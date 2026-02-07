@@ -686,6 +686,46 @@ def main():
     if not tester.test_shifts_and_cash_register():
         failed_tests.append("Cash Register")
     
+    # Step 7: PHASE 2 FEATURES TESTING
+    print("\n🆕 PHASE 2 FEATURES TESTING")
+    print("    (Inventory, Suppliers, Reports, Customers, Email, Print)")
+    
+    # Warehouses & Inventory
+    if not tester.test_warehouses():
+        failed_tests.append("Warehouses")
+    if not tester.test_suppliers():
+        failed_tests.append("Suppliers")
+    if not tester.test_inventory():
+        failed_tests.append("Inventory")
+    if not tester.test_inventory_alerts():
+        failed_tests.append("Inventory Alerts")
+    if not tester.test_recipes():
+        failed_tests.append("Recipes")
+    if not tester.test_purchase_orders():
+        failed_tests.append("Purchase Orders")
+    
+    # Customers & Loyalty
+    if not tester.test_customers():
+        failed_tests.append("Customers")
+    if not tester.test_loyalty_config():
+        failed_tests.append("Loyalty Config")
+    
+    # Reports
+    if not tester.test_reports_daily_sales():
+        failed_tests.append("Daily Sales Report")
+    if not tester.test_reports_by_category():
+        failed_tests.append("Sales by Category")
+    if not tester.test_reports_top_products():
+        failed_tests.append("Top Products Report")
+    if not tester.test_reports_by_waiter():
+        failed_tests.append("Sales by Waiter")
+    
+    # Email & Print
+    if not tester.test_email_daily_close():
+        failed_tests.append("Email Daily Close")
+    if not tester.test_print_templates():
+        failed_tests.append("Print Templates")
+    
     # Final results
     print("\n" + "=" * 60)
     print(f"📊 FINAL RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
