@@ -325,6 +325,22 @@ export default function Billing() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Print Preview Dialog */}
+      <Dialog open={printOpen} onOpenChange={setPrintOpen}>
+        <DialogContent className="max-w-sm bg-white text-black" data-testid="print-preview-dialog">
+          <DialogHeader><DialogTitle className="text-black font-oswald">Vista Previa de Recibo</DialogTitle></DialogHeader>
+          <div className="receipt-paper p-2" dangerouslySetInnerHTML={{ __html: printHtml }} />
+          <Button onClick={() => {
+            const w = window.open('', '_blank', 'width=320,height=600');
+            w.document.write(`<html><body style="margin:0;padding:0;">${printHtml}</body></html>`);
+            w.document.close();
+            w.print();
+          }} className="w-full h-11 bg-gray-900 text-white font-oswald font-bold active:scale-95" data-testid="print-receipt-btn">
+            <Printer size={16} className="mr-2" /> IMPRIMIR
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
