@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
-import os, logging, uuid, hashlib, jwt
+import os, logging, uuid, hashlib, jwt, asyncio, resend
 from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Optional
