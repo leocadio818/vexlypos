@@ -95,8 +95,12 @@ export default function Kitchen() {
                   </div>
 
                   {/* Waiter */}
-                  <div className="px-3 py-1.5 border-b border-dashed border-gray-300 text-xs text-gray-600">
-                    Mesero: <span className="font-semibold">{order.waiter_name}</span>
+                  <div className="px-3 py-1.5 border-b border-dashed border-gray-300 text-xs text-gray-600 flex items-center justify-between">
+                    <span>Mesero: <span className="font-semibold">{order.waiter_name}</span></span>
+                    <button onClick={async () => {
+                      try { const r = await fetch(`${API_BASE}/api/print/comanda/${order.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+                        const d = await r.json(); setPrintHtml(d.html); setPrintOpen(true); } catch {}
+                    }} className="text-gray-400 hover:text-gray-700"><Printer size={14} /></button>
                   </div>
 
                   {/* Items */}
