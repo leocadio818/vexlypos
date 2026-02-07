@@ -141,6 +141,22 @@ export default function Kitchen() {
           </div>
         )}
       </div>
+
+      {/* Print Comanda Dialog */}
+      <Dialog open={printOpen} onOpenChange={setPrintOpen}>
+        <DialogContent className="max-w-sm bg-white text-black" data-testid="print-comanda-dialog">
+          <DialogHeader><DialogTitle className="text-black font-oswald">Vista Previa de Comanda</DialogTitle></DialogHeader>
+          <div className="p-2" dangerouslySetInnerHTML={{ __html: printHtml }} />
+          <Button onClick={() => {
+            const w = window.open('', '_blank', 'width=320,height=600');
+            w.document.write(`<html><body style="margin:0;padding:0;">${printHtml}</body></html>`);
+            w.document.close();
+            w.print();
+          }} className="w-full h-11 bg-gray-900 text-white font-oswald font-bold active:scale-95">
+            <Printer size={16} className="mr-2" /> IMPRIMIR COMANDA
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
