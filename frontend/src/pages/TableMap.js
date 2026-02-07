@@ -13,9 +13,7 @@ const statusColors = {
 function DraggableTable({ table, containerSize, onDragEnd, onClick }) {
   const [isDragging, setIsDragging] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
-  const dragStart = useRef(null);
-  const startPos = useRef(null);
-  const hasMoved = useRef(false);
+  const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0, moved: false, pointerId: null });
   const nodeRef = useRef(null);
 
   const colors = statusColors[table.status] || statusColors.free;
@@ -34,36 +32,42 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick }) {
   }, [pxX, pxY]);
 
   const handlePointerDown = (e) => {
-    e.preventDefault();
+    const d = dragRef.current;
+    d.startX = e.clientX;
+    d.startY = e.clientY;
+    d.posX = pos.x;
+    d.posY = pos.y;
+    d.moved = false;
+    d.pointerId = e.pointerId;
     setIsDragging(true);
-    hasMoved.current = false;
-    dragStart.current = { x: e.clientX, y: e.clientY };
-    startPos.current = { x: pos.x, y: pos.y };
     nodeRef.current?.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e) => {
-    if (!isDragging || !dragStart.current) return;
-    const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasMoved.current = true;
-    const newX = Math.max(0, Math.min(containerSize.w - w, startPos.current.x + dx));
-    const newY = Math.max(0, Math.min(containerSize.h - h, startPos.current.y + dy));
-    setPos({ x: newX, y: newY });
+    if (!isDragging) return;
+    const d = dragRef.current;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) d.moved = true;
+    if (d.moved) {
+      const newX = Math.max(0, Math.min(containerSize.w - w, d.posX + dx));
+      const newY = Math.max(0, Math.min(containerSize.h - h, d.posY + dy));
+      setPos({ x: newX, y: newY });
+    }
   };
 
-  const handlePointerUp = (e) => {
+  const handlePointerUp = () => {
     if (!isDragging) return;
+    const d = dragRef.current;
     setIsDragging(false);
-    nodeRef.current?.releasePointerCapture(e.pointerId);
-    if (hasMoved.current) {
+    try { nodeRef.current?.releasePointerCapture(d.pointerId); } catch {}
+    if (d.moved) {
       const newXPct = Math.max(0, Math.min(90, (pos.x / containerSize.w) * 100));
       const newYPct = Math.max(0, Math.min(90, (pos.y / containerSize.h) * 100));
       onDragEnd(table, newXPct, newYPct);
     } else {
       onClick(table);
     }
-    dragStart.current = null;
   };
 
   return (
@@ -78,7 +82,7 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick }) {
         backgroundColor: colors.bg,
         boxShadow: isDragging ? `0 0 25px ${colors.glow}, 0 8px 30px rgba(0,0,0,0.5)` : `0 0 15px ${colors.glow}`,
         backdropFilter: 'blur(8px)',
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: isDragging ? 'grabbing' : 'pointer',
         zIndex: isDragging ? 100 : 1,
         transform: isDragging ? 'scale(1.05)' : 'scale(1)',
         transition: isDragging ? 'none' : 'transform 0.2s, box-shadow 0.2s',
