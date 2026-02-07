@@ -130,6 +130,66 @@ class ShiftOpenInput(BaseModel):
 class ShiftCloseInput(BaseModel):
     closing_amount: float = 0
 
+class WarehouseInput(BaseModel):
+    name: str
+    location: str = ""
+
+class SupplierInput(BaseModel):
+    name: str
+    contact_name: str = ""
+    phone: str = ""
+    email: str = ""
+    address: str = ""
+    rnc: str = ""
+
+class RecipeIngredientInput(BaseModel):
+    ingredient_name: str
+    quantity: float
+    unit: str = "unidad"
+    cost: float = 0
+
+class RecipeInput(BaseModel):
+    product_id: str
+    product_name: str
+    ingredients: List[RecipeIngredientInput]
+    yield_quantity: float = 1
+
+class POItemInput(BaseModel):
+    product_id: str
+    product_name: str
+    quantity: float
+    unit_price: float
+
+class PurchaseOrderInput(BaseModel):
+    supplier_id: str
+    warehouse_id: str = ""
+    items: List[POItemInput]
+    notes: str = ""
+
+class ReceivePOItemInput(BaseModel):
+    product_id: str
+    received_quantity: float
+
+class ReceivePOInput(BaseModel):
+    warehouse_id: str
+    items: List[ReceivePOItemInput]
+
+class CustomerInput(BaseModel):
+    name: str
+    phone: str = ""
+    email: str = ""
+
+class InventoryAdjustInput(BaseModel):
+    product_id: str
+    warehouse_id: str
+    quantity: float
+    reason: str = "Ajuste manual"
+
+class EmailInput(BaseModel):
+    to: str
+    subject: str
+    html: str
+
 # ─── AUTH ───
 @api.post("/auth/login")
 async def login(input: LoginInput):
