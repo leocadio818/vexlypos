@@ -45,10 +45,21 @@ export default function CashRegister() {
   const handleCloseShift = async () => {
     if (!currentShift) return;
     try {
-      const res = await shiftsAPI.close(currentShift.id, { closing_amount: parseFloat(closingAmount) || 0 });
+      await shiftsAPI.close(currentShift.id, { closing_amount: parseFloat(closingAmount) || 0 });
+      // Send email if provided
+      if (emailTo) {
+        try {
+          await fetch(`${API_BASE}/api/email/shift-report/${currentShift.id}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+            body: JSON.stringify({ to: emailTo })
+          });
+          toast.success('Reporte enviado por correo');
+        } catch {}
+      }
       setCurrentShift(null);
       toast.success('Turno cerrado');
       setCloseDialog(false);
+      setEmailTo('');
       fetchData();
     } catch {
       toast.error('Error cerrando turno');
