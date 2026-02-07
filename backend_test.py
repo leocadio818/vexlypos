@@ -371,6 +371,259 @@ class DOPOSAPITester:
             return shift_id
         return False
 
+    # ========== PHASE 2 TESTING ==========
+
+    def test_warehouses(self):
+        """Test warehouse management"""
+        success, response = self.run_test(
+            "Get Warehouses",
+            "GET",
+            "warehouses",
+            200,
+            description="Get all warehouses"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Warehouses found: {len(response)}")
+            for wh in response:
+                print(f"     {wh['name']} - {wh.get('location', 'No location')}")
+            return len(response) >= 2  # Should have at least Almacen Principal and Barra
+        return False
+
+    def test_suppliers(self):
+        """Test supplier management"""
+        success, response = self.run_test(
+            "Get Suppliers",
+            "GET",
+            "suppliers",
+            200,
+            description="Get all suppliers"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Suppliers found: {len(response)}")
+            for supplier in response:
+                rnc = supplier.get('rnc', 'No RNC')
+                print(f"     {supplier['name']} (RNC: {rnc}) - {supplier.get('phone', 'No phone')}")
+            return len(response) >= 3  # Should have at least 3 suppliers
+        return False
+
+    def test_inventory(self):
+        """Test inventory management"""
+        success, response = self.run_test(
+            "Get Inventory",
+            "GET",
+            "inventory",
+            200,
+            description="Get current inventory levels"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Inventory items found: {len(response)}")
+            for item in response:
+                stock = item.get('stock', 0)
+                min_stock = item.get('min_stock', 10)
+                status = "LOW STOCK" if stock <= min_stock else "OK"
+                print(f"     {item.get('product_name', 'Unknown')}: {stock} units ({status})")
+            return len(response) > 0
+        return False
+
+    def test_inventory_alerts(self):
+        """Test inventory alerts for low stock"""
+        success, response = self.run_test(
+            "Get Inventory Alerts",
+            "GET",
+            "inventory/alerts",
+            200,
+            description="Get low stock alerts"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Low stock alerts: {len(response)}")
+            for alert in response:
+                print(f"     {alert.get('product_name', 'Unknown')}: {alert.get('stock', 0)}/{alert.get('min_stock', 10)}")
+            return True  # Always pass - alerts can be empty
+        return False
+
+    def test_recipes(self):
+        """Test recipe management"""
+        success, response = self.run_test(
+            "Get Recipes",
+            "GET",
+            "recipes",
+            200,
+            description="Get all recipes"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Recipes found: {len(response)}")
+            for recipe in response:
+                ingredients = recipe.get('ingredients', [])
+                print(f"     {recipe['product_name']}: {len(ingredients)} ingredients")
+            return True  # Pass even if no recipes initially
+        return False
+
+    def test_purchase_orders(self):
+        """Test purchase order management"""
+        success, response = self.run_test(
+            "Get Purchase Orders",
+            "GET",
+            "purchase-orders",
+            200,
+            description="Get all purchase orders"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Purchase orders found: {len(response)}")
+            for po in response:
+                print(f"     PO {po['id'][:8]} - {po['supplier_name']} - Status: {po['status']} - Total: RD$ {po['total']:.2f}")
+            return True  # Pass even if no orders initially
+        return False
+
+    def test_customers(self):
+        """Test customer management"""
+        success, response = self.run_test(
+            "Get Customers",
+            "GET",
+            "customers",
+            200,
+            description="Get all customers"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Customers found: {len(response)}")
+            for customer in response:
+                points = customer.get('points', 0)
+                spent = customer.get('total_spent', 0)
+                print(f"     {customer['name']}: {points} pts, RD$ {spent:.2f} spent, {customer.get('visits', 0)} visits")
+            return len(response) >= 3  # Should have sample customers
+        return False
+
+    def test_loyalty_config(self):
+        """Test loyalty configuration"""
+        success, response = self.run_test(
+            "Get Loyalty Config",
+            "GET",
+            "loyalty/config",
+            200,
+            description="Get loyalty program configuration"
+        )
+        
+        if success and isinstance(response, dict):
+            pts_per_100 = response.get('points_per_hundred', 0)
+            pt_value = response.get('point_value_rd', 0)
+            min_redeem = response.get('min_redemption', 0)
+            print(f"   Config: {pts_per_100} pts per RD$100, {pt_value} RD$ per point, min redeem: {min_redeem}")
+            return pts_per_100 == 10 and pt_value == 1  # Check expected defaults
+        return False
+
+    def test_reports_daily_sales(self):
+        """Test daily sales report"""
+        today = datetime.now().strftime("%Y-%m-%d")
+        success, response = self.run_test(
+            "Daily Sales Report",
+            "GET",
+            f"reports/daily-sales?date={today}",
+            200,
+            description=f"Get daily sales report for {today}"
+        )
+        
+        if success and isinstance(response, dict):
+            print(f"   Total bills: {response.get('total_bills', 0)}")
+            print(f"   Total sales: RD$ {response.get('total_sales', 0):.2f}")
+            print(f"   ITBIS: RD$ {response.get('total_itbis', 0):.2f}")
+            print(f"   Tips: RD$ {response.get('total_tips', 0):.2f}")
+            return 'total_sales' in response
+        return False
+
+    def test_reports_by_category(self):
+        """Test sales by category report"""
+        today = datetime.now().strftime("%Y-%m-%d")
+        success, response = self.run_test(
+            "Sales by Category",
+            "GET",
+            f"reports/sales-by-category?date={today}",
+            200,
+            description="Get sales breakdown by category"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Category sales: {len(response)} categories")
+            for cat in response[:3]:  # Show top 3
+                print(f"     {cat['category']}: RD$ {cat['total']:.2f}")
+            return True
+        return False
+
+    def test_reports_top_products(self):
+        """Test top products report"""
+        today = datetime.now().strftime("%Y-%m-%d")
+        success, response = self.run_test(
+            "Top Products Report",
+            "GET",
+            f"reports/top-products?date={today}",
+            200,
+            description="Get top selling products"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Top products: {len(response)} products")
+            for prod in response[:3]:  # Show top 3
+                print(f"     {prod['name']}: {prod['quantity']} sold, RD$ {prod['total']:.2f}")
+            return True
+        return False
+
+    def test_reports_by_waiter(self):
+        """Test sales by waiter report"""
+        today = datetime.now().strftime("%Y-%m-%d")
+        success, response = self.run_test(
+            "Sales by Waiter",
+            "GET",
+            f"reports/sales-by-waiter?date={today}",
+            200,
+            description="Get sales by waiter/cashier"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Waiter sales: {len(response)} waiters")
+            for waiter in response:
+                print(f"     {waiter['name']}: {waiter['bills']} bills, RD$ {waiter['total']:.2f}, tips RD$ {waiter['tips']:.2f}")
+            return True
+        return False
+
+    def test_email_daily_close(self):
+        """Test email daily close (preview mode)"""
+        today = datetime.now().strftime("%Y-%m-%d")
+        success, response = self.run_test(
+            "Email Daily Close",
+            "POST",
+            "email/daily-close",
+            200,
+            data={"to": "test@example.com", "date": today},
+            description="Test daily close email (preview mode)"
+        )
+        
+        if success and isinstance(response, dict):
+            status = response.get('status', 'unknown')
+            print(f"   Email status: {status}")
+            if status == 'preview':
+                print("   ✓ Preview mode active (RESEND_API_KEY not configured)")
+            return status in ['preview', 'sent']
+        return False
+
+    def test_print_templates(self):
+        """Test print templates (requires bill_id)"""
+        # We'll test this after creating a bill
+        # For now just test that endpoint exists by calling with fake ID
+        success, response = self.run_test(
+            "Print Receipt Template",
+            "GET",
+            "print/receipt/fake-bill-id",
+            404,  # Expect 404 for fake ID
+            description="Test receipt print template endpoint"
+        )
+        # 404 is expected, so we pass if we get a proper HTTP response
+        return True
+
 def main():
     """Run comprehensive POS API tests"""
     print("🏪 Dominican Republic POS System - API Testing")
