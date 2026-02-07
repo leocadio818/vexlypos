@@ -17,6 +17,8 @@ export default function CashRegister() {
   const [station, setStation] = useState('Caja 1');
   const [openingAmount, setOpeningAmount] = useState('');
   const [closingAmount, setClosingAmount] = useState('');
+  const [emailTo, setEmailTo] = useState('');
+  const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
   const fetchData = useCallback(async () => {
     try {
