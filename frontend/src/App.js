@@ -8,6 +8,10 @@ import Kitchen from "@/pages/Kitchen";
 import Billing from "@/pages/Billing";
 import CashRegister from "@/pages/CashRegister";
 import Settings from "@/pages/Settings";
+import Inventory from "@/pages/Inventory";
+import Suppliers from "@/pages/Suppliers";
+import Reports from "@/pages/Reports";
+import Customers from "@/pages/Customers";
 import Layout from "@/components/Layout";
 
 function ProtectedRoute({ children }) {
