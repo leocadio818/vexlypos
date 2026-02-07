@@ -1,57 +1,50 @@
 # Mesa POS RD - PRD (Product Requirements Document)
 
 ## Problem Statement
-Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Funcionalidades: mapa de mesas arrastrables, comandas a cocina, modificadores de platillos, division de cuentas (50+), propinas, NCF, ITBIS 18%, razones de anulaciones configurables con retorno a inventario, teclado numerico de cantidad con fracciones, multiples estaciones, touchscreen, modo offline, responsive.
+Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Funcionalidades completas incluyendo inventario, proveedores, reportes, fidelidad de clientes, impresion virtual y envio de correos.
 
 ## Architecture
-- **Frontend**: React 19 + Tailwind CSS + Shadcn UI
-- **Backend**: FastAPI + Motor (async MongoDB)
+- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Recharts
+- **Backend**: FastAPI + Motor (async MongoDB) + Resend (email)
 - **Database**: MongoDB
-- **Auth**: JWT + PIN numerico (hashlib SHA256)
+- **Auth**: JWT + PIN numerico
 
-## User Personas
-1. **Mesero/Camarero** - Toma ordenes, gestiona mesas
-2. **Cajero** - Facturacion, cobros, cierres de turno
-3. **Chef/Cocina** - Visualiza comandas, cambia estados
-4. **Administrador** - Configuracion, gestion completa
+## What's Been Implemented
 
-## What's Been Implemented (Feb 2026)
+### Phase 1 (Feb 2026)
 - PIN login con teclado numerico
-- Mapa de mesas arrastrables con areas (Salon, Terraza, Bar, VIP)
-- Gestion de ordenes con categorias y productos dominicanos
-- Modificadores de platillos (Punto de coccion, Extras, Acompanantes, Sin...)
-- Seleccion de cantidad manual con fracciones (0.25, 0.50, etc.)
-- Envio de comandas a cocina
-- Pantalla de cocina con flujo de estados (Pendiente→Preparando→Listo→Servido)
-- Facturacion con ITBIS 18%, Propina Legal 10%, NCF (B01)
-- Division de cuentas con etiquetas personalizadas
-- Metodos de pago (Efectivo/Tarjeta)
-- Apertura/cierre de turnos por estacion
-- Razones de anulacion configurables (retorno a inventario si/no)
-- Configuracion de areas, mesas, productos, razones
-- Indicador de conexion online/offline
-- Cola offline para operaciones sin internet
-- Tema oscuro industrial con acentos naranja (Oswald + Manrope fonts)
-- 29 productos dominicanos autenticos como seed data
+- Mapa de mesas arrastrables con areas
+- Gestion de ordenes con categorias, modificadores, cantidad fraccionada
+- Pantalla de cocina con flujo de estados
+- Facturacion DGII (ITBIS 18%, Propina, NCF B01)
+- Division de cuentas con etiquetas
+- Razones de anulacion configurables con retorno a inventario
+- Turnos de caja por estacion
+- Indicador online/offline + cola de sincronizacion
+- Tema oscuro industrial
+
+### Phase 2 (Feb 2026)
+- Inventario completo: stock, almacenes, recetas, alertas
+- Proveedores: CRUD + ordenes de compra + recepcion de mercancia
+- Reportes: ventas diarias, por categoria (pie chart), top productos (bar chart), por mesero
+- Clientes & Fidelidad: registro, puntos por consumo, canjeo de puntos
+- Email (Resend): cierre de turno, cierre diario por correo
+- Impresion virtual: recibos y comandas con vista previa + print CSS
+- 31 endpoints backend probados al 100%
 
 ## Prioritized Backlog
 
-### P0 (Next Phase)
-- Inventario completo: recetas, almacenes, stock real
-- Proveedores y ordenes de compra
-- Recibir ordenes de compra
-- Alertas de inventario (pantalla + correo)
+### P0 (Pendiente)
+- Configurar RESEND_API_KEY para envio real de correos
+- Integrar fidelidad con facturacion (acumular puntos al pagar)
 
 ### P1
-- Reportes de ventas (diario, semanal, mensual)
-- Cierre de dia enviado por correo
-- Cierre de turno impreso
-- Impresoras termicas (comandas + recibos)
-- Reportes de inventario
+- Impresoras ESC/POS (USB y red) - raw printing
+- Reportes de inventario (movimientos, mermas)
+- Dashboard ejecutivo con KPIs en tiempo real
 
 ### P2
 - Service Worker para modo offline completo
-- Gestion de usuarios completa
-- Multiples cajas/estaciones simultarias
-- Historico de ventas y analytics
-- Export a formatos DGII
+- Export formatos DGII (607, 608)
+- Multi-sucursal
+- Gestion de turnos de cocina
