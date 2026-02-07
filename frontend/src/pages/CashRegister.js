@@ -214,6 +214,19 @@ export default function CashRegister() {
                 data-testid="closing-amount-input"
               />
             </div>
+            <div>
+              <label className="text-sm font-semibold text-muted-foreground mb-1 block flex items-center gap-1">
+                <Mail size={12} /> Enviar reporte por correo (opcional)
+              </label>
+              <input
+                type="email"
+                value={emailTo}
+                onChange={e => setEmailTo(e.target.value)}
+                placeholder="correo@ejemplo.com"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                data-testid="shift-email-input"
+              />
+            </div>
             <Button onClick={handleCloseShift} variant="destructive" data-testid="confirm-close-shift"
               className="w-full h-12 font-oswald font-bold active:scale-95">
               CERRAR TURNO
