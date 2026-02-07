@@ -1156,6 +1156,55 @@ async def seed_data():
 
     await db.ncf_sequences.insert_one({"prefix": "B01", "current_number": 0})
 
+    # Warehouses
+    warehouses = [
+        {"id": gen_id(), "name": "Almacen Principal", "location": "Cocina", "active": True},
+        {"id": gen_id(), "name": "Barra", "location": "Area de Bar", "active": True},
+    ]
+    await db.warehouses.insert_many(warehouses)
+
+    # Suppliers
+    suppliers = [
+        {"id": gen_id(), "name": "Distribuidora Nacional", "contact_name": "Jose Martinez",
+         "phone": "809-555-0001", "email": "jose@distnacional.com", "address": "Santo Domingo",
+         "rnc": "101-00001-1", "active": True, "created_at": now_iso()},
+        {"id": gen_id(), "name": "Mariscos del Caribe", "contact_name": "Ana Lopez",
+         "phone": "809-555-0002", "email": "ana@mariscoscaribe.com", "address": "Puerto Plata",
+         "rnc": "101-00002-2", "active": True, "created_at": now_iso()},
+        {"id": gen_id(), "name": "Bebidas Nacionales SRL", "contact_name": "Pedro Gomez",
+         "phone": "809-555-0003", "email": "pedro@bebidasnac.com", "address": "Santiago",
+         "rnc": "101-00003-3", "active": True, "created_at": now_iso()},
+    ]
+    await db.suppliers.insert_many(suppliers)
+
+    # Inventory (initial stock for tracked items)
+    inv_items = []
+    for p in products:
+        if p.get("track_inventory"):
+            inv_items.append({
+                "product_id": p["id"], "product_name": p["name"],
+                "warehouse_id": warehouses[1]["id"] if "cerveza" in p["name"].lower() or "mamajuana" in p["name"].lower() else warehouses[0]["id"],
+                "stock": 50, "min_stock": 10, "max_stock": 100, "unit": "unidad", "last_updated": now_iso()
+            })
+    if inv_items:
+        await db.inventory.insert_many(inv_items)
+
+    # Loyalty config
+    await db.loyalty_config.insert_one({
+        "points_per_hundred": 10, "point_value_rd": 1, "min_redemption": 50
+    })
+
+    # Sample customers
+    customers = [
+        {"id": gen_id(), "name": "Juan Perez", "phone": "809-555-1001", "email": "juan@email.com",
+         "points": 150, "total_spent": 4500, "visits": 8, "created_at": now_iso(), "last_visit": now_iso()},
+        {"id": gen_id(), "name": "Maria Garcia", "phone": "809-555-1002", "email": "maria@email.com",
+         "points": 80, "total_spent": 2800, "visits": 5, "created_at": now_iso(), "last_visit": now_iso()},
+        {"id": gen_id(), "name": "Carlos Rodriguez", "phone": "809-555-1003", "email": "",
+         "points": 220, "total_spent": 7200, "visits": 15, "created_at": now_iso(), "last_visit": now_iso()},
+    ]
+    await db.customers.insert_many(customers)
+
     return {"message": "Datos sembrados exitosamente", "seeded": True,
             "users": [{"name": u["name"], "role": u["role"]} for u in users]}
 
