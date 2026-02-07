@@ -8,6 +8,10 @@ const navItems = [
   { to: '/tables', icon: LayoutGrid, label: 'Mesas' },
   { to: '/kitchen', icon: ChefHat, label: 'Cocina' },
   { to: '/cash-register', icon: CircleDollarSign, label: 'Caja' },
+  { to: '/inventory', icon: Package, label: 'Invent.' },
+  { to: '/suppliers', icon: Truck, label: 'Compras' },
+  { to: '/reports', icon: BarChart3, label: 'Reporte' },
+  { to: '/customers', icon: Heart, label: 'Clientes' },
   { to: '/settings', icon: Settings, label: 'Config' },
 ];
 
