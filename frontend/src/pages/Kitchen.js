@@ -17,6 +17,9 @@ const statusColors = {
 
 export default function Kitchen() {
   const [orders, setOrders] = useState([]);
+  const [printHtml, setPrintHtml] = useState('');
+  const [printOpen, setPrintOpen] = useState(false);
+  const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
   const fetchOrders = useCallback(async () => {
     try {
