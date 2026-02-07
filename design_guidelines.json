@@ -1,0 +1,137 @@
+{
+  "identity": {
+    "name": "E1",
+    "mission": "Create a POS interface that feels like a tactical command center for gourmet operations.",
+    "tone": "Precision, Speed, High-Contrast, Industrial-Luxury"
+  },
+  "palette": {
+    "theme": "dark",
+    "backgrounds": {
+      "app_bg": "hsl(240, 10%, 4%)",
+      "card_bg": "hsl(240, 10%, 8%)",
+      "panel_bg": "hsl(240, 10%, 12%)",
+      "overlay": "hsla(0, 0%, 0%, 0.8)"
+    },
+    "text": {
+      "primary": "hsl(0, 0%, 95%)",
+      "secondary": "hsl(240, 5%, 65%)",
+      "tertiary": "hsl(240, 5%, 45%)",
+      "accent": "hsl(25, 100%, 50%)"
+    },
+    "functional": {
+      "success": "hsl(150, 60%, 45%)",
+      "warning": "hsl(35, 90%, 55%)",
+      "error": "hsl(0, 75%, 55%)",
+      "info": "hsl(210, 80%, 60%)",
+      "kitchen_active": "hsl(25, 95%, 55%)",
+      "kitchen_done": "hsl(140, 60%, 30%)",
+      "table_occupied": "hsl(0, 75%, 60%)",
+      "table_free": "hsl(150, 60%, 40%)",
+      "table_billed": "hsl(45, 90%, 55%)"
+    },
+    "brand": {
+      "primary": "hsl(25, 100%, 50%)",
+      "primary_foreground": "hsl(0, 0%, 100%)",
+      "secondary": "hsl(210, 20%, 20%)",
+      "accent_glow": "0 0 20px hsla(25, 100%, 50%, 0.3)"
+    }
+  },
+  "typography": {
+    "headings": {
+      "family": "'Oswald', sans-serif",
+      "weights": ["400", "500", "700"],
+      "usage": "Table numbers, prices, total amounts, receipt headers"
+    },
+    "body": {
+      "family": "'Manrope', sans-serif",
+      "weights": ["400", "500", "600"],
+      "usage": "Menu items, modifier options, settings, reports"
+    },
+    "mono": {
+      "family": "'JetBrains Mono', monospace",
+      "usage": "Order IDs, timestamps, raw data"
+    }
+  },
+  "layout_strategy": {
+    "grid_system": "The Command Grid",
+    "spacing": {
+      "base": "0.25rem",
+      "container_padding": "p-4 md:p-6 lg:p-8",
+      "gap_default": "gap-4",
+      "gap_loose": "gap-6"
+    },
+    "containers": {
+      "glass_panel": "bg-card/90 backdrop-blur-xl border border-white/10 shadow-2xl rounded-xl",
+      "solid_panel": "bg-card border border-white/5 rounded-lg shadow-lg",
+      "active_item": "ring-2 ring-primary ring-offset-2 ring-offset-background"
+    },
+    "touch_targets": {
+      "min_height": "h-14",
+      "min_width": "w-14",
+      "mobile_safe_area": "pb-8"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 h-14 font-bold tracking-wide uppercase shadow-[0_4px_14px_0_rgba(255,100,0,0.39)] transition-transform active:scale-95 rounded-lg",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 h-14 font-semibold uppercase rounded-lg border border-white/10",
+      "outline": "border-2 border-primary/50 text-primary hover:bg-primary/10 h-14 font-bold uppercase rounded-lg",
+      "ghost": "hover:bg-white/5 text-foreground h-12 rounded-md",
+      "destructive": "bg-destructive text-destructive-foreground hover:bg-destructive/90 h-14 font-bold uppercase rounded-lg shadow-[0_4px_14px_0_rgba(255,0,0,0.39)]"
+    },
+    "cards": {
+      "menu_item": "group relative overflow-hidden bg-card border border-white/5 hover:border-primary/50 transition-all active:scale-[0.98] rounded-xl flex flex-col justify-between p-4 h-full",
+      "order_ticket": "bg-[#fffdf5] text-black font-mono shadow-md border-t-8 border-primary p-4 rounded-b-lg relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2 after:bg-[linear-gradient(45deg,transparent_33.333%,#fff_33.333%,#fff_66.667%,transparent_66.667%),linear-gradient(-45deg,transparent_33.333%,#fff_33.333%,#fff_66.667%,transparent_66.667%)] after:bg-[length:20px_20px] after:bg-[position:0_10px]"
+    },
+    "inputs": {
+      "pin_pad": "grid grid-cols-3 gap-4 max-w-sm mx-auto",
+      "pin_button": "h-20 w-20 rounded-full text-3xl font-bold bg-secondary hover:bg-primary hover:text-black transition-colors flex items-center justify-center border-2 border-white/5",
+      "search_bar": "bg-secondary/50 border-none h-12 text-lg focus:ring-primary/50 pl-12 rounded-full"
+    },
+    "table_map": {
+      "container": "relative w-full h-full bg-[#1a1a1c] overflow-hidden grid-bg",
+      "table_node": "absolute flex items-center justify-center font-bold text-white transition-all cursor-move shadow-xl backdrop-blur-md border-2",
+      "area_tab": "px-6 py-3 rounded-t-lg bg-card/50 hover:bg-card border-t border-x border-white/10 text-muted-foreground data-[state=active]:text-primary data-[state=active]:bg-background data-[state=active]:border-primary/50 transition-all font-oswald tracking-wide"
+    }
+  },
+  "visual_enhancers": {
+    "grid_bg": "bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]",
+    "glass_morphism": "backdrop-blur-xl bg-black/40 border border-white/10",
+    "neon_glow": "shadow-[0_0_15px_rgba(255,100,0,0.5)]",
+    "kitchen_alert": "animate-pulse border-red-500 shadow-[0_0_20px_rgba(255,0,0,0.5)]"
+  },
+  "assets": {
+    "icons": "lucide-react",
+    "font_awesome": "For specific industry icons if needed",
+    "logo_placeholder": "https://images.unsplash.com/photo-1514362545857-3bc16549766b?auto=format&fit=crop&q=80&w=200"
+  },
+  "image_urls": {
+    "login_bg": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop",
+    "empty_state_food": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=500",
+    "default_avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=100",
+    "category_drinks": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&q=80&w=300",
+    "category_main": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=300",
+    "category_dessert": "https://images.unsplash.com/photo-1563729768-7491131ba719?auto=format&fit=crop&q=80&w=300"
+  },
+  "universal_guidelines": [
+    "NEVER use gradients for the main background. Use the 'grid-bg' pattern.",
+    "Buttons must have a 'click' feel (active:scale-95).",
+    "Use 'Oswald' font for all prices and numeric data.",
+    "All monetary values must be formatted as RD$ X,XXX.XX",
+    "Waiters need speed: Don't bury actions in dropdowns. Use grids of buttons.",
+    "Kitchen screens must be high contrast (Black/White/Red/Green) readable from 2 meters away.",
+    "Bill splitting must be drag-and-drop or simple tap-to-assign.",
+    "Offline mode indicator must be visible at all times.",
+    "Use `sonner` for all toasts/notifications.",
+    "Use `lucide-react` for icons."
+  ],
+  "instructions_to_main_agent": [
+    "Install `lucide-react` and `@fontsource/oswald` `@fontsource/manrope` `@fontsource/jetbrains-mono`.",
+    "Update `tailwind.config.js` to include the new colors and font families.",
+    "Create a `Layout` component that handles the Sidebar/TopBar structure.",
+    "Implement the 'PinPad' as a reusable component.",
+    "Use `react-draggable` for the Table Map.",
+    "For the Kitchen Display, create a 'Ticket' component that looks like a physical paper receipt but digital.",
+    "Ensure 'Order' screen has a category sidebar and a product grid."
+  ]
+}
