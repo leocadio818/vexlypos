@@ -195,6 +195,13 @@ export default function Billing() {
                           className="flex-1 h-11 rounded-lg bg-green-600 text-white font-oswald font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
                           <Check size={16} /> COBRAR
                         </button>
+                        <button onClick={async () => {
+                          try { const r = await fetch(`${API_BASE}/api/print/receipt/${bill.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+                            const d = await r.json(); setPrintHtml(d.html); setPrintOpen(true); } catch { toast.error('Error'); }
+                        }} data-testid={`print-bill-${bill.id}`}
+                          className="h-11 px-3 rounded-lg bg-muted text-foreground font-bold text-xs border border-border active:scale-95 flex items-center gap-1">
+                          <Printer size={14} /> Imprimir
+                        </button>
                         <button onClick={() => handleCancelBill(bill.id)}
                           data-testid={`cancel-bill-${bill.id}`}
                           className="h-11 px-3 rounded-lg bg-red-600/10 text-red-600 font-bold text-xs border border-red-600/30 active:scale-95">
@@ -202,9 +209,17 @@ export default function Billing() {
                         </button>
                       </div>
                     )}
-                    {bill.status === 'paid' && bill.paid_at && (
-                      <div className="mt-3 text-center text-[10px] text-gray-400 font-mono">
-                        Pagado: {new Date(bill.paid_at).toLocaleString('es-DO')} | {bill.payment_method === 'cash' ? 'Efectivo' : 'Tarjeta'}
+                    {bill.status === 'paid' && (
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-[10px] text-gray-400 font-mono">
+                          Pagado: {new Date(bill.paid_at).toLocaleString('es-DO')} | {bill.payment_method === 'cash' ? 'Efectivo' : 'Tarjeta'}
+                        </span>
+                        <button onClick={async () => {
+                          try { const r = await fetch(`${API_BASE}/api/print/receipt/${bill.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+                            const d = await r.json(); setPrintHtml(d.html); setPrintOpen(true); } catch { toast.error('Error'); }
+                        }} className="text-gray-500 hover:text-gray-800 transition-colors">
+                          <Printer size={14} />
+                        </button>
                       </div>
                     )}
                   </div>
