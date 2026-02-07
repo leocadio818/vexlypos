@@ -626,10 +626,16 @@ async def close_shift(shift_id: str, input: ShiftCloseInput):
     }})
     return await db.shifts.find_one({"id": shift_id}, {"_id": 0})
 
-# ─── INVENTORY ───
+# ─── INVENTORY (enhanced) ───
 @api.get("/inventory")
-async def list_inventory():
-    return await db.inventory.find({}, {"_id": 0}).to_list(500)
+async def list_inventory(warehouse_id: Optional[str] = Query(None)):
+    query = {"warehouse_id": warehouse_id} if warehouse_id else {}
+    return await db.inventory.find(query, {"_id": 0}).to_list(500)
+
+@api.get("/inventory/alerts")
+async def inventory_alerts():
+    items = await db.inventory.find({"$expr": {"$lte": ["$stock", "$min_stock"]}}, {"_id": 0}).to_list(100)
+    return items
 
 @api.put("/inventory/{product_id}")
 async def update_inventory(product_id: str, input: dict):
@@ -637,6 +643,395 @@ async def update_inventory(product_id: str, input: dict):
         del input["_id"]
     await db.inventory.update_one({"product_id": product_id}, {"$set": input}, upsert=True)
     return {"ok": True}
+
+@api.post("/inventory/adjust")
+async def adjust_inventory(input: InventoryAdjustInput, user=Depends(get_current_user)):
+    await db.inventory.update_one(
+        {"product_id": input.product_id, "warehouse_id": input.warehouse_id},
+        {"$inc": {"stock": input.quantity}, "$set": {"last_updated": now_iso()}},
+        upsert=True
+    )
+    await db.inventory_logs.insert_one({
+        "id": gen_id(), "product_id": input.product_id, "warehouse_id": input.warehouse_id,
+        "quantity": input.quantity, "reason": input.reason,
+        "user_id": user["user_id"], "user_name": user["name"], "created_at": now_iso()
+    })
+    return {"ok": True}
+
+# ─── WAREHOUSES ───
+@api.get("/warehouses")
+async def list_warehouses():
+    return await db.warehouses.find({}, {"_id": 0}).to_list(50)
+
+@api.post("/warehouses")
+async def create_warehouse(input: WarehouseInput):
+    doc = {"id": gen_id(), "name": input.name, "location": input.location, "active": True}
+    await db.warehouses.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/warehouses/{wid}")
+async def update_warehouse(wid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.warehouses.update_one({"id": wid}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/warehouses/{wid}")
+async def delete_warehouse(wid: str):
+    await db.warehouses.delete_one({"id": wid})
+    return {"ok": True}
+
+# ─── SUPPLIERS ───
+@api.get("/suppliers")
+async def list_suppliers():
+    return await db.suppliers.find({}, {"_id": 0}).to_list(100)
+
+@api.post("/suppliers")
+async def create_supplier(input: SupplierInput):
+    doc = {"id": gen_id(), "name": input.name, "contact_name": input.contact_name,
+           "phone": input.phone, "email": input.email, "address": input.address,
+           "rnc": input.rnc, "active": True, "created_at": now_iso()}
+    await db.suppliers.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/suppliers/{sid}")
+async def update_supplier(sid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.suppliers.update_one({"id": sid}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/suppliers/{sid}")
+async def delete_supplier(sid: str):
+    await db.suppliers.delete_one({"id": sid})
+    return {"ok": True}
+
+# ─── RECIPES ───
+@api.get("/recipes")
+async def list_recipes():
+    return await db.recipes.find({}, {"_id": 0}).to_list(200)
+
+@api.get("/recipes/product/{product_id}")
+async def get_recipe(product_id: str):
+    recipe = await db.recipes.find_one({"product_id": product_id}, {"_id": 0})
+    return recipe or {}
+
+@api.post("/recipes")
+async def create_recipe(input: RecipeInput):
+    ingredients = [{"id": gen_id(), **i.model_dump()} for i in input.ingredients]
+    doc = {"id": gen_id(), "product_id": input.product_id, "product_name": input.product_name,
+           "ingredients": ingredients, "yield_quantity": input.yield_quantity, "created_at": now_iso()}
+    existing = await db.recipes.find_one({"product_id": input.product_id})
+    if existing:
+        await db.recipes.update_one({"product_id": input.product_id}, {"$set": {"ingredients": ingredients, "yield_quantity": input.yield_quantity}})
+        return await db.recipes.find_one({"product_id": input.product_id}, {"_id": 0})
+    await db.recipes.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.delete("/recipes/{rid}")
+async def delete_recipe(rid: str):
+    await db.recipes.delete_one({"id": rid})
+    return {"ok": True}
+
+# ─── PURCHASE ORDERS ───
+@api.get("/purchase-orders")
+async def list_purchase_orders(status: Optional[str] = Query(None)):
+    query = {"status": status} if status else {}
+    return await db.purchase_orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+
+@api.post("/purchase-orders")
+async def create_purchase_order(input: PurchaseOrderInput, user=Depends(get_current_user)):
+    supplier = await db.suppliers.find_one({"id": input.supplier_id}, {"_id": 0})
+    items = [{"id": gen_id(), "product_id": i.product_id, "product_name": i.product_name,
+              "quantity": i.quantity, "unit_price": i.unit_price, "received_quantity": 0} for i in input.items]
+    total = sum(i.quantity * i.unit_price for i in input.items)
+    doc = {"id": gen_id(), "supplier_id": input.supplier_id,
+           "supplier_name": supplier["name"] if supplier else "?",
+           "warehouse_id": input.warehouse_id, "items": items, "total": round(total, 2),
+           "notes": input.notes, "status": "draft",
+           "created_by": user["name"], "created_at": now_iso(), "received_at": None}
+    await db.purchase_orders.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/purchase-orders/{po_id}")
+async def update_purchase_order(po_id: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.purchase_orders.update_one({"id": po_id}, {"$set": input})
+    return {"ok": True}
+
+@api.post("/purchase-orders/{po_id}/receive")
+async def receive_purchase_order(po_id: str, input: ReceivePOInput, user=Depends(get_current_user)):
+    po = await db.purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    for recv_item in input.items:
+        for po_item in po["items"]:
+            if po_item["product_id"] == recv_item.product_id:
+                po_item["received_quantity"] = po_item.get("received_quantity", 0) + recv_item.received_quantity
+                await db.inventory.update_one(
+                    {"product_id": recv_item.product_id, "warehouse_id": input.warehouse_id},
+                    {"$inc": {"stock": recv_item.received_quantity}, "$set": {"last_updated": now_iso()}},
+                    upsert=True
+                )
+    all_received = all(i["received_quantity"] >= i["quantity"] for i in po["items"])
+    partial = any(i["received_quantity"] > 0 for i in po["items"])
+    new_status = "received" if all_received else "partial" if partial else po["status"]
+    await db.purchase_orders.update_one({"id": po_id}, {"$set": {
+        "items": po["items"], "status": new_status, "received_at": now_iso() if all_received else None
+    }})
+    return await db.purchase_orders.find_one({"id": po_id}, {"_id": 0})
+
+@api.delete("/purchase-orders/{po_id}")
+async def delete_purchase_order(po_id: str):
+    await db.purchase_orders.delete_one({"id": po_id})
+    return {"ok": True}
+
+# ─── CUSTOMERS / LOYALTY ───
+@api.get("/customers")
+async def list_customers(search: Optional[str] = Query(None)):
+    query = {}
+    if search:
+        query = {"$or": [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"phone": {"$regex": search, "$options": "i"}}
+        ]}
+    return await db.customers.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+
+@api.post("/customers")
+async def create_customer(input: CustomerInput):
+    doc = {"id": gen_id(), "name": input.name, "phone": input.phone, "email": input.email,
+           "points": 0, "total_spent": 0, "visits": 0, "created_at": now_iso(), "last_visit": None}
+    await db.customers.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/customers/{cid}")
+async def update_customer(cid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.customers.update_one({"id": cid}, {"$set": input})
+    return {"ok": True}
+
+@api.post("/customers/{cid}/add-points")
+async def add_customer_points(cid: str, input: dict):
+    amount = input.get("amount", 0)
+    config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"points_per_hundred": 10, "point_value_rd": 1}
+    points = int((amount / 100) * config.get("points_per_hundred", 10))
+    await db.customers.update_one({"id": cid}, {
+        "$inc": {"points": points, "total_spent": amount, "visits": 1},
+        "$set": {"last_visit": now_iso()}
+    })
+    customer = await db.customers.find_one({"id": cid}, {"_id": 0})
+    return {"points_earned": points, "total_points": customer["points"] if customer else 0}
+
+@api.post("/customers/{cid}/redeem-points")
+async def redeem_customer_points(cid: str, input: dict):
+    points_to_redeem = input.get("points", 0)
+    customer = await db.customers.find_one({"id": cid}, {"_id": 0})
+    if not customer or customer["points"] < points_to_redeem:
+        raise HTTPException(status_code=400, detail="Puntos insuficientes")
+    config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"point_value_rd": 1}
+    discount = points_to_redeem * config.get("point_value_rd", 1)
+    await db.customers.update_one({"id": cid}, {"$inc": {"points": -points_to_redeem}})
+    return {"points_redeemed": points_to_redeem, "discount_rd": discount}
+
+@api.get("/loyalty/config")
+async def get_loyalty_config():
+    config = await db.loyalty_config.find_one({}, {"_id": 0})
+    return config or {"points_per_hundred": 10, "point_value_rd": 1, "min_redemption": 50}
+
+@api.put("/loyalty/config")
+async def update_loyalty_config(input: dict):
+    if "_id" in input: del input["_id"]
+    await db.loyalty_config.update_one({}, {"$set": input}, upsert=True)
+    return {"ok": True}
+
+# ─── REPORTS ───
+@api.get("/reports/daily-sales")
+async def daily_sales_report(date: Optional[str] = Query(None)):
+    if not date:
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(5000)
+    day_bills = [b for b in bills if b.get("paid_at", "").startswith(date)]
+    total_sales = sum(b["total"] for b in day_bills)
+    total_itbis = sum(b["itbis"] for b in day_bills)
+    total_tips = sum(b.get("propina_legal", 0) for b in day_bills)
+    cash_sales = sum(b["total"] for b in day_bills if b["payment_method"] == "cash")
+    card_sales = sum(b["total"] for b in day_bills if b["payment_method"] == "card")
+    return {
+        "date": date, "total_bills": len(day_bills),
+        "total_sales": round(total_sales, 2), "total_itbis": round(total_itbis, 2),
+        "total_tips": round(total_tips, 2), "cash_sales": round(cash_sales, 2),
+        "card_sales": round(card_sales, 2),
+        "subtotal": round(total_sales - total_itbis - total_tips, 2)
+    }
+
+@api.get("/reports/sales-by-category")
+async def sales_by_category(date: Optional[str] = Query(None)):
+    if not date:
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(5000)
+    day_bills = [b for b in bills if b.get("paid_at", "").startswith(date)]
+    products = await db.products.find({}, {"_id": 0}).to_list(500)
+    cats = await db.categories.find({}, {"_id": 0}).to_list(50)
+    prod_cat = {p["name"]: p["category_id"] for p in products}
+    cat_names = {c["id"]: c["name"] for c in cats}
+    cat_sales = {}
+    for bill in day_bills:
+        for item in bill.get("items", []):
+            cat_id = prod_cat.get(item["product_name"], "other")
+            cat_name = cat_names.get(cat_id, "Otros")
+            cat_sales[cat_name] = cat_sales.get(cat_name, 0) + item.get("total", 0)
+    return [{"category": k, "total": round(v, 2)} for k, v in sorted(cat_sales.items(), key=lambda x: -x[1])]
+
+@api.get("/reports/top-products")
+async def top_products_report(date: Optional[str] = Query(None)):
+    if not date:
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(5000)
+    day_bills = [b for b in bills if b.get("paid_at", "").startswith(date)]
+    product_sales = {}
+    for bill in day_bills:
+        for item in bill.get("items", []):
+            name = item["product_name"]
+            if name not in product_sales:
+                product_sales[name] = {"name": name, "quantity": 0, "total": 0}
+            product_sales[name]["quantity"] += item.get("quantity", 0)
+            product_sales[name]["total"] += item.get("total", 0)
+    result = sorted(product_sales.values(), key=lambda x: -x["total"])
+    return [{"name": r["name"], "quantity": r["quantity"], "total": round(r["total"], 2)} for r in result[:20]]
+
+@api.get("/reports/sales-by-waiter")
+async def sales_by_waiter(date: Optional[str] = Query(None)):
+    if not date:
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(5000)
+    day_bills = [b for b in bills if b.get("paid_at", "").startswith(date)]
+    waiter_sales = {}
+    for bill in day_bills:
+        name = bill.get("cashier_name", "?")
+        if name not in waiter_sales:
+            waiter_sales[name] = {"name": name, "bills": 0, "total": 0, "tips": 0}
+        waiter_sales[name]["bills"] += 1
+        waiter_sales[name]["total"] += bill["total"]
+        waiter_sales[name]["tips"] += bill.get("propina_legal", 0)
+    return [{"name": v["name"], "bills": v["bills"], "total": round(v["total"], 2), "tips": round(v["tips"], 2)}
+            for v in sorted(waiter_sales.values(), key=lambda x: -x["total"])]
+
+# ─── EMAIL ───
+@api.post("/email/send")
+async def send_email(input: EmailInput):
+    if not resend.api_key:
+        raise HTTPException(status_code=400, detail="RESEND_API_KEY no configurada")
+    try:
+        params = {"from": SENDER_EMAIL, "to": [input.to], "subject": input.subject, "html": input.html}
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        return {"status": "success", "email_id": email.get("id")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api.post("/email/shift-report/{shift_id}")
+async def email_shift_report(shift_id: str, input: dict):
+    to_email = input.get("to", "")
+    if not to_email:
+        raise HTTPException(status_code=400, detail="Email requerido")
+    shift = await db.shifts.find_one({"id": shift_id}, {"_id": 0})
+    if not shift:
+        raise HTTPException(status_code=404)
+    html = f"""<div style='font-family:Arial;max-width:600px;margin:0 auto;'>
+    <h2 style='color:#FF6600;border-bottom:2px solid #FF6600;padding-bottom:8px;'>Reporte de Turno - Mesa POS RD</h2>
+    <table style='width:100%;border-collapse:collapse;'>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Cajero</b></td><td style='padding:8px;border-bottom:1px solid #ddd;'>{shift['user_name']}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Estacion</b></td><td>{shift['station']}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Apertura</b></td><td>RD$ {shift['opening_amount']:,.2f}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Ventas Efectivo</b></td><td>RD$ {shift['cash_sales']:,.2f}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Ventas Tarjeta</b></td><td>RD$ {shift['card_sales']:,.2f}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Total Ventas</b></td><td style='font-size:18px;color:#FF6600;'><b>RD$ {shift['total_sales']:,.2f}</b></td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Propinas</b></td><td>RD$ {shift['total_tips']:,.2f}</td></tr>
+    <tr><td style='padding:8px;'><b>Anulaciones</b></td><td>{shift['cancelled_count']}</td></tr>
+    </table></div>"""
+    if not resend.api_key:
+        return {"status": "preview", "html": html}
+    try:
+        params = {"from": SENDER_EMAIL, "to": [to_email], "subject": f"Reporte de Turno - {shift['user_name']} - {shift['station']}", "html": html}
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        return {"status": "sent", "email_id": email.get("id")}
+    except Exception as e:
+        return {"status": "error", "detail": str(e), "html": html}
+
+@api.post("/email/daily-close")
+async def email_daily_close(input: dict):
+    to_email = input.get("to", "")
+    date = input.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(5000)
+    day_bills = [b for b in bills if b.get("paid_at", "").startswith(date)]
+    total = sum(b["total"] for b in day_bills)
+    itbis = sum(b["itbis"] for b in day_bills)
+    tips = sum(b.get("propina_legal", 0) for b in day_bills)
+    cash = sum(b["total"] for b in day_bills if b["payment_method"] == "cash")
+    card = sum(b["total"] for b in day_bills if b["payment_method"] == "card")
+    html = f"""<div style='font-family:Arial;max-width:600px;margin:0 auto;'>
+    <h2 style='color:#FF6600;border-bottom:2px solid #FF6600;padding-bottom:8px;'>Cierre del Dia - {date}</h2>
+    <table style='width:100%;border-collapse:collapse;'>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Total Facturas</b></td><td>{len(day_bills)}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Subtotal</b></td><td>RD$ {total - itbis - tips:,.2f}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>ITBIS 18%</b></td><td>RD$ {itbis:,.2f}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Propinas</b></td><td>RD$ {tips:,.2f}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Efectivo</b></td><td>RD$ {cash:,.2f}</td></tr>
+    <tr><td style='padding:8px;border-bottom:1px solid #ddd;'><b>Tarjeta</b></td><td>RD$ {card:,.2f}</td></tr>
+    <tr><td style='padding:8px;'><b>TOTAL</b></td><td style='font-size:20px;color:#FF6600;'><b>RD$ {total:,.2f}</b></td></tr>
+    </table></div>"""
+    if not to_email or not resend.api_key:
+        return {"status": "preview", "html": html, "data": {"date": date, "total_bills": len(day_bills), "total": round(total, 2)}}
+    try:
+        params = {"from": SENDER_EMAIL, "to": [to_email], "subject": f"Cierre del Dia - {date} - Mesa POS RD", "html": html}
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        return {"status": "sent", "email_id": email.get("id"), "html": html}
+    except Exception as e:
+        return {"status": "error", "detail": str(e), "html": html}
+
+# ─── PRINT TEMPLATES ───
+@api.get("/print/receipt/{bill_id}")
+async def print_receipt(bill_id: str):
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        raise HTTPException(status_code=404)
+    items_html = ""
+    for item in bill.get("items", []):
+        mods = ", ".join(m["name"] for m in item.get("modifiers", []))
+        mod_str = f"<br><small style='color:#666'>  {mods}</small>" if mods else ""
+        items_html += f"<tr><td>{item['quantity']}x {item['product_name']}{mod_str}</td><td style='text-align:right'>RD$ {item['total']:,.2f}</td></tr>"
+    return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
+    <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
+    <b style='font-size:16px;'>MESA POS RD</b><br>RNC: 000-000000-0<br>NCF: {bill['ncf']}</div>
+    <div>Mesa: {bill['table_number']} | {bill['label']}<br>Fecha: {bill.get('paid_at', bill['created_at'])[:19]}</div>
+    <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:4px 0;'>
+    {items_html}</table>
+    <table style='width:100%;font-size:12px;'>
+    <tr><td>Subtotal</td><td style='text-align:right'>RD$ {bill['subtotal']:,.2f}</td></tr>
+    <tr><td>ITBIS {bill.get('itbis_rate',18)}%</td><td style='text-align:right'>RD$ {bill['itbis']:,.2f}</td></tr>
+    <tr><td>Propina {bill.get('propina_percentage',10)}%</td><td style='text-align:right'>RD$ {bill.get('propina_legal',0):,.2f}</td></tr>
+    <tr><td><b style='font-size:14px;'>TOTAL</b></td><td style='text-align:right;font-size:14px;'><b>RD$ {bill['total']:,.2f}</b></td></tr>
+    </table>
+    <div style='text-align:center;margin-top:8px;font-size:10px;border-top:1px dashed #000;padding-top:8px;'>
+    Pago: {'Efectivo' if bill['payment_method']=='cash' else 'Tarjeta'}<br>Gracias por su visita!</div></div>"""}
+
+@api.get("/print/comanda/{order_id}")
+async def print_comanda(order_id: str):
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404)
+    items_html = ""
+    for item in order.get("items", []):
+        if item["status"] in ["cancelled"]:
+            continue
+        mods = ", ".join(m["name"] for m in item.get("modifiers", []))
+        notes = f"<br><i>{item['notes']}</i>" if item.get("notes") else ""
+        items_html += f"<tr style='border-bottom:1px solid #ddd;'><td style='padding:6px 0;font-size:16px;'><b>{item['quantity']}x</b> {item['product_name']}"
+        if mods:
+            items_html += f"<br><small>{mods}</small>"
+        items_html += f"{notes}</td></tr>"
+    return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
+    <div style='background:#000;color:#fff;padding:8px;text-align:center;font-size:18px;font-weight:bold;'>
+    COCINA - MESA {order['table_number']}</div>
+    <div style='padding:4px 0;font-size:11px;'>Mesero: {order['waiter_name']}<br>Hora: {order['created_at'][:19]}</div>
+    <table style='width:100%;'>{items_html}</table></div>"""}
 
 # ─── SEED ───
 @api.post("/seed")
