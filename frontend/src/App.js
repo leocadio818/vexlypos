@@ -32,6 +32,10 @@ function AppRoutes() {
         <Route path="kitchen" element={<Kitchen />} />
         <Route path="billing/:orderId" element={<Billing />} />
         <Route path="cash-register" element={<CashRegister />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="suppliers" element={<Suppliers />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="customers" element={<Customers />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/tables" replace />} />
