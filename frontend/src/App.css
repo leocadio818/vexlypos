@@ -1,34 +1,32 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* POS Custom Styles */
+.table-node-free { border-color: #2E7D4E; box-shadow: 0 0 12px rgba(46,125,78,0.4); }
+.table-node-occupied { border-color: #C62828; box-shadow: 0 0 12px rgba(198,40,40,0.4); }
+.table-node-billed { border-color: #F9A825; box-shadow: 0 0 12px rgba(249,168,37,0.4); }
+
+.table-node-free:hover { box-shadow: 0 0 20px rgba(46,125,78,0.7); }
+.table-node-occupied:hover { box-shadow: 0 0 20px rgba(198,40,40,0.7); }
+.table-node-billed:hover { box-shadow: 0 0 20px rgba(249,168,37,0.7); }
+
+/* Kitchen ticket serrated edge */
+.ticket-edge::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(135deg, #fffdf5 33.33%, transparent 33.33%) 0 0,
+              linear-gradient(225deg, #fffdf5 33.33%, transparent 33.33%) 0 0;
+  background-size: 12px 8px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
-}
+/* Active scale for buttons */
+.btn-press { transition: transform 0.1s; }
+.btn-press:active { transform: scale(0.95); }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Pin dot animation */
+@keyframes pin-fill {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
 }
-
-.App-link {
-    color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
+.pin-dot-filled { animation: pin-fill 0.15s ease-out; }
