@@ -29,7 +29,8 @@ export default function Login() {
     try {
       const u = await login(pin);
       toast.success(`Bienvenido, ${u.name}`);
-      navigate('/dashboard');
+      const canDash = u.permissions?.view_dashboard;
+      navigate(canDash ? '/dashboard' : '/tables');
     } catch {
       toast.error('PIN incorrecto');
       setPin('');
