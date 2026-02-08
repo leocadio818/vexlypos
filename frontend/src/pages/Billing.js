@@ -38,6 +38,11 @@ export default function Billing() {
       setOrder(orderRes.data);
       setBills(billsRes.data);
       setCustomers(custRes);
+      // Fetch payment methods
+      try {
+        const pmRes = await fetch(`${API_BASE}/api/payment-methods`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+        setPaymentMethods(await pmRes.json());
+      } catch {}
     } catch {
       toast.error('Error cargando datos');
     }
