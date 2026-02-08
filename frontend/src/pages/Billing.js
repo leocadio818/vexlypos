@@ -200,14 +200,23 @@ export default function Billing() {
                         <span>Subtotal</span>
                         <span className="font-oswald">{formatMoney(bill.subtotal)}</span>
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span>ITBIS ({bill.itbis_rate}%)</span>
-                        <span className="font-oswald">{formatMoney(bill.itbis)}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span>Propina Legal ({bill.propina_percentage}%)</span>
-                        <span className="font-oswald">{formatMoney(bill.propina_legal)}</span>
-                      </div>
+                      {bill.tax_breakdown ? bill.tax_breakdown.map((tax, i) => (
+                        <div key={i} className="flex justify-between text-xs">
+                          <span>{tax.description} ({tax.rate}%)</span>
+                          <span className="font-oswald">{formatMoney(tax.amount)}</span>
+                        </div>
+                      )) : (
+                        <>
+                          <div className="flex justify-between text-xs">
+                            <span>ITBIS ({bill.itbis_rate}%)</span>
+                            <span className="font-oswald">{formatMoney(bill.itbis)}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span>Propina Legal ({bill.propina_percentage}%)</span>
+                            <span className="font-oswald">{formatMoney(bill.propina_legal)}</span>
+                          </div>
+                        </>
+                      )}
                       <div className="flex justify-between text-sm font-bold border-t border-gray-300 pt-2 mt-2">
                         <span>TOTAL</span>
                         <span className="font-oswald text-lg">{formatMoney(bill.total)}</span>
