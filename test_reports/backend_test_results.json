@@ -1,82 +1,140 @@
 {
   "summary": {
-    "tests_run": 11,
-    "tests_passed": 11,
-    "success_rate": "100.0%"
+    "tests_run": 18,
+    "tests_passed": 16,
+    "success_rate": "88.9%",
+    "failed_count": 2
   },
-  "phase5_features": {
+  "new_features": {
+    "reservations_crud": false,
+    "print_channels_crud": false,
+    "auto_send_orders": true,
     "recipes_with_costs": false,
     "inventory_reports": true,
     "profit_analysis": true,
     "escpos_endpoints": true,
     "kitchen_tv_api": true
   },
+  "failed_tests": [
+    {
+      "test": "Delete Reservation",
+      "error": "cannot access local variable 'response' where it is not associated with a value"
+    },
+    {
+      "test": "Get Print Channels",
+      "expected": 200,
+      "actual": 520,
+      "error": "Internal Server Error"
+    }
+  ],
   "detailed_results": [
     {
       "test": "Admin Login",
       "passed": true,
       "details": "Status 200, Data received: dict",
-      "timestamp": "2026-02-08T01:13:57.467341"
+      "timestamp": "2026-02-08T14:36:46.995438"
     },
     {
       "test": "Areas",
       "passed": true,
       "details": "Status 200, Data received: list",
-      "timestamp": "2026-02-08T01:13:57.505838"
+      "timestamp": "2026-02-08T14:36:47.035195"
     },
     {
       "test": "Tables",
       "passed": true,
       "details": "Status 200, Data received: list",
-      "timestamp": "2026-02-08T01:13:57.558688"
+      "timestamp": "2026-02-08T14:36:47.075929"
     },
     {
       "test": "Categories",
       "passed": true,
       "details": "Status 200, Data received: list",
-      "timestamp": "2026-02-08T01:13:57.598257"
+      "timestamp": "2026-02-08T14:36:47.114298"
     },
     {
       "test": "Products",
       "passed": true,
       "details": "Status 200, Data received: list",
-      "timestamp": "2026-02-08T01:13:57.641291"
+      "timestamp": "2026-02-08T14:36:47.159026"
+    },
+    {
+      "test": "Get Reservations",
+      "passed": true,
+      "details": "Status 200, Data received: list",
+      "timestamp": "2026-02-08T14:36:47.200759"
+    },
+    {
+      "test": "Create Reservation",
+      "passed": true,
+      "details": "Status 200, Data received: dict",
+      "timestamp": "2026-02-08T14:36:47.254719"
+    },
+    {
+      "test": "Update Reservation Status",
+      "passed": true,
+      "details": "Status 200, Data received: dict",
+      "timestamp": "2026-02-08T14:36:47.292649"
+    },
+    {
+      "test": "Delete Reservation",
+      "passed": false,
+      "details": "cannot access local variable 'response' where it is not associated with a value",
+      "timestamp": "2026-02-08T14:36:47.293276"
+    },
+    {
+      "test": "Get Print Channels",
+      "passed": false,
+      "details": "Status 520: Internal Server Error",
+      "timestamp": "2026-02-08T14:36:47.352533"
+    },
+    {
+      "test": "Get Active Orders",
+      "passed": true,
+      "details": "Status 200, Data received: list",
+      "timestamp": "2026-02-08T14:36:47.394462"
+    },
+    {
+      "test": "Test Send to Kitchen Endpoint",
+      "passed": true,
+      "details": "Status 200, Data received: dict",
+      "timestamp": "2026-02-08T14:36:47.438478"
     },
     {
       "test": "Recipes API",
       "passed": true,
       "details": "Status 200, Data received: list",
-      "timestamp": "2026-02-08T01:13:57.684252"
+      "timestamp": "2026-02-08T14:36:47.482788"
     },
     {
       "test": "Inventory Report",
       "passed": true,
       "details": "Status 200, Data received: list",
-      "timestamp": "2026-02-08T01:13:57.727357"
+      "timestamp": "2026-02-08T14:36:47.535632"
     },
     {
       "test": "Profit Report",
       "passed": true,
       "details": "Status 200, Data received: dict",
-      "timestamp": "2026-02-08T01:13:57.769932"
+      "timestamp": "2026-02-08T14:36:47.582373"
     },
     {
       "test": "ESC/POS Receipt",
       "passed": true,
       "details": "Status 404, Data received: dict",
-      "timestamp": "2026-02-08T01:13:57.814094"
+      "timestamp": "2026-02-08T14:36:47.626530"
     },
     {
       "test": "ESC/POS Comanda",
       "passed": true,
       "details": "Status 404, Data received: dict",
-      "timestamp": "2026-02-08T01:13:57.893945"
+      "timestamp": "2026-02-08T14:36:47.666864"
     },
     {
       "test": "Kitchen TV API",
       "passed": true,
       "details": "Status 200, Data received: dict",
-      "timestamp": "2026-02-08T01:13:57.932705"
+      "timestamp": "2026-02-08T14:36:47.714971"
     }
   ]
 }
