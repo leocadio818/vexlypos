@@ -1196,6 +1196,64 @@ async def email_daily_close(input: dict):
         return {"status": "error", "detail": str(e), "html": html}
 
 # ─── PRINT TEMPLATES ───
+@api.get("/print/pre-check/{order_id}")
+async def print_pre_check(order_id: str):
+    """Pre-cuenta / Pre-check for customer review before payment"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404)
+    items = [i for i in order.get("items", []) if i["status"] != "cancelled"]
+    subtotal = sum((i["unit_price"] + sum(m.get("price",0) for m in i.get("modifiers",[]))) * i["quantity"] for i in items)
+    itbis = round(subtotal * 0.18, 2)
+    propina = round(subtotal * 0.10, 2)
+    total = round(subtotal + itbis + propina, 2)
+    items_html = ""
+    for item in items:
+        mods = ", ".join(m["name"] for m in item.get("modifiers", []))
+        mod_str = f"<br><small style='color:#666'>  {mods}</small>" if mods else ""
+        item_total = (item["unit_price"] + sum(m.get("price",0) for m in item.get("modifiers",[]))) * item["quantity"]
+        items_html += f"<tr><td>{item['quantity']}x {item['product_name']}{mod_str}</td><td style='text-align:right'>RD$ {item_total:,.2f}</td></tr>"
+    # Track print count
+    print_count = await db.pre_check_prints.count_documents({"order_id": order_id})
+    await db.pre_check_prints.insert_one({"order_id": order_id, "print_number": print_count + 1, "printed_at": now_iso()})
+    reprint_label = f"<div style='text-align:center;color:red;font-weight:bold;'>*** RE-IMPRESION #{print_count} ***</div>" if print_count > 0 else ""
+    return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
+    {reprint_label}
+    <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
+    <b style='font-size:16px;'>MESA POS RD</b><br><b>PRE-CUENTA</b></div>
+    <div>Mesa: {order['table_number']}<br>Mesero: {order['waiter_name']}<br>Fecha: {order['created_at'][:19]}</div>
+    <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;'>
+    {items_html}</table>
+    <table style='width:100%;font-size:12px;'>
+    <tr><td>Subtotal</td><td style='text-align:right'>RD$ {subtotal:,.2f}</td></tr>
+    <tr><td>ITBIS 18%</td><td style='text-align:right'>RD$ {itbis:,.2f}</td></tr>
+    <tr><td>Propina Sugerida 10%</td><td style='text-align:right'>RD$ {propina:,.2f}</td></tr>
+    <tr><td><b style='font-size:14px;'>TOTAL ESTIMADO</b></td><td style='text-align:right;font-size:14px;'><b>RD$ {total:,.2f}</b></td></tr>
+    </table>
+    <div style='text-align:center;margin-top:8px;font-size:10px;border-top:1px dashed #000;padding-top:8px;'>
+    La propina es voluntaria<br>Este NO es un comprobante fiscal</div></div>""",
+    "print_number": print_count + 1, "is_reprint": print_count > 0}
+
+@api.get("/print/pre-check-count/{order_id}")
+async def get_pre_check_count(order_id: str):
+    count = await db.pre_check_prints.count_documents({"order_id": order_id})
+    return {"count": count}
+
+@api.post("/auth/verify-manager")
+async def verify_manager_pin(input: dict):
+    """Verify a manager/admin PIN for security operations"""
+    pin = input.get("pin", "")
+    if not pin:
+        raise HTTPException(status_code=400, detail="PIN requerido")
+    hashed = hash_pin(pin)
+    user = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="PIN incorrecto")
+    perms = get_permissions(user["role"], user.get("permissions"))
+    if not perms.get("release_reserved_table") and user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Este usuario no tiene permisos de gerente")
+    return {"authorized": True, "user_name": user["name"]}
+
 @api.get("/print/receipt/{bill_id}")
 async def print_receipt(bill_id: str):
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
