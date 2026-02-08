@@ -68,7 +68,7 @@ export default function OrderScreen() {
   const filteredProducts = activeCat ? products.filter(p => p.category_id === activeCat) : [];
 
   const handleProductClick = (product) => {
-    setModDialog({ open: true, product, selectedMods: {}, qty: '1', notes: '' });
+    setModDialog({ open: true, product, selectedMods: {}, qty: '0', notes: '' });
   };
 
   const addItemToOrder = async (product, qty, mods, notes) => {
