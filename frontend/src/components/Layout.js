@@ -40,7 +40,7 @@ export default function Layout() {
         </div>
 
         <nav className="flex-1 flex flex-col gap-2">
-          {navItems.map(({ to, icon: Icon, label }) => (
+          {filteredNav.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
