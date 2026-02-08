@@ -399,6 +399,43 @@ export default function OrderScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Pre-Check Print Preview */}
+      <Dialog open={preCheckOpen} onOpenChange={setPreCheckOpen}>
+        <DialogContent className="max-w-sm bg-white text-black" data-testid="pre-check-dialog">
+          <DialogHeader><DialogTitle className="text-black font-oswald">Pre-Cuenta</DialogTitle></DialogHeader>
+          <div className="receipt-paper p-2" dangerouslySetInnerHTML={{ __html: preCheckHtml }} />
+          <Button onClick={() => {
+            const w = window.open('', '_blank', 'width=320,height=600');
+            w.document.write(`<html><body style="margin:0;padding:0;">${preCheckHtml}</body></html>`);
+            w.document.close(); w.print();
+          }} className="w-full h-11 bg-gray-900 text-white font-oswald font-bold active:scale-95" data-testid="print-precheck-btn">
+            <Printer size={16} className="mr-2" /> IMPRIMIR PRE-CUENTA
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manager PIN Authorization Dialog */}
+      <Dialog open={managerPinDialog.open} onOpenChange={(o) => !o && setManagerPinDialog({ open: false, pin: '' })}>
+        <DialogContent className="max-w-xs bg-card border-border" data-testid="manager-pin-dialog">
+          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2">
+            <Lock size={18} className="text-yellow-500" /> Autorizacion de Gerente
+          </DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">Esta pre-cuenta ya fue impresa. Se requiere PIN de gerente para reimprimir.</p>
+            <input value={managerPinDialog.pin} onChange={e => setManagerPinDialog(p => ({ ...p, pin: e.target.value }))}
+              type="password" maxLength={6} placeholder="PIN de gerente"
+              autoFocus
+              onKeyDown={e => { if (e.key === 'Enter') handleManagerAuth(); }}
+              className="w-full bg-background border border-border rounded-lg px-3 py-3 text-center text-2xl font-oswald tracking-widest"
+              data-testid="manager-pin-input" />
+            <Button onClick={handleManagerAuth} disabled={!managerPinDialog.pin || managerPinDialog.pin.length < 4}
+              className="w-full h-11 bg-yellow-600 text-black font-oswald font-bold active:scale-95" data-testid="confirm-manager-pin">
+              AUTORIZAR RE-IMPRESION
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
