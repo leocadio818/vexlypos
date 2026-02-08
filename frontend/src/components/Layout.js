@@ -17,10 +17,19 @@ const navItems = [
 ];
 
 export default function Layout() {
-  const { user, logout, isOnline } = useAuth();
+  const { user, logout, isOnline, hasPermission } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => { logout(); navigate('/login'); };
+
+  const filteredNav = navItems.filter(item => {
+    if (item.to === '/dashboard') return hasPermission('view_dashboard');
+    if (item.to === '/reports') return hasPermission('view_reports');
+    if (item.to === '/inventory') return hasPermission('manage_inventory');
+    if (item.to === '/suppliers') return hasPermission('manage_suppliers');
+    if (item.to === '/settings') return hasPermission('manage_settings') || user?.role === 'admin';
+    return true;
+  });
 
   return (
     <div className="h-screen flex overflow-hidden bg-background" data-testid="main-layout">
