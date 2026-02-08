@@ -33,25 +33,96 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 DEFAULT_PERMISSIONS = {
-    "admin": {"view_dashboard": True, "move_tables": True, "resize_tables": True, "manage_inventory": True,
-              "manage_settings": True, "void_items": True, "manage_users": True, "view_reports": True,
-              "manage_payment_methods": True, "manage_suppliers": True, "export_dgii": True},
-    "waiter": {"view_dashboard": False, "move_tables": False, "resize_tables": False, "manage_inventory": False,
-               "manage_settings": False, "void_items": True, "manage_users": False, "view_reports": False,
-               "manage_payment_methods": False, "manage_suppliers": False, "export_dgii": False},
-    "cashier": {"view_dashboard": False, "move_tables": False, "resize_tables": False, "manage_inventory": False,
-                "manage_settings": False, "void_items": True, "manage_users": False, "view_reports": False,
-                "manage_payment_methods": False, "manage_suppliers": False, "export_dgii": False},
-    "kitchen": {"view_dashboard": False, "move_tables": False, "resize_tables": False, "manage_inventory": False,
-                "manage_settings": False, "void_items": False, "manage_users": False, "view_reports": False,
-                "manage_payment_methods": False, "manage_suppliers": False, "export_dgii": False},
+    "admin": {
+        "view_dashboard": True, "move_tables": True, "resize_tables": True,
+        "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
+        "create_bill": True, "collect_payment": True, "split_bill": True,
+        "manage_users": True, "manage_areas": True, "manage_tables": True,
+        "manage_payment_methods": True, "manage_cancellation_reasons": True,
+        "manage_products": True, "manage_sale_types": True,
+        "manage_print_channels": True, "manage_station_config": True,
+        "manage_inventory": True, "manage_suppliers": True,
+        "manage_customers": True, "manage_reservations": True,
+        "view_reports": True, "export_dgii": True,
+        "open_shift": True, "close_shift": True, "close_day": True,
+        "release_reserved_table": True,
+    },
+    "waiter": {
+        "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
+        "split_bill": True, "manage_reservations": True, "manage_customers": True,
+    },
+    "cashier": {
+        "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
+        "create_bill": True, "collect_payment": True, "split_bill": True,
+        "open_shift": True, "close_shift": True, "manage_customers": True,
+    },
+    "kitchen": {},
+}
+
+ALL_PERMISSIONS = {
+    "view_dashboard": "Ver Dashboard",
+    "move_tables": "Mover Mesas", "resize_tables": "Redimensionar Mesas",
+    "open_table": "Abrir Mesa / Crear Orden", "add_products": "Agregar Productos",
+    "void_items": "Anular Items", "send_kitchen": "Enviar a Cocina",
+    "create_bill": "Crear Factura", "collect_payment": "Cobrar",
+    "split_bill": "Dividir Cuenta",
+    "manage_users": "Config: Usuarios", "manage_areas": "Config: Areas",
+    "manage_tables": "Config: Mesas", "manage_payment_methods": "Config: Formas de Pago",
+    "manage_cancellation_reasons": "Config: Anulaciones", "manage_products": "Config: Productos",
+    "manage_sale_types": "Config: Tipos de Venta", "manage_print_channels": "Config: Impresion",
+    "manage_station_config": "Config: Estacion",
+    "manage_inventory": "Inventario", "manage_suppliers": "Proveedores/Compras",
+    "manage_customers": "Clientes/Fidelidad", "manage_reservations": "Reservaciones",
+    "view_reports": "Ver Reportes", "export_dgii": "Exportar DGII",
+    "open_shift": "Abrir Turno", "close_shift": "Cerrar Turno", "close_day": "Cierre de Dia",
+    "release_reserved_table": "Desbloquear Mesa Reservada",
 }
 
 def get_permissions(role, custom=None):
-    perms = {**DEFAULT_PERMISSIONS.get(role, DEFAULT_PERMISSIONS["waiter"])}
+    base = {}
+    for k in ALL_PERMISSIONS:
+        base[k] = False
+    defaults = DEFAULT_PERMISSIONS.get(role, {})
+    base.update({k: True for k in defaults})
     if custom:
-        perms.update(custom)
-    return perms
+        base.update(custom)
+    return base
+
+@api.get("/permissions/all")
+async def list_all_permissions():
+    return ALL_PERMISSIONS
+
+# ─── CUSTOM ROLES ───
+@api.get("/roles")
+async def list_roles():
+    roles = await db.custom_roles.find({}, {"_id": 0}).to_list(50)
+    if not roles:
+        defaults = [
+            {"id": gen_id(), "name": "Administrador", "code": "admin", "is_system": True},
+            {"id": gen_id(), "name": "Mesero", "code": "waiter", "is_system": True},
+            {"id": gen_id(), "name": "Cajero", "code": "cashier", "is_system": True},
+            {"id": gen_id(), "name": "Cocina", "code": "kitchen", "is_system": True},
+        ]
+        await db.custom_roles.insert_many(defaults)
+        return defaults
+    return roles
+
+@api.post("/roles")
+async def create_role(input: dict):
+    doc = {"id": gen_id(), "name": input.get("name",""), "code": input.get("code","custom"), "is_system": False}
+    await db.custom_roles.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/roles/{rid}")
+async def update_role(rid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.custom_roles.update_one({"id": rid}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/roles/{rid}")
+async def delete_role(rid: str):
+    await db.custom_roles.delete_one({"id": rid})
+    return {"ok": True}
 
 async def get_current_user(request: Request):
     auth = request.headers.get("Authorization", "")
