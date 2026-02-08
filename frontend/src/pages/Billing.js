@@ -29,16 +29,18 @@ export default function Billing() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [orderRes, billsRes] = await Promise.all([
+      const [orderRes, billsRes, custRes] = await Promise.all([
         ordersAPI.get(orderId),
-        billsAPI.list({ order_id: orderId })
+        billsAPI.list({ order_id: orderId }),
+        fetch(`${API_BASE}/api/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json())
       ]);
       setOrder(orderRes.data);
       setBills(billsRes.data);
+      setCustomers(custRes);
     } catch {
       toast.error('Error cargando datos');
     }
-  }, [orderId]);
+  }, [orderId, API_BASE]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
