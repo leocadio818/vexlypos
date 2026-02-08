@@ -163,6 +163,12 @@ export default function OrderScreen() {
       setPreCheckHtml(d.html);
       setPreCheckOpen(true);
       setPreCheckCount(d.print_number);
+      // First print: change table status to billed (yellow glow)
+      if (d.print_number === 1 && table) {
+        try {
+          await tablesAPI.update(table.id, { status: 'billed' });
+        } catch {}
+      }
     } catch { toast.error('Error generando pre-cuenta'); }
   };
 
