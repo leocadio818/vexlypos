@@ -326,46 +326,112 @@ export default function Billing() {
       </Dialog>
 
       {/* Pay Dialog */}
-      <Dialog open={payDialog.open} onOpenChange={(open) => !open && setPayDialog({ open: false, billId: null })}>
+      <Dialog open={payDialog.open} onOpenChange={(open) => { if (!open) { setPayDialog({ open: false, billId: null, billTotal: 0 }); setPayAmounts({}); setPayStep('method'); } }}>
         <DialogContent className="max-w-sm bg-card border-border" data-testid="pay-dialog">
           <DialogHeader>
-            <DialogTitle className="font-oswald">Cobrar</DialogTitle>
+            <DialogTitle className="font-oswald flex items-center justify-between">
+              <span>Cobrar</span>
+              <span className="text-primary text-xl">{formatMoney(payDialog.billTotal)}</span>
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            {/* Customer for loyalty */}
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Cliente (fidelidad)</label>
-              <select value={selectedCustomer} onChange={e => setSelectedCustomer(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="pay-customer-select">
-                <option value="">Sin cliente</option>
-                {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.points} pts)</option>)}
-              </select>
-            </div>
+            {/* Customer */}
+            <select value={selectedCustomer} onChange={e => setSelectedCustomer(e.target.value)}
+              className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs" data-testid="pay-customer-select">
+              <option value="">Cliente (fidelidad)</option>
+              {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.points} pts)</option>)}
+            </select>
+
             {/* Tip */}
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Propina % (opcional)</label>
-              <div className="flex gap-1 flex-wrap">
-                {[0, 5, 10, 15, 18, 20].map(p => (
-                  <button key={p} onClick={() => setTipPct(p)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-oswald font-bold transition-colors ${
-                      tipPct === p ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-                    }`}>{p}%</button>
-                ))}
-              </div>
-            </div>
-            {/* All Payment Methods */}
-            <div className="space-y-1.5">
-              {paymentMethods.filter(m => m.active).map(method => (
-                <button key={method.id} onClick={() => handlePayBill(payDialog.billId, method.name)}
-                  data-testid={`pay-method-${method.id}`}
-                  className="w-full h-12 rounded-xl bg-muted/50 border border-border text-foreground font-oswald font-bold text-sm flex items-center justify-between px-4 hover:bg-primary/10 hover:border-primary/50 transition-all active:scale-95">
-                  <span>{method.name}</span>
-                  {method.currency !== 'DOP' && method.exchange_rate > 1 && (
-                    <span className="text-xs text-muted-foreground font-mono">1 {method.currency} = RD$ {method.exchange_rate}</span>
-                  )}
-                </button>
+            <div className="flex gap-1 items-center">
+              <span className="text-[10px] text-muted-foreground mr-1">Propina:</span>
+              {[0, 5, 10, 15, 18].map(p => (
+                <button key={p} onClick={() => setTipPct(p)}
+                  className={`px-2 py-1 rounded text-[10px] font-oswald font-bold ${tipPct === p ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>{p}%</button>
               ))}
             </div>
+
+            {/* Payment amounts per method */}
+            <div className="space-y-1.5">
+              {paymentMethods.filter(m => m.active).map(method => {
+                const amt = payAmounts[method.name] || '';
+                const rate = method.exchange_rate || 1;
+                const inDOP = (parseFloat(amt) || 0) * rate;
+                return (
+                  <div key={method.id} className="flex items-center gap-2">
+                    <span className="text-xs w-28 truncate">{method.name}</span>
+                    <input value={amt} onChange={e => setPayAmounts(p => ({ ...p, [method.name]: e.target.value }))}
+                      type="number" step="0.01" placeholder="0.00"
+                      className="flex-1 bg-background border border-border rounded-lg px-2 py-1.5 text-sm font-oswald text-right" 
+                      data-testid={`pay-amount-${method.id}`} />
+                    {method.currency !== 'DOP' && rate > 1 && parseFloat(amt) > 0 && (
+                      <span className="text-[9px] text-muted-foreground w-20 text-right">= {formatMoney(inDOP)}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Totals */}
+            {(() => {
+              const totalPaidDOP = paymentMethods.filter(m => m.active).reduce((sum, m) => {
+                const amt = parseFloat(payAmounts[m.name]) || 0;
+                return sum + amt * (m.exchange_rate || 1);
+              }, 0);
+              const billTotal = payDialog.billTotal || 0;
+              const change = totalPaidDOP - billTotal;
+              const isEnough = totalPaidDOP >= billTotal;
+
+              return (
+                <div className="bg-background rounded-xl p-3 border border-border space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Total a cobrar</span>
+                    <span className="font-oswald font-bold">{formatMoney(billTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Total recibido</span>
+                    <span className={`font-oswald font-bold ${isEnough ? 'text-green-400' : 'text-destructive'}`}>{formatMoney(totalPaidDOP)}</span>
+                  </div>
+                  {change > 0 && (
+                    <div className="flex justify-between text-sm border-t border-border pt-1 mt-1">
+                      <span className="font-bold text-green-400">CAMBIO</span>
+                      <span className="font-oswald text-xl font-bold text-green-400">{formatMoney(change)}</span>
+                    </div>
+                  )}
+                  {change < 0 && (
+                    <div className="flex justify-between text-xs border-t border-border pt-1 mt-1">
+                      <span className="text-destructive">Falta</span>
+                      <span className="font-oswald font-bold text-destructive">{formatMoney(Math.abs(change))}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Quick amounts for fastest payment */}
+            <div className="flex gap-1 flex-wrap">
+              {[100, 200, 500, 1000, 2000, 5000].map(amt => (
+                <button key={amt} onClick={() => {
+                  const mainMethod = paymentMethods.find(m => m.active && m.currency === 'DOP') || paymentMethods[0];
+                  if (mainMethod) setPayAmounts(p => ({ ...p, [mainMethod.name]: String(amt) }));
+                }} className="px-2 py-1 rounded bg-muted text-[10px] font-oswald hover:bg-primary/20 transition-colors">
+                  {amt}
+                </button>
+              ))}
+              <button onClick={() => {
+                const mainMethod = paymentMethods.find(m => m.active && m.currency === 'DOP') || paymentMethods[0];
+                if (mainMethod) setPayAmounts(p => ({ ...p, [mainMethod.name]: String(payDialog.billTotal) }));
+              }} className="px-2 py-1 rounded bg-primary/20 text-primary text-[10px] font-oswald font-bold">
+                EXACTO
+              </button>
+            </div>
+
+            <Button onClick={handlePayBill}
+              disabled={paymentMethods.filter(m => m.active).reduce((sum, m) => sum + (parseFloat(payAmounts[m.name]) || 0) * (m.exchange_rate || 1), 0) < (payDialog.billTotal || 0)}
+              data-testid="confirm-pay-btn"
+              className="w-full h-12 bg-green-600 text-white font-oswald font-bold text-base tracking-wider active:scale-95 disabled:opacity-40">
+              PROCESAR PAGO
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
