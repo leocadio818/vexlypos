@@ -45,13 +45,25 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
 - Dashboard y reportes ocultos para roles no autorizados
 - 48 endpoints backend probados al 100%
 
+### Phase 5 (Feb 2026)
+- 9 recetas con costos reales dominicanos (Bandera RD$50, Churrasco RD$90, Langosta RD$390, etc.)
+- Tab "Costos y Margenes" en Inventario (precio venta vs costo receta = % margen)
+- Tab "Movimientos" en Inventario (log de ajustes con usuario y razon)
+- Endpoints ESC/POS para impresoras termicas (recibos y comandas en formato raw)
+- Kitchen TV Display (/kitchen-tv) - pantalla completa negra para TV de cocina
+  - Auto-refresh cada 4 segundos
+  - Reloj en tiempo real
+  - Indicadores de urgencia (amarillo >15min, rojo >25min con pulso)
+  - Boton fullscreen
+  - Click para avanzar estado de items
+- Boton "PANTALLA TV" en pagina de cocina regular
+
 ## Prioritized Backlog
 
 ### P0
 - Verificar dominio en Resend para email real
-- Agregar costos a recetas existentes para calcular margenes reales
 
 ### P1
-- Impresoras ESC/POS fisicas (USB + red)
 - Multi-sucursal
 - App movil nativa
+- Reservaciones de mesas
