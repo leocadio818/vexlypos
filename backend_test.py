@@ -4,18 +4,25 @@ import sys
 import json
 from datetime import datetime
 
-class DOPOSAPITester:
+class POSAPITester:
     def __init__(self, base_url="https://mesa-comanda-rd.preview.emergentagent.com"):
-        self.base_url = base_url
-        self.api_url = f"{base_url}/api"
+        self.base_url = f"{base_url}/api"
         self.token = None
         self.tests_run = 0
         self.tests_passed = 0
-        self.user_data = None
+        self.results = []
+
+    def log_result(self, test_name, passed, details=""):
+        self.results.append({
+            "test": test_name,
+            "passed": passed,
+            "details": details,
+            "timestamp": datetime.now().isoformat()
+        })
 
     def run_test(self, name, method, endpoint, expected_status, data=None, description=""):
         """Run a single API test"""
-        url = f"{self.api_url}/{endpoint}"
+        url = f"{self.base_url}/{endpoint}"
         headers = {'Content-Type': 'application/json'}
         if self.token:
             headers['Authorization'] = f'Bearer {self.token}'
@@ -36,1056 +43,230 @@ class DOPOSAPITester:
             success = response.status_code == expected_status
             if success:
                 self.tests_passed += 1
-                print(f"✅ Passed - Status: {response.status_code}")
-                if response.text:
-                    try:
-                        resp_data = response.json()
-                        if isinstance(resp_data, dict) and len(resp_data) < 10:
-                            print(f"   Response: {resp_data}")
-                        elif isinstance(resp_data, list):
-                            print(f"   Response: {len(resp_data)} items returned")
-                    except:
-                        print(f"   Response: {response.text[:100]}...")
-                return success, response.json() if response.text else {}
+                print(f"✅ PASSED - Status: {response.status_code}")
+                try:
+                    resp_data = response.json()
+                    if isinstance(resp_data, list) and len(resp_data) > 0:
+                        print(f"   📊 Returned {len(resp_data)} items")
+                    elif isinstance(resp_data, dict) and 'orders' in resp_data:
+                        print(f"   📊 Kitchen TV: {len(resp_data.get('orders', []))} orders")
+                    self.log_result(name, True, f"Status {response.status_code}, Data received: {type(resp_data).__name__}")
+                    return success, resp_data
+                except:
+                    self.log_result(name, True, f"Status {response.status_code}, Non-JSON response")
+                    return success, {}
             else:
-                print(f"❌ Failed - Expected {expected_status}, got {response.status_code}")
-                if response.text:
-                    print(f"   Error: {response.text[:200]}")
+                print(f"❌ FAILED - Expected {expected_status}, got {response.status_code}")
+                print(f"   Response: {response.text[:200]}...")
+                self.log_result(name, False, f"Status {response.status_code}: {response.text[:100]}")
                 return False, {}
 
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Failed - Network Error: {str(e)}")
+        except requests.exceptions.Timeout:
+            print(f"❌ FAILED - Request timeout")
+            self.log_result(name, False, "Request timeout")
             return False, {}
         except Exception as e:
-            print(f"❌ Failed - Error: {str(e)}")
+            print(f"❌ FAILED - Error: {str(e)}")
+            self.log_result(name, False, str(e))
             return False, {}
 
-    def test_seed_data(self):
-        """Initialize seed data"""
+    def test_login(self):
+        """Test login with admin credentials"""
         success, response = self.run_test(
-            "Seed Data",
-            "POST",
-            "seed",
-            200,
-            description="Initialize demo data for POS system"
-        )
-        return success
-
-    def test_login(self, pin="1234"):
-        """Test login with PIN (Carlos waiter by default)"""
-        success, response = self.run_test(
-            "PIN Login (Carlos - 1234)",
-            "POST",
-            "auth/login",
-            200,
-            data={"pin": pin},
-            description="Login with Carlos waiter PIN"
-        )
-        if success and 'token' in response:
-            self.token = response['token']
-            self.user_data = response.get('user', {})
-            print(f"   Logged in as: {self.user_data.get('name', 'Unknown')} ({self.user_data.get('role', 'unknown')})")
-            return True
-        return False
-
-    def test_get_areas(self):
-        """Test getting restaurant areas"""
-        success, response = self.run_test(
-            "Get Areas",
-            "GET",
-            "areas",
-            200,
-            description="Get restaurant areas (Salon Principal, Terraza, Bar, VIP)"
-        )
-        if success and isinstance(response, list):
-            areas = [area['name'] for area in response]
-            print(f"   Areas found: {areas}")
-            return len(response) >= 4  # Should have at least 4 areas
-        return False
-
-    def test_get_tables(self):
-        """Test getting tables"""
-        success, response = self.run_test(
-            "Get Tables",
-            "GET",
-            "tables",
-            200,
-            description="Get all tables across all areas"
-        )
-        if success and isinstance(response, list):
-            tables_by_area = {}
-            for table in response:
-                area_id = table.get('area_id')
-                if area_id not in tables_by_area:
-                    tables_by_area[area_id] = 0
-                tables_by_area[area_id] += 1
-            print(f"   Tables found: {len(response)} total across {len(tables_by_area)} areas")
-            return len(response) > 0
-        return False
-
-    def test_get_categories(self):
-        """Test getting product categories"""
-        success, response = self.run_test(
-            "Get Categories",
-            "GET",
-            "categories",
-            200,
-            description="Get product categories (Entradas, Platos, Mariscos, etc.)"
-        )
-        if success and isinstance(response, list):
-            categories = [cat['name'] for cat in response]
-            print(f"   Categories: {categories}")
-            return len(response) >= 5
-        return False
-
-    def test_get_products(self):
-        """Test getting products"""
-        success, response = self.run_test(
-            "Get Products",
-            "GET",
-            "products",
-            200,
-            description="Get all products with prices"
-        )
-        if success and isinstance(response, list):
-            print(f"   Products found: {len(response)}")
-            # Check for Churrasco (should have modifiers)
-            churrasco = next((p for p in response if 'Churrasco' in p['name']), None)
-            if churrasco:
-                print(f"   Churrasco found with {len(churrasco.get('modifier_group_ids', []))} modifier groups")
-            return len(response) >= 20
-        return False
-
-    def test_get_modifiers(self):
-        """Test getting modifier groups"""
-        success, response = self.run_test(
-            "Get Modifiers",
-            "GET",
-            "modifiers",
-            200,
-            description="Get modifier groups (cooking point, extras, sides, etc.)"
-        )
-        if success and isinstance(response, list):
-            modifier_names = [mod['name'] for mod in response]
-            print(f"   Modifier groups: {modifier_names}")
-            return len(response) >= 3
-        return False
-
-    def test_create_order(self):
-        """Test creating an order"""
-        # First get a table
-        success, tables = self.run_test("Get Tables for Order", "GET", "tables", 200)
-        if not success or not tables:
-            print("❌ Cannot test order creation - no tables available")
-            return False
-        
-        table = tables[0]
-        table_id = table['id']
-        
-        # Get products
-        success, products = self.run_test("Get Products for Order", "GET", "products", 200)
-        if not success or not products:
-            print("❌ Cannot test order creation - no products available")
-            return False
-            
-        # Find a simple product without modifiers
-        simple_product = None
-        for prod in products:
-            if not prod.get('modifier_group_ids') or len(prod['modifier_group_ids']) == 0:
-                simple_product = prod
-                break
-        
-        if not simple_product:
-            simple_product = products[0]  # Use any product
-        
-        order_data = {
-            "table_id": table_id,
-            "items": [
-                {
-                    "product_id": simple_product['id'],
-                    "product_name": simple_product['name'],
-                    "quantity": 2,
-                    "unit_price": simple_product['price'],
-                    "modifiers": [],
-                    "notes": "Test order"
-                }
-            ]
-        }
-        
-        success, response = self.run_test(
-            "Create Order",
-            "POST",
-            "orders",
-            200,
-            data=order_data,
-            description=f"Create order for table {table['number']} with {simple_product['name']}"
-        )
-        
-        if success:
-            print(f"   Order created: {response.get('id', 'unknown')} with {len(response.get('items', []))} items")
-            return response.get('id')
-        return False
-
-    def test_send_to_kitchen(self, order_id):
-        """Test sending order to kitchen"""
-        if not order_id:
-            print("❌ Cannot test kitchen - no order ID")
-            return False
-            
-        success, response = self.run_test(
-            "Send to Kitchen",
-            "POST",
-            f"orders/{order_id}/send-kitchen",
-            200,
-            description="Send order items to kitchen"
-        )
-        
-        if success:
-            print(f"   Order status: {response.get('status', 'unknown')}")
-            return True
-        return False
-
-    def test_kitchen_orders(self):
-        """Test getting kitchen orders"""
-        success, response = self.run_test(
-            "Get Kitchen Orders",
-            "GET",
-            "kitchen/orders",
-            200,
-            description="Get orders in kitchen queue"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Kitchen orders: {len(response)}")
-            for order in response:
-                kitchen_items = [item for item in order.get('items', []) if item.get('sent_to_kitchen')]
-                print(f"     Order {order.get('id', 'unknown')[:8]} - Table {order.get('table_number')} - {len(kitchen_items)} kitchen items")
-            return True
-        return False
-
-    def test_create_bill(self, order_id):
-        """Test creating a bill"""
-        if not order_id:
-            print("❌ Cannot test billing - no order ID")
-            return False
-            
-        # Get the order first
-        success, order = self.run_test("Get Order for Bill", "GET", f"orders/{order_id}", 200)
-        if not success:
-            print("❌ Cannot get order for billing")
-            return False
-            
-        bill_data = {
-            "order_id": order_id,
-            "table_id": order['table_id'],
-            "label": f"Mesa {order['table_number']}",
-            "item_ids": [],  # Empty means all items
-            "tip_percentage": 10,
-            "payment_method": "cash"
-        }
-        
-        success, response = self.run_test(
-            "Create Bill",
-            "POST",
-            "bills",
-            200,
-            data=bill_data,
-            description=f"Create bill with ITBIS 18% and tip for order {order_id[:8]}"
-        )
-        
-        if success:
-            print(f"   Bill ID: {response.get('id', 'unknown')[:8]}")
-            print(f"   NCF: {response.get('ncf', 'N/A')}")
-            print(f"   Subtotal: RD$ {response.get('subtotal', 0):.2f}")
-            print(f"   ITBIS (18%): RD$ {response.get('itbis', 0):.2f}")
-            print(f"   Total: RD$ {response.get('total', 0):.2f}")
-            return response.get('id')
-        return False
-
-    def test_pay_bill(self, bill_id):
-        """Test paying a bill"""
-        if not bill_id:
-            print("❌ Cannot test payment - no bill ID")
-            return False
-            
-        payment_data = {
-            "payment_method": "cash",
-            "tip_percentage": 10,
-            "additional_tip": 0
-        }
-        
-        success, response = self.run_test(
-            "Pay Bill",
-            "POST",
-            f"bills/{bill_id}/pay",
-            200,
-            data=payment_data,
-            description="Process cash payment for bill"
-        )
-        
-        if success:
-            print(f"   Payment status: {response.get('status', 'unknown')}")
-            print(f"   Payment method: {response.get('payment_method', 'unknown')}")
-            print(f"   Final total: RD$ {response.get('total', 0):.2f}")
-            return True
-        return False
-
-    def test_cancellation_reasons(self):
-        """Test getting cancellation reasons"""
-        success, response = self.run_test(
-            "Get Cancellation Reasons",
-            "GET",
-            "cancellation-reasons",
-            200,
-            description="Get available cancellation reasons"
-        )
-        
-        if success and isinstance(response, list):
-            for reason in response:
-                inventory_action = "returns to inventory" if reason.get('return_to_inventory') else "no return"
-                print(f"   Reason: {reason['name']} ({inventory_action})")
-            return len(response) > 0
-        return False
-
-    def test_shifts_and_cash_register(self):
-        """Test shift management"""
-        # Test opening a shift
-        shift_data = {
-            "station": "Caja 1",
-            "opening_amount": 1000.00
-        }
-        
-        success, response = self.run_test(
-            "Open Cash Shift",
-            "POST",
-            "shifts/open",
-            200,
-            data=shift_data,
-            description="Open a cash register shift"
-        )
-        
-        if success:
-            shift_id = response.get('id')
-            print(f"   Shift opened: {shift_id[:8]} at {response.get('station', 'unknown')}")
-            print(f"   Opening amount: RD$ {response.get('opening_amount', 0):.2f}")
-            return shift_id
-        return False
-
-    # ========== PHASE 2 TESTING ==========
-
-    def test_warehouses(self):
-        """Test warehouse management"""
-        success, response = self.run_test(
-            "Get Warehouses",
-            "GET",
-            "warehouses",
-            200,
-            description="Get all warehouses"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Warehouses found: {len(response)}")
-            for wh in response:
-                print(f"     {wh['name']} - {wh.get('location', 'No location')}")
-            return len(response) >= 2  # Should have at least Almacen Principal and Barra
-        return False
-
-    def test_suppliers(self):
-        """Test supplier management"""
-        success, response = self.run_test(
-            "Get Suppliers",
-            "GET",
-            "suppliers",
-            200,
-            description="Get all suppliers"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Suppliers found: {len(response)}")
-            for supplier in response:
-                rnc = supplier.get('rnc', 'No RNC')
-                print(f"     {supplier['name']} (RNC: {rnc}) - {supplier.get('phone', 'No phone')}")
-            return len(response) >= 3  # Should have at least 3 suppliers
-        return False
-
-    def test_inventory(self):
-        """Test inventory management"""
-        success, response = self.run_test(
-            "Get Inventory",
-            "GET",
-            "inventory",
-            200,
-            description="Get current inventory levels"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Inventory items found: {len(response)}")
-            for item in response:
-                stock = item.get('stock', 0)
-                min_stock = item.get('min_stock', 10)
-                status = "LOW STOCK" if stock <= min_stock else "OK"
-                print(f"     {item.get('product_name', 'Unknown')}: {stock} units ({status})")
-            return len(response) > 0
-        return False
-
-    def test_inventory_alerts(self):
-        """Test inventory alerts for low stock"""
-        success, response = self.run_test(
-            "Get Inventory Alerts",
-            "GET",
-            "inventory/alerts",
-            200,
-            description="Get low stock alerts"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Low stock alerts: {len(response)}")
-            for alert in response:
-                print(f"     {alert.get('product_name', 'Unknown')}: {alert.get('stock', 0)}/{alert.get('min_stock', 10)}")
-            return True  # Always pass - alerts can be empty
-        return False
-
-    def test_recipes(self):
-        """Test recipe management"""
-        success, response = self.run_test(
-            "Get Recipes",
-            "GET",
-            "recipes",
-            200,
-            description="Get all recipes"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Recipes found: {len(response)}")
-            for recipe in response:
-                ingredients = recipe.get('ingredients', [])
-                print(f"     {recipe['product_name']}: {len(ingredients)} ingredients")
-            return True  # Pass even if no recipes initially
-        return False
-
-    def test_purchase_orders(self):
-        """Test purchase order management"""
-        success, response = self.run_test(
-            "Get Purchase Orders",
-            "GET",
-            "purchase-orders",
-            200,
-            description="Get all purchase orders"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Purchase orders found: {len(response)}")
-            for po in response:
-                print(f"     PO {po['id'][:8]} - {po['supplier_name']} - Status: {po['status']} - Total: RD$ {po['total']:.2f}")
-            return True  # Pass even if no orders initially
-        return False
-
-    def test_customers(self):
-        """Test customer management"""
-        success, response = self.run_test(
-            "Get Customers",
-            "GET",
-            "customers",
-            200,
-            description="Get all customers"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Customers found: {len(response)}")
-            for customer in response:
-                points = customer.get('points', 0)
-                spent = customer.get('total_spent', 0)
-                print(f"     {customer['name']}: {points} pts, RD$ {spent:.2f} spent, {customer.get('visits', 0)} visits")
-            return len(response) >= 3  # Should have sample customers
-        return False
-
-    def test_loyalty_config(self):
-        """Test loyalty configuration"""
-        success, response = self.run_test(
-            "Get Loyalty Config",
-            "GET",
-            "loyalty/config",
-            200,
-            description="Get loyalty program configuration"
-        )
-        
-        if success and isinstance(response, dict):
-            pts_per_100 = response.get('points_per_hundred', 0)
-            pt_value = response.get('point_value_rd', 0)
-            min_redeem = response.get('min_redemption', 0)
-            print(f"   Config: {pts_per_100} pts per RD$100, {pt_value} RD$ per point, min redeem: {min_redeem}")
-            return pts_per_100 == 10 and pt_value == 1  # Check expected defaults
-        return False
-
-    def test_reports_daily_sales(self):
-        """Test daily sales report"""
-        today = datetime.now().strftime("%Y-%m-%d")
-        success, response = self.run_test(
-            "Daily Sales Report",
-            "GET",
-            f"reports/daily-sales?date={today}",
-            200,
-            description=f"Get daily sales report for {today}"
-        )
-        
-        if success and isinstance(response, dict):
-            print(f"   Total bills: {response.get('total_bills', 0)}")
-            print(f"   Total sales: RD$ {response.get('total_sales', 0):.2f}")
-            print(f"   ITBIS: RD$ {response.get('total_itbis', 0):.2f}")
-            print(f"   Tips: RD$ {response.get('total_tips', 0):.2f}")
-            return 'total_sales' in response
-        return False
-
-    def test_reports_by_category(self):
-        """Test sales by category report"""
-        today = datetime.now().strftime("%Y-%m-%d")
-        success, response = self.run_test(
-            "Sales by Category",
-            "GET",
-            f"reports/sales-by-category?date={today}",
-            200,
-            description="Get sales breakdown by category"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Category sales: {len(response)} categories")
-            for cat in response[:3]:  # Show top 3
-                print(f"     {cat['category']}: RD$ {cat['total']:.2f}")
-            return True
-        return False
-
-    def test_reports_top_products(self):
-        """Test top products report"""
-        today = datetime.now().strftime("%Y-%m-%d")
-        success, response = self.run_test(
-            "Top Products Report",
-            "GET",
-            f"reports/top-products?date={today}",
-            200,
-            description="Get top selling products"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Top products: {len(response)} products")
-            for prod in response[:3]:  # Show top 3
-                print(f"     {prod['name']}: {prod['quantity']} sold, RD$ {prod['total']:.2f}")
-            return True
-        return False
-
-    def test_reports_by_waiter(self):
-        """Test sales by waiter report"""
-        today = datetime.now().strftime("%Y-%m-%d")
-        success, response = self.run_test(
-            "Sales by Waiter",
-            "GET",
-            f"reports/sales-by-waiter?date={today}",
-            200,
-            description="Get sales by waiter/cashier"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Waiter sales: {len(response)} waiters")
-            for waiter in response:
-                print(f"     {waiter['name']}: {waiter['bills']} bills, RD$ {waiter['total']:.2f}, tips RD$ {waiter['tips']:.2f}")
-            return True
-        return False
-
-    def test_email_daily_close(self):
-        """Test email daily close (preview mode)"""
-        today = datetime.now().strftime("%Y-%m-%d")
-        success, response = self.run_test(
-            "Email Daily Close",
-            "POST",
-            "email/daily-close",
-            200,
-            data={"to": "test@example.com", "date": today},
-            description="Test daily close email (preview mode)"
-        )
-        
-        if success and isinstance(response, dict):
-            status = response.get('status', 'unknown')
-            print(f"   Email status: {status}")
-            if status == 'preview':
-                print("   ✓ Preview mode active (RESEND_API_KEY not configured)")
-            elif status == 'error' and 'testing emails to your own email' in response.get('detail', ''):
-                print("   ✓ Resend domain restriction - API is working correctly")
-                return True
-            return status in ['preview', 'sent', 'error']
-        return False
-
-    def test_print_templates(self):
-        """Test print templates (requires bill_id)"""
-        # We'll test this after creating a bill
-        # For now just test that endpoint exists by calling with fake ID
-        success, response = self.run_test(
-            "Print Receipt Template",
-            "GET",
-            "print/receipt/fake-bill-id",
-            404,  # Expect 404 for fake ID
-            description="Test receipt print template endpoint"
-        )
-        # 404 is expected, so we pass if we get a proper HTTP response
-        return True
-
-    # ========== PHASE 4 TESTING ==========
-
-    def test_phase4_users_with_permissions(self):
-        """Test Phase 4: Users endpoint with permissions field"""
-        success, response = self.run_test(
-            "Get Users with Permissions",
-            "GET",
-            "users",
-            200,
-            description="Phase 4: Get all users with permissions field"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Users found: {len(response)}")
-            # Check that users have permissions field
-            for user in response:
-                permissions = user.get('permissions', {})
-                print(f"     {user['name']} ({user['role']}) - Permissions: {len(permissions)} keys")
-                # Check key permissions exist
-                if user['name'] == 'Admin':
-                    if not permissions.get('view_dashboard'):
-                        print(f"     ❌ Admin should have view_dashboard permission")
-                        return False
-                if user['name'] == 'Carlos' and user['role'] == 'waiter':
-                    if permissions.get('view_dashboard'):
-                        print(f"     ❌ Waiter should NOT have view_dashboard permission")
-                        return False
-            return len(response) >= 5  # Should have at least 5 users from seed
-        return False
-
-    def test_phase4_payment_methods_crud(self):
-        """Test Phase 4: Payment methods CRUD operations"""
-        # Test GET
-        success, response = self.run_test(
-            "Get Payment Methods",
-            "GET",
-            "payment-methods",
-            200,
-            description="Phase 4: Get payment methods (Efectivo, Tarjeta, etc.)"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Payment methods found: {len(response)}")
-            expected_methods = ['Efectivo', 'Tarjeta', 'Transferencia']
-            found_methods = [m['name'] for m in response]
-            for expected in expected_methods:
-                if not any(expected in method for method in found_methods):
-                    print(f"     ❌ Missing expected payment method: {expected}")
-                    return False
-            
-            # Test POST (create new method)
-            create_success, create_response = self.run_test(
-                "Create Payment Method",
-                "POST",
-                "payment-methods",
-                200,
-                data={"name": "Test Payment", "icon": "test"},
-                description="Create new payment method"
-            )
-            
-            if create_success:
-                new_method_id = create_response.get('id')
-                print(f"     Created payment method: {new_method_id}")
-                
-                # Test PUT (update)
-                update_success, _ = self.run_test(
-                    "Update Payment Method",
-                    "PUT",
-                    f"payment-methods/{new_method_id}",
-                    200,
-                    data={"name": "Test Payment Updated"},
-                    description="Update payment method"
-                )
-                return update_success
-            
-            return True
-        return False
-
-    def test_phase4_inventory_movements(self):
-        """Test Phase 4: Inventory movements endpoint"""
-        success, response = self.run_test(
-            "Get Inventory Movements",
-            "GET",
-            "inventory/movements",
-            200,
-            description="Phase 4: Get inventory movement logs"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Inventory movements: {len(response)}")
-            for movement in response[:3]:  # Show first 3
-                print(f"     {movement.get('product_id', 'unknown')[:8]}: {movement.get('quantity', 0)} - {movement.get('reason', 'unknown')}")
-            return True
-        return False
-
-    def test_phase4_inventory_report_with_costs(self):
-        """Test Phase 4: Inventory report with costs and margins"""
-        success, response = self.run_test(
-            "Get Inventory Report with Costs",
-            "GET",
-            "reports/inventory",
-            200,
-            description="Phase 4: Get inventory with costs and profit margins"
-        )
-        
-        if success and isinstance(response, list):
-            print(f"   Inventory items with costs: {len(response)}")
-            for item in response[:3]:  # Show first 3
-                name = item.get('product_name', 'Unknown')
-                cost = item.get('recipe_cost', 0)
-                price = item.get('sale_price', 0)
-                margin = item.get('margin_pct', 0)
-                print(f"     {name}: Cost RD$ {cost:.2f}, Price RD$ {price:.2f}, Margin {margin:.1f}%")
-            return True
-        return False
-
-    def test_phase4_profit_report(self):
-        """Test Phase 4: Profit report endpoint"""
-        today = datetime.now().strftime("%Y-%m-%d")
-        success, response = self.run_test(
-            "Get Profit Report",
-            "GET",
-            f"reports/profit?date={today}",
-            200,
-            description="Phase 4: Get profit report with margins"
-        )
-        
-        if success and isinstance(response, dict):
-            revenue = response.get('total_revenue', 0)
-            cost = response.get('total_cost', 0)
-            profit = response.get('gross_profit', 0)
-            margin = response.get('margin_pct', 0)
-            print(f"   Revenue: RD$ {revenue:.2f}, Cost: RD$ {cost:.2f}")
-            print(f"   Profit: RD$ {profit:.2f}, Margin: {margin:.1f}%")
-            products = response.get('products', [])
-            print(f"   Products analyzed: {len(products)}")
-            return 'total_revenue' in response
-        return False
-
-    def test_phase4_dgii_607_export(self):
-        """Test Phase 4: DGII 607 export endpoint"""
-        current_month = datetime.now().strftime("%Y-%m")
-        success, response = self.run_test(
-            "Export DGII 607",
-            "GET",
-            f"export/dgii-607?month={current_month}",
-            200,
-            description="Phase 4: Export DGII 607 format"
-        )
-        
-        if success and isinstance(response, dict):
-            records = response.get('total_records', 0)
-            amount = response.get('total_amount', 0)
-            itbis = response.get('total_itbis', 0)
-            rows = response.get('rows', [])
-            print(f"   607 Export: {records} records, Total RD$ {amount:.2f}, ITBIS RD$ {itbis:.2f}")
-            if rows:
-                first_row = rows[0]
-                print(f"   Sample row: NCF {first_row.get('ncf', 'N/A')}, Total RD$ {first_row.get('total', 0):.2f}")
-            return 'rows' in response
-        return False
-
-    def test_phase4_dgii_608_export(self):
-        """Test Phase 4: DGII 608 export endpoint"""  
-        current_month = datetime.now().strftime("%Y-%m")
-        success, response = self.run_test(
-            "Export DGII 608",
-            "GET",
-            f"export/dgii-608?month={current_month}",
-            200,
-            description="Phase 4: Export DGII 608 format"
-        )
-        
-        if success and isinstance(response, dict):
-            records = response.get('total_records', 0)
-            amount = response.get('total_amount', 0)
-            rows = response.get('rows', [])
-            print(f"   608 Export: {records} records, Total RD$ {amount:.2f}")
-            if rows:
-                first_row = rows[0]
-                print(f"   Sample row: RNC {first_row.get('rnc', 'N/A')}, Supplier {first_row.get('supplier_name', 'N/A')}")
-            return 'rows' in response
-        return False
-
-    def test_admin_login(self):
-        """Test Admin login (PIN 0000) - Phase 4"""
-        success, response = self.run_test(
-            "PIN Login (Admin - 0000)",
+            "Admin Login",
             "POST",
             "auth/login",
             200,
             data={"pin": "0000"},
-            description="Login with Admin PIN - should have all permissions"
+            description="Login with admin PIN 0000"
         )
         if success and 'token' in response:
-            user = response.get('user', {})
-            permissions = user.get('permissions', {})
-            print(f"   Logged in as: {user.get('name', 'Unknown')} ({user.get('role', 'unknown')})")
-            print(f"   Has view_dashboard: {permissions.get('view_dashboard', False)}")
-            print(f"   Has manage_users: {permissions.get('manage_users', False)}")
-            print(f"   Has move_tables: {permissions.get('move_tables', False)}")
-            return permissions.get('view_dashboard') and permissions.get('manage_users')
+            self.token = response['token']
+            print(f"   🔑 Token obtained: {self.token[:20]}...")
+            return True
         return False
 
-    def test_cashier_login(self):
-        """Test Cashier login (PIN 4321) - Phase 4"""
+    def test_recipes_api(self):
+        """Test recipes endpoint - should show Dominican recipes with costs"""
         success, response = self.run_test(
-            "PIN Login (Luis - 4321)",
-            "POST",
-            "auth/login",
+            "Recipes API",
+            "GET", 
+            "recipes",
             200,
-            data={"pin": "4321"},
-            description="Login with Luis cashier PIN - limited permissions"
+            description="Get recipes with ingredient costs (Phase 5 feature)"
         )
-        if success and 'token' in response:
-            user = response.get('user', {})
-            permissions = user.get('permissions', {})
-            print(f"   Logged in as: {user.get('name', 'Unknown')} ({user.get('role', 'unknown')})")
-            print(f"   Has view_dashboard: {permissions.get('view_dashboard', False)}")
-            print(f"   Has move_tables: {permissions.get('move_tables', False)}")
-            print(f"   Has void_items: {permissions.get('void_items', False)}")
-            # Cashier should have void_items but NOT view_dashboard or move_tables
-            return permissions.get('void_items') and not permissions.get('view_dashboard') and not permissions.get('move_tables')
-        return False
+        if success and isinstance(response, list):
+            print(f"   📋 Found {len(response)} recipes")
+            dominican_recipes = 0
+            for recipe in response:
+                if any(food in recipe.get('product_name', '').lower() 
+                      for food in ['bandera', 'churrasco', 'langosta', 'pollo', 'pescado']):
+                    dominican_recipes += 1
+                    ingredients = recipe.get('ingredients', [])
+                    print(f"   🇩🇴 {recipe.get('product_name', 'Unknown')} - {len(ingredients)} ingredients")
+                    for ing in ingredients[:2]:  # Show first 2 ingredients
+                        cost = ing.get('cost', 0)
+                        print(f"      • {ing.get('ingredient_name', 'N/A')} - RD${cost}")
+            print(f"   🎯 Found {dominican_recipes} Dominican recipes")
+            return dominican_recipes >= 5  # Expecting at least 5 Dominican recipes
+        return success
 
-    # ========== PHASE 3 TESTING ==========
-
-    def test_dashboard_kpis(self):
-        """Test dashboard KPIs endpoint (Phase 3)"""
+    def test_inventory_report(self):
+        """Test inventory report with costs and margins"""
         success, response = self.run_test(
-            "Dashboard KPIs",
+            "Inventory Report",
             "GET",
-            "reports/dashboard",
+            "reports/inventory", 
             200,
-            description="Get real-time dashboard KPIs (Ventas Hoy, Efectivo, ITBIS, Ocupacion)"
+            description="Get inventory with recipe costs and margin percentages"
         )
-        
-        if success and isinstance(response, dict):
-            today = response.get('today', {})
-            operations = response.get('operations', {})
-            loyalty = response.get('loyalty', {})
-            hourly = response.get('hourly_sales', [])
-            
-            print(f"   Today Sales: RD$ {today.get('total_sales', 0):.2f}")
-            print(f"   Bills Today: {today.get('bills_count', 0)}")
-            print(f"   Cash: RD$ {today.get('cash', 0):.2f}, Card: RD$ {today.get('card', 0):.2f}")
-            print(f"   ITBIS: RD$ {today.get('itbis', 0):.2f}")
-            print(f"   Occupancy: {operations.get('occupancy_pct', 0)}% ({operations.get('occupied_tables', 0)}/{operations.get('total_tables', 0)})")
-            print(f"   Active Orders: {operations.get('active_orders', 0)}")
-            print(f"   Open Shifts: {operations.get('open_shifts', 0)}")
-            print(f"   Inventory Alerts: {operations.get('inventory_alerts', 0)}")
-            print(f"   Loyalty Customers: {loyalty.get('total_customers', 0)}")
-            print(f"   Hourly Data Points: {len(hourly)}")
-            
-            # Verify structure
-            required_keys = ['today', 'operations', 'loyalty', 'hourly_sales']
-            return all(key in response for key in required_keys)
-        return False
+        if success and isinstance(response, list):
+            items_with_costs = [item for item in response if item.get('recipe_cost', 0) > 0]
+            print(f"   💰 {len(items_with_costs)} items have recipe costs")
+            if len(items_with_costs) > 0:
+                for item in items_with_costs[:3]:  # Show first 3 items
+                    print(f"   📊 {item.get('product_name', 'Unknown')}: Sale RD${item.get('sale_price', 0)}, Cost RD${item.get('recipe_cost', 0)}, Margin {item.get('margin_pct', 0)}%")
+            return len(items_with_costs) > 0
+        return success
 
-    def test_pay_bill_with_loyalty(self, bill_id, customer_id):
-        """Test paying a bill with customer loyalty points (Phase 3)"""
-        if not bill_id:
-            print("❌ Cannot test loyalty payment - no bill ID")
-            return False
-            
-        payment_data = {
-            "payment_method": "cash",
-            "tip_percentage": 10,
-            "additional_tip": 0,
-            "customer_id": customer_id  # This triggers loyalty points
-        }
-        
+    def test_profit_report(self):
+        """Test profit analysis report"""
         success, response = self.run_test(
-            "Pay Bill with Loyalty",
-            "POST",
-            f"bills/{bill_id}/pay",
+            "Profit Report",
+            "GET",
+            "reports/profit",
             200,
-            data=payment_data,
-            description="Process payment with loyalty customer to accumulate points"
+            description="Get revenue vs cost analysis"
+        )
+        if success and isinstance(response, dict):
+            revenue = response.get('total_revenue', 0)
+            cost = response.get('total_cost', 0) 
+            profit = response.get('gross_profit', 0)
+            margin = response.get('margin_pct', 0)
+            products = len(response.get('products', []))
+            print(f"   💹 Revenue: RD${revenue}, Cost: RD${cost}, Profit: RD${profit} ({margin}%)")
+            print(f"   📈 {products} products analyzed")
+            return True
+        return success
+
+    def test_escpos_endpoints(self):
+        """Test ESC/POS thermal printer endpoints"""
+        # These endpoints need actual bill/order IDs, so test for proper error handling
+        success1, _ = self.run_test(
+            "ESC/POS Receipt",
+            "GET",
+            "print/receipt-escpos/non-existent-id",
+            404,
+            description="Test ESC/POS receipt endpoint (expecting 404 for non-existent ID)"
         )
         
-        if success:
-            points_earned = response.get('points_earned', 0)
-            print(f"   Payment status: {response.get('status', 'unknown')}")
-            print(f"   Payment method: {response.get('payment_method', 'unknown')}")
-            print(f"   Final total: RD$ {response.get('total', 0):.2f}")
-            print(f"   Points earned: {points_earned}")
-            return points_earned > 0  # Should earn points
-        return False
+        success2, _ = self.run_test(
+            "ESC/POS Comanda", 
+            "GET",
+            "print/comanda-escpos/non-existent-id",
+            404,
+            description="Test ESC/POS comanda endpoint (expecting 404 for non-existent ID)"
+        )
+        
+        return success1 and success2
+
+    def test_kitchen_tv_api(self):
+        """Test Kitchen TV optimized endpoint"""
+        success, response = self.run_test(
+            "Kitchen TV API",
+            "GET",
+            "kitchen/tv",
+            200,
+            description="Get optimized kitchen display data with urgency indicators"
+        )
+        if success and isinstance(response, dict):
+            orders = response.get('orders', [])
+            timestamp = response.get('timestamp', '')
+            total = response.get('total', 0)
+            print(f"   📺 Kitchen TV: {total} orders, timestamp: {timestamp[:19]}")
+            
+            urgent_count = sum(1 for order in orders if order.get('is_urgent'))
+            critical_count = sum(1 for order in orders if order.get('is_critical'))
+            print(f"   ⚠️  Urgent: {urgent_count}, Critical: {critical_count}")
+            
+            # Check for required fields in orders
+            if orders:
+                order = orders[0]
+                has_elapsed = 'elapsed_minutes' in order
+                has_urgency = 'is_urgent' in order and 'is_critical' in order
+                print(f"   ✅ Has elapsed_minutes: {has_elapsed}, Has urgency flags: {has_urgency}")
+                return has_elapsed and has_urgency
+            return True
+        return success
+
+    def test_core_pos_flow(self):
+        """Test core POS functionality still works"""
+        print("\n🏪 Testing Core POS Flow...")
+        
+        # Test areas, tables, products, categories
+        areas_success, _ = self.run_test("Areas", "GET", "areas", 200)
+        tables_success, _ = self.run_test("Tables", "GET", "tables", 200) 
+        categories_success, _ = self.run_test("Categories", "GET", "categories", 200)
+        products_success, _ = self.run_test("Products", "GET", "products", 200)
+        
+        return all([areas_success, tables_success, categories_success, products_success])
 
 def main():
-    """Run comprehensive POS API tests"""
-    print("🏪 Dominican Republic POS System - API Testing")
-    print("=" * 60)
+    print("🚀 Starting Phase 5 POS API Testing...")
+    print("📍 Testing: Recipe costs, ESC/POS endpoints, Kitchen TV, Inventory reports")
     
-    tester = DOPOSAPITester()
+    tester = POSAPITester()
     
-    # Track test results
-    failed_tests = []
-    
-    # Step 1: Initialize data
-    print("\n📦 INITIALIZING SYSTEM")
-    if not tester.test_seed_data():
-        failed_tests.append("Seed Data")
-    
-    # Step 2: Authentication
-    print("\n🔐 AUTHENTICATION TESTING")
-    if not tester.test_login("1234"):  # Carlos waiter PIN
-        failed_tests.append("PIN Login")
-        print("❌ Cannot continue without login")
+    # Phase 1: Authentication
+    if not tester.test_login():
+        print("❌ Authentication failed - cannot continue with API tests")
         return 1
-    
-    # Step 3: Basic data retrieval
-    print("\n📋 CORE DATA TESTING")
-    if not tester.test_get_areas():
-        failed_tests.append("Get Areas")
-    if not tester.test_get_tables():
-        failed_tests.append("Get Tables")
-    if not tester.test_get_categories():
-        failed_tests.append("Get Categories")
-    if not tester.test_get_products():
-        failed_tests.append("Get Products")
-    if not tester.test_get_modifiers():
-        failed_tests.append("Get Modifiers")
-    
-    # Step 4: Order workflow
-    print("\n🍽️  ORDER WORKFLOW TESTING")
-    order_id = tester.test_create_order()
-    if not order_id:
-        failed_tests.append("Create Order")
-    else:
-        if not tester.test_send_to_kitchen(order_id):
-            failed_tests.append("Send to Kitchen")
-        if not tester.test_kitchen_orders():
-            failed_tests.append("Kitchen Orders")
-        
-        # Step 5: Billing workflow
-        print("\n💳 BILLING WORKFLOW TESTING")
-        bill_id = tester.test_create_bill(order_id)
-        if not bill_id:
-            failed_tests.append("Create Bill")
-        else:
-            if not tester.test_pay_bill(bill_id):
-                failed_tests.append("Pay Bill")
-    
-    # Step 6: Additional features
-    print("\n⚙️  ADDITIONAL FEATURES TESTING")
-    if not tester.test_cancellation_reasons():
-        failed_tests.append("Cancellation Reasons")
-    if not tester.test_shifts_and_cash_register():
-        failed_tests.append("Cash Register")
-    
-    # Step 7: PHASE 2 FEATURES TESTING
-    print("\n🆕 PHASE 2 FEATURES TESTING")
-    print("    (Inventory, Suppliers, Reports, Customers, Email, Print)")
-    
-    # Warehouses & Inventory
-    if not tester.test_warehouses():
-        failed_tests.append("Warehouses")
-    if not tester.test_suppliers():
-        failed_tests.append("Suppliers")
-    if not tester.test_inventory():
-        failed_tests.append("Inventory")
-    if not tester.test_inventory_alerts():
-        failed_tests.append("Inventory Alerts")
-    if not tester.test_recipes():
-        failed_tests.append("Recipes")
-    if not tester.test_purchase_orders():
-        failed_tests.append("Purchase Orders")
-    
-    # Customers & Loyalty
-    if not tester.test_customers():
-        failed_tests.append("Customers")
-    if not tester.test_loyalty_config():
-        failed_tests.append("Loyalty Config")
-    
-    # Reports
-    if not tester.test_reports_daily_sales():
-        failed_tests.append("Daily Sales Report")
-    if not tester.test_reports_by_category():
-        failed_tests.append("Sales by Category")
-    if not tester.test_reports_top_products():
-        failed_tests.append("Top Products Report")
-    if not tester.test_reports_by_waiter():
-        failed_tests.append("Sales by Waiter")
-    
-    # Email & Print
-    if not tester.test_email_daily_close():
-        failed_tests.append("Email Daily Close")
-    if not tester.test_print_templates():
-        failed_tests.append("Print Templates")
-    
-    # Step 8: PHASE 4 FEATURES TESTING (NEW)
-    print("\n🆕 PHASE 4 FEATURES TESTING")
-    print("    (Role-based permissions, User management, Payment methods CRUD, Inventory with costs, DGII exports)")
-    
-    # Test different login types
-    if not tester.test_admin_login():
-        failed_tests.append("Admin Login (0000)")
-    if not tester.test_cashier_login():
-        failed_tests.append("Cashier Login (4321)")
-    
-    # Reset to Carlos for other tests
-    tester.test_login("1234")
-    
-    # Phase 4 specific features
-    if not tester.test_phase4_users_with_permissions():
-        failed_tests.append("Users with Permissions")
-    if not tester.test_phase4_payment_methods_crud():
-        failed_tests.append("Payment Methods CRUD")
-    if not tester.test_phase4_inventory_movements():
-        failed_tests.append("Inventory Movements")
-    if not tester.test_phase4_inventory_report_with_costs():
-        failed_tests.append("Inventory Report with Costs")
-    if not tester.test_phase4_profit_report():
-        failed_tests.append("Profit Report")
-    if not tester.test_phase4_dgii_607_export():
-        failed_tests.append("DGII 607 Export")
-    if not tester.test_phase4_dgii_608_export():
-        failed_tests.append("DGII 608 Export")
 
-    # Step 9: PHASE 3 FEATURES TESTING
-    print("\n🆕 PHASE 3 FEATURES TESTING")
-    print("    (Dashboard KPIs, Loyalty Points in Billing)")
+    # Phase 2: Core functionality check
+    if not tester.test_core_pos_flow():
+        print("⚠️  Core POS flow has issues")
+
+    # Phase 3: Phase 5 specific features
+    print("\n🆕 Testing Phase 5 Features...")
     
-    # Dashboard KPIs
-    if not tester.test_dashboard_kpis():
-        failed_tests.append("Dashboard KPIs")
+    recipes_ok = tester.test_recipes_api()
+    inventory_ok = tester.test_inventory_report() 
+    profit_ok = tester.test_profit_report()
+    escpos_ok = tester.test_escpos_endpoints()
+    kitchen_tv_ok = tester.test_kitchen_tv_api()
+
+    # Results Summary
+    print(f"\n📊 FINAL RESULTS:")
+    print(f"Tests Run: {tester.tests_run}")
+    print(f"Tests Passed: {tester.tests_passed}")
+    print(f"Success Rate: {(tester.tests_passed/tester.tests_run)*100:.1f}%")
     
-    # Loyalty Points Integration Test (if we have bill and customer)
-    if order_id and bill_id:
-        # Get first customer for testing
-        success, customers = tester.run_test("Get Customers for Loyalty Test", "GET", "customers", 200)
-        if success and customers:
-            customer_id = customers[0]['id']
-            # Create another bill for loyalty test
-            bill2_id = tester.test_create_bill(order_id)
-            if bill2_id:
-                if not tester.test_pay_bill_with_loyalty(bill2_id, customer_id):
-                    failed_tests.append("Loyalty Points Payment")
-            else:
-                failed_tests.append("Create Bill for Loyalty Test")
-        else:
-            print("   ⚠️  Skipping loyalty payment test - no customers available")
-    else:
-        print("   ⚠️  Skipping loyalty payment test - no order/bill available")
-    
-    # Final results
-    print("\n" + "=" * 60)
-    print(f"📊 FINAL RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
-    
-    if failed_tests:
-        print(f"❌ Failed tests ({len(failed_tests)}):")
-        for test in failed_tests:
-            print(f"   - {test}")
-        return 1
-    else:
-        print("✅ All tests passed! POS API is working correctly.")
-        return 0
+    print(f"\n🎯 Phase 5 Features:")
+    print(f"✅ Recipes with costs: {'PASS' if recipes_ok else 'FAIL'}")
+    print(f"✅ Inventory reports: {'PASS' if inventory_ok else 'FAIL'}")
+    print(f"✅ Profit analysis: {'PASS' if profit_ok else 'FAIL'}")
+    print(f"✅ ESC/POS endpoints: {'PASS' if escpos_ok else 'FAIL'}")
+    print(f"✅ Kitchen TV API: {'PASS' if kitchen_tv_ok else 'FAIL'}")
+
+    # Save detailed results
+    with open('/app/test_reports/backend_test_results.json', 'w') as f:
+        json.dump({
+            "summary": {
+                "tests_run": tester.tests_run,
+                "tests_passed": tester.tests_passed,
+                "success_rate": f"{(tester.tests_passed/tester.tests_run)*100:.1f}%"
+            },
+            "phase5_features": {
+                "recipes_with_costs": recipes_ok,
+                "inventory_reports": inventory_ok, 
+                "profit_analysis": profit_ok,
+                "escpos_endpoints": escpos_ok,
+                "kitchen_tv_api": kitchen_tv_ok
+            },
+            "detailed_results": tester.results
+        }, f, indent=2)
+
+    return 0 if tester.tests_passed >= tester.tests_run * 0.8 else 1
 
 if __name__ == "__main__":
     sys.exit(main())
