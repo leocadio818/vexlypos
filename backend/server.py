@@ -237,19 +237,60 @@ async def get_me(user=Depends(get_current_user)):
 # ─── USERS ───
 @api.get("/users")
 async def list_users():
-    return await db.users.find({}, {"_id": 0, "pin_hash": 0}).to_list(100)
+    users = await db.users.find({}, {"_id": 0, "pin_hash": 0}).to_list(100)
+    for u in users:
+        u["permissions"] = get_permissions(u["role"], u.get("permissions"))
+    return users
 
 @api.post("/users")
 async def create_user(input: UserInput):
-    doc = {"id": gen_id(), "name": input.name, "pin_hash": hash_pin(input.pin), "role": input.role, "active": True}
+    doc = {"id": gen_id(), "name": input.name, "pin_hash": hash_pin(input.pin), "role": input.role, "active": True, "permissions": {}}
     await db.users.insert_one(doc)
-    return {"id": doc["id"], "name": doc["name"], "role": doc["role"], "active": True}
+    perms = get_permissions(input.role)
+    return {"id": doc["id"], "name": doc["name"], "role": doc["role"], "active": True, "permissions": perms}
 
 @api.put("/users/{user_id}")
 async def update_user(user_id: str, input: dict):
+    if "_id" in input: del input["_id"]
     if "pin" in input:
         input["pin_hash"] = hash_pin(input.pop("pin"))
     await db.users.update_one({"id": user_id}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/users/{user_id}")
+async def delete_user(user_id: str):
+    await db.users.update_one({"id": user_id}, {"$set": {"active": False}})
+    return {"ok": True}
+
+# ─── PAYMENT METHODS ───
+@api.get("/payment-methods")
+async def list_payment_methods():
+    methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
+    if not methods:
+        defaults = [
+            {"id": gen_id(), "name": "Efectivo", "icon": "banknote", "active": True},
+            {"id": gen_id(), "name": "Tarjeta", "icon": "credit-card", "active": True},
+            {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "active": True},
+        ]
+        await db.payment_methods.insert_many(defaults)
+        return defaults
+    return methods
+
+@api.post("/payment-methods")
+async def create_payment_method(input: dict):
+    doc = {"id": gen_id(), "name": input.get("name", ""), "icon": input.get("icon", "circle"), "active": True}
+    await db.payment_methods.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/payment-methods/{mid}")
+async def update_payment_method(mid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.payment_methods.update_one({"id": mid}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/payment-methods/{mid}")
+async def delete_payment_method(mid: str):
+    await db.payment_methods.delete_one({"id": mid})
     return {"ok": True}
 
 # ─── AREAS ───
