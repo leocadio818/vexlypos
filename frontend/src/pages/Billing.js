@@ -82,17 +82,24 @@ export default function Billing() {
     handleCreateBill(unbilledItems.map(i => i.id), `Mesa ${order?.table_number}`);
   };
 
-  const handlePayBill = async (billId, method) => {
+  const handlePayBill = async () => {
+    const billId = payDialog.billId;
+    // Determine primary payment method (the one with highest amount)
+    const entries = Object.entries(payAmounts).filter(([_, v]) => v > 0);
+    const mainMethod = entries.length > 0 ? entries.sort((a, b) => b[1] - a[1])[0][0] : 'Efectivo RD$';
     try {
-      const res = await billsAPI.pay(billId, { payment_method: method, tip_percentage: tipPct, additional_tip: 0, customer_id: selectedCustomer });
+      const res = await billsAPI.pay(billId, { payment_method: mainMethod, tip_percentage: tipPct, additional_tip: 0, customer_id: selectedCustomer });
       const pts = res.data?.points_earned;
-      if (pts > 0) {
-        toast.success(`Pago procesado | +${pts} puntos fidelidad`);
-      } else {
-        toast.success('Pago procesado');
-      }
-      setPayDialog({ open: false, billId: null });
+      const totalPaid = Object.values(payAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+      const change = totalPaid - payDialog.billTotal;
+      let msg = 'Pago procesado';
+      if (change > 0) msg += ` | Cambio: ${formatMoney(change)}`;
+      if (pts > 0) msg += ` | +${pts} pts`;
+      toast.success(msg);
+      setPayDialog({ open: false, billId: null, billTotal: 0 });
+      setPayAmounts({});
       setSelectedCustomer('');
+      setPayStep('method');
       fetchData();
     } catch {
       toast.error('Error procesando pago');
