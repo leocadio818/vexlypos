@@ -260,6 +260,18 @@ export default function Settings() {
             <TabsTrigger value="station" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-station">
               <Cog size={14} className="mr-1" /> Estacion
             </TabsTrigger>
+            <TabsTrigger value="inventory" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-inventory-cfg">
+              <Package size={14} className="mr-1" /> Inventario
+            </TabsTrigger>
+            <TabsTrigger value="suppliers-cfg" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-suppliers-cfg">
+              <Truck size={14} className="mr-1" /> Compras
+            </TabsTrigger>
+            <TabsTrigger value="reports-cfg" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-reports-cfg">
+              <BarChart3 size={14} className="mr-1" /> Reportes
+            </TabsTrigger>
+            <TabsTrigger value="customers-cfg" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-customers-cfg">
+              <Heart size={14} className="mr-1" /> Clientes
+            </TabsTrigger>
           </TabsList>
 
           {/* USERS */}
