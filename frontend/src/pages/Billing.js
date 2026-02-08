@@ -75,9 +75,15 @@ export default function Billing() {
 
   const handlePayBill = async (billId, method) => {
     try {
-      await billsAPI.pay(billId, { payment_method: method, tip_percentage: tipPct, additional_tip: 0 });
-      toast.success('Pago procesado');
+      const res = await billsAPI.pay(billId, { payment_method: method, tip_percentage: tipPct, additional_tip: 0, customer_id: selectedCustomer });
+      const pts = res.data?.points_earned;
+      if (pts > 0) {
+        toast.success(`Pago procesado | +${pts} puntos fidelidad`);
+      } else {
+        toast.success('Pago procesado');
+      }
       setPayDialog({ open: false, billId: null });
+      setSelectedCustomer('');
       fetchData();
     } catch {
       toast.error('Error procesando pago');
