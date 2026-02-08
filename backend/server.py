@@ -1155,6 +1155,118 @@ async def print_comanda(order_id: str):
     <div style='padding:4px 0;font-size:11px;'>Mesero: {order['waiter_name']}<br>Hora: {order['created_at'][:19]}</div>
     <table style='width:100%;'>{items_html}</table></div>"""}
 
+# ─── INVENTORY REPORTS ───
+@api.get("/inventory/movements")
+async def inventory_movements(product_id: Optional[str] = Query(None)):
+    query = {"product_id": product_id} if product_id else {}
+    return await db.inventory_logs.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+@api.get("/reports/inventory")
+async def inventory_report():
+    inv = await db.inventory.find({}, {"_id": 0}).to_list(500)
+    recipes = await db.recipes.find({}, {"_id": 0}).to_list(200)
+    products = await db.products.find({}, {"_id": 0}).to_list(500)
+    prod_map = {p["id"]: p for p in products}
+    recipe_map = {r["product_id"]: r for r in recipes}
+
+    report = []
+    for item in inv:
+        pid = item.get("product_id", "")
+        prod = prod_map.get(pid, {})
+        recipe = recipe_map.get(pid, {})
+        recipe_cost = sum(ing.get("cost", 0) * ing.get("quantity", 0) for ing in recipe.get("ingredients", []))
+        sale_price = prod.get("price", 0)
+        margin = ((sale_price - recipe_cost) / sale_price * 100) if sale_price > 0 and recipe_cost > 0 else 0
+        report.append({
+            "product_id": pid, "product_name": item.get("product_name", prod.get("name", "?")),
+            "stock": item.get("stock", 0), "min_stock": item.get("min_stock", 10),
+            "warehouse_id": item.get("warehouse_id", ""),
+            "sale_price": sale_price, "recipe_cost": round(recipe_cost, 2),
+            "margin_pct": round(margin, 1), "stock_value": round(item.get("stock", 0) * recipe_cost, 2)
+        })
+    return report
+
+@api.get("/reports/profit")
+async def profit_report(date: Optional[str] = Query(None)):
+    if not date:
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(5000)
+    day_bills = [b for b in bills if b.get("paid_at", "").startswith(date)]
+    recipes = await db.recipes.find({}, {"_id": 0}).to_list(200)
+    products = await db.products.find({}, {"_id": 0}).to_list(500)
+    recipe_cost_map = {}
+    for r in recipes:
+        recipe_cost_map[r["product_name"]] = sum(ing.get("cost", 0) * ing.get("quantity", 0) for ing in r.get("ingredients", []))
+    prod_price_map = {p["name"]: p["price"] for p in products}
+
+    total_revenue = 0
+    total_cost = 0
+    product_profit = {}
+    for bill in day_bills:
+        for item in bill.get("items", []):
+            name = item["product_name"]
+            qty = item.get("quantity", 1)
+            revenue = item.get("total", 0)
+            cost = recipe_cost_map.get(name, 0) * qty
+            total_revenue += revenue
+            total_cost += cost
+            if name not in product_profit:
+                product_profit[name] = {"name": name, "revenue": 0, "cost": 0, "quantity": 0}
+            product_profit[name]["revenue"] += revenue
+            product_profit[name]["cost"] += cost
+            product_profit[name]["quantity"] += qty
+
+    products_data = sorted(product_profit.values(), key=lambda x: -(x["revenue"] - x["cost"]))
+    for p in products_data:
+        p["profit"] = round(p["revenue"] - p["cost"], 2)
+        p["margin_pct"] = round((p["profit"] / p["revenue"] * 100) if p["revenue"] > 0 else 0, 1)
+        p["revenue"] = round(p["revenue"], 2)
+        p["cost"] = round(p["cost"], 2)
+
+    return {
+        "date": date, "total_revenue": round(total_revenue, 2), "total_cost": round(total_cost, 2),
+        "gross_profit": round(total_revenue - total_cost, 2),
+        "margin_pct": round(((total_revenue - total_cost) / total_revenue * 100) if total_revenue > 0 else 0, 1),
+        "products": products_data
+    }
+
+# ─── DGII EXPORT ───
+@api.get("/export/dgii-607")
+async def export_dgii_607(month: Optional[str] = Query(None)):
+    if not month:
+        month = datetime.now(timezone.utc).strftime("%Y-%m")
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
+    month_bills = [b for b in bills if b.get("paid_at", "").startswith(month)]
+    rows = []
+    for b in month_bills:
+        rows.append({
+            "ncf": b.get("ncf", ""), "rnc_cedula": "", "tipo_id": "99",
+            "fecha": b.get("paid_at", "")[:10], "subtotal": b.get("subtotal", 0),
+            "itbis": b.get("itbis", 0), "total": b.get("total", 0),
+            "forma_pago": "01" if b.get("payment_method") == "cash" else "02"
+        })
+    return {"month": month, "total_records": len(rows), "total_amount": round(sum(r["total"] for r in rows), 2),
+            "total_itbis": round(sum(r["itbis"] for r in rows), 2), "rows": rows}
+
+@api.get("/export/dgii-608")
+async def export_dgii_608(month: Optional[str] = Query(None)):
+    if not month:
+        month = datetime.now(timezone.utc).strftime("%Y-%m")
+    pos = await db.purchase_orders.find({"status": {"$in": ["received", "partial"]}}, {"_id": 0}).to_list(5000)
+    month_pos = [p for p in pos if p.get("created_at", "").startswith(month)]
+    suppliers = await db.suppliers.find({}, {"_id": 0}).to_list(100)
+    sup_map = {s["id"]: s for s in suppliers}
+    rows = []
+    for po in month_pos:
+        sup = sup_map.get(po.get("supplier_id", ""), {})
+        rows.append({
+            "rnc": sup.get("rnc", ""), "supplier_name": po.get("supplier_name", ""),
+            "ncf": "", "fecha": po.get("created_at", "")[:10],
+            "subtotal": po.get("total", 0), "itbis": round(po.get("total", 0) * 0.18, 2),
+            "total": round(po.get("total", 0) * 1.18, 2)
+        })
+    return {"month": month, "total_records": len(rows), "total_amount": round(sum(r["total"] for r in rows), 2), "rows": rows}
+
 # ─── SEED ───
 @api.post("/seed")
 async def seed_data():
