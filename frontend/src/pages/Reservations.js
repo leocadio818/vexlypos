@@ -74,7 +74,7 @@ export default function Reservations() {
         <div className="flex items-center gap-2">
           <input type="date" value={date} onChange={e => setDate(e.target.value)}
             className="bg-card border border-border rounded-lg px-3 py-1.5 text-sm font-mono" data-testid="reservation-date" />
-          <Button onClick={() => setDialog({ open: true, customer_name: '', phone: '', date, time: '19:00', party_size: 2, table_id: '', notes: '' })}
+          <Button onClick={() => setDialog({ open: true, customer_name: '', phone: '', date, time: '19:00', party_size: 2, table_ids: [], area_id: '', notes: '' })}
             size="sm" className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="new-reservation-btn">
             <Plus size={14} className="mr-1" /> Nueva
           </Button>
