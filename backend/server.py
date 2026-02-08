@@ -1384,6 +1384,68 @@ async def export_dgii_608(month: Optional[str] = Query(None)):
         })
     return {"month": month, "total_records": len(rows), "total_amount": round(sum(r["total"] for r in rows), 2), "rows": rows}
 
+# ─── PRINT CHANNELS ───
+@api.get("/print-channels")
+async def list_print_channels():
+    channels = await db.print_channels.find({}, {"_id": 0}).to_list(50)
+    if not channels:
+        defaults = [
+            {"id": gen_id(), "name": "Cocina Principal", "type": "kitchen", "target": "screen", "ip": "", "active": True},
+            {"id": gen_id(), "name": "Barra", "type": "bar", "target": "screen", "ip": "", "active": True},
+            {"id": gen_id(), "name": "Caja", "type": "receipt", "target": "screen", "ip": "", "active": True},
+        ]
+        await db.print_channels.insert_many(defaults)
+        return defaults
+    return channels
+
+@api.post("/print-channels")
+async def create_print_channel(input: dict):
+    doc = {"id": gen_id(), "name": input.get("name",""), "type": input.get("type","kitchen"),
+           "target": input.get("target","screen"), "ip": input.get("ip",""), "active": True}
+    await db.print_channels.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/print-channels/{cid}")
+async def update_print_channel(cid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.print_channels.update_one({"id": cid}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/print-channels/{cid}")
+async def delete_print_channel(cid: str):
+    await db.print_channels.delete_one({"id": cid})
+    return {"ok": True}
+
+# ─── RESERVATIONS ───
+@api.get("/reservations")
+async def list_reservations(date: Optional[str] = Query(None)):
+    query = {}
+    if date:
+        query = {"date": date}
+    return await db.reservations.find(query, {"_id": 0}).sort("time", 1).to_list(200)
+
+@api.post("/reservations")
+async def create_reservation(input: dict):
+    doc = {"id": gen_id(), "customer_name": input.get("customer_name",""),
+           "phone": input.get("phone",""), "date": input.get("date",""),
+           "time": input.get("time",""), "party_size": input.get("party_size",2),
+           "table_id": input.get("table_id",""), "table_number": input.get("table_number",0),
+           "notes": input.get("notes",""), "status": "confirmed",
+           "created_at": now_iso()}
+    await db.reservations.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/reservations/{rid}")
+async def update_reservation(rid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.reservations.update_one({"id": rid}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/reservations/{rid}")
+async def delete_reservation(rid: str):
+    await db.reservations.delete_one({"id": rid})
+    return {"ok": True}
+
 # ─── SEED ───
 @api.post("/seed")
 async def seed_data():
