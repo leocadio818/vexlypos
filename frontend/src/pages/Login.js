@@ -11,7 +11,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) navigate('/tables');
+    if (user) navigate('/dashboard');
   }, [user, navigate]);
 
   useEffect(() => { ensureSeed(); }, [ensureSeed]);
