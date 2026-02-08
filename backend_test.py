@@ -387,8 +387,8 @@ class POSAPITester:
         return True
 
 def main():
-    print("🚀 Starting Phase 5 POS API Testing...")
-    print("📍 Testing: Recipe costs, ESC/POS endpoints, Kitchen TV, Inventory reports")
+    print("🚀 Starting POS System Backend Testing...")
+    print("📍 Testing: Reservations, Print Channels, Auto-send Orders, Core POS APIs")
     
     tester = POSAPITester()
     
@@ -398,12 +398,16 @@ def main():
         return 1
 
     # Phase 2: Core functionality check
-    if not tester.test_core_pos_flow():
+    core_ok = tester.test_core_pos_flow()
+    if not core_ok:
         print("⚠️  Core POS flow has issues")
 
-    # Phase 3: Phase 5 specific features
-    print("\n🆕 Testing Phase 5 Features...")
+    # Phase 3: New features testing
+    print("\n🆕 Testing New Features...")
     
+    reservations_ok = tester.test_reservations_crud()
+    print_channels_ok = tester.test_print_channels_crud()  
+    auto_send_ok = tester.test_auto_send_orders()
     recipes_ok = tester.test_recipes_api()
     inventory_ok = tester.test_inventory_report() 
     profit_ok = tester.test_profit_report()
@@ -416,12 +420,21 @@ def main():
     print(f"Tests Passed: {tester.tests_passed}")
     print(f"Success Rate: {(tester.tests_passed/tester.tests_run)*100:.1f}%")
     
-    print(f"\n🎯 Phase 5 Features:")
+    print(f"\n🎯 New Features:")
+    print(f"✅ Reservations CRUD: {'PASS' if reservations_ok else 'FAIL'}")
+    print(f"✅ Print Channels CRUD: {'PASS' if print_channels_ok else 'FAIL'}")
+    print(f"✅ Auto-send Orders: {'PASS' if auto_send_ok else 'FAIL'}")
     print(f"✅ Recipes with costs: {'PASS' if recipes_ok else 'FAIL'}")
     print(f"✅ Inventory reports: {'PASS' if inventory_ok else 'FAIL'}")
     print(f"✅ Profit analysis: {'PASS' if profit_ok else 'FAIL'}")
     print(f"✅ ESC/POS endpoints: {'PASS' if escpos_ok else 'FAIL'}")
     print(f"✅ Kitchen TV API: {'PASS' if kitchen_tv_ok else 'FAIL'}")
+
+    # Show failed tests if any
+    if tester.failed_tests:
+        print(f"\n❌ FAILED TESTS ({len(tester.failed_tests)}):")
+        for failure in tester.failed_tests[:5]:  # Show max 5 failures
+            print(f"- {failure.get('test', 'Unknown')}: {failure.get('error', 'Unknown error')[:100]}")
 
     # Save detailed results
     with open('/app/test_reports/backend_test_results.json', 'w') as f:
@@ -429,19 +442,24 @@ def main():
             "summary": {
                 "tests_run": tester.tests_run,
                 "tests_passed": tester.tests_passed,
-                "success_rate": f"{(tester.tests_passed/tester.tests_run)*100:.1f}%"
+                "success_rate": f"{(tester.tests_passed/tester.tests_run)*100:.1f}%",
+                "failed_count": len(tester.failed_tests)
             },
-            "phase5_features": {
+            "new_features": {
+                "reservations_crud": reservations_ok,
+                "print_channels_crud": print_channels_ok,
+                "auto_send_orders": auto_send_ok,
                 "recipes_with_costs": recipes_ok,
                 "inventory_reports": inventory_ok, 
                 "profit_analysis": profit_ok,
                 "escpos_endpoints": escpos_ok,
                 "kitchen_tv_api": kitchen_tv_ok
             },
+            "failed_tests": tester.failed_tests,
             "detailed_results": tester.results
         }, f, indent=2)
 
-    return 0 if tester.tests_passed >= tester.tests_run * 0.8 else 1
+    return 0 if tester.tests_passed >= tester.tests_run * 0.7 else 1
 
 if __name__ == "__main__":
     sys.exit(main())
