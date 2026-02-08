@@ -860,6 +860,45 @@ async def update_loyalty_config(input: dict):
     return {"ok": True}
 
 # ─── REPORTS ───
+@api.get("/reports/dashboard")
+async def dashboard_kpis():
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(5000)
+    today_bills = [b for b in bills if b.get("paid_at", "").startswith(today)]
+    all_orders = await db.orders.find({"status": {"$in": ["active", "sent"]}}, {"_id": 0}).to_list(100)
+    tables = await db.tables.find({}, {"_id": 0}).to_list(200)
+    occupied = len([t for t in tables if t["status"] != "free"])
+    total_tables = len(tables)
+    alerts = await db.inventory.find({"$expr": {"$lte": ["$stock", "$min_stock"]}}, {"_id": 0}).to_list(100)
+    shifts = await db.shifts.find({"status": "open"}, {"_id": 0}).to_list(20)
+    customers_total = await db.customers.count_documents({})
+
+    today_total = sum(b["total"] for b in today_bills)
+    today_itbis = sum(b["itbis"] for b in today_bills)
+    today_tips = sum(b.get("propina_legal", 0) for b in today_bills)
+    avg_ticket = today_total / len(today_bills) if today_bills else 0
+
+    # Hourly sales for today
+    hourly = {}
+    for b in today_bills:
+        hr = b.get("paid_at", "")[:13]
+        if hr:
+            h = hr.split("T")[1][:2] if "T" in hr else "00"
+            hourly[h] = hourly.get(h, 0) + b["total"]
+    hourly_data = [{"hour": f"{h}:00", "total": round(v, 2)} for h, v in sorted(hourly.items())]
+
+    return {
+        "today": {"total_sales": round(today_total, 2), "bills_count": len(today_bills),
+                  "itbis": round(today_itbis, 2), "tips": round(today_tips, 2),
+                  "avg_ticket": round(avg_ticket, 2), "cash": round(sum(b["total"] for b in today_bills if b["payment_method"]=="cash"), 2),
+                  "card": round(sum(b["total"] for b in today_bills if b["payment_method"]=="card"), 2)},
+        "operations": {"active_orders": len(all_orders), "occupied_tables": occupied,
+                       "total_tables": total_tables, "occupancy_pct": round((occupied/total_tables)*100, 1) if total_tables else 0,
+                       "open_shifts": len(shifts), "inventory_alerts": len(alerts)},
+        "loyalty": {"total_customers": customers_total},
+        "hourly_sales": hourly_data
+    }
+
 @api.get("/reports/daily-sales")
 async def daily_sales_report(date: Optional[str] = Query(None)):
     if not date:
