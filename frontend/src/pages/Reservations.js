@@ -20,12 +20,14 @@ export default function Reservations() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [rRes, tRes] = await Promise.all([
+      const [rRes, tRes, aRes] = await Promise.all([
         axios.get(`${API}/reservations`, { params: { date }, headers: hdrs() }),
         axios.get(`${API}/tables`, { headers: hdrs() }),
+        axios.get(`${API}/areas`, { headers: hdrs() }),
       ]);
       setReservations(rRes.data);
       setTables(tRes.data);
+      setAreas(aRes.data);
     } catch {}
   }, [date]);
 
