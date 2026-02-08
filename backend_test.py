@@ -220,6 +220,172 @@ class POSAPITester:
         
         return all([areas_success, tables_success, categories_success, products_success])
 
+    def test_reservations_crud(self):
+        """Test reservations CRUD operations (new feature)"""
+        print("\n📅 Testing Reservations CRUD...")
+        
+        # Get reservations list
+        today = datetime.now().strftime('%Y-%m-%d')
+        success, reservations = self.run_test(
+            "Get Reservations", 
+            "GET", 
+            "reservations", 
+            200,
+            description="Fetch reservations for today"
+        )
+        
+        if not success:
+            return False
+        
+        # Create new reservation
+        reservation_data = {
+            "customer_name": "Test Customer",
+            "phone": "809-123-4567", 
+            "date": today,
+            "time": "19:00",
+            "party_size": 4,
+            "table_id": "",
+            "table_number": 5,
+            "notes": "Test reservation"
+        }
+        
+        success, new_reservation = self.run_test(
+            "Create Reservation",
+            "POST",
+            "reservations", 
+            200,
+            data=reservation_data,
+            description="Create new test reservation"
+        )
+        
+        if not success or 'id' not in new_reservation:
+            return False
+            
+        reservation_id = new_reservation['id']
+        print(f"   ✅ Created reservation with ID: {reservation_id}")
+        
+        # Update reservation status
+        success, _ = self.run_test(
+            "Update Reservation Status",
+            "PUT",
+            f"reservations/{reservation_id}",
+            200,
+            data={"status": "seated"},
+            description="Update reservation status to seated"
+        )
+        
+        if not success:
+            return False
+            
+        # Delete reservation (cleanup)
+        success, _ = self.run_test(
+            "Delete Reservation",
+            "DELETE", 
+            f"reservations/{reservation_id}",
+            200,
+            description="Delete test reservation"
+        )
+        
+        return success
+
+    def test_print_channels_crud(self):
+        """Test print channels CRUD operations (new feature)"""
+        print("\n🖨️  Testing Print Channels CRUD...")
+        
+        # Get print channels list
+        success, channels = self.run_test(
+            "Get Print Channels",
+            "GET",
+            "print-channels", 
+            200,
+            description="Fetch print channels configuration"
+        )
+        
+        if not success:
+            return False
+            
+        # Create new print channel
+        channel_data = {
+            "name": "Test Kitchen Printer",
+            "type": "kitchen",
+            "target": "network", 
+            "ip": "192.168.1.100",
+            "active": True
+        }
+        
+        success, new_channel = self.run_test(
+            "Create Print Channel",
+            "POST",
+            "print-channels",
+            200,
+            data=channel_data,
+            description="Create new test print channel"
+        )
+        
+        if not success or 'id' not in new_channel:
+            return False
+            
+        channel_id = new_channel['id']
+        print(f"   ✅ Created print channel with ID: {channel_id}")
+        
+        # Update print channel
+        success, _ = self.run_test(
+            "Update Print Channel",
+            "PUT",
+            f"print-channels/{channel_id}",
+            200,
+            data={"active": False},
+            description="Update print channel status"
+        )
+        
+        if not success:
+            return False
+            
+        # Delete print channel (cleanup)
+        success, _ = self.run_test(
+            "Delete Print Channel",
+            "DELETE",
+            f"print-channels/{channel_id}",
+            200,
+            description="Delete test print channel"  
+        )
+        
+        return success
+
+    def test_auto_send_orders(self):
+        """Test auto-send orders functionality"""
+        print("\n🔄 Testing Auto-send Orders...")
+        
+        # Get active orders (this endpoint is used for auto-send on logout)
+        success, orders = self.run_test(
+            "Get Active Orders",
+            "GET",
+            "orders",
+            200,
+            description="Fetch active orders for auto-send functionality"
+        )
+        
+        if not success:
+            return False
+            
+        print(f"   📋 Found {len(orders) if isinstance(orders, list) else 0} active orders")
+        
+        # If there are active orders, they would be auto-sent via the send-kitchen endpoint
+        # This is tested in the AuthContext logout function
+        if isinstance(orders, list) and len(orders) > 0:
+            first_order = orders[0]
+            if 'id' in first_order:
+                success, _ = self.run_test(
+                    "Test Send to Kitchen Endpoint",
+                    "POST", 
+                    f"orders/{first_order['id']}/send-kitchen",
+                    200,
+                    description="Test send order to kitchen (used in auto-send)"
+                )
+                return success
+        
+        return True
+
 def main():
     print("🚀 Starting Phase 5 POS API Testing...")
     print("📍 Testing: Recipe costs, ESC/POS endpoints, Kitchen TV, Inventory reports")
