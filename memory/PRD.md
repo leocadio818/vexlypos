@@ -32,26 +32,26 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
 - Impresion virtual: recibos y comandas con vista previa + print CSS
 - 31 endpoints backend probados al 100%
 
-### Phase 3 (Feb 2026)
-- Dashboard ejecutivo en tiempo real (KPIs: ventas, ITBIS, ocupacion, alertas)
-- Grafico de ventas por hora (AreaChart)
-- Fidelidad integrada en facturacion (puntos automaticos al pagar con cliente seleccionado)
-- Resend API key configurada para envio de correos
-- Dashboard como pagina principal despues del login
-- 36 endpoints backend probados al 100%
+### Phase 4 (Feb 2026)
+- Sistema de permisos por rol con personalizacion por usuario
+- Gestion de usuarios completa (crear, editar, eliminar, asignar permisos)
+- Mesas con modo edicion protegido (solo usuarios autorizados mueven/redimensionan)
+- Redimensionar mesas con slider (adaptable a PC/tablet/celular)
+- Formas de pago CRUD (agregar, editar, eliminar)
+- Reportes de inventario con costos y margenes de ganancia
+- Reporte de rentabilidad por producto (ingreso vs costo de receta)
+- Exportacion DGII formato 607 (ingresos) y 608 (gastos)
+- Movimientos de inventario con log de auditorla
+- Dashboard y reportes ocultos para roles no autorizados
+- 48 endpoints backend probados al 100%
 
 ## Prioritized Backlog
 
-### P0 (Pendiente)
-- Verificar dominio en Resend para envio real de correos (https://resend.com/domains)
-- Impresoras ESC/POS fisicas (USB + red)
+### P0
+- Verificar dominio en Resend para email real
+- Agregar costos a recetas existentes para calcular margenes reales
 
 ### P1
-- Reportes de inventario (movimientos, mermas)
-- Export formatos DGII (607, 608)
+- Impresoras ESC/POS fisicas (USB + red)
 - Multi-sucursal
-
-### P2
-- Service Worker para modo offline completo
-- Gestion de turnos de cocina
 - App movil nativa
