@@ -658,9 +658,30 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
             "total": round(item_total, 2)
         })
 
-    itbis = round(subtotal * 0.18, 2)
-    propina = round(subtotal * (input.tip_percentage / 100), 2)
-    total = round(subtotal + itbis + propina, 2)
+    # Dynamic tax calculation from config
+    taxes = await db.tax_config.find({"active": True}, {"_id": 0}).sort("order", 1).to_list(10)
+    if not taxes:
+        taxes = [{"description": "ITBIS", "rate": 18, "is_tip": False}, {"description": "Propina Legal", "rate": 10, "is_tip": True}]
+    
+    tax_breakdown = []
+    total_taxes = 0
+    itbis_amount = 0
+    propina_amount = 0
+    for tax in taxes:
+        rate = tax.get("rate", 0)
+        if rate <= 0:
+            continue
+        is_tip = tax.get("is_tip", False)
+        base = subtotal if not tax.get("apply_to_tip") else (subtotal + total_taxes)
+        amount = round(base * (rate / 100), 2)
+        tax_breakdown.append({"description": tax["description"], "rate": rate, "amount": amount, "is_tip": is_tip})
+        total_taxes += amount
+        if is_tip:
+            propina_amount += amount
+        else:
+            itbis_amount += amount
+    
+    total = round(subtotal + total_taxes, 2)
 
     ncf_doc = await db.ncf_sequences.find_one_and_update(
         {"prefix": "B01"},
