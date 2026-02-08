@@ -40,6 +40,11 @@ export function AuthProvider({ children }) {
     return res.data.user;
   };
 
+  const hasPermission = (perm) => {
+    if (!user) return false;
+    return user.permissions?.[perm] === true;
+  };
+
   const logout = () => {
     localStorage.removeItem('pos_token');
     setUser(null);
