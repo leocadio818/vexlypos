@@ -13,6 +13,7 @@ const navItems = [
   { to: '/suppliers', icon: Truck, label: 'Compras' },
   { to: '/reports', icon: BarChart3, label: 'Reporte' },
   { to: '/customers', icon: Heart, label: 'Clientes' },
+  { to: '/reservations', icon: CalendarDays, label: 'Reservas' },
   { to: '/settings', icon: Settings, label: 'Config' },
 ];
 
