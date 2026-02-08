@@ -7,11 +7,11 @@ import { toast } from 'sonner';
 export default function Login() {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, user, ensureSeed } = useAuth();
+  const { login, user, ensureSeed, hasPermission } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) navigate('/dashboard');
+    if (user) navigate(user.permissions?.view_dashboard ? '/dashboard' : '/tables');
   }, [user, navigate]);
 
   useEffect(() => { ensureSeed(); }, [ensureSeed]);
