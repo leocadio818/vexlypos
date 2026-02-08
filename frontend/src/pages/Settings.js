@@ -51,6 +51,14 @@ export default function Settings() {
       setAreas(aRes.data); setTables(tRes.data); setReasons(rRes.data);
       setCategories(cRes.data); setProducts(pRes.data);
       setUsers(uRes.data); setPayMethods(pmRes.data);
+      try {
+        const [stRes, pcRes, scRes] = await Promise.all([
+          axios.get(`${API}/sale-types`, { headers: hdrs() }),
+          axios.get(`${API}/print-channels`, { headers: hdrs() }),
+          axios.get(`${API}/station-config`, { headers: hdrs() }),
+        ]);
+        setSaleTypes(stRes.data); setPrintChannels(pcRes.data); setStationConfig(scRes.data);
+      } catch {}
     } catch {}
   };
 
