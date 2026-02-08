@@ -1192,6 +1192,33 @@ async def print_comanda_escpos(order_id: str):
     return {"printer_type": "escpos", "lines": lines, "order_id": order_id}
 
 # ─── KITCHEN TV DISPLAY ───
+@api.get("/kitchen/config")
+async def get_kitchen_config():
+    config = await db.kitchen_config.find_one({}, {"_id": 0})
+    return config or {"warning_minutes": 15, "urgent_minutes": 25, "critical_minutes": 35, "sound_enabled": True, "auto_advance_ready": False}
+
+@api.put("/kitchen/config")
+async def update_kitchen_config(input: dict):
+    if "_id" in input: del input["_id"]
+    await db.kitchen_config.update_one({}, {"$set": input}, upsert=True)
+    return {"ok": True}
+
+@api.post("/auth/auto-login")
+async def auto_login(input: dict):
+    """Auto-login for kiosk mode - accepts PIN via query or body"""
+    pin = input.get("pin", "")
+    if not pin:
+        raise HTTPException(status_code=400, detail="PIN requerido")
+    hashed = hash_pin(pin)
+    user = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="PIN incorrecto")
+    perms = get_permissions(user["role"], user.get("permissions"))
+    token = jwt.encode({"user_id": user["id"], "name": user["name"], "role": user["role"]}, JWT_SECRET, algorithm="HS256")
+    user_data = {k: v for k, v in user.items() if k != "pin_hash"}
+    user_data["permissions"] = perms
+    return {"token": token, "user": user_data}
+
 @api.get("/kitchen/tv")
 async def kitchen_tv_data():
     """Optimized endpoint for kitchen TV display - large format, auto-refresh"""
