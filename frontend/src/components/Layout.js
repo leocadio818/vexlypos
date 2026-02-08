@@ -28,7 +28,9 @@ export default function Layout() {
     if (item.to === '/reports') return hasPermission('view_reports');
     if (item.to === '/inventory') return hasPermission('manage_inventory');
     if (item.to === '/suppliers') return hasPermission('manage_suppliers');
-    if (item.to === '/settings') return hasPermission('manage_settings') || user?.role === 'admin';
+    if (item.to === '/settings') return hasPermission('manage_users') || hasPermission('manage_areas') || hasPermission('manage_tables') || hasPermission('manage_products') || hasPermission('manage_payment_methods');
+    if (item.to === '/customers') return hasPermission('manage_customers');
+    if (item.to === '/reservations') return hasPermission('manage_reservations');
     return true;
   });
 
