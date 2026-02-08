@@ -61,6 +61,11 @@ export default function Kitchen() {
           <h1 className="font-oswald text-xl font-bold tracking-wide">COCINA</h1>
         </div>
         <Badge variant="outline" className="font-mono text-xs">{orders.length} ordenes activas</Badge>
+        <a href="/kitchen-tv" target="_blank" rel="noreferrer"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-oswald hover:bg-primary hover:text-white transition-all"
+          data-testid="kitchen-tv-link">
+          <Monitor size={14} /> PANTALLA TV
+        </a>
       </div>
 
       <div className="flex-1 p-4 overflow-auto">
