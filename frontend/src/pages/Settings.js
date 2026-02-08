@@ -397,6 +397,100 @@ export default function Settings() {
               ))}
             </div>
           </TabsContent>
+
+          {/* SALE TYPES */}
+          <TabsContent value="saletypes">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-oswald text-base font-bold">Tipos de Venta e Impuestos</h2>
+              <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null })} size="sm"
+                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-saletype-btn">
+                <Plus size={14} className="mr-1" /> Agregar
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {saleTypes.map(st => (
+                <div key={st.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`saletype-${st.id}`}>
+                  <div>
+                    <span className="font-semibold">{st.name}</span>
+                    <Badge variant="secondary" className="ml-2 text-[9px]">{st.code}</Badge>
+                    <span className="text-xs text-muted-foreground ml-2">ITBIS {st.tax_rate}% | Propina {st.tip_default}%</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_rate: st.tax_rate, tip_default: st.tip_default, editId: st.id })}>
+                      <Pencil size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
+                      onClick={() => handleDeleteSaleType(st.id)}><Trash2 size={14} /></Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* PRINT CHANNELS */}
+          <TabsContent value="channels">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-oswald text-base font-bold">Canales de Impresion</h2>
+              <Button onClick={() => setChannelDialog({ open: true, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null })} size="sm"
+                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-channel-btn">
+                <Plus size={14} className="mr-1" /> Agregar
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {printChannels.map(ch => (
+                <div key={ch.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`channel-${ch.id}`}>
+                  <div>
+                    <span className="font-semibold">{ch.name}</span>
+                    <Badge variant="secondary" className="ml-2 text-[9px]">{ch.type}</Badge>
+                    <Badge variant="outline" className="ml-1 text-[9px]">{ch.target === 'screen' ? 'Pantalla' : ch.target === 'network' ? `Red: ${ch.ip}` : 'USB'}</Badge>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => setChannelDialog({ open: true, name: ch.name, type: ch.type, target: ch.target, ip: ch.ip, editId: ch.id })}>
+                      <Pencil size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
+                      onClick={() => handleDeleteChannel(ch.id)}><Trash2 size={14} /></Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* STATION CONFIG */}
+          <TabsContent value="station">
+            <h2 className="font-oswald text-base font-bold mb-4">Configuracion de Estacion</h2>
+            <div className="space-y-3 max-w-lg">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+                <div>
+                  <span className="text-sm font-semibold">Turno obligatorio para vender</span>
+                  <p className="text-[10px] text-muted-foreground">El cajero debe abrir turno antes de procesar ventas</p>
+                </div>
+                <Switch checked={stationConfig.require_shift_to_sell}
+                  onCheckedChange={(v) => setStationConfig(p => ({ ...p, require_shift_to_sell: v }))} />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+                <div>
+                  <span className="text-sm font-semibold">Arqueo de caja obligatorio</span>
+                  <p className="text-[10px] text-muted-foreground">Requiere conteo de efectivo al cerrar turno</p>
+                </div>
+                <Switch checked={stationConfig.require_cash_count}
+                  onCheckedChange={(v) => setStationConfig(p => ({ ...p, require_cash_count: v }))} />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+                <div>
+                  <span className="text-sm font-semibold">Envio automatico al cerrar sesion</span>
+                  <p className="text-[10px] text-muted-foreground">Envia comandas pendientes al hacer logout</p>
+                </div>
+                <Switch checked={stationConfig.auto_send_on_logout}
+                  onCheckedChange={(v) => setStationConfig(p => ({ ...p, auto_send_on_logout: v }))} />
+              </div>
+              <Button onClick={handleSaveStationConfig} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="save-station-config">
+                GUARDAR CONFIGURACION
+              </Button>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
