@@ -27,7 +27,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/kitchen-tv" element={<ProtectedRoute><KitchenTV /></ProtectedRoute>} />
+      <Route path="/kitchen-tv" element={<KitchenTV />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
