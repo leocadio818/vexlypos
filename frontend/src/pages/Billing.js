@@ -323,6 +323,15 @@ export default function Billing() {
             <DialogTitle className="font-oswald">Metodo de Pago</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {/* Customer selection for loyalty */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Cliente (fidelidad - opcional)</label>
+              <select value={selectedCustomer} onChange={e => setSelectedCustomer(e.target.value)}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="pay-customer-select">
+                <option value="">Sin cliente</option>
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.points} pts)</option>)}
+              </select>
+            </div>
             <button onClick={() => handlePayBill(payDialog.billId, 'cash')}
               data-testid="pay-cash"
               className="w-full h-16 rounded-xl bg-green-600/10 border border-green-600/30 text-green-400 font-oswald font-bold text-lg flex items-center justify-center gap-3 hover:bg-green-600 hover:text-white transition-all active:scale-95">
