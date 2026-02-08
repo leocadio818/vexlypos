@@ -208,6 +208,21 @@ export default function Settings() {
     catch { toast.error('Error'); }
   };
 
+  // Role handlers
+  const handleSaveRole = async () => {
+    if (!roleDialog.name) return;
+    try {
+      if (roleDialog.editId) {
+        await axios.put(`${API}/roles/${roleDialog.editId}`, { name: roleDialog.name, code: roleDialog.code }, { headers: hdrs() });
+      } else {
+        const code = roleDialog.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        await axios.post(`${API}/roles`, { name: roleDialog.name, code }, { headers: hdrs() });
+      }
+      toast.success(roleDialog.editId ? 'Rol actualizado' : 'Rol creado');
+      setRoleDialog({ open: false, name: '', code: '', editId: null }); fetchAll();
+    } catch { toast.error('Error'); }
+  };
+
   return (
     <div className="h-full flex flex-col" data-testid="settings-page">
       <div className="px-4 py-3 border-b border-border flex items-center gap-2 bg-card/50">
