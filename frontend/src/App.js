@@ -12,6 +12,7 @@ import Inventory from "@/pages/Inventory";
 import Suppliers from "@/pages/Suppliers";
 import Reports from "@/pages/Reports";
 import Customers from "@/pages/Customers";
+import Dashboard from "@/pages/Dashboard";
 import Layout from "@/components/Layout";
 
 function ProtectedRoute({ children }) {
