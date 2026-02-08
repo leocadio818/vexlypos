@@ -318,7 +318,12 @@ async def list_users():
 
 @api.post("/users")
 async def create_user(input: UserInput):
-    doc = {"id": gen_id(), "name": input.name, "pin_hash": hash_pin(input.pin), "role": input.role, "active": True, "permissions": {}}
+    # Check duplicate PIN
+    hashed = hash_pin(input.pin)
+    existing = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Ya existe un usuario con ese PIN")
+    doc = {"id": gen_id(), "name": input.name, "pin_hash": hashed, "role": input.role, "active": True, "permissions": {}}
     await db.users.insert_one(doc)
     perms = get_permissions(input.role)
     return {"id": doc["id"], "name": doc["name"], "role": doc["role"], "active": True, "permissions": perms}
@@ -327,7 +332,12 @@ async def create_user(input: UserInput):
 async def update_user(user_id: str, input: dict):
     if "_id" in input: del input["_id"]
     if "pin" in input:
-        input["pin_hash"] = hash_pin(input.pop("pin"))
+        hashed = hash_pin(input["pin"])
+        existing = await db.users.find_one({"pin_hash": hashed, "active": True, "id": {"$ne": user_id}}, {"_id": 0})
+        if existing:
+            raise HTTPException(status_code=400, detail="Ya existe un usuario con ese PIN")
+        input["pin_hash"] = hashed
+        del input["pin"]
     await db.users.update_one({"id": user_id}, {"$set": input})
     return {"ok": True}
 
