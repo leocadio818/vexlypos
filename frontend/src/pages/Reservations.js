@@ -35,11 +35,11 @@ export default function Reservations() {
 
   const handleCreate = async () => {
     if (!dialog.customer_name || !dialog.date || !dialog.time) { toast.error('Completa los campos requeridos'); return; }
-    const tbl = tables.find(t => t.id === dialog.table_id);
+    if (dialog.table_ids.length === 0) { toast.error('Selecciona al menos una mesa'); return; }
     try {
-      await axios.post(`${API}/reservations`, { ...dialog, table_number: tbl?.number || 0 }, { headers: hdrs() });
+      await axios.post(`${API}/reservations`, { ...dialog }, { headers: hdrs() });
       toast.success('Reservacion creada');
-      setDialog({ open: false, customer_name: '', phone: '', date: '', time: '', party_size: 2, table_id: '', notes: '' });
+      setDialog({ open: false, customer_name: '', phone: '', date: '', time: '', party_size: 2, table_ids: [], area_id: '', notes: '' });
       fetchAll();
     } catch { toast.error('Error'); }
   };
