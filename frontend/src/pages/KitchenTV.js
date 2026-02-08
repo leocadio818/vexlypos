@@ -44,10 +44,23 @@ export default function KitchenTV() {
     if (!authReady) return;
     try {
       const res = await axios.get(`${API}/kitchen/tv`, { headers: hdrs() });
-      setOrders(res.data.orders || []);
+      const newOrders = res.data.orders || [];
+      // Play sound if new orders arrived
+      if (newOrders.length > orders.length && orders.length > 0) {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.frequency.value = 800; gain.gain.value = 0.3;
+          osc.start(); osc.stop(ctx.currentTime + 0.3);
+          setTimeout(() => { const o2 = ctx.createOscillator(); o2.connect(gain); o2.frequency.value = 1000; o2.start(); o2.stop(ctx.currentTime + 0.2); }, 350);
+        } catch {}
+      }
+      setOrders(newOrders);
       if (res.data.config) setConfig(prev => ({ ...prev, ...res.data.config }));
     } catch {}
-  }, [authReady]);
+  }, [authReady, orders.length]);
 
   useEffect(() => {
     fetchOrders();
