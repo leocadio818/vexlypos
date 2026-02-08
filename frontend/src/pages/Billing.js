@@ -61,7 +61,7 @@ export default function Billing() {
         table_id: order.table_id,
         label: label || `Mesa ${order.table_number}`,
         item_ids: itemIds,
-        tip_percentage: tipPct,
+        tip_percentage: 0,
         payment_method: 'cash'
       });
       toast.success('Factura creada');
