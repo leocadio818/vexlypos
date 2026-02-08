@@ -220,14 +220,18 @@ async def login(input: LoginInput):
     user = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=401, detail="PIN incorrecto")
+    perms = get_permissions(user["role"], user.get("permissions"))
     token = jwt.encode({"user_id": user["id"], "name": user["name"], "role": user["role"]}, JWT_SECRET, algorithm="HS256")
-    return {"token": token, "user": user}
+    user_data = {k: v for k, v in user.items() if k != "pin_hash"}
+    user_data["permissions"] = perms
+    return {"token": token, "user": user_data}
 
 @api.get("/auth/me")
 async def get_me(user=Depends(get_current_user)):
     u = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "pin_hash": 0})
     if not u:
         raise HTTPException(status_code=404, detail="User not found")
+    u["permissions"] = get_permissions(u["role"], u.get("permissions"))
     return u
 
 # ─── USERS ───
