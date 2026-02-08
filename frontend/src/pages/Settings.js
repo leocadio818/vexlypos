@@ -417,6 +417,79 @@ export default function Settings() {
             </div>
           </TabsContent>
 
+          {/* TAX CONFIG */}
+          <TabsContent value="taxes">
+            <h2 className="font-oswald text-base font-bold mb-4">Configuracion de Impuestos</h2>
+            <div className="max-w-2xl">
+              {/* Table header */}
+              <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold border-b border-border">
+                <div className="col-span-1">Activo</div>
+                <div className="col-span-4">Descripcion</div>
+                <div className="col-span-2">Tasa %</div>
+                <div className="col-span-3">Aplicar a Propina</div>
+                <div className="col-span-2">Es Propina</div>
+              </div>
+              {/* Tax rows */}
+              <div className="space-y-1 mt-1">
+                {taxConfig.map((tax, idx) => (
+                  <div key={tax.id || idx} className={`grid grid-cols-12 gap-2 items-center px-3 py-2 rounded-lg border ${tax.active ? 'border-border bg-card' : 'border-border/30 bg-card/30 opacity-60'}`}
+                    data-testid={`tax-row-${idx}`}>
+                    <div className="col-span-1">
+                      <Switch checked={tax.active} onCheckedChange={(v) => updateTaxRow(idx, 'active', v)} />
+                    </div>
+                    <div className="col-span-4">
+                      <input value={tax.description} onChange={e => updateTaxRow(idx, 'description', e.target.value)}
+                        className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm" />
+                    </div>
+                    <div className="col-span-2">
+                      <input value={tax.rate} onChange={e => updateTaxRow(idx, 'rate', parseFloat(e.target.value) || 0)}
+                        type="number" step="0.01"
+                        className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-oswald text-right" />
+                    </div>
+                    <div className="col-span-3 flex items-center justify-center">
+                      <Switch checked={tax.apply_to_tip || false} onCheckedChange={(v) => updateTaxRow(idx, 'apply_to_tip', v)} />
+                      <span className="text-[9px] text-muted-foreground ml-1">Sobre total</span>
+                    </div>
+                    <div className="col-span-2 flex items-center justify-center">
+                      <Switch checked={tax.is_tip || false} onCheckedChange={(v) => updateTaxRow(idx, 'is_tip', v)} />
+                      <span className="text-[9px] text-muted-foreground ml-1">Propina</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Preview */}
+              <div className="mt-4 p-4 rounded-xl bg-background border border-border">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Vista Previa (sobre RD$ 1,000.00)</h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between"><span>Subtotal Neto</span><span className="font-oswald">RD$ 1,000.00</span></div>
+                  {taxConfig.filter(t => t.active && t.rate > 0).map((tax, i) => {
+                    const base = tax.apply_to_tip ? 1000 + taxConfig.filter(t => t.active && t.rate > 0).slice(0, i).reduce((s, t) => s + (1000 * t.rate / 100), 0) : 1000;
+                    const amount = base * (tax.rate / 100);
+                    return (
+                      <div key={i} className="flex justify-between text-muted-foreground">
+                        <span>{tax.description} ({tax.rate}%){tax.is_tip ? ' *' : ''}</span>
+                        <span className="font-oswald">RD$ {amount.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between font-bold border-t border-border pt-1 mt-1">
+                    <span>Total General</span>
+                    <span className="font-oswald text-primary">
+                      RD$ {(1000 + taxConfig.filter(t => t.active && t.rate > 0).reduce((s, t) => {
+                        const base = t.apply_to_tip ? 1000 + s : 1000;
+                        return s + (base * t.rate / 100);
+                      }, 0)).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[9px] text-muted-foreground mt-2">* = Se identifica como propina en la factura</p>
+              </div>
+              <Button onClick={handleSaveTaxConfig} className="w-full h-11 mt-4 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="save-tax-config">
+                GUARDAR IMPUESTOS
+              </Button>
+            </div>
+          </TabsContent>
+
           {/* CANCELLATION REASONS */}
           <TabsContent value="reasons">
             <div className="flex items-center justify-between mb-4">
