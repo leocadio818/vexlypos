@@ -218,6 +218,15 @@ export default function Settings() {
             <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-products">
               <Package size={14} className="mr-1" /> Productos
             </TabsTrigger>
+            <TabsTrigger value="saletypes" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-saletypes">
+              <ShoppingBag size={14} className="mr-1" /> Ventas
+            </TabsTrigger>
+            <TabsTrigger value="channels" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-channels">
+              <Printer size={14} className="mr-1" /> Impresion
+            </TabsTrigger>
+            <TabsTrigger value="station" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-station">
+              <Cog size={14} className="mr-1" /> Estacion
+            </TabsTrigger>
           </TabsList>
 
           {/* USERS */}
