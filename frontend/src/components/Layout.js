@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import '@/App.css';
 
 const navItems = [
+  { to: '/dashboard', icon: Gauge, label: 'Panel' },
   { to: '/tables', icon: LayoutGrid, label: 'Mesas' },
   { to: '/kitchen', icon: ChefHat, label: 'Cocina' },
   { to: '/cash-register', icon: CircleDollarSign, label: 'Caja' },
