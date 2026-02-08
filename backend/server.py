@@ -1216,7 +1216,7 @@ async def kitchen_tv_data():
                        "modifiers": [m["name"] for m in i.get("modifiers", [])],
                        "notes": i.get("notes", ""), "status": i["status"]} for i in kitchen_items]
         })
-    return {"orders": result, "total": len(result), "timestamp": now_iso()}}
+    return {"orders": result, "total": len(result), "timestamp": now_iso()}
 
 @api.get("/print/comanda/{order_id}")
 async def print_comanda(order_id: str):
