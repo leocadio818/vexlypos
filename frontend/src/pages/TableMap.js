@@ -98,7 +98,7 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
       </span>
       {!editMode && table.status !== 'free' && (
         <span className="text-[8px] mt-0.5 font-medium uppercase tracking-wider" style={{ color: colors.border }}>
-          {table.status === 'occupied' ? 'Ocupada' : 'Facturada'}
+          {table.status === 'occupied' ? 'Ocupada' : table.status === 'reserved' ? 'Reservada' : 'Facturada'}
         </span>
       )}
       {editMode && (
