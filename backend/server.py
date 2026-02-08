@@ -554,7 +554,8 @@ async def list_report_categories():
             {"id": gen_id(), "name": "Otros", "code": "other"},
         ]
         await db.report_categories.insert_many(defaults)
-        return defaults
+        # Return without _id
+        return [{k: v for k, v in d.items() if k != "_id"} for d in defaults]
     return cats
 
 @api.post("/report-categories")
