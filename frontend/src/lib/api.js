@@ -83,8 +83,10 @@ export const categoriesAPI = {
 // Products
 export const productsAPI = {
   list: (categoryId) => api.get('/products', { params: categoryId ? { category_id: categoryId } : {} }),
+  get: (id) => api.get(`/products/${id}`),
   create: (data) => api.post('/products', data),
   update: (id, data) => api.put(`/products/${id}`, data),
+  delete: (id) => api.put(`/products/${id}`, { active: false }),
 };
 
 // Modifiers
