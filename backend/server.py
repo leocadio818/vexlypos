@@ -32,6 +32,27 @@ def gen_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+DEFAULT_PERMISSIONS = {
+    "admin": {"view_dashboard": True, "move_tables": True, "resize_tables": True, "manage_inventory": True,
+              "manage_settings": True, "void_items": True, "manage_users": True, "view_reports": True,
+              "manage_payment_methods": True, "manage_suppliers": True, "export_dgii": True},
+    "waiter": {"view_dashboard": False, "move_tables": False, "resize_tables": False, "manage_inventory": False,
+               "manage_settings": False, "void_items": True, "manage_users": False, "view_reports": False,
+               "manage_payment_methods": False, "manage_suppliers": False, "export_dgii": False},
+    "cashier": {"view_dashboard": False, "move_tables": False, "resize_tables": False, "manage_inventory": False,
+                "manage_settings": False, "void_items": True, "manage_users": False, "view_reports": False,
+                "manage_payment_methods": False, "manage_suppliers": False, "export_dgii": False},
+    "kitchen": {"view_dashboard": False, "move_tables": False, "resize_tables": False, "manage_inventory": False,
+                "manage_settings": False, "void_items": False, "manage_users": False, "view_reports": False,
+                "manage_payment_methods": False, "manage_suppliers": False, "export_dgii": False},
+}
+
+def get_permissions(role, custom=None):
+    perms = {**DEFAULT_PERMISSIONS.get(role, DEFAULT_PERMISSIONS["waiter"])}
+    if custom:
+        perms.update(custom)
+    return perms
+
 async def get_current_user(request: Request):
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
