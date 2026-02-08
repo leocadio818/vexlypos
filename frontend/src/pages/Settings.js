@@ -14,10 +14,21 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
 
 const PERM_LABELS = {
-  view_dashboard: 'Ver Dashboard', move_tables: 'Mover Mesas', resize_tables: 'Redimensionar Mesas',
-  manage_inventory: 'Gestionar Inventario', manage_settings: 'Configuracion', void_items: 'Anular Items',
-  manage_users: 'Gestionar Usuarios', view_reports: 'Ver Reportes', manage_payment_methods: 'Formas de Pago',
-  manage_suppliers: 'Proveedores/Compras', export_dgii: 'Exportar DGII',
+  view_dashboard: 'Ver Dashboard',
+  move_tables: 'Mover Mesas', resize_tables: 'Redimensionar Mesas',
+  open_table: 'Abrir Mesa', add_products: 'Agregar Productos',
+  void_items: 'Anular Items', send_kitchen: 'Enviar a Cocina',
+  create_bill: 'Crear Factura', collect_payment: 'Cobrar', split_bill: 'Dividir Cuenta',
+  manage_users: 'Config: Usuarios', manage_areas: 'Config: Areas',
+  manage_tables: 'Config: Mesas', manage_payment_methods: 'Config: Pagos',
+  manage_cancellation_reasons: 'Config: Anulaciones', manage_products: 'Config: Productos',
+  manage_sale_types: 'Config: Ventas', manage_print_channels: 'Config: Impresion',
+  manage_station_config: 'Config: Estacion',
+  manage_inventory: 'Inventario', manage_suppliers: 'Proveedores',
+  manage_customers: 'Clientes', manage_reservations: 'Reservaciones',
+  view_reports: 'Reportes', export_dgii: 'Exportar DGII',
+  open_shift: 'Abrir Turno', close_shift: 'Cerrar Turno', close_day: 'Cierre de Dia',
+  release_reserved_table: 'Desbloquear Mesa Reservada',
 };
 
 export default function Settings() {
