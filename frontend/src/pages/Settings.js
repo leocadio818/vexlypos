@@ -331,10 +331,17 @@ export default function Settings() {
             <div className="space-y-2">
               {payMethods.map(m => (
                 <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`payment-${m.id}`}>
-                  <span className="font-semibold">{m.name}</span>
+                  <div>
+                    <span className="font-semibold">{m.name}</span>
+                    {m.currency && m.currency !== 'DOP' && (
+                      <Badge variant="outline" className="ml-2 text-[9px] border-yellow-500 text-yellow-400">
+                        {m.currency} (1={m.exchange_rate})
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      onClick={() => setPayDialog({ open: true, name: m.name, icon: m.icon, editId: m.id })}>
+                      onClick={() => setPayDialog({ open: true, name: m.name, icon: m.icon || '', currency: m.currency || 'DOP', exchange_rate: m.exchange_rate || 1, editId: m.id })}>
                       <Pencil size={14} />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
