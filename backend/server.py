@@ -134,9 +134,11 @@ class CreateBillInput(BaseModel):
 
 class PayBillInput(BaseModel):
     payment_method: str = "cash"
-    tip_percentage: float = 10
+    payment_method_id: str = ""
+    tip_percentage: float = 0
     additional_tip: float = 0
     customer_id: str = ""
+    sale_type: str = "dine_in"
 
 class CancelItemInput(BaseModel):
     reason_id: str
@@ -152,6 +154,7 @@ class ShiftOpenInput(BaseModel):
 
 class ShiftCloseInput(BaseModel):
     closing_amount: float = 0
+    cash_count: Optional[dict] = None
 
 class WarehouseInput(BaseModel):
     name: str
