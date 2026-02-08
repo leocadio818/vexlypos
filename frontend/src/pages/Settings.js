@@ -226,6 +226,18 @@ export default function Settings() {
     } catch { toast.error('Error'); }
   };
 
+  // Tax config handler
+  const handleSaveTaxConfig = async () => {
+    try {
+      await axios.put(`${API}/tax-config`, { taxes: taxConfig }, { headers: hdrs() });
+      toast.success('Impuestos guardados');
+    } catch { toast.error('Error'); }
+  };
+
+  const updateTaxRow = (idx, field, value) => {
+    setTaxConfig(prev => prev.map((t, i) => i === idx ? { ...t, [field]: value } : t));
+  };
+
   return (
     <div className="h-full flex flex-col" data-testid="settings-page">
       <div className="px-4 py-3 border-b border-border flex items-center gap-2 bg-card/50">
