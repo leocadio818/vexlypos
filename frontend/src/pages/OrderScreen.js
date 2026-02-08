@@ -142,6 +142,17 @@ export default function OrderScreen() {
     return sum + (i.unit_price + modTotal) * i.quantity;
   }, 0);
 
+  // Dynamic tax breakdown from config
+  const taxBreakdown = [];
+  let runningTotal = subtotal;
+  for (const tax of taxConfig) {
+    const base = tax.apply_to_tip ? runningTotal : subtotal;
+    const amount = Math.round(base * (tax.rate / 100) * 100) / 100;
+    taxBreakdown.push({ description: tax.description, rate: tax.rate, amount, is_tip: tax.is_tip || false });
+    runningTotal += amount;
+  }
+  const grandTotal = runningTotal;
+
   const handleQtyKey = (key) => {
     setModDialog(prev => {
       let val = prev.qty;
