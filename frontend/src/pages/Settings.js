@@ -1,12 +1,24 @@
 import { useState, useEffect } from 'react';
 import { areasAPI, tablesAPI, reasonsAPI, categoriesAPI, productsAPI } from '@/lib/api';
-import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag } from 'lucide-react';
+import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import axios from 'axios';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
+
+const PERM_LABELS = {
+  view_dashboard: 'Ver Dashboard', move_tables: 'Mover Mesas', resize_tables: 'Redimensionar Mesas',
+  manage_inventory: 'Gestionar Inventario', manage_settings: 'Configuracion', void_items: 'Anular Items',
+  manage_users: 'Gestionar Usuarios', view_reports: 'Ver Reportes', manage_payment_methods: 'Formas de Pago',
+  manage_suppliers: 'Proveedores/Compras', export_dgii: 'Exportar DGII',
+};
 
 export default function Settings() {
   const [areas, setAreas] = useState([]);
@@ -14,60 +26,54 @@ export default function Settings() {
   const [reasons, setReasons] = useState([]);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [payMethods, setPayMethods] = useState([]);
 
-  // Dialogs
-  const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600' });
+  const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
   const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round' });
   const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', return_to_inventory: true });
   const [productDialog, setProductDialog] = useState({ open: false, name: '', category_id: '', price: '', track_inventory: false });
+  const [userDialog, setUserDialog] = useState({ open: false, name: '', pin: '', role: 'waiter', editId: null, permissions: {} });
+  const [payDialog, setPayDialog] = useState({ open: false, name: '', icon: 'circle', editId: null });
 
   const fetchAll = async () => {
     try {
-      const [aRes, tRes, rRes, cRes, pRes] = await Promise.all([
-        areasAPI.list(), tablesAPI.list(), reasonsAPI.list(), categoriesAPI.list(), productsAPI.list()
+      const [aRes, tRes, rRes, cRes, pRes, uRes, pmRes] = await Promise.all([
+        areasAPI.list(), tablesAPI.list(), reasonsAPI.list(), categoriesAPI.list(), productsAPI.list(),
+        axios.get(`${API}/users`, { headers: hdrs() }),
+        axios.get(`${API}/payment-methods`, { headers: hdrs() }),
       ]);
-      setAreas(aRes.data);
-      setTables(tRes.data);
-      setReasons(rRes.data);
-      setCategories(cRes.data);
-      setProducts(pRes.data);
+      setAreas(aRes.data); setTables(tRes.data); setReasons(rRes.data);
+      setCategories(cRes.data); setProducts(pRes.data);
+      setUsers(uRes.data); setPayMethods(pmRes.data);
     } catch {}
   };
 
   useEffect(() => { fetchAll(); }, []);
 
-  const handleAddArea = async () => {
+  // Area handlers
+  const handleSaveArea = async () => {
     if (!areaDialog.name.trim()) return;
     try {
-      await areasAPI.create({ name: areaDialog.name, color: areaDialog.color });
-      toast.success('Area creada');
-      setAreaDialog({ open: false, name: '', color: '#FF6600' });
-      fetchAll();
+      if (areaDialog.editId) {
+        await areasAPI.update(areaDialog.editId, { name: areaDialog.name, color: areaDialog.color });
+      } else {
+        await areasAPI.create({ name: areaDialog.name, color: areaDialog.color });
+      }
+      toast.success(areaDialog.editId ? 'Area actualizada' : 'Area creada');
+      setAreaDialog({ open: false, name: '', color: '#FF6600', editId: null }); fetchAll();
     } catch { toast.error('Error'); }
-  };
-
-  const handleDeleteArea = async (id) => {
-    try { await areasAPI.delete(id); toast.success('Area eliminada'); fetchAll(); }
-    catch { toast.error('Error'); }
   };
 
   const handleAddTable = async () => {
     if (!tableDialog.number || !tableDialog.area_id) return;
     try {
-      await tablesAPI.create({
-        number: parseInt(tableDialog.number), area_id: tableDialog.area_id,
+      await tablesAPI.create({ number: parseInt(tableDialog.number), area_id: tableDialog.area_id,
         capacity: parseInt(tableDialog.capacity) || 4, shape: tableDialog.shape,
-        x: 20 + Math.random() * 60, y: 20 + Math.random() * 60
-      });
+        x: 20 + Math.random() * 60, y: 20 + Math.random() * 60 });
       toast.success('Mesa creada');
-      setTableDialog({ open: false, number: '', area_id: '', capacity: 4, shape: 'round' });
-      fetchAll();
+      setTableDialog({ open: false, number: '', area_id: '', capacity: 4, shape: 'round' }); fetchAll();
     } catch { toast.error('Error'); }
-  };
-
-  const handleDeleteTable = async (id) => {
-    try { await tablesAPI.delete(id); toast.success('Mesa eliminada'); fetchAll(); }
-    catch { toast.error('Error'); }
   };
 
   const handleAddReason = async () => {
@@ -75,30 +81,59 @@ export default function Settings() {
     try {
       await reasonsAPI.create({ name: reasonDialog.name, return_to_inventory: reasonDialog.return_to_inventory });
       toast.success('Razon creada');
-      setReasonDialog({ open: false, name: '', return_to_inventory: true });
-      fetchAll();
-    } catch { toast.error('Error'); }
-  };
-
-  const handleToggleReasonInventory = async (reason) => {
-    try {
-      await reasonsAPI.update(reason.id, { return_to_inventory: !reason.return_to_inventory });
-      toast.success('Actualizado');
-      fetchAll();
+      setReasonDialog({ open: false, name: '', return_to_inventory: true }); fetchAll();
     } catch { toast.error('Error'); }
   };
 
   const handleAddProduct = async () => {
     if (!productDialog.name || !productDialog.category_id || !productDialog.price) return;
     try {
-      await productsAPI.create({
-        name: productDialog.name, category_id: productDialog.category_id,
-        price: parseFloat(productDialog.price), track_inventory: productDialog.track_inventory
-      });
+      await productsAPI.create({ name: productDialog.name, category_id: productDialog.category_id,
+        price: parseFloat(productDialog.price), track_inventory: productDialog.track_inventory });
       toast.success('Producto creado');
-      setProductDialog({ open: false, name: '', category_id: '', price: '', track_inventory: false });
-      fetchAll();
+      setProductDialog({ open: false, name: '', category_id: '', price: '', track_inventory: false }); fetchAll();
     } catch { toast.error('Error'); }
+  };
+
+  // User handlers
+  const handleSaveUser = async () => {
+    if (!userDialog.name) return;
+    try {
+      if (userDialog.editId) {
+        const data = { name: userDialog.name, role: userDialog.role, permissions: userDialog.permissions };
+        if (userDialog.pin) data.pin = userDialog.pin;
+        await axios.put(`${API}/users/${userDialog.editId}`, data, { headers: hdrs() });
+      } else {
+        if (!userDialog.pin) { toast.error('PIN requerido'); return; }
+        await axios.post(`${API}/users`, { name: userDialog.name, pin: userDialog.pin, role: userDialog.role }, { headers: hdrs() });
+      }
+      toast.success(userDialog.editId ? 'Usuario actualizado' : 'Usuario creado');
+      setUserDialog({ open: false, name: '', pin: '', role: 'waiter', editId: null, permissions: {} }); fetchAll();
+    } catch { toast.error('Error'); }
+  };
+
+  const handleDeleteUser = async (id) => {
+    try { await axios.delete(`${API}/users/${id}`, { headers: hdrs() }); toast.success('Usuario desactivado'); fetchAll(); }
+    catch { toast.error('Error'); }
+  };
+
+  // Payment method handlers
+  const handleSavePayMethod = async () => {
+    if (!payDialog.name) return;
+    try {
+      if (payDialog.editId) {
+        await axios.put(`${API}/payment-methods/${payDialog.editId}`, { name: payDialog.name, icon: payDialog.icon }, { headers: hdrs() });
+      } else {
+        await axios.post(`${API}/payment-methods`, { name: payDialog.name, icon: payDialog.icon }, { headers: hdrs() });
+      }
+      toast.success(payDialog.editId ? 'Metodo actualizado' : 'Metodo creado');
+      setPayDialog({ open: false, name: '', icon: 'circle', editId: null }); fetchAll();
+    } catch { toast.error('Error'); }
+  };
+
+  const handleDeletePayMethod = async (id) => {
+    try { await axios.delete(`${API}/payment-methods/${id}`, { headers: hdrs() }); toast.success('Eliminado'); fetchAll(); }
+    catch { toast.error('Error'); }
   };
 
   return (
@@ -109,28 +144,70 @@ export default function Settings() {
       </div>
 
       <div className="flex-1 p-4 overflow-auto">
-        <Tabs defaultValue="areas" className="max-w-4xl mx-auto">
-          <TabsList className="bg-card border border-border mb-4">
-            <TabsTrigger value="areas" data-testid="tab-areas" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs">
+        <Tabs defaultValue="users" className="max-w-4xl mx-auto">
+          <TabsList className="bg-card border border-border mb-4 flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-users">
+              <Users size={14} className="mr-1" /> Usuarios
+            </TabsTrigger>
+            <TabsTrigger value="areas" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-areas">
               <MapPin size={14} className="mr-1" /> Areas
             </TabsTrigger>
-            <TabsTrigger value="tables" data-testid="tab-tables" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs">
+            <TabsTrigger value="tables" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-tables">
               <Table2 size={14} className="mr-1" /> Mesas
             </TabsTrigger>
-            <TabsTrigger value="reasons" data-testid="tab-reasons" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs">
+            <TabsTrigger value="payment" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-payment">
+              <CreditCard size={14} className="mr-1" /> Pagos
+            </TabsTrigger>
+            <TabsTrigger value="reasons" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-reasons">
               <AlertTriangle size={14} className="mr-1" /> Anulaciones
             </TabsTrigger>
-            <TabsTrigger value="products" data-testid="tab-products" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs">
+            <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-products">
               <Package size={14} className="mr-1" /> Productos
             </TabsTrigger>
           </TabsList>
+
+          {/* USERS */}
+          <TabsContent value="users">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-oswald text-base font-bold">Usuarios del Sistema</h2>
+              <Button onClick={() => setUserDialog({ open: true, name: '', pin: '', role: 'waiter', editId: null, permissions: {} })}
+                size="sm" className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-user-btn">
+                <Plus size={14} className="mr-1" /> Nuevo Usuario
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {users.filter(u => u.active !== false).map(user => (
+                <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`user-${user.id}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold font-oswald">
+                      {user.name?.[0]}
+                    </div>
+                    <div>
+                      <span className="font-semibold">{user.name}</span>
+                      <Badge variant="secondary" className="ml-2 text-[9px]">{user.role}</Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => setUserDialog({ open: true, name: user.name, pin: '', role: user.role, editId: user.id, permissions: user.permissions || {} })}>
+                      <Pencil size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
+                      onClick={() => handleDeleteUser(user.id)}>
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
 
           {/* AREAS */}
           <TabsContent value="areas">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-oswald text-base font-bold">Areas del Restaurante</h2>
-              <Button onClick={() => setAreaDialog({ open: true, name: '', color: '#FF6600' })} size="sm" data-testid="add-area-btn"
-                className="bg-primary text-primary-foreground font-bold active:scale-95">
+              <Button onClick={() => setAreaDialog({ open: true, name: '', color: '#FF6600', editId: null })} size="sm"
+                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-area-btn">
                 <Plus size={14} className="mr-1" /> Agregar
               </Button>
             </div>
@@ -142,9 +219,14 @@ export default function Settings() {
                     <span className="font-semibold">{area.name}</span>
                     <Badge variant="secondary" className="text-[10px]">{tables.filter(t => t.area_id === area.id).length} mesas</Badge>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteArea(area.id)} className="text-destructive/60 hover:text-destructive h-8 w-8">
-                    <Trash2 size={14} />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => setAreaDialog({ open: true, name: area.name, color: area.color, editId: area.id })}>
+                      <Pencil size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => { areasAPI.delete(area.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
+                      className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -155,21 +237,48 @@ export default function Settings() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-oswald text-base font-bold">Mesas</h2>
               <Button onClick={() => setTableDialog({ open: true, number: '', area_id: areas[0]?.id || '', capacity: 4, shape: 'round' })} size="sm"
-                data-testid="add-table-btn" className="bg-primary text-primary-foreground font-bold active:scale-95">
+                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-table-btn">
                 <Plus size={14} className="mr-1" /> Agregar
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {tables.map(table => (
-                <div key={table.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`table-setting-${table.id}`}>
+                <div key={table.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
                   <div>
                     <span className="font-oswald font-bold text-primary">#{table.number}</span>
-                    <span className="text-sm ml-2">{areas.find(a => a.id === table.area_id)?.name || '?'}</span>
+                    <span className="text-sm ml-2">{areas.find(a => a.id === table.area_id)?.name}</span>
                     <span className="text-xs text-muted-foreground ml-2">Cap: {table.capacity} | {table.shape}</span>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteTable(table.id)} className="text-destructive/60 hover:text-destructive h-8 w-8">
-                    <Trash2 size={14} />
-                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => { tablesAPI.delete(table.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
+                    className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* PAYMENT METHODS */}
+          <TabsContent value="payment">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-oswald text-base font-bold">Formas de Pago</h2>
+              <Button onClick={() => setPayDialog({ open: true, name: '', icon: 'circle', editId: null })} size="sm"
+                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-payment-btn">
+                <Plus size={14} className="mr-1" /> Agregar
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {payMethods.map(m => (
+                <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`payment-${m.id}`}>
+                  <span className="font-semibold">{m.name}</span>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => setPayDialog({ open: true, name: m.name, icon: m.icon, editId: m.id })}>
+                      <Pencil size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
+                      onClick={() => handleDeletePayMethod(m.id)}>
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -180,24 +289,21 @@ export default function Settings() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-oswald text-base font-bold">Razones de Anulacion</h2>
               <Button onClick={() => setReasonDialog({ open: true, name: '', return_to_inventory: true })} size="sm"
-                data-testid="add-reason-btn" className="bg-primary text-primary-foreground font-bold active:scale-95">
+                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-reason-btn">
                 <Plus size={14} className="mr-1" /> Agregar
               </Button>
             </div>
             <div className="space-y-2">
               {reasons.map(reason => (
-                <div key={reason.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`reason-${reason.id}`}>
+                <div key={reason.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
                   <div>
                     <span className="font-semibold text-sm">{reason.name}</span>
                     <Badge variant={reason.return_to_inventory ? 'default' : 'destructive'} className="ml-2 text-[9px]">
                       {reason.return_to_inventory ? 'Retorna inventario' : 'No retorna'}
                     </Badge>
                   </div>
-                  <Switch
-                    checked={reason.return_to_inventory}
-                    onCheckedChange={() => handleToggleReasonInventory(reason)}
-                    data-testid={`reason-toggle-${reason.id}`}
-                  />
+                  <Switch checked={reason.return_to_inventory}
+                    onCheckedChange={() => { reasonsAPI.update(reason.id, { return_to_inventory: !reason.return_to_inventory }).then(() => { toast.success('Actualizado'); fetchAll(); }); }} />
                 </div>
               ))}
             </div>
@@ -208,7 +314,7 @@ export default function Settings() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-oswald text-base font-bold">Productos</h2>
               <Button onClick={() => setProductDialog({ open: true, name: '', category_id: categories[0]?.id || '', price: '', track_inventory: false })} size="sm"
-                data-testid="add-product-btn" className="bg-primary text-primary-foreground font-bold active:scale-95">
+                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-product-btn">
                 <Plus size={14} className="mr-1" /> Agregar
               </Button>
             </div>
@@ -219,9 +325,9 @@ export default function Settings() {
                     <Tag size={12} style={{ color: cat.color }} /> {cat.name}
                   </h3>
                   {products.filter(p => p.category_id === cat.id).map(prod => (
-                    <div key={prod.id} className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 ml-4 mb-1" data-testid={`product-setting-${prod.id}`}>
+                    <div key={prod.id} className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 ml-4 mb-1">
                       <span className="text-sm">{prod.name}</span>
-                      <span className="font-oswald text-sm text-primary font-bold">RD$ {prod.price.toFixed(2)}</span>
+                      <span className="font-oswald text-sm text-primary font-bold">RD$ {prod.price?.toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -231,13 +337,13 @@ export default function Settings() {
         </Tabs>
       </div>
 
-      {/* Add Area Dialog */}
-      <Dialog open={areaDialog.open} onOpenChange={(open) => !open && setAreaDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="add-area-dialog">
-          <DialogHeader><DialogTitle className="font-oswald">Nueva Area</DialogTitle></DialogHeader>
+      {/* Area Dialog */}
+      <Dialog open={areaDialog.open} onOpenChange={(o) => !o && setAreaDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="area-dialog">
+          <DialogHeader><DialogTitle className="font-oswald">{areaDialog.editId ? 'Editar' : 'Nueva'} Area</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={areaDialog.name} onChange={e => setAreaDialog(p => ({ ...p, name: e.target.value }))}
-              placeholder="Nombre del area" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="area-name-input" />
+              placeholder="Nombre" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="area-name-input" />
             <div className="flex gap-2">
               {['#FF6600','#4CAF50','#2196F3','#9C27B0','#E91E63','#FFB300'].map(c => (
                 <button key={c} onClick={() => setAreaDialog(p => ({ ...p, color: c }))}
@@ -245,25 +351,26 @@ export default function Settings() {
                   style={{ backgroundColor: c }} />
               ))}
             </div>
-            <Button onClick={handleAddArea} data-testid="confirm-add-area"
-              className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR AREA</Button>
+            <Button onClick={handleSaveArea} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-area">
+              {areaDialog.editId ? 'GUARDAR' : 'CREAR AREA'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Add Table Dialog */}
-      <Dialog open={tableDialog.open} onOpenChange={(open) => !open && setTableDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="add-table-dialog">
+      {/* Table Dialog */}
+      <Dialog open={tableDialog.open} onOpenChange={(o) => !o && setTableDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-sm bg-card border-border">
           <DialogHeader><DialogTitle className="font-oswald">Nueva Mesa</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={tableDialog.number} onChange={e => setTableDialog(p => ({ ...p, number: e.target.value }))}
-              type="number" placeholder="Numero de mesa" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="table-number-input" />
+              type="number" placeholder="Numero de mesa" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             <select value={tableDialog.area_id} onChange={e => setTableDialog(p => ({ ...p, area_id: e.target.value }))}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="table-area-select">
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
               {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
             <input value={tableDialog.capacity} onChange={e => setTableDialog(p => ({ ...p, capacity: e.target.value }))}
-              type="number" placeholder="Capacidad" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="table-capacity-input" />
+              type="number" placeholder="Capacidad" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             <div className="flex gap-2">
               {['round', 'square', 'rectangle'].map(s => (
                 <button key={s} onClick={() => setTableDialog(p => ({ ...p, shape: s }))}
@@ -272,52 +379,103 @@ export default function Settings() {
                   }`}>{s === 'round' ? 'Redonda' : s === 'square' ? 'Cuadrada' : 'Rectangular'}</button>
               ))}
             </div>
-            <Button onClick={handleAddTable} data-testid="confirm-add-table"
-              className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR MESA</Button>
+            <Button onClick={handleAddTable} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR MESA</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Add Reason Dialog */}
-      <Dialog open={reasonDialog.open} onOpenChange={(open) => !open && setReasonDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="add-reason-dialog">
-          <DialogHeader><DialogTitle className="font-oswald">Nueva Razon de Anulacion</DialogTitle></DialogHeader>
+      {/* Reason Dialog */}
+      <Dialog open={reasonDialog.open} onOpenChange={(o) => !o && setReasonDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader><DialogTitle className="font-oswald">Nueva Razon</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={reasonDialog.name} onChange={e => setReasonDialog(p => ({ ...p, name: e.target.value }))}
-              placeholder="Nombre de la razon" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="reason-name-input" />
+              placeholder="Razon" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
               <span className="text-sm">Retorna al inventario</span>
-              <Switch checked={reasonDialog.return_to_inventory}
-                onCheckedChange={(v) => setReasonDialog(p => ({ ...p, return_to_inventory: v }))}
-                data-testid="reason-inventory-switch" />
+              <Switch checked={reasonDialog.return_to_inventory} onCheckedChange={(v) => setReasonDialog(p => ({ ...p, return_to_inventory: v }))} />
             </div>
-            <Button onClick={handleAddReason} data-testid="confirm-add-reason"
-              className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR RAZON</Button>
+            <Button onClick={handleAddReason} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Add Product Dialog */}
-      <Dialog open={productDialog.open} onOpenChange={(open) => !open && setProductDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="add-product-dialog">
+      {/* Product Dialog */}
+      <Dialog open={productDialog.open} onOpenChange={(o) => !o && setProductDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-sm bg-card border-border">
           <DialogHeader><DialogTitle className="font-oswald">Nuevo Producto</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={productDialog.name} onChange={e => setProductDialog(p => ({ ...p, name: e.target.value }))}
-              placeholder="Nombre del producto" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="product-name-input" />
+              placeholder="Nombre" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             <select value={productDialog.category_id} onChange={e => setProductDialog(p => ({ ...p, category_id: e.target.value }))}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="product-category-select">
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <input value={productDialog.price} onChange={e => setProductDialog(p => ({ ...p, price: e.target.value }))}
-              type="number" placeholder="Precio (RD$)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" data-testid="product-price-input" />
+              type="number" placeholder="Precio RD$" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
             <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
               <span className="text-sm">Controlar inventario</span>
-              <Switch checked={productDialog.track_inventory}
-                onCheckedChange={(v) => setProductDialog(p => ({ ...p, track_inventory: v }))}
-                data-testid="product-inventory-switch" />
+              <Switch checked={productDialog.track_inventory} onCheckedChange={(v) => setProductDialog(p => ({ ...p, track_inventory: v }))} />
             </div>
-            <Button onClick={handleAddProduct} data-testid="confirm-add-product"
-              className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR PRODUCTO</Button>
+            <Button onClick={handleAddProduct} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Dialog */}
+      <Dialog open={userDialog.open} onOpenChange={(o) => !o && setUserDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-md bg-card border-border" data-testid="user-dialog">
+          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2">
+            <Shield size={18} className="text-primary" /> {userDialog.editId ? 'Editar' : 'Nuevo'} Usuario
+          </DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <input value={userDialog.name} onChange={e => setUserDialog(p => ({ ...p, name: e.target.value }))}
+              placeholder="Nombre" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-name-input" />
+            <input value={userDialog.pin} onChange={e => setUserDialog(p => ({ ...p, pin: e.target.value }))}
+              placeholder={userDialog.editId ? "Nuevo PIN (dejar vacio para no cambiar)" : "PIN (4 digitos)"}
+              type="password" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-pin-input" />
+            <select value={userDialog.role} onChange={e => setUserDialog(p => ({ ...p, role: e.target.value }))}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-role-select">
+              <option value="admin">Administrador</option>
+              <option value="waiter">Mesero</option>
+              <option value="cashier">Cajero</option>
+              <option value="kitchen">Cocina</option>
+            </select>
+            <div className="border border-border rounded-lg p-3">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1">
+                <Shield size={12} /> Permisos Personalizados
+              </h4>
+              <ScrollArea className="max-h-40">
+                <div className="space-y-2">
+                  {Object.entries(PERM_LABELS).map(([key, label]) => (
+                    <div key={key} className="flex items-center justify-between">
+                      <span className="text-xs">{label}</span>
+                      <Switch
+                        checked={userDialog.permissions[key] !== undefined ? userDialog.permissions[key] : false}
+                        onCheckedChange={(v) => setUserDialog(p => ({ ...p, permissions: { ...p.permissions, [key]: v } }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+            <Button onClick={handleSaveUser} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-user">
+              {userDialog.editId ? 'GUARDAR CAMBIOS' : 'CREAR USUARIO'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Method Dialog */}
+      <Dialog open={payDialog.open} onOpenChange={(o) => !o && setPayDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="payment-dialog">
+          <DialogHeader><DialogTitle className="font-oswald">{payDialog.editId ? 'Editar' : 'Nueva'} Forma de Pago</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <input value={payDialog.name} onChange={e => setPayDialog(p => ({ ...p, name: e.target.value }))}
+              placeholder="Nombre (ej: Efectivo, Tarjeta)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="payment-name-input" />
+            <Button onClick={handleSavePayMethod} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-payment">
+              {payDialog.editId ? 'GUARDAR' : 'CREAR'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
