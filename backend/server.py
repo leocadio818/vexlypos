@@ -1739,12 +1739,25 @@ async def seed_data():
 
     # Payment methods
     pay_methods = [
-        {"id": gen_id(), "name": "Efectivo", "icon": "banknote", "active": True},
-        {"id": gen_id(), "name": "Tarjeta de Credito", "icon": "credit-card", "active": True},
-        {"id": gen_id(), "name": "Tarjeta de Debito", "icon": "credit-card", "active": True},
-        {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "active": True},
+        {"id": gen_id(), "name": "Efectivo RD$", "icon": "banknote", "currency": "DOP", "exchange_rate": 1, "active": True},
+        {"id": gen_id(), "name": "Tarjeta de Credito", "icon": "credit-card", "currency": "DOP", "exchange_rate": 1, "active": True},
+        {"id": gen_id(), "name": "Tarjeta de Debito", "icon": "credit-card", "currency": "DOP", "exchange_rate": 1, "active": True},
+        {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "currency": "DOP", "exchange_rate": 1, "active": True},
+        {"id": gen_id(), "name": "Efectivo USD", "icon": "dollar-sign", "currency": "USD", "exchange_rate": 58.50, "active": True},
+        {"id": gen_id(), "name": "Efectivo EUR", "icon": "euro", "currency": "EUR", "exchange_rate": 63.20, "active": True},
     ]
     await db.payment_methods.insert_many(pay_methods)
+
+    # Sale types
+    sale_types = [
+        {"id": gen_id(), "name": "Consumidor Final", "code": "dine_in", "tax_rate": 18, "tip_default": 10, "active": True},
+        {"id": gen_id(), "name": "Take Out", "code": "take_out", "tax_rate": 18, "tip_default": 0, "active": True},
+        {"id": gen_id(), "name": "Delivery", "code": "delivery", "tax_rate": 18, "tip_default": 0, "active": True},
+    ]
+    await db.sale_types.insert_many(sale_types)
+
+    # Station config
+    await db.station_config.insert_one({"require_shift_to_sell": True, "require_cash_count": False, "auto_send_on_logout": True})
 
     # Recipes with costs (cost per ingredient for main dishes)
     recipe_data = [
