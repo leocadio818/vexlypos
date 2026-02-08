@@ -21,6 +21,8 @@ export default function Inventory() {
   const [adjustDialog, setAdjustDialog] = useState({ open: false, product_id: '', warehouse_id: '', qty: '', reason: 'Ajuste manual' });
   const [warehouseDialog, setWarehouseDialog] = useState({ open: false, name: '', location: '' });
   const [recipeDialog, setRecipeDialog] = useState({ open: false, product_id: '', product_name: '', ingredients: [{ ingredient_name: '', quantity: 1, unit: 'unidad', cost: 0 }] });
+  const [invReport, setInvReport] = useState([]);
+  const [movements, setMovements] = useState([]);
 
   const fetchAll = useCallback(async () => {
     try {
