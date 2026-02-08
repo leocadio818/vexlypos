@@ -543,6 +543,48 @@ export default function Settings() {
               </Button>
             </div>
           </TabsContent>
+
+          {/* MODULE LINKS */}
+          <TabsContent value="inventory">
+            <div className="text-center py-8">
+              <Package size={40} className="mx-auto mb-3 text-primary opacity-50" />
+              <h2 className="font-oswald text-lg mb-2">Inventario</h2>
+              <p className="text-sm text-muted-foreground mb-4">Stock, almacenes, recetas, costos y movimientos</p>
+              <a href="/inventory" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
+                <Package size={16} /> Abrir Inventario
+              </a>
+            </div>
+          </TabsContent>
+          <TabsContent value="suppliers-cfg">
+            <div className="text-center py-8">
+              <Truck size={40} className="mx-auto mb-3 text-primary opacity-50" />
+              <h2 className="font-oswald text-lg mb-2">Proveedores & Compras</h2>
+              <p className="text-sm text-muted-foreground mb-4">Proveedores, ordenes de compra, recepcion de mercancia</p>
+              <a href="/suppliers" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
+                <Truck size={16} /> Abrir Compras
+              </a>
+            </div>
+          </TabsContent>
+          <TabsContent value="reports-cfg">
+            <div className="text-center py-8">
+              <BarChart3 size={40} className="mx-auto mb-3 text-primary opacity-50" />
+              <h2 className="font-oswald text-lg mb-2">Reportes</h2>
+              <p className="text-sm text-muted-foreground mb-4">Ventas, categorias, productos, meseros, DGII</p>
+              <a href="/reports" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
+                <BarChart3 size={16} /> Abrir Reportes
+              </a>
+            </div>
+          </TabsContent>
+          <TabsContent value="customers-cfg">
+            <div className="text-center py-8">
+              <Heart size={40} className="mx-auto mb-3 text-primary opacity-50" />
+              <h2 className="font-oswald text-lg mb-2">Clientes & Fidelidad</h2>
+              <p className="text-sm text-muted-foreground mb-4">Registro, puntos, canjeo, historial</p>
+              <a href="/customers" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
+                <Heart size={16} /> Abrir Clientes
+              </a>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
