@@ -260,6 +260,9 @@ export default function Settings() {
             <TabsTrigger value="payment" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-payment">
               <CreditCard size={14} className="mr-1" /> Pagos
             </TabsTrigger>
+            <TabsTrigger value="taxes" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-taxes">
+              <Percent size={14} className="mr-1" /> Impuestos
+            </TabsTrigger>
             <TabsTrigger value="reasons" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-reasons">
               <AlertTriangle size={14} className="mr-1" /> Anulaciones
             </TabsTrigger>
