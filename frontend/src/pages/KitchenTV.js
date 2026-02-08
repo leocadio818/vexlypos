@@ -26,27 +26,53 @@ export default function KitchenTV() {
   const [time, setTime] = useState(new Date());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [autoLogged, setAutoLogged] = useState(false);
-  const { user, login } = useAuth();
+  const [authReady, setAuthReady] = useState(false);
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const containerRef = useRef(null);
 
-  // Auto-login from URL ?pin=XXXX
+  // Auto-login from URL ?pin=XXXX or check existing session
   useEffect(() => {
-    const pin = searchParams.get('pin');
-    if (pin && !user && !autoLogged) {
-      setAutoLogged(true);
-      (async () => {
+    const tryAuth = async () => {
+      const token = localStorage.getItem('pos_token');
+      if (token) {
+        setAuthReady(true);
+        return;
+      }
+      const pin = searchParams.get('pin');
+      if (pin) {
         try {
           const res = await axios.post(`${API}/auth/auto-login`, { pin });
           localStorage.setItem('pos_token', res.data.token);
-          window.location.reload();
+          setAuthReady(true);
         } catch {
-          console.error('Auto-login failed');
+          setAuthReady(false);
         }
-      })();
-    }
-  }, [searchParams, user, autoLogged]);
+      }
+    };
+    tryAuth();
+  }, [searchParams]);
+
+  // Show login prompt if no auth
+  if (!authReady && !localStorage.getItem('pos_token')) {
+    const pin = searchParams.get('pin');
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <ChefHat size={64} className="mx-auto mb-4 text-orange-500" />
+          <h1 className="font-oswald text-3xl mb-2">KITCHEN TV</h1>
+          {pin ? (
+            <p className="text-gray-400">Iniciando sesion automatica...</p>
+          ) : (
+            <div>
+              <p className="text-gray-400 mb-4">Agrega ?pin=XXXX a la URL para inicio automatico</p>
+              <p className="text-gray-600 text-sm font-mono">Ejemplo: /kitchen-tv?pin=9999</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const fetchOrders = useCallback(async () => {
     try {
