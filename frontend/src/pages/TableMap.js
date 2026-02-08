@@ -189,6 +189,7 @@ export default function TableMap() {
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-free" /> Libre</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-occupied" /> Ocupada</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-billed" /> Facturada</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{backgroundColor:'#7C4DFF'}} /> Reservada</span>
           </div>
           {canMoveTable && (
             <Button
