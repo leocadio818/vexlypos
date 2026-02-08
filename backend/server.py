@@ -509,12 +509,71 @@ async def update_product(product_id: str, input: dict):
 async def list_modifiers():
     return await db.modifiers.find({}, {"_id": 0}).to_list(100)
 
+@api.get("/modifiers/{modifier_id}")
+async def get_modifier(modifier_id: str):
+    modifier = await db.modifiers.find_one({"id": modifier_id}, {"_id": 0})
+    if not modifier:
+        raise HTTPException(status_code=404, detail="Grupo de modificador no encontrado")
+    return modifier
+
 @api.post("/modifiers")
 async def create_modifier(input: ModifierGroupInput):
     options = [{"id": gen_id(), "name": o.name, "price": o.price} for o in input.options]
-    doc = {"id": gen_id(), "name": input.name, "required": input.required, "max_selections": input.max_selections, "options": options}
+    doc = {"id": gen_id(), "name": input.name, "required": input.required, "max_selections": input.max_selections, "options": options, "active": True}
     await db.modifiers.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/modifiers/{modifier_id}")
+async def update_modifier(modifier_id: str, input: dict):
+    if "_id" in input:
+        del input["_id"]
+    # Handle options update - add IDs to new options
+    if "options" in input:
+        for opt in input["options"]:
+            if "id" not in opt:
+                opt["id"] = gen_id()
+    await db.modifiers.update_one({"id": modifier_id}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/modifiers/{modifier_id}")
+async def delete_modifier(modifier_id: str):
+    await db.modifiers.delete_one({"id": modifier_id})
+    return {"ok": True}
+
+# ─── REPORT CATEGORIES ───
+@api.get("/report-categories")
+async def list_report_categories():
+    cats = await db.report_categories.find({}, {"_id": 0}).to_list(50)
+    if not cats:
+        # Default report categories
+        defaults = [
+            {"id": gen_id(), "name": "Alimentos", "code": "food"},
+            {"id": gen_id(), "name": "Bebidas", "code": "beverages"},
+            {"id": gen_id(), "name": "Postres", "code": "desserts"},
+            {"id": gen_id(), "name": "Licores", "code": "liquor"},
+            {"id": gen_id(), "name": "Otros", "code": "other"},
+        ]
+        await db.report_categories.insert_many(defaults)
+        return defaults
+    return cats
+
+@api.post("/report-categories")
+async def create_report_category(input: dict):
+    doc = {"id": gen_id(), "name": input.get("name", ""), "code": input.get("code", "")}
+    await db.report_categories.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/report-categories/{cat_id}")
+async def update_report_category(cat_id: str, input: dict):
+    if "_id" in input:
+        del input["_id"]
+    await db.report_categories.update_one({"id": cat_id}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/report-categories/{cat_id}")
+async def delete_report_category(cat_id: str):
+    await db.report_categories.delete_one({"id": cat_id})
+    return {"ok": True}
 
 # ─── ORDERS ───
 @api.get("/orders")
