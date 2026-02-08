@@ -1439,6 +1439,15 @@ async def seed_data():
     ]
     await db.customers.insert_many(customers)
 
+    # Payment methods
+    pay_methods = [
+        {"id": gen_id(), "name": "Efectivo", "icon": "banknote", "active": True},
+        {"id": gen_id(), "name": "Tarjeta de Credito", "icon": "credit-card", "active": True},
+        {"id": gen_id(), "name": "Tarjeta de Debito", "icon": "credit-card", "active": True},
+        {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "active": True},
+    ]
+    await db.payment_methods.insert_many(pay_methods)
+
     return {"message": "Datos sembrados exitosamente", "seeded": True,
             "users": [{"name": u["name"], "role": u["role"]} for u in users]}
 
