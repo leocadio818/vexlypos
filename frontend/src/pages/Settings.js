@@ -129,15 +129,18 @@ export default function Settings() {
     try {
       if (userDialog.editId) {
         const data = { name: userDialog.name, role: userDialog.role, permissions: userDialog.permissions };
-        if (userDialog.pin) data.pin = userDialog.pin;
+        if (userDialog.pin && userDialog.pin.length >= 4) data.pin = userDialog.pin;
         await axios.put(`${API}/users/${userDialog.editId}`, data, { headers: hdrs() });
+        toast.success('Usuario actualizado');
       } else {
-        if (!userDialog.pin) { toast.error('PIN requerido'); return; }
+        if (!userDialog.pin || userDialog.pin.length < 4) { toast.error('PIN debe tener minimo 4 digitos'); return; }
         await axios.post(`${API}/users`, { name: userDialog.name, pin: userDialog.pin, role: userDialog.role }, { headers: hdrs() });
+        toast.success('Usuario creado');
       }
-      toast.success(userDialog.editId ? 'Usuario actualizado' : 'Usuario creado');
       setUserDialog({ open: false, name: '', pin: '', role: 'waiter', editId: null, permissions: {} }); fetchAll();
-    } catch { toast.error('Error'); }
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error');
+    }
   };
 
   const handleDeleteUser = async (id) => {
