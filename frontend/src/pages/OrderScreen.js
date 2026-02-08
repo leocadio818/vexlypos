@@ -195,6 +195,13 @@ export default function OrderScreen() {
             <h2 className="font-oswald text-base font-bold">Mesa {table?.number || '?'}</h2>
           </div>
           <div className="flex items-center gap-1">
+            {order && activeItems.length > 0 && (
+              <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
+                className="h-7 px-2 text-[10px] border-muted-foreground/30 text-muted-foreground relative">
+                <FileText size={10} className="mr-1" /> Pre-Cuenta
+                {preCheckCount > 0 && <Lock size={8} className="ml-0.5 text-yellow-500" />}
+              </Button>
+            )}
             {pendingCount > 0 && (
               <Button onClick={handleSendToKitchen} size="sm" data-testid="send-to-kitchen-btn"
                 className="h-7 px-2 bg-primary text-primary-foreground font-oswald text-[10px] font-bold active:scale-95">
