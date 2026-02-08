@@ -116,6 +116,12 @@ export default function Inventory() {
             <TabsTrigger value="alerts" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-alerts">
               <AlertTriangle size={14} className="mr-1" /> Alertas {alerts.length > 0 && `(${alerts.length})`}
             </TabsTrigger>
+            <TabsTrigger value="costs" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-costs">
+              <DollarSign size={14} className="mr-1" /> Costos
+            </TabsTrigger>
+            <TabsTrigger value="movements" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-movements">
+              <ArrowUpDown size={14} className="mr-1" /> Movimientos
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="stock">
