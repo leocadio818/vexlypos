@@ -38,6 +38,15 @@ export default function Inventory() {
       setAlerts(alertRes.data);
       setRecipes(recRes.data);
       setProducts(prodRes.data);
+      // Fetch report and movements
+      try {
+        const [repRes, movRes] = await Promise.all([
+          axios.get(`${API}/reports/inventory`, { headers: headers() }),
+          axios.get(`${API}/inventory/movements`, { headers: headers() }),
+        ]);
+        setInvReport(repRes.data);
+        setMovements(movRes.data);
+      } catch {}
     } catch {}
   }, []);
 
