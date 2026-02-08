@@ -227,6 +227,58 @@ export default function Inventory() {
               </div>
             )}
           </TabsContent>
+
+          {/* COSTS & MARGINS */}
+          <TabsContent value="costs">
+            <h2 className="font-oswald text-base font-bold mb-4 flex items-center gap-2">
+              <TrendingUp size={16} className="text-primary" /> Costos y Margenes de Ganancia
+            </h2>
+            <div className="space-y-2">
+              {invReport.filter(r => r.recipe_cost > 0).length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Agrega costos a las recetas para ver margenes</p>
+              ) : invReport.filter(r => r.recipe_cost > 0).map((item, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+                  <div className="flex-1">
+                    <span className="font-semibold text-sm">{item.product_name}</span>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                      <span>Venta: <span className="font-oswald text-foreground">{formatMoney(item.sale_price)}</span></span>
+                      <span>Costo: <span className="font-oswald text-destructive">{formatMoney(item.recipe_cost)}</span></span>
+                      <span>Stock: <span className="font-oswald">{item.stock}</span></span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`font-oswald text-lg font-bold ${item.margin_pct > 50 ? 'text-green-400' : item.margin_pct > 30 ? 'text-yellow-400' : 'text-destructive'}`}>
+                      {item.margin_pct}%
+                    </span>
+                    <p className="text-[10px] text-muted-foreground">margen</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* MOVEMENTS */}
+          <TabsContent value="movements">
+            <h2 className="font-oswald text-base font-bold mb-4">Movimientos de Inventario</h2>
+            <div className="space-y-1">
+              {movements.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No hay movimientos registrados</p>
+              ) : movements.map((m, i) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-card/50 border border-border/50 text-xs">
+                  <div>
+                    <span className="font-semibold">{m.product_id?.slice(0, 8)}</span>
+                    <span className="text-muted-foreground ml-2">{m.reason}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`font-oswald font-bold ${m.quantity > 0 ? 'text-green-400' : 'text-destructive'}`}>
+                      {m.quantity > 0 ? '+' : ''}{m.quantity}
+                    </span>
+                    <span className="text-muted-foreground font-mono text-[10px]">{m.user_name}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
