@@ -69,10 +69,11 @@ export default function Layout() {
               <WifiOff size={16} className="text-destructive animate-pulse" />
             )}
           </div>
-          <div className="text-center">
+          <div className="text-center" data-testid="user-info">
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold font-oswald">
               {user?.name?.[0]}
             </div>
+            <p className="text-[8px] text-muted-foreground mt-0.5 max-w-[50px] truncate">{user?.name}</p>
           </div>
           <Button
             variant="ghost"
