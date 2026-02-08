@@ -13,6 +13,7 @@ import Suppliers from "@/pages/Suppliers";
 import Reports from "@/pages/Reports";
 import Customers from "@/pages/Customers";
 import Dashboard from "@/pages/Dashboard";
+import KitchenTV from "@/pages/KitchenTV";
 import Layout from "@/components/Layout";
 
 function ProtectedRoute({ children }) {
