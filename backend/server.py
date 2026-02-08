@@ -465,12 +465,34 @@ async def list_products(category_id: Optional[str] = Query(None)):
     query = {"category_id": category_id, "active": True} if category_id else {"active": True}
     return await db.products.find(query, {"_id": 0}).to_list(500)
 
+@api.get("/products/{product_id}")
+async def get_product(product_id: str):
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return product
+
 @api.post("/products")
 async def create_product(input: ProductInput):
+    modifier_assignments = [ma.model_dump() for ma in input.modifier_assignments] if input.modifier_assignments else []
     doc = {
-        "id": gen_id(), "name": input.name, "category_id": input.category_id,
-        "price": input.price, "modifier_group_ids": input.modifier_group_ids,
-        "track_inventory": input.track_inventory, "active": True
+        "id": gen_id(), 
+        "name": input.name, 
+        "printed_name": input.printed_name or input.name,
+        "category_id": input.category_id,
+        "report_category_id": input.report_category_id,
+        "price": input.price, 
+        "price_a": input.price_a or input.price,
+        "price_b": input.price_b,
+        "price_c": input.price_c,
+        "price_d": input.price_d,
+        "price_e": input.price_e,
+        "button_bg_color": input.button_bg_color,
+        "button_text_color": input.button_text_color,
+        "modifier_group_ids": input.modifier_group_ids,
+        "modifier_assignments": modifier_assignments,
+        "track_inventory": input.track_inventory, 
+        "active": True
     }
     await db.products.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
