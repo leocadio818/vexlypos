@@ -324,30 +324,45 @@ export default function Billing() {
 
       {/* Pay Dialog */}
       <Dialog open={payDialog.open} onOpenChange={(open) => !open && setPayDialog({ open: false, billId: null })}>
-        <DialogContent className="max-w-xs bg-card border-border" data-testid="pay-dialog">
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="pay-dialog">
           <DialogHeader>
-            <DialogTitle className="font-oswald">Metodo de Pago</DialogTitle>
+            <DialogTitle className="font-oswald">Cobrar</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            {/* Customer selection for loyalty */}
+            {/* Customer for loyalty */}
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Cliente (fidelidad - opcional)</label>
+              <label className="text-xs text-muted-foreground mb-1 block">Cliente (fidelidad)</label>
               <select value={selectedCustomer} onChange={e => setSelectedCustomer(e.target.value)}
                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="pay-customer-select">
                 <option value="">Sin cliente</option>
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.points} pts)</option>)}
               </select>
             </div>
-            <button onClick={() => handlePayBill(payDialog.billId, 'cash')}
-              data-testid="pay-cash"
-              className="w-full h-16 rounded-xl bg-green-600/10 border border-green-600/30 text-green-400 font-oswald font-bold text-lg flex items-center justify-center gap-3 hover:bg-green-600 hover:text-white transition-all active:scale-95">
-              <Banknote size={24} /> EFECTIVO
-            </button>
-            <button onClick={() => handlePayBill(payDialog.billId, 'card')}
-              data-testid="pay-card"
-              className="w-full h-16 rounded-xl bg-blue-600/10 border border-blue-600/30 text-blue-400 font-oswald font-bold text-lg flex items-center justify-center gap-3 hover:bg-blue-600 hover:text-white transition-all active:scale-95">
-              <CreditCard size={24} /> TARJETA
-            </button>
+            {/* Tip */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Propina % (opcional)</label>
+              <div className="flex gap-1 flex-wrap">
+                {[0, 5, 10, 15, 18, 20].map(p => (
+                  <button key={p} onClick={() => setTipPct(p)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-oswald font-bold transition-colors ${
+                      tipPct === p ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                    }`}>{p}%</button>
+                ))}
+              </div>
+            </div>
+            {/* All Payment Methods */}
+            <div className="space-y-1.5">
+              {paymentMethods.filter(m => m.active).map(method => (
+                <button key={method.id} onClick={() => handlePayBill(payDialog.billId, method.name)}
+                  data-testid={`pay-method-${method.id}`}
+                  className="w-full h-12 rounded-xl bg-muted/50 border border-border text-foreground font-oswald font-bold text-sm flex items-center justify-between px-4 hover:bg-primary/10 hover:border-primary/50 transition-all active:scale-95">
+                  <span>{method.name}</span>
+                  {method.currency !== 'DOP' && method.exchange_rate > 1 && (
+                    <span className="text-xs text-muted-foreground font-mono">1 {method.currency} = RD$ {method.exchange_rate}</span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
