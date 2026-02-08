@@ -21,6 +21,9 @@ export default function Billing() {
   const [tipPct, setTipPct] = useState(10);
   const [printHtml, setPrintHtml] = useState('');
   const [printOpen, setPrintOpen] = useState(false);
+  const [customers, setCustomers] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
