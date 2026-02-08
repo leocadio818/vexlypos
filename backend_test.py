@@ -11,6 +11,7 @@ class POSAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.results = []
+        self.failed_tests = []
 
     def log_result(self, test_name, passed, details=""):
         self.results.append({
