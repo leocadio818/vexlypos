@@ -29,7 +29,7 @@ export default function Login() {
     try {
       const u = await login(pin);
       toast.success(`Bienvenido, ${u.name}`);
-      navigate('/tables');
+      navigate('/dashboard');
     } catch {
       toast.error('PIN incorrecto');
       setPin('');
