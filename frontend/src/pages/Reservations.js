@@ -154,12 +154,43 @@ export default function Reservations() {
                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Mesa (opcional)</label>
-                <select value={dialog.table_id} onChange={e => setDialog(p => ({ ...p, table_id: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
-                  <option value="">Auto-asignar</option>
-                  {tables.filter(t => t.status === 'free').map(t => <option key={t.id} value={t.id}>Mesa {t.number} (cap: {t.capacity})</option>)}
+                <label className="text-xs text-muted-foreground mb-1 block">Area</label>
+                <select value={dialog.area_id} onChange={e => {
+                  const aid = e.target.value;
+                  setDialog(p => ({ ...p, area_id: aid }));
+                  if (aid === '__all__') {
+                    const areaTables = tables.filter(t => t.status === 'free');
+                    setDialog(p => ({ ...p, table_ids: areaTables.map(t => t.id) }));
+                  }
+                }} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
+                  <option value="">Seleccionar area...</option>
+                  {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Mesas ({dialog.table_ids.length} seleccionadas)</label>
+              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-background rounded-lg border border-border">
+                {dialog.area_id && (
+                  <button onClick={() => {
+                    const areaTables = tables.filter(t => t.area_id === dialog.area_id && t.status === 'free');
+                    setDialog(p => ({ ...p, table_ids: areaTables.map(t => t.id) }));
+                  }} className="px-2 py-1 rounded bg-primary/20 text-primary text-[10px] font-bold">
+                    Seleccionar toda el area
+                  </button>
+                )}
+                {tables.filter(t => t.status === 'free' && (!dialog.area_id || t.area_id === dialog.area_id)).map(t => {
+                  const selected = dialog.table_ids.includes(t.id);
+                  return (
+                    <button key={t.id} onClick={() => {
+                      setDialog(p => ({ ...p, table_ids: selected ? p.table_ids.filter(id => id !== t.id) : [...p.table_ids, t.id] }));
+                    }} className={`px-2.5 py-1.5 rounded-lg text-xs font-oswald font-bold transition-all ${
+                      selected ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}>
+                      Mesa {t.number}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <input value={dialog.notes} onChange={e => setDialog(p => ({ ...p, notes: e.target.value }))}
