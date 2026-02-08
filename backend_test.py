@@ -627,6 +627,231 @@ class DOPOSAPITester:
         # 404 is expected, so we pass if we get a proper HTTP response
         return True
 
+    # ========== PHASE 4 TESTING ==========
+
+    def test_phase4_users_with_permissions(self):
+        """Test Phase 4: Users endpoint with permissions field"""
+        success, response = self.run_test(
+            "Get Users with Permissions",
+            "GET",
+            "users",
+            200,
+            description="Phase 4: Get all users with permissions field"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Users found: {len(response)}")
+            # Check that users have permissions field
+            for user in response:
+                permissions = user.get('permissions', {})
+                print(f"     {user['name']} ({user['role']}) - Permissions: {len(permissions)} keys")
+                # Check key permissions exist
+                if user['name'] == 'Admin':
+                    if not permissions.get('view_dashboard'):
+                        print(f"     ❌ Admin should have view_dashboard permission")
+                        return False
+                if user['name'] == 'Carlos' and user['role'] == 'waiter':
+                    if permissions.get('view_dashboard'):
+                        print(f"     ❌ Waiter should NOT have view_dashboard permission")
+                        return False
+            return len(response) >= 5  # Should have at least 5 users from seed
+        return False
+
+    def test_phase4_payment_methods_crud(self):
+        """Test Phase 4: Payment methods CRUD operations"""
+        # Test GET
+        success, response = self.run_test(
+            "Get Payment Methods",
+            "GET",
+            "payment-methods",
+            200,
+            description="Phase 4: Get payment methods (Efectivo, Tarjeta, etc.)"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Payment methods found: {len(response)}")
+            expected_methods = ['Efectivo', 'Tarjeta', 'Transferencia']
+            found_methods = [m['name'] for m in response]
+            for expected in expected_methods:
+                if not any(expected in method for method in found_methods):
+                    print(f"     ❌ Missing expected payment method: {expected}")
+                    return False
+            
+            # Test POST (create new method)
+            create_success, create_response = self.run_test(
+                "Create Payment Method",
+                "POST",
+                "payment-methods",
+                200,
+                data={"name": "Test Payment", "icon": "test"},
+                description="Create new payment method"
+            )
+            
+            if create_success:
+                new_method_id = create_response.get('id')
+                print(f"     Created payment method: {new_method_id}")
+                
+                # Test PUT (update)
+                update_success, _ = self.run_test(
+                    "Update Payment Method",
+                    "PUT",
+                    f"payment-methods/{new_method_id}",
+                    200,
+                    data={"name": "Test Payment Updated"},
+                    description="Update payment method"
+                )
+                return update_success
+            
+            return True
+        return False
+
+    def test_phase4_inventory_movements(self):
+        """Test Phase 4: Inventory movements endpoint"""
+        success, response = self.run_test(
+            "Get Inventory Movements",
+            "GET",
+            "inventory/movements",
+            200,
+            description="Phase 4: Get inventory movement logs"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Inventory movements: {len(response)}")
+            for movement in response[:3]:  # Show first 3
+                print(f"     {movement.get('product_id', 'unknown')[:8]}: {movement.get('quantity', 0)} - {movement.get('reason', 'unknown')}")
+            return True
+        return False
+
+    def test_phase4_inventory_report_with_costs(self):
+        """Test Phase 4: Inventory report with costs and margins"""
+        success, response = self.run_test(
+            "Get Inventory Report with Costs",
+            "GET",
+            "reports/inventory",
+            200,
+            description="Phase 4: Get inventory with costs and profit margins"
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Inventory items with costs: {len(response)}")
+            for item in response[:3]:  # Show first 3
+                name = item.get('product_name', 'Unknown')
+                cost = item.get('recipe_cost', 0)
+                price = item.get('sale_price', 0)
+                margin = item.get('margin_pct', 0)
+                print(f"     {name}: Cost RD$ {cost:.2f}, Price RD$ {price:.2f}, Margin {margin:.1f}%")
+            return True
+        return False
+
+    def test_phase4_profit_report(self):
+        """Test Phase 4: Profit report endpoint"""
+        today = datetime.now().strftime("%Y-%m-%d")
+        success, response = self.run_test(
+            "Get Profit Report",
+            "GET",
+            f"reports/profit?date={today}",
+            200,
+            description="Phase 4: Get profit report with margins"
+        )
+        
+        if success and isinstance(response, dict):
+            revenue = response.get('total_revenue', 0)
+            cost = response.get('total_cost', 0)
+            profit = response.get('gross_profit', 0)
+            margin = response.get('margin_pct', 0)
+            print(f"   Revenue: RD$ {revenue:.2f}, Cost: RD$ {cost:.2f}")
+            print(f"   Profit: RD$ {profit:.2f}, Margin: {margin:.1f}%")
+            products = response.get('products', [])
+            print(f"   Products analyzed: {len(products)}")
+            return 'total_revenue' in response
+        return False
+
+    def test_phase4_dgii_607_export(self):
+        """Test Phase 4: DGII 607 export endpoint"""
+        current_month = datetime.now().strftime("%Y-%m")
+        success, response = self.run_test(
+            "Export DGII 607",
+            "GET",
+            f"export/dgii-607?month={current_month}",
+            200,
+            description="Phase 4: Export DGII 607 format"
+        )
+        
+        if success and isinstance(response, dict):
+            records = response.get('total_records', 0)
+            amount = response.get('total_amount', 0)
+            itbis = response.get('total_itbis', 0)
+            rows = response.get('rows', [])
+            print(f"   607 Export: {records} records, Total RD$ {amount:.2f}, ITBIS RD$ {itbis:.2f}")
+            if rows:
+                first_row = rows[0]
+                print(f"   Sample row: NCF {first_row.get('ncf', 'N/A')}, Total RD$ {first_row.get('total', 0):.2f}")
+            return 'rows' in response
+        return False
+
+    def test_phase4_dgii_608_export(self):
+        """Test Phase 4: DGII 608 export endpoint"""  
+        current_month = datetime.now().strftime("%Y-%m")
+        success, response = self.run_test(
+            "Export DGII 608",
+            "GET",
+            f"export/dgii-608?month={current_month}",
+            200,
+            description="Phase 4: Export DGII 608 format"
+        )
+        
+        if success and isinstance(response, dict):
+            records = response.get('total_records', 0)
+            amount = response.get('total_amount', 0)
+            rows = response.get('rows', [])
+            print(f"   608 Export: {records} records, Total RD$ {amount:.2f}")
+            if rows:
+                first_row = rows[0]
+                print(f"   Sample row: RNC {first_row.get('rnc', 'N/A')}, Supplier {first_row.get('supplier_name', 'N/A')}")
+            return 'rows' in response
+        return False
+
+    def test_admin_login(self):
+        """Test Admin login (PIN 0000) - Phase 4"""
+        success, response = self.run_test(
+            "PIN Login (Admin - 0000)",
+            "POST",
+            "auth/login",
+            200,
+            data={"pin": "0000"},
+            description="Login with Admin PIN - should have all permissions"
+        )
+        if success and 'token' in response:
+            user = response.get('user', {})
+            permissions = user.get('permissions', {})
+            print(f"   Logged in as: {user.get('name', 'Unknown')} ({user.get('role', 'unknown')})")
+            print(f"   Has view_dashboard: {permissions.get('view_dashboard', False)}")
+            print(f"   Has manage_users: {permissions.get('manage_users', False)}")
+            print(f"   Has move_tables: {permissions.get('move_tables', False)}")
+            return permissions.get('view_dashboard') and permissions.get('manage_users')
+        return False
+
+    def test_cashier_login(self):
+        """Test Cashier login (PIN 4321) - Phase 4"""
+        success, response = self.run_test(
+            "PIN Login (Luis - 4321)",
+            "POST",
+            "auth/login",
+            200,
+            data={"pin": "4321"},
+            description="Login with Luis cashier PIN - limited permissions"
+        )
+        if success and 'token' in response:
+            user = response.get('user', {})
+            permissions = user.get('permissions', {})
+            print(f"   Logged in as: {user.get('name', 'Unknown')} ({user.get('role', 'unknown')})")
+            print(f"   Has view_dashboard: {permissions.get('view_dashboard', False)}")
+            print(f"   Has move_tables: {permissions.get('move_tables', False)}")
+            print(f"   Has void_items: {permissions.get('void_items', False)}")
+            # Cashier should have void_items but NOT view_dashboard or move_tables
+            return permissions.get('void_items') and not permissions.get('view_dashboard') and not permissions.get('move_tables')
+        return False
+
     # ========== PHASE 3 TESTING ==========
 
     def test_dashboard_kpis(self):
