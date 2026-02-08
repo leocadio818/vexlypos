@@ -17,7 +17,7 @@ export default function Billing() {
   const [splitDialog, setSplitDialog] = useState(false);
   const [splitLabel, setSplitLabel] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
-  const [payDialog, setPayDialog] = useState({ open: false, billId: null });
+  const [payDialog, setPayDialog] = useState({ open: false, billId: null, billTotal: 0 });
   const [tipPct, setTipPct] = useState(0);
   const [printHtml, setPrintHtml] = useState('');
   const [printOpen, setPrintOpen] = useState(false);
@@ -25,6 +25,9 @@ export default function Billing() {
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [paymentMethods, setPaymentMethods] = useState([]);
+  const [payAmounts, setPayAmounts] = useState({}); // {methodName: amount}
+  const [payStep, setPayStep] = useState('method'); // 'method' | 'amount'
+  const [activePayMethod, setActivePayMethod] = useState(null);
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
