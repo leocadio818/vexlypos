@@ -1134,6 +1134,90 @@ async def print_receipt(bill_id: str):
     <div style='text-align:center;margin-top:8px;font-size:10px;border-top:1px dashed #000;padding-top:8px;'>
     Pago: {'Efectivo' if bill['payment_method']=='cash' else 'Tarjeta'}<br>Gracias por su visita!</div></div>"""}
 
+@api.get("/print/receipt-escpos/{bill_id}")
+async def print_receipt_escpos(bill_id: str):
+    """Returns ESC/POS raw command data for thermal printers"""
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        raise HTTPException(status_code=404)
+    lines = []
+    lines.append({"cmd": "center"})
+    lines.append({"cmd": "bold", "text": "MESA POS RD"})
+    lines.append({"text": "RNC: 000-000000-0"})
+    lines.append({"text": f"NCF: {bill['ncf']}"})
+    lines.append({"cmd": "line"})
+    lines.append({"cmd": "left"})
+    lines.append({"text": f"Mesa: {bill['table_number']} | {bill['label']}"})
+    lines.append({"text": f"Fecha: {bill.get('paid_at', bill['created_at'])[:19]}"})
+    lines.append({"cmd": "line"})
+    for item in bill.get("items", []):
+        mods = " (".join(m["name"] for m in item.get("modifiers", []))
+        mod_str = f" ({mods})" if mods else ""
+        lines.append({"text": f"{item['quantity']}x {item['product_name']}{mod_str}", "right": f"RD${item['total']:,.2f}"})
+    lines.append({"cmd": "line"})
+    lines.append({"text": "Subtotal", "right": f"RD${bill['subtotal']:,.2f}"})
+    lines.append({"text": f"ITBIS {bill.get('itbis_rate',18)}%", "right": f"RD${bill['itbis']:,.2f}"})
+    lines.append({"text": f"Propina {bill.get('propina_percentage',10)}%", "right": f"RD${bill.get('propina_legal',0):,.2f}"})
+    lines.append({"cmd": "bold", "text": "TOTAL", "right": f"RD${bill['total']:,.2f}"})
+    lines.append({"cmd": "line"})
+    lines.append({"cmd": "center"})
+    lines.append({"text": f"Pago: {'Efectivo' if bill['payment_method']=='cash' else 'Tarjeta'}"})
+    lines.append({"text": "Gracias por su visita!"})
+    lines.append({"cmd": "cut"})
+    return {"printer_type": "escpos", "lines": lines, "bill_id": bill_id}
+
+@api.get("/print/comanda-escpos/{order_id}")
+async def print_comanda_escpos(order_id: str):
+    """Returns ESC/POS raw command data for kitchen printer"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404)
+    lines = []
+    lines.append({"cmd": "center"})
+    lines.append({"cmd": "double", "text": f"MESA {order['table_number']}"})
+    lines.append({"cmd": "left"})
+    lines.append({"text": f"Mesero: {order['waiter_name']}"})
+    lines.append({"text": f"Hora: {order['created_at'][:19]}"})
+    lines.append({"cmd": "line"})
+    for item in order.get("items", []):
+        if item["status"] == "cancelled":
+            continue
+        lines.append({"cmd": "bold", "text": f"{item['quantity']}x {item['product_name']}"})
+        for m in item.get("modifiers", []):
+            lines.append({"text": f"  > {m['name']}"})
+        if item.get("notes"):
+            lines.append({"text": f"  * {item['notes']}"})
+    lines.append({"cmd": "line"})
+    lines.append({"cmd": "cut"})
+    return {"printer_type": "escpos", "lines": lines, "order_id": order_id}
+
+# ─── KITCHEN TV DISPLAY ───
+@api.get("/kitchen/tv")
+async def kitchen_tv_data():
+    """Optimized endpoint for kitchen TV display - large format, auto-refresh"""
+    orders = await db.orders.find(
+        {"status": {"$in": ["sent", "active"]},
+         "items": {"$elemMatch": {"sent_to_kitchen": True, "status": {"$nin": ["served", "cancelled"]}}}},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(50)
+
+    result = []
+    for order in orders:
+        kitchen_items = [i for i in order["items"] if i.get("sent_to_kitchen") and i["status"] not in ["served", "cancelled"]]
+        if not kitchen_items:
+            continue
+        elapsed = (datetime.now(timezone.utc) - datetime.fromisoformat(order["created_at"].replace("Z", "+00:00"))).total_seconds() / 60
+        result.append({
+            "order_id": order["id"], "table_number": order["table_number"],
+            "waiter_name": order["waiter_name"], "created_at": order["created_at"],
+            "elapsed_minutes": round(elapsed, 1),
+            "is_urgent": elapsed > 15, "is_critical": elapsed > 25,
+            "items": [{"id": i["id"], "product_name": i["product_name"], "quantity": i["quantity"],
+                       "modifiers": [m["name"] for m in i.get("modifiers", [])],
+                       "notes": i.get("notes", ""), "status": i["status"]} for i in kitchen_items]
+        })
+    return {"orders": result, "total": len(result), "timestamp": now_iso()}}
+
 @api.get("/print/comanda/{order_id}")
 async def print_comanda(order_id: str):
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
