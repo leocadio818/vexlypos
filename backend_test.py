@@ -624,6 +624,71 @@ class DOPOSAPITester:
         # 404 is expected, so we pass if we get a proper HTTP response
         return True
 
+    # ========== PHASE 3 TESTING ==========
+
+    def test_dashboard_kpis(self):
+        """Test dashboard KPIs endpoint (Phase 3)"""
+        success, response = self.run_test(
+            "Dashboard KPIs",
+            "GET",
+            "reports/dashboard",
+            200,
+            description="Get real-time dashboard KPIs (Ventas Hoy, Efectivo, ITBIS, Ocupacion)"
+        )
+        
+        if success and isinstance(response, dict):
+            today = response.get('today', {})
+            operations = response.get('operations', {})
+            loyalty = response.get('loyalty', {})
+            hourly = response.get('hourly_sales', [])
+            
+            print(f"   Today Sales: RD$ {today.get('total_sales', 0):.2f}")
+            print(f"   Bills Today: {today.get('bills_count', 0)}")
+            print(f"   Cash: RD$ {today.get('cash', 0):.2f}, Card: RD$ {today.get('card', 0):.2f}")
+            print(f"   ITBIS: RD$ {today.get('itbis', 0):.2f}")
+            print(f"   Occupancy: {operations.get('occupancy_pct', 0)}% ({operations.get('occupied_tables', 0)}/{operations.get('total_tables', 0)})")
+            print(f"   Active Orders: {operations.get('active_orders', 0)}")
+            print(f"   Open Shifts: {operations.get('open_shifts', 0)}")
+            print(f"   Inventory Alerts: {operations.get('inventory_alerts', 0)}")
+            print(f"   Loyalty Customers: {loyalty.get('total_customers', 0)}")
+            print(f"   Hourly Data Points: {len(hourly)}")
+            
+            # Verify structure
+            required_keys = ['today', 'operations', 'loyalty', 'hourly_sales']
+            return all(key in response for key in required_keys)
+        return False
+
+    def test_pay_bill_with_loyalty(self, bill_id, customer_id):
+        """Test paying a bill with customer loyalty points (Phase 3)"""
+        if not bill_id:
+            print("❌ Cannot test loyalty payment - no bill ID")
+            return False
+            
+        payment_data = {
+            "payment_method": "cash",
+            "tip_percentage": 10,
+            "additional_tip": 0,
+            "customer_id": customer_id  # This triggers loyalty points
+        }
+        
+        success, response = self.run_test(
+            "Pay Bill with Loyalty",
+            "POST",
+            f"bills/{bill_id}/pay",
+            200,
+            data=payment_data,
+            description="Process payment with loyalty customer to accumulate points"
+        )
+        
+        if success:
+            points_earned = response.get('points_earned', 0)
+            print(f"   Payment status: {response.get('status', 'unknown')}")
+            print(f"   Payment method: {response.get('payment_method', 'unknown')}")
+            print(f"   Final total: RD$ {response.get('total', 0):.2f}")
+            print(f"   Points earned: {points_earned}")
+            return points_earned > 0  # Should earn points
+        return False
+
 def main():
     """Run comprehensive POS API tests"""
     print("🏪 Dominican Republic POS System - API Testing")
