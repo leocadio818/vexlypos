@@ -568,7 +568,22 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     else:
         await db.tables.update_one({"id": bill["table_id"]}, {"$set": {"status": "billed"}})
 
-    return await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    # Loyalty points accumulation
+    cust_id = input.customer_id or bill.get("customer_id", "")
+    points_earned = 0
+    if cust_id:
+        config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"points_per_hundred": 10}
+        points_earned = int((total / 100) * config.get("points_per_hundred", 10))
+        await db.customers.update_one({"id": cust_id}, {
+            "$inc": {"points": points_earned, "total_spent": total, "visits": 1},
+            "$set": {"last_visit": now_iso()}
+        })
+        await db.bills.update_one({"id": bill_id}, {"$set": {"customer_id": cust_id, "points_earned": points_earned}})
+
+    result = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if result:
+        result["points_earned"] = points_earned
+    return result
 
 @api.post("/bills/{bill_id}/cancel")
 async def cancel_bill(bill_id: str, user=Depends(get_current_user)):
