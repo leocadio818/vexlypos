@@ -715,7 +715,9 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         raise HTTPException(status_code=404, detail="Factura no encontrada")
 
     propina = round(bill["subtotal"] * (input.tip_percentage / 100), 2) + input.additional_tip
-    total = round(bill["subtotal"] + bill["itbis"] + propina, 2)
+    # Recalculate: use stored itbis + new tip
+    itbis = bill.get("itbis", 0)
+    total = round(bill["subtotal"] + itbis + propina, 2)
 
     await db.bills.update_one({"id": bill_id}, {"$set": {
         "status": "paid", "payment_method": input.payment_method,
