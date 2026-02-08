@@ -791,6 +791,32 @@ def main():
     if not tester.test_print_templates():
         failed_tests.append("Print Templates")
     
+    # Step 8: PHASE 3 FEATURES TESTING
+    print("\n🆕 PHASE 3 FEATURES TESTING")
+    print("    (Dashboard KPIs, Loyalty Points in Billing)")
+    
+    # Dashboard KPIs
+    if not tester.test_dashboard_kpis():
+        failed_tests.append("Dashboard KPIs")
+    
+    # Loyalty Points Integration Test (if we have bill and customer)
+    if order_id and bill_id:
+        # Get first customer for testing
+        success, customers = tester.run_test("Get Customers for Loyalty Test", "GET", "customers", 200)
+        if success and customers:
+            customer_id = customers[0]['id']
+            # Create another bill for loyalty test
+            bill2_id = tester.test_create_bill(order_id)
+            if bill2_id:
+                if not tester.test_pay_bill_with_loyalty(bill2_id, customer_id):
+                    failed_tests.append("Loyalty Points Payment")
+            else:
+                failed_tests.append("Create Bill for Loyalty Test")
+        else:
+            print("   ⚠️  Skipping loyalty payment test - no customers available")
+    else:
+        print("   ⚠️  Skipping loyalty payment test - no order/bill available")
+    
     # Final results
     print("\n" + "=" * 60)
     print(f"📊 FINAL RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
