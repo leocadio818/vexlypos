@@ -158,7 +158,13 @@ export default function TableMap() {
     } catch { toast.error('Error moviendo mesa'); }
   };
 
-  const handleTableClick = (table) => navigate(`/order/${table.id}`);
+  const handleTableClick = (table) => {
+    if (table.status === 'reserved') {
+      toast.error('Mesa reservada. Solo un gerente puede desbloquearla.');
+      return;
+    }
+    navigate(`/order/${table.id}`);
+  };
 
   const handleResize = (table) => {
     setResizeDialog({ open: true, table, width: table.width || 80, height: table.height || 80 });
