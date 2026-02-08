@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { areasAPI, tablesAPI, reasonsAPI, categoriesAPI, productsAPI } from '@/lib/api';
-import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil, Printer, ShoppingBag, Cog } from 'lucide-react';
+import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil, Printer, ShoppingBag, Cog, BarChart3, Truck, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
