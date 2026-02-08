@@ -109,11 +109,13 @@ class CreateBillInput(BaseModel):
     item_ids: List[str] = []
     tip_percentage: float = 10
     payment_method: str = "cash"
+    customer_id: str = ""
 
 class PayBillInput(BaseModel):
     payment_method: str = "cash"
     tip_percentage: float = 10
     additional_tip: float = 0
+    customer_id: str = ""
 
 class CancelItemInput(BaseModel):
     reason_id: str
