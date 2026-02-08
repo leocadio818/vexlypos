@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { kitchenAPI } from '@/lib/api';
-import { Clock, ChefHat, CheckCircle2, ArrowRight, Printer } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, ArrowRight, Printer, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
