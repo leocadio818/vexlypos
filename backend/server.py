@@ -1511,19 +1511,53 @@ async def list_reservations(date: Optional[str] = Query(None)):
 
 @api.post("/reservations")
 async def create_reservation(input: dict):
+    table_ids = input.get("table_ids", [])
+    if input.get("table_id") and input["table_id"] not in table_ids:
+        table_ids.append(input["table_id"])
+    table_numbers = []
+    for tid in table_ids:
+        t = await db.tables.find_one({"id": tid}, {"_id": 0})
+        if t:
+            table_numbers.append(t["number"])
+            await db.tables.update_one({"id": tid}, {"$set": {"status": "reserved", "reservation_id": None}})
     doc = {"id": gen_id(), "customer_name": input.get("customer_name",""),
            "phone": input.get("phone",""), "date": input.get("date",""),
            "time": input.get("time",""), "party_size": input.get("party_size",2),
-           "table_id": input.get("table_id",""), "table_number": input.get("table_number",0),
+           "table_ids": table_ids, "table_numbers": table_numbers,
+           "area_id": input.get("area_id", ""),
            "notes": input.get("notes",""), "status": "confirmed",
            "created_at": now_iso()}
     await db.reservations.insert_one(doc)
+    # Update tables with reservation id
+    for tid in table_ids:
+        await db.tables.update_one({"id": tid}, {"$set": {"status": "reserved", "reservation_id": doc["id"]}})
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @api.put("/reservations/{rid}")
 async def update_reservation(rid: str, input: dict):
     if "_id" in input: del input["_id"]
+    old = await db.reservations.find_one({"id": rid}, {"_id": 0})
+    if input.get("status") in ["cancelled", "completed", "no_show"]:
+        # Free the tables
+        if old:
+            for tid in old.get("table_ids", []):
+                await db.tables.update_one({"id": tid}, {"$set": {"status": "free", "reservation_id": None}})
+    if input.get("status") == "seated" and old:
+        for tid in old.get("table_ids", []):
+            await db.tables.update_one({"id": tid}, {"$set": {"status": "occupied", "reservation_id": None}})
     await db.reservations.update_one({"id": rid}, {"$set": input})
+    return {"ok": True}
+
+@api.post("/reservations/{rid}/release")
+async def release_reservation(rid: str, user=Depends(get_current_user)):
+    """Release reserved tables - requires authorized role"""
+    perms = get_permissions(user.get("role", "waiter"))
+    res = await db.reservations.find_one({"id": rid}, {"_id": 0})
+    if not res:
+        raise HTTPException(status_code=404)
+    for tid in res.get("table_ids", []):
+        await db.tables.update_one({"id": tid}, {"$set": {"status": "free", "reservation_id": None}})
+    await db.reservations.update_one({"id": rid}, {"$set": {"status": "no_show"}})
     return {"ok": True}
 
 @api.delete("/reservations/{rid}")
