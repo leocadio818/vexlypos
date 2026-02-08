@@ -627,38 +627,58 @@ export default function Settings() {
           </DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={userDialog.name} onChange={e => setUserDialog(p => ({ ...p, name: e.target.value }))}
-              placeholder="Nombre" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-name-input" />
+              placeholder="Nombre completo" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-name-input" />
             <input value={userDialog.pin} onChange={e => setUserDialog(p => ({ ...p, pin: e.target.value }))}
-              placeholder={userDialog.editId ? "Nuevo PIN (dejar vacio para no cambiar)" : "PIN (4 digitos)"}
-              type="password" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-pin-input" />
-            <select value={userDialog.role} onChange={e => setUserDialog(p => ({ ...p, role: e.target.value }))}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-role-select">
-              <option value="admin">Administrador</option>
-              <option value="waiter">Mesero</option>
-              <option value="cashier">Cajero</option>
-              <option value="kitchen">Cocina</option>
-            </select>
+              placeholder={userDialog.editId ? "Nuevo PIN (vacio = no cambiar)" : "PIN (min 4 digitos)"}
+              type="password" maxLength={6} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-pin-input" />
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Rol</label>
+              <div className="flex gap-1 flex-wrap">
+                {roles.map(r => (
+                  <button key={r.id} onClick={() => setUserDialog(p => ({ ...p, role: r.code }))}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                      userDialog.role === r.code ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground'
+                    }`}>{r.name}</button>
+                ))}
+                <button onClick={() => setRoleDialog({ open: true, name: '', code: '', editId: null })}
+                  className="px-2 py-1.5 rounded-lg text-xs border border-dashed border-muted-foreground text-muted-foreground hover:border-primary hover:text-primary">
+                  <Plus size={12} className="inline mr-0.5" /> Rol
+                </button>
+              </div>
+            </div>
             <div className="border border-border rounded-lg p-3">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1">
-                <Shield size={12} /> Permisos Personalizados
+                <Shield size={12} /> Permisos ({Object.values(userDialog.permissions).filter(Boolean).length} activos)
               </h4>
-              <ScrollArea className="max-h-40">
-                <div className="space-y-2">
-                  {Object.entries(PERM_LABELS).map(([key, label]) => (
-                    <div key={key} className="flex items-center justify-between">
-                      <span className="text-xs">{label}</span>
-                      <Switch
-                        checked={userDialog.permissions[key] !== undefined ? userDialog.permissions[key] : false}
-                        onCheckedChange={(v) => setUserDialog(p => ({ ...p, permissions: { ...p.permissions, [key]: v } }))}
-                      />
-                    </div>
-                  ))}
+              <ScrollArea className="max-h-48">
+                <div className="space-y-1">
+                  {Object.entries(PERM_LABELS).map(([key, label]) => {
+                    const val = userDialog.permissions[key] !== undefined ? userDialog.permissions[key] : false;
+                    return (
+                      <div key={key} className="flex items-center justify-between py-0.5">
+                        <span className="text-[11px]">{label}</span>
+                        <Switch checked={val} onCheckedChange={(v) => setUserDialog(p => ({ ...p, permissions: { ...p.permissions, [key]: v } }))} />
+                      </div>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </div>
             <Button onClick={handleSaveUser} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-user">
               {userDialog.editId ? 'GUARDAR CAMBIOS' : 'CREAR USUARIO'}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Dialog */}
+      <Dialog open={roleDialog.open} onOpenChange={(o) => !o && setRoleDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-xs bg-card border-border" data-testid="role-dialog">
+          <DialogHeader><DialogTitle className="font-oswald">Nuevo Rol</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <input value={roleDialog.name} onChange={e => setRoleDialog(p => ({ ...p, name: e.target.value }))}
+              placeholder="Nombre del rol (ej: Supervisor, Host)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
+            <Button onClick={handleSaveRole} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR ROL</Button>
           </div>
         </DialogContent>
       </Dialog>
