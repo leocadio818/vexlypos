@@ -1387,6 +1387,85 @@ async def export_dgii_608(month: Optional[str] = Query(None)):
         })
     return {"month": month, "total_records": len(rows), "total_amount": round(sum(r["total"] for r in rows), 2), "rows": rows}
 
+# ─── SALE TYPES ───
+@api.get("/sale-types")
+async def list_sale_types():
+    types = await db.sale_types.find({}, {"_id": 0}).to_list(50)
+    if not types:
+        defaults = [
+            {"id": gen_id(), "name": "Consumidor Final", "code": "dine_in", "tax_rate": 18, "tip_default": 10, "active": True},
+            {"id": gen_id(), "name": "Take Out", "code": "take_out", "tax_rate": 18, "tip_default": 0, "active": True},
+            {"id": gen_id(), "name": "Delivery", "code": "delivery", "tax_rate": 18, "tip_default": 0, "active": True},
+        ]
+        await db.sale_types.insert_many(defaults)
+        return defaults
+    return types
+
+@api.post("/sale-types")
+async def create_sale_type(input: dict):
+    doc = {"id": gen_id(), "name": input.get("name",""), "code": input.get("code",""),
+           "tax_rate": input.get("tax_rate", 18), "tip_default": input.get("tip_default", 0), "active": True}
+    await db.sale_types.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/sale-types/{sid}")
+async def update_sale_type(sid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.sale_types.update_one({"id": sid}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/sale-types/{sid}")
+async def delete_sale_type(sid: str):
+    await db.sale_types.delete_one({"id": sid})
+    return {"ok": True}
+
+# ─── SHIFT VALIDATION ───
+@api.get("/shifts/check")
+async def check_shift_required(user=Depends(get_current_user)):
+    """Check if user needs to open a shift before selling"""
+    shift = await db.shifts.find_one({"user_id": user["user_id"], "status": "open"}, {"_id": 0})
+    return {"has_open_shift": shift is not None, "shift": shift}
+
+# ─── DAY CLOSE ───
+@api.get("/day-close/check")
+async def check_day_close():
+    """Check if day can be closed"""
+    occupied = await db.tables.count_documents({"status": {"$ne": "free"}})
+    open_shifts = await db.shifts.find({"status": "open"}, {"_id": 0}).to_list(50)
+    open_orders = await db.orders.count_documents({"status": {"$in": ["active", "sent"]}})
+    can_close = occupied == 0 and len(open_shifts) == 0 and open_orders == 0
+    blockers = []
+    if occupied > 0: blockers.append(f"{occupied} mesa(s) ocupada(s)")
+    if len(open_shifts) > 0: blockers.append(f"{len(open_shifts)} turno(s) abierto(s): " + ", ".join(s["user_name"] for s in open_shifts))
+    if open_orders > 0: blockers.append(f"{open_orders} orden(es) activa(s)")
+    return {"can_close": can_close, "blockers": blockers}
+
+@api.post("/day-close/execute")
+async def execute_day_close(input: dict, user=Depends(get_current_user)):
+    check = await check_day_close()
+    if not check["can_close"]:
+        raise HTTPException(status_code=400, detail="No se puede cerrar: " + ", ".join(check["blockers"]))
+    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(5000)
+    day_bills = [b for b in bills if b.get("paid_at", "").startswith(date)]
+    total = sum(b["total"] for b in day_bills)
+    doc = {"id": gen_id(), "date": date, "total_bills": len(day_bills), "total_sales": round(total, 2),
+           "closed_by": user["name"], "closed_at": now_iso()}
+    await db.day_closes.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+# ─── STATION CONFIG ───
+@api.get("/station-config")
+async def get_station_config():
+    config = await db.station_config.find_one({}, {"_id": 0})
+    return config or {"require_shift_to_sell": True, "require_cash_count": False, "auto_send_on_logout": True}
+
+@api.put("/station-config")
+async def update_station_config(input: dict):
+    if "_id" in input: del input["_id"]
+    await db.station_config.update_one({}, {"$set": input}, upsert=True)
+    return {"ok": True}
+
 # ─── PRINT CHANNELS ───
 @api.get("/print-channels")
 async def list_print_channels():
