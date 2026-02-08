@@ -71,6 +71,8 @@ export default function Settings() {
           axios.get(`${API}/station-config`, { headers: hdrs() }),
         ]);
         setSaleTypes(stRes.data); setPrintChannels(pcRes.data); setStationConfig(scRes.data);
+        const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
+        setRoles(rolesRes.data);
       } catch {}
     } catch {}
   };
