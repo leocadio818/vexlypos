@@ -92,7 +92,18 @@ export const productsAPI = {
 // Modifiers
 export const modifiersAPI = {
   list: () => api.get('/modifiers'),
+  get: (id) => api.get(`/modifiers/${id}`),
   create: (data) => api.post('/modifiers', data),
+  update: (id, data) => api.put(`/modifiers/${id}`, data),
+  delete: (id) => api.delete(`/modifiers/${id}`),
+};
+
+// Report Categories (for product classification)
+export const reportCategoriesAPI = {
+  list: () => api.get('/report-categories'),
+  create: (data) => api.post('/report-categories', data),
+  update: (id, data) => api.put(`/report-categories/${id}`, data),
+  delete: (id) => api.delete(`/report-categories/${id}`),
 };
 
 // Orders
