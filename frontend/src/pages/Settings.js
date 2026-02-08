@@ -519,10 +519,10 @@ export default function Settings() {
           <TabsContent value="products">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-oswald text-base font-bold">Productos</h2>
-              <Button onClick={() => setProductDialog({ open: true, name: '', category_id: categories[0]?.id || '', price: '', track_inventory: false })} size="sm"
-                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-product-btn">
-                <Plus size={14} className="mr-1" /> Agregar
-              </Button>
+              <a href="/product/new"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold active:scale-95 transition-transform" data-testid="add-product-btn">
+                <Plus size={14} /> Nuevo Producto
+              </a>
             </div>
             <div className="space-y-1">
               {categories.map(cat => (
@@ -531,10 +531,29 @@ export default function Settings() {
                     <Tag size={12} style={{ color: cat.color }} /> {cat.name}
                   </h3>
                   {products.filter(p => p.category_id === cat.id).map(prod => (
-                    <div key={prod.id} className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 ml-4 mb-1">
-                      <span className="text-sm">{prod.name}</span>
-                      <span className="font-oswald text-sm text-primary font-bold">RD$ {prod.price?.toFixed(2)}</span>
-                    </div>
+                    <a 
+                      key={prod.id} 
+                      href={`/product/${prod.id}`}
+                      className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 ml-4 mb-1 hover:border-primary/50 hover:bg-card transition-colors cursor-pointer"
+                      data-testid={`product-${prod.id}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {prod.button_bg_color && (
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: prod.button_bg_color }} />
+                        )}
+                        <span className="text-sm">{prod.name}</span>
+                        {prod.printed_name && prod.printed_name !== prod.name && (
+                          <span className="text-[10px] text-muted-foreground font-mono">({prod.printed_name})</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {prod.modifier_assignments?.length > 0 && (
+                          <Badge variant="outline" className="text-[9px]">{prod.modifier_assignments.length} mod</Badge>
+                        )}
+                        <span className="font-oswald text-sm text-primary font-bold">RD$ {prod.price?.toFixed(2)}</span>
+                        <Pencil size={12} className="text-muted-foreground" />
+                      </div>
+                    </a>
                   ))}
                 </div>
               ))}
