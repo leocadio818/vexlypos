@@ -38,6 +38,23 @@ export default function Login() {
     setLoading(false);
   };
 
+  // Physical keyboard support
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key >= '0' && e.key <= '9') {
+        setPin(prev => prev.length < 6 ? prev + e.key : prev);
+      } else if (e.key === 'Backspace') {
+        setPin(prev => prev.slice(0, -1));
+      } else if (e.key === 'Enter') {
+        handleSubmit();
+      } else if (e.key === 'Escape') {
+        setPin('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
+
   const digits = [1,2,3,4,5,6,7,8,9];
 
   return (
