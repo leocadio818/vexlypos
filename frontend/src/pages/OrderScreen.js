@@ -134,6 +134,55 @@ export default function OrderScreen() {
     });
   };
 
+  // Pre-check (pre-cuenta) functions
+  const fetchPreCheckCount = async () => {
+    if (!order) return;
+    try {
+      const r = await fetch(`${API_BASE}/api/print/pre-check-count/${order.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+      const d = await r.json();
+      setPreCheckCount(d.count || 0);
+    } catch {}
+  };
+
+  useEffect(() => { if (order) fetchPreCheckCount(); }, [order]);
+
+  const handlePrintPreCheck = async () => {
+    if (!order) return;
+    // If already printed, require manager PIN
+    if (preCheckCount > 0) {
+      setManagerPinDialog({ open: true, pin: '' });
+      return;
+    }
+    await doPrintPreCheck();
+  };
+
+  const doPrintPreCheck = async () => {
+    try {
+      const r = await fetch(`${API_BASE}/api/print/pre-check/${order.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+      const d = await r.json();
+      setPreCheckHtml(d.html);
+      setPreCheckOpen(true);
+      setPreCheckCount(d.print_number);
+    } catch { toast.error('Error generando pre-cuenta'); }
+  };
+
+  const handleManagerAuth = async () => {
+    try {
+      const r = await fetch(`${API_BASE}/api/auth/verify-manager`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+        body: JSON.stringify({ pin: managerPinDialog.pin })
+      });
+      if (r.ok) {
+        setManagerPinDialog({ open: false, pin: '' });
+        toast.success('Autorizado por gerente');
+        await doPrintPreCheck();
+      } else {
+        const d = await r.json();
+        toast.error(d.detail || 'No autorizado');
+      }
+    } catch { toast.error('Error de autorizacion'); }
+  };
+
   return (
     <div className="h-full flex flex-col lg:flex-row" data-testid="order-screen">
       {/* Left: Order Summary */}
