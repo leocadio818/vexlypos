@@ -1222,6 +1222,7 @@ async def auto_login(input: dict):
 @api.get("/kitchen/tv")
 async def kitchen_tv_data():
     """Optimized endpoint for kitchen TV display - large format, auto-refresh"""
+    config = await db.kitchen_config.find_one({}, {"_id": 0}) or {"warning_minutes": 15, "urgent_minutes": 25, "critical_minutes": 35}
     orders = await db.orders.find(
         {"status": {"$in": ["sent", "active"]},
          "items": {"$elemMatch": {"sent_to_kitchen": True, "status": {"$nin": ["served", "cancelled"]}}}},
@@ -1233,17 +1234,22 @@ async def kitchen_tv_data():
         kitchen_items = [i for i in order["items"] if i.get("sent_to_kitchen") and i["status"] not in ["served", "cancelled"]]
         if not kitchen_items:
             continue
-        elapsed = (datetime.now(timezone.utc) - datetime.fromisoformat(order["created_at"].replace("Z", "+00:00"))).total_seconds() / 60
+        try:
+            elapsed = (datetime.now(timezone.utc) - datetime.fromisoformat(order["created_at"].replace("Z", "+00:00"))).total_seconds() / 60
+        except:
+            elapsed = 0
         result.append({
             "order_id": order["id"], "table_number": order["table_number"],
             "waiter_name": order["waiter_name"], "created_at": order["created_at"],
             "elapsed_minutes": round(elapsed, 1),
-            "is_urgent": elapsed > 15, "is_critical": elapsed > 25,
+            "is_warning": elapsed > config.get("warning_minutes", 15),
+            "is_urgent": elapsed > config.get("urgent_minutes", 25),
+            "is_critical": elapsed > config.get("critical_minutes", 35),
             "items": [{"id": i["id"], "product_name": i["product_name"], "quantity": i["quantity"],
                        "modifiers": [m["name"] for m in i.get("modifiers", [])],
                        "notes": i.get("notes", ""), "status": i["status"]} for i in kitchen_items]
         })
-    return {"orders": result, "total": len(result), "timestamp": now_iso()}
+    return {"orders": result, "total": len(result), "timestamp": now_iso(), "config": config}
 
 @api.get("/print/comanda/{order_id}")
 async def print_comanda(order_id: str):
