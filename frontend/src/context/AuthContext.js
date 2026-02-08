@@ -45,7 +45,25 @@ export function AuthProvider({ children }) {
     return user.permissions?.[perm] === true;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Auto-send all pending orders before logout
+    try {
+      const token = localStorage.getItem('pos_token');
+      if (token) {
+        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders?status=active`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const orders = await res.json();
+        for (const order of orders) {
+          const pending = order.items?.filter(i => i.status === 'pending') || [];
+          if (pending.length > 0) {
+            await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/orders/${order.id}/send-kitchen`, {
+              method: 'POST', headers: { Authorization: `Bearer ${token}` }
+            });
+          }
+        }
+      }
+    } catch {}
     localStorage.removeItem('pos_token');
     setUser(null);
   };
