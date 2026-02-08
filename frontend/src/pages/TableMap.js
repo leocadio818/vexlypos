@@ -96,11 +96,6 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
       <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
         <Users size={9} /> {table.capacity}
       </span>
-      {!editMode && table.status !== 'free' && (
-        <span className="text-[8px] mt-0.5 font-medium uppercase tracking-wider" style={{ color: colors.border }}>
-          {table.status === 'occupied' ? 'Ocupada' : table.status === 'reserved' ? 'Reservada' : 'Facturada'}
-        </span>
-      )}
       {editMode && (
         <span className="text-[8px] text-primary mt-0.5"><Maximize2 size={8} className="inline" /></span>
       )}
