@@ -70,10 +70,12 @@ class POSAPITester:
 
         except requests.exceptions.Timeout:
             print(f"❌ FAILED - Request timeout")
+            self.failed_tests.append({"test": name, "error": "Request timeout"})
             self.log_result(name, False, "Request timeout")
             return False, {}
         except Exception as e:
             print(f"❌ FAILED - Error: {str(e)}")
+            self.failed_tests.append({"test": name, "error": str(e)})
             self.log_result(name, False, str(e))
             return False, {}
 
