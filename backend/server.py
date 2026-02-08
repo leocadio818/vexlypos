@@ -1448,6 +1448,63 @@ async def seed_data():
     ]
     await db.payment_methods.insert_many(pay_methods)
 
+    # Recipes with costs (cost per ingredient for main dishes)
+    recipe_data = [
+        {"product_name": "Bandera Dominicana", "ingredients": [
+            {"ingredient_name": "Arroz", "quantity": 0.25, "unit": "libra", "cost": 15},
+            {"ingredient_name": "Habichuelas", "quantity": 0.2, "unit": "libra", "cost": 20},
+            {"ingredient_name": "Carne guisada", "quantity": 0.3, "unit": "libra", "cost": 65},
+            {"ingredient_name": "Ensalada", "quantity": 1, "unit": "porcion", "cost": 15},
+            {"ingredient_name": "Maduro frito", "quantity": 1, "unit": "unidad", "cost": 8},
+        ]},
+        {"product_name": "Churrasco", "ingredients": [
+            {"ingredient_name": "Churrasco de res", "quantity": 0.5, "unit": "libra", "cost": 120},
+            {"ingredient_name": "Chimichurri", "quantity": 1, "unit": "porcion", "cost": 10},
+            {"ingredient_name": "Acompanante", "quantity": 1, "unit": "porcion", "cost": 20},
+        ]},
+        {"product_name": "Mofongo Relleno", "ingredients": [
+            {"ingredient_name": "Platano verde", "quantity": 3, "unit": "unidad", "cost": 8},
+            {"ingredient_name": "Chicharron", "quantity": 0.15, "unit": "libra", "cost": 25},
+            {"ingredient_name": "Relleno (carne/pollo)", "quantity": 0.2, "unit": "libra", "cost": 45},
+            {"ingredient_name": "Aceite", "quantity": 0.1, "unit": "litro", "cost": 5},
+        ]},
+        {"product_name": "Chivo Guisado", "ingredients": [
+            {"ingredient_name": "Chivo", "quantity": 0.4, "unit": "libra", "cost": 85},
+            {"ingredient_name": "Oregano/especias", "quantity": 1, "unit": "porcion", "cost": 8},
+            {"ingredient_name": "Acompanante", "quantity": 1, "unit": "porcion", "cost": 20},
+        ]},
+        {"product_name": "Camarones al Ajillo", "ingredients": [
+            {"ingredient_name": "Camarones", "quantity": 0.35, "unit": "libra", "cost": 140},
+            {"ingredient_name": "Ajo/mantequilla", "quantity": 1, "unit": "porcion", "cost": 15},
+            {"ingredient_name": "Acompanante", "quantity": 1, "unit": "porcion", "cost": 20},
+        ]},
+        {"product_name": "Langosta a la Plancha", "ingredients": [
+            {"ingredient_name": "Langosta", "quantity": 1, "unit": "unidad", "cost": 350},
+            {"ingredient_name": "Mantequilla/limon", "quantity": 1, "unit": "porcion", "cost": 15},
+            {"ingredient_name": "Acompanante", "quantity": 1, "unit": "porcion", "cost": 25},
+        ]},
+        {"product_name": "Sancocho", "ingredients": [
+            {"ingredient_name": "Carnes variadas", "quantity": 0.3, "unit": "libra", "cost": 50},
+            {"ingredient_name": "Viveres", "quantity": 0.5, "unit": "libra", "cost": 20},
+            {"ingredient_name": "Vegetales/especias", "quantity": 1, "unit": "porcion", "cost": 15},
+        ]},
+        {"product_name": "Presidente", "ingredients": [
+            {"ingredient_name": "Cerveza Presidente", "quantity": 1, "unit": "unidad", "cost": 80},
+        ]},
+        {"product_name": "Mamajuana", "ingredients": [
+            {"ingredient_name": "Mamajuana preparada", "quantity": 1, "unit": "trago", "cost": 60},
+        ]},
+    ]
+    prod_map = {p["name"]: p["id"] for p in products}
+    for rd in recipe_data:
+        pid = prod_map.get(rd["product_name"])
+        if pid:
+            ings = [{"id": gen_id(), **ing} for ing in rd["ingredients"]]
+            await db.recipes.insert_one({
+                "id": gen_id(), "product_id": pid, "product_name": rd["product_name"],
+                "ingredients": ings, "yield_quantity": 1, "created_at": now_iso()
+            })
+
     return {"message": "Datos sembrados exitosamente", "seeded": True,
             "users": [{"name": u["name"], "role": u["role"]} for u in users]}
 
