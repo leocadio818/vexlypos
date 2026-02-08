@@ -1019,7 +1019,36 @@ def main():
     if not tester.test_print_templates():
         failed_tests.append("Print Templates")
     
-    # Step 8: PHASE 3 FEATURES TESTING
+    # Step 8: PHASE 4 FEATURES TESTING (NEW)
+    print("\n🆕 PHASE 4 FEATURES TESTING")
+    print("    (Role-based permissions, User management, Payment methods CRUD, Inventory with costs, DGII exports)")
+    
+    # Test different login types
+    if not tester.test_admin_login():
+        failed_tests.append("Admin Login (0000)")
+    if not tester.test_cashier_login():
+        failed_tests.append("Cashier Login (4321)")
+    
+    # Reset to Carlos for other tests
+    tester.test_login("1234")
+    
+    # Phase 4 specific features
+    if not tester.test_phase4_users_with_permissions():
+        failed_tests.append("Users with Permissions")
+    if not tester.test_phase4_payment_methods_crud():
+        failed_tests.append("Payment Methods CRUD")
+    if not tester.test_phase4_inventory_movements():
+        failed_tests.append("Inventory Movements")
+    if not tester.test_phase4_inventory_report_with_costs():
+        failed_tests.append("Inventory Report with Costs")
+    if not tester.test_phase4_profit_report():
+        failed_tests.append("Profit Report")
+    if not tester.test_phase4_dgii_607_export():
+        failed_tests.append("DGII 607 Export")
+    if not tester.test_phase4_dgii_608_export():
+        failed_tests.append("DGII 608 Export")
+
+    # Step 9: PHASE 3 FEATURES TESTING
     print("\n🆕 PHASE 3 FEATURES TESTING")
     print("    (Dashboard KPIs, Loyalty Points in Billing)")
     
