@@ -1529,6 +1529,48 @@ async def export_dgii_608(month: Optional[str] = Query(None)):
         })
     return {"month": month, "total_records": len(rows), "total_amount": round(sum(r["total"] for r in rows), 2), "rows": rows}
 
+# ─── TAX CONFIG ───
+@api.get("/tax-config")
+async def get_tax_config():
+    taxes = await db.tax_config.find({}, {"_id": 0}).sort("order", 1).to_list(10)
+    if not taxes:
+        defaults = [
+            {"id": gen_id(), "description": "ITBIS", "rate": 18.00, "apply_to_tip": False, "active": True, "order": 0},
+            {"id": gen_id(), "description": "Propina Legal (Ley 10%)", "rate": 10.00, "apply_to_tip": False, "active": True, "order": 1, "is_tip": True},
+            {"id": gen_id(), "description": "Impuesto Municipal", "rate": 0, "apply_to_tip": False, "active": False, "order": 2},
+            {"id": gen_id(), "description": "Tax 4", "rate": 0, "apply_to_tip": False, "active": False, "order": 3},
+            {"id": gen_id(), "description": "Tax 5", "rate": 0, "apply_to_tip": False, "active": False, "order": 4},
+        ]
+        await db.tax_config.insert_many(defaults)
+        return defaults
+    return taxes
+
+@api.put("/tax-config")
+async def update_tax_config(input: dict):
+    """Update all tax rows at once"""
+    taxes = input.get("taxes", [])
+    for tax in taxes:
+        tid = tax.get("id")
+        if tid:
+            safe = {k: v for k, v in tax.items() if k != "_id"}
+            await db.tax_config.update_one({"id": tid}, {"$set": safe}, upsert=True)
+    return {"ok": True}
+
+@api.get("/tax-config/calculate")
+async def calculate_taxes(subtotal: float = Query(0)):
+    """Calculate all taxes for a given subtotal"""
+    taxes = await db.tax_config.find({"active": True}, {"_id": 0}).sort("order", 1).to_list(10)
+    result = {"subtotal": round(subtotal, 2), "taxes": [], "total": subtotal}
+    tip_base = subtotal
+    for tax in taxes:
+        rate = tax.get("rate", 0)
+        is_tip = tax.get("is_tip", False)
+        base = tip_base if not tax.get("apply_to_tip") else result["total"]
+        amount = round(base * (rate / 100), 2)
+        result["taxes"].append({"description": tax["description"], "rate": rate, "amount": amount, "is_tip": is_tip})
+        result["total"] = round(result["total"] + amount, 2)
+    return result
+
 # ─── SALE TYPES ───
 @api.get("/sale-types")
 async def list_sale_types():
