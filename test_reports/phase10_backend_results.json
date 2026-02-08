@@ -1,0 +1,366 @@
+{
+  "timestamp": "2026-02-08T16:27:17.977833",
+  "total_tests": 31,
+  "passed_tests": 29,
+  "success_rate": 93.54838709677419,
+  "test_details": [
+    {
+      "test_name": "Backend API connectivity",
+      "passed": true,
+      "message": "Status: 200",
+      "response_data": {
+        "view_dashboard": "Ver Dashboard",
+        "move_tables": "Mover Mesas",
+        "resize_tables": "Redimensionar Mesas",
+        "open_table": "Abrir Mesa / Crear Orden",
+        "add_products": "Agregar Productos",
+        "void_items": "Anular Items",
+        "send_kitchen": "Enviar a Cocina",
+        "create_bill": "Crear Factura",
+        "collect_payment": "Cobrar",
+        "split_bill": "Dividir Cuenta",
+        "manage_users": "Config: Usuarios",
+        "manage_areas": "Config: Areas",
+        "manage_tables": "Config: Mesas",
+        "manage_payment_methods": "Config: Formas de Pago",
+        "manage_cancellation_reasons": "Config: Anulaciones",
+        "manage_products": "Config: Productos",
+        "manage_sale_types": "Config: Tipos de Venta",
+        "manage_print_channels": "Config: Impresion",
+        "manage_station_config": "Config: Estacion",
+        "manage_inventory": "Inventario",
+        "manage_suppliers": "Proveedores/Compras",
+        "manage_customers": "Clientes/Fidelidad",
+        "manage_reservations": "Reservaciones",
+        "view_reports": "Ver Reportes",
+        "export_dgii": "Exportar DGII",
+        "open_shift": "Abrir Turno",
+        "close_shift": "Cerrar Turno",
+        "close_day": "Cierre de Dia",
+        "release_reserved_table": "Desbloquear Mesa Reservada"
+      }
+    },
+    {
+      "test_name": "Create user with PIN 9999 (first time)",
+      "passed": false,
+      "message": "Status: 400 (expected 201). Response: {\"detail\":\"Ya existe un usuario con ese PIN\"}",
+      "response_data": {
+        "detail": "Ya existe un usuario con ese PIN"
+      }
+    },
+    {
+      "test_name": "Create user with duplicate PIN 9999 (should fail)",
+      "passed": true,
+      "message": "Status: 400",
+      "response_data": {
+        "detail": "Ya existe un usuario con ese PIN"
+      }
+    },
+    {
+      "test_name": "Duplicate PIN error message",
+      "passed": true,
+      "message": "Got expected message: Ya existe un usuario con ese PIN",
+      "response_data": null
+    },
+    {
+      "test_name": "Get roles list",
+      "passed": true,
+      "message": "Status: 200",
+      "response_data": [
+        {
+          "id": "d683744c-9288-4233-a742-c16a29ea2b98",
+          "name": "Administrador",
+          "code": "admin",
+          "is_system": true
+        },
+        {
+          "id": "6ba0a840-643b-4691-9b66-3c83572954cd",
+          "name": "Mesero",
+          "code": "waiter",
+          "is_system": true
+        },
+        {
+          "id": "8fe9cd7d-dd18-453a-aa96-ebe0e942bce5",
+          "name": "Cajero",
+          "code": "cashier",
+          "is_system": true
+        },
+        {
+          "id": "79273aa4-b58c-47fb-8780-c20cf3aaaeee",
+          "name": "Cocina",
+          "code": "kitchen",
+          "is_system": true
+        }
+      ]
+    },
+    {
+      "test_name": "Found default role: Administrador",
+      "passed": true,
+      "message": "Role exists in system",
+      "response_data": null
+    },
+    {
+      "test_name": "Found default role: Mesero",
+      "passed": true,
+      "message": "Role exists in system",
+      "response_data": null
+    },
+    {
+      "test_name": "Found default role: Cajero",
+      "passed": true,
+      "message": "Role exists in system",
+      "response_data": null
+    },
+    {
+      "test_name": "Found default role: Cocina",
+      "passed": true,
+      "message": "Role exists in system",
+      "response_data": null
+    },
+    {
+      "test_name": "Default roles count",
+      "passed": true,
+      "message": "Found 4/4 default roles",
+      "response_data": null
+    },
+    {
+      "test_name": "Get all permissions",
+      "passed": true,
+      "message": "Status: 200",
+      "response_data": {
+        "view_dashboard": "Ver Dashboard",
+        "move_tables": "Mover Mesas",
+        "resize_tables": "Redimensionar Mesas",
+        "open_table": "Abrir Mesa / Crear Orden",
+        "add_products": "Agregar Productos",
+        "void_items": "Anular Items",
+        "send_kitchen": "Enviar a Cocina",
+        "create_bill": "Crear Factura",
+        "collect_payment": "Cobrar",
+        "split_bill": "Dividir Cuenta",
+        "manage_users": "Config: Usuarios",
+        "manage_areas": "Config: Areas",
+        "manage_tables": "Config: Mesas",
+        "manage_payment_methods": "Config: Formas de Pago",
+        "manage_cancellation_reasons": "Config: Anulaciones",
+        "manage_products": "Config: Productos",
+        "manage_sale_types": "Config: Tipos de Venta",
+        "manage_print_channels": "Config: Impresion",
+        "manage_station_config": "Config: Estacion",
+        "manage_inventory": "Inventario",
+        "manage_suppliers": "Proveedores/Compras",
+        "manage_customers": "Clientes/Fidelidad",
+        "manage_reservations": "Reservaciones",
+        "view_reports": "Ver Reportes",
+        "export_dgii": "Exportar DGII",
+        "open_shift": "Abrir Turno",
+        "close_shift": "Cerrar Turno",
+        "close_day": "Cierre de Dia",
+        "release_reserved_table": "Desbloquear Mesa Reservada"
+      }
+    },
+    {
+      "test_name": "29 permissions check",
+      "passed": true,
+      "message": "Found 29 permissions (expected 29)",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: view_dashboard",
+      "passed": true,
+      "message": "Found: Ver Dashboard",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: move_tables",
+      "passed": true,
+      "message": "Found: Mover Mesas",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: open_table",
+      "passed": true,
+      "message": "Found: Abrir Mesa / Crear Orden",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: manage_users",
+      "passed": true,
+      "message": "Found: Config: Usuarios",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: manage_areas",
+      "passed": true,
+      "message": "Found: Config: Areas",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: manage_tables",
+      "passed": true,
+      "message": "Found: Config: Mesas",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: manage_payment_methods",
+      "passed": true,
+      "message": "Found: Config: Formas de Pago",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: manage_products",
+      "passed": true,
+      "message": "Found: Config: Productos",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: view_reports",
+      "passed": true,
+      "message": "Found: Ver Reportes",
+      "response_data": null
+    },
+    {
+      "test_name": "Key permission: manage_inventory",
+      "passed": true,
+      "message": "Found: Inventario",
+      "response_data": null
+    },
+    {
+      "test_name": "Create custom role",
+      "passed": false,
+      "message": "Status: 200 (expected 201). Response: {\"id\":\"650459ab-447f-4ac2-9cce-29c66a8c07f3\",\"name\":\"Supervisor Test\",\"code\":\"supervisor_test\",\"is_system\":false}",
+      "response_data": {
+        "id": "650459ab-447f-4ac2-9cce-29c66a8c07f3",
+        "name": "Supervisor Test",
+        "code": "supervisor_test",
+        "is_system": false
+      }
+    },
+    {
+      "test_name": "Login with PIN 0000",
+      "passed": true,
+      "message": "Status: 200",
+      "response_data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZDBiNmZiMWYtODFlNC00YWFkLWFkNmItZmY5ZTU5M2NjZmNlIiwibmFtZSI6IkFkbWluIiwicm9sZSI6ImFkbWluIn0.Gtaq46eMCWFG2IMumxHcSVIPTKjc8ObWZaRcJRlFj_M",
+        "user": {
+          "id": "d0b6fb1f-81e4-4aad-ad6b-ff9e593ccfce",
+          "name": "Admin",
+          "role": "admin",
+          "active": true,
+          "permissions": {
+            "view_dashboard": true,
+            "move_tables": true,
+            "resize_tables": true,
+            "open_table": true,
+            "add_products": true,
+            "void_items": true,
+            "send_kitchen": true,
+            "create_bill": true,
+            "collect_payment": true,
+            "split_bill": true,
+            "manage_users": true,
+            "manage_areas": true,
+            "manage_tables": true,
+            "manage_payment_methods": true,
+            "manage_cancellation_reasons": true,
+            "manage_products": true,
+            "manage_sale_types": true,
+            "manage_print_channels": true,
+            "manage_station_config": true,
+            "manage_inventory": true,
+            "manage_suppliers": true,
+            "manage_customers": true,
+            "manage_reservations": true,
+            "view_reports": true,
+            "export_dgii": true,
+            "open_shift": true,
+            "close_shift": true,
+            "close_day": true,
+            "release_reserved_table": true
+          }
+        }
+      }
+    },
+    {
+      "test_name": "Login name verification for 0000",
+      "passed": true,
+      "message": "Got correct name: Admin",
+      "response_data": null
+    },
+    {
+      "test_name": "Admin permissions check",
+      "passed": true,
+      "message": "Admin has 5/5 key permissions",
+      "response_data": null
+    },
+    {
+      "test_name": "Login with PIN 1234",
+      "passed": true,
+      "message": "Status: 200",
+      "response_data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNWNlZjFhZGEtNWRjOS00MWZhLTg3OTUtOGQ1OGIyMzBiNjYzIiwibmFtZSI6IkNhcmxvcyIsInJvbGUiOiJ3YWl0ZXIifQ.h6xbmQshRvzDO0JXhymN6593OJkGhSO5F75IZVLYiCI",
+        "user": {
+          "id": "5cef1ada-5dc9-41fa-8795-8d58b230b663",
+          "name": "Carlos",
+          "role": "waiter",
+          "active": true,
+          "permissions": {
+            "view_dashboard": false,
+            "move_tables": false,
+            "resize_tables": false,
+            "open_table": true,
+            "add_products": true,
+            "void_items": true,
+            "send_kitchen": true,
+            "create_bill": false,
+            "collect_payment": false,
+            "split_bill": true,
+            "manage_users": false,
+            "manage_areas": false,
+            "manage_tables": false,
+            "manage_payment_methods": false,
+            "manage_cancellation_reasons": false,
+            "manage_products": false,
+            "manage_sale_types": false,
+            "manage_print_channels": false,
+            "manage_station_config": false,
+            "manage_inventory": false,
+            "manage_suppliers": false,
+            "manage_customers": true,
+            "manage_reservations": true,
+            "view_reports": false,
+            "export_dgii": false,
+            "open_shift": false,
+            "close_shift": false,
+            "close_day": false,
+            "release_reserved_table": false
+          }
+        }
+      }
+    },
+    {
+      "test_name": "Login name verification for 1234",
+      "passed": true,
+      "message": "Got correct name: Carlos",
+      "response_data": null
+    },
+    {
+      "test_name": "Carlos role check",
+      "passed": true,
+      "message": "Carlos has role: waiter",
+      "response_data": null
+    },
+    {
+      "test_name": "Carlos waiter permissions",
+      "passed": true,
+      "message": "Carlos has 4/4 expected permissions",
+      "response_data": null
+    },
+    {
+      "test_name": "Carlos restricted permissions",
+      "passed": true,
+      "message": "Carlos correctly lacks 4/4 admin permissions",
+      "response_data": null
+    }
+  ]
+}
