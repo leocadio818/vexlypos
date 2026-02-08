@@ -41,6 +41,7 @@ function AppRoutes() {
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="reports" element={<Reports />} />
         <Route path="customers" element={<Customers />} />
+        <Route path="reservations" element={<Reservations />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
