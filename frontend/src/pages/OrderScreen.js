@@ -49,9 +49,27 @@ export default function OrderScreen() {
       ]);
       setCategories(catRes.data); setProducts(prodRes.data);
       setModifierGroups(modRes.data); setCancelReasons(reasonRes.data);
+      // Fetch tax config
+      try {
+        const taxRes = await fetch(`${API_BASE}/api/tax-config`);
+        const taxes = await taxRes.json();
+        setTaxConfig(taxes.filter(t => t.active && t.rate > 0));
+      } catch {}
     };
     fetchAll(); fetchOrder();
-  }, [fetchOrder]);
+  }, [fetchOrder, API_BASE]);
+
+  // Re-sync tax config every 30s so changes reflect immediately
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const r = await fetch(`${API_BASE}/api/tax-config`);
+        const taxes = await r.json();
+        setTaxConfig(taxes.filter(t => t.active && t.rate > 0));
+      } catch {}
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [API_BASE]);
 
   useEffect(() => { orderRef.current = order; }, [order]);
 
