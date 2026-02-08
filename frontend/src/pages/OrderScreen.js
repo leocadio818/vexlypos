@@ -19,9 +19,14 @@ export default function OrderScreen() {
   const [modifierGroups, setModifierGroups] = useState([]);
   const [activeCat, setActiveCat] = useState(null); // null = show categories grid
   const [cancelReasons, setCancelReasons] = useState([]);
-  const [modDialog, setModDialog] = useState({ open: false, product: null, selectedMods: {}, qty: '1', notes: '' });
+  const [modDialog, setModDialog] = useState({ open: false, product: null, selectedMods: {}, qty: '0', notes: '' });
   const [cancelDialog, setCancelDialog] = useState({ open: false, itemId: null });
+  const [preCheckHtml, setPreCheckHtml] = useState('');
+  const [preCheckOpen, setPreCheckOpen] = useState(false);
+  const [preCheckCount, setPreCheckCount] = useState(0);
+  const [managerPinDialog, setManagerPinDialog] = useState({ open: false, pin: '' });
   const orderRef = useRef(null);
+  const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
   const fetchOrder = useCallback(async () => {
     try {
