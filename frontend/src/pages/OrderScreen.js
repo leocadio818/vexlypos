@@ -25,6 +25,7 @@ export default function OrderScreen() {
   const [preCheckOpen, setPreCheckOpen] = useState(false);
   const [preCheckCount, setPreCheckCount] = useState(0);
   const [managerPinDialog, setManagerPinDialog] = useState({ open: false, pin: '' });
+  const [taxConfig, setTaxConfig] = useState([]);
   const orderRef = useRef(null);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
