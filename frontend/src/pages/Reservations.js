@@ -106,7 +106,7 @@ export default function Reservations() {
                           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1"><Users size={10} /> {r.party_size} personas</span>
                             {r.phone && <span className="flex items-center gap-1"><Phone size={10} /> {r.phone}</span>}
-                            {r.table_number > 0 && <span>Mesa {r.table_number}</span>}
+                            {r.table_numbers?.length > 0 && <span>Mesas: {r.table_numbers.join(', ')}</span>}
                             {r.notes && <span className="italic">{r.notes}</span>}
                           </div>
                         </div>
