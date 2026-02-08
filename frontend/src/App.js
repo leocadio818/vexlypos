@@ -14,6 +14,7 @@ import Reports from "@/pages/Reports";
 import Customers from "@/pages/Customers";
 import Dashboard from "@/pages/Dashboard";
 import KitchenTV from "@/pages/KitchenTV";
+import Reservations from "@/pages/Reservations";
 import Layout from "@/components/Layout";
 
 function ProtectedRoute({ children }) {
