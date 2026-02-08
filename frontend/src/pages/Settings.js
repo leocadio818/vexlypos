@@ -150,6 +150,46 @@ export default function Settings() {
     catch { toast.error('Error'); }
   };
 
+  // Sale type handlers
+  const handleSaveSaleType = async () => {
+    if (!saleDialog.name) return;
+    try {
+      const data = { name: saleDialog.name, code: saleDialog.code, tax_rate: parseFloat(saleDialog.tax_rate) || 18, tip_default: parseFloat(saleDialog.tip_default) || 0 };
+      if (saleDialog.editId) await axios.put(`${API}/sale-types/${saleDialog.editId}`, data, { headers: hdrs() });
+      else await axios.post(`${API}/sale-types`, data, { headers: hdrs() });
+      toast.success(saleDialog.editId ? 'Actualizado' : 'Creado');
+      setSaleDialog({ open: false, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null }); fetchAll();
+    } catch { toast.error('Error'); }
+  };
+
+  const handleDeleteSaleType = async (id) => {
+    try { await axios.delete(`${API}/sale-types/${id}`, { headers: hdrs() }); toast.success('Eliminado'); fetchAll(); }
+    catch { toast.error('Error'); }
+  };
+
+  // Print channel handlers
+  const handleSaveChannel = async () => {
+    if (!channelDialog.name) return;
+    try {
+      const data = { name: channelDialog.name, type: channelDialog.type, target: channelDialog.target, ip: channelDialog.ip };
+      if (channelDialog.editId) await axios.put(`${API}/print-channels/${channelDialog.editId}`, data, { headers: hdrs() });
+      else await axios.post(`${API}/print-channels`, data, { headers: hdrs() });
+      toast.success(channelDialog.editId ? 'Actualizado' : 'Creado');
+      setChannelDialog({ open: false, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null }); fetchAll();
+    } catch { toast.error('Error'); }
+  };
+
+  const handleDeleteChannel = async (id) => {
+    try { await axios.delete(`${API}/print-channels/${id}`, { headers: hdrs() }); toast.success('Eliminado'); fetchAll(); }
+    catch { toast.error('Error'); }
+  };
+
+  // Station config handler
+  const handleSaveStationConfig = async () => {
+    try { await axios.put(`${API}/station-config`, stationConfig, { headers: hdrs() }); toast.success('Configuracion guardada'); }
+    catch { toast.error('Error'); }
+  };
+
   return (
     <div className="h-full flex flex-col" data-testid="settings-page">
       <div className="px-4 py-3 border-b border-border flex items-center gap-2 bg-card/50">
