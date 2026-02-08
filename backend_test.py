@@ -59,6 +59,12 @@ class POSAPITester:
             else:
                 print(f"❌ FAILED - Expected {expected_status}, got {response.status_code}")
                 print(f"   Response: {response.text[:200]}...")
+                self.failed_tests.append({
+                    "test": name,
+                    "expected": expected_status,
+                    "actual": response.status_code,
+                    "error": response.text[:200]
+                })
                 self.log_result(name, False, f"Status {response.status_code}: {response.text[:100]}")
                 return False, {}
 
