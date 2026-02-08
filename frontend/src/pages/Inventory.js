@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, Warehouse, AlertTriangle, Plus, ArrowUpDown, BookOpen, Minus } from 'lucide-react';
+import { Package, Warehouse, AlertTriangle, Plus, ArrowUpDown, BookOpen, Minus, TrendingUp, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
