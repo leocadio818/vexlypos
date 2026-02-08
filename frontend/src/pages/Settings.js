@@ -629,9 +629,83 @@ export default function Settings() {
           <DialogHeader><DialogTitle className="font-oswald">{payDialog.editId ? 'Editar' : 'Nueva'} Forma de Pago</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={payDialog.name} onChange={e => setPayDialog(p => ({ ...p, name: e.target.value }))}
-              placeholder="Nombre (ej: Efectivo, Tarjeta)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="payment-name-input" />
+              placeholder="Nombre (ej: Efectivo, Tarjeta, USD)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="payment-name-input" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Moneda</label>
+                <select value={payDialog.currency} onChange={e => setPayDialog(p => ({ ...p, currency: e.target.value }))}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
+                  <option value="DOP">DOP (Peso)</option>
+                  <option value="USD">USD (Dolar)</option>
+                  <option value="EUR">EUR (Euro)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Tipo de cambio</label>
+                <input value={payDialog.exchange_rate} onChange={e => setPayDialog(p => ({ ...p, exchange_rate: e.target.value }))}
+                  type="number" step="0.01" placeholder="1.00" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
+              </div>
+            </div>
             <Button onClick={handleSavePayMethod} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-payment">
               {payDialog.editId ? 'GUARDAR' : 'CREAR'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sale Type Dialog */}
+      <Dialog open={saleDialog.open} onOpenChange={(o) => !o && setSaleDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="saletype-dialog">
+          <DialogHeader><DialogTitle className="font-oswald">{saleDialog.editId ? 'Editar' : 'Nuevo'} Tipo de Venta</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <input value={saleDialog.name} onChange={e => setSaleDialog(p => ({ ...p, name: e.target.value }))}
+              placeholder="Nombre (ej: Consumidor Final)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
+            <input value={saleDialog.code} onChange={e => setSaleDialog(p => ({ ...p, code: e.target.value }))}
+              placeholder="Codigo (ej: dine_in, take_out)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono" />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">ITBIS %</label>
+                <input value={saleDialog.tax_rate} onChange={e => setSaleDialog(p => ({ ...p, tax_rate: e.target.value }))}
+                  type="number" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Propina Default %</label>
+                <input value={saleDialog.tip_default} onChange={e => setSaleDialog(p => ({ ...p, tip_default: e.target.value }))}
+                  type="number" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
+              </div>
+            </div>
+            <Button onClick={handleSaveSaleType} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
+              {saleDialog.editId ? 'GUARDAR' : 'CREAR'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Channel Dialog */}
+      <Dialog open={channelDialog.open} onOpenChange={(o) => !o && setChannelDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="channel-dialog">
+          <DialogHeader><DialogTitle className="font-oswald">{channelDialog.editId ? 'Editar' : 'Nuevo'} Canal de Impresion</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <input value={channelDialog.name} onChange={e => setChannelDialog(p => ({ ...p, name: e.target.value }))}
+              placeholder="Nombre (ej: Cocina Principal)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
+            <select value={channelDialog.type} onChange={e => setChannelDialog(p => ({ ...p, type: e.target.value }))}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
+              <option value="kitchen">Cocina</option>
+              <option value="bar">Barra</option>
+              <option value="receipt">Recibo/Caja</option>
+            </select>
+            <select value={channelDialog.target} onChange={e => setChannelDialog(p => ({ ...p, target: e.target.value }))}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
+              <option value="screen">Pantalla (virtual)</option>
+              <option value="network">Impresora de Red</option>
+              <option value="usb">Impresora USB</option>
+            </select>
+            {channelDialog.target === 'network' && (
+              <input value={channelDialog.ip} onChange={e => setChannelDialog(p => ({ ...p, ip: e.target.value }))}
+                placeholder="IP de la impresora (ej: 192.168.1.100)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono" />
+            )}
+            <Button onClick={handleSaveChannel} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
+              {channelDialog.editId ? 'GUARDAR' : 'CREAR'}
             </Button>
           </div>
         </DialogContent>
