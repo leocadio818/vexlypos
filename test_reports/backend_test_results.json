@@ -1,0 +1,82 @@
+{
+  "summary": {
+    "tests_run": 11,
+    "tests_passed": 11,
+    "success_rate": "100.0%"
+  },
+  "phase5_features": {
+    "recipes_with_costs": false,
+    "inventory_reports": true,
+    "profit_analysis": true,
+    "escpos_endpoints": true,
+    "kitchen_tv_api": true
+  },
+  "detailed_results": [
+    {
+      "test": "Admin Login",
+      "passed": true,
+      "details": "Status 200, Data received: dict",
+      "timestamp": "2026-02-08T01:13:57.467341"
+    },
+    {
+      "test": "Areas",
+      "passed": true,
+      "details": "Status 200, Data received: list",
+      "timestamp": "2026-02-08T01:13:57.505838"
+    },
+    {
+      "test": "Tables",
+      "passed": true,
+      "details": "Status 200, Data received: list",
+      "timestamp": "2026-02-08T01:13:57.558688"
+    },
+    {
+      "test": "Categories",
+      "passed": true,
+      "details": "Status 200, Data received: list",
+      "timestamp": "2026-02-08T01:13:57.598257"
+    },
+    {
+      "test": "Products",
+      "passed": true,
+      "details": "Status 200, Data received: list",
+      "timestamp": "2026-02-08T01:13:57.641291"
+    },
+    {
+      "test": "Recipes API",
+      "passed": true,
+      "details": "Status 200, Data received: list",
+      "timestamp": "2026-02-08T01:13:57.684252"
+    },
+    {
+      "test": "Inventory Report",
+      "passed": true,
+      "details": "Status 200, Data received: list",
+      "timestamp": "2026-02-08T01:13:57.727357"
+    },
+    {
+      "test": "Profit Report",
+      "passed": true,
+      "details": "Status 200, Data received: dict",
+      "timestamp": "2026-02-08T01:13:57.769932"
+    },
+    {
+      "test": "ESC/POS Receipt",
+      "passed": true,
+      "details": "Status 404, Data received: dict",
+      "timestamp": "2026-02-08T01:13:57.814094"
+    },
+    {
+      "test": "ESC/POS Comanda",
+      "passed": true,
+      "details": "Status 404, Data received: dict",
+      "timestamp": "2026-02-08T01:13:57.893945"
+    },
+    {
+      "test": "Kitchen TV API",
+      "passed": true,
+      "details": "Status 200, Data received: dict",
+      "timestamp": "2026-02-08T01:13:57.932705"
+    }
+  ]
+}
