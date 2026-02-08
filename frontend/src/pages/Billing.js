@@ -300,17 +300,6 @@ export default function Billing() {
                 </div>
               </ScrollArea>
             </div>
-            <div>
-              <label className="text-sm font-semibold text-muted-foreground mb-1 block">Propina %</label>
-              <div className="flex gap-2">
-                {[0, 5, 10, 15, 18, 20].map(p => (
-                  <button key={p} onClick={() => setTipPct(p)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-oswald font-bold transition-colors ${
-                      tipPct === p ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-                    }`}>{p}%</button>
-                ))}
-              </div>
-            </div>
             <Button
               onClick={() => handleCreateBill(selectedItems, splitLabel)}
               disabled={selectedItems.length === 0}
