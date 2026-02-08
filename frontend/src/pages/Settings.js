@@ -28,13 +28,18 @@ export default function Settings() {
   const [products, setProducts] = useState([]);
   const [users, setUsers] = useState([]);
   const [payMethods, setPayMethods] = useState([]);
+  const [saleTypes, setSaleTypes] = useState([]);
+  const [printChannels, setPrintChannels] = useState([]);
+  const [stationConfig, setStationConfig] = useState({ require_shift_to_sell: true, require_cash_count: false, auto_send_on_logout: true });
 
   const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
   const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round' });
   const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', return_to_inventory: true });
   const [productDialog, setProductDialog] = useState({ open: false, name: '', category_id: '', price: '', track_inventory: false });
   const [userDialog, setUserDialog] = useState({ open: false, name: '', pin: '', role: 'waiter', editId: null, permissions: {} });
-  const [payDialog, setPayDialog] = useState({ open: false, name: '', icon: 'circle', editId: null });
+  const [payDialog, setPayDialog] = useState({ open: false, name: '', icon: 'circle', currency: 'DOP', exchange_rate: 1, editId: null });
+  const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null });
+  const [channelDialog, setChannelDialog] = useState({ open: false, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null });
 
   const fetchAll = async () => {
     try {
