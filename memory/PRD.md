@@ -32,19 +32,26 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
 - Impresion virtual: recibos y comandas con vista previa + print CSS
 - 31 endpoints backend probados al 100%
 
+### Phase 3 (Feb 2026)
+- Dashboard ejecutivo en tiempo real (KPIs: ventas, ITBIS, ocupacion, alertas)
+- Grafico de ventas por hora (AreaChart)
+- Fidelidad integrada en facturacion (puntos automaticos al pagar con cliente seleccionado)
+- Resend API key configurada para envio de correos
+- Dashboard como pagina principal despues del login
+- 36 endpoints backend probados al 100%
+
 ## Prioritized Backlog
 
 ### P0 (Pendiente)
-- Configurar RESEND_API_KEY para envio real de correos
-- Integrar fidelidad con facturacion (acumular puntos al pagar)
+- Verificar dominio en Resend para envio real de correos (https://resend.com/domains)
+- Impresoras ESC/POS fisicas (USB + red)
 
 ### P1
-- Impresoras ESC/POS (USB y red) - raw printing
 - Reportes de inventario (movimientos, mermas)
-- Dashboard ejecutivo con KPIs en tiempo real
+- Export formatos DGII (607, 608)
+- Multi-sucursal
 
 ### P2
 - Service Worker para modo offline completo
-- Export formatos DGII (607, 608)
-- Multi-sucursal
 - Gestion de turnos de cocina
+- App movil nativa
