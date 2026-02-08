@@ -40,7 +40,7 @@ function AppRoutes() {
         <Route path="customers" element={<Customers />} />
         <Route path="settings" element={<Settings />} />
       </Route>
-      <Route path="*" element={<Navigate to="/tables" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
