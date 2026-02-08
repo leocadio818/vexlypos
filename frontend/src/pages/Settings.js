@@ -42,6 +42,8 @@ export default function Settings() {
   const [saleTypes, setSaleTypes] = useState([]);
   const [printChannels, setPrintChannels] = useState([]);
   const [stationConfig, setStationConfig] = useState({ require_shift_to_sell: true, require_cash_count: false, auto_send_on_logout: true });
+  const [roles, setRoles] = useState([]);
+  const [roleDialog, setRoleDialog] = useState({ open: false, name: '', code: '', editId: null });
 
   const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
   const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round' });
