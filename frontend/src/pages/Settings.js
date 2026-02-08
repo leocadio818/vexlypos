@@ -134,13 +134,14 @@ export default function Settings() {
   const handleSavePayMethod = async () => {
     if (!payDialog.name) return;
     try {
+      const data = { name: payDialog.name, icon: payDialog.icon, currency: payDialog.currency, exchange_rate: parseFloat(payDialog.exchange_rate) || 1 };
       if (payDialog.editId) {
-        await axios.put(`${API}/payment-methods/${payDialog.editId}`, { name: payDialog.name, icon: payDialog.icon }, { headers: hdrs() });
+        await axios.put(`${API}/payment-methods/${payDialog.editId}`, data, { headers: hdrs() });
       } else {
-        await axios.post(`${API}/payment-methods`, { name: payDialog.name, icon: payDialog.icon }, { headers: hdrs() });
+        await axios.post(`${API}/payment-methods`, data, { headers: hdrs() });
       }
-      toast.success(payDialog.editId ? 'Metodo actualizado' : 'Metodo creado');
-      setPayDialog({ open: false, name: '', icon: 'circle', editId: null }); fetchAll();
+      toast.success(payDialog.editId ? 'Actualizado' : 'Creado');
+      setPayDialog({ open: false, name: '', icon: 'circle', currency: 'DOP', exchange_rate: 1, editId: null }); fetchAll();
     } catch { toast.error('Error'); }
   };
 
