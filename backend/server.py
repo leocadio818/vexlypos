@@ -162,11 +162,27 @@ class CategoryInput(BaseModel):
     color: str = "#FF6600"
     icon: str = "utensils"
 
+class ProductModifierAssignment(BaseModel):
+    group_id: str
+    min_selections: int = 0
+    max_selections: int = 0
+    allow_multiple: bool = False
+
 class ProductInput(BaseModel):
     name: str
+    printed_name: str = ""
     category_id: str
+    report_category_id: str = ""
     price: float
+    price_a: float = 0
+    price_b: float = 0
+    price_c: float = 0
+    price_d: float = 0
+    price_e: float = 0
+    button_bg_color: str = ""
+    button_text_color: str = ""
     modifier_group_ids: List[str] = []
+    modifier_assignments: List[ProductModifierAssignment] = []
     track_inventory: bool = False
 
 class ModifierOptionInput(BaseModel):
