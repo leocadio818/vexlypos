@@ -75,6 +75,12 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - **Mesas**: Contiene sub-tabs "Mesas" y "Areas"
   - **Ventas**: Contiene sub-tabs "Formas de Pago", "Impuestos", "Anulaciones", "Tipos de Venta"
   - **Inventario**: Contiene sub-tabs "Productos", "Compras", "Stock"
+- **Módulo Avanzado de Configuración de Empleados** (/user/:userId):
+  - **Tab Informc.Empleado**: Datos personales completos (nombre, apellido, dirección, ciudad, estado, código postal, cédula/IMSS, teléfonos, email, fecha nacimiento), configuración POS (inicio/fin día, centro de ingresos, tarjeta #, referencia, PIN), foto del empleado, modo entrenamiento
+  - **Tab Avanzado**: Interfase Sistema (Capacidad Restaurante, Orden Rápida, Host/Hostess, Repartidor, Modo Reparto, Solo Marca E/S), Autorización Vía WEB, Reglas para turnos, opciones de gerente
+  - **Tab Empleador**: Config. Puesto (tabla con tarifa/hora y puesto primario), Salario Anual, Selector de Puesto Labores
+  - **Horarios**: Grid visual semanal (7 días × 24 horas) con estados (No Requerido, Requerido, No puede trabajar), horas preferidas, nivel de habilidad 1-10
+  - Nuevos campos en API: last_name, pos_name, address, phones, employment info, positions, schedule, skill_level
 - 100% de tests pasados (backend y frontend)
 
 ## Prioritized Backlog
