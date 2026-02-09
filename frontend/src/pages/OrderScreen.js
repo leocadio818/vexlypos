@@ -455,7 +455,7 @@ export default function OrderScreen() {
   return (
     <div className="h-full flex flex-col lg:flex-row-reverse" data-testid="order-screen">
       {/* Left (visually): Order Summary - Now rendered second but appears on left due to flex-row-reverse */}
-      <div className="w-full lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-l border-border flex flex-col bg-card/50 shrink-0">
+      <div className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-l border-border flex flex-col bg-card/50 shrink-0">
         <div className="px-2 py-2 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Button variant="ghost" size="icon" onClick={splitMode ? exitSplitMode : handleBack} data-testid="back-to-tables" className="h-9 w-9">
