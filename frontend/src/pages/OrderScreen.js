@@ -56,6 +56,8 @@ export default function OrderScreen() {
   const orderRef = useRef(null);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
+  const [accessDenied, setAccessDenied] = useState(null); // Stores error message if access denied
+
   const fetchOrder = useCallback(async () => {
     try {
       const tableRes = await tablesAPI.list();
@@ -63,29 +65,39 @@ export default function OrderScreen() {
       setTable(t);
       
       // Fetch ALL orders for this table
-      const ordersRes = await ordersAPI.getTableOrders(tableId);
-      const orders = ordersRes.data || [];
-      setTableOrders(orders);
-      
-      if (orders.length > 0) {
-        // If there's an active order selected, keep it; otherwise select first
-        const currentOrder = activeOrderId 
-          ? orders.find(o => o.id === activeOrderId) 
-          : orders[0];
-        if (currentOrder) {
-          setOrder(currentOrder);
-          setActiveOrderId(currentOrder.id);
-          orderRef.current = currentOrder;
+      try {
+        const ordersRes = await ordersAPI.getTableOrders(tableId);
+        const orders = ordersRes.data || [];
+        setTableOrders(orders);
+        setAccessDenied(null); // Clear any previous access denied
+        
+        if (orders.length > 0) {
+          // If there's an active order selected, keep it; otherwise select first
+          const currentOrder = activeOrderId 
+            ? orders.find(o => o.id === activeOrderId) 
+            : orders[0];
+          if (currentOrder) {
+            setOrder(currentOrder);
+            setActiveOrderId(currentOrder.id);
+            orderRef.current = currentOrder;
+          }
+        } else if (t?.active_order_id) {
+          // Fallback: try to get order from table reference
+          try {
+            const orderRes = await ordersAPI.get(t.active_order_id);
+            setOrder(orderRes.data);
+            setActiveOrderId(orderRes.data.id);
+            setTableOrders([orderRes.data]);
+            orderRef.current = orderRes.data;
+          } catch {}
         }
-      } else if (t?.active_order_id) {
-        // Fallback: try to get order from table reference
-        try {
-          const orderRes = await ordersAPI.get(t.active_order_id);
-          setOrder(orderRes.data);
-          setActiveOrderId(orderRes.data.id);
-          setTableOrders([orderRes.data]);
-          orderRef.current = orderRes.data;
-        } catch {}
+      } catch (orderError) {
+        // Check if it's a 403 Forbidden error
+        if (orderError.response?.status === 403) {
+          setAccessDenied(orderError.response?.data?.detail || 'No tienes permiso para acceder a esta mesa');
+          setOrder(null);
+          setTableOrders([]);
+        }
       }
     } catch {}
   }, [tableId, activeOrderId]);
