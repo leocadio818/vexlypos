@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { areasAPI, tablesAPI, reasonsAPI, categoriesAPI, productsAPI } from '@/lib/api';
-import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil, Printer, ShoppingBag, Cog, BarChart3, Truck, Heart, Percent } from 'lucide-react';
+import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil, Printer, ShoppingBag, Cog, BarChart3, Truck, Heart, Percent, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -46,10 +46,14 @@ export default function Settings() {
   const [roleDialog, setRoleDialog] = useState({ open: false, name: '', code: '', editId: null });
   const [taxConfig, setTaxConfig] = useState([]);
 
+  // Sub-tab states
+  const [mesasSubTab, setMesasSubTab] = useState('mesas');
+  const [ventasSubTab, setVentasSubTab] = useState('pagos');
+  const [inventarioSubTab, setInventarioSubTab] = useState('productos');
+
   const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
   const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round' });
   const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', return_to_inventory: true });
-  const [productDialog, setProductDialog] = useState({ open: false, name: '', category_id: '', price: '', track_inventory: false });
   const [userDialog, setUserDialog] = useState({ open: false, name: '', pin: '', role: 'waiter', editId: null, permissions: {} });
   const [payDialog, setPayDialog] = useState({ open: false, name: '', icon: 'circle', currency: 'DOP', exchange_rate: 1, editId: null });
   const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null });
@@ -113,16 +117,6 @@ export default function Settings() {
       await reasonsAPI.create({ name: reasonDialog.name, return_to_inventory: reasonDialog.return_to_inventory });
       toast.success('Razon creada');
       setReasonDialog({ open: false, name: '', return_to_inventory: true }); fetchAll();
-    } catch { toast.error('Error'); }
-  };
-
-  const handleAddProduct = async () => {
-    if (!productDialog.name || !productDialog.category_id || !productDialog.price) return;
-    try {
-      await productsAPI.create({ name: productDialog.name, category_id: productDialog.category_id,
-        price: parseFloat(productDialog.price), track_inventory: productDialog.track_inventory });
-      toast.success('Producto creado');
-      setProductDialog({ open: false, name: '', category_id: '', price: '', track_inventory: false }); fetchAll();
     } catch { toast.error('Error'); }
   };
 
@@ -238,6 +232,21 @@ export default function Settings() {
     setTaxConfig(prev => prev.map((t, i) => i === idx ? { ...t, [field]: value } : t));
   };
 
+  // Sub-tab button component
+  const SubTabButton = ({ active, onClick, icon: Icon, label }) => (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+        active 
+          ? 'bg-primary/20 text-primary border border-primary/30' 
+          : 'bg-card/50 text-muted-foreground border border-border hover:border-primary/30 hover:text-primary'
+      }`}
+    >
+      <Icon size={14} />
+      {label}
+    </button>
+  );
+
   return (
     <div className="h-full flex flex-col" data-testid="settings-page">
       <div className="px-4 py-3 border-b border-border flex items-center gap-2 bg-card/50">
@@ -251,38 +260,20 @@ export default function Settings() {
             <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-users">
               <Users size={14} className="mr-1" /> Usuarios
             </TabsTrigger>
-            <TabsTrigger value="areas" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-areas">
-              <MapPin size={14} className="mr-1" /> Areas
-            </TabsTrigger>
-            <TabsTrigger value="tables" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-tables">
+            <TabsTrigger value="mesas" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-mesas">
               <Table2 size={14} className="mr-1" /> Mesas
             </TabsTrigger>
-            <TabsTrigger value="payment" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-payment">
-              <CreditCard size={14} className="mr-1" /> Pagos
-            </TabsTrigger>
-            <TabsTrigger value="taxes" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-taxes">
-              <Percent size={14} className="mr-1" /> Impuestos
-            </TabsTrigger>
-            <TabsTrigger value="reasons" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-reasons">
-              <AlertTriangle size={14} className="mr-1" /> Anulaciones
-            </TabsTrigger>
-            <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-products">
-              <Package size={14} className="mr-1" /> Productos
-            </TabsTrigger>
-            <TabsTrigger value="saletypes" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-saletypes">
+            <TabsTrigger value="ventas" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-ventas">
               <ShoppingBag size={14} className="mr-1" /> Ventas
+            </TabsTrigger>
+            <TabsTrigger value="inventario" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-inventario">
+              <Package size={14} className="mr-1" /> Inventario
             </TabsTrigger>
             <TabsTrigger value="channels" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-channels">
               <Printer size={14} className="mr-1" /> Impresion
             </TabsTrigger>
             <TabsTrigger value="station" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-station">
               <Cog size={14} className="mr-1" /> Estacion
-            </TabsTrigger>
-            <TabsTrigger value="inventory" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-inventory-cfg">
-              <Package size={14} className="mr-1" /> Inventario
-            </TabsTrigger>
-            <TabsTrigger value="suppliers-cfg" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-suppliers-cfg">
-              <Truck size={14} className="mr-1" /> Compras
             </TabsTrigger>
             <TabsTrigger value="reports-cfg" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-reports-cfg">
               <BarChart3 size={14} className="mr-1" /> Reportes
@@ -328,266 +319,319 @@ export default function Settings() {
             </div>
           </TabsContent>
 
-          {/* AREAS */}
-          <TabsContent value="areas">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-oswald text-base font-bold">Areas del Restaurante</h2>
-              <Button onClick={() => setAreaDialog({ open: true, name: '', color: '#FF6600', editId: null })} size="sm"
-                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-area-btn">
-                <Plus size={14} className="mr-1" /> Agregar
-              </Button>
+          {/* MESAS (includes Areas + Tables) */}
+          <TabsContent value="mesas">
+            <div className="flex items-center gap-2 mb-4">
+              <SubTabButton active={mesasSubTab === 'mesas'} onClick={() => setMesasSubTab('mesas')} icon={Table2} label="Mesas" />
+              <SubTabButton active={mesasSubTab === 'areas'} onClick={() => setMesasSubTab('areas')} icon={MapPin} label="Areas" />
             </div>
-            <div className="space-y-2">
-              {areas.map(area => (
-                <div key={area.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`area-${area.id}`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: area.color }} />
-                    <span className="font-semibold">{area.name}</span>
-                    <Badge variant="secondary" className="text-[10px]">{tables.filter(t => t.area_id === area.id).length} mesas</Badge>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      onClick={() => setAreaDialog({ open: true, name: area.name, color: area.color, editId: area.id })}>
-                      <Pencil size={14} />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => { areasAPI.delete(area.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
-                      className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
 
-          {/* TABLES */}
-          <TabsContent value="tables">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-oswald text-base font-bold">Mesas</h2>
-              <Button onClick={() => setTableDialog({ open: true, number: '', area_id: areas[0]?.id || '', capacity: 4, shape: 'round' })} size="sm"
-                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-table-btn">
-                <Plus size={14} className="mr-1" /> Agregar
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {tables.map(table => (
-                <div key={table.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
-                  <div>
-                    <span className="font-oswald font-bold text-primary">#{table.number}</span>
-                    <span className="text-sm ml-2">{areas.find(a => a.id === table.area_id)?.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">Cap: {table.capacity} | {table.shape}</span>
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={() => { tablesAPI.delete(table.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
-                    className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
+            {mesasSubTab === 'mesas' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-oswald text-base font-bold">Mesas</h2>
+                  <Button onClick={() => setTableDialog({ open: true, number: '', area_id: areas[0]?.id || '', capacity: 4, shape: 'round' })} size="sm"
+                    className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-table-btn">
+                    <Plus size={14} className="mr-1" /> Agregar
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* PAYMENT METHODS */}
-          <TabsContent value="payment">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-oswald text-base font-bold">Formas de Pago</h2>
-              <Button onClick={() => setPayDialog({ open: true, name: '', icon: 'circle', editId: null })} size="sm"
-                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-payment-btn">
-                <Plus size={14} className="mr-1" /> Agregar
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {payMethods.map(m => (
-                <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`payment-${m.id}`}>
-                  <div>
-                    <span className="font-semibold">{m.name}</span>
-                    {m.currency && m.currency !== 'DOP' && (
-                      <Badge variant="outline" className="ml-2 text-[9px] border-yellow-500 text-yellow-400">
-                        {m.currency} (1={m.exchange_rate})
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      onClick={() => setPayDialog({ open: true, name: m.name, icon: m.icon || '', currency: m.currency || 'DOP', exchange_rate: m.exchange_rate || 1, editId: m.id })}>
-                      <Pencil size={14} />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
-                      onClick={() => handleDeletePayMethod(m.id)}>
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* TAX CONFIG */}
-          <TabsContent value="taxes">
-            <h2 className="font-oswald text-base font-bold mb-4">Configuracion de Impuestos</h2>
-            <div className="max-w-2xl">
-              {/* Table header */}
-              <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold border-b border-border">
-                <div className="col-span-1">Activo</div>
-                <div className="col-span-4">Descripcion</div>
-                <div className="col-span-2">Tasa %</div>
-                <div className="col-span-3">Aplicar a Propina</div>
-                <div className="col-span-2">Es Propina</div>
-              </div>
-              {/* Tax rows */}
-              <div className="space-y-1 mt-1">
-                {taxConfig.map((tax, idx) => (
-                  <div key={tax.id || idx} className={`grid grid-cols-12 gap-2 items-center px-3 py-2 rounded-lg border ${tax.active ? 'border-border bg-card' : 'border-border/30 bg-card/30 opacity-60'}`}
-                    data-testid={`tax-row-${idx}`}>
-                    <div className="col-span-1">
-                      <Switch checked={tax.active} onCheckedChange={(v) => updateTaxRow(idx, 'active', v)} />
-                    </div>
-                    <div className="col-span-4">
-                      <input value={tax.description} onChange={e => updateTaxRow(idx, 'description', e.target.value)}
-                        className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm" />
-                    </div>
-                    <div className="col-span-2">
-                      <input value={tax.rate} onChange={e => updateTaxRow(idx, 'rate', parseFloat(e.target.value) || 0)}
-                        type="number" step="0.01"
-                        className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-oswald text-right" />
-                    </div>
-                    <div className="col-span-3 flex items-center justify-center">
-                      <Switch checked={tax.apply_to_tip || false} onCheckedChange={(v) => updateTaxRow(idx, 'apply_to_tip', v)} />
-                      <span className="text-[9px] text-muted-foreground ml-1">Sobre total</span>
-                    </div>
-                    <div className="col-span-2 flex items-center justify-center">
-                      <Switch checked={tax.is_tip || false} onCheckedChange={(v) => updateTaxRow(idx, 'is_tip', v)} />
-                      <span className="text-[9px] text-muted-foreground ml-1">Propina</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Preview */}
-              <div className="mt-4 p-4 rounded-xl bg-background border border-border">
-                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Vista Previa (sobre RD$ 1,000.00)</h3>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span>Subtotal Neto</span><span className="font-oswald">RD$ 1,000.00</span></div>
-                  {taxConfig.filter(t => t.active && t.rate > 0).map((tax, i) => {
-                    const base = tax.apply_to_tip ? 1000 + taxConfig.filter(t => t.active && t.rate > 0).slice(0, i).reduce((s, t) => s + (1000 * t.rate / 100), 0) : 1000;
-                    const amount = base * (tax.rate / 100);
-                    return (
-                      <div key={i} className="flex justify-between text-muted-foreground">
-                        <span>{tax.description} ({tax.rate}%){tax.is_tip ? ' *' : ''}</span>
-                        <span className="font-oswald">RD$ {amount.toFixed(2)}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {tables.map(table => (
+                    <div key={table.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+                      <div>
+                        <span className="font-oswald font-bold text-primary">#{table.number}</span>
+                        <span className="text-sm ml-2">{areas.find(a => a.id === table.area_id)?.name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">Cap: {table.capacity} | {table.shape}</span>
                       </div>
-                    );
-                  })}
-                  <div className="flex justify-between font-bold border-t border-border pt-1 mt-1">
-                    <span>Total General</span>
-                    <span className="font-oswald text-primary">
-                      RD$ {(1000 + taxConfig.filter(t => t.active && t.rate > 0).reduce((s, t) => {
-                        const base = t.apply_to_tip ? 1000 + s : 1000;
-                        return s + (base * t.rate / 100);
-                      }, 0)).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-[9px] text-muted-foreground mt-2">* = Se identifica como propina en la factura</p>
-              </div>
-              <Button onClick={handleSaveTaxConfig} className="w-full h-11 mt-4 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="save-tax-config">
-                GUARDAR IMPUESTOS
-              </Button>
-            </div>
-          </TabsContent>
-
-          {/* CANCELLATION REASONS */}
-          <TabsContent value="reasons">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-oswald text-base font-bold">Razones de Anulacion</h2>
-              <Button onClick={() => setReasonDialog({ open: true, name: '', return_to_inventory: true })} size="sm"
-                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-reason-btn">
-                <Plus size={14} className="mr-1" /> Agregar
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {reasons.map(reason => (
-                <div key={reason.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
-                  <div>
-                    <span className="font-semibold text-sm">{reason.name}</span>
-                    <Badge variant={reason.return_to_inventory ? 'default' : 'destructive'} className="ml-2 text-[9px]">
-                      {reason.return_to_inventory ? 'Retorna inventario' : 'No retorna'}
-                    </Badge>
-                  </div>
-                  <Switch checked={reason.return_to_inventory}
-                    onCheckedChange={() => { reasonsAPI.update(reason.id, { return_to_inventory: !reason.return_to_inventory }).then(() => { toast.success('Actualizado'); fetchAll(); }); }} />
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* PRODUCTS */}
-          <TabsContent value="products">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-oswald text-base font-bold">Productos</h2>
-              <a href="/product/new"
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold active:scale-95 transition-transform" data-testid="add-product-btn">
-                <Plus size={14} /> Nuevo Producto
-              </a>
-            </div>
-            <div className="space-y-1">
-              {categories.map(cat => (
-                <div key={cat.id}>
-                  <h3 className="font-oswald text-xs uppercase text-muted-foreground tracking-wider mt-4 mb-2 flex items-center gap-2">
-                    <Tag size={12} style={{ color: cat.color }} /> {cat.name}
-                  </h3>
-                  {products.filter(p => p.category_id === cat.id).map(prod => (
-                    <a 
-                      key={prod.id} 
-                      href={`/product/${prod.id}`}
-                      className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 ml-4 mb-1 hover:border-primary/50 hover:bg-card transition-colors cursor-pointer"
-                      data-testid={`product-${prod.id}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {prod.button_bg_color && (
-                          <div className="w-4 h-4 rounded" style={{ backgroundColor: prod.button_bg_color }} />
-                        )}
-                        <span className="text-sm">{prod.name}</span>
-                        {prod.printed_name && prod.printed_name !== prod.name && (
-                          <span className="text-[10px] text-muted-foreground font-mono">({prod.printed_name})</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {prod.modifier_assignments?.length > 0 && (
-                          <Badge variant="outline" className="text-[9px]">{prod.modifier_assignments.length} mod</Badge>
-                        )}
-                        <span className="font-oswald text-sm text-primary font-bold">RD$ {prod.price?.toFixed(2)}</span>
-                        <Pencil size={12} className="text-muted-foreground" />
-                      </div>
-                    </a>
+                      <Button variant="ghost" size="icon" onClick={() => { tablesAPI.delete(table.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
+                        className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
+                    </div>
                   ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
+
+            {mesasSubTab === 'areas' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-oswald text-base font-bold">Areas del Restaurante</h2>
+                  <Button onClick={() => setAreaDialog({ open: true, name: '', color: '#FF6600', editId: null })} size="sm"
+                    className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-area-btn">
+                    <Plus size={14} className="mr-1" /> Agregar
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {areas.map(area => (
+                    <div key={area.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`area-${area.id}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: area.color }} />
+                        <span className="font-semibold">{area.name}</span>
+                        <Badge variant="secondary" className="text-[10px]">{tables.filter(t => t.area_id === area.id).length} mesas</Badge>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() => setAreaDialog({ open: true, name: area.name, color: area.color, editId: area.id })}>
+                          <Pencil size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => { areasAPI.delete(area.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
+                          className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </TabsContent>
 
-          {/* SALE TYPES */}
-          <TabsContent value="saletypes">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-oswald text-base font-bold">Tipos de Venta e Impuestos</h2>
-              <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null })} size="sm"
-                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-saletype-btn">
-                <Plus size={14} className="mr-1" /> Agregar
-              </Button>
+          {/* VENTAS (includes Pagos, Impuestos, Anulaciones, Tipos de Venta) */}
+          <TabsContent value="ventas">
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <SubTabButton active={ventasSubTab === 'pagos'} onClick={() => setVentasSubTab('pagos')} icon={CreditCard} label="Formas de Pago" />
+              <SubTabButton active={ventasSubTab === 'impuestos'} onClick={() => setVentasSubTab('impuestos')} icon={Percent} label="Impuestos" />
+              <SubTabButton active={ventasSubTab === 'anulaciones'} onClick={() => setVentasSubTab('anulaciones')} icon={AlertTriangle} label="Anulaciones" />
+              <SubTabButton active={ventasSubTab === 'tipos'} onClick={() => setVentasSubTab('tipos')} icon={ShoppingBag} label="Tipos de Venta" />
             </div>
-            <div className="space-y-2">
-              {saleTypes.map(st => (
-                <div key={st.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`saletype-${st.id}`}>
-                  <div>
-                    <span className="font-semibold">{st.name}</span>
-                    <Badge variant="secondary" className="ml-2 text-[9px]">{st.code}</Badge>
-                    <span className="text-xs text-muted-foreground ml-2">ITBIS {st.tax_rate}% | Propina {st.tip_default}%</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_rate: st.tax_rate, tip_default: st.tip_default, editId: st.id })}>
-                      <Pencil size={14} />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
-                      onClick={() => handleDeleteSaleType(st.id)}><Trash2 size={14} /></Button>
-                  </div>
+
+            {ventasSubTab === 'pagos' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-oswald text-base font-bold">Formas de Pago</h2>
+                  <Button onClick={() => setPayDialog({ open: true, name: '', icon: 'circle', editId: null })} size="sm"
+                    className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-payment-btn">
+                    <Plus size={14} className="mr-1" /> Agregar
+                  </Button>
                 </div>
-              ))}
+                <div className="space-y-2">
+                  {payMethods.map(m => (
+                    <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`payment-${m.id}`}>
+                      <div>
+                        <span className="font-semibold">{m.name}</span>
+                        {m.currency && m.currency !== 'DOP' && (
+                          <Badge variant="outline" className="ml-2 text-[9px] border-yellow-500 text-yellow-400">
+                            {m.currency} (1={m.exchange_rate})
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() => setPayDialog({ open: true, name: m.name, icon: m.icon || '', currency: m.currency || 'DOP', exchange_rate: m.exchange_rate || 1, editId: m.id })}>
+                          <Pencil size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
+                          onClick={() => handleDeletePayMethod(m.id)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {ventasSubTab === 'impuestos' && (
+              <>
+                <h2 className="font-oswald text-base font-bold mb-4">Configuracion de Impuestos</h2>
+                <div className="max-w-2xl">
+                  <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold border-b border-border">
+                    <div className="col-span-1">Activo</div>
+                    <div className="col-span-4">Descripcion</div>
+                    <div className="col-span-2">Tasa %</div>
+                    <div className="col-span-3">Aplicar a Propina</div>
+                    <div className="col-span-2">Es Propina</div>
+                  </div>
+                  <div className="space-y-1 mt-1">
+                    {taxConfig.map((tax, idx) => (
+                      <div key={tax.id || idx} className={`grid grid-cols-12 gap-2 items-center px-3 py-2 rounded-lg border ${tax.active ? 'border-border bg-card' : 'border-border/30 bg-card/30 opacity-60'}`}
+                        data-testid={`tax-row-${idx}`}>
+                        <div className="col-span-1">
+                          <Switch checked={tax.active} onCheckedChange={(v) => updateTaxRow(idx, 'active', v)} />
+                        </div>
+                        <div className="col-span-4">
+                          <input value={tax.description} onChange={e => updateTaxRow(idx, 'description', e.target.value)}
+                            className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm" />
+                        </div>
+                        <div className="col-span-2">
+                          <input value={tax.rate} onChange={e => updateTaxRow(idx, 'rate', parseFloat(e.target.value) || 0)}
+                            type="number" step="0.01"
+                            className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-oswald text-right" />
+                        </div>
+                        <div className="col-span-3 flex items-center justify-center">
+                          <Switch checked={tax.apply_to_tip || false} onCheckedChange={(v) => updateTaxRow(idx, 'apply_to_tip', v)} />
+                          <span className="text-[9px] text-muted-foreground ml-1">Sobre total</span>
+                        </div>
+                        <div className="col-span-2 flex items-center justify-center">
+                          <Switch checked={tax.is_tip || false} onCheckedChange={(v) => updateTaxRow(idx, 'is_tip', v)} />
+                          <span className="text-[9px] text-muted-foreground ml-1">Propina</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 p-4 rounded-xl bg-background border border-border">
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-2">Vista Previa (sobre RD$ 1,000.00)</h3>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between"><span>Subtotal Neto</span><span className="font-oswald">RD$ 1,000.00</span></div>
+                      {taxConfig.filter(t => t.active && t.rate > 0).map((tax, i) => {
+                        const base = tax.apply_to_tip ? 1000 + taxConfig.filter(t => t.active && t.rate > 0).slice(0, i).reduce((s, t) => s + (1000 * t.rate / 100), 0) : 1000;
+                        const amount = base * (tax.rate / 100);
+                        return (
+                          <div key={i} className="flex justify-between text-muted-foreground">
+                            <span>{tax.description} ({tax.rate}%){tax.is_tip ? ' *' : ''}</span>
+                            <span className="font-oswald">RD$ {amount.toFixed(2)}</span>
+                          </div>
+                        );
+                      })}
+                      <div className="flex justify-between font-bold border-t border-border pt-1 mt-1">
+                        <span>Total General</span>
+                        <span className="font-oswald text-primary">
+                          RD$ {(1000 + taxConfig.filter(t => t.active && t.rate > 0).reduce((s, t) => {
+                            const base = t.apply_to_tip ? 1000 + s : 1000;
+                            return s + (base * t.rate / 100);
+                          }, 0)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground mt-2">* = Se identifica como propina en la factura</p>
+                  </div>
+                  <Button onClick={handleSaveTaxConfig} className="w-full h-11 mt-4 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="save-tax-config">
+                    GUARDAR IMPUESTOS
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {ventasSubTab === 'anulaciones' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-oswald text-base font-bold">Razones de Anulacion</h2>
+                  <Button onClick={() => setReasonDialog({ open: true, name: '', return_to_inventory: true })} size="sm"
+                    className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-reason-btn">
+                    <Plus size={14} className="mr-1" /> Agregar
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {reasons.map(reason => (
+                    <div key={reason.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+                      <div>
+                        <span className="font-semibold text-sm">{reason.name}</span>
+                        <Badge variant={reason.return_to_inventory ? 'default' : 'destructive'} className="ml-2 text-[9px]">
+                          {reason.return_to_inventory ? 'Retorna inventario' : 'No retorna'}
+                        </Badge>
+                      </div>
+                      <Switch checked={reason.return_to_inventory}
+                        onCheckedChange={() => { reasonsAPI.update(reason.id, { return_to_inventory: !reason.return_to_inventory }).then(() => { toast.success('Actualizado'); fetchAll(); }); }} />
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {ventasSubTab === 'tipos' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-oswald text-base font-bold">Tipos de Venta</h2>
+                  <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null })} size="sm"
+                    className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-saletype-btn">
+                    <Plus size={14} className="mr-1" /> Agregar
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {saleTypes.map(st => (
+                    <div key={st.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`saletype-${st.id}`}>
+                      <div>
+                        <span className="font-semibold">{st.name}</span>
+                        <Badge variant="secondary" className="ml-2 text-[9px]">{st.code}</Badge>
+                        <span className="text-xs text-muted-foreground ml-2">ITBIS {st.tax_rate}% | Propina {st.tip_default}%</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_rate: st.tax_rate, tip_default: st.tip_default, editId: st.id })}>
+                          <Pencil size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
+                          onClick={() => handleDeleteSaleType(st.id)}><Trash2 size={14} /></Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          {/* INVENTARIO (includes Productos, Compras, Stock) */}
+          <TabsContent value="inventario">
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <SubTabButton active={inventarioSubTab === 'productos'} onClick={() => setInventarioSubTab('productos')} icon={Package} label="Productos" />
+              <SubTabButton active={inventarioSubTab === 'compras'} onClick={() => setInventarioSubTab('compras')} icon={Truck} label="Compras" />
+              <SubTabButton active={inventarioSubTab === 'stock'} onClick={() => setInventarioSubTab('stock')} icon={BarChart3} label="Stock" />
             </div>
+
+            {inventarioSubTab === 'productos' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-oswald text-base font-bold">Productos</h2>
+                  <a href="/product/new"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold active:scale-95 transition-transform" data-testid="add-product-btn">
+                    <Plus size={14} /> Nuevo Producto
+                  </a>
+                </div>
+                <div className="space-y-1">
+                  {categories.map(cat => (
+                    <div key={cat.id}>
+                      <h3 className="font-oswald text-xs uppercase text-muted-foreground tracking-wider mt-4 mb-2 flex items-center gap-2">
+                        <Tag size={12} style={{ color: cat.color }} /> {cat.name}
+                      </h3>
+                      {products.filter(p => p.category_id === cat.id).map(prod => (
+                        <a 
+                          key={prod.id} 
+                          href={`/product/${prod.id}`}
+                          className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 ml-4 mb-1 hover:border-primary/50 hover:bg-card transition-colors cursor-pointer"
+                          data-testid={`product-${prod.id}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {prod.button_bg_color && (
+                              <div className="w-4 h-4 rounded" style={{ backgroundColor: prod.button_bg_color }} />
+                            )}
+                            <span className="text-sm">{prod.name}</span>
+                            {prod.printed_name && prod.printed_name !== prod.name && (
+                              <span className="text-[10px] text-muted-foreground font-mono">({prod.printed_name})</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {prod.modifier_assignments?.length > 0 && (
+                              <Badge variant="outline" className="text-[9px]">{prod.modifier_assignments.length} mod</Badge>
+                            )}
+                            <span className="font-oswald text-sm text-primary font-bold">RD$ {prod.price?.toFixed(2)}</span>
+                            <Pencil size={12} className="text-muted-foreground" />
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {inventarioSubTab === 'compras' && (
+              <div className="text-center py-8">
+                <Truck size={40} className="mx-auto mb-3 text-primary opacity-50" />
+                <h2 className="font-oswald text-lg mb-2">Proveedores & Compras</h2>
+                <p className="text-sm text-muted-foreground mb-4">Proveedores, ordenes de compra, recepcion de mercancia</p>
+                <a href="/suppliers" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
+                  <Truck size={16} /> Abrir Compras
+                </a>
+              </div>
+            )}
+
+            {inventarioSubTab === 'stock' && (
+              <div className="text-center py-8">
+                <Package size={40} className="mx-auto mb-3 text-primary opacity-50" />
+                <h2 className="font-oswald text-lg mb-2">Inventario</h2>
+                <p className="text-sm text-muted-foreground mb-4">Stock, almacenes, recetas, costos y movimientos</p>
+                <a href="/inventory" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
+                  <Package size={16} /> Abrir Inventario
+                </a>
+              </div>
+            )}
           </TabsContent>
 
           {/* PRINT CHANNELS */}
@@ -654,27 +698,7 @@ export default function Settings() {
             </div>
           </TabsContent>
 
-          {/* MODULE LINKS */}
-          <TabsContent value="inventory">
-            <div className="text-center py-8">
-              <Package size={40} className="mx-auto mb-3 text-primary opacity-50" />
-              <h2 className="font-oswald text-lg mb-2">Inventario</h2>
-              <p className="text-sm text-muted-foreground mb-4">Stock, almacenes, recetas, costos y movimientos</p>
-              <a href="/inventory" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
-                <Package size={16} /> Abrir Inventario
-              </a>
-            </div>
-          </TabsContent>
-          <TabsContent value="suppliers-cfg">
-            <div className="text-center py-8">
-              <Truck size={40} className="mx-auto mb-3 text-primary opacity-50" />
-              <h2 className="font-oswald text-lg mb-2">Proveedores & Compras</h2>
-              <p className="text-sm text-muted-foreground mb-4">Proveedores, ordenes de compra, recepcion de mercancia</p>
-              <a href="/suppliers" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
-                <Truck size={16} /> Abrir Compras
-              </a>
-            </div>
-          </TabsContent>
+          {/* REPORTS LINK */}
           <TabsContent value="reports-cfg">
             <div className="text-center py-8">
               <BarChart3 size={40} className="mx-auto mb-3 text-primary opacity-50" />
@@ -685,6 +709,8 @@ export default function Settings() {
               </a>
             </div>
           </TabsContent>
+
+          {/* CUSTOMERS LINK */}
           <TabsContent value="customers-cfg">
             <div className="text-center py-8">
               <Heart size={40} className="mx-auto mb-3 text-primary opacity-50" />
@@ -757,28 +783,6 @@ export default function Settings() {
               <Switch checked={reasonDialog.return_to_inventory} onCheckedChange={(v) => setReasonDialog(p => ({ ...p, return_to_inventory: v }))} />
             </div>
             <Button onClick={handleAddReason} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Product Dialog */}
-      <Dialog open={productDialog.open} onOpenChange={(o) => !o && setProductDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border">
-          <DialogHeader><DialogTitle className="font-oswald">Nuevo Producto</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <input value={productDialog.name} onChange={e => setProductDialog(p => ({ ...p, name: e.target.value }))}
-              placeholder="Nombre" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
-            <select value={productDialog.category_id} onChange={e => setProductDialog(p => ({ ...p, category_id: e.target.value }))}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <input value={productDialog.price} onChange={e => setProductDialog(p => ({ ...p, price: e.target.value }))}
-              type="number" placeholder="Precio RD$" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
-            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-              <span className="text-sm">Controlar inventario</span>
-              <Switch checked={productDialog.track_inventory} onCheckedChange={(v) => setProductDialog(p => ({ ...p, track_inventory: v }))} />
-            </div>
-            <Button onClick={handleAddProduct} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR</Button>
           </div>
         </DialogContent>
       </Dialog>
