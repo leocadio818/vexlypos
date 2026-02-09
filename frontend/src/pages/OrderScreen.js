@@ -447,20 +447,39 @@ export default function OrderScreen() {
         {/* Account Tabs - Show when table has multiple orders OR has at least one order */}
         {(tableOrders.length > 1 || (tableOrders.length === 1 && order)) && !splitMode && (
           <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto bg-card/30">
-            {tableOrders.map(ord => (
-              <button
-                key={ord.id}
-                onClick={() => selectOrder(ord.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
-                  activeOrderId === ord.id 
-                    ? 'bg-primary text-primary-foreground font-bold' 
-                    : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
-                }`}
-              >
-                Cuenta #{ord.account_number || 1}
-                <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
-              </button>
-            ))}
+            {tableOrders.map(ord => {
+              const isEmpty = isOrderEmpty(ord);
+              const canDelete = isEmpty && tableOrders.length > 1;
+              return (
+                <div key={ord.id} className="relative flex items-center">
+                  <button
+                    onClick={() => selectOrder(ord.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
+                      activeOrderId === ord.id 
+                        ? 'bg-primary text-primary-foreground font-bold' 
+                        : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
+                    } ${canDelete ? 'pr-7' : ''}`}
+                  >
+                    Cuenta #{ord.account_number || 1}
+                    <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
+                  </button>
+                  {/* Delete button for empty accounts */}
+                  {canDelete && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteEmptyAccount(ord.id, ord.account_number || 1);
+                      }}
+                      data-testid={`delete-account-${ord.account_number || 1}`}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-400 flex items-center justify-center transition-colors"
+                      title="Eliminar cuenta vacía"
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
             {/* Add New Account Button */}
             <button
               onClick={createNewEmptyAccount}
