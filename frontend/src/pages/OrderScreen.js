@@ -245,6 +245,94 @@ export default function OrderScreen() {
     } catch { toast.error('Error de autorizacion'); }
   };
 
+  // Move Table Functions
+  const openMoveDialog = async () => {
+    try {
+      const [tablesRes, areasRes] = await Promise.all([tablesAPI.list(), areasAPI.list()]);
+      setAllTables(tablesRes.data);
+      setAllAreas(areasRes.data);
+      setMoveDialog({ open: true });
+    } catch { toast.error('Error cargando mesas'); }
+  };
+
+  const handleMoveTable = async (targetTableId) => {
+    if (!order) return;
+    try {
+      const res = await ordersAPI.moveToTable(order.id, targetTableId, false);
+      if (res.data.needs_merge) {
+        // Target table is occupied, ask to merge
+        setMoveDialog({ open: false });
+        setMergeConfirm({ open: true, targetTableId, targetTableNumber: res.data.target_table_number });
+      } else {
+        toast.success('Mesa movida exitosamente');
+        setMoveDialog({ open: false });
+        navigate(`/order/${targetTableId}`);
+      }
+    } catch { toast.error('Error moviendo mesa'); }
+  };
+
+  const handleConfirmMerge = async () => {
+    if (!order || !mergeConfirm.targetTableId) return;
+    try {
+      await ordersAPI.moveToTable(order.id, mergeConfirm.targetTableId, true);
+      toast.success('Cuentas unidas exitosamente');
+      setMergeConfirm({ open: false, targetTableId: null, targetTableNumber: null });
+      navigate(`/order/${mergeConfirm.targetTableId}`);
+    } catch { toast.error('Error uniendo cuentas'); }
+  };
+
+  // Split/Divide Functions
+  const enterSplitMode = () => {
+    setSplitMode(true);
+    setSelectedSplitItems([]);
+  };
+
+  const exitSplitMode = () => {
+    setSplitMode(false);
+    setSelectedSplitItems([]);
+  };
+
+  const toggleSplitItem = (itemId) => {
+    setSelectedSplitItems(prev => 
+      prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
+    );
+  };
+
+  const addDivision = () => {
+    const newId = Math.max(...divisions.map(d => d.id)) + 1;
+    setDivisions(prev => [...prev, { id: newId, name: `División ${newId}`, item_ids: [] }]);
+  };
+
+  const moveItemsToDivision = async (targetDivId) => {
+    if (selectedSplitItems.length === 0) {
+      toast.info('Selecciona items primero');
+      return;
+    }
+    if (!order) return;
+
+    try {
+      const res = await ordersAPI.splitItems(order.id, selectedSplitItems, targetDivId.toString());
+      setOrder(res.data);
+      setDivisions(res.data.divisions || divisions);
+      setSelectedSplitItems([]);
+      toast.success('Items movidos');
+    } catch { toast.error('Error moviendo items'); }
+  };
+
+  const getItemsForDivision = (divId) => {
+    const div = divisions.find(d => d.id === divId);
+    if (!div) return [];
+    return activeItems.filter(item => div.item_ids.includes(item.id));
+  };
+
+  const getDivisionTotal = (divId) => {
+    const items = getItemsForDivision(divId);
+    return items.reduce((sum, i) => {
+      const modTotal = (i.modifiers || []).reduce((s, m) => s + (m.price || 0), 0);
+      return sum + (i.unit_price + modTotal) * i.quantity;
+    }, 0);
+  };
+
   return (
     <div className="h-full flex flex-col lg:flex-row" data-testid="order-screen">
       {/* Left: Order Summary */}
