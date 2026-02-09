@@ -27,7 +27,7 @@ export default function Billing() {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [payAmounts, setPayAmounts] = useState({}); // {methodName: amount}
   const [payStep, setPayStep] = useState('method'); // 'method' | 'amount'
-  const [activePayMethod, setActivePayMethod] = useState(null);
+  const [activePayMethod, setActivePayMethod] = useState(null); // Currently focused payment method
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
