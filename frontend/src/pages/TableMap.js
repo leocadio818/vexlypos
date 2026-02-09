@@ -100,11 +100,11 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
         left: pos.x, top: pos.y, width: w, height: h, borderRadius: radius,
         border: `${isDivided ? '4px' : '3px'} solid ${editMode ? '#FF6600' : colors.border}`,
         backgroundColor: editMode ? 'rgba(255,102,0,0.1)' : colors.bg,
-        backgroundImage: isDivided && !editMode ? stripedPattern : 'none',
+        backgroundImage: isDivided && !editMode ? stripedPattern(isOtherUser) : 'none',
         boxShadow: isDragging 
           ? `0 0 25px ${colors.glow}, 0 8px 30px rgba(0,0,0,0.5)` 
           : isDivided 
-            ? `0 0 20px ${colors.glow}, inset 0 0 15px rgba(255,102,0,0.2)` 
+            ? `0 0 20px ${colors.glow}, inset 0 0 15px ${isOtherUser ? 'rgba(2,136,209,0.2)' : 'rgba(255,102,0,0.2)'}` 
             : `0 0 15px ${colors.glow}`,
         backdropFilter: 'blur(8px)',
         cursor: editMode ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
@@ -119,8 +119,14 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
     >
       {/* Divided badge */}
       {isDivided && !editMode && (
-        <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold shadow-lg border-2 border-background">
+        <div className={`absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg border-2 border-background ${isOtherUser ? 'bg-blue-500' : 'bg-orange-500'}`}>
           ÷
+        </div>
+      )}
+      {/* Other user indicator */}
+      {isOtherUser && !isDivided && !editMode && (
+        <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shadow-lg border-2 border-background">
+          <Users size={8} className="text-white" />
         </div>
       )}
       <span className="font-oswald text-lg font-bold" style={{ color: editMode ? '#FF6600' : colors.border }}>
