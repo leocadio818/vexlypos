@@ -758,31 +758,67 @@ export default function OrderScreen() {
       {/* Right (visually): Categories & Products - Now rendered first but appears on right */}
       {!splitMode && (
         <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Breadcrumb when inside a category */}
-        {activeCat && (
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/30">
-            <button onClick={() => setActiveCat(null)} className="flex items-center gap-1 text-xs text-primary hover:underline font-semibold" data-testid="back-to-categories">
-              <Grid3X3 size={12} /> Categorias
-            </button>
-            <span className="text-xs text-muted-foreground">/</span>
-            <span className="text-xs font-semibold">{categories.find(c => c.id === activeCat)?.name}</span>
+        {/* Grid Settings Bar */}
+        <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card/30">
+          <div className="flex items-center gap-2">
+            {activeCat ? (
+              <button onClick={() => setActiveCat(null)} className="flex items-center gap-1 text-xs text-primary hover:underline font-semibold" data-testid="back-to-categories">
+                <Grid3X3 size={12} /> Categorias
+              </button>
+            ) : (
+              <span className="text-xs font-semibold flex items-center gap-1"><Grid3X3 size={12} /> Categorías</span>
+            )}
+            {activeCat && (
+              <>
+                <span className="text-xs text-muted-foreground">/</span>
+                <span className="text-xs font-semibold">{categories.find(c => c.id === activeCat)?.name}</span>
+              </>
+            )}
           </div>
-        )}
+          {/* Column controls */}
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] text-muted-foreground mr-1">Columnas:</span>
+            {[2, 3, 4, 5, 6].map(num => (
+              <button
+                key={num}
+                onClick={() => {
+                  const newSettings = activeCat 
+                    ? { ...gridSettings, productColumns: num }
+                    : { ...gridSettings, categoryColumns: num };
+                  setGridSettings(newSettings);
+                  localStorage.setItem('pos_grid_settings', JSON.stringify(newSettings));
+                }}
+                className={`w-6 h-6 rounded text-[10px] font-bold transition-colors ${
+                  (activeCat ? gridSettings.productColumns : gridSettings.categoryColumns) === num
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <ScrollArea className="flex-1">
           {/* Category Grid (when no category selected) */}
           {!activeCat && (
-            <div className="p-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2" data-testid="category-grid">
+            <div 
+              className="p-2 grid gap-2" 
+              style={{ gridTemplateColumns: `repeat(${gridSettings.categoryColumns}, minmax(0, 1fr))` }}
+              data-testid="category-grid"
+            >
               {categories.map(cat => {
                 const catProductCount = products.filter(p => p.category_id === cat.id).length;
+                const heightClass = gridSettings.categoryColumns > 4 ? 'h-20' : 'h-24';
                 return (
                   <button key={cat.id} onClick={() => setActiveCat(cat.id)} data-testid={`cat-card-${cat.id}`}
-                    className="relative overflow-hidden rounded-xl border border-border hover:border-primary/50 transition-all active:scale-[0.97] p-4 h-24 text-left flex flex-col justify-between"
+                    className={`relative overflow-hidden rounded-xl border border-border hover:border-primary/50 transition-all active:scale-[0.97] p-3 ${heightClass} text-left flex flex-col justify-between`}
                     style={{ backgroundColor: cat.color + '15', borderColor: cat.color + '40' }}>
                     <span className="text-sm font-bold leading-tight" style={{ color: cat.color }}>{cat.name}</span>
                     <span className="text-[10px] text-muted-foreground">{catProductCount} productos</span>
-                    <div className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: cat.color + '20' }}>
-                      <span className="font-oswald text-xs font-bold" style={{ color: cat.color }}>{catProductCount}</span>
+                    <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: cat.color + '20' }}>
+                      <span className="font-oswald text-[10px] font-bold" style={{ color: cat.color }}>{catProductCount}</span>
                     </div>
                   </button>
                 );
@@ -792,10 +828,16 @@ export default function OrderScreen() {
 
           {/* Product Grid (when category selected) */}
           {activeCat && (
-            <div className="p-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2" data-testid="product-grid">
-              {filteredProducts.map(product => (
-                <button key={product.id} onClick={() => handleProductClick(product)} data-testid={`product-${product.id}`}
-                  className="group relative overflow-hidden bg-card border border-border hover:border-primary/50 transition-all active:scale-[0.97] rounded-xl flex flex-col justify-between p-3 h-24 text-left">
+            <div 
+              className="p-2 grid gap-2" 
+              style={{ gridTemplateColumns: `repeat(${gridSettings.productColumns}, minmax(0, 1fr))` }}
+              data-testid="product-grid"
+            >
+              {filteredProducts.map(product => {
+                const heightClass = gridSettings.productColumns > 4 ? 'h-20' : 'h-24';
+                return (
+                  <button key={product.id} onClick={() => handleProductClick(product)} data-testid={`product-${product.id}`}
+                    className={`group relative overflow-hidden bg-card border border-border hover:border-primary/50 transition-all active:scale-[0.97] rounded-xl flex flex-col justify-between p-3 ${heightClass} text-left`}>
                   <span className="text-xs font-semibold leading-tight line-clamp-2">{product.name}</span>
                   <span className="font-oswald text-base font-bold text-primary">{formatMoney(product.price)}</span>
                   {product.modifier_group_ids?.length > 0 && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary/60" />}
