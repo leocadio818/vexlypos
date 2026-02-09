@@ -136,6 +136,15 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - Toast notifications reducidos a 500ms
   - Botón "ENVIAR" simplificado (antes era "ENVIAR A COCINA")
   - Bug fix: Montos rápidos en pago ahora respetan el método de pago seleccionado
+- **Mover Mesa con Múltiples Cuentas (Feb 9, 2026)**:
+  - **Nuevo endpoint: POST /api/tables/{tableId}/move-all** - Mueve TODAS las órdenes de una mesa a otra
+  - Al mover una mesa dividida, todas las cuentas se trasladan automáticamente
+  - La mesa destino hereda el estado "divided" si recibe más de una cuenta
+  - La mesa origen queda automáticamente libre
+  - Validaciones: no permite mover a la misma mesa, verifica existencia de ambas mesas
+  - Si la mesa destino tiene órdenes activas, retorna `needs_merge` para confirmación del usuario
+  - Frontend actualizado para detectar mesas con múltiples cuentas y usar el nuevo endpoint
+  - **Archivo de sonido para notificaciones de cocina creado**: `/public/sounds/notification.mp3`
 
 ## PINs de Acceso (Datos de Demo)
 | Usuario | PIN | Rol |
