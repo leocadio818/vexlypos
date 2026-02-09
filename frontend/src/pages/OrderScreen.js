@@ -781,17 +781,19 @@ export default function OrderScreen() {
                     <Receipt size={14} className="mr-1.5" /> FACTURAR
                   </Button>
                 </div>
-                {/* Secondary actions row */}
+                {/* Secondary actions row - hide Dividir when table is billed */}
                 {activeItems.length > 0 && (
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className={`grid gap-1 ${table?.status === 'billed' ? 'grid-cols-2' : 'grid-cols-3'}`}>
                     <Button onClick={openMoveDialog} variant="outline" size="sm" data-testid="move-table-btn"
                       className="h-8 text-[10px] border-muted-foreground/30">
                       <MoveRight size={12} className="mr-1" /> Mover
                     </Button>
-                    <Button onClick={enterSplitMode} variant="outline" size="sm" data-testid="split-btn"
-                      className="h-8 text-[10px] border-muted-foreground/30">
-                      <SplitSquareHorizontal size={12} className="mr-1" /> Dividir
-                    </Button>
+                    {table?.status !== 'billed' && (
+                      <Button onClick={enterSplitMode} variant="outline" size="sm" data-testid="split-btn"
+                        className="h-8 text-[10px] border-muted-foreground/30">
+                        <SplitSquareHorizontal size={12} className="mr-1" /> Dividir
+                      </Button>
+                    )}
                     <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
                       className="h-8 text-[10px] border-muted-foreground/30 relative">
                       <FileText size={12} className="mr-1" /> Pre-Cuenta
