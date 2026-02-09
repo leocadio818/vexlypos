@@ -1,168 +1,181 @@
 <analysis>**original_problem_statement:**
-The user wants to build a comprehensive Point of Sale (POS) system for a restaurant in the Dominican Republic.
+The user is building a comprehensive Point of Sale (POS) system for a restaurant in the Dominican Republic.
 
-Initial high-level requirements included:
-1.  A robust database.
-2.  A quick, numeric keypad-based login system.
-3.  Visual display for receipts and kitchen orders, with plans for future thermal printer integration.
-4.  A complete inventory management system, including recipes with costs, stock control, warehouses, suppliers, purchase orders, and inventory reports with alerts.
-5.  A unique surprise me feature, which evolved into a customer loyalty system.
-6.  End-of-shift and end-of-day closing procedures with reports sent via email.
-
-Over the course of development, the user added numerous detailed requests, including:
--   Granular role-based permissions for every action in the system.
--   A specific UI/UX for the order screen, emphasizing a numeric keypad for quantity input and mobile-friendliness.
--   A Kitchen Display System (KDS) with keyboard/peripheral controls.
--   A reservations module integrated with the table map.
--   Specific tax calculation logic for the Dominican Republic (ITBIS, 10% Legal Tip).
--   Management of multiple payment methods, including foreign currencies with exchange rates.
--   Pre-account printing and secure re-printing.
--   Change calculation and mixed-payment support in the payment dialog.
+Key requirements that have been implemented or requested include:
+- A quick, numeric keypad-based login system with granular role-based permissions.
+- A visual, draggable table map showing real-time table status.
+- A complete order management screen with a numeric keypad, modifiers, and notes.
+- A Kitchen Display System (KDS).
+- A comprehensive billing screen with features for splitting bills, pre-account printing, and a payment dialog that handles multiple payment methods, different currencies, and change calculation.
+- A centralized settings module for managing users, roles, tables, products, dynamic taxes (ITBIS, Propina Legal), etc.
+- Advanced configuration modules for Products and Users/Employees, with multi-tab interfaces for detailed settings.
+- Specific logic for moving orders between tables and splitting bills into multiple, independent accounts on the same table.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-A sophisticated and feature-rich Restaurant POS system has been developed from the ground up. The application consists of a Node.js (Fastify) backend with a Prisma ORM connected to an SQLite database, and a React (Vite) frontend.
+A sophisticated Restaurant POS system with a FastAPI (Python) backend using a MongoDB database and a React (Vite) frontend. The original handoff summary incorrectly stated a Node.js/Prisma/SQLite stack.
 
 **Key implemented features:**
--   **Core Architecture:** Secure user authentication with PINs, a highly granular role-based access control (RBAC) system, and JWT for session management.
--   **Operations:** A dynamic, draggable table map showing real-time table statuses (free, occupied, billed, reserved).
--   **Order Management:** An intuitive order screen with a pop-up numeric keypad, item modifiers, notes, and automatic sending of orders to the kitchen upon leaving the screen or logging out.
--   **Kitchen Display System (KDS):** A dedicated, real-time KDS screen designed for kiosk use, featuring auto-login via a URL parameter and control via a numeric keypad.
--   **Billing & Payments:** A comprehensive billing screen with features for splitting bills and a payment dialog that handles multiple payment methods (including different currencies), calculates change, and processes mixed payments.
--   **Settings & Configuration:** A centralized settings module allows administrators to manage nearly every aspect of the system: users, custom roles, permissions, table layouts, payment methods, sale types (e.g., Dine-in, Take Out), print channels, and station-specific configurations.
--   **Financials:** A dynamic tax configuration module that allows setting up local taxes (like ITBIS and Propina Legal), which are then automatically applied to all bills.
--   **Inventory & Customers:** Modules for managing products (with recipe costs), inventory, suppliers, customers, and a basic loyalty points system.
--   **Reporting & Analytics:** An executive dashboard with KPIs and sales charts.
+-   **Core Architecture:** Secure PIN-based user authentication, a granular role-based access control (RBAC) system, and JWT for session management.
+-   **Operations:** A dynamic, draggable table map showing real-time table statuses (free, occupied, billed).
+-   **Order & Billing:** An intuitive order screen that is currently being refactored to support multiple independent accounts per table. It includes item selection, modifiers, and notes. The billing and payment dialogs are fully featured.
+-   **Advanced Configuration:**
+    -   **Products:** A new, multi-tab module () for detailed product setup, including multiple price points, POS button styling, and modifier group assignment.
+    -   **Users/Employees:** A new, multi-tab module () for comprehensive employee management, including personal data, advanced system permissions, job/pay rates, and a visual weekly schedule grid.
+    -   **General Settings:** A reorganized settings panel () grouping configurations into logical categories like Mesas, Ventas, and Inventario.
 
 **Last working item**:
--   **Last item agent was working:** The final task was to connect the newly created dynamic tax configuration module to the main order screen (). The goal was to replace the hardcoded tax calculations with a system that reads the tax settings from the global state and displays a dynamic breakdown of all applicable taxes (e.g., Subtotal, ITBIS (18%), LEY (10%), Total) on the customer's bill in real-time.
--   **Status**: COMPLETED
--   **Agent Testing Done**: Y
--   **Which testing method agent to use?**: NA
+-   **Last item agent was working:** The agent was in the middle of a major refactoring of the bill splitting functionality based on detailed user feedback. The goal is to change the system from having divisions within a single order to allowing **multiple, separate orders (accounts)** to exist on the same physical table. This involves backend changes to create new orders when splitting and significant frontend changes on  to manage and display these multiple accounts, and on  to show a visual indicator for split tables.
+-   **Status**: IN PROGRESS
+-   **Agent Testing Done**: N
+-   **Which testing method agent to use?**: both. This is a critical feature involving significant backend logic and frontend UI/UX changes. A full end-to-end test is required.
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-There are no pending or in-progress issues. The agent successfully addressed all issues raised by the user in the last set of messages.
+-   **Issue 1:** The bill splitting feature is functionally incorrect and currently broken mid-refactor.
+    -   **Priority**: P0
+    -   **Description**: The user clarified that splitting a bill should not create divisions but rather new, independent orders linked to the same table. The original order should retain any un-moved items. The current implementation is being refactored to match this logic.
+    -   **Attempted fixes**: The first implementation used a  array within a single order object, which was incorrect. The agent correctly identified the need to switch to a multi-order-per-table model and began refactoring the backend () and frontend (, ).
+    -   **Next debug checklist**:
+        1.  Complete the refactor of :
+            -   When a table has multiple orders, display a view to select which account to work on.
+            -   When viewing a single account, add tabs or buttons to switch between the other accounts on that table.
+        2.  Finalize the Split Mode UI:
+            -   Ensure selecting items and clicking Move to new account correctly calls the  endpoint.
+            -   Verify the original account is updated (items removed) and the new account is created with the moved items.
+            -   The UI should refresh to show both accounts correctly.
+        3.  Verify  correctly applies a striped background or similar indicator to tables that have  (i.e., more than one active order).
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a core business requirement for the user. Fixing it will allow cashiers to correctly manage complex billing scenarios, such as groups of customers at one table who want to pay separately.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Blocked on other issue**: None
 
 **In progress Task List**:
-There are no tasks currently in progress.
+-   **Task 1:** Refactor  to handle multiple orders per table.
+    -   **Priority**: P0
+    -   **Where to resume**: The agent was modifying . The next step is to add the UI for displaying and switching between multiple accounts on a single table. The initial view for a split table should show a list of all its open accounts.
+    -   **What will be achieved with this?**: A fully functional bill splitting system that aligns with the user's explicit requirements.
+    -   **Status**: IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Blocked on something**: Blocked by the completion of Issue 1.
 
 **Upcoming and Future Tasks**
-
 *   **Upcoming Tasks:**
-    *   **P0: Physical ESC/POS Printer Integration:** The backend includes a raw print endpoint (), but the client-side logic to connect to and send commands to physical USB or network printers is yet to be implemented.
-    *   **P1: Sound Notification for Kitchen:** A user request to add an audible alert to the Kitchen Display System () when a new order arrives. The code was added, but it needs verification to ensure the sound file () exists and plays correctly.
-    *   **P2: DGII Report Generation:** The backend has placeholder endpoints for Dominican tax reports (607, 608). The functionality to generate and download these files from the frontend needs to be built.
+    *   **P0: Physical ESC/POS Printer Integration:** Implement client-side logic to connect to and send raw commands to physical printers. The backend endpoint () exists but is a placeholder.
+    *   **P1: Sound Notification for Kitchen:** Verify the sound file () exists and the audible alert on the KDS works when a new order arrives.
+    *   **P1: Employee Time Clock:** Based on the new user management module, implement a feature to track employee check-in/out and generate reports on hours worked.
+    *   **P2: DGII Report Generation:** Build the frontend functionality to generate and download Dominican tax reports (607, 608) using the existing backend placeholders.
 *   **Future Tasks:**
-    *   **P2: Advanced Reservations:** Improve the reservation system to better handle large events, perhaps by allowing the reservation of entire areas.
-    *   **P3: Resend Domain Verification:** The user has paused this, but it will be necessary to complete the domain verification in Resend to ensure reliable email delivery. The API key is already configured.
+    *   **P2: Image/Icon Support for Product Buttons:** Allow users to upload an image or select an icon for product buttons on the order screen.
+    *   **P2: Advanced Reservations:** Improve the reservation system to handle large events or area bookings.
+    *   **P3: Resend Domain Verification:** Complete the domain verification in Resend for reliable email delivery.
+    - **P3: Duplicate Product Feature:** Add a Duplicate button in the product list to create a new product that copies the configuration of an existing one.
 
 **Completed work in this session**
--   **Full System Scaffolding:** Initialized Node.js/Fastify backend and React/Vite frontend. (DONE)
--   **Authentication & Permissions:** Implemented a complete, granular role-based access control system with PIN login. (DONE)
--   **Table & Order Management:** Created the interactive table map and the full-featured order-taking screen. (DONE)
--   **Kitchen Display System (KDS):** Built a real-time KDS with kiosk mode and keyboard controls. (DONE)
--   **Billing & Payments:** Developed the payment dialog with change calculation, mixed payments, and bill splitting. (DONE)
--   **Pre-Account Printing:** Implemented pre-bill printing with manager security for reprints. (DONE)
--   **Inventory & Recipes:** Built the inventory module with support for recipes and cost calculation. (DONE)
--   **Reservations & Customers:** Created the modules for managing reservations and customers, including a loyalty system. (DONE)
--   **Dynamic Tax Module:** Implemented a settings panel to configure taxes dynamically, which are reflected across the application. (DONE)
--   **UI/UX Refinements:** Performed multiple rounds of UI cleanup and simplification based on direct user feedback, such as redesigning the category view and streamlining the main navigation sidebar. (DONE)
+-   **Advanced Product Configuration Module:** Implemented a full-featured, multi-tab UI for creating and editing products with multiple prices, button styles, and modifier rules. (DONE)
+-   **Settings Menu Reorganization:** Refactored the main  page into a more intuitive, nested tab structure based on user feedback. (DONE)
+-   **Advanced User/Employee Configuration Module:** Built a comprehensive, multi-tab UI for detailed employee management, including personal info, system roles, and a visual schedule editor. (DONE)
+-   **Feature Removal from User Config:** Removed Annual Salary and Web Access Authorization sections from the user configuration page as requested. (DONE)
+-   **Table/Order Moving & Splitting (V1):** Implemented the backend and frontend for moving an order to another table and a new UI for splitting items. This implementation is currently being refactored to a new logic. (IN PROGRESS/REFACTORING)
 
 **Earlier issues found/mentioned but not fixed**
-There are no known issues that were mentioned by the user and not addressed by the agent.
+-   The existence of the sound file for kitchen notifications () has not been verified.
 
 **Known issue recurrence from previous fork**
-N/A
+-   **Incorrect Handoff Summary:** The initial handoff summary was for a completely different project stack (Node.js/Prisma/SQLite). The agent had to spend time exploring the filesystem to determine the correct stack is FastAPI/Python/MongoDB.
+-   **Database Seeding/PINs:** There was a persistent issue with user PINs not matching what was expected. The agent had to debug the seeding logic, manually drop database collections, and re-seed to restore access. The correct Admin PIN is . This can recur if the environment is reset.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend:** Node.js with Fastify web server, Prisma as the ORM, and SQLite for the database.
--   **Frontend:** React (with Hooks), Vite as the build tool, and  for navigation.
--   **Authentication:** A custom JWT-based system. The user's role and granular permissions are encoded in the token and managed via  on the frontend.
--   **Real-time Updates:** The application uses periodic polling () in key components like  and  to fetch fresh data and simulate a real-time experience.
--   **State Management:** Primarily relies on React's built-in , , and  for both local component state and global application state ().
+-   **Backend:** FastAPI (Python) in a single  file.
+-   **Database:** MongoDB.
+-   **Frontend:** React (Vite build tool) with .
+-   **Authentication:** Custom JWT-based system with PINs. Permissions are checked on the frontend via .
+-   **Real-time Updates:** Periodic polling () is used on the Table Map and KDS.
+-   **State Management:** React Context API () for global state, and component-level state (, ).
 
 **key DB schema**
--   **User Management:** , ,  (supports custom roles and fine-grained permissions).
--   **Restaurant Layout:** ,  (with position and status).
--   **Order Flow:** , , ,  (supports multiple payments per bill).
--   **Menu & Inventory:** , , , , , , .
--   **Customer & Reservations:** , , .
--   **Configuration:** , , , .
+The application uses MongoDB. Key collections include:
+-   : Stores user data, hashed PINs, roles, and permissions.
+-   : Defines roles and their associated permissions.
+-   : Stores product details, including the new advanced fields (prices A-E, button colors, etc.).
+-   : Represents a customer's bill. A single table can have multiple active orders.
+-   : Stores the layout (x, y coordinates) and status of each table.
+-   : Groups tables into logical sections (e.g., Salón Principal, Terraza).
+-   : Stores dynamic tax configurations (e.g., ITBIS 18%).
+-   : Stores groups of modifiers (e.g., Punto de Coccion).
+
+**changes in tech stack**
+- The project's tech stack is **FastAPI/Python + MongoDB**, which is completely different from the **Node.js + Prisma + SQLite** stack described in the initial handoff summary.
 
 **All files of reference**
--   : Contains the entire backend logic, including all API endpoints. It is the single source of truth for the server.
--   : A very large frontend component that houses the UI and logic for 13 different configuration tabs, including Users, Roles, Taxes, Products, and more.
--   : Manages the complex state of a single order, including item selection, the numeric keypad, and the dynamic tax breakdown.
--   : Contains the logic for the advanced payment dialog, including change calculation and mixed payments.
--   : Implements the kiosk display, including auto-login, keyboard navigation, and real-time order fetching.
--   : Manages the global user session, authentication status, and provides the  utility function used for authorization across the app.
--   : Defines the entire database structure.
--   : Crucial for development, as it populates the database with all necessary initial data (users, roles, products, settings, etc.).
+-   : The monolithic backend. All new endpoints (product CRUD, user CRUD, order splitting/moving) were added here.
+-   : The most complex component, currently being refactored to handle multiple orders per table.
+-   : Modified to render a special state for tables with split bills.
+-   : Heavily refactored to serve as a hub for nested configuration tabs.
+-   : A new file created for the advanced product configuration feature.
+-   : A new file created for the advanced employee configuration feature.
+-   : Updated to include functions for all new backend endpoints.
+-   : Updated with routes for  and .
 
 **Areas that need refactoring**
--   ****: This file has become a monolith, containing all API routes and business logic. It should be broken down into a more maintainable structure, such as a controller/service pattern with separate files for each resource (e.g., , ).
--   ****: This React component is excessively large and complex, managing the state and rendering for 13 distinct configuration sections. It should be refactored by extracting each tab into its own independent component to improve readability and maintainability.
--   **Large Page Components**: Several other page components like  and  have also grown very large. Their logic could be simplified by extracting complex state management into custom React hooks (e.g., , ).
+-   ****: This is a critical bottleneck. The single file is over 2000 lines long and contains all logic for dozens of endpoints. It should be broken down into a modern structure (e.g., using APIRouter for different resources like , ).
+-   **Frontend Page Components**: , , and the new  are all extremely large and complex. Each major tab or feature within them should be extracted into its own component to improve maintainability.
 
 **key api endpoints**
--   : Authenticates a user with a PIN and returns a JWT.
--   , , : Full CRUD for user and permission management.
--   : Create, view, and update orders.
--   , : Endpoints for creating and processing bills.
--   : Generates the data for a pre-account receipt.
--   : CRUD for the dynamic tax settings.
--   : A collection of endpoints for various system settings.
--   : Provides real-time order data for the Kitchen Display System.
--   : A placeholder endpoint for raw ESC/POS command printing.
+-   : Moves an entire order to a different table.
+-   : Creates a new order on the same table and moves specified items to it from an existing order.
+-   : GET/PUT for a specific user.
+-   : GET/PUT for a specific product.
+-   : GET all modifier groups.
+-   : GET all report categories.
 
 **Critical Info for New Agent**
--   The user is highly engaged and provides very specific, detailed feedback, often with annotated screenshots. Pay close attention to their requests for UI/UX changes.
--   The entire backend is in , and several frontend components (, ) are monolithic. Navigate these files carefully.
--   The permissions system is central to the application's logic. Any new feature or button must be wrapped in a permission check using the  function from .
--   The  script is essential. After any modification to , you must run  and  to reset and re-populate the database.
--   The user has explicitly requested to pause work on the Resend email integration until further notice.
+-   **IGNORE THE INITIAL HANDOFF'S TECH STACK**. The application uses **FastAPI (Python) and MongoDB**, not Node.js.
+-   The current top priority (P0) is to **fix the bill splitting feature**. The logic must be based on creating multiple separate orders for a single table. The work is in-progress and the  component is currently in a broken, partially-refactored state.
+-   **User PINs may be inconsistent.** If login fails, assume a seeding issue. The  PIN discovered during the session is . Manually dropping and re-seeding the database is the known fix.
 
 **documents and test reports created in this job**
--   : A Product Requirements Document that has been updated throughout the session.
+-    (updated multiple times)
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **Request (COMPLETED):** Implement a module to configure taxes (ITBIS, Propina, etc.) with percentages and names.
-2.  **Request (COMPLETED):** Connect the new tax module to the order screen to show a dynamic breakdown of taxes on the bill.
-3.  **Request (COMPLETED):** When a pre-account is printed for a table, automatically change the table's status to billed (which turns its border yellow).
-4.  **Request (COMPLETED):** Clean up the table map UI by removing the status text (e.g., OCUPADA) below the table number.
-5.  **Request (COMPLETED):** Ensure the yellow glow effect for billed tables remains active.
-6.  **Request (COMPLETED):** Add a Pre-Cuenta (Pre-Account) button to the header of the order screen.
-7.  **Request (COMPLETED):** Secure the re-printing of a pre-account by requiring a manager's PIN.
-8.  **Request (COMPLETED):** Simplify the main sidebar for administrators by moving several items (Reports, Inventory, etc.) into tabs within the Configuración screen.
-9.  **Request (COMPLETED):** In the payment dialog, implement functionality to calculate the customer's change.
-10. **Request (COMPLETED):** Allow for mixed payments (e.g., part cash, part card) in the payment dialog.
+1.  **User Request:** Remove Salario Anual and Autorización Vía WEB from the new user config screen. (COMPLETED)
+2.  **Agent Summary:** Confirmed removal and summarized work. (COMPLETED)
+3.  **User Request:** Add a function to move a table/account to another. If the destination is occupied, ask to merge. (IN PROGRESS)
+4.  **User Request:** Redesign the bill splitting feature. User should be able to select items and move them to a new, empty sub-account on the same table. Provided images for the desired UI. (IN PROGRESS)
+5.  **Agent Action:** Started exploring  and  to implement the new features. (IN PROGRESS)
+6.  **Agent Implementation:** Began implementing the move and split features, adding backend endpoints and making extensive changes to . (IN PROGRESS)
+7.  **Agent Verification:** Took screenshots showing the new Mover button and the new Dividir Cuenta UI, which worked as per the user's images. (COMPLETED)
+8.  **User Clarification:** The user provided critical feedback. The split items should not disappear from the original account. A table must support multiple independent accounts simultaneously. The table map should show a visual indicator (stripes) when a table is split. (PENDING)
+9.  **Agent Acknowledgement:** Confirmed understanding of the new, more complex requirements. (COMPLETED)
+10. **Agent Refactoring:** Started rewriting the backend and frontend logic to support the multi-order-per-table model instead of the initial divisions model. (IN PROGRESS)
 
 **Project Health Check:**
--   **Broken:** No features are currently broken. The agent has been diligent in fixing bugs as they are reported.
+-   **Broken:** The bill splitting functionality on the  is non-functional due to an ongoing major refactor.
 -   **Mocked:**
-    *   **Emailing:** The Resend integration is functional but uses an unverified domain, meaning emails may not be delivered correctly. The user has deferred completing the setup.
-    *   **Printing:** All printing functionality is mocked with on-screen print preview dialogs. There is no integration with physical hardware.
+    *   **Emailing:** Resend integration is configured but uses an unverified domain.
+    *   **Printing:** All printing is mocked with on-screen previews; no physical printer integration exists.
 
 **3rd Party Integrations**
--   **Resend:** Used for sending email notifications (e.g., end-of-day reports). This requires a User API Key, which has been provided and is stored in the  file.
+-   **Resend:** Configured for sending emails, requires a User API Key (present in ).
 
 **Testing status**
--   **Testing agent used after significant changes**: YES
+-   **Testing agent used after significant changes**: YES, for the product configuration module.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: None. Testing has been performed by the agent using its internal testing capabilities and manual verification via screenshots.
--   **Known regressions**: None
+-   **Test files created**: None.
+-   **Known regressions**: The bill splitting feature is currently broken.
 
 **Credentials to test flow:**
 -   **Admin:** PIN 
--   **Cashier (Cajero):** PIN 
--   **Waiter (Mesero):** PIN 
--   **Kitchen (Cocina):** PIN 
--   **Kitchen TV Auto-Login:** Access the  route with the query parameter .
+-   **Cajero (Cashier):** PIN 
+-   **Mesero (Waiter):** PIN 
+-   **Cocina (Kitchen):** PIN 
+-   **Note:** These PINs are based on the  script. If they don't work, the database may need to be reset.
 
 **What agent forgot to execute**
--   During the implementation of the sound notification for new kitchen orders feature, the agent added the code to play a sound file () in . However, it is not confirmed whether the corresponding sound file was created in the  directory. This needs to be verified.</analysis>
+-   The agent has not verified if the sound notification file for the kitchen, , exists in the project structure. This was a pending task from the initial handoff.</analysis>
