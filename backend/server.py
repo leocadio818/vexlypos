@@ -140,6 +140,7 @@ async def list_roles():
             {"id": gen_id(), "name": "Administrador", "code": "admin", "is_system": True},
             {"id": gen_id(), "name": "Mesero", "code": "waiter", "is_system": True},
             {"id": gen_id(), "name": "Cajero", "code": "cashier", "is_system": True},
+            {"id": gen_id(), "name": "Supervisor", "code": "supervisor", "is_system": True},
             {"id": gen_id(), "name": "Cocina", "code": "kitchen", "is_system": True},
         ]
         await db.custom_roles.insert_many(defaults)
