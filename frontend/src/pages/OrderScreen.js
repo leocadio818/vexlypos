@@ -97,19 +97,6 @@ export default function OrderScreen() {
     fetchAll(); fetchOrder();
   }, [fetchOrder, API_BASE]);
 
-  // Initialize divisions when order loads
-  useEffect(() => {
-    if (order) {
-      if (order.divisions && order.divisions.length > 0) {
-        setDivisions(order.divisions);
-      } else {
-        // Initialize with all items in division 1
-        const allItemIds = order.items?.filter(i => i.status !== 'cancelled').map(i => i.id) || [];
-        setDivisions([{ id: 1, name: 'División 1', item_ids: allItemIds }]);
-      }
-    }
-  }, [order]);
-
   // Re-sync tax config every 30s so changes reflect immediately
   useEffect(() => {
     const interval = setInterval(async () => {
