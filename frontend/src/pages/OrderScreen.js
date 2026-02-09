@@ -1018,22 +1018,35 @@ export default function OrderScreen() {
                 </h4>
                 <div className="grid grid-cols-5 gap-1.5 mb-3">
                   {allTables.filter(t => t.area_id === area.id && t.id !== tableId).map(t => {
-                    const isOccupied = t.status === 'occupied' || t.status === 'billed';
                     const isFree = t.status === 'free';
+                    const isDivided = t.status === 'divided';
+                    const isOccupied = t.status === 'occupied' || t.status === 'billed';
+                    const isOtherUser = t.owner_id && t.owner_id !== user?.id;
+                    
+                    // Determine color based on status and ownership
+                    let colorClass = 'border-green-500/50 bg-green-500/10 text-green-400 hover:bg-green-500/20'; // Free
+                    let statusText = 'Libre';
+                    
+                    if (isDivided) {
+                      colorClass = isOtherUser 
+                        ? 'border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
+                        : 'border-orange-500/50 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20';
+                      statusText = 'Dividida';
+                    } else if (isOccupied) {
+                      colorClass = isOtherUser
+                        ? 'border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
+                        : 'border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20';
+                      statusText = isOtherUser ? 'De otro' : 'Ocupada';
+                    }
+                    
                     return (
                       <button
                         key={t.id}
                         onClick={() => handleMoveTable(t.id)}
-                        className={`p-2 rounded-lg text-center font-oswald transition-all border ${
-                          isFree 
-                            ? 'border-green-500/50 bg-green-500/10 text-green-400 hover:bg-green-500/20' 
-                            : 'border-yellow-500/50 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20'
-                        }`}
+                        className={`p-2 rounded-lg text-center font-oswald transition-all border ${colorClass}`}
                       >
                         <span className="text-sm font-bold">#{t.number}</span>
-                        <span className="block text-[8px] mt-0.5">
-                          {isFree ? 'Libre' : 'Ocupada'}
-                        </span>
+                        <span className="block text-[8px] mt-0.5">{statusText}</span>
                       </button>
                     );
                   })}
