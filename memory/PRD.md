@@ -77,10 +77,22 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - **Inventario**: Contiene sub-tabs "Productos", "Compras", "Stock"
 - **Módulo Avanzado de Configuración de Empleados** (/user/:userId):
   - **Tab Informc.Empleado**: Datos personales completos (nombre, apellido, dirección, ciudad, estado, código postal, cédula/IMSS, teléfonos, email, fecha nacimiento), configuración POS (inicio/fin día, centro de ingresos, tarjeta #, referencia, PIN), foto del empleado, modo entrenamiento
-  - **Tab Avanzado**: Interfase Sistema (Capacidad Restaurante, Orden Rápida, Host/Hostess, Repartidor, Modo Reparto, Solo Marca E/S), Autorización Vía WEB, Reglas para turnos, opciones de gerente
-  - **Tab Empleador**: Config. Puesto (tabla con tarifa/hora y puesto primario), Salario Anual, Selector de Puesto Labores
+  - **Tab Avanzado**: Interfase Sistema (Capacidad Restaurante, Orden Rápida, Host/Hostess, Repartidor, Modo Reparto, Solo Marca E/S), opciones adicionales
+  - **Tab Empleador**: Config. Puesto (tabla con tarifa/hora y puesto primario), Selector de Puesto Labores
   - **Horarios**: Grid visual semanal (7 días × 24 horas) con estados (No Requerido, Requerido, No puede trabajar), horas preferidas, nivel de habilidad 1-10
-  - Nuevos campos en API: last_name, pos_name, address, phones, employment info, positions, schedule, skill_level
+- **Función Mover Mesa**: Permite mover una cuenta completa a otra mesa
+  - Diálogo visual con todas las mesas organizadas por área
+  - Mesas libres en verde, ocupadas en amarillo
+  - Si la mesa destino está ocupada, pregunta si desea unir las cuentas
+  - Al unir cuentas: todos los items de origen se mueven a destino, mesa origen queda libre
+- **Sistema de División de Cuenta mejorado**: 
+  - Modo visual con tabs de divisiones (Mesa #X División 1, División 2, etc.)
+  - Selección de items tocándolos (se resaltan en rojo)
+  - Botón "+ Nueva" para crear más divisiones
+  - Mensaje "1 item(s) seleccionado(s)" con instrucciones
+  - División vacía muestra botón "✓ Mover X item(s) aquí"
+  - Total por división
+  - Backend: POST /api/orders/{id}/move, POST /api/orders/{id}/split
 - 100% de tests pasados (backend y frontend)
 
 ## Prioritized Backlog
