@@ -27,6 +27,13 @@ export default function OrderScreen() {
   const [managerPinDialog, setManagerPinDialog] = useState({ open: false, pin: '' });
   const [taxConfig, setTaxConfig] = useState([]);
   
+  // Grid display settings
+  const [gridSettings, setGridSettings] = useState({
+    categoryColumns: 3,
+    productColumns: 4,
+    buttonSize: 'medium' // 'small', 'medium', 'large'
+  });
+  
   // Move Table Dialog
   const [moveDialog, setMoveDialog] = useState({ open: false });
   const [allTables, setAllTables] = useState([]);
