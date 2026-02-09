@@ -151,9 +151,10 @@ export default function TableMap() {
   const containerRef = useRef(null);
   const [containerSize, setContainerSize] = useState({ w: 800, h: 500 });
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
 
   const canMoveTable = hasPermission('move_tables');
+  const currentUserId = user?.id;
 
   const fetchData = useCallback(async () => {
     try {
