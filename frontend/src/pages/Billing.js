@@ -366,12 +366,18 @@ export default function Billing() {
                 const amt = payAmounts[method.name] || '';
                 const rate = method.exchange_rate || 1;
                 const inDOP = (parseFloat(amt) || 0) * rate;
+                const isActive = activePayMethod === method.name;
                 return (
-                  <div key={method.id} className="flex items-center gap-2">
-                    <span className="text-xs w-28 truncate">{method.name}</span>
-                    <input value={amt} onChange={e => setPayAmounts(p => ({ ...p, [method.name]: e.target.value }))}
-                      type="number" step="0.01" placeholder="0.00"
-                      className="flex-1 bg-background border border-border rounded-lg px-2 py-1.5 text-sm font-oswald text-right" 
+                  <div key={method.id} className={`flex items-center gap-2 p-1.5 rounded-lg transition-colors ${isActive ? 'bg-primary/10 ring-1 ring-primary/50' : ''}`}>
+                    <span className={`text-xs w-28 truncate ${isActive ? 'text-primary font-bold' : ''}`}>{method.name}</span>
+                    <input 
+                      value={amt} 
+                      onChange={e => setPayAmounts(p => ({ ...p, [method.name]: e.target.value }))}
+                      onFocus={() => setActivePayMethod(method.name)}
+                      type="number" 
+                      step="0.01" 
+                      placeholder="0.00"
+                      className={`flex-1 bg-background border rounded-lg px-2 py-1.5 text-sm font-oswald text-right ${isActive ? 'border-primary' : 'border-border'}`}
                       data-testid={`pay-amount-${method.id}`} />
                     {method.currency !== 'DOP' && rate > 1 && parseFloat(amt) > 0 && (
                       <span className="text-[9px] text-muted-foreground w-20 text-right">= {formatMoney(inDOP)}</span>
