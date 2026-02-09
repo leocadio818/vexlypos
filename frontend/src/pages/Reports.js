@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { formatMoney } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Calendar, Mail, Users } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, Mail, Users, ArrowRightLeft, Table2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import axios from 'axios';
