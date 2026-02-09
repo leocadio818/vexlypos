@@ -427,15 +427,17 @@ export default function Billing() {
             <div className="flex gap-1 flex-wrap">
               {[100, 200, 500, 1000, 2000, 5000].map(amt => (
                 <button key={amt} onClick={() => {
-                  const mainMethod = paymentMethods.find(m => m.active && m.currency === 'DOP') || paymentMethods[0];
-                  if (mainMethod) setPayAmounts(p => ({ ...p, [mainMethod.name]: String(amt) }));
+                  // Use active method if set, otherwise use first active DOP method
+                  const targetMethod = activePayMethod || (paymentMethods.find(m => m.active && m.currency === 'DOP') || paymentMethods.find(m => m.active))?.name;
+                  if (targetMethod) setPayAmounts(p => ({ ...p, [targetMethod]: String(amt) }));
                 }} className="px-2 py-1 rounded bg-muted text-[10px] font-oswald hover:bg-primary/20 transition-colors">
                   {amt}
                 </button>
               ))}
               <button onClick={() => {
-                const mainMethod = paymentMethods.find(m => m.active && m.currency === 'DOP') || paymentMethods[0];
-                if (mainMethod) setPayAmounts(p => ({ ...p, [mainMethod.name]: String(payDialog.billTotal) }));
+                // Use active method if set, otherwise use first active DOP method
+                const targetMethod = activePayMethod || (paymentMethods.find(m => m.active && m.currency === 'DOP') || paymentMethods.find(m => m.active))?.name;
+                if (targetMethod) setPayAmounts(p => ({ ...p, [targetMethod]: String(payDialog.billTotal) }));
               }} className="px-2 py-1 rounded bg-primary/20 text-primary text-[10px] font-oswald font-bold">
                 EXACTO
               </button>
