@@ -311,7 +311,6 @@ export default function Settings() {
                       <span className="text-xs text-muted-foreground">{user.positions.length} puesto(s)</span>
                     )}
                     <Pencil size={14} className="text-muted-foreground" />
-                    </Button>
                   </div>
                 </a>
               ))}
