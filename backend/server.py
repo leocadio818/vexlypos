@@ -46,15 +46,27 @@ DEFAULT_PERMISSIONS = {
         "view_reports": True, "export_dgii": True,
         "open_shift": True, "close_shift": True, "close_day": True,
         "release_reserved_table": True,
+        "access_all_tables": True,  # Can access any table regardless of owner
     },
     "waiter": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
         "split_bill": True, "manage_reservations": True, "manage_customers": True,
+        "access_all_tables": False,  # Can only access own tables
     },
     "cashier": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
         "create_bill": True, "collect_payment": True, "split_bill": True,
         "open_shift": True, "close_shift": True, "manage_customers": True,
+        "access_all_tables": True,  # Cashiers can access any table to collect payment
+    },
+    "supervisor": {
+        "view_dashboard": True, "move_tables": True,
+        "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
+        "create_bill": True, "collect_payment": True, "split_bill": True,
+        "manage_reservations": True, "manage_customers": True,
+        "view_reports": True,
+        "open_shift": True, "close_shift": True,
+        "access_all_tables": True,  # Supervisors can access any table
     },
     "kitchen": {},
 }
