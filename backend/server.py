@@ -522,7 +522,21 @@ async def delete_area(area_id: str):
 @api.get("/tables")
 async def list_tables(area_id: Optional[str] = Query(None)):
     query = {"area_id": area_id} if area_id else {}
-    return await db.tables.find(query, {"_id": 0}).to_list(200)
+    tables = await db.tables.find(query, {"_id": 0}).to_list(200)
+    
+    # For occupied/divided tables, get the owner (waiter) info from active orders
+    for table in tables:
+        if table["status"] in ["occupied", "divided"]:
+            # Get the first active order to find the owner
+            order = await db.orders.find_one(
+                {"table_id": table["id"], "status": {"$in": ["active", "sent"]}},
+                {"_id": 0, "waiter_id": 1, "waiter_name": 1}
+            )
+            if order:
+                table["owner_id"] = order.get("waiter_id")
+                table["owner_name"] = order.get("waiter_name")
+    
+    return tables
 
 @api.post("/tables")
 async def create_table(input: TableInput):
