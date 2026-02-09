@@ -1,0 +1,81 @@
+{
+  "summary": "Completed comprehensive testing of MERGE/UNIR accounts functionality. All backend and frontend tests passed. The merge feature allows users to combine multiple accounts on the same table back into one when a group decides to pay together.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Merge Dialog",
+        "issues": ["Minor: Missing aria-describedby for DialogContent (accessibility warning in console)"]
+      }
+    ]
+  },
+  "passed_tests": [
+    "Backend: Admin login with PIN 0000 - returns token and user data",
+    "Backend: GET /api/tables - returns tables with correct status (free, occupied, divided, billed)",
+    "Backend: Mesa 3 has single account after previous merge (verified)",
+    "Backend: Mesa 2 has 2 accounts (divided status)",
+    "Backend: POST /api/orders/{id}/merge/{target_id} endpoint exists and responds",
+    "Backend: Merge with self correctly rejected (400 error)",
+    "Backend: Cross-table merge correctly rejected (400 error)",
+    "Backend: Create 2 accounts, add items, merge - all items combined correctly",
+    "Backend: Table status changes from 'divided' to 'occupied' after merge",
+    "Frontend: Login with PIN 0000 navigates to Dashboard",
+    "Frontend: Table map shows divided tables with striped pattern",
+    "Frontend: Order screen shows multiple account tabs (Cuenta #1, Cuenta #2)",
+    "Frontend: 'Unir' button visible when 2+ accounts exist",
+    "Frontend: 'Unir' button hidden when only 1 account",
+    "Frontend: Merge dialog opens with correct title 'Unir Cuentas'",
+    "Frontend: Merge dialog shows target accounts with item count and total",
+    "Frontend: Clicking target account merges successfully",
+    "Frontend: Success toast 'Cuentas fusionadas exitosamente' displayed",
+    "Frontend: After merge, only 1 account tab remains",
+    "Frontend: Table map updates visual indicator (striped → solid)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_merge_orders.py",
+    "/app/test_reports/pytest/merge_orders_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_merge_orders.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (all UI flows working)"
+  },
+  "seed_data_creation": "Used existing seed data. Created test orders on free table during test_create_and_merge_accounts test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Merge/Unir functionality fully tested and working. Mesa 3 and Mesa 4 now have single accounts after merge. Mesa 2 and Mesa 5 still have divided accounts for future testing. The 'Unir' button correctly appears only when 2+ accounts exist on a table.",
+  "features_verified": {
+    "merge_accounts": {
+      "backend_endpoint": "POST /api/orders/{id}/merge/{target_id} - WORKING",
+      "validation_same_order": "Correctly rejects merging order with itself",
+      "validation_different_tables": "Correctly rejects merging orders from different tables",
+      "items_transfer": "All items from source order moved to target order",
+      "source_order_deleted": "Source order deleted after merge",
+      "table_status_update": "Table status changes from 'divided' to 'occupied' when 1 order remains"
+    },
+    "ui_elements": {
+      "unir_button": "Blue button with merge icon, visible only with 2+ accounts",
+      "merge_dialog": "Shows target accounts with item count and RD$ total",
+      "success_toast": "'Cuentas fusionadas exitosamente' displayed after merge",
+      "account_tabs_update": "Tabs refresh to show only remaining account"
+    },
+    "table_map_visual": {
+      "divided_indicator": "Striped pattern for tables with multiple accounts",
+      "occupied_indicator": "Solid color for tables with single account",
+      "status_update_after_merge": "Visual updates correctly after merge"
+    }
+  },
+  "mocked_apis": {
+    "email_resend": "MOCKED - domain not verified",
+    "esc_pos_printing": "MOCKED - preview only"
+  }
+}
