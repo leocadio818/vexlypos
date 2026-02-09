@@ -293,7 +293,7 @@ export default function OrderScreen() {
     } catch { toast.error('Error uniendo cuentas'); }
   };
 
-  // Split/Divide Functions
+  // Split/Divide Functions - Create new orders
   const enterSplitMode = () => {
     setSplitMode(true);
     setSelectedSplitItems([]);
@@ -310,35 +310,49 @@ export default function OrderScreen() {
     );
   };
 
-  const addDivision = () => {
-    const newId = Math.max(...divisions.map(d => d.id)) + 1;
-    setDivisions(prev => [...prev, { id: newId, name: `División ${newId}`, item_ids: [] }]);
+  // Select a different order (account) in the same table
+  const selectOrder = (orderId) => {
+    const selectedOrder = tableOrders.find(o => o.id === orderId);
+    if (selectedOrder) {
+      setOrder(selectedOrder);
+      setActiveOrderId(orderId);
+      orderRef.current = selectedOrder;
+      setSelectedSplitItems([]);
+    }
   };
 
-  const moveItemsToDivision = async (targetDivId) => {
+  // Create new order from selected items
+  const createNewOrderFromItems = async () => {
     if (selectedSplitItems.length === 0) {
       toast.info('Selecciona items primero');
       return;
     }
     if (!order) return;
+    
+    // Check if ALL items are selected - not allowed
+    const allItemIds = activeItems.map(i => i.id);
+    if (selectedSplitItems.length === allItemIds.length) {
+      toast.error('No puede mover todos los items. Use "Mover Mesa" para eso.');
+      return;
+    }
 
     try {
-      const res = await ordersAPI.splitItems(order.id, selectedSplitItems, targetDivId.toString());
-      setOrder(res.data);
-      setDivisions(res.data.divisions || divisions);
+      const res = await ordersAPI.splitToNewOrder(order.id, selectedSplitItems);
+      toast.success(`Cuenta #${res.data.new_order.account_number} creada`);
       setSelectedSplitItems([]);
-      toast.success('Items movidos');
-    } catch { toast.error('Error moviendo items'); }
+      // Refresh orders
+      await fetchOrder();
+      // Switch to new order
+      setActiveOrderId(res.data.new_order.id);
+    } catch (e) { 
+      toast.error(e.response?.data?.detail || 'Error dividiendo cuenta'); 
+    }
   };
 
-  const getItemsForDivision = (divId) => {
-    const div = divisions.find(d => d.id === divId);
-    if (!div) return [];
-    return activeItems.filter(item => div.item_ids.includes(item.id));
-  };
-
-  const getDivisionTotal = (divId) => {
-    const items = getItemsForDivision(divId);
+  // Get order total
+  const getOrderTotal = (ord) => {
+    if (!ord?.items) return 0;
+    const items = ord.items.filter(i => i.status !== 'cancelled');
     return items.reduce((sum, i) => {
       const modTotal = (i.modifiers || []).reduce((s, m) => s + (m.price || 0), 0);
       return sum + (i.unit_price + modTotal) * i.quantity;
