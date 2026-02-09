@@ -287,27 +287,30 @@ export default function Settings() {
           <TabsContent value="users">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-oswald text-base font-bold">Usuarios del Sistema</h2>
-              <Button onClick={() => setUserDialog({ open: true, name: '', pin: '', role: 'waiter', editId: null, permissions: {} })}
-                size="sm" className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-user-btn">
-                <Plus size={14} className="mr-1" /> Nuevo Usuario
-              </Button>
+              <a href="/user/new"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold active:scale-95 transition-transform" data-testid="add-user-btn">
+                <Plus size={14} /> Nuevo Empleado
+              </a>
             </div>
             <div className="space-y-2">
               {users.filter(u => u.active !== false).map(user => (
-                <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`user-${user.id}`}>
+                <a key={user.id} href={`/user/${user.id}`} 
+                  className="flex items-center justify-between p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors cursor-pointer" data-testid={`user-${user.id}`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold font-oswald">
-                      {user.name?.[0]}
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-bold font-oswald">
+                      {user.name?.[0]}{user.last_name?.[0] || ''}
                     </div>
                     <div>
-                      <span className="font-semibold">{user.name}</span>
+                      <span className="font-semibold">{user.name} {user.last_name || ''}</span>
                       <Badge variant="secondary" className="ml-2 text-[9px]">{user.role}</Badge>
+                      {user.training_mode && <Badge variant="outline" className="ml-1 text-[9px] border-yellow-500 text-yellow-400">Entrenamiento</Badge>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      onClick={() => setUserDialog({ open: true, name: user.name, pin: '', role: user.role, editId: user.id, permissions: user.permissions || {} })}>
-                      <Pencil size={14} />
+                  <div className="flex items-center gap-3">
+                    {user.positions?.length > 0 && (
+                      <span className="text-xs text-muted-foreground">{user.positions.length} puesto(s)</span>
+                    )}
+                    <Pencil size={14} className="text-muted-foreground" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
                       onClick={() => handleDeleteUser(user.id)}>
