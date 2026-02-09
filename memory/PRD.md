@@ -162,7 +162,6 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
 - Verificar dominio en Resend para email real
 
 ### P1
-- Sonido de notificación para nuevos pedidos en KDS
 - Generación de reportes DGII (607, 608) desde frontend
 - Multi-sucursal
 - App móvil nativa
