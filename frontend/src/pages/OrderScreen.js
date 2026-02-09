@@ -362,6 +362,33 @@ export default function OrderScreen() {
     }
   };
 
+  // Delete empty account
+  const deleteEmptyAccount = async (orderId, accountNumber) => {
+    try {
+      await ordersAPI.deleteEmpty(orderId);
+      toast.success(`Cuenta #${accountNumber} eliminada`);
+      // Refresh orders
+      await fetchOrder();
+      // If current order was deleted, switch to first available
+      if (activeOrderId === orderId) {
+        const remaining = tableOrders.filter(o => o.id !== orderId);
+        if (remaining.length > 0) {
+          setActiveOrderId(remaining[0].id);
+        } else {
+          navigate('/tables');
+        }
+      }
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error eliminando cuenta');
+    }
+  };
+
+  // Check if order is empty
+  const isOrderEmpty = (ord) => {
+    if (!ord?.items) return true;
+    return ord.items.filter(i => i.status !== 'cancelled').length === 0;
+  };
+
   // Get order total
   const getOrderTotal = (ord) => {
     if (!ord?.items) return 0;
