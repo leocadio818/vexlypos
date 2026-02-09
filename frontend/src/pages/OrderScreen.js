@@ -514,6 +514,17 @@ export default function OrderScreen() {
             >
               <Plus size={12} /> Nueva
             </button>
+            {/* Merge Accounts Button - only show if 2+ accounts */}
+            {tableOrders.length >= 2 && (
+              <button
+                onClick={() => openMergeDialog(activeOrderId)}
+                data-testid="merge-accounts-btn"
+                className="px-2 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all bg-blue-600/20 border border-blue-600/50 text-blue-400 hover:bg-blue-600/30 hover:border-blue-500 flex items-center gap-1"
+                title="Unir cuentas"
+              >
+                <Merge size={12} /> Unir
+              </button>
+            )}
           </div>
         )}
 
