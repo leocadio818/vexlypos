@@ -118,6 +118,7 @@ export const ordersAPI = {
   moveToTable: (orderId, targetTableId, merge = false) => api.post(`/orders/${orderId}/move`, { target_table_id: targetTableId, merge }),
   splitToNewOrder: (orderId, itemIds) => api.post(`/orders/${orderId}/split-to-new`, { item_ids: itemIds }),
   getTableOrders: (tableId) => api.get(`/tables/${tableId}/orders`),
+  createNewAccount: (tableId) => api.post(`/tables/${tableId}/orders/new`),
 };
 
 // Kitchen
