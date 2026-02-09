@@ -116,7 +116,8 @@ export const ordersAPI = {
   cancelItem: (orderId, itemId, data) => api.post(`/orders/${orderId}/cancel-item/${itemId}`, data),
   sendToKitchen: (id) => api.post(`/orders/${id}/send-kitchen`),
   moveToTable: (orderId, targetTableId, merge = false) => api.post(`/orders/${orderId}/move`, { target_table_id: targetTableId, merge }),
-  splitItems: (orderId, itemIds, targetDivision) => api.post(`/orders/${orderId}/split`, { item_ids: itemIds, target_division: targetDivision }),
+  splitToNewOrder: (orderId, itemIds) => api.post(`/orders/${orderId}/split-to-new`, { item_ids: itemIds }),
+  getTableOrders: (tableId) => api.get(`/tables/${tableId}/orders`),
 };
 
 // Kitchen
