@@ -843,7 +843,7 @@ async def move_order_to_table(order_id: str, input: dict, user: dict = Depends(g
         )
         # Log movement for audit
         await log_table_movement(
-            user_id=user["id"], user_name=user["name"], user_role=user["role"],
+            user_id=user["user_id"], user_name=user["name"], user_role=user["role"],
             source_table_id=source_table_id, source_table_number=source_table["number"],
             target_table_id=target_table_id, target_table_number=target_table["number"],
             movement_type="single", orders_moved=1, merged=True
