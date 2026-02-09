@@ -591,6 +591,7 @@ export default function OrderScreen() {
           )}
         </ScrollArea>
       </div>
+      )}
 
       {/* Product Dialog with Numpad */}
       <Dialog open={modDialog.open} onOpenChange={(open) => !open && setModDialog(p => ({ ...p, open: false }))}>
