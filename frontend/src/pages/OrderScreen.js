@@ -417,8 +417,8 @@ export default function OrderScreen() {
           </div>
         </div>
 
-        {/* Account Tabs - Show when table has multiple orders */}
-        {tableOrders.length > 1 && !splitMode && (
+        {/* Account Tabs - Show when table has multiple orders OR has at least one order */}
+        {(tableOrders.length > 1 || (tableOrders.length === 1 && order)) && !splitMode && (
           <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto bg-card/30">
             {tableOrders.map(ord => (
               <button
@@ -434,6 +434,15 @@ export default function OrderScreen() {
                 <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
               </button>
             ))}
+            {/* Add New Account Button */}
+            <button
+              onClick={createNewEmptyAccount}
+              data-testid="add-new-account-btn"
+              className="px-2 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all bg-green-600/20 border border-green-600/50 text-green-400 hover:bg-green-600/30 hover:border-green-500 flex items-center gap-1"
+              title="Crear nueva cuenta"
+            >
+              <Plus size={12} /> Nueva
+            </button>
           </div>
         )}
 
