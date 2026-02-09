@@ -135,6 +135,16 @@ export default function OrderScreen() {
     }
   };
 
+  // Load grid settings from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('pos_grid_settings');
+    if (saved) {
+      try {
+        setGridSettings(JSON.parse(saved));
+      } catch {}
+    }
+  }, []);
+
   const handleBack = async () => { await autoSendPending(); navigate('/tables'); };
 
   const filteredProducts = activeCat ? products.filter(p => p.category_id === activeCat) : [];
