@@ -312,12 +312,8 @@ export default function Settings() {
                     )}
                     <Pencil size={14} className="text-muted-foreground" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
-                      onClick={() => handleDeleteUser(user.id)}>
-                      <Trash2 size={14} />
-                    </Button>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           </TabsContent>
