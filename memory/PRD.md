@@ -118,6 +118,25 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - Fix crítico: Corregido error require_auth → get_current_user en endpoint split-to-new
 - **Testing Exhaustivo**: 100% tests pasados (backend y frontend)
 
+### Phase 8 (Feb 2026) - Mejoras UX y Seguridad
+- **Control de Acceso a Mesas por Usuario**:
+  - **Meseros** solo pueden acceder a mesas que ellos abrieron
+  - **Cajeros** pueden acceder a cualquier mesa (necesitan cobrar)
+  - **Supervisores, Gerentes, Admin** pueden acceder a todas las mesas
+  - Nuevo permiso: `access_all_tables` en sistema de permisos
+  - Nuevo rol: `supervisor` con permisos intermedios
+  - Pantalla de "Acceso Denegado" con ícono de candado y nombre del mesero dueño
+  - Botón "Volver a Mesas" para regresar fácilmente
+- **Layout Mejorado de Pantalla de Órdenes**:
+  - **Layout invertido**: Cuenta a la derecha, Menú a la izquierda
+  - **Botones de acción fijos** en la parte inferior del panel (ENVIAR, FACTURAR, Mover, Dividir, Pre-Cuenta)
+  - **Selector de columnas** para categorías y productos (2-6 columnas)
+  - Configuración guardada en localStorage
+- **Mejoras de UX**:
+  - Toast notifications reducidos a 500ms
+  - Botón "ENVIAR" simplificado (antes era "ENVIAR A COCINA")
+  - Bug fix: Montos rápidos en pago ahora respetan el método de pago seleccionado
+
 ## PINs de Acceso (Datos de Demo)
 | Usuario | PIN | Rol |
 |---------|-----|-----|
