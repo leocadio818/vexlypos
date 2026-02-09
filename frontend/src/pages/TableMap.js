@@ -19,22 +19,31 @@ const statusColors = {
 };
 
 // More visible pattern for divided tables - diagonal stripes with higher contrast
-const stripedPattern = `repeating-linear-gradient(
+const stripedPattern = (isOther) => `repeating-linear-gradient(
   -45deg,
-  rgba(255,102,0,0.5),
-  rgba(255,102,0,0.5) 6px,
-  rgba(255,102,0,0.15) 6px,
-  rgba(255,102,0,0.15) 12px
+  rgba(${isOther ? '2,136,209' : '255,102,0'},0.5),
+  rgba(${isOther ? '2,136,209' : '255,102,0'},0.5) 6px,
+  rgba(${isOther ? '2,136,209' : '255,102,0'},0.15) 6px,
+  rgba(${isOther ? '2,136,209' : '255,102,0'},0.15) 12px
 )`;
 
-function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, onResize }) {
+function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, onResize, currentUserId }) {
   const [isDragging, setIsDragging] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0, moved: false, pointerId: null });
   const nodeRef = useRef(null);
 
-  const colors = statusColors[table.status] || statusColors.free;
+  // Determine if this table belongs to another user
+  const isOtherUser = table.owner_id && table.owner_id !== currentUserId;
   const isDivided = table.status === 'divided';
+  const isOccupied = table.status === 'occupied';
+  
+  // Get correct color scheme based on ownership
+  let colorKey = table.status;
+  if (isOtherUser && isOccupied) colorKey = 'occupied_other';
+  if (isOtherUser && isDivided) colorKey = 'divided_other';
+  
+  const colors = statusColors[colorKey] || statusColors.free;
   const pxX = (table.x / 100) * containerSize.w;
   const pxY = (table.y / 100) * containerSize.h;
   const scale = Math.min(containerSize.w / 1200, containerSize.h / 700, 1.5);
