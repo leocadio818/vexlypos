@@ -145,6 +145,14 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - Si la mesa destino tiene órdenes activas, retorna `needs_merge` para confirmación del usuario
   - Frontend actualizado para detectar mesas con múltiples cuentas y usar el nuevo endpoint
   - **Archivo de sonido para notificaciones de cocina creado**: `/public/sounds/notification.mp3`
+- **Historial de Movimientos de Mesas para Auditoría (Feb 9, 2026)**:
+  - Nueva colección `table_movements` en MongoDB para registro de auditoría
+  - **Nuevo endpoint: GET /api/reports/table-movements** - Lista todos los movimientos con filtro por fecha
+  - **Nuevo endpoint: GET /api/reports/table-movements/stats** - Estadísticas de movimientos (totales, por tipo, por usuario)
+  - Cada movimiento registra: usuario (id, nombre, rol), mesa origen/destino, tipo (single/bulk), cantidad de cuentas, si hubo unión
+  - Nueva sección en página de Reportes: "HISTORIAL DE MOVIMIENTOS DE MESAS"
+  - Muestra estadísticas: Total movimientos, Simples, Múltiples, Cuentas unidas
+  - Tabla detallada: Hora, Usuario, Origen, Destino, Tipo, Cuentas
 
 ## PINs de Acceso (Datos de Demo)
 | Usuario | PIN | Rol |
