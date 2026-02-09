@@ -711,53 +711,13 @@ export default function UserConfig() {
                   </div>
                 </div>
 
-                {/* Web Authorization */}
+                {/* Other Options */}
                 <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                  <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Globe size={14} /> Autorización Vía WEB
+                  <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                    Opciones Adicionales
                   </h3>
                   
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-                    <span className="text-sm">Acceso WEB</span>
-                    <Switch 
-                      checked={user.web_access}
-                      onCheckedChange={v => setUser(p => ({ ...p, web_access: v }))}
-                    />
-                  </div>
-
-                  {user.web_access && (
-                    <Button variant="outline" className="w-full" onClick={() => {
-                      const newPass = prompt('Nueva contraseña web:');
-                      if (newPass) setUser(p => ({ ...p, web_password: newPass }));
-                    }}>
-                      <Key size={14} className="mr-2" /> Configura Contraseña
-                    </Button>
-                  )}
-
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Ref#</label>
-                    <input 
-                      value={user.reference_number}
-                      onChange={e => setUser(p => ({ ...p, reference_number: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Reglas para turnos</label>
-                    <select 
-                      value={user.shift_rules}
-                      onChange={e => setUser(p => ({ ...p, shift_rules: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    >
-                      <option value="">Ninguno Seleccionado</option>
-                      <option value="standard">Turno Estándar</option>
-                      <option value="flexible">Turno Flexible</option>
-                      <option value="rotating">Turno Rotativo</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2 pt-2">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between p-2 rounded bg-background border border-border">
                       <span className="text-sm">Despreciar Horas del Empleado</span>
                       <Switch 
