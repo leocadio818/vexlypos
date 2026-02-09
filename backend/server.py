@@ -106,28 +106,20 @@ def can_access_table_orders(user: dict, orders: list) -> bool:
     """Check if user can access orders on a table based on ownership and permissions"""
     perms = get_permissions(user.get("role", "waiter"), user.get("permissions"))
     
-    # Debug logging
-    print(f"[ACCESS CHECK] User: {user.get('name')}, Role: {user.get('role')}, access_all_tables: {perms.get('access_all_tables', False)}")
-    
     # Users with access_all_tables permission can access any table
     if perms.get("access_all_tables", False):
-        print(f"[ACCESS CHECK] -> ALLOWED (has access_all_tables)")
         return True
     
     # If no orders, anyone can access (to create new order)
     if not orders:
-        print(f"[ACCESS CHECK] -> ALLOWED (no orders on table)")
         return True
     
     # Check if user owns any of the orders on this table
     user_id = user.get("user_id")
     for order in orders:
-        print(f"[ACCESS CHECK] Comparing user_id {user_id} with order waiter_id {order.get('waiter_id')}")
         if order.get("waiter_id") == user_id:
-            print(f"[ACCESS CHECK] -> ALLOWED (owns this order)")
             return True
     
-    print(f"[ACCESS CHECK] -> DENIED")
     return False
 
 def get_table_owner_name(orders: list) -> str:
