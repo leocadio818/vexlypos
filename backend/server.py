@@ -78,6 +78,7 @@ ALL_PERMISSIONS = {
     "void_items": "Anular Items", "send_kitchen": "Enviar a Cocina",
     "create_bill": "Crear Factura", "collect_payment": "Cobrar",
     "split_bill": "Dividir Cuenta",
+    "access_all_tables": "Acceder a Todas las Mesas",
     "manage_users": "Config: Usuarios", "manage_areas": "Config: Areas",
     "manage_tables": "Config: Mesas", "manage_payment_methods": "Config: Formas de Pago",
     "manage_cancellation_reasons": "Config: Anulaciones", "manage_products": "Config: Productos",
