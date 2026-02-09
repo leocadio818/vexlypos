@@ -349,6 +349,19 @@ export default function OrderScreen() {
     }
   };
 
+  // Create new empty account on the table
+  const createNewEmptyAccount = async () => {
+    try {
+      const res = await ordersAPI.createNewAccount(tableId);
+      toast.success(`Cuenta #${res.data.account_number} creada`);
+      // Refresh orders and switch to new account
+      await fetchOrder();
+      setActiveOrderId(res.data.id);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error creando nueva cuenta');
+    }
+  };
+
   // Get order total
   const getOrderTotal = (ord) => {
     if (!ord?.items) return 0;
