@@ -46,6 +46,7 @@ function AppRoutes() {
         <Route path="reservations" element={<Reservations />} />
         <Route path="settings" element={<Settings />} />
         <Route path="product/:productId" element={<ProductConfig />} />
+        <Route path="user/:userId" element={<UserConfig />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
