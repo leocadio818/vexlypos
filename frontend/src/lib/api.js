@@ -121,6 +121,7 @@ export const ordersAPI = {
   createNewAccount: (tableId) => api.post(`/tables/${tableId}/orders/new`),
   deleteEmpty: (orderId) => api.delete(`/orders/${orderId}/empty`),
   mergeOrders: (sourceOrderId, targetOrderId) => api.post(`/orders/${sourceOrderId}/merge/${targetOrderId}`),
+  moveAllToTable: (sourceTableId, targetTableId) => api.post(`/tables/${sourceTableId}/move-all`, { target_table_id: targetTableId }),
 };
 
 // Kitchen
