@@ -975,7 +975,7 @@ export default function OrderScreen() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Selecciona la cuenta a la que deseas unir la <strong>Cuenta #{tableOrders.find(o => o.id === mergeAccountsDialog.sourceOrderId)?.account_number || '?'}</strong>:
+              Selecciona la cuenta a la que deseas unir la <strong>Cuenta #{order?.account_number || tableOrders.find(o => o.id === mergeAccountsDialog.sourceOrderId)?.account_number || 1}</strong>:
             </p>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {tableOrders
