@@ -227,13 +227,18 @@ export default function OrderScreen() {
     await doPrintPreCheck();
   };
 
-  const doPrintPreCheck = async () => {
+  const doPrintPreCheck = async (specificOrderId = null) => {
+    const targetOrderId = specificOrderId || order?.id;
+    if (!targetOrderId) return;
+    
     try {
-      const r = await fetch(`${API_BASE}/api/print/pre-check/${order.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+      const r = await fetch(`${API_BASE}/api/print/pre-check/${targetOrderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
       const d = await r.json();
       setPreCheckHtml(d.html);
       setPreCheckOpen(true);
-      setPreCheckCount(d.print_number);
+      if (!specificOrderId) {
+        setPreCheckCount(d.print_number);
+      }
       // First print: change table status to billed (yellow glow)
       if (d.print_number === 1 && table) {
         try {
@@ -241,6 +246,12 @@ export default function OrderScreen() {
         } catch {}
       }
     } catch { toast.error('Error generando pre-cuenta'); }
+  };
+
+  // Print pre-check for a specific account
+  const handlePrintAccountPreCheck = async (orderId, accountNumber) => {
+    toast.info(`Generando pre-cuenta de Cuenta #${accountNumber}...`);
+    await doPrintPreCheck(orderId);
   };
 
   const handleManagerAuth = async () => {
