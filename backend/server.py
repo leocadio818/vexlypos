@@ -941,6 +941,44 @@ async def get_table_orders(table_id: str):
     ).sort("account_number", 1).to_list(20)
     return orders
 
+@api.delete("/orders/{order_id}/empty")
+async def delete_empty_order(order_id: str, user: dict = Depends(get_current_user)):
+    """Delete an empty order/account - only works if order has no items"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    # Check if order is empty
+    active_items = [i for i in order.get("items", []) if i.get("status") != "cancelled"]
+    if len(active_items) > 0:
+        raise HTTPException(status_code=400, detail="No se puede eliminar una cuenta con items. Mueve los items primero.")
+    
+    table_id = order["table_id"]
+    
+    # Delete the order
+    await db.orders.delete_one({"id": order_id})
+    
+    # Check remaining orders on this table
+    remaining_orders = await db.orders.find(
+        {"table_id": table_id, "status": {"$in": ["active", "sent"]}},
+        {"_id": 0, "id": 1}
+    ).to_list(20)
+    
+    # Update table status based on remaining orders
+    if len(remaining_orders) == 0:
+        await db.tables.update_one(
+            {"id": table_id},
+            {"$set": {"status": "free", "active_order_id": None}}
+        )
+    elif len(remaining_orders) == 1:
+        await db.tables.update_one(
+            {"id": table_id},
+            {"$set": {"status": "occupied", "active_order_id": remaining_orders[0]["id"]}}
+        )
+    # If more than 1, keep as "divided"
+    
+    return {"message": "Cuenta eliminada", "remaining_orders": len(remaining_orders)}
+
 # ─── KITCHEN ───
 @api.get("/kitchen/orders")
 async def kitchen_orders():
