@@ -102,9 +102,10 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - Nuevo endpoint: GET /api/tables/{tableId}/orders - obtiene todas las órdenes activas de una mesa
   - Estado de mesa "divided" cuando tiene más de una cuenta activa
   - Indicador visual en el mapa de mesas: patrón de rayas diagonales para mesas divididas
-  - UI mejorada con tabs de cuentas (Cuenta #1, Cuenta #2, etc.)
+  - **UI mejorada con tabs de cuentas visibles en vista normal** (no solo en modo dividir)
+  - Título dinámico muestra "Mesa X - Cuenta #Y" cuando hay múltiples cuentas
   - Navegación entre cuentas con un toque
-  - Botón "CREAR NUEVA CUENTA" visible cuando hay items seleccionados
+  - Botón "CREAR NUEVA CUENTA" visible cuando hay items seleccionados en modo dividir
   - Validación: no permite mover todos los items (usar "Mover Mesa" en su lugar)
   - Fix crítico: Corregido error require_auth → get_current_user en endpoint split-to-new
 - **Testing Exhaustivo**: 100% tests pasados (backend y frontend)
