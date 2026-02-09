@@ -795,7 +795,7 @@ async def send_to_kitchen(order_id: str):
 
 # ─── MOVE ORDER / MERGE ORDERS ───
 @api.post("/orders/{order_id}/move")
-async def move_order_to_table(order_id: str, input: dict):
+async def move_order_to_table(order_id: str, input: dict, user: dict = Depends(get_current_user)):
     """Move an order to a different table. If destination has order, merge them."""
     target_table_id = input.get("target_table_id")
     merge = input.get("merge", False)
@@ -806,6 +806,9 @@ async def move_order_to_table(order_id: str, input: dict):
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
     source_table_id = source_order["table_id"]
+    
+    # Get source table for logging
+    source_table = await db.tables.find_one({"id": source_table_id}, {"_id": 0})
     
     # Get target table
     target_table = await db.tables.find_one({"id": target_table_id}, {"_id": 0})
@@ -838,6 +841,13 @@ async def move_order_to_table(order_id: str, input: dict):
             {"id": source_table_id},
             {"$set": {"status": "free", "active_order_id": None}}
         )
+        # Log movement for audit
+        await log_table_movement(
+            user_id=user["id"], user_name=user["name"], user_role=user["role"],
+            source_table_id=source_table_id, source_table_number=source_table["number"],
+            target_table_id=target_table_id, target_table_number=target_table["number"],
+            movement_type="single", orders_moved=1, merged=True
+        )
         return {"ok": True, "merged": True, "target_order_id": target_order["id"]}
     else:
         # Simple move: change order's table reference
@@ -854,6 +864,13 @@ async def move_order_to_table(order_id: str, input: dict):
         await db.tables.update_one(
             {"id": target_table_id},
             {"$set": {"status": "occupied", "active_order_id": order_id}}
+        )
+        # Log movement for audit
+        await log_table_movement(
+            user_id=user["id"], user_name=user["name"], user_role=user["role"],
+            source_table_id=source_table_id, source_table_number=source_table["number"],
+            target_table_id=target_table_id, target_table_number=target_table["number"],
+            movement_type="single", orders_moved=1, merged=False
         )
         return {"ok": True, "moved": True}
 
