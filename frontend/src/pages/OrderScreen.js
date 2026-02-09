@@ -709,6 +709,97 @@ export default function OrderScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Move Table Dialog */}
+      <Dialog open={moveDialog.open} onOpenChange={(o) => !o && setMoveDialog({ open: false })}>
+        <DialogContent className="max-w-lg bg-card border-border" data-testid="move-table-dialog">
+          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2">
+            <MoveRight size={18} className="text-primary" /> Mover a otra Mesa
+          </DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground mb-2">
+              Selecciona la mesa destino. Si está ocupada, se te preguntará si deseas unir las cuentas.
+            </p>
+            {allAreas.map(area => (
+              <div key={area.id}>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: area.color }} />
+                  {area.name}
+                </h4>
+                <div className="grid grid-cols-5 gap-1.5 mb-3">
+                  {allTables.filter(t => t.area_id === area.id && t.id !== tableId).map(t => {
+                    const isOccupied = t.status === 'occupied' || t.status === 'billed';
+                    const isFree = t.status === 'free';
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => handleMoveTable(t.id)}
+                        className={`p-2 rounded-lg text-center font-oswald transition-all border ${
+                          isFree 
+                            ? 'border-green-500/50 bg-green-500/10 text-green-400 hover:bg-green-500/20' 
+                            : 'border-yellow-500/50 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20'
+                        }`}
+                      >
+                        <span className="text-sm font-bold">#{t.number}</span>
+                        <span className="block text-[8px] mt-0.5">
+                          {isFree ? 'Libre' : 'Ocupada'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Merge Confirmation Dialog */}
+      <Dialog open={mergeConfirm.open} onOpenChange={(o) => !o && setMergeConfirm({ open: false, targetTableId: null, targetTableNumber: null })}>
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="merge-confirm-dialog">
+          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2">
+            <Users size={18} className="text-yellow-500" /> ¿Unir Cuentas?
+          </DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
+              <p className="text-sm text-center">
+                La <strong className="text-primary">Mesa #{mergeConfirm.targetTableNumber}</strong> ya tiene una cuenta activa.
+              </p>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                ¿Deseas unir todos los artículos de esta mesa con la mesa destino?
+              </p>
+            </div>
+            <div className="text-center text-sm">
+              <div className="flex items-center justify-center gap-3">
+                <div className="px-3 py-2 rounded-lg bg-card border border-border">
+                  <span className="font-oswald text-lg text-primary">Mesa #{table?.number}</span>
+                  <span className="block text-[10px] text-muted-foreground">{activeItems.length} items</span>
+                </div>
+                <MoveRight size={20} className="text-primary" />
+                <div className="px-3 py-2 rounded-lg bg-card border border-border">
+                  <span className="font-oswald text-lg text-yellow-400">Mesa #{mergeConfirm.targetTableNumber}</span>
+                  <span className="block text-[10px] text-muted-foreground">Ocupada</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setMergeConfirm({ open: false, targetTableId: null, targetTableNumber: null })}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleConfirmMerge}
+                className="flex-1 bg-yellow-600 text-black font-oswald font-bold"
+              >
+                <Users size={14} className="mr-1" /> UNIR CUENTAS
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
