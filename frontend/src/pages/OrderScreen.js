@@ -386,6 +386,28 @@ export default function OrderScreen() {
     }
   };
 
+  // Merge two accounts
+  const mergeAccounts = async (targetOrderId) => {
+    const sourceOrderId = mergeAccountsDialog.sourceOrderId;
+    if (!sourceOrderId || !targetOrderId) return;
+    
+    try {
+      await ordersAPI.mergeOrders(sourceOrderId, targetOrderId);
+      toast.success('Cuentas fusionadas exitosamente');
+      setMergeAccountsDialog({ open: false, sourceOrderId: null });
+      // Refresh orders and switch to target
+      await fetchOrder();
+      setActiveOrderId(targetOrderId);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error fusionando cuentas');
+    }
+  };
+
+  // Open merge dialog
+  const openMergeDialog = (orderId) => {
+    setMergeAccountsDialog({ open: true, sourceOrderId: orderId });
+  };
+
   // Check if order is empty
   const isOrderEmpty = (ord) => {
     if (!ord?.items) return true;
