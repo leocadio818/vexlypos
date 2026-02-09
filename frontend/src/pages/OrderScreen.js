@@ -471,7 +471,7 @@ export default function OrderScreen() {
                         deleteEmptyAccount(ord.id, ord.account_number || 1);
                       }}
                       data-testid={`delete-account-${ord.account_number || 1}`}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/40 text-red-400 flex items-center justify-center transition-colors"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-colors shadow-sm"
                       title="Eliminar cuenta vacía"
                     >
                       <X size={10} />
