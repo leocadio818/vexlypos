@@ -404,6 +404,26 @@ export default function OrderScreen() {
           </div>
         </div>
 
+        {/* Account Tabs - Show when table has multiple orders */}
+        {tableOrders.length > 1 && !splitMode && (
+          <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto bg-card/30">
+            {tableOrders.map(ord => (
+              <button
+                key={ord.id}
+                onClick={() => selectOrder(ord.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
+                  activeOrderId === ord.id 
+                    ? 'bg-primary text-primary-foreground font-bold' 
+                    : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
+                }`}
+              >
+                Cuenta #{ord.account_number || 1}
+                <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Split Mode View - Multiple Orders/Accounts */}
         {splitMode ? (
           <div className="flex-1 flex flex-col">
