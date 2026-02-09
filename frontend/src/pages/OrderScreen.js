@@ -404,54 +404,40 @@ export default function OrderScreen() {
           </div>
         </div>
 
-        {/* Split Mode View */}
+        {/* Split Mode View - Multiple Orders/Accounts */}
         {splitMode ? (
           <div className="flex-1 flex flex-col">
-            {/* Division Tabs */}
+            {/* Orders/Accounts Tabs */}
             <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto">
-              {divisions.map(div => (
+              {tableOrders.map(ord => (
                 <button
-                  key={div.id}
-                  onClick={() => setActiveDivision(div.id)}
+                  key={ord.id}
+                  onClick={() => selectOrder(ord.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
-                    activeDivision === div.id 
+                    activeOrderId === ord.id 
                       ? 'bg-primary text-primary-foreground font-bold' 
                       : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
                   }`}
                 >
-                  Mesa #{table?.number} {div.name}
+                  Cuenta #{ord.account_number || 1}
+                  <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
                 </button>
               ))}
-              <button
-                onClick={addDivision}
-                className="px-2 py-1.5 rounded-lg text-xs border border-dashed border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-primary"
-              >
-                + Nueva
-              </button>
             </div>
 
-            {/* Division Content */}
+            {/* Current Order Items - Select to move */}
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-1">
-                {getItemsForDivision(activeDivision).length === 0 ? (
+                <p className="text-[10px] text-muted-foreground mb-2 text-center">
+                  Selecciona items para mover a nueva cuenta
+                </p>
+                {activeItems.length === 0 ? (
                   <div className="text-center py-8">
                     <Users size={24} className="mx-auto mb-2 text-muted-foreground/30" />
-                    <p className="text-xs text-muted-foreground">División vacía</p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Selecciona items y toca aquí para moverlos
-                    </p>
-                    {selectedSplitItems.length > 0 && (
-                      <Button 
-                        onClick={() => moveItemsToDivision(activeDivision)}
-                        size="sm"
-                        className="mt-3 bg-green-600 text-white"
-                      >
-                        <Check size={12} className="mr-1" /> Mover {selectedSplitItems.length} item(s) aquí
-                      </Button>
-                    )}
+                    <p className="text-xs text-muted-foreground">Esta cuenta está vacía</p>
                   </div>
                 ) : (
-                  getItemsForDivision(activeDivision).map(item => (
+                  activeItems.map(item => (
                     <div 
                       key={item.id} 
                       onClick={() => toggleSplitItem(item.id)}
@@ -481,24 +467,29 @@ export default function OrderScreen() {
               </div>
             </ScrollArea>
 
-            {/* Selected items action bar */}
-            {selectedSplitItems.length > 0 && (
-              <div className="p-2 border-t border-border bg-red-500/10">
-                <p className="text-xs text-center font-semibold text-red-400 mb-2">
-                  {selectedSplitItems.length} item(s) seleccionado(s)
-                </p>
+            {/* Action bar */}
+            <div className="p-3 border-t border-border bg-card space-y-2">
+              {selectedSplitItems.length > 0 ? (
+                <>
+                  <p className="text-xs text-center font-semibold text-red-400">
+                    {selectedSplitItems.length} item(s) seleccionado(s)
+                  </p>
+                  <Button 
+                    onClick={createNewOrderFromItems}
+                    className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold"
+                  >
+                    <SplitSquareHorizontal size={14} className="mr-2" /> CREAR NUEVA CUENTA
+                  </Button>
+                </>
+              ) : (
                 <p className="text-[10px] text-muted-foreground text-center">
-                  Selecciona otra división para mover los items
+                  Toca los items que deseas mover a otra cuenta
                 </p>
-              </div>
-            )}
-
-            {/* Division Total */}
-            <div className="p-3 border-t border-border bg-card">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">Total División</span>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                <span className="text-xs text-muted-foreground">Total Cuenta #{order?.account_number || 1}</span>
                 <span className="font-oswald text-lg font-bold text-primary">
-                  {formatMoney(getDivisionTotal(activeDivision))}
+                  {formatMoney(getOrderTotal(order))}
                 </span>
               </div>
             </div>
