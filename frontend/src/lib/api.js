@@ -119,6 +119,7 @@ export const ordersAPI = {
   splitToNewOrder: (orderId, itemIds) => api.post(`/orders/${orderId}/split-to-new`, { item_ids: itemIds }),
   getTableOrders: (tableId) => api.get(`/tables/${tableId}/orders`),
   createNewAccount: (tableId) => api.post(`/tables/${tableId}/orders/new`),
+  deleteEmpty: (orderId) => api.delete(`/orders/${orderId}/empty`),
 };
 
 // Kitchen
