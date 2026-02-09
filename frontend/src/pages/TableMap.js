@@ -87,10 +87,14 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
       className="absolute flex flex-col items-center justify-center select-none touch-none"
       style={{
         left: pos.x, top: pos.y, width: w, height: h, borderRadius: radius,
-        border: `3px solid ${editMode ? '#FF6600' : colors.border}`,
+        border: `${isDivided ? '4px' : '3px'} solid ${editMode ? '#FF6600' : colors.border}`,
         backgroundColor: editMode ? 'rgba(255,102,0,0.1)' : colors.bg,
         backgroundImage: isDivided && !editMode ? stripedPattern : 'none',
-        boxShadow: isDragging ? `0 0 25px ${colors.glow}, 0 8px 30px rgba(0,0,0,0.5)` : `0 0 15px ${colors.glow}`,
+        boxShadow: isDragging 
+          ? `0 0 25px ${colors.glow}, 0 8px 30px rgba(0,0,0,0.5)` 
+          : isDivided 
+            ? `0 0 20px ${colors.glow}, inset 0 0 15px rgba(255,102,0,0.2)` 
+            : `0 0 15px ${colors.glow}`,
         backdropFilter: 'blur(8px)',
         cursor: editMode ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
         zIndex: isDragging ? 100 : 1,
@@ -102,12 +106,17 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
       onPointerUp={editMode ? handlePointerUp : undefined}
       onClick={handleClick}
     >
+      {/* Divided badge */}
+      {isDivided && !editMode && (
+        <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold shadow-lg border-2 border-background">
+          ÷
+        </div>
+      )}
       <span className="font-oswald text-lg font-bold" style={{ color: editMode ? '#FF6600' : colors.border }}>
         {table.number}
       </span>
       <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
         <Users size={9} /> {table.capacity}
-        {isDivided && <span className="ml-0.5 text-red-400 font-bold">÷</span>}
       </span>
       {editMode && (
         <span className="text-[8px] text-primary mt-0.5"><Maximize2 size={8} className="inline" /></span>
