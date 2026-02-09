@@ -979,6 +979,69 @@ async def delete_empty_order(order_id: str, user: dict = Depends(get_current_use
     
     return {"message": "Cuenta eliminada", "remaining_orders": len(remaining_orders)}
 
+@api.post("/orders/{order_id}/merge/{target_order_id}")
+async def merge_orders(order_id: str, target_order_id: str, user: dict = Depends(get_current_user)):
+    """Merge two orders - move all items from order_id to target_order_id"""
+    if order_id == target_order_id:
+        raise HTTPException(status_code=400, detail="No puedes fusionar una cuenta consigo misma")
+    
+    # Get source order
+    source_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not source_order:
+        raise HTTPException(status_code=404, detail="Cuenta origen no encontrada")
+    
+    # Get target order
+    target_order = await db.orders.find_one({"id": target_order_id}, {"_id": 0})
+    if not target_order:
+        raise HTTPException(status_code=404, detail="Cuenta destino no encontrada")
+    
+    # Verify both orders are on the same table
+    if source_order["table_id"] != target_order["table_id"]:
+        raise HTTPException(status_code=400, detail="Solo puedes fusionar cuentas de la misma mesa")
+    
+    table_id = source_order["table_id"]
+    
+    # Get items to move (non-cancelled)
+    items_to_move = [i for i in source_order.get("items", []) if i.get("status") != "cancelled"]
+    
+    if len(items_to_move) == 0:
+        # Source is empty, just delete it
+        await db.orders.delete_one({"id": order_id})
+    else:
+        # Move items to target order
+        await db.orders.update_one(
+            {"id": target_order_id},
+            {
+                "$push": {"items": {"$each": items_to_move}},
+                "$set": {"updated_at": now_iso()}
+            }
+        )
+        # Delete source order
+        await db.orders.delete_one({"id": order_id})
+    
+    # Check remaining orders on this table
+    remaining_orders = await db.orders.find(
+        {"table_id": table_id, "status": {"$in": ["active", "sent"]}},
+        {"_id": 0, "id": 1}
+    ).to_list(20)
+    
+    # Update table status
+    if len(remaining_orders) == 1:
+        await db.tables.update_one(
+            {"id": table_id},
+            {"$set": {"status": "occupied", "active_order_id": remaining_orders[0]["id"]}}
+        )
+    # If more than 1, keep as "divided"
+    
+    # Get updated target order
+    updated_target = await db.orders.find_one({"id": target_order_id}, {"_id": 0})
+    
+    return {
+        "message": f"Cuentas fusionadas exitosamente",
+        "merged_order": updated_target,
+        "remaining_orders": len(remaining_orders)
+    }
+
 # ─── KITCHEN ───
 @api.get("/kitchen/orders")
 async def kitchen_orders():
