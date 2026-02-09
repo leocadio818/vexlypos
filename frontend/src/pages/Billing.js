@@ -136,14 +136,19 @@ export default function Billing() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setSplitDialog(true)} variant="outline" size="sm" data-testid="split-bill-btn"
-            className="text-xs border-primary/50 text-primary">
-            <SplitSquareHorizontal size={14} className="mr-1" /> Dividir
-          </Button>
-          <Button onClick={handleCreateFullBill} size="sm" data-testid="full-bill-btn"
-            className="text-xs bg-primary text-primary-foreground">
-            <Receipt size={14} className="mr-1" /> Facturar Todo
-          </Button>
+          {/* Hide buttons if all bills are paid */}
+          {bills.filter(b => b.status === 'pending').length > 0 || bills.length === 0 ? (
+            <>
+              <Button onClick={() => setSplitDialog(true)} variant="outline" size="sm" data-testid="split-bill-btn"
+                className="text-xs border-primary/50 text-primary">
+                <SplitSquareHorizontal size={14} className="mr-1" /> Dividir
+              </Button>
+              <Button onClick={handleCreateFullBill} size="sm" data-testid="full-bill-btn"
+                className="text-xs bg-primary text-primary-foreground">
+                <Receipt size={14} className="mr-1" /> Facturar Todo
+              </Button>
+            </>
+          ) : null}
         </div>
       </div>
 
