@@ -95,6 +95,29 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - Backend: POST /api/orders/{id}/move, POST /api/orders/{id}/split
 - 100% de tests pasados (backend y frontend)
 
+### Phase 7 (Feb 2026) - División de Cuentas Múltiples
+- **Sistema de Múltiples Cuentas por Mesa (COMPLETADO)**:
+  - Cada mesa puede tener múltiples órdenes/cuentas independientes
+  - Nuevo endpoint: POST /api/orders/{id}/split-to-new - crea nueva orden en la misma mesa moviendo items seleccionados
+  - Nuevo endpoint: GET /api/tables/{tableId}/orders - obtiene todas las órdenes activas de una mesa
+  - Estado de mesa "divided" cuando tiene más de una cuenta activa
+  - Indicador visual en el mapa de mesas: patrón de rayas diagonales para mesas divididas
+  - UI mejorada con tabs de cuentas (Cuenta #1, Cuenta #2, etc.)
+  - Navegación entre cuentas con un toque
+  - Botón "CREAR NUEVA CUENTA" visible cuando hay items seleccionados
+  - Validación: no permite mover todos los items (usar "Mover Mesa" en su lugar)
+  - Fix crítico: Corregido error require_auth → get_current_user en endpoint split-to-new
+- **Testing Exhaustivo**: 100% tests pasados (backend y frontend)
+
+## PINs de Acceso (Datos de Demo)
+| Usuario | PIN | Rol |
+|---------|-----|-----|
+| Admin | 0000 | admin |
+| Carlos | 1234 | waiter |
+| Maria | 5678 | waiter |
+| Luis (Cajero) | 4321 | cashier |
+| Chef Pedro | 9999 | kitchen |
+
 ## Prioritized Backlog
 
 ### P0
