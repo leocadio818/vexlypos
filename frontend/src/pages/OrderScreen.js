@@ -313,51 +313,28 @@ export default function OrderScreen() {
   const handleMoveTable = async (targetTableId) => {
     if (!order) return;
     try {
-      // If table has multiple accounts, move ALL of them together
-      if (tableOrders.length > 1) {
-        const res = await ordersAPI.moveAllToTable(tableId, targetTableId);
-        if (res.data.needs_merge) {
-          // Target table has orders - show merge confirmation
-          setMoveDialog({ open: false });
-          setMergeConfirm({ 
-            open: true, 
-            targetTableId, 
-            targetTableNumber: res.data.target_table_number,
-            isBulkMove: true,
-            sourceOrderCount: res.data.source_order_count,
-            targetOrderCount: res.data.target_order_count
-          });
-        } else {
-          toast.success(`${res.data.orders_moved} cuentas movidas a Mesa ${res.data.target_table_number}`);
-          setMoveDialog({ open: false });
-          navigate(`/order/${targetTableId}`);
-        }
+      // Always move only the CURRENT order/account, not all of them
+      const res = await ordersAPI.moveToTable(order.id, targetTableId, false);
+      if (res.data.needs_merge) {
+        // Target table is occupied, ask to merge
+        setMoveDialog({ open: false });
+        setMergeConfirm({ open: true, targetTableId, targetTableNumber: res.data.target_table_number });
       } else {
-        // Single order - use original endpoint
-        const res = await ordersAPI.moveToTable(order.id, targetTableId, false);
-        if (res.data.needs_merge) {
-          // Target table is occupied, ask to merge
-          setMoveDialog({ open: false });
-          setMergeConfirm({ open: true, targetTableId, targetTableNumber: res.data.target_table_number });
-        } else {
-          toast.success('Mesa movida exitosamente');
-          setMoveDialog({ open: false });
-          navigate(`/order/${targetTableId}`);
-        }
+        toast.success(`Cuenta #${order.account_number || 1} movida a Mesa ${res.data.target_table_number || targetTableId}`);
+        setMoveDialog({ open: false });
+        navigate(`/order/${targetTableId}`);
       }
-    } catch { toast.error('Error moviendo mesa'); }
+    } catch { toast.error('Error moviendo cuenta'); }
   };
 
   const handleConfirmMerge = async () => {
     if (!order || !mergeConfirm.targetTableId) return;
     try {
-      // For bulk moves with merge, we need to handle differently
-      // For now, merge the current order (user can merge others manually)
       await ordersAPI.moveToTable(order.id, mergeConfirm.targetTableId, true);
-      toast.success('Cuentas unidas exitosamente');
+      toast.success('Cuenta unida exitosamente');
       setMergeConfirm({ open: false, targetTableId: null, targetTableNumber: null });
       navigate(`/order/${mergeConfirm.targetTableId}`);
-    } catch { toast.error('Error uniendo cuentas'); }
+    } catch { toast.error('Error uniendo cuenta'); }
   };
 
   // Split/Divide Functions - Create new orders
