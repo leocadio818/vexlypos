@@ -448,36 +448,6 @@ export default function OrderScreen() {
               {splitMode ? 'DIVIDIR CUENTA' : tableOrders.length > 1 ? `Mesa ${table?.number || '?'} - Cuenta #${order?.account_number || 1}` : `Mesa ${table?.number || '?'}`}
             </h2>
           </div>
-          <div className="flex items-center gap-1">
-            {!splitMode && order && activeItems.length > 0 && (
-              <>
-                <Button onClick={openMoveDialog} variant="ghost" size="sm" data-testid="move-table-btn"
-                  className="h-7 px-2 text-[10px] text-muted-foreground">
-                  <MoveRight size={10} className="mr-1" /> Mover
-                </Button>
-                <Button onClick={enterSplitMode} variant="ghost" size="sm" data-testid="split-btn"
-                  className="h-7 px-2 text-[10px] text-muted-foreground">
-                  <SplitSquareHorizontal size={10} className="mr-1" /> Dividir
-                </Button>
-                <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
-                  className="h-7 px-2 text-[10px] border-muted-foreground/30 text-muted-foreground relative">
-                  <FileText size={10} className="mr-1" /> Pre-Cuenta
-                  {preCheckCount > 0 && <Lock size={8} className="ml-0.5 text-yellow-500" />}
-                </Button>
-              </>
-            )}
-            {!splitMode && pendingCount > 0 && (
-              <Button onClick={handleSendToKitchen} size="sm" data-testid="send-to-kitchen-btn"
-                className="h-7 px-2 bg-primary text-primary-foreground font-oswald text-[10px] font-bold active:scale-95">
-                <Send size={10} className="mr-1" /> ENVIAR ({pendingCount})
-              </Button>
-            )}
-            {!splitMode && order && (
-              <Button onClick={() => navigate(`/billing/${order.id}`)} variant="outline" size="sm" data-testid="go-to-billing" className="h-7 px-2 text-[10px] border-primary/50 text-primary">
-                <Receipt size={10} className="mr-1" /> Facturar
-              </Button>
-            )}
-          </div>
         </div>
 
         {/* Account Tabs - Show when table has multiple orders OR has at least one order */}
