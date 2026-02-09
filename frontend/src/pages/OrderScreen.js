@@ -369,7 +369,7 @@ export default function OrderScreen() {
               {splitMode ? <X size={16} /> : <ArrowLeft size={16} />}
             </Button>
             <h2 className="font-oswald text-base font-bold">
-              {splitMode ? 'DIVIDIR CUENTA' : `Mesa ${table?.number || '?'}`}
+              {splitMode ? 'DIVIDIR CUENTA' : tableOrders.length > 1 ? `Mesa ${table?.number || '?'} - Cuenta #${order?.account_number || 1}` : `Mesa ${table?.number || '?'}`}
             </h2>
           </div>
           <div className="flex items-center gap-1">
