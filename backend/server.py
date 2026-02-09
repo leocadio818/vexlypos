@@ -96,7 +96,8 @@ def get_permissions(role, custom=None):
     for k in ALL_PERMISSIONS:
         base[k] = False
     defaults = DEFAULT_PERMISSIONS.get(role, {})
-    base.update({k: True for k in defaults})
+    # Apply default permissions with their actual values (True or False)
+    base.update(defaults)
     if custom:
         base.update(custom)
     return base
