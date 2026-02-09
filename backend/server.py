@@ -818,7 +818,7 @@ async def move_order_to_table(order_id: str, input: dict):
 
 # ─── SPLIT ORDER - CREATE NEW ORDER FROM ITEMS ───
 @api.post("/orders/{order_id}/split-to-new")
-async def split_to_new_order(order_id: str, input: dict, user: dict = Depends(require_auth)):
+async def split_to_new_order(order_id: str, input: dict, user: dict = Depends(get_current_user)):
     """Split selected items from an order to create a new order on the same table"""
     item_ids = input.get("item_ids", [])
     
