@@ -486,19 +486,38 @@ export default function OrderScreen() {
             {tableOrders.map(ord => {
               const isEmpty = isOrderEmpty(ord);
               const canDelete = isEmpty && tableOrders.length > 1;
+              const hasItems = !isEmpty;
               return (
-                <div key={ord.id} className="relative flex items-center">
+                <div key={ord.id} className="relative flex items-center group">
                   <button
                     onClick={() => selectOrder(ord.id)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
                       activeOrderId === ord.id 
                         ? 'bg-primary text-primary-foreground font-bold' 
                         : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
-                    } ${canDelete ? 'pr-7' : ''}`}
+                    } ${canDelete ? 'pr-7' : ''} ${hasItems && tableOrders.length > 1 ? 'pr-8' : ''}`}
                   >
                     Cuenta #{ord.account_number || 1}
                     <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
                   </button>
+                  {/* Print pre-check button for accounts with items */}
+                  {hasItems && tableOrders.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrintAccountPreCheck(ord.id, ord.account_number || 1);
+                      }}
+                      data-testid={`print-precheck-${ord.account_number || 1}`}
+                      className={`absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                        activeOrderId === ord.id 
+                          ? 'bg-primary-foreground/20 hover:bg-primary-foreground/40 text-primary-foreground' 
+                          : 'bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400'
+                      }`}
+                      title={`Imprimir pre-cuenta de Cuenta #${ord.account_number || 1}`}
+                    >
+                      <Printer size={10} />
+                    </button>
+                  )}
                   {/* Delete button for empty accounts */}
                   {canDelete && (
                     <button
