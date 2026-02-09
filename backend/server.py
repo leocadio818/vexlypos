@@ -947,6 +947,14 @@ async def move_all_orders_to_table(table_id: str, input: dict, user: dict = Depe
             {"$set": {"status": "occupied", "active_order_id": source_orders[0]["id"]}}
         )
     
+    # Log movement for audit
+    await log_table_movement(
+        user_id=user["id"], user_name=user["name"], user_role=user["role"],
+        source_table_id=table_id, source_table_number=source_table["number"],
+        target_table_id=target_table_id, target_table_number=target_table["number"],
+        movement_type="bulk", orders_moved=len(source_orders), merged=False
+    )
+    
     return {
         "ok": True, 
         "moved": True, 
