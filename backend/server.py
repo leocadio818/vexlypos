@@ -857,6 +857,86 @@ async def move_order_to_table(order_id: str, input: dict):
         )
         return {"ok": True, "moved": True}
 
+@api.post("/tables/{table_id}/move-all")
+async def move_all_orders_to_table(table_id: str, input: dict, user: dict = Depends(get_current_user)):
+    """Move ALL orders from a table to another table. Preserves divided state."""
+    target_table_id = input.get("target_table_id")
+    
+    if table_id == target_table_id:
+        raise HTTPException(status_code=400, detail="No puedes mover a la misma mesa")
+    
+    # Get source table
+    source_table = await db.tables.find_one({"id": table_id}, {"_id": 0})
+    if not source_table:
+        raise HTTPException(status_code=404, detail="Mesa origen no encontrada")
+    
+    # Get target table
+    target_table = await db.tables.find_one({"id": target_table_id}, {"_id": 0})
+    if not target_table:
+        raise HTTPException(status_code=404, detail="Mesa destino no encontrada")
+    
+    # Get ALL orders from source table
+    source_orders = await db.orders.find(
+        {"table_id": table_id, "status": {"$in": ["active", "sent"]}},
+        {"_id": 0}
+    ).to_list(50)
+    
+    if not source_orders:
+        raise HTTPException(status_code=400, detail="No hay órdenes activas en esta mesa")
+    
+    # Check if target table has orders
+    target_orders = await db.orders.find(
+        {"table_id": target_table_id, "status": {"$in": ["active", "sent"]}},
+        {"_id": 0}
+    ).to_list(50)
+    
+    if target_orders:
+        # Target has orders - return needs_merge info
+        return {
+            "needs_merge": True, 
+            "source_order_count": len(source_orders),
+            "target_order_count": len(target_orders),
+            "target_table_number": target_table["number"]
+        }
+    
+    # Move all orders to target table
+    for order in source_orders:
+        await db.orders.update_one(
+            {"id": order["id"]},
+            {"$set": {
+                "table_id": target_table_id, 
+                "table_number": target_table["number"], 
+                "updated_at": now_iso()
+            }}
+        )
+    
+    # Update source table: free it
+    await db.tables.update_one(
+        {"id": table_id},
+        {"$set": {"status": "free", "active_order_id": None}}
+    )
+    
+    # Update target table status based on number of orders moved
+    if len(source_orders) > 1:
+        # Multiple orders = divided
+        await db.tables.update_one(
+            {"id": target_table_id},
+            {"$set": {"status": "divided", "active_order_id": source_orders[0]["id"]}}
+        )
+    else:
+        # Single order = occupied
+        await db.tables.update_one(
+            {"id": target_table_id},
+            {"$set": {"status": "occupied", "active_order_id": source_orders[0]["id"]}}
+        )
+    
+    return {
+        "ok": True, 
+        "moved": True, 
+        "orders_moved": len(source_orders),
+        "target_table_number": target_table["number"]
+    }
+
 # ─── SPLIT ORDER - CREATE NEW ORDER FROM ITEMS ───
 @api.post("/orders/{order_id}/split-to-new")
 async def split_to_new_order(order_id: str, input: dict, user: dict = Depends(get_current_user)):
