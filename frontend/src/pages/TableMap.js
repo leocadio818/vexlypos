@@ -11,9 +11,11 @@ import { Slider } from '@/components/ui/slider';
 const statusColors = {
   free: { border: '#2E7D4E', bg: 'rgba(46,125,78,0.15)', glow: 'rgba(46,125,78,0.4)' },
   occupied: { border: '#C62828', bg: 'rgba(198,40,40,0.15)', glow: 'rgba(198,40,40,0.4)' },
+  occupied_other: { border: '#1565C0', bg: 'rgba(21,101,192,0.15)', glow: 'rgba(21,101,192,0.4)' }, // Blue for other users
   billed: { border: '#F9A825', bg: 'rgba(249,168,37,0.15)', glow: 'rgba(249,168,37,0.4)' },
   reserved: { border: '#7C4DFF', bg: 'rgba(124,77,255,0.15)', glow: 'rgba(124,77,255,0.4)' },
   divided: { border: '#FF6600', bg: 'rgba(255,102,0,0.25)', glow: 'rgba(255,102,0,0.5)' },
+  divided_other: { border: '#0288D1', bg: 'rgba(2,136,209,0.25)', glow: 'rgba(2,136,209,0.5)' }, // Light blue for divided by others
 };
 
 // More visible pattern for divided tables - diagonal stripes with higher contrast
