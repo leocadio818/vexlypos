@@ -20,19 +20,25 @@ export default function Reports() {
   const [byWaiter, setByWaiter] = useState([]);
   const [emailTo, setEmailTo] = useState('');
   const [sending, setSending] = useState(false);
+  const [tableMovements, setTableMovements] = useState([]);
+  const [movementStats, setMovementStats] = useState(null);
 
   const fetchReports = useCallback(async () => {
     try {
-      const [dRes, cRes, pRes, wRes] = await Promise.all([
+      const [dRes, cRes, pRes, wRes, mRes, msRes] = await Promise.all([
         axios.get(`${API}/reports/daily-sales`, { params: { date }, headers: headers() }),
         axios.get(`${API}/reports/sales-by-category`, { params: { date }, headers: headers() }),
         axios.get(`${API}/reports/top-products`, { params: { date }, headers: headers() }),
         axios.get(`${API}/reports/sales-by-waiter`, { params: { date }, headers: headers() }),
+        axios.get(`${API}/reports/table-movements`, { params: { date, limit: 20 }, headers: headers() }),
+        axios.get(`${API}/reports/table-movements/stats`, { params: { date }, headers: headers() }),
       ]);
       setDaily(dRes.data);
       setByCategory(cRes.data);
       setTopProducts(pRes.data);
       setByWaiter(wRes.data);
+      setTableMovements(mRes.data);
+      setMovementStats(msRes.data);
     } catch {}
   }, [date]);
 
