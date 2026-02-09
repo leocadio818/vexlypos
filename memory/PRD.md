@@ -70,6 +70,11 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - GET /api/products/{id} para obtener producto específico
   - CRUD completo /api/report-categories para categorías de reporte fiscal
   - CRUD /api/modifiers/{id} para gestión individual de grupos de modificadores
+- **Reorganización del menú de Configuración**: 
+  - Reducido de 14 tabs a 8 tabs principales
+  - **Mesas**: Contiene sub-tabs "Mesas" y "Areas"
+  - **Ventas**: Contiene sub-tabs "Formas de Pago", "Impuestos", "Anulaciones", "Tipos de Venta"
+  - **Inventario**: Contiene sub-tabs "Productos", "Compras", "Stock"
 - 100% de tests pasados (backend y frontend)
 
 ## Prioritized Backlog
