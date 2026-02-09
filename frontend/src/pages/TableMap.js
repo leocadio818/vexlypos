@@ -13,7 +13,17 @@ const statusColors = {
   occupied: { border: '#C62828', bg: 'rgba(198,40,40,0.15)', glow: 'rgba(198,40,40,0.4)' },
   billed: { border: '#F9A825', bg: 'rgba(249,168,37,0.15)', glow: 'rgba(249,168,37,0.4)' },
   reserved: { border: '#7C4DFF', bg: 'rgba(124,77,255,0.15)', glow: 'rgba(124,77,255,0.4)' },
+  divided: { border: '#C62828', bg: 'rgba(198,40,40,0.15)', glow: 'rgba(198,40,40,0.4)' },
 };
+
+// Striped pattern for divided tables
+const stripedPattern = `repeating-linear-gradient(
+  45deg,
+  rgba(198,40,40,0.3),
+  rgba(198,40,40,0.3) 4px,
+  rgba(198,40,40,0.1) 4px,
+  rgba(198,40,40,0.1) 8px
+)`;
 
 function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, onResize }) {
   const [isDragging, setIsDragging] = useState(false);
