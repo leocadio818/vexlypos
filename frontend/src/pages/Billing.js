@@ -229,6 +229,7 @@ export default function Billing() {
                         <button onClick={() => {
                           setPayAmounts({});
                           setPayStep('method');
+                          setActivePayMethod(null);
                           setPayDialog({ open: true, billId: bill.id, billTotal: bill.total });
                         }}
                           data-testid={`pay-bill-${bill.id}`}
