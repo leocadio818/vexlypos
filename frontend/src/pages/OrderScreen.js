@@ -782,7 +782,7 @@ export default function OrderScreen() {
       </div>
 
       {/* Right (visually): Categories & Products - Now rendered first but appears on right */}
-      {!splitMode && (
+      {!splitMode && !accessDenied && (
         <div className="flex-1 flex flex-col overflow-hidden">
         {/* Grid Settings Bar */}
         <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card/30">
