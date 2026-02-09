@@ -173,6 +173,91 @@ export default function Reports() {
               Obtenerla en: <a href="https://resend.com/api-keys" target="_blank" rel="noreferrer" className="text-primary underline">resend.com/api-keys</a>
             </p>
           </div>
+
+          {/* Table Movements Audit */}
+          <div className="bg-card border border-border rounded-xl p-4" data-testid="table-movements-section">
+            <h3 className="font-oswald text-sm font-bold mb-3 uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <ArrowRightLeft size={14} /> Historial de Movimientos de Mesas
+            </h3>
+            
+            {/* Stats Summary */}
+            {movementStats && movementStats.total_movements > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                <div className="bg-background border border-border/50 rounded-lg p-3 text-center">
+                  <p className="text-[9px] text-muted-foreground uppercase">Total Movimientos</p>
+                  <p className="font-oswald text-xl font-bold text-primary">{movementStats.total_movements}</p>
+                </div>
+                <div className="bg-background border border-border/50 rounded-lg p-3 text-center">
+                  <p className="text-[9px] text-muted-foreground uppercase">Movimientos Simples</p>
+                  <p className="font-oswald text-xl font-bold text-blue-400">{movementStats.single_moves}</p>
+                </div>
+                <div className="bg-background border border-border/50 rounded-lg p-3 text-center">
+                  <p className="text-[9px] text-muted-foreground uppercase">Movimientos Múltiples</p>
+                  <p className="font-oswald text-xl font-bold text-purple-400">{movementStats.bulk_moves}</p>
+                </div>
+                <div className="bg-background border border-border/50 rounded-lg p-3 text-center">
+                  <p className="text-[9px] text-muted-foreground uppercase">Cuentas Unidas</p>
+                  <p className="font-oswald text-xl font-bold text-yellow-400">{movementStats.merges}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Movement Log Table */}
+            {tableMovements.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted-foreground">
+                      <th className="py-2 px-2">Hora</th>
+                      <th className="py-2 px-2">Usuario</th>
+                      <th className="py-2 px-2">Origen</th>
+                      <th className="py-2 px-2">Destino</th>
+                      <th className="py-2 px-2">Tipo</th>
+                      <th className="py-2 px-2">Cuentas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableMovements.map((m) => (
+                      <tr key={m.id} className="border-b border-border/30 hover:bg-background/50">
+                        <td className="py-2 px-2 font-mono text-muted-foreground">
+                          <Clock size={10} className="inline mr-1" />
+                          {m.created_at?.split('T')[1]?.slice(0, 5) || '--:--'}
+                        </td>
+                        <td className="py-2 px-2">
+                          <span className="font-medium">{m.user_name}</span>
+                          <Badge variant="outline" className="ml-1 text-[8px] px-1 py-0">{m.user_role}</Badge>
+                        </td>
+                        <td className="py-2 px-2">
+                          <Badge variant="secondary" className="font-oswald">
+                            <Table2 size={10} className="mr-1" /> Mesa {m.source_table_number}
+                          </Badge>
+                        </td>
+                        <td className="py-2 px-2">
+                          <Badge className="font-oswald bg-primary/20 text-primary border-primary/30">
+                            <Table2 size={10} className="mr-1" /> Mesa {m.target_table_number}
+                          </Badge>
+                        </td>
+                        <td className="py-2 px-2">
+                          {m.merged ? (
+                            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[9px]">Unión</Badge>
+                          ) : m.movement_type === 'bulk' ? (
+                            <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[9px]">Múltiple</Badge>
+                          ) : (
+                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[9px]">Simple</Badge>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 font-oswald text-center">{m.orders_moved}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                No hay movimientos de mesas registrados para esta fecha
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
