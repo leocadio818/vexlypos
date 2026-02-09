@@ -964,6 +964,54 @@ export default function OrderScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Merge Accounts Dialog */}
+      <Dialog open={mergeAccountsDialog.open} onOpenChange={(o) => !o && setMergeAccountsDialog({ open: false, sourceOrderId: null })}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <Merge size={18} className="text-blue-400" /> Unir Cuentas
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Selecciona la cuenta a la que deseas unir la <strong>Cuenta #{tableOrders.find(o => o.id === mergeAccountsDialog.sourceOrderId)?.account_number || '?'}</strong>:
+            </p>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {tableOrders
+                .filter(o => o.id !== mergeAccountsDialog.sourceOrderId)
+                .map(ord => {
+                  const itemCount = ord.items?.filter(i => i.status !== 'cancelled').length || 0;
+                  const total = getOrderTotal(ord);
+                  return (
+                    <button
+                      key={ord.id}
+                      onClick={() => mergeAccounts(ord.id)}
+                      data-testid={`merge-target-${ord.account_number || 1}`}
+                      className="w-full p-3 rounded-lg border border-border bg-card hover:border-blue-500 hover:bg-blue-500/10 transition-all flex items-center justify-between"
+                    >
+                      <div className="text-left">
+                        <span className="font-oswald font-bold">Cuenta #{ord.account_number || 1}</span>
+                        <span className="text-xs text-muted-foreground ml-2">({itemCount} items)</span>
+                      </div>
+                      <span className="text-sm font-oswald text-primary">RD$ {total.toLocaleString()}</span>
+                    </button>
+                  );
+                })}
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center">
+              Los items de la cuenta actual se moverán a la cuenta seleccionada
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => setMergeAccountsDialog({ open: false, sourceOrderId: null })}
+              className="w-full"
+            >
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
