@@ -205,6 +205,7 @@ export default function TableMap() {
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-free" /> Libre</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-occupied" /> Ocupada</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{backgroundColor:'#FF6600'}} /> Dividida</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-billed" /> Facturada</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{backgroundColor:'#7C4DFF'}} /> Reservada</span>
           </div>
