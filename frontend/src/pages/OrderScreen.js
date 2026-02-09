@@ -474,13 +474,27 @@ export default function OrderScreen() {
               {splitMode ? <X size={16} /> : <ArrowLeft size={16} />}
             </Button>
             <h2 className="font-oswald text-base font-bold">
-              {splitMode ? 'DIVIDIR CUENTA' : tableOrders.length > 1 ? `Mesa ${table?.number || '?'} - Cuenta #${order?.account_number || 1}` : `Mesa ${table?.number || '?'}`}
+              {accessDenied ? `Mesa ${table?.number || '?'}` : splitMode ? 'DIVIDIR CUENTA' : tableOrders.length > 1 ? `Mesa ${table?.number || '?'} - Cuenta #${order?.account_number || 1}` : `Mesa ${table?.number || '?'}`}
             </h2>
           </div>
         </div>
 
+        {/* Access Denied Screen */}
+        {accessDenied && (
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+              <Lock size={32} className="text-red-500" />
+            </div>
+            <h3 className="font-oswald text-lg font-bold text-red-500 mb-2">Acceso Denegado</h3>
+            <p className="text-sm text-muted-foreground mb-6">{accessDenied}</p>
+            <Button onClick={() => navigate('/tables')} variant="outline" className="gap-2">
+              <ArrowLeft size={14} /> Volver a Mesas
+            </Button>
+          </div>
+        )}
+
         {/* Account Tabs - Show when table has multiple orders OR has at least one order */}
-        {(tableOrders.length > 1 || (tableOrders.length === 1 && order)) && !splitMode && (
+        {!accessDenied && (tableOrders.length > 1 || (tableOrders.length === 1 && order)) && !splitMode && (
           <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto bg-card/30">
             {tableOrders.map(ord => {
               const isEmpty = isOrderEmpty(ord);
