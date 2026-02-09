@@ -39,6 +39,10 @@ export default function OrderScreen() {
   const [activeDivision, setActiveDivision] = useState(1);
   const [selectedSplitItems, setSelectedSplitItems] = useState([]);
   
+  // Multiple orders per table support
+  const [tableOrders, setTableOrders] = useState([]); // All orders for this table
+  const [activeOrderId, setActiveOrderId] = useState(null); // Currently selected order
+  
   const orderRef = useRef(null);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
@@ -47,13 +51,34 @@ export default function OrderScreen() {
       const tableRes = await tablesAPI.list();
       const t = tableRes.data.find(tb => tb.id === tableId);
       setTable(t);
-      if (t?.active_order_id) {
-        const orderRes = await ordersAPI.get(t.active_order_id);
-        setOrder(orderRes.data);
-        orderRef.current = orderRes.data;
+      
+      // Fetch ALL orders for this table
+      const ordersRes = await ordersAPI.getTableOrders(tableId);
+      const orders = ordersRes.data || [];
+      setTableOrders(orders);
+      
+      if (orders.length > 0) {
+        // If there's an active order selected, keep it; otherwise select first
+        const currentOrder = activeOrderId 
+          ? orders.find(o => o.id === activeOrderId) 
+          : orders[0];
+        if (currentOrder) {
+          setOrder(currentOrder);
+          setActiveOrderId(currentOrder.id);
+          orderRef.current = currentOrder;
+        }
+      } else if (t?.active_order_id) {
+        // Fallback: try to get order from table reference
+        try {
+          const orderRes = await ordersAPI.get(t.active_order_id);
+          setOrder(orderRes.data);
+          setActiveOrderId(orderRes.data.id);
+          setTableOrders([orderRes.data]);
+          orderRef.current = orderRes.data;
+        } catch {}
       }
     } catch {}
-  }, [tableId]);
+  }, [tableId, activeOrderId]);
 
   useEffect(() => {
     const fetchAll = async () => {
