@@ -517,30 +517,33 @@ export default function OrderScreen() {
                   ))
                 )}
               </div>
-        </ScrollArea>
+            </ScrollArea>
 
-        <div className="px-2 py-1.5 border-t border-border space-y-0.5">
-          <div className="flex justify-between items-center text-xs text-muted-foreground">
-            <span>Subtotal</span>
-            <span className="font-oswald">{formatMoney(subtotal)}</span>
-          </div>
-          {subtotal > 0 && taxBreakdown.map((tax, i) => (
-            <div key={i} className="flex justify-between items-center text-[10px] text-muted-foreground/70">
-              <span>{tax.description} ({tax.rate}%)</span>
-              <span className="font-oswald">{formatMoney(tax.amount)}</span>
+            <div className="px-2 py-1.5 border-t border-border space-y-0.5">
+              <div className="flex justify-between items-center text-xs text-muted-foreground">
+                <span>Subtotal</span>
+                <span className="font-oswald">{formatMoney(subtotal)}</span>
+              </div>
+              {subtotal > 0 && taxBreakdown.map((tax, i) => (
+                <div key={i} className="flex justify-between items-center text-[10px] text-muted-foreground/70">
+                  <span>{tax.description} ({tax.rate}%)</span>
+                  <span className="font-oswald">{formatMoney(tax.amount)}</span>
+                </div>
+              ))}
+              {subtotal > 0 && (
+                <div className="flex justify-between items-center font-oswald border-t border-border/50 pt-0.5">
+                  <span className="text-xs text-muted-foreground">Total</span>
+                  <span className="text-base font-bold text-primary">{formatMoney(grandTotal)}</span>
+                </div>
+              )}
             </div>
-          ))}
-          {subtotal > 0 && (
-            <div className="flex justify-between items-center font-oswald border-t border-border/50 pt-0.5">
-              <span className="text-xs text-muted-foreground">Total</span>
-              <span className="text-base font-bold text-primary">{formatMoney(grandTotal)}</span>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Right: Categories & Products */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {!splitMode && (
+        <div className="flex-1 flex flex-col overflow-hidden">
         {/* Breadcrumb when inside a category */}
         {activeCat && (
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/30">
