@@ -885,6 +885,53 @@ async def split_to_new_order(order_id: str, input: dict, user: dict = Depends(ge
         "new_order": {k: v for k, v in new_order.items() if k != "_id"}
     }
 
+@api.post("/tables/{table_id}/orders/new")
+async def create_new_account_on_table(table_id: str, user: dict = Depends(get_current_user)):
+    """Create a new empty order/account on a table that already has orders"""
+    # Get table
+    table = await db.tables.find_one({"id": table_id}, {"_id": 0})
+    if not table:
+        raise HTTPException(status_code=404, detail="Mesa no encontrada")
+    
+    # Get existing orders for this table
+    existing_orders = await db.orders.find(
+        {"table_id": table_id, "status": {"$in": ["active", "sent"]}}, 
+        {"_id": 0, "account_number": 1}
+    ).to_list(100)
+    
+    # Get max account number
+    max_account = max([o.get("account_number", 1) for o in existing_orders], default=0)
+    new_account_number = max_account + 1
+    
+    # Create new empty order
+    new_order = {
+        "id": gen_id(),
+        "table_id": table_id,
+        "table_number": table["number"],
+        "account_number": new_account_number,
+        "status": "active",
+        "items": [],
+        "waiter_id": user["user_id"],
+        "waiter_name": user["name"],
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.orders.insert_one(new_order)
+    
+    # Update table status to "divided" if this creates multiple orders
+    if len(existing_orders) >= 1:
+        await db.tables.update_one(
+            {"id": table_id},
+            {"$set": {"status": "divided"}}
+        )
+    else:
+        await db.tables.update_one(
+            {"id": table_id},
+            {"$set": {"status": "occupied", "active_order_id": new_order["id"]}}
+        )
+    
+    return {k: v for k, v in new_order.items() if k != "_id"}
+
 @api.get("/tables/{table_id}/orders")
 async def get_table_orders(table_id: str):
     """Get all active orders for a table (for divided tables)"""
