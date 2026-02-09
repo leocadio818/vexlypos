@@ -723,7 +723,7 @@ export default function OrderScreen() {
                   {pendingCount > 0 && (
                     <Button onClick={handleSendToKitchen} size="sm" data-testid="send-to-kitchen-btn"
                       className="h-10 bg-green-600 hover:bg-green-700 text-white font-oswald text-xs font-bold active:scale-95 col-span-2">
-                      <Send size={14} className="mr-1.5" /> ENVIAR A COCINA ({pendingCount})
+                      <Send size={14} className="mr-1.5" /> ENVIAR ({pendingCount})
                     </Button>
                   )}
                   <Button onClick={() => navigate(`/billing/${order.id}`)} size="sm" data-testid="go-to-billing" 
