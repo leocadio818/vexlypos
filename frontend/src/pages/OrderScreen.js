@@ -26,6 +26,19 @@ export default function OrderScreen() {
   const [preCheckCount, setPreCheckCount] = useState(0);
   const [managerPinDialog, setManagerPinDialog] = useState({ open: false, pin: '' });
   const [taxConfig, setTaxConfig] = useState([]);
+  
+  // Move Table Dialog
+  const [moveDialog, setMoveDialog] = useState({ open: false });
+  const [allTables, setAllTables] = useState([]);
+  const [allAreas, setAllAreas] = useState([]);
+  const [mergeConfirm, setMergeConfirm] = useState({ open: false, targetTableId: null, targetTableNumber: null });
+  
+  // Split/Divide Dialog
+  const [splitMode, setSplitMode] = useState(false);
+  const [divisions, setDivisions] = useState([{ id: 1, name: 'División 1', item_ids: [] }]);
+  const [activeDivision, setActiveDivision] = useState(1);
+  const [selectedSplitItems, setSelectedSplitItems] = useState([]);
+  
   const orderRef = useRef(null);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
