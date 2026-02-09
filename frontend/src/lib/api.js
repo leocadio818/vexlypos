@@ -120,6 +120,7 @@ export const ordersAPI = {
   getTableOrders: (tableId) => api.get(`/tables/${tableId}/orders`),
   createNewAccount: (tableId) => api.post(`/tables/${tableId}/orders/new`),
   deleteEmpty: (orderId) => api.delete(`/orders/${orderId}/empty`),
+  mergeOrders: (sourceOrderId, targetOrderId) => api.post(`/orders/${sourceOrderId}/merge/${targetOrderId}`),
 };
 
 // Kitchen
