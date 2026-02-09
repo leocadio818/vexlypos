@@ -220,9 +220,10 @@ export default function TableMap() {
       <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
         <h1 className="font-oswald text-xl font-bold tracking-wide">MAPA DE MESAS</h1>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-3 text-xs flex-wrap">
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-free" /> Libre</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-occupied" /> Ocupada</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-occupied" /> Mis mesas</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{backgroundColor:'#1565C0'}} /> De otros</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{backgroundColor:'#FF6600'}} /> Dividida</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-billed" /> Facturada</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{backgroundColor:'#7C4DFF'}} /> Reservada</span>
