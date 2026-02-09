@@ -836,11 +836,30 @@ async def move_order_to_table(order_id: str, input: dict, user: dict = Depends(g
             {"id": order_id},
             {"$set": {"status": "merged", "merged_into": target_order["id"], "items": [], "updated_at": now_iso()}}
         )
-        # Free source table
-        await db.tables.update_one(
-            {"id": source_table_id},
-            {"$set": {"status": "free", "active_order_id": None}}
-        )
+        # Check if source table has remaining orders
+        remaining_orders = await db.orders.find(
+            {"table_id": source_table_id, "status": {"$in": ["active", "sent"]}, "id": {"$ne": order_id}},
+            {"_id": 0}
+        ).to_list(50)
+        
+        if len(remaining_orders) == 0:
+            # No more orders - free the table
+            await db.tables.update_one(
+                {"id": source_table_id},
+                {"$set": {"status": "free", "active_order_id": None}}
+            )
+        elif len(remaining_orders) == 1:
+            # One order left - set to occupied
+            await db.tables.update_one(
+                {"id": source_table_id},
+                {"$set": {"status": "occupied", "active_order_id": remaining_orders[0]["id"]}}
+            )
+        else:
+            # Multiple orders - keep as divided
+            await db.tables.update_one(
+                {"id": source_table_id},
+                {"$set": {"status": "divided", "active_order_id": remaining_orders[0]["id"]}}
+            )
         # Log movement for audit
         await log_table_movement(
             user_id=user["user_id"], user_name=user["name"], user_role=user["role"],
@@ -855,11 +874,30 @@ async def move_order_to_table(order_id: str, input: dict, user: dict = Depends(g
             {"id": order_id},
             {"$set": {"table_id": target_table_id, "table_number": target_table["number"], "updated_at": now_iso()}}
         )
-        # Update source table: free it
-        await db.tables.update_one(
-            {"id": source_table_id},
-            {"$set": {"status": "free", "active_order_id": None}}
-        )
+        # Check if source table has remaining orders
+        remaining_orders = await db.orders.find(
+            {"table_id": source_table_id, "status": {"$in": ["active", "sent"]}, "id": {"$ne": order_id}},
+            {"_id": 0}
+        ).to_list(50)
+        
+        if len(remaining_orders) == 0:
+            # No more orders - free the table
+            await db.tables.update_one(
+                {"id": source_table_id},
+                {"$set": {"status": "free", "active_order_id": None}}
+            )
+        elif len(remaining_orders) == 1:
+            # One order left - set to occupied
+            await db.tables.update_one(
+                {"id": source_table_id},
+                {"$set": {"status": "occupied", "active_order_id": remaining_orders[0]["id"]}}
+            )
+        else:
+            # Multiple orders - keep as divided
+            await db.tables.update_one(
+                {"id": source_table_id},
+                {"$set": {"status": "divided", "active_order_id": remaining_orders[0]["id"]}}
+            )
         # Update target table: occupy it
         await db.tables.update_one(
             {"id": target_table_id},
