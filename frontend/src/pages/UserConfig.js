@@ -855,19 +855,6 @@ export default function UserConfig() {
                       )}
                     </div>
                   </div>
-
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Salario Anual</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">RD$</span>
-                      <input 
-                        type="number"
-                        value={user.annual_salary}
-                        onChange={e => setUser(p => ({ ...p, annual_salary: parseFloat(e.target.value) || 0 }))}
-                        className="w-full bg-background border border-border rounded-lg pl-12 pr-3 py-2 text-sm font-oswald text-right"
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 {/* Role Selection */}
