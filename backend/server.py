@@ -332,27 +332,86 @@ async def list_users():
         u["permissions"] = get_permissions(u["role"], u.get("permissions"))
     return users
 
+@api.get("/users/{user_id}")
+async def get_user(user_id: str):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "pin_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    user["permissions"] = get_permissions(user.get("role", "waiter"), user.get("permissions"))
+    return user
+
 @api.post("/users")
-async def create_user(input: UserInput):
+async def create_user(input: dict):
     # Check duplicate PIN
-    hashed = hash_pin(input.pin)
+    if "pin" not in input or len(input.get("pin", "")) < 4:
+        raise HTTPException(status_code=400, detail="PIN debe tener mínimo 4 dígitos")
+    hashed = hash_pin(input["pin"])
     existing = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Ya existe un usuario con ese PIN")
-    doc = {"id": gen_id(), "name": input.name, "pin_hash": hashed, "role": input.role, "active": True, "permissions": {}}
+    
+    doc = {
+        "id": gen_id(),
+        "name": input.get("name", ""),
+        "last_name": input.get("last_name", ""),
+        "pos_name": input.get("pos_name", input.get("name", "")),
+        "pin_hash": hashed,
+        "role": input.get("role", "waiter"),
+        "active": True,
+        "permissions": input.get("permissions", {}),
+        # Contact info
+        "address_line1": input.get("address_line1", ""),
+        "address_line2": input.get("address_line2", ""),
+        "city": input.get("city", ""),
+        "state": input.get("state", ""),
+        "postal_code": input.get("postal_code", ""),
+        "phone_home": input.get("phone_home", ""),
+        "phone_work": input.get("phone_work", ""),
+        "phone_mobile": input.get("phone_mobile", ""),
+        "email": input.get("email", ""),
+        "birth_date": input.get("birth_date", ""),
+        "social_security": input.get("social_security", ""),
+        # Employment
+        "start_date": input.get("start_date", ""),
+        "end_date": input.get("end_date", ""),
+        "revenue_center_id": input.get("revenue_center_id", ""),
+        "card_number": input.get("card_number", ""),
+        "training_mode": input.get("training_mode", False),
+        # Advanced
+        "system_interface": input.get("system_interface", "restaurant"),
+        "web_access": input.get("web_access", False),
+        "web_password": input.get("web_password", ""),
+        "reference_number": input.get("reference_number", ""),
+        "shift_rules": input.get("shift_rules", ""),
+        "ignore_hours": input.get("ignore_hours", False),
+        "manager_on_duty": input.get("manager_on_duty", False),
+        "till_employee": input.get("till_employee", False),
+        # Positions
+        "positions": input.get("positions", []),
+        "annual_salary": input.get("annual_salary", 0),
+        # Schedule
+        "schedule": input.get("schedule", []),
+        "preferred_hours": input.get("preferred_hours", 0),
+        "skill_level": input.get("skill_level", 1),
+        # Photo
+        "photo_url": input.get("photo_url", ""),
+    }
     await db.users.insert_one(doc)
-    perms = get_permissions(input.role)
-    return {"id": doc["id"], "name": doc["name"], "role": doc["role"], "active": True, "permissions": perms}
+    perms = get_permissions(doc["role"], doc["permissions"])
+    result = {k: v for k, v in doc.items() if k not in ["_id", "pin_hash"]}
+    result["permissions"] = perms
+    return result
 
 @api.put("/users/{user_id}")
 async def update_user(user_id: str, input: dict):
     if "_id" in input: del input["_id"]
-    if "pin" in input:
+    if "pin" in input and input["pin"]:
         hashed = hash_pin(input["pin"])
         existing = await db.users.find_one({"pin_hash": hashed, "active": True, "id": {"$ne": user_id}}, {"_id": 0})
         if existing:
             raise HTTPException(status_code=400, detail="Ya existe un usuario con ese PIN")
         input["pin_hash"] = hashed
+    if "pin" in input:
         del input["pin"]
     await db.users.update_one({"id": user_id}, {"$set": input})
     return {"ok": True}
