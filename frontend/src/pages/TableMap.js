@@ -262,7 +262,7 @@ export default function TableMap() {
         {containerSize.w > 0 && filteredTables.map(table => (
           <DraggableTable key={table.id} table={table} containerSize={containerSize}
             onDragEnd={handleDragEnd} onClick={handleTableClick}
-            editMode={editMode} onResize={handleResize} />
+            editMode={editMode} onResize={handleResize} currentUserId={currentUserId} />
         ))}
         {filteredTables.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
