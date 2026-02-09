@@ -1724,6 +1724,82 @@ async def sales_by_waiter(date: Optional[str] = Query(None)):
     return [{"name": v["name"], "bills": v["bills"], "total": round(v["total"], 2), "tips": round(v["tips"], 2)}
             for v in sorted(waiter_sales.values(), key=lambda x: -x["total"])]
 
+# ─── TABLE MOVEMENTS AUDIT ───
+async def log_table_movement(
+    user_id: str, user_name: str, user_role: str,
+    source_table_id: str, source_table_number: int,
+    target_table_id: str, target_table_number: int,
+    movement_type: str, orders_moved: int = 1, merged: bool = False
+):
+    """Log a table movement for audit purposes"""
+    movement = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "user_name": user_name,
+        "user_role": user_role,
+        "source_table_id": source_table_id,
+        "source_table_number": source_table_number,
+        "target_table_id": target_table_id,
+        "target_table_number": target_table_number,
+        "movement_type": movement_type,  # "single", "bulk", "merge"
+        "orders_moved": orders_moved,
+        "merged": merged,
+        "created_at": now_iso()
+    }
+    await db.table_movements.insert_one(movement)
+    return movement
+
+@api.get("/reports/table-movements")
+async def get_table_movements(
+    date: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    user: dict = Depends(get_current_user)
+):
+    """Get table movement history for audit"""
+    query = {}
+    if date:
+        query["created_at"] = {"$regex": f"^{date}"}
+    
+    movements = await db.table_movements.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
+    return movements
+
+@api.get("/reports/table-movements/stats")
+async def get_table_movement_stats(
+    date: Optional[str] = Query(None),
+    user: dict = Depends(get_current_user)
+):
+    """Get statistics about table movements"""
+    if not date:
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    movements = await db.table_movements.find(
+        {"created_at": {"$regex": f"^{date}"}}, {"_id": 0}
+    ).to_list(500)
+    
+    # Stats by user
+    by_user = {}
+    for m in movements:
+        name = m.get("user_name", "?")
+        if name not in by_user:
+            by_user[name] = {"name": name, "moves": 0, "merges": 0}
+        by_user[name]["moves"] += 1
+        if m.get("merged"):
+            by_user[name]["merges"] += 1
+    
+    # Stats by type
+    single_moves = len([m for m in movements if m.get("movement_type") == "single"])
+    bulk_moves = len([m for m in movements if m.get("movement_type") == "bulk"])
+    merges = len([m for m in movements if m.get("merged")])
+    
+    return {
+        "date": date,
+        "total_movements": len(movements),
+        "single_moves": single_moves,
+        "bulk_moves": bulk_moves,
+        "merges": merges,
+        "by_user": list(by_user.values())
+    }
+
 # ─── EMAIL ───
 @api.post("/email/send")
 async def send_email(input: EmailInput):
