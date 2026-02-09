@@ -336,7 +336,7 @@ export default function Billing() {
       </Dialog>
 
       {/* Pay Dialog */}
-      <Dialog open={payDialog.open} onOpenChange={(open) => { if (!open) { setPayDialog({ open: false, billId: null, billTotal: 0 }); setPayAmounts({}); setPayStep('method'); } }}>
+      <Dialog open={payDialog.open} onOpenChange={(open) => { if (!open) { setPayDialog({ open: false, billId: null, billTotal: 0 }); setPayAmounts({}); setPayStep('method'); setActivePayMethod(null); } }}>
         <DialogContent className="max-w-sm bg-card border-border" data-testid="pay-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald flex items-center justify-between">
