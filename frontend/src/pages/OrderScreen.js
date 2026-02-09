@@ -339,75 +339,184 @@ export default function OrderScreen() {
       <div className="w-full lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-r border-border flex flex-col bg-card/50 shrink-0">
         <div className="px-2 py-2 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="icon" onClick={handleBack} data-testid="back-to-tables" className="h-9 w-9">
-              <ArrowLeft size={16} />
+            <Button variant="ghost" size="icon" onClick={splitMode ? exitSplitMode : handleBack} data-testid="back-to-tables" className="h-9 w-9">
+              {splitMode ? <X size={16} /> : <ArrowLeft size={16} />}
             </Button>
-            <h2 className="font-oswald text-base font-bold">Mesa {table?.number || '?'}</h2>
+            <h2 className="font-oswald text-base font-bold">
+              {splitMode ? 'DIVIDIR CUENTA' : `Mesa ${table?.number || '?'}`}
+            </h2>
           </div>
           <div className="flex items-center gap-1">
-            {order && activeItems.length > 0 && (
-              <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
-                className="h-7 px-2 text-[10px] border-muted-foreground/30 text-muted-foreground relative">
-                <FileText size={10} className="mr-1" /> Pre-Cuenta
-                {preCheckCount > 0 && <Lock size={8} className="ml-0.5 text-yellow-500" />}
-              </Button>
+            {!splitMode && order && activeItems.length > 0 && (
+              <>
+                <Button onClick={openMoveDialog} variant="ghost" size="sm" data-testid="move-table-btn"
+                  className="h-7 px-2 text-[10px] text-muted-foreground">
+                  <MoveRight size={10} className="mr-1" /> Mover
+                </Button>
+                <Button onClick={enterSplitMode} variant="ghost" size="sm" data-testid="split-btn"
+                  className="h-7 px-2 text-[10px] text-muted-foreground">
+                  <SplitSquareHorizontal size={10} className="mr-1" /> Dividir
+                </Button>
+                <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
+                  className="h-7 px-2 text-[10px] border-muted-foreground/30 text-muted-foreground relative">
+                  <FileText size={10} className="mr-1" /> Pre-Cuenta
+                  {preCheckCount > 0 && <Lock size={8} className="ml-0.5 text-yellow-500" />}
+                </Button>
+              </>
             )}
-            {pendingCount > 0 && (
+            {!splitMode && pendingCount > 0 && (
               <Button onClick={handleSendToKitchen} size="sm" data-testid="send-to-kitchen-btn"
                 className="h-7 px-2 bg-primary text-primary-foreground font-oswald text-[10px] font-bold active:scale-95">
                 <Send size={10} className="mr-1" /> ENVIAR ({pendingCount})
               </Button>
             )}
-            {order && (
+            {!splitMode && order && (
               <Button onClick={() => navigate(`/billing/${order.id}`)} variant="outline" size="sm" data-testid="go-to-billing" className="h-7 px-2 text-[10px] border-primary/50 text-primary">
                 <Receipt size={10} className="mr-1" /> Facturar
-              </Button>
-            )}
-            {order && (
-              <Button onClick={() => navigate(`/billing/${order.id}`)} variant="ghost" size="sm" data-testid="split-from-order" className="h-7 px-2 text-[10px] text-muted-foreground">
-                <SplitSquareHorizontal size={10} className="mr-1" /> Dividir
               </Button>
             )}
           </div>
         </div>
 
-        <ScrollArea className="flex-1 max-h-[28vh] lg:max-h-none">
-          <div className="p-2 space-y-1">
-            {activeItems.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-4">Selecciona productos</p>
-            ) : (
-              activeItems.map(item => (
-                <div key={item.id} data-testid={`order-item-${item.id}`}
-                  className="flex items-start gap-1.5 p-1.5 rounded-lg bg-background/50 border border-border/50">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="font-oswald text-xs font-bold text-primary">{item.quantity}x</span>
-                      <span className="text-xs font-medium truncate">{item.product_name}</span>
-                    </div>
-                    {item.modifiers?.length > 0 && (
-                      <div className="flex flex-wrap gap-0.5 mt-0.5">
-                        {item.modifiers.map((m, i) => <Badge key={i} variant="secondary" className="text-[7px] h-3.5 px-1">{m.name}</Badge>)}
+        {/* Split Mode View */}
+        {splitMode ? (
+          <div className="flex-1 flex flex-col">
+            {/* Division Tabs */}
+            <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto">
+              {divisions.map(div => (
+                <button
+                  key={div.id}
+                  onClick={() => setActiveDivision(div.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
+                    activeDivision === div.id 
+                      ? 'bg-primary text-primary-foreground font-bold' 
+                      : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
+                  }`}
+                >
+                  Mesa #{table?.number} {div.name}
+                </button>
+              ))}
+              <button
+                onClick={addDivision}
+                className="px-2 py-1.5 rounded-lg text-xs border border-dashed border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-primary"
+              >
+                + Nueva
+              </button>
+            </div>
+
+            {/* Division Content */}
+            <ScrollArea className="flex-1">
+              <div className="p-2 space-y-1">
+                {getItemsForDivision(activeDivision).length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users size={24} className="mx-auto mb-2 text-muted-foreground/30" />
+                    <p className="text-xs text-muted-foreground">División vacía</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Selecciona items y toca aquí para moverlos
+                    </p>
+                    {selectedSplitItems.length > 0 && (
+                      <Button 
+                        onClick={() => moveItemsToDivision(activeDivision)}
+                        size="sm"
+                        className="mt-3 bg-green-600 text-white"
+                      >
+                        <Check size={12} className="mr-1" /> Mover {selectedSplitItems.length} item(s) aquí
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  getItemsForDivision(activeDivision).map(item => (
+                    <div 
+                      key={item.id} 
+                      onClick={() => toggleSplitItem(item.id)}
+                      className={`flex items-start gap-1.5 p-1.5 rounded-lg border cursor-pointer transition-all ${
+                        selectedSplitItems.includes(item.id)
+                          ? 'bg-red-500/20 border-red-500'
+                          : 'bg-background/50 border-border/50 hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span className="font-oswald text-xs font-bold text-primary">{item.quantity}x</span>
+                          <span className="text-xs font-medium truncate">{item.product_name}</span>
+                        </div>
+                        {item.modifiers?.length > 0 && (
+                          <div className="flex flex-wrap gap-0.5 mt-0.5">
+                            {item.modifiers.map((m, i) => <Badge key={i} variant="secondary" className="text-[7px] h-3.5 px-1">{m.name}</Badge>)}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <div className="mt-0.5">
-                      {item.status === 'pending' && <Badge variant="outline" className="text-[7px] h-3 border-yellow-600 text-yellow-500">Pendiente</Badge>}
-                      {item.status === 'sent' && <Badge variant="outline" className="text-[7px] h-3 border-blue-500 text-blue-400">Enviado</Badge>}
-                      {item.status === 'preparing' && <Badge variant="outline" className="text-[7px] h-3 border-orange-500 text-orange-400">Preparando</Badge>}
-                      {item.status === 'ready' && <Badge variant="outline" className="text-[7px] h-3 border-green-500 text-green-400">Listo</Badge>}
+                      <div className="text-right shrink-0">
+                        <span className="font-oswald text-[11px]">{formatMoney(item.unit_price * item.quantity)}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="font-oswald text-[11px]">{formatMoney(item.unit_price * item.quantity)}</span>
-                    {item.status === 'pending' && (
-                      <button onClick={() => setCancelDialog({ open: true, itemId: item.id })} className="block ml-auto text-destructive/50 hover:text-destructive">
-                        <Trash2 size={10} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+
+            {/* Selected items action bar */}
+            {selectedSplitItems.length > 0 && (
+              <div className="p-2 border-t border-border bg-red-500/10">
+                <p className="text-xs text-center font-semibold text-red-400 mb-2">
+                  {selectedSplitItems.length} item(s) seleccionado(s)
+                </p>
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Selecciona otra división para mover los items
+                </p>
+              </div>
             )}
+
+            {/* Division Total */}
+            <div className="p-3 border-t border-border bg-card">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">Total División</span>
+                <span className="font-oswald text-lg font-bold text-primary">
+                  {formatMoney(getDivisionTotal(activeDivision))}
+                </span>
+              </div>
+            </div>
           </div>
+        ) : (
+          /* Normal Order View */
+          <>
+            <ScrollArea className="flex-1 max-h-[28vh] lg:max-h-none">
+              <div className="p-2 space-y-1">
+                {activeItems.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">Selecciona productos</p>
+                ) : (
+                  activeItems.map(item => (
+                    <div key={item.id} data-testid={`order-item-${item.id}`}
+                      className="flex items-start gap-1.5 p-1.5 rounded-lg bg-background/50 border border-border/50">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span className="font-oswald text-xs font-bold text-primary">{item.quantity}x</span>
+                          <span className="text-xs font-medium truncate">{item.product_name}</span>
+                        </div>
+                        {item.modifiers?.length > 0 && (
+                          <div className="flex flex-wrap gap-0.5 mt-0.5">
+                            {item.modifiers.map((m, i) => <Badge key={i} variant="secondary" className="text-[7px] h-3.5 px-1">{m.name}</Badge>)}
+                          </div>
+                        )}
+                        <div className="mt-0.5">
+                          {item.status === 'pending' && <Badge variant="outline" className="text-[7px] h-3 border-yellow-600 text-yellow-500">Pendiente</Badge>}
+                          {item.status === 'sent' && <Badge variant="outline" className="text-[7px] h-3 border-blue-500 text-blue-400">Enviado</Badge>}
+                          {item.status === 'preparing' && <Badge variant="outline" className="text-[7px] h-3 border-orange-500 text-orange-400">Preparando</Badge>}
+                          {item.status === 'ready' && <Badge variant="outline" className="text-[7px] h-3 border-green-500 text-green-400">Listo</Badge>}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-oswald text-[11px]">{formatMoney(item.unit_price * item.quantity)}</span>
+                        {item.status === 'pending' && (
+                          <button onClick={() => setCancelDialog({ open: true, itemId: item.id })} className="block ml-auto text-destructive/50 hover:text-destructive">
+                            <Trash2 size={10} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
         </ScrollArea>
 
         <div className="px-2 py-1.5 border-t border-border space-y-0.5">
