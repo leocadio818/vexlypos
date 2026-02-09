@@ -32,6 +32,7 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
   const nodeRef = useRef(null);
 
   const colors = statusColors[table.status] || statusColors.free;
+  const isDivided = table.status === 'divided';
   const pxX = (table.x / 100) * containerSize.w;
   const pxY = (table.y / 100) * containerSize.h;
   const scale = Math.min(containerSize.w / 1200, containerSize.h / 700, 1.5);
