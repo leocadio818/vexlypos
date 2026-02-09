@@ -972,12 +972,21 @@ async def create_new_account_on_table(table_id: str, user: dict = Depends(get_cu
     return {k: v for k, v in new_order.items() if k != "_id"}
 
 @api.get("/tables/{table_id}/orders")
-async def get_table_orders(table_id: str):
+async def get_table_orders(table_id: str, user: dict = Depends(get_current_user)):
     """Get all active orders for a table (for divided tables)"""
     orders = await db.orders.find(
         {"table_id": table_id, "status": {"$in": ["active", "sent"]}},
         {"_id": 0}
     ).sort("account_number", 1).to_list(20)
+    
+    # Check if user can access this table
+    if not can_access_table_orders(user, orders):
+        owner_name = get_table_owner_name(orders)
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Esta mesa está siendo atendida por {owner_name}. No tienes permiso para acceder."
+        )
+    
     return orders
 
 @api.delete("/orders/{order_id}/empty")
