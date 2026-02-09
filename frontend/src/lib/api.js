@@ -153,4 +153,10 @@ export const shiftsAPI = {
   close: (id, data) => api.put(`/shifts/${id}/close`, data),
 };
 
+// Table Movements Audit
+export const tableMovementsAPI = {
+  list: (params) => api.get('/reports/table-movements', { params }),
+  stats: (date) => api.get('/reports/table-movements/stats', { params: date ? { date } : {} }),
+};
+
 export default api;
