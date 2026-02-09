@@ -731,7 +731,7 @@ export default function OrderScreen() {
         )}
       </div>
 
-      {/* Right: Categories & Products */}
+      {/* Right (visually): Categories & Products - Now rendered first but appears on right */}
       {!splitMode && (
         <div className="flex-1 flex flex-col overflow-hidden">
         {/* Breadcrumb when inside a category */}
