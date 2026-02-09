@@ -110,6 +110,7 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - **Botón "X" para eliminar cuentas vacías** (solo aparece si la cuenta está vacía y hay más de una cuenta)
   - **Botón "Unir" azul para fusionar cuentas** (solo aparece cuando hay 2+ cuentas)
   - **Diálogo de fusión muestra cuentas destino con cantidad de items y total RD$**
+  - **Ícono de impresora 🖨️ en cada tab de cuenta** para imprimir pre-cuenta individual (solo visible con 2+ cuentas)
   - Título dinámico muestra "Mesa X - Cuenta #Y" cuando hay múltiples cuentas
   - Navegación entre cuentas con un toque
   - Botón "CREAR NUEVA CUENTA" visible cuando hay items seleccionados en modo dividir
