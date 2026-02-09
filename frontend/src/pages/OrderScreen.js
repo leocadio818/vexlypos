@@ -697,6 +697,43 @@ export default function OrderScreen() {
                 </div>
               )}
             </div>
+
+            {/* Action Buttons - Fixed at bottom */}
+            {!splitMode && order && (
+              <div className="p-2 border-t border-border bg-card/80 space-y-1.5">
+                {/* Primary actions row */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  {pendingCount > 0 && (
+                    <Button onClick={handleSendToKitchen} size="sm" data-testid="send-to-kitchen-btn"
+                      className="h-10 bg-green-600 hover:bg-green-700 text-white font-oswald text-xs font-bold active:scale-95 col-span-2">
+                      <Send size={14} className="mr-1.5" /> ENVIAR A COCINA ({pendingCount})
+                    </Button>
+                  )}
+                  <Button onClick={() => navigate(`/billing/${order.id}`)} size="sm" data-testid="go-to-billing" 
+                    className={`h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-xs font-bold ${pendingCount > 0 ? '' : 'col-span-2'}`}>
+                    <Receipt size={14} className="mr-1.5" /> FACTURAR
+                  </Button>
+                </div>
+                {/* Secondary actions row */}
+                {activeItems.length > 0 && (
+                  <div className="grid grid-cols-3 gap-1">
+                    <Button onClick={openMoveDialog} variant="outline" size="sm" data-testid="move-table-btn"
+                      className="h-8 text-[10px] border-muted-foreground/30">
+                      <MoveRight size={12} className="mr-1" /> Mover
+                    </Button>
+                    <Button onClick={enterSplitMode} variant="outline" size="sm" data-testid="split-btn"
+                      className="h-8 text-[10px] border-muted-foreground/30">
+                      <SplitSquareHorizontal size={12} className="mr-1" /> Dividir
+                    </Button>
+                    <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
+                      className="h-8 text-[10px] border-muted-foreground/30 relative">
+                      <FileText size={12} className="mr-1" /> Pre-Cuenta
+                      {preCheckCount > 0 && <Lock size={8} className="ml-0.5 text-yellow-500" />}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
