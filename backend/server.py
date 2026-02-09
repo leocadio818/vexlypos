@@ -816,54 +816,83 @@ async def move_order_to_table(order_id: str, input: dict):
         )
         return {"ok": True, "moved": True}
 
-# ─── SPLIT ORDER ITEMS ───
-@api.post("/orders/{order_id}/split")
-async def split_order_items(order_id: str, input: dict):
-    """Create a new split division or move items between divisions"""
+# ─── SPLIT ORDER - CREATE NEW ORDER FROM ITEMS ───
+@api.post("/orders/{order_id}/split-to-new")
+async def split_to_new_order(order_id: str, input: dict, user: dict = Depends(require_auth)):
+    """Split selected items from an order to create a new order on the same table"""
     item_ids = input.get("item_ids", [])
-    target_division = input.get("target_division")  # "new" or existing division number
     
-    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
-    if not order:
+    if not item_ids:
+        raise HTTPException(status_code=400, detail="Debe seleccionar al menos un item")
+    
+    # Get source order
+    source_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not source_order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
-    # Initialize divisions if not present
-    if "divisions" not in order:
-        order["divisions"] = [{"id": 1, "name": "División 1", "item_ids": [i["id"] for i in order["items"]]}]
+    # Separate items: items to move vs items to keep
+    items_to_move = [i for i in source_order["items"] if i["id"] in item_ids]
+    items_to_keep = [i for i in source_order["items"] if i["id"] not in item_ids]
     
-    if target_division == "new":
-        # Create new division
-        new_div_num = max([d["id"] for d in order["divisions"]]) + 1
-        new_division = {"id": new_div_num, "name": f"División {new_div_num}", "item_ids": item_ids}
-        
-        # Remove items from their current divisions
-        for div in order["divisions"]:
-            div["item_ids"] = [iid for iid in div["item_ids"] if iid not in item_ids]
-        
-        order["divisions"].append(new_division)
-    else:
-        # Move items to existing division
-        target_div_id = int(target_division)
-        
-        # Remove items from all divisions first
-        for div in order["divisions"]:
-            div["item_ids"] = [iid for iid in div["item_ids"] if iid not in item_ids]
-        
-        # Add to target division
-        for div in order["divisions"]:
-            if div["id"] == target_div_id:
-                div["item_ids"].extend(item_ids)
-                break
+    if not items_to_move:
+        raise HTTPException(status_code=400, detail="Items no encontrados en la orden")
     
-    # Clean up empty divisions (except first one)
-    order["divisions"] = [d for d in order["divisions"] if d["item_ids"] or d["id"] == 1]
+    if not items_to_keep:
+        raise HTTPException(status_code=400, detail="No puede mover todos los items. Use 'Mover Mesa' para eso.")
     
+    # Count existing orders for this table to get the next account number
+    table_id = source_order["table_id"]
+    existing_orders = await db.orders.find(
+        {"table_id": table_id, "status": {"$in": ["active", "sent"]}}, 
+        {"_id": 0, "account_number": 1}
+    ).to_list(100)
+    
+    # Get max account number
+    max_account = max([o.get("account_number", 1) for o in existing_orders], default=1)
+    new_account_number = max_account + 1
+    
+    # Update source order: remove moved items
     await db.orders.update_one(
         {"id": order_id},
-        {"$set": {"divisions": order["divisions"], "updated_at": now_iso()}}
+        {"$set": {"items": items_to_keep, "updated_at": now_iso()}}
     )
     
-    return await db.orders.find_one({"id": order_id}, {"_id": 0})
+    # Create new order with moved items
+    new_order = {
+        "id": gen_id(),
+        "table_id": table_id,
+        "table_number": source_order["table_number"],
+        "account_number": new_account_number,
+        "status": source_order["status"],
+        "items": items_to_move,
+        "waiter_id": user["user_id"],
+        "waiter_name": user["name"],
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+        "parent_order_id": order_id,  # Reference to original order
+    }
+    await db.orders.insert_one(new_order)
+    
+    # Update table status to "divided"
+    await db.tables.update_one(
+        {"id": table_id},
+        {"$set": {"status": "divided"}}
+    )
+    
+    return {
+        "ok": True,
+        "source_order": await db.orders.find_one({"id": order_id}, {"_id": 0}),
+        "new_order": {k: v for k, v in new_order.items() if k != "_id"}
+    }
+
+@api.get("/tables/{table_id}/orders")
+async def get_table_orders(table_id: str):
+    """Get all active orders for a table (for divided tables)"""
+    orders = await db.orders.find(
+        {"table_id": table_id, "status": {"$in": ["active", "sent"]}},
+        {"_id": 0}
+    ).sort("account_number", 1).to_list(20)
+    return orders
 
 # ─── KITCHEN ───
 @api.get("/kitchen/orders")
