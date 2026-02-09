@@ -101,6 +101,32 @@ def get_permissions(role, custom=None):
         base.update(custom)
     return base
 
+def can_access_table_orders(user: dict, orders: list) -> bool:
+    """Check if user can access orders on a table based on ownership and permissions"""
+    perms = get_permissions(user.get("role", "waiter"), user.get("permissions"))
+    
+    # Users with access_all_tables permission can access any table
+    if perms.get("access_all_tables", False):
+        return True
+    
+    # If no orders, anyone can access (to create new order)
+    if not orders:
+        return True
+    
+    # Check if user owns any of the orders on this table
+    user_id = user.get("user_id")
+    for order in orders:
+        if order.get("waiter_id") == user_id:
+            return True
+    
+    return False
+
+def get_table_owner_name(orders: list) -> str:
+    """Get the name of the waiter who owns the table"""
+    if orders:
+        return orders[0].get("waiter_name", "Otro usuario")
+    return None
+
 @api.get("/permissions/all")
 async def list_all_permissions():
     return ALL_PERMISSIONS
