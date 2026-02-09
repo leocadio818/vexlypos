@@ -58,12 +58,34 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - Click para avanzar estado de items
 - Boton "PANTALLA TV" en pagina de cocina regular
 
+### Phase 6 (Dec 2025)
+- **Módulo Avanzado de Configuración de Productos** con interfaz de pestañas:
+  - **Tab General**: Descripción del producto, descripción impresa (para tickets), categoría del menú, categoría de reporte, control de inventario
+  - **Tab General - Estilo del Botón POS**: Selector de colores para fondo y texto del botón en pantalla de ventas con vista previa en tiempo real
+  - **Tab Precios**: 5 niveles de precios (Precio A-E) con valores decimales para diferentes horarios/tipos de cliente
+  - **Tab Receta**: Enlace al módulo de inventario para gestión de ingredientes
+  - **Tab Modificadores**: Asignación de grupos de preguntas forzadas con configuración de selecciones mínimas/máximas y opción de múltiples selecciones
+- Nuevos endpoints backend:
+  - GET/POST/PUT /api/products con campos extendidos (printed_name, report_category_id, price_a-e, button_bg_color, button_text_color, modifier_assignments)
+  - GET /api/products/{id} para obtener producto específico
+  - CRUD completo /api/report-categories para categorías de reporte fiscal
+  - CRUD /api/modifiers/{id} para gestión individual de grupos de modificadores
+- 100% de tests pasados (backend y frontend)
+
 ## Prioritized Backlog
 
 ### P0
+- Integración con impresoras térmicas ESC/POS físicas (USB/Red)
 - Verificar dominio en Resend para email real
 
 ### P1
+- Sonido de notificación para nuevos pedidos en KDS
+- Generación de reportes DGII (607, 608) desde frontend
 - Multi-sucursal
-- App movil nativa
-- Reservaciones de mesas
+- App móvil nativa
+- Reservaciones avanzadas (reservar áreas completas)
+
+### P2
+- Refactorización: Dividir server.py en módulos separados
+- Refactorización: Extraer tabs de Settings.js en componentes independientes
+
