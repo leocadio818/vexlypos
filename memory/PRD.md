@@ -98,11 +98,13 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
 ### Phase 7 (Feb 2026) - División de Cuentas Múltiples
 - **Sistema de Múltiples Cuentas por Mesa (COMPLETADO)**:
   - Cada mesa puede tener múltiples órdenes/cuentas independientes
-  - Nuevo endpoint: POST /api/orders/{id}/split-to-new - crea nueva orden en la misma mesa moviendo items seleccionados
+  - Nuevo endpoint: POST /api/orders/{id}/split-to-new - crea nueva orden moviendo items seleccionados
   - Nuevo endpoint: GET /api/tables/{tableId}/orders - obtiene todas las órdenes activas de una mesa
+  - **Nuevo endpoint: POST /api/tables/{tableId}/orders/new - crea cuenta vacía directamente**
   - Estado de mesa "divided" cuando tiene más de una cuenta activa
   - Indicador visual en el mapa de mesas: patrón de rayas diagonales para mesas divididas
   - **UI mejorada con tabs de cuentas visibles en vista normal** (no solo en modo dividir)
+  - **Botón "+ Nueva" para crear cuentas vacías sin entrar al modo dividir**
   - Título dinámico muestra "Mesa X - Cuenta #Y" cuando hay múltiples cuentas
   - Navegación entre cuentas con un toque
   - Botón "CREAR NUEVA CUENTA" visible cuando hay items seleccionados en modo dividir
