@@ -948,13 +948,29 @@ export default function OrderScreen() {
             )}
             {activeCat && (
               <>
-                <span className="text-xs text-muted-foreground">/</span>
-                <span className="text-xs font-semibold">{categories.find(c => c.id === activeCat)?.name}</span>
+                <span className={`text-muted-foreground ${largeMode ? 'text-base' : 'text-sm'}`}>/</span>
+                <span className={`font-semibold ${largeMode ? 'text-base' : 'text-sm'}`}>{categories.find(c => c.id === activeCat)?.name}</span>
               </>
             )}
           </div>
           {/* Column controls and Quantity button */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            {/* Large Mode Toggle (A+) */}
+            <button
+              onClick={() => {
+                const newMode = !largeMode;
+                setLargeMode(newMode);
+                localStorage.setItem('pos_large_mode', String(newMode));
+              }}
+              className={`w-9 h-8 rounded-lg text-sm font-bold transition-colors flex items-center justify-center ${
+                largeMode
+                  ? 'bg-green-600 text-white'
+                  : 'bg-muted hover:bg-green-600/20 text-muted-foreground'
+              }`}
+              title="Modo texto grande"
+            >
+              A+
+            </button>
             {/* Quick Quantity Button */}
             {activeCat && (
               <button
@@ -963,19 +979,19 @@ export default function OrderScreen() {
                   setQtyKeypadExtended(false);
                   setQtyKeypadValue('');
                 }}
-                className={`w-8 h-6 rounded text-xs font-bold transition-colors mr-2 flex items-center justify-center ${
+                className={`${largeMode ? 'w-10 h-8' : 'w-9 h-8'} rounded-lg ${largeMode ? 'text-sm' : 'text-xs'} font-bold transition-colors flex items-center justify-center ${
                   presetQty > 0
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted hover:bg-primary/20 text-muted-foreground'
                 }`}
                 title="Selector de cantidad"
               >
-                <Hash size={12} />
+                <Hash size={largeMode ? 16 : 14} />
                 {presetQty > 0 && <span className="ml-0.5">{presetQty}</span>}
               </button>
             )}
-            <span className="text-[9px] text-muted-foreground mr-1">Columnas:</span>
-            {[2, 3, 4, 5, 6].map(num => (
+            <span className={`text-muted-foreground mx-1 ${largeMode ? 'text-xs' : 'text-[10px]'}`}>Col:</span>
+            {[2, 3, 4, 5].map(num => (
               <button
                 key={num}
                 onClick={() => {
@@ -985,7 +1001,7 @@ export default function OrderScreen() {
                   setGridSettings(newSettings);
                   localStorage.setItem('pos_grid_settings', JSON.stringify(newSettings));
                 }}
-                className={`w-6 h-6 rounded text-[10px] font-bold transition-colors ${
+                className={`${largeMode ? 'w-8 h-8 text-sm' : 'w-7 h-7 text-xs'} rounded-lg font-bold transition-colors ${
                   (activeCat ? gridSettings.productColumns : gridSettings.categoryColumns) === num
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted hover:bg-muted/80 text-muted-foreground'
@@ -999,13 +1015,13 @@ export default function OrderScreen() {
 
         {/* Preset Qty Indicator */}
         {presetQty > 0 && activeCat && (
-          <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-primary/10 border-b border-primary/30">
-            <span className="text-xs font-bold text-primary">
+          <div className="flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 border-b border-primary/30">
+            <span className={`font-bold text-primary ${largeMode ? 'text-base' : 'text-sm'}`}>
               Próximo producto: x{presetQty}
             </span>
             <button
               onClick={() => setPresetQty(0)}
-              className="text-xs text-primary/70 hover:text-primary underline"
+              className={`text-primary/70 hover:text-primary underline ${largeMode ? 'text-base' : 'text-sm'}`}
             >
               Cancelar
             </button>
