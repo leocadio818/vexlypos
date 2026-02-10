@@ -1692,12 +1692,12 @@ async def update_loyalty_config(input: dict):
 
 # ─── SYSTEM CONFIG (Timezone, etc) ───
 TIMEZONE_OPTIONS = [
-    {"value": -5, "label": "UTC-5 (Colombia, Perú, Ecuador, Panamá, México Centro)"},
+    {"value": -5, "label": "UTC-5 (USA Este, Colombia, Perú, Ecuador, Panamá)"},
     {"value": -4, "label": "UTC-4 (República Dominicana, Puerto Rico, Venezuela, Bolivia)"},
     {"value": -3, "label": "UTC-3 (Argentina, Chile, Uruguay, Brasil)"},
-    {"value": -6, "label": "UTC-6 (México CDMX, Costa Rica, Guatemala, El Salvador)"},
-    {"value": -7, "label": "UTC-7 (México Pacífico, Arizona)"},
-    {"value": -8, "label": "UTC-8 (USA Pacífico, Tijuana)"},
+    {"value": -6, "label": "UTC-6 (USA Central, México CDMX, Costa Rica, Guatemala)"},
+    {"value": -7, "label": "UTC-7 (USA Mountain, Arizona)"},
+    {"value": -8, "label": "UTC-8 (USA Pacífico, Los Angeles, Tijuana)"},
     {"value": 0, "label": "UTC+0 (Reino Unido, Portugal)"},
     {"value": 1, "label": "UTC+1 (España, Francia, Alemania, Italia)"},
     {"value": 2, "label": "UTC+2 (Grecia, Israel, Sudáfrica)"},
