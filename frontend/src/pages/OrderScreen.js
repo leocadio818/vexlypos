@@ -973,6 +973,47 @@ export default function OrderScreen() {
           </div>
         </div>
 
+        {/* Quick Quantity Selector */}
+        {showQtySelector && activeCat && (
+          <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-primary/5">
+            <span className="text-[10px] text-muted-foreground mr-1">Cantidad:</span>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+              <button
+                key={num}
+                onClick={() => setPresetQty(presetQty === num ? 0 : num)}
+                className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                  presetQty === num
+                    ? 'bg-primary text-primary-foreground scale-110 ring-2 ring-primary/50'
+                    : 'bg-muted hover:bg-primary/20 text-muted-foreground'
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+            <button
+              onClick={() => { setPresetQty(0); setShowQtySelector(false); }}
+              className="ml-2 px-2 h-7 rounded-lg text-[10px] font-semibold bg-destructive/20 text-destructive hover:bg-destructive/30"
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
+
+        {/* Preset Qty Indicator */}
+        {presetQty > 0 && !showQtySelector && activeCat && (
+          <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-primary/10 border-b border-primary/30">
+            <span className="text-xs font-bold text-primary">
+              Próximo producto: x{presetQty}
+            </span>
+            <button
+              onClick={() => setPresetQty(0)}
+              className="text-xs text-primary/70 hover:text-primary underline"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+
         <ScrollArea className="flex-1">
           {/* Category Grid (when no category selected) */}
           {!activeCat && (
