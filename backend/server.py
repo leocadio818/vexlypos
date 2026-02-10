@@ -2489,7 +2489,11 @@ async def check_reservation_activations():
     """Check and activate reservations that should be visible now"""
     from datetime import datetime, timedelta, timezone
     
-    now = datetime.now(timezone.utc)
+    # Dominican Republic is UTC-4
+    DR_OFFSET = timedelta(hours=-4)
+    DR_TZ = timezone(DR_OFFSET)
+    
+    now = datetime.now(DR_TZ)
     today = now.strftime("%Y-%m-%d")
     
     # Get all confirmed reservations for today
@@ -2502,9 +2506,9 @@ async def check_reservation_activations():
     
     for res in reservations:
         try:
-            # Parse reservation time
+            # Parse reservation time (already in local DR time)
             res_time_str = f"{res['date']} {res['time']}"
-            res_datetime = datetime.strptime(res_time_str, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+            res_datetime = datetime.strptime(res_time_str, "%Y-%m-%d %H:%M").replace(tzinfo=DR_TZ)
             
             activation_minutes = res.get("activation_minutes", 60)
             tolerance_minutes = res.get("tolerance_minutes", 15)
