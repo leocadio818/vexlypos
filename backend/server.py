@@ -1690,6 +1690,34 @@ async def update_loyalty_config(input: dict):
     await db.loyalty_config.update_one({}, {"$set": input}, upsert=True)
     return {"ok": True}
 
+# ─── SYSTEM CONFIG (Timezone, etc) ───
+TIMEZONE_OPTIONS = [
+    {"value": -5, "label": "UTC-5 (Colombia, Perú, Ecuador, Panamá, México Centro)"},
+    {"value": -4, "label": "UTC-4 (República Dominicana, Puerto Rico, Venezuela, Bolivia)"},
+    {"value": -3, "label": "UTC-3 (Argentina, Chile, Uruguay, Brasil)"},
+    {"value": -6, "label": "UTC-6 (México CDMX, Costa Rica, Guatemala, El Salvador)"},
+    {"value": -7, "label": "UTC-7 (México Pacífico, Arizona)"},
+    {"value": -8, "label": "UTC-8 (USA Pacífico, Tijuana)"},
+    {"value": 0, "label": "UTC+0 (Reino Unido, Portugal)"},
+    {"value": 1, "label": "UTC+1 (España, Francia, Alemania, Italia)"},
+    {"value": 2, "label": "UTC+2 (Grecia, Israel, Sudáfrica)"},
+]
+
+@api.get("/system/config")
+async def get_system_config():
+    config = await db.system_config.find_one({}, {"_id": 0})
+    return config or {"timezone_offset": -4, "restaurant_name": "Mi Restaurante", "currency": "RD$"}
+
+@api.put("/system/config")
+async def update_system_config(input: dict):
+    if "_id" in input: del input["_id"]
+    await db.system_config.update_one({}, {"$set": input}, upsert=True)
+    return {"ok": True}
+
+@api.get("/system/timezones")
+async def get_timezone_options():
+    return TIMEZONE_OPTIONS
+
 # ─── REPORTS ───
 @api.get("/reports/dashboard")
 async def dashboard_kpis():
