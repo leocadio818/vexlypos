@@ -41,6 +41,7 @@ export default function OrderScreen() {
   const [allTables, setAllTables] = useState([]);
   const [allAreas, setAllAreas] = useState([]);
   const [mergeConfirm, setMergeConfirm] = useState({ open: false, targetTableId: null, targetTableNumber: null });
+  const [reservedAlert, setReservedAlert] = useState({ open: false, tableNumber: null });
   
   // Split/Divide Dialog
   const [splitMode, setSplitMode] = useState(false);
