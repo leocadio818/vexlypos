@@ -2517,11 +2517,14 @@ async def check_reservation_activations():
     """Check and activate reservations that should be visible now"""
     from datetime import datetime, timedelta, timezone
     
-    # Dominican Republic is UTC-4
-    DR_OFFSET = timedelta(hours=-4)
-    DR_TZ = timezone(DR_OFFSET)
+    # Get configured timezone from system config
+    config = await db.system_config.find_one({}, {"_id": 0})
+    tz_offset_hours = config.get("timezone_offset", -4) if config else -4
     
-    now = datetime.now(DR_TZ)
+    TZ_OFFSET = timedelta(hours=tz_offset_hours)
+    LOCAL_TZ = timezone(TZ_OFFSET)
+    
+    now = datetime.now(LOCAL_TZ)
     today = now.strftime("%Y-%m-%d")
     tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
     
@@ -2535,9 +2538,9 @@ async def check_reservation_activations():
     
     for res in reservations:
         try:
-            # Parse reservation time (already in local DR time)
+            # Parse reservation time (already in local time)
             res_time_str = f"{res['date']} {res['time']}"
-            res_datetime = datetime.strptime(res_time_str, "%Y-%m-%d %H:%M").replace(tzinfo=DR_TZ)
+            res_datetime = datetime.strptime(res_time_str, "%Y-%m-%d %H:%M").replace(tzinfo=LOCAL_TZ)
             
             activation_minutes = res.get("activation_minutes", 60)
             tolerance_minutes = res.get("tolerance_minutes", 15)
