@@ -1032,21 +1032,23 @@ export default function OrderScreen() {
           {/* Category Grid (when no category selected) */}
           {!activeCat && (
             <div 
-              className="p-2 grid gap-2" 
+              className={`p-2 grid ${largeMode ? 'gap-3' : 'gap-2'}`}
               style={{ gridTemplateColumns: `repeat(${gridSettings.categoryColumns}, minmax(0, 1fr))` }}
               data-testid="category-grid"
             >
               {categories.map(cat => {
                 const catProductCount = products.filter(p => p.category_id === cat.id).length;
-                const heightClass = gridSettings.categoryColumns > 4 ? 'h-20' : 'h-24';
+                const heightClass = largeMode 
+                  ? (gridSettings.categoryColumns > 3 ? 'h-28' : 'h-32')
+                  : (gridSettings.categoryColumns > 4 ? 'h-24' : 'h-28');
                 return (
                   <button key={cat.id} onClick={() => setActiveCat(cat.id)} data-testid={`cat-card-${cat.id}`}
-                    className={`relative overflow-hidden rounded-xl border border-border hover:border-primary/50 transition-all active:scale-[0.97] p-3 ${heightClass} text-left flex flex-col justify-between`}
+                    className={`relative overflow-hidden rounded-xl border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] p-3 ${heightClass} text-left flex flex-col justify-between`}
                     style={{ backgroundColor: cat.color + '15', borderColor: cat.color + '40' }}>
-                    <span className="text-sm font-bold leading-tight" style={{ color: cat.color }}>{cat.name}</span>
-                    <span className="text-[10px] text-muted-foreground">{catProductCount} productos</span>
-                    <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: cat.color + '20' }}>
-                      <span className="font-oswald text-[10px] font-bold" style={{ color: cat.color }}>{catProductCount}</span>
+                    <span className={`font-bold leading-tight ${largeMode ? 'text-lg' : 'text-base'}`} style={{ color: cat.color }}>{cat.name}</span>
+                    <span className={`text-muted-foreground ${largeMode ? 'text-sm' : 'text-xs'}`}>{catProductCount} productos</span>
+                    <div className={`absolute top-2 right-2 ${largeMode ? 'w-9 h-9' : 'w-8 h-8'} rounded-full flex items-center justify-center`} style={{ backgroundColor: cat.color + '20' }}>
+                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm' : 'text-xs'}`} style={{ color: cat.color }}>{catProductCount}</span>
                     </div>
                   </button>
                 );
@@ -1057,12 +1059,14 @@ export default function OrderScreen() {
           {/* Product Grid (when category selected) */}
           {activeCat && (
             <div 
-              className="p-2 grid gap-2" 
+              className={`p-2 grid ${largeMode ? 'gap-3' : 'gap-2'}`}
               style={{ gridTemplateColumns: `repeat(${gridSettings.productColumns}, minmax(0, 1fr))` }}
               data-testid="product-grid"
             >
               {filteredProducts.map(product => {
-                const heightClass = gridSettings.productColumns > 4 ? 'h-20' : 'h-24';
+                const heightClass = largeMode 
+                  ? (gridSettings.productColumns > 3 ? 'h-28' : 'h-32')
+                  : (gridSettings.productColumns > 4 ? 'h-24' : 'h-28');
                 const hasModifiers = product.modifier_group_ids?.length > 0;
                 let pressTimer = null;
                 
