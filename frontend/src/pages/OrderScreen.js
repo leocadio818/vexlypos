@@ -557,67 +557,95 @@ export default function OrderScreen() {
 
         {/* Account Tabs - Show when table has multiple orders OR has at least one order */}
         {!accessDenied && (tableOrders.length > 1 || (tableOrders.length === 1 && order)) && !splitMode && (
-          <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto bg-card/30">
-            {tableOrders.map(ord => {
-              const isEmpty = isOrderEmpty(ord);
-              const canDelete = isEmpty && tableOrders.length > 1;
-              const hasItems = !isEmpty;
-              return (
-                <div key={ord.id} className="relative flex items-center group">
-                  <button
-                    onClick={() => selectOrder(ord.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
-                      activeOrderId === ord.id 
-                        ? 'bg-primary text-primary-foreground font-bold' 
-                        : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
-                    } ${canDelete ? 'pr-7' : ''} ${hasItems && tableOrders.length > 1 ? 'pr-8' : ''}`}
-                  >
-                    Cuenta #{ord.account_number || 1}
-                    <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
-                  </button>
-                  {/* Print pre-check button for accounts with items */}
-                  {hasItems && tableOrders.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePrintAccountPreCheck(ord.id, ord.account_number || 1);
-                      }}
-                      data-testid={`print-precheck-${ord.account_number || 1}`}
-                      className={`absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                        activeOrderId === ord.id 
-                          ? 'bg-primary-foreground/20 hover:bg-primary-foreground/40 text-primary-foreground' 
-                          : 'bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400'
-                      }`}
-                      title={`Imprimir pre-cuenta de Cuenta #${ord.account_number || 1}`}
-                    >
-                      <Printer size={10} />
-                    </button>
-                  )}
-                  {/* Delete button for empty accounts */}
-                  {canDelete && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteEmptyAccount(ord.id, ord.account_number || 1);
-                      }}
-                      data-testid={`delete-account-${ord.account_number || 1}`}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-colors shadow-sm"
-                      title="Eliminar cuenta vacía"
-                    >
-                      <X size={10} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-            {/* Add New Account Button */}
-            <button
-              onClick={createNewEmptyAccount}
-              data-testid="add-new-account-btn"
-              className="px-2 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all bg-green-600/20 border border-green-600/50 text-green-400 hover:bg-green-600/30 hover:border-green-500 flex items-center gap-1"
-              title="Crear nueva cuenta"
-            >
-              <Plus size={12} /> Nueva
+          <div className="flex flex-col">
+            {/* Move Items Mode Header */}
+            {moveItemsMode && (
+              <div className="flex items-center justify-between px-2 py-1.5 bg-purple-600/20 border-b border-purple-500/30">
+                <span className="text-xs font-semibold text-purple-300">
+                  ↓ Selecciona cuenta destino ({selectedItemsToMove.length} artículo{selectedItemsToMove.length > 1 ? 's' : ''})
+                </span>
+                <Button variant="ghost" size="sm" onClick={exitMoveItemsMode} className="h-6 px-2 text-xs text-purple-300 hover:text-white">
+                  <X size={12} className="mr-1" /> Cancelar
+                </Button>
+              </div>
+            )}
+            <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto bg-card/30">
+              {tableOrders.map(ord => {
+                const isEmpty = isOrderEmpty(ord);
+                const canDelete = isEmpty && tableOrders.length > 1 && !moveItemsMode;
+                const hasItems = !isEmpty;
+                const isCurrentOrder = activeOrderId === ord.id;
+                const canMoveHere = moveItemsMode && !isCurrentOrder;
+                
+                return (
+                  <div key={ord.id} className="relative flex items-center group">
+                    {canMoveHere ? (
+                      <button
+                        onClick={() => moveItemsToAccount(ord.id)}
+                        className="px-3 py-2 rounded-lg text-xs font-oswald whitespace-nowrap transition-all bg-purple-600 hover:bg-purple-500 text-white font-bold border-2 border-purple-400 animate-pulse"
+                      >
+                        → Mover aquí (#{ord.account_number || 1})
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => !moveItemsMode && selectOrder(ord.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
+                          isCurrentOrder 
+                            ? moveItemsMode 
+                              ? 'bg-yellow-600 text-black font-bold border-2 border-yellow-400' 
+                              : 'bg-primary text-primary-foreground font-bold' 
+                            : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
+                        } ${canDelete ? 'pr-7' : ''} ${hasItems && tableOrders.length > 1 && !moveItemsMode ? 'pr-8' : ''}`}
+                        disabled={moveItemsMode}
+                      >
+                        {moveItemsMode && isCurrentOrder ? 'Desde aquí →' : `Cuenta #${ord.account_number || 1}`}
+                        {!moveItemsMode && <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>}
+                      </button>
+                    )}
+                    {/* Print pre-check button for accounts with items */}
+                    {hasItems && tableOrders.length > 1 && !moveItemsMode && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePrintAccountPreCheck(ord.id, ord.account_number || 1);
+                        }}
+                        data-testid={`print-precheck-${ord.account_number || 1}`}
+                        className={`absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                          isCurrentOrder 
+                            ? 'bg-primary-foreground/20 hover:bg-primary-foreground/40 text-primary-foreground' 
+                            : 'bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400'
+                        }`}
+                        title={`Imprimir pre-cuenta de Cuenta #${ord.account_number || 1}`}
+                      >
+                        <Printer size={10} />
+                      </button>
+                    )}
+                    {/* Delete button for empty accounts */}
+                    {canDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteEmptyAccount(ord.id, ord.account_number || 1);
+                        }}
+                        data-testid={`delete-account-${ord.account_number || 1}`}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-colors shadow-sm"
+                        title="Eliminar cuenta vacía"
+                      >
+                        <X size={10} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {/* Add New Account Button - Hide in move mode */}
+              {!moveItemsMode && (
+                <button
+                  onClick={createNewEmptyAccount}
+                  data-testid="add-new-account-btn"
+                  className="px-2 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all bg-green-600/20 border border-green-600/50 text-green-400 hover:bg-green-600/30 hover:border-green-500 flex items-center gap-1"
+                  title="Crear nueva cuenta"
+                >
+                  <Plus size={12} /> Nueva
             </button>
             {/* Merge Accounts Button - only show if 2+ accounts */}
             {tableOrders.length >= 2 && (
