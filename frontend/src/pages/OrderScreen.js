@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { ordersAPI, categoriesAPI, productsAPI, modifiersAPI, reasonsAPI, tablesAPI, areasAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge } from 'lucide-react';
@@ -12,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 export default function OrderScreen() {
   const { tableId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [table, setTable] = useState(null);
   const [order, setOrder] = useState(null);
   const [categories, setCategories] = useState([]);
