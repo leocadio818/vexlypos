@@ -750,12 +750,22 @@ export default function OrderScreen() {
                   <p className="text-xs text-center font-semibold text-red-400">
                     {selectedSplitItems.length} item(s) seleccionado(s)
                   </p>
-                  <Button 
-                    onClick={createNewOrderFromItems}
-                    className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold"
-                  >
-                    <SplitSquareHorizontal size={14} className="mr-2" /> CREAR NUEVA CUENTA
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      onClick={createNewOrderFromItems}
+                      className="h-10 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold text-xs"
+                    >
+                      <SplitSquareHorizontal size={12} className="mr-1" /> Nueva Cuenta
+                    </Button>
+                    {tableOrders.length > 1 && (
+                      <Button 
+                        onClick={enterMoveItemsMode}
+                        className="h-10 bg-purple-600 hover:bg-purple-700 text-white font-oswald font-bold text-xs"
+                      >
+                        <MoveRight size={12} className="mr-1" /> Mover a Cuenta
+                      </Button>
+                    )}
+                  </div>
                 </>
               ) : (
                 <p className="text-[10px] text-muted-foreground text-center">
