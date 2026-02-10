@@ -7,6 +7,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  // Global accessibility mode - Large text
+  const [largeMode, setLargeMode] = useState(() => {
+    return localStorage.getItem('pos_large_mode') === 'true';
+  });
+  
+  const toggleLargeMode = () => {
+    const newMode = !largeMode;
+    setLargeMode(newMode);
+    localStorage.setItem('pos_large_mode', String(newMode));
+  };
 
   useEffect(() => {
     const handleOnline = () => { setIsOnline(true); processOfflineQueue(); };
