@@ -249,11 +249,11 @@ export default function TableMap() {
         </div>
       </div>
 
-      <div className="flex gap-1 px-4 pt-3 overflow-x-auto" data-testid="area-tabs">
+      <div className={`flex gap-1 px-4 pt-3 overflow-x-auto`} data-testid="area-tabs">
         {areas.map(area => (
           <button key={area.id} onClick={() => setActiveArea(area.id)}
             data-testid={`area-tab-${area.name.toLowerCase().replace(/\s/g, '-')}`}
-            className={`px-5 py-2.5 rounded-t-lg font-oswald text-sm tracking-wide whitespace-nowrap transition-all btn-press ${
+            className={`${largeMode ? 'px-6 py-3 text-base' : 'px-5 py-2.5 text-sm'} rounded-t-lg font-oswald tracking-wide whitespace-nowrap transition-all btn-press ${
               activeArea === area.id ? 'bg-background border-t-2 border-x border-border text-primary' : 'bg-card/50 text-muted-foreground hover:text-foreground border-t border-x border-transparent'
             }`} style={activeArea === area.id ? { borderTopColor: area.color } : {}}>
             {area.name}
@@ -263,20 +263,20 @@ export default function TableMap() {
 
       <div ref={containerRef} className="flex-1 relative bg-background grid-bg mx-4 mb-4 rounded-b-xl rounded-tr-xl border border-border overflow-hidden" data-testid="table-canvas">
         {editMode && (
-          <div className="absolute top-2 left-2 z-50 bg-primary/90 text-white text-xs px-3 py-1.5 rounded-full font-oswald tracking-wider animate-pulse">
+          <div className={`absolute top-2 left-2 z-50 bg-primary/90 text-white ${largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
             MODO EDICION - Arrastra o toca para redimensionar
           </div>
         )}
         {containerSize.w > 0 && filteredTables.map(table => (
           <DraggableTable key={table.id} table={table} containerSize={containerSize}
             onDragEnd={handleDragEnd} onClick={handleTableClick}
-            editMode={editMode} onResize={handleResize} currentUserId={currentUserId} />
+            editMode={editMode} onResize={handleResize} currentUserId={currentUserId} largeMode={largeMode} />
         ))}
         {filteredTables.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <Plus size={32} className="mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No hay mesas en esta area</p>
+              <Plus size={largeMode ? 40 : 32} className="mx-auto mb-2 opacity-40" />
+              <p className={largeMode ? 'text-base' : 'text-sm'}>No hay mesas en esta area</p>
             </div>
           </div>
         )}
