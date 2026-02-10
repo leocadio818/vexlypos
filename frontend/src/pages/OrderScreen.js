@@ -38,7 +38,9 @@ export default function OrderScreen() {
   
   // Quick quantity mode
   const [presetQty, setPresetQty] = useState(0); // 0 = quick add x1, >0 = preset quantity
-  const [showQtySelector, setShowQtySelector] = useState(false);
+  const [showQtyKeypad, setShowQtyKeypad] = useState(false); // Floating keypad
+  const [qtyKeypadExtended, setQtyKeypadExtended] = useState(false); // Extended mode for 10+ or decimals
+  const [qtyKeypadValue, setQtyKeypadValue] = useState(''); // Current value in extended mode
   
   // Move Table Dialog
   const [moveDialog, setMoveDialog] = useState({ open: false });
