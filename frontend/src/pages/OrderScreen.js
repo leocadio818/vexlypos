@@ -1094,11 +1094,11 @@ export default function OrderScreen() {
                     onMouseUp={handleTouchEnd}
                     onMouseLeave={handleTouchEnd}
                     data-testid={`product-${product.id}`}
-                    className={`group relative overflow-hidden bg-card border border-border hover:border-primary/50 transition-all active:scale-[0.97] rounded-xl flex flex-col justify-between p-3 ${heightClass} text-left`}
+                    className={`group relative overflow-hidden bg-card border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] rounded-xl flex flex-col justify-between ${largeMode ? 'p-4' : 'p-3'} ${heightClass} text-left`}
                   >
-                    <span className="text-xs font-semibold leading-tight line-clamp-2">{product.name}</span>
-                    <span className="font-oswald text-base font-bold text-primary">{formatMoney(product.price)}</span>
-                    {hasModifiers && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary/60" title="Tiene modificadores" />}
+                    <span className={`font-semibold leading-tight line-clamp-2 ${largeMode ? 'text-base' : 'text-sm'}`}>{product.name}</span>
+                    <span className={`font-oswald font-bold text-primary ${largeMode ? 'text-xl' : 'text-lg'}`}>{formatMoney(product.price)}</span>
+                    {hasModifiers && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
                   </button>
                 );
               })}
