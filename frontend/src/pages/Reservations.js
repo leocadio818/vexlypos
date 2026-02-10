@@ -52,12 +52,55 @@ export default function Reservations() {
       await axios.post(`${API}/reservations`, { ...dialog }, { headers: hdrs() });
       toast.success('Reservacion creada');
       setDialog({ 
-        open: false, customer_name: '', phone: '', date: getLocalDate(), time: '', party_size: 2, 
+        open: false, editId: null, customer_name: '', phone: '', date: getLocalDate(), time: '', party_size: 2, 
         table_ids: [], area_id: '', notes: '',
         activation_minutes: 60, tolerance_minutes: 15
       });
       fetchAll();
     } catch { toast.error('Error'); }
+  };
+
+  const handleUpdate = async () => {
+    if (!dialog.customer_name || !dialog.date || !dialog.time) { toast.error('Completa los campos requeridos'); return; }
+    if (dialog.table_ids.length === 0) { toast.error('Selecciona al menos una mesa'); return; }
+    try {
+      await axios.put(`${API}/reservations/${dialog.editId}`, { 
+        customer_name: dialog.customer_name,
+        phone: dialog.phone,
+        date: dialog.date,
+        time: dialog.time,
+        party_size: dialog.party_size,
+        table_ids: dialog.table_ids,
+        area_id: dialog.area_id,
+        notes: dialog.notes,
+        activation_minutes: dialog.activation_minutes,
+        tolerance_minutes: dialog.tolerance_minutes
+      }, { headers: hdrs() });
+      toast.success('Reservacion actualizada');
+      setDialog({ 
+        open: false, editId: null, customer_name: '', phone: '', date: getLocalDate(), time: '', party_size: 2, 
+        table_ids: [], area_id: '', notes: '',
+        activation_minutes: 60, tolerance_minutes: 15
+      });
+      fetchAll();
+    } catch { toast.error('Error'); }
+  };
+
+  const openEdit = (res) => {
+    setDialog({
+      open: true,
+      editId: res.id,
+      customer_name: res.customer_name || '',
+      phone: res.phone || '',
+      date: res.date || getLocalDate(),
+      time: res.time || '',
+      party_size: res.party_size || 2,
+      table_ids: res.table_ids || [],
+      area_id: res.area_id || '',
+      notes: res.notes || '',
+      activation_minutes: res.activation_minutes || 60,
+      tolerance_minutes: res.tolerance_minutes || 15
+    });
   };
 
   const updateStatus = async (id, status) => {
