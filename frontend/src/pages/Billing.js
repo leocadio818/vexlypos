@@ -231,12 +231,7 @@ export default function Billing() {
                     {/* Actions */}
                     {bill.status === 'open' && (
                       <div className="mt-4 flex gap-2">
-                        <button onClick={() => {
-                          setPayAmounts({});
-                          setPayStep('method');
-                          setActivePayMethod(null);
-                          setPayDialog({ open: true, billId: bill.id, billTotal: bill.total });
-                        }}
+                        <button onClick={() => navigate(`/payment/${bill.id}`)}
                           data-testid={`pay-bill-${bill.id}`}
                           className="flex-1 h-11 rounded-lg bg-green-600 text-white font-oswald font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
                           <Check size={16} /> COBRAR
