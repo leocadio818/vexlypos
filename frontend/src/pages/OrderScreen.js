@@ -937,14 +937,14 @@ export default function OrderScreen() {
       {!splitMode && !accessDenied && (
         <div className="flex-1 flex flex-col overflow-hidden">
         {/* Grid Settings Bar */}
-        <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card/30">
+        <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-border bg-card/30`}>
           <div className="flex items-center gap-2">
             {activeCat ? (
-              <button onClick={() => setActiveCat(null)} className="flex items-center gap-1 text-xs text-primary hover:underline font-semibold" data-testid="back-to-categories">
-                <Grid3X3 size={12} /> Categorias
+              <button onClick={() => setActiveCat(null)} className={`flex items-center gap-1.5 text-primary hover:underline font-semibold ${largeMode ? 'text-base' : 'text-sm'}`} data-testid="back-to-categories">
+                <Grid3X3 size={largeMode ? 18 : 14} /> Categorías
               </button>
             ) : (
-              <span className="text-xs font-semibold flex items-center gap-1"><Grid3X3 size={12} /> Categorías</span>
+              <span className={`font-semibold flex items-center gap-1.5 ${largeMode ? 'text-base' : 'text-sm'}`}><Grid3X3 size={largeMode ? 18 : 14} /> Categorías</span>
             )}
             {activeCat && (
               <>
