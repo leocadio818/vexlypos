@@ -160,7 +160,10 @@ export default function Reservations() {
                   </h3>
                   <div className="space-y-2">
                     {items.map(r => (
-                      <div key={r.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border" data-testid={`reservation-${r.id}`}>
+                      <div key={r.id} 
+                        onClick={() => openEdit(r)}
+                        className="flex items-center justify-between p-3 rounded-xl bg-card border border-border cursor-pointer hover:bg-card/80 transition-colors" 
+                        data-testid={`reservation-${r.id}`}>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold">{r.customer_name}</span>
@@ -173,7 +176,7 @@ export default function Reservations() {
                             {r.notes && <span className="italic">{r.notes}</span>}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                           {r.status === 'confirmed' && (
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-green-400 hover:text-green-300"
                               onClick={() => updateStatus(r.id, 'seated')}><Check size={14} /></Button>
