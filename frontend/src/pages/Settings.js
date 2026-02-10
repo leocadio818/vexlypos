@@ -213,6 +213,15 @@ export default function Settings() {
     catch { toast.error('Error'); }
   };
 
+  // System config handler
+  const handleSaveSystemConfig = async () => {
+    try { 
+      await axios.put(`${API}/system/config`, systemConfig, { headers: hdrs() }); 
+      toast.success('Configuración del sistema guardada'); 
+    }
+    catch { toast.error('Error'); }
+  };
+
   // Role handlers
   const handleSaveRole = async () => {
     if (!roleDialog.name) return;
