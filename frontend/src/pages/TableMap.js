@@ -158,6 +158,11 @@ export default function TableMap() {
 
   const fetchData = useCallback(async () => {
     try {
+      // Check reservation activations first
+      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reservations/check-activations`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+      });
+      
       const [areasRes, tablesRes] = await Promise.all([areasAPI.list(), tablesAPI.list()]);
       setAreas(areasRes.data);
       setTables(tablesRes.data);
@@ -166,6 +171,12 @@ export default function TableMap() {
   }, [activeArea]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+  
+  // Check reservation activations every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   useEffect(() => {
     const updateSize = () => {
