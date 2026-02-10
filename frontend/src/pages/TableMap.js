@@ -224,26 +224,26 @@ export default function TableMap() {
 
   return (
     <div className="h-full flex flex-col" data-testid="table-map-page">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
-        <h1 className="font-oswald text-xl font-bold tracking-wide">MAPA DE MESAS</h1>
+      <div className={`px-4 ${largeMode ? 'py-4' : 'py-3'} border-b border-border flex items-center justify-between bg-card/50`}>
+        <h1 className={`font-oswald font-bold tracking-wide ${largeMode ? 'text-2xl' : 'text-xl'}`}>MAPA DE MESAS</h1>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 text-xs flex-wrap">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-free" /> Libre</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-occupied" /> Mis mesas</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{backgroundColor:'#1565C0'}} /> De otros</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{backgroundColor:'#FF6600'}} /> Dividida</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-table-billed" /> Facturada</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{backgroundColor:'#7C4DFF'}} /> Reservada</span>
+          <div className={`flex items-center gap-3 flex-wrap ${largeMode ? 'text-sm' : 'text-xs'}`}>
+            <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full bg-table-free`} /> Libre</span>
+            <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full bg-table-occupied`} /> Mis mesas</span>
+            <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full`} style={{backgroundColor:'#1565C0'}} /> De otros</span>
+            <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full`} style={{backgroundColor:'#FF6600'}} /> Dividida</span>
+            <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full bg-table-billed`} /> Facturada</span>
+            <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full`} style={{backgroundColor:'#7C4DFF'}} /> Reservada</span>
           </div>
           {canMoveTable && (
             <Button
               variant={editMode ? 'default' : 'outline'}
-              size="sm"
+              size={largeMode ? 'default' : 'sm'}
               onClick={() => setEditMode(!editMode)}
               data-testid="edit-mode-toggle"
-              className={`text-xs ${editMode ? 'bg-primary text-white' : 'border-primary/50 text-primary'}`}
+              className={`${largeMode ? 'text-sm' : 'text-xs'} ${editMode ? 'bg-primary text-white' : 'border-primary/50 text-primary'}`}
             >
-              {editMode ? <><Unlock size={14} className="mr-1" /> Editando</> : <><Lock size={14} className="mr-1" /> Editar</>}
+              {editMode ? <><Unlock size={largeMode ? 18 : 14} className="mr-1" /> Editando</> : <><Lock size={largeMode ? 18 : 14} className="mr-1" /> Editar</>}
             </Button>
           )}
         </div>
