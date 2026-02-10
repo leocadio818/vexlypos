@@ -1029,12 +1029,10 @@ export default function OrderScreen() {
                     // Determine color based on status and ownership
                     let colorClass = 'border-green-500/50 bg-green-500/10 text-green-400 hover:bg-green-500/20'; // Free
                     let statusText = 'Libre';
-                    let isDisabled = false;
                     
                     if (isReserved) {
-                      colorClass = 'border-purple-500/50 bg-purple-500/10 text-purple-400 opacity-60 cursor-not-allowed';
+                      colorClass = 'border-purple-500/50 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20';
                       statusText = 'Reservada';
-                      isDisabled = true;
                     } else if (isDivided) {
                       colorClass = isOtherUser 
                         ? 'border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
@@ -1052,12 +1050,11 @@ export default function OrderScreen() {
                         key={t.id}
                         onClick={() => {
                           if (isReserved) {
-                            toast.error('Mesa reservada. Un gerente debe cancelar la reserva primero.');
+                            setReservedAlert({ open: true, tableNumber: t.number });
                             return;
                           }
                           handleMoveTable(t.id);
                         }}
-                        disabled={isDisabled}
                         className={`p-2 rounded-lg text-center font-oswald transition-all border ${colorClass}`}
                       >
                         <span className="text-sm font-bold">#{t.number}</span>
