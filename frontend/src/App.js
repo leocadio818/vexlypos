@@ -6,6 +6,7 @@ import TableMap from "@/pages/TableMap";
 import OrderScreen from "@/pages/OrderScreen";
 import Kitchen from "@/pages/Kitchen";
 import Billing from "@/pages/Billing";
+import PaymentScreen from "@/pages/PaymentScreen";
 import CashRegister from "@/pages/CashRegister";
 import Settings from "@/pages/Settings";
 import Inventory from "@/pages/Inventory";
