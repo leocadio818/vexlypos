@@ -948,8 +948,23 @@ export default function OrderScreen() {
               </>
             )}
           </div>
-          {/* Column controls */}
+          {/* Column controls and Quantity button */}
           <div className="flex items-center gap-1">
+            {/* Quick Quantity Button */}
+            {activeCat && (
+              <button
+                onClick={() => setShowQtySelector(!showQtySelector)}
+                className={`w-8 h-6 rounded text-xs font-bold transition-colors mr-2 flex items-center justify-center ${
+                  showQtySelector || presetQty > 0
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted hover:bg-primary/20 text-muted-foreground'
+                }`}
+                title="Selector de cantidad"
+              >
+                <Hash size={12} />
+                {presetQty > 0 && <span className="ml-0.5">{presetQty}</span>}
+              </button>
+            )}
             <span className="text-[9px] text-muted-foreground mr-1">Columnas:</span>
             {[2, 3, 4, 5, 6].map(num => (
               <button
