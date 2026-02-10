@@ -1014,6 +1014,62 @@ async def move_all_orders_to_table(table_id: str, input: dict, user: dict = Depe
         "target_table_number": target_table["number"]
     }
 
+# ─── MOVE ITEMS BETWEEN ORDERS ───
+@api.post("/orders/{order_id}/move-items")
+async def move_items_to_order(order_id: str, input: dict, user: dict = Depends(get_current_user)):
+    """Move selected items from one order to another order"""
+    target_order_id = input.get("target_order_id")
+    item_ids = input.get("item_ids", [])
+    
+    if not target_order_id:
+        raise HTTPException(status_code=400, detail="Debe especificar la cuenta destino")
+    if not item_ids:
+        raise HTTPException(status_code=400, detail="Debe seleccionar al menos un artículo")
+    
+    # Get source order
+    source_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not source_order:
+        raise HTTPException(status_code=404, detail="Orden origen no encontrada")
+    
+    # Get target order
+    target_order = await db.orders.find_one({"id": target_order_id}, {"_id": 0})
+    if not target_order:
+        raise HTTPException(status_code=404, detail="Orden destino no encontrada")
+    
+    # Find items to move
+    items_to_move = []
+    remaining_items = []
+    
+    for item in source_order.get("items", []):
+        if item.get("id") in item_ids:
+            items_to_move.append(item)
+        else:
+            remaining_items.append(item)
+    
+    if len(items_to_move) == 0:
+        raise HTTPException(status_code=400, detail="No se encontraron los artículos seleccionados")
+    
+    # Update source order (remove items)
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"items": remaining_items, "updated_at": now_iso()}}
+    )
+    
+    # Update target order (add items)
+    target_items = target_order.get("items", [])
+    target_items.extend(items_to_move)
+    await db.orders.update_one(
+        {"id": target_order_id},
+        {"$set": {"items": target_items, "updated_at": now_iso()}}
+    )
+    
+    return {
+        "ok": True,
+        "items_moved": len(items_to_move),
+        "source_order_id": order_id,
+        "target_order_id": target_order_id
+    }
+
 # ─── SPLIT ORDER - CREATE NEW ORDER FROM ITEMS ───
 @api.post("/orders/{order_id}/split-to-new")
 async def split_to_new_order(order_id: str, input: dict, user: dict = Depends(get_current_user)):
