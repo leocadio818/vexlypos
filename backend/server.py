@@ -2495,10 +2495,11 @@ async def check_reservation_activations():
     
     now = datetime.now(DR_TZ)
     today = now.strftime("%Y-%m-%d")
+    tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
     
-    # Get all confirmed reservations for today
+    # Get all confirmed reservations for today AND tomorrow (to handle edge cases)
     reservations = await db.reservations.find(
-        {"date": today, "status": "confirmed"}, {"_id": 0}
+        {"date": {"$in": [today, tomorrow]}, "status": "confirmed"}, {"_id": 0}
     ).to_list(200)
     
     activated = []
