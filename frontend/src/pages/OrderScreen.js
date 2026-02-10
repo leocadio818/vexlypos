@@ -36,11 +36,6 @@ export default function OrderScreen() {
     buttonSize: 'medium' // 'small', 'medium', 'large'
   });
   
-  // Accessibility - Large text mode
-  const [largeMode, setLargeMode] = useState(() => {
-    return localStorage.getItem('pos_large_mode') === 'true';
-  });
-  
   // Quick quantity mode
   const [presetQty, setPresetQty] = useState(0); // 0 = quick add x1, >0 = preset quantity
   const [showQtyKeypad, setShowQtyKeypad] = useState(false); // Floating keypad
