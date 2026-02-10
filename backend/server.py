@@ -745,19 +745,62 @@ async def create_order(input: CreateOrderInput, user=Depends(get_current_user)):
 
 @api.post("/orders/{order_id}/items")
 async def add_items_to_order(order_id: str, input: AddItemsInput):
-    new_items = []
+    # Get current order to check for existing items
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    existing_items = order.get("items", [])
+    items_to_add = []
+    items_to_update = []
+    
     for item in input.items:
-        new_items.append({
-            "id": gen_id(), "product_id": item.product_id, "product_name": item.product_name,
-            "quantity": item.quantity, "unit_price": item.unit_price,
-            "modifiers": item.modifiers, "notes": item.notes,
-            "status": "pending", "sent_to_kitchen": False,
-            "cancelled_reason_id": None, "return_to_inventory": False
-        })
-    await db.orders.update_one(
-        {"id": order_id},
-        {"$push": {"items": {"$each": new_items}}, "$set": {"updated_at": now_iso()}}
-    )
+        # Check if there's an existing pending item with same product, modifiers, and notes
+        existing_item = None
+        for existing in existing_items:
+            if (existing.get("product_id") == item.product_id and 
+                existing.get("status") == "pending" and
+                existing.get("notes", "") == (item.notes or "") and
+                existing.get("modifiers", []) == (item.modifiers or [])):
+                existing_item = existing
+                break
+        
+        if existing_item:
+            # Add quantity to existing item
+            items_to_update.append({
+                "item_id": existing_item["id"],
+                "new_quantity": existing_item["quantity"] + item.quantity
+            })
+        else:
+            # Create new item
+            items_to_add.append({
+                "id": gen_id(), "product_id": item.product_id, "product_name": item.product_name,
+                "quantity": item.quantity, "unit_price": item.unit_price,
+                "modifiers": item.modifiers or [], "notes": item.notes or "",
+                "status": "pending", "sent_to_kitchen": False,
+                "cancelled_reason_id": None, "return_to_inventory": False
+            })
+    
+    # Update existing items quantities
+    for update in items_to_update:
+        await db.orders.update_one(
+            {"id": order_id, "items.id": update["item_id"]},
+            {"$set": {"items.$.quantity": update["new_quantity"], "updated_at": now_iso()}}
+        )
+    
+    # Add new items
+    if items_to_add:
+        await db.orders.update_one(
+            {"id": order_id},
+            {"$push": {"items": {"$each": items_to_add}}, "$set": {"updated_at": now_iso()}}
+        )
+    elif items_to_update:
+        # If only updates, still update the timestamp
+        await db.orders.update_one(
+            {"id": order_id},
+            {"$set": {"updated_at": now_iso()}}
+        )
+    
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
 @api.put("/orders/{order_id}/items/{item_id}")
