@@ -1117,6 +1117,28 @@ export default function OrderScreen() {
         </DialogContent>
       </Dialog>
 
+      {/* Reserved Table Alert */}
+      <Dialog open={reservedAlert.open} onOpenChange={(o) => !o && setReservedAlert({ open: false, tableNumber: null })}>
+        <DialogContent className="max-w-sm bg-card border-purple-500/50">
+          <div className="text-center py-6 space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-full bg-purple-500/20 flex items-center justify-center">
+              <Lock size={32} className="text-purple-400" />
+            </div>
+            <div>
+              <h3 className="font-oswald text-xl font-bold text-purple-400">Mesa #{reservedAlert.tableNumber}</h3>
+              <p className="text-lg font-semibold mt-2">Esta mesa está Reservada</p>
+              <p className="text-muted-foreground mt-1">Contacte al Administrador</p>
+            </div>
+            <Button 
+              onClick={() => setReservedAlert({ open: false, tableNumber: null })}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-oswald"
+            >
+              Entendido
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Merge Accounts Dialog */}
       <Dialog open={mergeAccountsDialog.open} onOpenChange={(o) => !o && setMergeAccountsDialog({ open: false, sourceOrderId: null })}>
         <DialogContent className="max-w-sm">
