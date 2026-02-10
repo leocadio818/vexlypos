@@ -14,10 +14,16 @@ const statusColors = { confirmed: 'bg-green-600', seated: 'bg-blue-600', cancell
 export default function Reservations() {
   const [reservations, setReservations] = useState([]);
   const [tables, setTables] = useState([]);
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const today = new Date().toISOString().slice(0, 10);
+  
+  // Use local date, not UTC
+  const getLocalDate = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  };
+  
+  const [date, setDate] = useState(getLocalDate());
   const [dialog, setDialog] = useState({ 
-    open: false, customer_name: '', phone: '', date: today, time: '', party_size: 2, 
+    open: false, customer_name: '', phone: '', date: getLocalDate(), time: '', party_size: 2, 
     table_ids: [], area_id: '', notes: '',
     activation_minutes: 60,
     tolerance_minutes: 15
