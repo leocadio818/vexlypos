@@ -36,6 +36,10 @@ export default function OrderScreen() {
     buttonSize: 'medium' // 'small', 'medium', 'large'
   });
   
+  // Quick quantity mode
+  const [presetQty, setPresetQty] = useState(0); // 0 = quick add x1, >0 = preset quantity
+  const [showQtySelector, setShowQtySelector] = useState(false);
+  
   // Move Table Dialog
   const [moveDialog, setMoveDialog] = useState({ open: false });
   const [allTables, setAllTables] = useState([]);
