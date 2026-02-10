@@ -23,7 +23,7 @@ export default function Reservations() {
   
   const [date, setDate] = useState(getLocalDate());
   const [dialog, setDialog] = useState({ 
-    open: false, customer_name: '', phone: '', date: getLocalDate(), time: '', party_size: 2, 
+    open: false, editId: null, customer_name: '', phone: '', date: getLocalDate(), time: '', party_size: 2, 
     table_ids: [], area_id: '', notes: '',
     activation_minutes: 60,
     tolerance_minutes: 15
