@@ -133,6 +133,7 @@ export const kitchenAPI = {
 // Bills
 export const billsAPI = {
   list: (params) => api.get('/bills', { params }),
+  get: (id) => api.get(`/bills/${id}`),
   create: (data) => api.post('/bills', data),
   pay: (id, data) => api.post(`/bills/${id}/pay`, data),
   cancel: (id) => api.post(`/bills/${id}/cancel`),
