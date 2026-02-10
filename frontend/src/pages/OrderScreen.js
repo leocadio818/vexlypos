@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 export default function OrderScreen() {
   const { tableId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, largeMode } = useAuth();
   const [table, setTable] = useState(null);
   const [order, setOrder] = useState(null);
   const [categories, setCategories] = useState([]);
