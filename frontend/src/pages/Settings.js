@@ -298,6 +298,9 @@ export default function Settings() {
             <TabsTrigger value="customers-cfg" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-customers-cfg">
               <Heart size={14} className="mr-1" /> Clientes
             </TabsTrigger>
+            <TabsTrigger value="system" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-system">
+              <Cog size={14} className="mr-1" /> Sistema
+            </TabsTrigger>
           </TabsList>
 
           {/* USERS */}
