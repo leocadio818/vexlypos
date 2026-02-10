@@ -44,7 +44,11 @@ export default function Reservations() {
     try {
       await axios.post(`${API}/reservations`, { ...dialog }, { headers: hdrs() });
       toast.success('Reservacion creada');
-      setDialog({ open: false, customer_name: '', phone: '', date: '', time: '', party_size: 2, table_ids: [], area_id: '', notes: '' });
+      setDialog({ 
+        open: false, customer_name: '', phone: '', date: '', time: '', party_size: 2, 
+        table_ids: [], area_id: '', notes: '',
+        activation_minutes: 60, tolerance_minutes: 15
+      });
       fetchAll();
     } catch { toast.error('Error'); }
   };
