@@ -950,22 +950,6 @@ export default function OrderScreen() {
           </div>
           {/* Column controls and Quantity button */}
           <div className="flex items-center gap-1.5">
-            {/* Large Mode Toggle (A+) */}
-            <button
-              onClick={() => {
-                const newMode = !largeMode;
-                setLargeMode(newMode);
-                localStorage.setItem('pos_large_mode', String(newMode));
-              }}
-              className={`w-9 h-8 rounded-lg text-sm font-bold transition-colors flex items-center justify-center ${
-                largeMode
-                  ? 'bg-green-600 text-white'
-                  : 'bg-muted hover:bg-green-600/20 text-muted-foreground'
-              }`}
-              title="Modo texto grande"
-            >
-              A+
-            </button>
             {/* Quick Quantity Button */}
             {activeCat && (
               <button
