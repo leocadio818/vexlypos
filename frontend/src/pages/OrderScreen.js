@@ -32,8 +32,13 @@ export default function OrderScreen() {
   // Grid display settings
   const [gridSettings, setGridSettings] = useState({
     categoryColumns: 3,
-    productColumns: 4,
+    productColumns: 3,
     buttonSize: 'medium' // 'small', 'medium', 'large'
+  });
+  
+  // Accessibility - Large text mode
+  const [largeMode, setLargeMode] = useState(() => {
+    return localStorage.getItem('pos_large_mode') === 'true';
   });
   
   // Quick quantity mode
