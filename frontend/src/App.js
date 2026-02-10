@@ -39,6 +39,7 @@ function AppRoutes() {
         <Route path="order/:tableId" element={<OrderScreen />} />
         <Route path="kitchen" element={<Kitchen />} />
         <Route path="billing/:orderId" element={<Billing />} />
+        <Route path="payment/:billId" element={<PaymentScreen />} />
         <Route path="cash-register" element={<CashRegister />} />
         <Route path="inventory" element={<Inventory />} />
         <Route path="suppliers" element={<Suppliers />} />
