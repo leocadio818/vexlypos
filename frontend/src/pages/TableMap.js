@@ -27,7 +27,7 @@ const stripedPattern = (isOther) => `repeating-linear-gradient(
   rgba(${isOther ? '2,136,209' : '255,102,0'},0.15) 12px
 )`;
 
-function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, onResize, currentUserId }) {
+function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, onResize, currentUserId, largeMode }) {
   const [isDragging, setIsDragging] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0, moved: false, pointerId: null });
