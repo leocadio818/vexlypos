@@ -472,6 +472,60 @@ export default function OrderScreen() {
     }, 0);
   };
 
+  // Enter move items mode
+  const enterMoveItemsMode = () => {
+    if (selectedSplitItems.length === 0) {
+      toast.info('Selecciona artículos primero');
+      return;
+    }
+    setSelectedItemsToMove([...selectedSplitItems]);
+    setMoveItemsMode(true);
+  };
+
+  // Exit move items mode
+  const exitMoveItemsMode = () => {
+    setMoveItemsMode(false);
+    setSelectedItemsToMove([]);
+  };
+
+  // Move items to another account
+  const moveItemsToAccount = async (targetOrderId) => {
+    if (selectedItemsToMove.length === 0 || !order) return;
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/${order.id}/move-items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('pos_token')}`
+        },
+        body: JSON.stringify({
+          target_order_id: targetOrderId,
+          item_ids: selectedItemsToMove
+        })
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error moviendo artículos');
+      }
+      
+      const data = await res.json();
+      toast.success(`${data.items_moved} artículo(s) movido(s)`);
+      
+      // Reset and refresh
+      setMoveItemsMode(false);
+      setSelectedItemsToMove([]);
+      setSelectedSplitItems([]);
+      await fetchOrder();
+      
+      // Switch to target order
+      setActiveOrderId(targetOrderId);
+    } catch (e) {
+      toast.error(e.message || 'Error moviendo artículos');
+    }
+  };
+
   return (
     <div className="h-full flex flex-col lg:flex-row-reverse" data-testid="order-screen">
       {/* Left (visually): Order Summary - Now rendered second but appears on left due to flex-row-reverse */}
