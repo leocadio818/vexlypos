@@ -1023,13 +1023,19 @@ export default function OrderScreen() {
                     const isFree = t.status === 'free';
                     const isDivided = t.status === 'divided';
                     const isOccupied = t.status === 'occupied' || t.status === 'billed';
+                    const isReserved = t.status === 'reserved';
                     const isOtherUser = t.owner_id && t.owner_id !== user?.id;
                     
                     // Determine color based on status and ownership
                     let colorClass = 'border-green-500/50 bg-green-500/10 text-green-400 hover:bg-green-500/20'; // Free
                     let statusText = 'Libre';
+                    let isDisabled = false;
                     
-                    if (isDivided) {
+                    if (isReserved) {
+                      colorClass = 'border-purple-500/50 bg-purple-500/10 text-purple-400 opacity-60 cursor-not-allowed';
+                      statusText = 'Reservada';
+                      isDisabled = true;
+                    } else if (isDivided) {
                       colorClass = isOtherUser 
                         ? 'border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
                         : 'border-orange-500/50 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20';
@@ -1044,7 +1050,14 @@ export default function OrderScreen() {
                     return (
                       <button
                         key={t.id}
-                        onClick={() => handleMoveTable(t.id)}
+                        onClick={() => {
+                          if (isReserved) {
+                            toast.error('Mesa reservada. Un gerente debe cancelar la reserva primero.');
+                            return;
+                          }
+                          handleMoveTable(t.id);
+                        }}
+                        disabled={isDisabled}
                         className={`p-2 rounded-lg text-center font-oswald transition-all border ${colorClass}`}
                       >
                         <span className="text-sm font-bold">#{t.number}</span>
