@@ -15,7 +15,12 @@ export default function Reservations() {
   const [reservations, setReservations] = useState([]);
   const [tables, setTables] = useState([]);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [dialog, setDialog] = useState({ open: false, customer_name: '', phone: '', date: '', time: '', party_size: 2, table_ids: [], area_id: '', notes: '' });
+  const [dialog, setDialog] = useState({ 
+    open: false, customer_name: '', phone: '', date: '', time: '', party_size: 2, 
+    table_ids: [], area_id: '', notes: '',
+    activation_minutes: 60,  // Default 1 hour before
+    tolerance_minutes: 15    // Default 15 min after
+  });
   const [areas, setAreas] = useState([]);
 
   const fetchAll = useCallback(async () => {
