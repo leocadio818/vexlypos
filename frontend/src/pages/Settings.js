@@ -739,6 +739,66 @@ export default function Settings() {
               </a>
             </div>
           </TabsContent>
+
+          {/* SYSTEM CONFIG */}
+          <TabsContent value="system">
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-oswald text-base font-bold mb-4">Configuración del Sistema</h2>
+                
+                {/* Restaurant Name */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-4">
+                  <h3 className="text-sm font-semibold mb-3">Nombre del Restaurante</h3>
+                  <input 
+                    value={systemConfig.restaurant_name || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, restaurant_name: e.target.value }))}
+                    placeholder="Mi Restaurante"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+
+                {/* Timezone */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-4">
+                  <h3 className="text-sm font-semibold mb-2">Zona Horaria</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Selecciona la zona horaria de tu restaurante. Esto afecta las reservaciones y reportes.
+                  </p>
+                  <select 
+                    value={systemConfig.timezone_offset} 
+                    onChange={e => setSystemConfig(p => ({ ...p, timezone_offset: parseInt(e.target.value) }))}
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                  >
+                    {timezones.map(tz => (
+                      <option key={tz.value} value={tz.value}>{tz.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Currency */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-4">
+                  <h3 className="text-sm font-semibold mb-3">Moneda</h3>
+                  <select 
+                    value={systemConfig.currency || 'RD$'} 
+                    onChange={e => setSystemConfig(p => ({ ...p, currency: e.target.value }))}
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="RD$">RD$ - Peso Dominicano</option>
+                    <option value="$">$ - Dólar (USD)</option>
+                    <option value="€">€ - Euro</option>
+                    <option value="COP$">COP$ - Peso Colombiano</option>
+                    <option value="MX$">MX$ - Peso Mexicano</option>
+                    <option value="S/.">S/. - Sol Peruano</option>
+                    <option value="Bs.">Bs. - Bolívar</option>
+                    <option value="$">ARS$ - Peso Argentino</option>
+                  </select>
+                </div>
+
+                <Button onClick={handleSaveSystemConfig} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
+                  GUARDAR CONFIGURACIÓN
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
