@@ -49,6 +49,10 @@ export default function OrderScreen() {
   const [activeDivision, setActiveDivision] = useState(1);
   const [selectedSplitItems, setSelectedSplitItems] = useState([]);
   
+  // Move Items Mode
+  const [moveItemsMode, setMoveItemsMode] = useState(false);
+  const [selectedItemsToMove, setSelectedItemsToMove] = useState([]);
+  
   // Merge Accounts Dialog
   const [mergeAccountsDialog, setMergeAccountsDialog] = useState({ open: false, sourceOrderId: null });
   
