@@ -194,10 +194,6 @@ export default function TableMap() {
   };
 
   const handleTableClick = (table) => {
-    if (table.status === 'reserved') {
-      toast.error('Mesa reservada. Solo un gerente puede desbloquearla.');
-      return;
-    }
     navigate(`/order/${table.id}`);
   };
 
