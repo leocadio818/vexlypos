@@ -1385,6 +1385,13 @@ async def list_bills(status: Optional[str] = Query(None), table_id: Optional[str
         query["order_id"] = order_id
     return await db.bills.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
 
+@api.get("/bills/{bill_id}")
+async def get_bill(bill_id: str):
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    return bill
+
 @api.post("/bills")
 async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
     order = await db.orders.find_one({"id": input.order_id}, {"_id": 0})
