@@ -479,6 +479,7 @@ export default function OrderScreen() {
       return;
     }
     setSelectedItemsToMove([...selectedSplitItems]);
+    setSplitMode(false); // Exit split mode
     setMoveItemsMode(true);
   };
 
