@@ -707,9 +707,25 @@ export default function OrderScreen() {
             {/* Current Order Items - Select to move */}
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-1">
-                <p className="text-[10px] text-muted-foreground mb-2 text-center">
-                  Selecciona items para mover a nueva cuenta
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] text-muted-foreground">
+                    Selecciona items para mover
+                  </p>
+                  {activeItems.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (selectedSplitItems.length === activeItems.length) {
+                          setSelectedSplitItems([]);
+                        } else {
+                          setSelectedSplitItems(activeItems.map(i => i.id));
+                        }
+                      }}
+                      className="text-[10px] text-primary hover:underline font-semibold"
+                    >
+                      {selectedSplitItems.length === activeItems.length ? '✓ Deseleccionar todos' : '☐ Seleccionar todos'}
+                    </button>
+                  )}
+                </div>
                 {activeItems.length === 0 ? (
                   <div className="text-center py-8">
                     <Users size={24} className="mx-auto mb-2 text-muted-foreground/30" />
@@ -865,12 +881,12 @@ export default function OrderScreen() {
                   <div className={`grid gap-1 ${table?.status === 'billed' ? 'grid-cols-2' : 'grid-cols-3'}`}>
                     <Button onClick={openMoveDialog} variant="outline" size="sm" data-testid="move-table-btn"
                       className="h-8 text-[10px] border-muted-foreground/30">
-                      <MoveRight size={12} className="mr-1" /> Mover
+                      <MoveRight size={12} className="mr-1" /> Mover Mesa
                     </Button>
                     {table?.status !== 'billed' && (
                       <Button onClick={enterSplitMode} variant="outline" size="sm" data-testid="split-btn"
                         className="h-8 text-[10px] border-muted-foreground/30">
-                        <SplitSquareHorizontal size={12} className="mr-1" /> Dividir
+                        <SplitSquareHorizontal size={12} className="mr-1" /> Editar Cuenta
                       </Button>
                     )}
                     <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
