@@ -297,8 +297,8 @@ export default function Reservations() {
               </p>
             </div>
             
-            <Button onClick={handleCreate} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-reservation">
-              RESERVAR
+            <Button onClick={dialog.editId ? handleUpdate : handleCreate} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-reservation">
+              {dialog.editId ? 'ACTUALIZAR' : 'RESERVAR'}
             </Button>
           </div>
         </DialogContent>
