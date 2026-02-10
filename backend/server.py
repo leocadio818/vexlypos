@@ -2454,19 +2454,95 @@ async def create_reservation(input: dict):
         t = await db.tables.find_one({"id": tid}, {"_id": 0})
         if t:
             table_numbers.append(t["number"])
-            await db.tables.update_one({"id": tid}, {"$set": {"status": "reserved", "reservation_id": None}})
-    doc = {"id": gen_id(), "customer_name": input.get("customer_name",""),
-           "phone": input.get("phone",""), "date": input.get("date",""),
-           "time": input.get("time",""), "party_size": input.get("party_size",2),
-           "table_ids": table_ids, "table_numbers": table_numbers,
-           "area_id": input.get("area_id", ""),
-           "notes": input.get("notes",""), "status": "confirmed",
-           "created_at": now_iso()}
+    
+    # New fields for activation timing
+    activation_minutes = input.get("activation_minutes", 60)  # Default 1 hour before
+    tolerance_minutes = input.get("tolerance_minutes", 15)    # Default 15 min after
+    
+    doc = {
+        "id": gen_id(), 
+        "customer_name": input.get("customer_name",""),
+        "phone": input.get("phone",""), 
+        "date": input.get("date",""),
+        "time": input.get("time",""), 
+        "party_size": input.get("party_size",2),
+        "table_ids": table_ids, 
+        "table_numbers": table_numbers,
+        "area_id": input.get("area_id", ""),
+        "notes": input.get("notes",""), 
+        "status": "confirmed",
+        "activation_minutes": activation_minutes,
+        "tolerance_minutes": tolerance_minutes,
+        "created_at": now_iso()
+    }
     await db.reservations.insert_one(doc)
-    # Update tables with reservation id
+    
+    # DON'T set tables to reserved yet - that happens when activation time arrives
+    # Just store the reservation_id for reference
     for tid in table_ids:
-        await db.tables.update_one({"id": tid}, {"$set": {"status": "reserved", "reservation_id": doc["id"]}})
+        await db.tables.update_one({"id": tid}, {"$set": {"pending_reservation_id": doc["id"]}})
+    
     return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.get("/reservations/check-activations")
+async def check_reservation_activations():
+    """Check and activate reservations that should be visible now"""
+    from datetime import datetime, timedelta, timezone
+    
+    now = datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
+    
+    # Get all confirmed reservations for today
+    reservations = await db.reservations.find(
+        {"date": today, "status": "confirmed"}, {"_id": 0}
+    ).to_list(200)
+    
+    activated = []
+    expired = []
+    
+    for res in reservations:
+        try:
+            # Parse reservation time
+            res_time_str = f"{res['date']} {res['time']}"
+            res_datetime = datetime.strptime(res_time_str, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+            
+            activation_minutes = res.get("activation_minutes", 60)
+            tolerance_minutes = res.get("tolerance_minutes", 15)
+            
+            activation_time = res_datetime - timedelta(minutes=activation_minutes)
+            expiry_time = res_datetime + timedelta(minutes=tolerance_minutes)
+            
+            # Check if should activate (within activation window)
+            if activation_time <= now < expiry_time:
+                # Activate - set tables to reserved
+                for tid in res.get("table_ids", []):
+                    await db.tables.update_one(
+                        {"id": tid}, 
+                        {"$set": {"status": "reserved", "reservation_id": res["id"]}}
+                    )
+                activated.append(res["id"])
+            
+            # Check if expired (past tolerance time and still confirmed)
+            elif now >= expiry_time:
+                # Expire - free the tables and mark as no_show
+                for tid in res.get("table_ids", []):
+                    current_table = await db.tables.find_one({"id": tid}, {"_id": 0})
+                    # Only free if still reserved for this reservation
+                    if current_table and current_table.get("reservation_id") == res["id"]:
+                        await db.tables.update_one(
+                            {"id": tid}, 
+                            {"$set": {"status": "free", "reservation_id": None, "pending_reservation_id": None}}
+                        )
+                await db.reservations.update_one(
+                    {"id": res["id"]}, 
+                    {"$set": {"status": "no_show", "auto_expired": True}}
+                )
+                expired.append(res["id"])
+                
+        except Exception as e:
+            print(f"Error processing reservation {res.get('id')}: {e}")
+    
+    return {"activated": activated, "expired": expired, "checked": len(reservations)}
 
 @api.put("/reservations/{rid}")
 async def update_reservation(rid: str, input: dict):
