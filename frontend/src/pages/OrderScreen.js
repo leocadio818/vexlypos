@@ -1083,6 +1083,123 @@ export default function OrderScreen() {
       </div>
       )}
 
+      {/* Floating Quantity Keypad */}
+      {showQtyKeypad && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowQtyKeypad(false)}>
+          <div 
+            className="bg-card border-2 border-primary/50 rounded-2xl p-4 shadow-2xl w-72"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Display */}
+            <div className="bg-background rounded-xl border border-border p-3 mb-3 text-center">
+              {qtyKeypadExtended ? (
+                <span className="font-oswald text-4xl font-bold text-primary">
+                  {qtyKeypadValue || '0'}
+                </span>
+              ) : (
+                <span className="font-oswald text-lg text-muted-foreground">
+                  Selecciona cantidad
+                </span>
+              )}
+            </div>
+
+            {qtyKeypadExtended ? (
+              /* Extended Mode - Full Keypad */
+              <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                  {['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'DEL'].map((key) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        if (key === 'DEL') {
+                          setQtyKeypadValue(prev => prev.slice(0, -1));
+                        } else if (key === '.') {
+                          if (!qtyKeypadValue.includes('.')) {
+                            setQtyKeypadValue(prev => prev + '.');
+                          }
+                        } else {
+                          setQtyKeypadValue(prev => prev + key);
+                        }
+                      }}
+                      className={`h-14 rounded-xl font-oswald text-xl font-bold transition-all active:scale-95 ${
+                        key === 'DEL' 
+                          ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
+                          : 'bg-muted hover:bg-primary/20'
+                      }`}
+                    >
+                      {key === 'DEL' ? '⌫' : key}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <button
+                    onClick={() => {
+                      setQtyKeypadExtended(false);
+                      setQtyKeypadValue('');
+                    }}
+                    className="h-12 rounded-xl font-oswald font-bold text-sm bg-muted hover:bg-muted/80 transition-all"
+                  >
+                    ← Volver
+                  </button>
+                  <button
+                    onClick={() => {
+                      const qty = parseFloat(qtyKeypadValue);
+                      if (qty > 0) {
+                        setPresetQty(qty);
+                        setShowQtyKeypad(false);
+                        setQtyKeypadExtended(false);
+                        setQtyKeypadValue('');
+                      }
+                    }}
+                    className="h-12 rounded-xl font-oswald font-bold text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                  >
+                    OK ✓
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Quick Mode - Numbers 1-9 + Extended */
+              <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => {
+                        setPresetQty(num);
+                        setShowQtyKeypad(false);
+                      }}
+                      className="h-14 rounded-xl font-oswald text-2xl font-bold bg-muted hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
+                    >
+                      {num}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <button
+                    onClick={() => {
+                      setQtyKeypadExtended(true);
+                      setQtyKeypadValue('');
+                    }}
+                    className="h-12 rounded-xl font-oswald font-bold text-lg bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-2"
+                  >
+                    10+ <span className="text-xl">›</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPresetQty(0);
+                      setShowQtyKeypad(false);
+                    }}
+                    className="h-12 rounded-xl font-oswald font-bold text-sm bg-destructive/20 text-destructive hover:bg-destructive/30 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Product Dialog with Numpad */}
       <Dialog open={modDialog.open} onOpenChange={(open) => !open && setModDialog(p => ({ ...p, open: false }))}>
         <DialogContent className="max-w-sm bg-card border-border p-4" data-testid="modifier-dialog">
