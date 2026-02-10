@@ -58,6 +58,10 @@ export default function Settings() {
   const [payDialog, setPayDialog] = useState({ open: false, name: '', icon: 'circle', currency: 'DOP', exchange_rate: 1, editId: null });
   const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null });
   const [channelDialog, setChannelDialog] = useState({ open: false, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null });
+  
+  // System Config
+  const [systemConfig, setSystemConfig] = useState({ timezone_offset: -4, restaurant_name: 'Mi Restaurante', currency: 'RD$' });
+  const [timezones, setTimezones] = useState([]);
 
   const fetchAll = async () => {
     try {
@@ -70,12 +74,16 @@ export default function Settings() {
       setCategories(cRes.data); setProducts(pRes.data);
       setUsers(uRes.data); setPayMethods(pmRes.data);
       try {
-        const [stRes, pcRes, scRes] = await Promise.all([
+        const [stRes, pcRes, scRes, sysRes, tzRes] = await Promise.all([
           axios.get(`${API}/sale-types`, { headers: hdrs() }),
           axios.get(`${API}/print-channels`, { headers: hdrs() }),
           axios.get(`${API}/station-config`, { headers: hdrs() }),
+          axios.get(`${API}/system/config`, { headers: hdrs() }),
+          axios.get(`${API}/system/timezones`, { headers: hdrs() }),
         ]);
         setSaleTypes(stRes.data); setPrintChannels(pcRes.data); setStationConfig(scRes.data);
+        setSystemConfig(sysRes.data);
+        setTimezones(tzRes.data);
         const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
         setRoles(rolesRes.data);
         const taxRes = await axios.get(`${API}/tax-config`, { headers: hdrs() });
