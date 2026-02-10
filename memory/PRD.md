@@ -153,6 +153,37 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - Nueva sección en página de Reportes: "HISTORIAL DE MOVIMIENTOS DE MESAS"
   - Muestra estadísticas: Total movimientos, Simples, Múltiples, Cuentas unidas
   - Tabla detallada: Hora, Usuario, Origen, Destino, Tipo, Cuentas
+- **Sistema de Reservas Avanzado con Zonas Horarias (Feb 9, 2026)**:
+  - Configuración de tiempo de pre-activación (minutos antes de la reserva para marcar mesa como reservada)
+  - Período de tolerancia (minutos de espera antes de liberar mesa si cliente no llega)
+  - Soporte multi-zona horaria para restaurantes en diferentes países
+  - **Nuevo endpoint: PUT /api/reservations/{id}** - Editar reserva existente
+  - **Nuevo endpoint: POST /api/reservations/check-activations** - Verificar y actualizar estados de reservas
+  - **Nuevo endpoint: GET/PUT /api/system/config** - Configuración del sistema (zona horaria, moneda, etc.)
+  - Nueva sección "Sistema" en Configuración para ajustes de zona horaria
+  - Frontend con polling cada 30 segundos para actualizar estados de reservas
+- **Mejoras Visuales del Mapa de Mesas (Feb 9, 2026)**:
+  - Colores diferenciados: Mis mesas (rojo), Mesas de otros (azul), Divididas (naranja), Reservadas (púrpura)
+  - Leyenda actualizada con todos los estados
+  - Mesas divididas con patrón de rayas más visible
+
+### Phase 9 (Feb 10, 2026) - Mover Ítems Entre Cuentas
+- **Función "Mover Ítems Entre Cuentas" (COMPLETADO)**:
+  - Permite mover ítems seleccionados de una cuenta a otra cuenta existente en la misma mesa
+  - **Nuevo endpoint: POST /api/orders/{order_id}/move-items** - Mueve ítems seleccionados a otra orden
+  - Flujo de usuario:
+    1. Entrar a mesa dividida con múltiples cuentas
+    2. Clic en botón "Dividir"
+    3. Seleccionar uno o más ítems (se resaltan en naranja)
+    4. Clic en botón morado "Mover a Cuenta"
+    5. Aparecen botones "→ Mover aquí (#X)" en las otras cuentas (animación púrpura pulsante)
+    6. Indicador "Desde aquí →" (amarillo) muestra cuenta origen
+    7. Clic en cuenta destino para completar el movimiento
+    8. Toast de confirmación "X artículo(s) movido(s)"
+  - Los totales de ambas cuentas se actualizan automáticamente
+  - Validaciones backend: requiere target_order_id y item_ids válidos
+  - Botón "Cancelar" para salir del modo de movimiento
+- **Testing**: 100% tests pasados (10/10 backend, 10/10 frontend)
 
 ## PINs de Acceso (Datos de Demo)
 | Usuario | PIN | Rol |
