@@ -198,10 +198,10 @@ export default function Reservations() {
         </div>
       </div>
 
-      {/* New Reservation Dialog */}
-      <Dialog open={dialog.open} onOpenChange={(o) => !o && setDialog(p => ({ ...p, open: false }))}>
+      {/* New/Edit Reservation Dialog */}
+      <Dialog open={dialog.open} onOpenChange={(o) => !o && setDialog(p => ({ ...p, open: false, editId: null }))}>
         <DialogContent className="max-w-sm bg-card border-border" data-testid="new-reservation-dialog">
-          <DialogHeader><DialogTitle className="font-oswald">Nueva Reservacion</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-oswald">{dialog.editId ? 'Editar Reservacion' : 'Nueva Reservacion'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={dialog.customer_name} onChange={e => setDialog(p => ({ ...p, customer_name: e.target.value }))}
               placeholder="Nombre del cliente" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="res-name" />
