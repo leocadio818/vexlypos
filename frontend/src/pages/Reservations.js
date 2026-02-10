@@ -134,7 +134,7 @@ export default function Reservations() {
           <input type="date" value={date} onChange={e => setDate(e.target.value)}
             className="bg-card border border-border rounded-lg px-3 py-1.5 text-sm font-mono" data-testid="reservation-date" />
           <Button onClick={() => setDialog({ 
-            open: true, customer_name: '', phone: '', date, time: '19:00', party_size: 2, 
+            open: true, editId: null, customer_name: '', phone: '', date, time: '19:00', party_size: 2, 
             table_ids: [], area_id: '', notes: '',
             activation_minutes: 60, tolerance_minutes: 15
           })}
