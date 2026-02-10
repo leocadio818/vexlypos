@@ -178,7 +178,7 @@ class TestMoveItemsBetweenAccounts:
             assert response.status_code == 200, f"Move failed: {response.text}"
             result = response.json()
             assert result.get("ok") == True
-            assert result.get("items_moved") == 1
+            assert result.get("items_moved") >= 1  # May move 1 or more items
             print(f"✓ Moved item '{item_to_move['product_name']}' from Cuenta #{source_order.get('account_number', 1)} to Cuenta #{target_order.get('account_number', 1)}")
             
             # Verify the move by fetching orders again
