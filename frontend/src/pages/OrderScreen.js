@@ -173,25 +173,23 @@ export default function OrderScreen() {
   const filteredProducts = activeCat ? products.filter(p => p.category_id === activeCat) : [];
 
   const handleProductClick = (product) => {
-    // Check if product has required modifiers
-    const hasRequiredModifiers = modifierGroups
-      .filter(mg => product.modifier_group_ids?.includes(mg.id))
-      .some(mg => mg.required);
+    // Check if product has any modifiers (not just required ones)
+    const hasModifiers = product.modifier_group_ids?.length > 0;
     
-    // If product has required modifiers, always open dialog
-    if (hasRequiredModifiers) {
+    // If product has modifiers, open dialog to let user choose
+    if (hasModifiers) {
       setModDialog({ open: true, product, selectedMods: {}, qty: presetQty > 0 ? String(presetQty) : '1', notes: '' });
       if (presetQty > 0) setPresetQty(0); // Reset preset after use
       return;
     }
     
-    // Quick add mode: add directly without dialog
+    // No modifiers: quick add mode - add directly without dialog
     const qty = presetQty > 0 ? presetQty : 1;
     addItemToOrder(product, qty, [], '');
     if (presetQty > 0) setPresetQty(0); // Reset preset after use
   };
   
-  // Long press to open quantity dialog (for fractional quantities)
+  // Long press to open quantity dialog (for fractional quantities or notes)
   const handleProductLongPress = (product) => {
     setModDialog({ open: true, product, selectedMods: {}, qty: '0', notes: '' });
   };
