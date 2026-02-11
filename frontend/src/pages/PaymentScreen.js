@@ -371,7 +371,7 @@ export default function PaymentScreen() {
         </div>
 
         {/* Right Panel - Payment Methods */}
-        <div className="flex-1 flex flex-col p-4 overflow-auto">
+        <div className={`flex-1 flex flex-col p-4 ${isMobile ? 'shrink-0' : 'overflow-auto'}`}>
           
           {/* Payment Methods Grid */}
           <h3 className={`font-oswald font-bold text-white/70 mb-3 ${isMobile ? 'text-sm' : 'text-base'}`}>
