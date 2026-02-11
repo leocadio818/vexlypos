@@ -151,8 +151,20 @@ export default function PaymentScreen() {
     return sum + amt * (m.exchange_rate || 1);
   }, 0);
   const billTotal = bill?.total || 0;
-  const change = totalPaidDOP - billTotal;
+  const overpaid = totalPaidDOP - billTotal;
   const isEnough = totalPaidDOP >= billTotal;
+
+  // Determine if overpayment is change (cash) or tip (card)
+  // Check which methods have amounts and if any are non-cash (cards)
+  const hasNonCashPayment = paymentMethods.some(m => {
+    const amt = parseFloat(payAmounts[m.name]) || 0;
+    return amt > 0 && m.is_cash === false;
+  });
+  
+  // If any payment is with card/non-cash, overpayment becomes tip
+  const isTip = overpaid > 0 && hasNonCashPayment;
+  const change = isTip ? 0 : overpaid;
+  const cardTip = isTip ? overpaid : 0;
 
   const handlePayment = async () => {
     if (!isEnough) {
@@ -167,13 +179,14 @@ export default function PaymentScreen() {
       const res = await billsAPI.pay(billId, { 
         payment_method: mainMethod, 
         tip_percentage: 0, 
-        additional_tip: 0, 
+        additional_tip: cardTip, // Add card tip as additional tip
         customer_id: selectedCustomer?.id || '' 
       });
       
       const pts = res.data?.points_earned;
       let msg = '✓ Pago procesado';
       if (change > 0) msg += ` | Cambio: ${formatMoney(change)}`;
+      if (cardTip > 0) msg += ` | Propina: ${formatMoney(cardTip)}`;
       if (pts > 0) msg += ` | +${pts} pts fidelidad`;
       toast.success(msg);
       
