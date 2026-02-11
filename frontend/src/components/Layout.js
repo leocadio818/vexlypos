@@ -42,6 +42,37 @@ export default function Layout() {
       {isMobile ? (
         // Mobile Bottom Navigation
         <aside className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom" data-testid="mobile-nav">
+          {/* Offline banner for mobile */}
+          {(!isOnline || pendingCount > 0) && (
+            <div className={`flex items-center justify-center gap-2 py-1.5 text-xs font-medium ${
+              !isOnline 
+                ? 'bg-orange-500/20 text-orange-500' 
+                : 'bg-yellow-500/20 text-yellow-600'
+            }`}>
+              {isSyncing ? (
+                <>
+                  <RefreshCw size={12} className="animate-spin" />
+                  <span>Sincronizando...</span>
+                </>
+              ) : !isOnline ? (
+                <>
+                  <CloudOff size={12} />
+                  <span>Modo Offline {pendingCount > 0 && `(${pendingCount} pendiente${pendingCount > 1 ? 's' : ''})`}</span>
+                </>
+              ) : pendingCount > 0 ? (
+                <>
+                  <Cloud size={12} />
+                  <span>{pendingCount} por sincronizar</span>
+                  <button 
+                    onClick={syncNow}
+                    className="underline font-bold"
+                  >
+                    Sincronizar
+                  </button>
+                </>
+              ) : null}
+            </div>
+          )}
           <nav className="flex justify-around items-center py-2 px-1">
             {filteredNav.slice(0, 5).map(({ to, icon: Icon, label }) => (
               <NavLink
