@@ -508,7 +508,8 @@ export default function Settings() {
                             text_color: m.text_color || '#ffffff',
                             currency: m.currency || 'DOP', 
                             exchange_rate: m.exchange_rate || 1, 
-                            editId: m.id 
+                            editId: m.id,
+                            is_cash: m.is_cash !== false // default to true if not set
                           })}
                         >
                           <Pencil size={16} />
