@@ -480,6 +480,41 @@ export default function OrderScreen() {
     setMergeAccountsDialog({ open: true, sourceOrderId: orderId });
   };
 
+  // Direct billing - create bill and go to payment
+  const handleDirectBilling = async () => {
+    try {
+      // Check for existing open bills for this order
+      const existingBills = await billsAPI.list({ order_id: order.id, status: 'open' });
+      
+      if (existingBills.data?.length > 0) {
+        // If there's an open bill, go directly to payment
+        navigate(`/payment/${existingBills.data[0].id}`);
+        return;
+      }
+      
+      // Create new bill with all items
+      const itemIds = order.items
+        .filter(i => i.status !== 'cancelled')
+        .map(i => i.id);
+      
+      if (itemIds.length === 0) {
+        toast.error('No hay items para facturar');
+        return;
+      }
+      
+      const res = await billsAPI.create({
+        order_id: order.id,
+        table_id: tableId,
+        item_ids: itemIds
+      });
+      
+      // Navigate directly to payment screen
+      navigate(`/payment/${res.data.id}`);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error creando factura');
+    }
+  };
+
   // Check if order is empty
   const isOrderEmpty = (ord) => {
     if (!ord?.items) return true;
