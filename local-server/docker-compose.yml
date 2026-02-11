@@ -1,0 +1,90 @@
+# ===============================================
+# MESA POS RD - Instalación Local
+# Sistema POS para Restaurantes - Servidor Local
+# ===============================================
+
+version: '3.8'
+
+services:
+  # Base de datos MongoDB
+  mongodb:
+    image: mongo:6.0
+    container_name: pos_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - pos_mongo_data:/data/db
+      - ./backups:/backups
+    environment:
+      - MONGO_INITDB_DATABASE=pos_db
+    networks:
+      - pos_network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/pos_db --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pos_backend
+    restart: always
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - DB_NAME=pos_db
+      - JWT_SECRET=${JWT_SECRET:-tu_clave_secreta_muy_segura_cambiar_esto}
+      - ENVIRONMENT=production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - pos_network
+    healthcheck:
+      test: curl -f http://localhost:8001/api/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend (React - servido por Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_BACKEND_URL=${SERVER_URL:-http://localhost:8001}
+    container_name: pos_frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - pos_network
+
+  # Watchtower - Auto-actualización (opcional)
+  watchtower:
+    image: containrrr/watchtower
+    container_name: pos_watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=86400
+    networks:
+      - pos_network
+
+networks:
+  pos_network:
+    driver: bridge
+
+volumes:
+  pos_mongo_data:
+    driver: local
