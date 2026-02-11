@@ -1020,33 +1020,201 @@ export default function Settings() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Method Dialog */}
+      {/* Payment Method Dialog - REDISEÑADO */}
       <Dialog open={payDialog.open} onOpenChange={(o) => !o && setPayDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="payment-dialog">
+        <DialogContent className="max-w-lg bg-card border-border" data-testid="payment-dialog">
           <DialogHeader><DialogTitle className="font-oswald">{payDialog.editId ? 'Editar' : 'Nueva'} Forma de Pago</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <input value={payDialog.name} onChange={e => setPayDialog(p => ({ ...p, name: e.target.value }))}
-              placeholder="Nombre (ej: Efectivo, Tarjeta, USD)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="payment-name-input" />
-            <div className="grid grid-cols-2 gap-2">
+          <ScrollArea className="max-h-[70vh]">
+            <div className="space-y-4 pr-2">
+              {/* Name */}
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Moneda</label>
-                <select value={payDialog.currency} onChange={e => setPayDialog(p => ({ ...p, currency: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
-                  <option value="DOP">DOP (Peso)</option>
-                  <option value="USD">USD (Dolar)</option>
-                  <option value="EUR">EUR (Euro)</option>
-                </select>
+                <label className="text-xs text-muted-foreground mb-1 block">Nombre del Método</label>
+                <input value={payDialog.name} onChange={e => setPayDialog(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Ej: Efectivo RD$, Visa, Mastercard..." className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="payment-name-input" />
               </div>
+
+              {/* Icon Type Selection */}
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Tipo de cambio</label>
-                <input value={payDialog.exchange_rate} onChange={e => setPayDialog(p => ({ ...p, exchange_rate: e.target.value }))}
-                  type="number" step="0.01" placeholder="1.00" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
+                <label className="text-xs text-muted-foreground mb-2 block">Tipo de Icono</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPayDialog(p => ({ ...p, icon_type: 'lucide', brand_icon: null }))}
+                    className={`flex-1 p-3 rounded-lg border-2 transition-all ${
+                      payDialog.icon_type === 'lucide' 
+                        ? 'border-primary bg-primary/10 text-primary' 
+                        : 'border-border bg-background text-muted-foreground hover:border-primary/50'
+                    }`}
+                  >
+                    <CreditCard className="mx-auto mb-1" size={24} />
+                    <span className="text-xs font-medium">Icono Simple</span>
+                  </button>
+                  <button
+                    onClick={() => setPayDialog(p => ({ ...p, icon_type: 'brand', brand_icon: 'visa' }))}
+                    className={`flex-1 p-3 rounded-lg border-2 transition-all ${
+                      payDialog.icon_type === 'brand' 
+                        ? 'border-primary bg-primary/10 text-primary' 
+                        : 'border-border bg-background text-muted-foreground hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="w-10 h-6 mx-auto mb-1 bg-blue-600 rounded flex items-center justify-center text-white text-[8px] font-bold">VISA</div>
+                    <span className="text-xs font-medium">Marca/Procesador</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Brand Icon Selection (if brand type) */}
+              {payDialog.icon_type === 'brand' && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-2 block">Selecciona la Marca</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'visa', name: 'Visa', color: '#1565C0' },
+                      { id: 'mastercard', name: 'Mastercard', color: '#FF5722' },
+                      { id: 'amex', name: 'Amex', color: '#1976D2' },
+                      { id: 'discover', name: 'Discover', color: '#E64A19' },
+                      { id: 'paypal', name: 'PayPal', color: '#039BE5' },
+                      { id: 'cash', name: 'Efectivo', color: '#16a34a' },
+                      { id: 'bank', name: 'Banco', color: '#0891b2' },
+                      { id: 'dollar', name: 'Dólar', color: '#059669' },
+                      { id: 'euro', name: 'Euro', color: '#d97706' },
+                    ].map(brand => (
+                      <button
+                        key={brand.id}
+                        onClick={() => setPayDialog(p => ({ ...p, brand_icon: brand.id, bg_color: brand.color }))}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          payDialog.brand_icon === brand.id 
+                            ? 'border-primary ring-2 ring-primary/30' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <div 
+                          className="w-full h-10 rounded-lg flex items-center justify-center text-white text-[9px] font-bold mb-1"
+                          style={{ backgroundColor: brand.color }}
+                        >
+                          {brand.name.toUpperCase()}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{brand.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Lucide Icon Selection (if lucide type) */}
+              {payDialog.icon_type === 'lucide' && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-2 block">Selecciona el Icono</label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[
+                      { id: 'banknote', Icon: Banknote, name: 'Billetes' },
+                      { id: 'credit-card', Icon: CreditCard, name: 'Tarjeta' },
+                      { id: 'smartphone', Icon: Smartphone, name: 'Teléfono' },
+                      { id: 'building2', Icon: Building2, name: 'Banco' },
+                      { id: 'dollar-sign', Icon: DollarSign, name: 'Dólar' },
+                    ].map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => setPayDialog(p => ({ ...p, icon: item.id }))}
+                        className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
+                          payDialog.icon === item.id 
+                            ? 'border-primary bg-primary/10 text-primary' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <item.Icon size={24} />
+                        <span className="text-[9px] mt-1">{item.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Colors */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Color de Fondo</label>
+                  <div className="flex gap-1 flex-wrap">
+                    {[
+                      '#16a34a', '#059669', '#0891b2', '#1e40af', '#7c3aed', 
+                      '#c026d3', '#dc2626', '#d97706', '#6b7280', '#1f2937'
+                    ].map(color => (
+                      <button
+                        key={color}
+                        onClick={() => setPayDialog(p => ({ ...p, bg_color: color }))}
+                        className={`w-8 h-8 rounded-lg transition-all ${
+                          payDialog.bg_color === color ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : 'hover:scale-105'
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Color de Texto</label>
+                  <div className="flex gap-1">
+                    {['#ffffff', '#000000', '#fef3c7', '#d1fae5'].map(color => (
+                      <button
+                        key={color}
+                        onClick={() => setPayDialog(p => ({ ...p, text_color: color }))}
+                        className={`w-8 h-8 rounded-lg border border-border transition-all ${
+                          payDialog.text_color === color ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : 'hover:scale-105'
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-2 block">Vista Previa</label>
+                <div className="flex justify-center p-4 bg-background rounded-xl border border-border">
+                  <div 
+                    className="w-32 h-28 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-lg transition-all"
+                    style={{ backgroundColor: payDialog.bg_color, color: payDialog.text_color }}
+                  >
+                    {payDialog.icon_type === 'brand' && payDialog.brand_icon ? (
+                      <div className="w-12 h-8 bg-white/20 rounded flex items-center justify-center text-[8px] font-bold">
+                        {payDialog.brand_icon.toUpperCase()}
+                      </div>
+                    ) : (
+                      (() => {
+                        const icons = { banknote: Banknote, 'credit-card': CreditCard, smartphone: Smartphone, building2: Building2, 'dollar-sign': DollarSign };
+                        const Icon = icons[payDialog.icon] || Banknote;
+                        return <Icon size={28} />;
+                      })()
+                    )}
+                    <span className="font-oswald font-bold text-xs text-center px-2 leading-tight">
+                      {payDialog.name || 'Método de Pago'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Currency & Exchange */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Moneda</label>
+                  <select value={payDialog.currency} onChange={e => setPayDialog(p => ({ ...p, currency: e.target.value }))}
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
+                    <option value="DOP">DOP (Peso)</option>
+                    <option value="USD">USD (Dólar)</option>
+                    <option value="EUR">EUR (Euro)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Tipo de Cambio</label>
+                  <input value={payDialog.exchange_rate} onChange={e => setPayDialog(p => ({ ...p, exchange_rate: e.target.value }))}
+                    type="number" step="0.01" placeholder="1.00" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
+                </div>
+              </div>
+
+              <Button onClick={handleSavePayMethod} className="w-full h-12 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-payment">
+                {payDialog.editId ? 'GUARDAR CAMBIOS' : 'CREAR MÉTODO DE PAGO'}
+              </Button>
             </div>
-            <Button onClick={handleSavePayMethod} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-payment">
-              {payDialog.editId ? 'GUARDAR' : 'CREAR'}
-            </Button>
-          </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
