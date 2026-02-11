@@ -589,13 +589,13 @@ export default function OrderScreen() {
   return (
     <div className="h-full flex flex-col lg:flex-row-reverse" data-testid="order-screen">
       {/* Left (visually): Order Summary - Now rendered second but appears on left due to flex-row-reverse */}
-      <div className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-l border-border flex flex-col bg-card/50 shrink-0">
-        <div className="px-2 py-2 border-b border-border flex items-center justify-between">
+      <div className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-l border-white/10 flex flex-col backdrop-blur-xl bg-white/5 shrink-0">
+        <div className="px-2 py-2 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="icon" onClick={splitMode ? exitSplitMode : handleBack} data-testid="back-to-tables" className="h-9 w-9">
+            <button onClick={splitMode ? exitSplitMode : handleBack} data-testid="back-to-tables" className="h-9 w-9 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all">
               {splitMode ? <X size={16} /> : <ArrowLeft size={16} />}
-            </Button>
-            <h2 className="font-oswald text-base font-bold">
+            </button>
+            <h2 className="font-oswald text-base font-bold text-white">
               {accessDenied ? `Mesa ${table?.number || '?'}` : splitMode ? 'EDITAR CUENTA' : tableOrders.length > 1 ? `Mesa ${table?.number || '?'} - Cuenta #${order?.account_number || 1}` : `Mesa ${table?.number || '?'}`}
             </h2>
           </div>
@@ -608,10 +608,10 @@ export default function OrderScreen() {
               <Lock size={32} className="text-red-500" />
             </div>
             <h3 className="font-oswald text-lg font-bold text-red-500 mb-2">Acceso Denegado</h3>
-            <p className="text-sm text-muted-foreground mb-6">{accessDenied}</p>
-            <Button onClick={() => navigate('/tables')} variant="outline" className="gap-2">
+            <p className="text-sm text-white/60 mb-6">{accessDenied}</p>
+            <button onClick={() => navigate('/tables')} className="px-4 py-2 rounded-lg border border-white/20 text-white/80 hover:bg-white/10 flex items-center gap-2 transition-all">
               <ArrowLeft size={14} /> Volver a Mesas
-            </Button>
+            </button>
           </div>
         )}
 
@@ -624,12 +624,12 @@ export default function OrderScreen() {
                 <span className="text-xs font-semibold text-purple-300">
                   ↓ Selecciona cuenta destino ({selectedItemsToMove.length} artículo{selectedItemsToMove.length > 1 ? 's' : ''})
                 </span>
-                <Button variant="ghost" size="sm" onClick={exitMoveItemsMode} className="h-6 px-2 text-xs text-purple-300 hover:text-white">
+                <button onClick={exitMoveItemsMode} className="h-6 px-2 text-xs text-purple-300 hover:text-white flex items-center rounded">
                   <X size={12} className="mr-1" /> Cancelar
-                </Button>
+                </button>
               </div>
             )}
-            <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto bg-card/30">
+            <div className="flex items-center gap-1 p-2 border-b border-white/10 overflow-x-auto bg-white/5">
               {tableOrders.map(ord => {
                 const isEmpty = isOrderEmpty(ord);
                 const canDelete = isEmpty && tableOrders.length > 1 && !moveItemsMode;
