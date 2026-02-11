@@ -246,12 +246,12 @@ export default function TableMap() {
 
   return (
     <div className="h-full flex flex-col" data-testid="table-map-page">
-      {/* Header - Responsive */}
-      <div className={`px-3 sm:px-4 ${isMobile ? 'py-2' : largeMode ? 'py-4' : 'py-3'} border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-card/50`}>
-        <h1 className={`font-oswald font-bold tracking-wide ${isMobile ? 'text-lg' : largeMode ? 'text-2xl' : 'text-xl'}`}>MAPA DE MESAS</h1>
+      {/* Header - Glassmorphism */}
+      <div className={`px-3 sm:px-4 ${isMobile ? 'py-2' : largeMode ? 'py-4' : 'py-3'} backdrop-blur-xl bg-white/5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2`}>
+        <h1 className={`font-oswald font-bold tracking-wide text-white ${isMobile ? 'text-lg' : largeMode ? 'text-2xl' : 'text-xl'}`}>MAPA DE MESAS</h1>
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Legend - Hidden on mobile, collapsed on tablet */}
-          <div className={`items-center gap-2 sm:gap-3 flex-wrap ${isMobile ? 'hidden' : isTablet ? 'hidden sm:flex' : 'flex'} ${largeMode ? 'text-sm' : 'text-xs'}`}>
+          <div className={`items-center gap-2 sm:gap-3 flex-wrap ${isMobile ? 'hidden' : isTablet ? 'hidden sm:flex' : 'flex'} ${largeMode ? 'text-sm' : 'text-xs'} text-white/70`}>
             <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full bg-table-free`} /> Libre</span>
             <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full bg-table-occupied`} /> Mis mesas</span>
             <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full`} style={{backgroundColor:'#1565C0'}} /> De otros</span>
@@ -260,36 +260,40 @@ export default function TableMap() {
             <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full`} style={{backgroundColor:'#7C4DFF'}} /> Reservada</span>
           </div>
           {canMoveTable && (
-            <Button
-              variant={editMode ? 'default' : 'outline'}
-              size={isMobile ? 'sm' : largeMode ? 'default' : 'sm'}
+            <button
               onClick={() => setEditMode(!editMode)}
               data-testid="edit-mode-toggle"
-              className={`${isMobile ? 'text-xs h-9' : largeMode ? 'text-sm' : 'text-xs'} ${editMode ? 'bg-primary text-white' : 'border-primary/50 text-primary'}`}
+              className={`${isMobile ? 'text-xs h-9 px-3' : largeMode ? 'text-sm h-10 px-4' : 'text-xs h-9 px-3'} rounded-xl font-oswald font-bold transition-all active:scale-95 ${
+                editMode 
+                  ? 'bg-white/20 text-white border border-white/30' 
+                  : 'backdrop-blur-md bg-white/10 border border-white/20 text-white/80 hover:bg-white/20'
+              }`}
             >
-              {editMode ? <><Unlock size={isMobile ? 14 : largeMode ? 18 : 14} className="mr-1" /> Editando</> : <><Lock size={isMobile ? 14 : largeMode ? 18 : 14} className="mr-1" /> Editar</>}
-            </Button>
+              {editMode ? <><Unlock size={isMobile ? 14 : largeMode ? 18 : 14} className="inline mr-1" /> Editando</> : <><Lock size={isMobile ? 14 : largeMode ? 18 : 14} className="inline mr-1" /> Editar</>}
+            </button>
           )}
         </div>
       </div>
 
-      {/* Area Tabs - Scrollable on mobile */}
+      {/* Area Tabs - Glassmorphism */}
       <div className={`flex gap-1 px-3 sm:px-4 pt-2 sm:pt-3 overflow-x-auto scrollbar-hide`} data-testid="area-tabs">
         {areas.map(area => (
           <button key={area.id} onClick={() => setActiveArea(area.id)}
             data-testid={`area-tab-${area.name.toLowerCase().replace(/\s/g, '-')}`}
-            className={`${isMobile ? 'px-4 py-2 text-sm min-w-fit' : largeMode ? 'px-6 py-3 text-base' : 'px-5 py-2.5 text-sm'} rounded-t-lg font-oswald tracking-wide whitespace-nowrap transition-all btn-press ${
-              activeArea === area.id ? 'bg-background border-t-2 border-x border-border text-primary' : 'bg-card/50 text-muted-foreground hover:text-foreground border-t border-x border-transparent'
+            className={`${isMobile ? 'px-4 py-2 text-sm min-w-fit' : largeMode ? 'px-6 py-3 text-base' : 'px-5 py-2.5 text-sm'} rounded-t-xl font-oswald tracking-wide whitespace-nowrap transition-all btn-press ${
+              activeArea === area.id 
+                ? 'backdrop-blur-xl bg-white/15 border-t-2 border-x border-white/20 text-white' 
+                : 'backdrop-blur-md bg-white/5 text-white/50 hover:text-white/80 hover:bg-white/10 border-t border-x border-transparent'
             }`} style={activeArea === area.id ? { borderTopColor: area.color } : {}}>
             {area.name}
           </button>
         ))}
       </div>
 
-      {/* Table Canvas */}
-      <div ref={containerRef} className="flex-1 relative bg-background grid-bg mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-b-xl rounded-tr-xl border border-border overflow-hidden" data-testid="table-canvas">
+      {/* Table Canvas - Glassmorphism */}
+      <div ref={containerRef} className="flex-1 relative backdrop-blur-xl bg-white/5 mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-b-xl rounded-tr-xl border border-white/10 overflow-hidden" data-testid="table-canvas">
         {editMode && (
-          <div className={`absolute top-2 left-2 z-50 bg-primary/90 text-white ${isMobile ? 'text-[10px] px-3 py-1' : largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
+          <div className={`absolute top-2 left-2 z-50 backdrop-blur-xl bg-white/20 text-white border border-white/30 ${isMobile ? 'text-[10px] px-3 py-1' : largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
             {isMobile ? 'MODO EDICION' : 'MODO EDICION - Arrastra o toca para redimensionar'}
           </div>
         )}
@@ -299,7 +303,7 @@ export default function TableMap() {
             editMode={editMode} onResize={handleResize} currentUserId={currentUserId} largeMode={largeMode} device={device} />
         ))}
         {filteredTables.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+          <div className="absolute inset-0 flex items-center justify-center text-white/40">
             <div className="text-center">
               <Plus size={isMobile ? 28 : largeMode ? 40 : 32} className="mx-auto mb-2 opacity-40" />
               <p className={isMobile ? 'text-sm' : largeMode ? 'text-base' : 'text-sm'}>No hay mesas en esta area</p>
@@ -308,22 +312,22 @@ export default function TableMap() {
         )}
       </div>
 
-      {/* Resize Dialog */}
+      {/* Resize Dialog - Glassmorphism */}
       <Dialog open={resizeDialog.open} onOpenChange={(o) => !o && setResizeDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="resize-dialog">
-          <DialogHeader><DialogTitle className="font-oswald">Redimensionar Mesa {resizeDialog.table?.number}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="resize-dialog">
+          <DialogHeader><DialogTitle className="font-oswald text-white">Redimensionar Mesa {resizeDialog.table?.number}</DialogTitle></DialogHeader>
           <div className="space-y-6">
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Ancho: {resizeDialog.width}px</label>
+              <label className="text-sm text-white/60 mb-2 block">Ancho: {resizeDialog.width}px</label>
               <Slider value={[resizeDialog.width]} onValueChange={([v]) => setResizeDialog(p => ({ ...p, width: v }))}
                 min={40} max={160} step={5} className="py-2" />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Alto: {resizeDialog.height}px</label>
+              <label className="text-sm text-white/60 mb-2 block">Alto: {resizeDialog.height}px</label>
               <Slider value={[resizeDialog.height]} onValueChange={([v]) => setResizeDialog(p => ({ ...p, height: v }))}
                 min={40} max={160} step={5} className="py-2" />
             </div>
-            <div className="flex items-center justify-center p-4 bg-background rounded-lg border border-border">
+            <div className="flex items-center justify-center p-4 backdrop-blur-md bg-white/5 rounded-lg border border-white/10">
               <div style={{
                 width: resizeDialog.width * 0.8, height: resizeDialog.height * 0.8,
                 borderRadius: resizeDialog.table?.shape === 'round' ? '50%' : '12px',
@@ -333,9 +337,9 @@ export default function TableMap() {
                 <span className="font-oswald text-primary font-bold">{resizeDialog.table?.number}</span>
               </div>
             </div>
-            <Button onClick={handleSaveResize} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="save-resize">
+            <button onClick={handleSaveResize} className="w-full h-11 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-oswald font-bold active:scale-95 transition-all" data-testid="save-resize">
               GUARDAR TAMANO
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
