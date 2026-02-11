@@ -137,24 +137,24 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
     >
       {/* Divided badge */}
       {isDivided && !editMode && (
-        <div className={`absolute -top-2 -right-2 ${largeMode ? 'w-6 h-6 text-xs' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-background ${isOtherUser ? 'bg-blue-500' : 'bg-orange-500'}`}>
+        <div className={`absolute -top-2 -right-2 ${device?.isMobile ? 'w-5 h-5 text-[10px]' : largeMode ? 'w-6 h-6 text-xs' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-background ${isOtherUser ? 'bg-blue-500' : 'bg-orange-500'}`}>
           ÷
         </div>
       )}
       {/* Other user indicator */}
       {isOtherUser && !isDivided && !editMode && (
-        <div className={`absolute -top-1.5 -right-1.5 ${largeMode ? 'w-5 h-5' : 'w-4 h-4'} rounded-full bg-blue-500 flex items-center justify-center shadow-lg border-2 border-background`}>
-          <Users size={largeMode ? 10 : 8} className="text-white" />
+        <div className={`absolute -top-1.5 -right-1.5 ${device?.isMobile ? 'w-4 h-4' : largeMode ? 'w-5 h-5' : 'w-4 h-4'} rounded-full bg-blue-500 flex items-center justify-center shadow-lg border-2 border-background`}>
+          <Users size={device?.isMobile ? 8 : largeMode ? 10 : 8} className="text-white" />
         </div>
       )}
-      <span className={`font-oswald font-bold ${largeMode ? 'text-xl' : 'text-lg'}`} style={{ color: editMode ? '#FF6600' : colors.border }}>
+      <span className={`font-oswald font-bold ${numberSize}`} style={{ color: editMode ? '#FF6600' : colors.border }}>
         {table.number}
       </span>
-      <span className={`flex items-center gap-1 text-muted-foreground ${largeMode ? 'text-xs' : 'text-[9px]'}`}>
-        <Users size={largeMode ? 12 : 9} /> {table.capacity}
+      <span className={`flex items-center gap-1 text-muted-foreground ${capacitySize}`}>
+        <Users size={iconSize} /> {table.capacity}
       </span>
       {editMode && (
-        <span className={`text-primary mt-0.5 ${largeMode ? 'text-[10px]' : 'text-[8px]'}`}><Maximize2 size={largeMode ? 10 : 8} className="inline" /></span>
+        <span className={`text-primary mt-0.5 ${device?.isMobile ? 'text-[9px]' : largeMode ? 'text-[10px]' : 'text-[8px]'}`}><Maximize2 size={device?.isMobile ? 9 : largeMode ? 10 : 8} className="inline" /></span>
       )}
     </div>
   );
