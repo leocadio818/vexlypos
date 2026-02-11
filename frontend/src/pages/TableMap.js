@@ -169,10 +169,14 @@ export default function TableMap() {
   const containerRef = useRef(null);
   const [containerSize, setContainerSize] = useState({ w: 800, h: 500 });
   const navigate = useNavigate();
-  const { hasPermission, user, largeMode } = useAuth();
+  const { hasPermission, user, largeMode, device } = useAuth();
 
   const canMoveTable = hasPermission('move_tables');
   const currentUserId = user?.id;
+  
+  // Responsive helpers
+  const isMobile = device?.isMobile;
+  const isTablet = device?.isTablet;
 
   const fetchData = useCallback(async () => {
     try {
