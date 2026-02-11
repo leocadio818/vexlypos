@@ -468,12 +468,12 @@ async def list_payment_methods():
     methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
     if not methods:
         defaults = [
-            {"id": gen_id(), "name": "Efectivo", "icon": "banknote", "currency": "DOP", "exchange_rate": 1, "active": True},
-            {"id": gen_id(), "name": "Tarjeta de Credito", "icon": "credit-card", "currency": "DOP", "exchange_rate": 1, "active": True},
-            {"id": gen_id(), "name": "Tarjeta de Debito", "icon": "credit-card", "currency": "DOP", "exchange_rate": 1, "active": True},
-            {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "currency": "DOP", "exchange_rate": 1, "active": True},
-            {"id": gen_id(), "name": "Dolar (USD)", "icon": "dollar-sign", "currency": "USD", "exchange_rate": 58.50, "active": True},
-            {"id": gen_id(), "name": "Euro (EUR)", "icon": "euro", "currency": "EUR", "exchange_rate": 63.20, "active": True},
+            {"id": gen_id(), "name": "Efectivo RD$", "icon": "banknote", "icon_type": "lucide", "brand_icon": None, "bg_color": "#16a34a", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 0},
+            {"id": gen_id(), "name": "Tarjeta de Crédito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "visa", "bg_color": "#1e40af", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 1},
+            {"id": gen_id(), "name": "Tarjeta de Débito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "mastercard", "bg_color": "#7c3aed", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 2},
+            {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "icon_type": "lucide", "brand_icon": None, "bg_color": "#0891b2", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 3},
+            {"id": gen_id(), "name": "USD Dólar", "icon": "dollar-sign", "icon_type": "lucide", "brand_icon": None, "bg_color": "#059669", "text_color": "#ffffff", "currency": "USD", "exchange_rate": 58.50, "active": True, "order": 4},
+            {"id": gen_id(), "name": "EUR Euro", "icon": "euro", "icon_type": "lucide", "brand_icon": None, "bg_color": "#d97706", "text_color": "#ffffff", "currency": "EUR", "exchange_rate": 63.20, "active": True, "order": 5},
         ]
         await db.payment_methods.insert_many(defaults)
         return defaults
