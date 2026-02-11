@@ -14,7 +14,8 @@ export function useDeviceDetect() {
     const isIOS = /iphone|ipad|ipod/.test(ua);
     const isAndroid = /android/.test(ua);
     const isTablet = /ipad/.test(ua) || (/android/.test(ua) && !/mobile/.test(ua)) || (width >= 768 && width <= 1024);
-    const isMobile = (isIOS || isAndroid) && !isTablet && width < 768;
+    // Mobile detection: either mobile UA with small screen, OR just small screen width (< 768px)
+    const isMobile = width < 768 && !isTablet;
     const isDesktop = !isMobile && !isTablet;
     
     // Touch detection
