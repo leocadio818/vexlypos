@@ -522,6 +522,7 @@ export default function PaymentScreen() {
                 </span>
               </div>
               
+              {/* Cash change */}
               {change > 0 && (
                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-green-400/20">
                   <span className="font-bold text-green-400 flex items-center gap-2">
@@ -534,10 +535,24 @@ export default function PaymentScreen() {
                 </div>
               )}
               
-              {change < 0 && (
+              {/* Card tip (not cash) */}
+              {cardTip > 0 && (
+                <div className="flex justify-between items-center mt-3 pt-3 border-t border-purple-400/20">
+                  <span className="font-bold text-purple-400 flex items-center gap-2">
+                    <Heart size={isMobile ? 16 : 20} className="animate-pulse" />
+                    PROPINA
+                  </span>
+                  <span className={`font-oswald font-bold bg-gradient-to-r from-purple-300 to-pink-400 bg-clip-text text-transparent ${isMobile ? 'text-xl' : 'text-3xl'}`}>
+                    {formatMoney(cardTip)}
+                  </span>
+                </div>
+              )}
+              
+              {/* Amount remaining */}
+              {overpaid < 0 && (
                 <div className="flex justify-between items-center mt-2 text-sm">
                   <span className="text-red-400/80">Falta</span>
-                  <span className="font-oswald font-bold text-red-400">{formatMoney(Math.abs(change))}</span>
+                  <span className="font-oswald font-bold text-red-400">{formatMoney(Math.abs(overpaid))}</span>
                 </div>
               )}
             </div>
