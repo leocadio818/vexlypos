@@ -383,6 +383,13 @@ export default function PaymentScreen() {
               const amount = payAmounts[method.name];
               const hasAmount = amount && parseFloat(amount) > 0;
               
+              // Calculate equivalent amount in foreign currency
+              const isForeignCurrency = method.currency !== 'DOP';
+              const equivalentInForeign = isForeignCurrency && method.exchange_rate 
+                ? (billTotal / method.exchange_rate).toFixed(2) 
+                : null;
+              const currencySymbol = method.currency === 'USD' ? '$' : method.currency === 'EUR' ? '€' : '';
+              
               return (
                 <button
                   key={method.id}
@@ -431,13 +438,20 @@ export default function PaymentScreen() {
                   </div>
                   
                   {/* Name */}
-                  <span className={`relative z-10 font-oswald font-bold text-center leading-tight text-white/90 mt-2 drop-shadow-lg ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                  <span className={`relative z-10 font-oswald font-bold text-center leading-tight text-white/90 mt-1 drop-shadow-lg ${isMobile ? 'text-xs' : 'text-sm'}`}>
                     {method.name}
                   </span>
                   
+                  {/* Foreign currency equivalent - Shows how much to receive in USD/EUR */}
+                  {isForeignCurrency && equivalentInForeign && !hasAmount && (
+                    <span className={`relative z-10 font-oswald font-bold text-center text-yellow-300 drop-shadow-lg ${isMobile ? 'text-sm' : 'text-base'}`}>
+                      {currencySymbol}{equivalentInForeign}
+                    </span>
+                  )}
+                  
                   {/* Exchange rate badge */}
-                  {method.currency !== 'DOP' && (
-                    <span className={`absolute bottom-2 right-2 ${glassStyles.card} px-2 py-0.5 rounded-full font-oswald text-white/70 ${isMobile ? 'text-[8px]' : 'text-[10px]'}`}>
+                  {isForeignCurrency && (
+                    <span className={`absolute bottom-1.5 right-2 ${glassStyles.card} px-1.5 py-0.5 rounded-full font-oswald text-white/60 ${isMobile ? 'text-[7px]' : 'text-[9px]'}`}>
                       1 = {method.exchange_rate}
                     </span>
                   )}
