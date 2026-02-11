@@ -1653,6 +1653,48 @@ export default function Settings() {
                 </div>
               </div>
 
+              {/* Cash or Card Toggle */}
+              <div className="bg-background border border-border rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-semibold block">¿Es Efectivo?</label>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {payDialog.is_cash 
+                        ? 'Si el cliente paga de más → CAMBIO (se devuelve)' 
+                        : 'Si el cliente paga de más → PROPINA (se queda)'}
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={payDialog.is_cash} 
+                    onCheckedChange={(checked) => setPayDialog(p => ({ ...p, is_cash: checked }))}
+                  />
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setPayDialog(p => ({ ...p, is_cash: true }))}
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                      payDialog.is_cash 
+                        ? 'bg-green-500/20 border-2 border-green-500 text-green-400' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    💵 Efectivo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPayDialog(p => ({ ...p, is_cash: false }))}
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                      !payDialog.is_cash 
+                        ? 'bg-purple-500/20 border-2 border-purple-500 text-purple-400' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    💳 Tarjeta
+                  </button>
+                </div>
+              </div>
+
               <Button onClick={handleSavePayMethod} className="w-full h-12 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-payment">
                 {payDialog.editId ? 'GUARDAR CAMBIOS' : 'CREAR MÉTODO DE PAGO'}
               </Button>
