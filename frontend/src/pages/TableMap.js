@@ -27,7 +27,7 @@ const stripedPattern = (isOther) => `repeating-linear-gradient(
   rgba(${isOther ? '2,136,209' : '255,102,0'},0.15) 12px
 )`;
 
-function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, onResize, currentUserId, largeMode }) {
+function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, onResize, currentUserId, largeMode, device }) {
   const [isDragging, setIsDragging] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0, moved: false, pointerId: null });
@@ -46,12 +46,30 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
   const colors = statusColors[colorKey] || statusColors.free;
   const pxX = (table.x / 100) * containerSize.w;
   const pxY = (table.y / 100) * containerSize.h;
-  const scale = Math.min(containerSize.w / 1200, containerSize.h / 700, 1.5);
+  
+  // Responsive scaling based on device
+  const getScale = () => {
+    if (device?.isMobile) return Math.min(containerSize.w / 800, containerSize.h / 500, 1.2);
+    if (device?.isTablet) return Math.min(containerSize.w / 1000, containerSize.h / 600, 1.3);
+    return Math.min(containerSize.w / 1200, containerSize.h / 700, 1.5);
+  };
+  
+  const scale = getScale();
   const baseW = table.width || 80;
   const baseH = table.height || 80;
-  const w = Math.max(50, baseW * scale);
-  const h = Math.max(45, baseH * scale);
+  
+  // Minimum sizes based on device
+  const minW = device?.isMobile ? 55 : device?.isTablet ? 60 : 50;
+  const minH = device?.isMobile ? 50 : device?.isTablet ? 55 : 45;
+  
+  const w = Math.max(minW, baseW * scale);
+  const h = Math.max(minH, baseH * scale);
   const radius = table.shape === 'round' ? '50%' : table.shape === 'rectangle' ? '12px' : '16px';
+  
+  // Font sizes based on device
+  const numberSize = device?.isMobile ? 'text-base' : largeMode ? 'text-xl' : 'text-lg';
+  const capacitySize = device?.isMobile ? 'text-[10px]' : largeMode ? 'text-xs' : 'text-[9px]';
+  const iconSize = device?.isMobile ? 10 : largeMode ? 12 : 9;
 
   useEffect(() => { setPos({ x: pxX, y: pxY }); }, [pxX, pxY]);
 
