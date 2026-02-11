@@ -60,8 +60,14 @@ export default function Settings() {
   const [channelDialog, setChannelDialog] = useState({ open: false, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null });
   
   // System Config
-  const [systemConfig, setSystemConfig] = useState({ timezone_offset: -4, restaurant_name: 'Mi Restaurante', currency: 'RD$' });
+  const [systemConfig, setSystemConfig] = useState({ 
+    timezone_offset: -4, 
+    restaurant_name: 'Mi Restaurante', 
+    currency: 'RD$',
+    quick_amounts: [100, 200, 500, 1000, 2000, 5000]
+  });
   const [timezones, setTimezones] = useState([]);
+  const [quickAmountInput, setQuickAmountInput] = useState('');
 
   const fetchAll = async () => {
     try {
