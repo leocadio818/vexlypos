@@ -437,27 +437,80 @@ export default function Settings() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-oswald text-base font-bold">Formas de Pago</h2>
-                  <Button onClick={() => setPayDialog({ open: true, name: '', icon: 'circle', editId: null })} size="sm"
+                  <Button onClick={() => setPayDialog({ 
+                    open: true, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
+                    bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null 
+                  })} size="sm"
                     className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-payment-btn">
                     <Plus size={14} className="mr-1" /> Agregar
                   </Button>
                 </div>
-                <div className="space-y-2 mb-6">
-                  {payMethods.map(m => (
-                    <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`payment-${m.id}`}>
-                      <div>
-                        <span className="font-semibold">{m.name}</span>
+                
+                {/* Payment Methods Grid - Vista Mejorada */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+                  {payMethods.sort((a, b) => (a.order || 0) - (b.order || 0)).map(m => (
+                    <div 
+                      key={m.id} 
+                      className="group relative rounded-2xl overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1"
+                      style={{ backgroundColor: m.bg_color || '#6b7280' }}
+                      data-testid={`payment-${m.id}`}
+                    >
+                      {/* Content */}
+                      <div 
+                        className="p-4 flex flex-col items-center justify-center min-h-[100px]"
+                        style={{ color: m.text_color || '#ffffff' }}
+                      >
+                        {/* Icon */}
+                        {m.icon_type === 'brand' && m.brand_icon ? (
+                          <div className="w-10 h-6 bg-white/20 rounded flex items-center justify-center text-[8px] font-bold mb-2">
+                            {m.brand_icon.toUpperCase()}
+                          </div>
+                        ) : (
+                          (() => {
+                            const icons = { banknote: Banknote, 'credit-card': CreditCard, smartphone: Smartphone, building2: Building2, 'dollar-sign': DollarSign };
+                            const Icon = icons[m.icon] || Banknote;
+                            return <Icon size={24} className="mb-2" />;
+                          })()
+                        )}
+                        <span className="font-oswald font-bold text-sm text-center">{m.name}</span>
                         {m.currency && m.currency !== 'DOP' && (
-                          <Badge variant="outline" className="ml-2 text-[9px] border-yellow-500 text-yellow-400">
-                            {m.currency} (1={m.exchange_rate})
-                          </Badge>
+                          <span className="text-[10px] opacity-70 mt-1">1 = {m.exchange_rate}</span>
                         )}
                       </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                          onClick={() => setPayDialog({ open: true, name: m.name, icon: m.icon || '', currency: m.currency || 'DOP', exchange_rate: m.exchange_rate || 1, editId: m.id })}>
-                          <Pencil size={14} />
+                      
+                      {/* Hover Actions */}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-10 w-10 bg-white/20 hover:bg-white/30 text-white"
+                          onClick={() => setPayDialog({ 
+                            open: true, 
+                            name: m.name, 
+                            icon: m.icon || 'banknote', 
+                            icon_type: m.icon_type || 'lucide',
+                            brand_icon: m.brand_icon || null,
+                            bg_color: m.bg_color || '#6b7280',
+                            text_color: m.text_color || '#ffffff',
+                            currency: m.currency || 'DOP', 
+                            exchange_rate: m.exchange_rate || 1, 
+                            editId: m.id 
+                          })}
+                        >
+                          <Pencil size={16} />
                         </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-10 w-10 bg-destructive/50 hover:bg-destructive/70 text-white"
+                          onClick={() => handleDeletePayMethod(m.id)}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
                           onClick={() => handleDeletePayMethod(m.id)}>
                           <Trash2 size={14} />
