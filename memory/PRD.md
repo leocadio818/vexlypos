@@ -253,6 +253,39 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - Tablet Landscape: 1024x768
   - Desktop: 1920x1080
 
+### Phase 12 (Feb 11, 2026) - Modo Offline Completo
+- **Sistema Offline con Sincronización Automática (COMPLETADO)**:
+  - **Nuevo módulo `offlineDB.js`**: Base de datos local con IndexedDB
+    - Almacena operaciones pendientes sin límite de tiempo
+    - Cola de sincronización con prioridades
+    - Caché de datos esenciales (productos, categorías, mesas, áreas, métodos de pago)
+  - **Nuevo hook `useOfflineSync.js`**: Gestión de estado offline
+    - Sincronización automática al recuperar conexión
+    - Polling cada 30 segundos para sincronizar pendientes
+    - Hooks para datos cacheados y mutaciones offline
+  - **Funciones Disponibles Offline**:
+    - ✅ Ver menú y productos (desde caché)
+    - ✅ Ver mesas y su estado (última información conocida)
+    - ✅ Tomar pedidos (agregar productos a órdenes)
+    - ✅ Enviar a cocina (se encola)
+    - ✅ Dividir cuentas (se encola)
+    - ✅ Mover ítems entre cuentas (se encola)
+  - **Indicadores Visuales**:
+    - 🟢 WiFi verde: Conexión activa
+    - 🔵 Nube azul pulsante: Sincronizando
+    - 🟠 WiFi naranja pulsante: Sin conexión
+    - 🔶 Badge con contador: Operaciones pendientes
+    - Banner en móvil con estado y botón de sincronización
+  - **Notificaciones Toast**:
+    - "📴 Modo Offline Activado" al perder conexión
+    - "🌐 Conexión restaurada" al recuperar
+    - "✓ X operación(es) sincronizada(s)" tras sync exitoso
+    - "Guardado offline" al crear operación sin conexión
+- **Archivos nuevos**:
+  - `frontend/src/lib/offlineDB.js` - Base de datos IndexedDB
+  - `frontend/src/hooks/useOfflineSync.js` - Hooks de sincronización
+- **Dependencia nueva**: `idb@8.0.3` (IndexedDB wrapper)
+
 ## PINs de Acceso (Datos de Demo)
 | Usuario | PIN | Rol |
 |---------|-----|-----|
