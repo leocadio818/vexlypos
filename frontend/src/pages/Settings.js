@@ -183,7 +183,8 @@ export default function Settings() {
         bg_color: payDialog.bg_color,
         text_color: payDialog.text_color,
         currency: payDialog.currency, 
-        exchange_rate: parseFloat(payDialog.exchange_rate) || 1 
+        exchange_rate: parseFloat(payDialog.exchange_rate) || 1,
+        is_cash: payDialog.is_cash
       };
       if (payDialog.editId) {
         await axios.put(`${API}/payment-methods/${payDialog.editId}`, data, { headers: hdrs() });
@@ -193,7 +194,7 @@ export default function Settings() {
       toast.success(payDialog.editId ? 'Actualizado' : 'Creado');
       setPayDialog({ 
         open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
-        bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null 
+        bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true 
       }); 
       fetchAll();
     } catch { toast.error('Error'); }
