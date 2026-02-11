@@ -36,6 +36,8 @@ const PERM_LABELS = {
 };
 
 export default function Settings() {
+  const { user } = useAuth();
+  const { theme, setTheme, saveTheme, resetTheme, defaultTheme } = useTheme();
   const [areas, setAreas] = useState([]);
   const [tables, setTables] = useState([]);
   const [reasons, setReasons] = useState([]);
@@ -49,6 +51,9 @@ export default function Settings() {
   const [roles, setRoles] = useState([]);
   const [roleDialog, setRoleDialog] = useState({ open: false, name: '', code: '', editId: null });
   const [taxConfig, setTaxConfig] = useState([]);
+  
+  // Check if user can access theme settings (admin, manager, owner, gerente, propietario)
+  const canAccessTheme = ['admin', 'manager', 'owner', 'propietario', 'gerente'].includes(user?.role);
 
   // Sub-tab states
   const [mesasSubTab, setMesasSubTab] = useState('mesas');
