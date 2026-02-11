@@ -30,3 +30,116 @@
   100% { transform: scale(1); }
 }
 .pin-dot-filled { animation: pin-fill 0.15s ease-out; }
+
+
+/* ============================
+   RESPONSIVE & MOBILE STYLES
+   ============================ */
+
+/* Safe area for iOS devices (notch, home indicator) */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch-friendly tap targets */
+@media (pointer: coarse) {
+  button, 
+  a, 
+  input[type="button"], 
+  input[type="submit"],
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent text selection on interactive elements for touch */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Smooth momentum scrolling on iOS */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile optimized grid backgrounds */
+@media (max-width: 640px) {
+  .grid-bg {
+    background-size: 20px 20px !important;
+  }
+}
+
+/* Larger touch targets for mobile */
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* Tablet specific adjustments */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tablet-compact {
+    padding: 0.5rem;
+  }
+}
+
+/* Prevent overscroll/bounce on iOS */
+body {
+  overscroll-behavior: none;
+}
+
+/* Prevent pull-to-refresh */
+html {
+  overscroll-behavior-y: contain;
+}
+
+/* Better focus styles for touch devices */
+@media (pointer: coarse) {
+  :focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Animated gradient background for payment buttons */
+.payment-btn-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Shimmer effect for loading states */
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
