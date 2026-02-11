@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { Toaster } from "@/components/ui/sonner";
 import Login from "@/pages/Login";
 import TableMap from "@/pages/TableMap";
@@ -58,10 +59,12 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-        <Toaster position="top-right" richColors duration={500} />
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AppRoutes />
+          <Toaster position="top-right" richColors duration={500} />
+        </BrowserRouter>
+      </ThemeProvider>
     </AuthProvider>
   );
 }
