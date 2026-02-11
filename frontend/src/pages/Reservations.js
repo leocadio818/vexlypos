@@ -125,29 +125,30 @@ export default function Reservations() {
 
   return (
     <div className="h-full flex flex-col" data-testid="reservations-page">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
+      {/* Header - Glassmorphism */}
+      <div className="px-4 py-3 backdrop-blur-xl bg-white/5 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CalendarDays size={22} className="text-primary" />
-          <h1 className="font-oswald text-xl font-bold tracking-wide">RESERVACIONES</h1>
+          <CalendarDays size={22} className="text-orange-400" />
+          <h1 className="font-oswald text-xl font-bold tracking-wide text-white">RESERVACIONES</h1>
         </div>
         <div className="flex items-center gap-2">
           <input type="date" value={date} onChange={e => setDate(e.target.value)}
-            className="bg-card border border-border rounded-lg px-3 py-1.5 text-sm font-mono" data-testid="reservation-date" />
-          <Button onClick={() => setDialog({ 
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm font-mono text-white focus:border-white/30 outline-none" data-testid="reservation-date" />
+          <button onClick={() => setDialog({ 
             open: true, editId: null, customer_name: '', phone: '', date, time: '19:00', party_size: 2, 
             table_ids: [], area_id: '', notes: '',
             activation_minutes: 60, tolerance_minutes: 15
           })}
-            size="sm" className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="new-reservation-btn">
-            <Plus size={14} className="mr-1" /> Nueva
-          </Button>
+            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold active:scale-95 flex items-center gap-1 text-sm" data-testid="new-reservation-btn">
+            <Plus size={14} /> Nueva
+          </button>
         </div>
       </div>
 
       <div className="flex-1 p-4 overflow-auto">
         <div className="max-w-3xl mx-auto">
           {reservations.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-12 text-white/40">
               <CalendarDays size={40} className="mx-auto mb-3 opacity-30" />
               <p className="font-oswald text-lg">Sin reservaciones para {date}</p>
             </div>
@@ -155,21 +156,21 @@ export default function Reservations() {
             <div className="space-y-4">
               {Object.entries(timeSlots).sort().map(([time, items]) => (
                 <div key={time}>
-                  <h3 className="font-oswald text-sm text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <h3 className="font-oswald text-sm text-white/50 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Clock size={14} /> {time}
                   </h3>
                   <div className="space-y-2">
                     {items.map(r => (
                       <div key={r.id} 
                         onClick={() => openEdit(r)}
-                        className="flex items-center justify-between p-3 rounded-xl bg-card border border-border cursor-pointer hover:bg-card/80 transition-colors" 
+                        className="flex items-center justify-between p-3 rounded-xl backdrop-blur-xl bg-white/10 border border-white/20 cursor-pointer hover:bg-white/15 transition-colors" 
                         data-testid={`reservation-${r.id}`}>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold">{r.customer_name}</span>
+                            <span className="font-semibold text-white">{r.customer_name}</span>
                             <Badge className={statusColors[r.status]}>{r.status === 'confirmed' ? 'Confirmada' : r.status === 'seated' ? 'Sentados' : r.status === 'cancelled' ? 'Cancelada' : 'Completada'}</Badge>
                           </div>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-3 mt-1 text-xs text-white/50">
                             <span className="flex items-center gap-1"><Users size={10} /> {r.party_size} personas</span>
                             {r.phone && <span className="flex items-center gap-1"><Phone size={10} /> {r.phone}</span>}
                             {r.table_numbers?.length > 0 && <span>Mesas: {r.table_numbers.join(', ')}</span>}
@@ -178,15 +179,15 @@ export default function Reservations() {
                         </div>
                         <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                           {r.status === 'confirmed' && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-green-400 hover:text-green-300"
-                              onClick={() => updateStatus(r.id, 'seated')}><Check size={14} /></Button>
+                            <button className="h-8 w-8 rounded-lg text-green-400 hover:text-green-300 hover:bg-white/10 flex items-center justify-center transition-all"
+                              onClick={() => updateStatus(r.id, 'seated')}><Check size={14} /></button>
                           )}
                           {r.status !== 'cancelled' && r.status !== 'completed' && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
-                              onClick={() => updateStatus(r.id, 'cancelled')}><X size={14} /></Button>
+                            <button className="h-8 w-8 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-white/10 flex items-center justify-center transition-all"
+                              onClick={() => updateStatus(r.id, 'cancelled')}><X size={14} /></button>
                           )}
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => deleteRes(r.id)}><Trash2 size={12} /></Button>
+                          <button className="h-8 w-8 rounded-lg text-white/40 hover:text-red-400 hover:bg-white/10 flex items-center justify-center transition-all"
+                            onClick={() => deleteRes(r.id)}><Trash2 size={12} /></button>
                         </div>
                       </div>
                     ))}
