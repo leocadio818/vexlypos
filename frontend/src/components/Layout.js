@@ -25,11 +25,15 @@ export default function Layout() {
   
   // Offline state
   const { isSyncing, pendingCount, syncNow } = offline || {};
+  
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
 
   const filteredNav = navItems.filter(item => {
     if (item.to === '/dashboard') return hasPermission('view_dashboard');
     if (item.to === '/reservations') return hasPermission('manage_reservations');
-    if (item.to === '/settings') return true;
+    // Only show Config for admins
+    if (item.to === '/settings') return isAdmin;
     return true;
   });
 
