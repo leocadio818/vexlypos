@@ -975,6 +975,180 @@ export default function Settings() {
                   </button>
                 </div>
 
+                {/* Preset Palettes */}
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <h3 className="text-sm font-semibold mb-3">Paletas Predefinidas</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {/* Default - Purple/Blue */}
+                    <button
+                      onClick={() => setTheme({
+                        gradientStart: '#0f0f23',
+                        gradientMid1: '#1a1a3e',
+                        gradientMid2: '#2d1b4e',
+                        gradientEnd: '#1e3a5f',
+                        accentColor: '#ff6600',
+                        glassOpacity: 0.1,
+                        glassBlur: 12,
+                        orbColor1: 'rgba(168, 85, 247, 0.3)',
+                        orbColor2: 'rgba(59, 130, 246, 0.2)',
+                        orbColor3: 'rgba(6, 182, 212, 0.2)',
+                      })}
+                      className="p-3 rounded-xl border border-border hover:border-purple-500/50 transition-all group"
+                    >
+                      <div className="h-12 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b4e 100%)' }} />
+                      <span className="text-xs font-medium group-hover:text-purple-400">Predeterminado</span>
+                      <p className="text-[10px] text-muted-foreground">Púrpura/Azul</p>
+                    </button>
+
+                    {/* Natural - Green */}
+                    <button
+                      onClick={() => setTheme({
+                        gradientStart: '#0a1f0a',
+                        gradientMid1: '#0f2f1a',
+                        gradientMid2: '#1a3f2a',
+                        gradientEnd: '#0f3f3f',
+                        accentColor: '#22c55e',
+                        glassOpacity: 0.1,
+                        glassBlur: 12,
+                        orbColor1: 'rgba(34, 197, 94, 0.3)',
+                        orbColor2: 'rgba(16, 185, 129, 0.25)',
+                        orbColor3: 'rgba(6, 182, 212, 0.2)',
+                      })}
+                      className="p-3 rounded-xl border border-border hover:border-green-500/50 transition-all group"
+                    >
+                      <div className="h-12 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, #0a1f0a 0%, #0f2f1a 50%, #1a3f2a 100%)' }} />
+                      <span className="text-xs font-medium group-hover:text-green-400">Natural</span>
+                      <p className="text-[10px] text-muted-foreground">Verdes bosque</p>
+                    </button>
+
+                    {/* Elegant - Gold */}
+                    <button
+                      onClick={() => setTheme({
+                        gradientStart: '#1a1510',
+                        gradientMid1: '#2a2015',
+                        gradientMid2: '#3a2a1a',
+                        gradientEnd: '#2a1a10',
+                        accentColor: '#f59e0b',
+                        glassOpacity: 0.12,
+                        glassBlur: 14,
+                        orbColor1: 'rgba(245, 158, 11, 0.25)',
+                        orbColor2: 'rgba(217, 119, 6, 0.2)',
+                        orbColor3: 'rgba(180, 83, 9, 0.15)',
+                      })}
+                      className="p-3 rounded-xl border border-border hover:border-amber-500/50 transition-all group"
+                    >
+                      <div className="h-12 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, #1a1510 0%, #2a2015 50%, #3a2a1a 100%)' }} />
+                      <span className="text-xs font-medium group-hover:text-amber-400">Elegante</span>
+                      <p className="text-[10px] text-muted-foreground">Dorados cálidos</p>
+                    </button>
+
+                    {/* Pastel */}
+                    <button
+                      onClick={() => setTheme({
+                        gradientStart: '#2d2d3d',
+                        gradientMid1: '#3d3d5c',
+                        gradientMid2: '#4a4a6a',
+                        gradientEnd: '#3a4a5a',
+                        accentColor: '#f472b6',
+                        glassOpacity: 0.15,
+                        glassBlur: 16,
+                        orbColor1: 'rgba(244, 114, 182, 0.25)',
+                        orbColor2: 'rgba(167, 139, 250, 0.25)',
+                        orbColor3: 'rgba(129, 230, 217, 0.2)',
+                      })}
+                      className="p-3 rounded-xl border border-border hover:border-pink-400/50 transition-all group"
+                    >
+                      <div className="h-12 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, #2d2d3d 0%, #3d3d5c 50%, #4a4a6a 100%)' }} />
+                      <span className="text-xs font-medium group-hover:text-pink-400">Pastel</span>
+                      <p className="text-[10px] text-muted-foreground">Tonos suaves</p>
+                    </button>
+
+                    {/* Ocean */}
+                    <button
+                      onClick={() => setTheme({
+                        gradientStart: '#0a192f',
+                        gradientMid1: '#0d2137',
+                        gradientMid2: '#112a45',
+                        gradientEnd: '#0f3460',
+                        accentColor: '#06b6d4',
+                        glassOpacity: 0.1,
+                        glassBlur: 12,
+                        orbColor1: 'rgba(6, 182, 212, 0.3)',
+                        orbColor2: 'rgba(14, 165, 233, 0.25)',
+                        orbColor3: 'rgba(59, 130, 246, 0.2)',
+                      })}
+                      className="p-3 rounded-xl border border-border hover:border-cyan-500/50 transition-all group"
+                    >
+                      <div className="h-12 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, #0a192f 0%, #0d2137 50%, #112a45 100%)' }} />
+                      <span className="text-xs font-medium group-hover:text-cyan-400">Océano</span>
+                      <p className="text-[10px] text-muted-foreground">Azules profundos</p>
+                    </button>
+
+                    {/* Sunset */}
+                    <button
+                      onClick={() => setTheme({
+                        gradientStart: '#1a0a1a',
+                        gradientMid1: '#2d1020',
+                        gradientMid2: '#4a1530',
+                        gradientEnd: '#2a1a35',
+                        accentColor: '#f97316',
+                        glassOpacity: 0.12,
+                        glassBlur: 14,
+                        orbColor1: 'rgba(249, 115, 22, 0.3)',
+                        orbColor2: 'rgba(236, 72, 153, 0.25)',
+                        orbColor3: 'rgba(168, 85, 247, 0.2)',
+                      })}
+                      className="p-3 rounded-xl border border-border hover:border-orange-500/50 transition-all group"
+                    >
+                      <div className="h-12 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, #1a0a1a 0%, #2d1020 50%, #4a1530 100%)' }} />
+                      <span className="text-xs font-medium group-hover:text-orange-400">Atardecer</span>
+                      <p className="text-[10px] text-muted-foreground">Rosa/Naranja</p>
+                    </button>
+
+                    {/* Mint */}
+                    <button
+                      onClick={() => setTheme({
+                        gradientStart: '#1a2a2a',
+                        gradientMid1: '#1f3535',
+                        gradientMid2: '#254545',
+                        gradientEnd: '#203a3a',
+                        accentColor: '#2dd4bf',
+                        glassOpacity: 0.12,
+                        glassBlur: 14,
+                        orbColor1: 'rgba(45, 212, 191, 0.3)',
+                        orbColor2: 'rgba(52, 211, 153, 0.25)',
+                        orbColor3: 'rgba(34, 197, 94, 0.2)',
+                      })}
+                      className="p-3 rounded-xl border border-border hover:border-teal-400/50 transition-all group"
+                    >
+                      <div className="h-12 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, #1a2a2a 0%, #1f3535 50%, #254545 100%)' }} />
+                      <span className="text-xs font-medium group-hover:text-teal-400">Menta</span>
+                      <p className="text-[10px] text-muted-foreground">Verde agua</p>
+                    </button>
+
+                    {/* Cherry */}
+                    <button
+                      onClick={() => setTheme({
+                        gradientStart: '#1a0f0f',
+                        gradientMid1: '#2a1515',
+                        gradientMid2: '#3a1a1a',
+                        gradientEnd: '#2a1010',
+                        accentColor: '#ef4444',
+                        glassOpacity: 0.1,
+                        glassBlur: 12,
+                        orbColor1: 'rgba(239, 68, 68, 0.3)',
+                        orbColor2: 'rgba(244, 63, 94, 0.25)',
+                        orbColor3: 'rgba(236, 72, 153, 0.2)',
+                      })}
+                      className="p-3 rounded-xl border border-border hover:border-red-500/50 transition-all group"
+                    >
+                      <div className="h-12 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, #1a0f0f 0%, #2a1515 50%, #3a1a1a 100%)' }} />
+                      <span className="text-xs font-medium group-hover:text-red-400">Cereza</span>
+                      <p className="text-[10px] text-muted-foreground">Rojos intensos</p>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Live Preview */}
                 <div 
                   className="rounded-xl overflow-hidden border border-border h-32 relative"
