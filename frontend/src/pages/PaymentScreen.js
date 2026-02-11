@@ -3,31 +3,118 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { billsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, QrCode, X, Check, Printer } from 'lucide-react';
+import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, QrCode, X, Check, Wallet, Coins, CircleDollarSign, BadgeDollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const paymentIcons = {
-  'Efectivo RD$': Banknote,
-  'Tarjeta Crédito': CreditCard,
-  'Tarjeta Débito': CreditCard,
-  'Transferencia': Building2,
-  'USD': DollarSign,
-  'EUR': Euro,
+// Iconos de Lucide para métodos de pago
+const lucideIcons = {
+  'banknote': Banknote,
+  'credit-card': CreditCard,
+  'smartphone': Smartphone,
+  'building2': Building2,
+  'dollar-sign': DollarSign,
+  'euro': Euro,
+  'wallet': Wallet,
+  'coins': Coins,
+  'circle-dollar-sign': CircleDollarSign,
+  'badge-dollar-sign': BadgeDollarSign,
   'default': Banknote
 };
 
-const paymentColors = {
-  'Efectivo RD$': 'bg-green-600 hover:bg-green-700',
-  'Tarjeta Crédito': 'bg-blue-600 hover:bg-blue-700',
-  'Tarjeta Débito': 'bg-purple-600 hover:bg-purple-700',
-  'Transferencia': 'bg-cyan-600 hover:bg-cyan-700',
-  'USD': 'bg-emerald-600 hover:bg-emerald-700',
-  'EUR': 'bg-amber-600 hover:bg-amber-700',
-  'default': 'bg-gray-600 hover:bg-gray-700'
+// SVG icons para procesadores de pago (Visa, Mastercard, etc.)
+const BrandIcons = {
+  visa: () => (
+    <svg viewBox="0 0 48 48" className="w-full h-full">
+      <path fill="#1565C0" d="M45,35c0,2.209-1.791,4-4,4H7c-2.209,0-4-1.791-4-4V13c0-2.209,1.791-4,4-4h34c2.209,0,4,1.791,4,4V35z"/>
+      <path fill="#FFF" d="M15.186 19l-2.626 7.832c0 0-.598-3.053-.724-3.719-.42-1.181-.937-2.009-2.126-2.009H7v.105c1.441.356 2.808 1.077 3.812 1.897l3.074 8.894h3.3L21.5 19H15.186zM17.556 30l3.594-11h3.6l-3.594 11H17.556zM38.95 19h-3.26l-5.04 11h3.36l.62-1.54h4.12l.34 1.54H42L38.95 19zM35.27 25.54l1.68-4.42 .96 4.42H35.27zM28.75 22.32l.4-2.32c0 0-1.87-.68-3.14-.68-1.4 0-4.71.62-4.71 3.61 0 2.78 3.88 2.81 3.88 4.27s-3.48 1.2-4.64.28l-.42 2.42c0 0 1.89.91 3.81.91 1.92 0 5.07-1 5.07-3.73 0-2.82-3.91-3.06-3.91-4.27S27.46 22.04 28.75 22.32z"/>
+    </svg>
+  ),
+  mastercard: () => (
+    <svg viewBox="0 0 48 48" className="w-full h-full">
+      <path fill="#3F51B5" d="M45,35c0,2.209-1.791,4-4,4H7c-2.209,0-4-1.791-4-4V13c0-2.209,1.791-4,4-4h34c2.209,0,4,1.791,4,4V35z"/>
+      <circle cx="18" cy="24" r="9" fill="#E53935"/>
+      <circle cx="30" cy="24" r="9" fill="#FF9800"/>
+      <path fill="#FF5722" d="M24,17c1.958,1.626,3.211,4.087,3.211,6.833c0,2.933-1.407,5.536-3.578,7.167c-2.171-1.631-3.578-4.234-3.578-7.167C20.056,21.087,21.309,18.626,24,17z"/>
+    </svg>
+  ),
+  amex: () => (
+    <svg viewBox="0 0 48 48" className="w-full h-full">
+      <path fill="#1976D2" d="M45,35c0,2.209-1.791,4-4,4H7c-2.209,0-4-1.791-4-4V13c0-2.209,1.791-4,4-4h34c2.209,0,4,1.791,4,4V35z"/>
+      <path fill="#FFF" d="M22.255 20l-2.113 4.683L18.029 20h-2.502l3.286 7.159H20.1l3.286-7.159H22.255zM25.752 27.159h5.502v-1.431h-3.97v-1.493h3.876v-1.426h-3.876v-1.378h3.97V20h-5.502V27.159zM7 20l2.252 7.159h2.084L13.589 20h-2.084l-1.347 5.026L8.812 20H7zM34.152 22.425c0-1.461-1.007-2.425-2.503-2.425h-4.006v7.159h1.532v-2.318h1.505l1.535 2.318h1.876l-1.752-2.493C33.377 24.359 34.152 23.534 34.152 22.425zM31.175 23.659h-2v-2.227h2c.558 0 .971.395.971.969C32.146 23.234 31.733 23.659 31.175 23.659z"/>
+      <path fill="#FFF" d="M14.5 27.159h1.531V20H14.5V27.159zM37.5 20l-2.252 7.159h2.084L39.589 20H37.5z"/>
+    </svg>
+  ),
+  discover: () => (
+    <svg viewBox="0 0 48 48" className="w-full h-full">
+      <path fill="#E64A19" d="M45,35c0,2.209-1.791,4-4,4H7c-2.209,0-4-1.791-4-4V13c0-2.209,1.791-4,4-4h34c2.209,0,4,1.791,4,4V35z"/>
+      <path fill="#FFF" d="M7.5,19h2.7c1.9,0,3,1,3,2.5c0,1.6-1.2,2.5-3,2.5H9v3h-1.5V19z M9,22.6h1c1,0,1.5-0.4,1.5-1.1s-0.5-1.1-1.5-1.1H9V22.6z"/>
+      <circle cx="30" cy="24" r="5" fill="#FF6F00"/>
+      <path fill="#FFF" d="M14.5,19h1.5v8h-1.5V19z M17.5,24.6c0.3,0.7,1,1.1,1.7,1.1c0.8,0,1.3-0.4,1.3-1s-0.3-0.8-1.2-1.1l-0.8-0.2c-1.3-0.4-1.8-1.1-1.8-2.1c0-1.3,1-2.3,2.6-2.3c1.2,0,2.1,0.5,2.6,1.4l-1.1,0.8c-0.3-0.5-0.8-0.8-1.5-0.8c-0.7,0-1.1,0.4-1.1,0.9c0,0.5,0.3,0.7,1.1,1l0.8,0.2c1.4,0.4,1.9,1.1,1.9,2.1c0,1.4-1.1,2.4-2.8,2.4c-1.3,0-2.4-0.6-2.9-1.5L17.5,24.6z"/>
+      <path fill="#FFF" d="M37.4,21.6h-0.6v1.1h0.6c0.4,0,0.6-0.2,0.6-0.6S37.8,21.6,37.4,21.6z M38.5,25.3l-1.1-1.6h-0.6v1.6h-1v-4.5h1.7c1,0,1.6,0.6,1.6,1.5c0,0.7-0.4,1.2-1,1.4l1.2,1.6H38.5z"/>
+    </svg>
+  ),
+  paypal: () => (
+    <svg viewBox="0 0 48 48" className="w-full h-full">
+      <path fill="#1565C0" d="M18.7,13.767l0.005,0.002C18.809,13.326,19.187,13,19.66,13h13.472c5.538,0,9.43,3.967,8.657,9.067c-0.798,5.267-5.593,9.067-11.134,9.067H26.33c-0.473,0-0.851,0.326-0.955,0.769l-1.522,6.229l-0.061,0.251h-5.77l1.406-5.749L18.7,13.767z"/>
+      <path fill="#039BE5" d="M33.132,13c5.538,0,9.43,3.967,8.657,9.067c-0.798,5.267-5.593,9.067-11.134,9.067H26.33c-0.473,0-0.851,0.326-0.955,0.769l-1.522,6.229l-0.061,0.251H17.39l-0.018,0.073c-0.135,0.552,0.285,1.077,0.862,1.077h5.549c0.412,0,0.762-0.284,0.846-0.682l0.549-2.248l0.896-3.671c0.104-0.443,0.482-0.769,0.955-0.769h4.325c5.541,0,10.336-3.8,11.134-9.067C43.263,18.033,40.346,14.583,35.94,13.316C35.024,13.104,34.094,13,33.132,13"/>
+      <path fill="#283593" d="M19.66,13c-0.473,0-0.851,0.326-0.955,0.769l-0.006,0.002l-2.547,10.418c-0.135,0.552,0.285,1.077,0.862,1.077h6.803l1.703-6.97l0.547-2.24c0.104-0.443,0.482-0.769,0.955-0.769h4.325c0.962,0,1.892,0.104,2.808,0.316C33.168,14.214,31.167,13,27.79,13H19.66z"/>
+    </svg>
+  ),
+  cash: () => (
+    <svg viewBox="0 0 48 48" className="w-full h-full">
+      <rect x="4" y="12" width="40" height="24" rx="3" fill="#16a34a"/>
+      <circle cx="24" cy="24" r="7" fill="none" stroke="#22c55e" strokeWidth="2"/>
+      <text x="24" y="28" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold">$</text>
+      <circle cx="10" cy="18" r="2" fill="#22c55e"/>
+      <circle cx="38" cy="18" r="2" fill="#22c55e"/>
+      <circle cx="10" cy="30" r="2" fill="#22c55e"/>
+      <circle cx="38" cy="30" r="2" fill="#22c55e"/>
+    </svg>
+  ),
+  bank: () => (
+    <svg viewBox="0 0 48 48" className="w-full h-full">
+      <path fill="#0891b2" d="M24,6L4,16v4h40v-4L24,6z"/>
+      <rect x="8" y="22" width="4" height="14" fill="#06b6d4"/>
+      <rect x="16" y="22" width="4" height="14" fill="#06b6d4"/>
+      <rect x="28" y="22" width="4" height="14" fill="#06b6d4"/>
+      <rect x="36" y="22" width="4" height="14" fill="#06b6d4"/>
+      <rect x="4" y="36" width="40" height="6" fill="#0891b2"/>
+      <polygon points="24,8 12,14 36,14" fill="#22d3ee"/>
+    </svg>
+  ),
+  dollar: () => (
+    <svg viewBox="0 0 48 48" className="w-full h-full">
+      <circle cx="24" cy="24" r="20" fill="#059669"/>
+      <circle cx="24" cy="24" r="16" fill="none" stroke="#10b981" strokeWidth="2"/>
+      <text x="24" y="30" textAnchor="middle" fill="#ffffff" fontSize="18" fontWeight="bold">$</text>
+    </svg>
+  ),
+  euro: () => (
+    <svg viewBox="0 0 48 48" className="w-full h-full">
+      <circle cx="24" cy="24" r="20" fill="#d97706"/>
+      <circle cx="24" cy="24" r="16" fill="none" stroke="#f59e0b" strokeWidth="2"/>
+      <text x="24" y="30" textAnchor="middle" fill="#ffffff" fontSize="18" fontWeight="bold">€</text>
+    </svg>
+  ),
 };
+
+// Lista de iconos de marcas disponibles
+const BRAND_ICONS_LIST = [
+  { id: 'visa', name: 'Visa' },
+  { id: 'mastercard', name: 'Mastercard' },
+  { id: 'amex', name: 'American Express' },
+  { id: 'discover', name: 'Discover' },
+  { id: 'paypal', name: 'PayPal' },
+  { id: 'cash', name: 'Efectivo' },
+  { id: 'bank', name: 'Banco/Transferencia' },
+  { id: 'dollar', name: 'Dólar' },
+  { id: 'euro', name: 'Euro' },
+];
+
+export { BRAND_ICONS_LIST, BrandIcons };
 
 export default function PaymentScreen() {
   const { billId } = useParams();
@@ -55,7 +142,9 @@ export default function PaymentScreen() {
         fetch(`${API_BASE}/api/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json())
       ]);
       setBill(billRes.data);
-      setPaymentMethods(pmRes.filter(m => m.active));
+      // Sort by order field
+      const sortedMethods = pmRes.filter(m => m.active).sort((a, b) => (a.order || 0) - (b.order || 0));
+      setPaymentMethods(sortedMethods);
       setCustomers(custRes);
       // Load quick amounts from settings
       try {
@@ -139,6 +228,22 @@ export default function PaymentScreen() {
     c.phone?.includes(customerSearch) ||
     c.email?.toLowerCase().includes(customerSearch.toLowerCase())
   );
+
+  // Render payment method icon
+  const renderPaymentIcon = (method) => {
+    // If it's a brand icon
+    if (method.icon_type === 'brand' && method.brand_icon && BrandIcons[method.brand_icon]) {
+      const BrandIcon = BrandIcons[method.brand_icon];
+      return (
+        <div className={`${largeMode ? 'w-14 h-10' : 'w-12 h-8'}`}>
+          <BrandIcon />
+        </div>
+      );
+    }
+    // Otherwise use lucide icon
+    const LucideIcon = lucideIcons[method.icon] || lucideIcons.default;
+    return <LucideIcon size={largeMode ? 32 : 28} />;
+  };
 
   if (!bill) {
     return (
@@ -245,15 +350,15 @@ export default function PaymentScreen() {
         {/* Right Panel - Payment Methods & Amounts */}
         <div className="flex-1 flex flex-col p-6 overflow-hidden">
           <div className="flex-1 flex gap-6">
-            {/* Payment Methods */}
+            {/* Payment Methods Grid - NUEVO DISEÑO ESPECTACULAR */}
             <div className="flex-1 flex flex-col">
               <h3 className={`font-oswald font-bold mb-4 ${largeMode ? 'text-lg' : 'text-base'}`}>FORMAS DE PAGO</h3>
               <div className={`grid ${largeMode ? 'grid-cols-2 gap-4' : 'grid-cols-3 gap-3'}`}>
                 {paymentMethods.map(method => {
-                  const Icon = paymentIcons[method.name] || paymentIcons.default;
-                  const colorClass = paymentColors[method.name] || paymentColors.default;
                   const amount = payAmounts[method.name];
                   const hasAmount = amount && parseFloat(amount) > 0;
+                  const bgColor = method.bg_color || '#6b7280';
+                  const textColor = method.text_color || '#ffffff';
                   
                   return (
                     <button
@@ -262,17 +367,53 @@ export default function PaymentScreen() {
                         setKeypadValue(amount || '');
                         setKeypadDialog({ open: true, method: method.name });
                       }}
-                      className={`relative rounded-2xl ${colorClass} text-white transition-all active:scale-95 flex flex-col items-center justify-center gap-2 ${
-                        largeMode ? 'h-32 p-4' : 'h-24 p-3'
-                      } ${hasAmount ? 'ring-4 ring-white/30' : ''}`}
+                      className={`group relative rounded-2xl transition-all duration-300 active:scale-95 flex flex-col items-center justify-center gap-2 overflow-hidden ${
+                        largeMode ? 'h-36 p-4' : 'h-28 p-3'
+                      } ${hasAmount ? 'ring-4 ring-white/40 shadow-lg shadow-white/20' : 'hover:shadow-xl hover:-translate-y-1'}`}
+                      style={{ 
+                        backgroundColor: bgColor,
+                        color: textColor,
+                      }}
                       data-testid={`payment-method-${method.id}`}
                     >
-                      <Icon size={largeMode ? 32 : 24} />
-                      <span className={`font-oswald font-bold text-center leading-tight ${largeMode ? 'text-sm' : 'text-xs'}`}>
+                      {/* Glassmorphism overlay effect */}
+                      <div 
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        style={{
+                          background: `linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)`,
+                        }}
+                      />
+                      
+                      {/* Shine effect on hover */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        <div 
+                          className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
+                          style={{
+                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Icon */}
+                      <div className="relative z-10 transform group-hover:scale-110 transition-transform duration-300">
+                        {renderPaymentIcon(method)}
+                      </div>
+                      
+                      {/* Name */}
+                      <span className={`relative z-10 font-oswald font-bold text-center leading-tight drop-shadow-md ${largeMode ? 'text-sm' : 'text-xs'}`}>
                         {method.name}
                       </span>
+                      
+                      {/* Exchange rate badge for foreign currencies */}
+                      {method.currency !== 'DOP' && (
+                        <span className={`absolute bottom-2 right-2 bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-full font-oswald ${largeMode ? 'text-xs' : 'text-[10px]'}`}>
+                          1 = {method.exchange_rate}
+                        </span>
+                      )}
+                      
+                      {/* Amount badge when selected */}
                       {hasAmount && (
-                        <div className={`absolute -top-2 -right-2 bg-white text-gray-900 rounded-full px-2 py-0.5 font-oswald font-bold ${largeMode ? 'text-sm' : 'text-xs'}`}>
+                        <div className={`absolute -top-1 -right-1 bg-white text-gray-900 rounded-full px-3 py-1 font-oswald font-bold shadow-lg animate-pulse ${largeMode ? 'text-sm' : 'text-xs'}`}>
                           {formatMoney(parseFloat(amount) * (method.exchange_rate || 1))}
                         </div>
                       )}
@@ -282,7 +423,11 @@ export default function PaymentScreen() {
               </div>
 
               {/* Payment Summary */}
-              <div className={`mt-6 p-4 rounded-2xl bg-card border-2 ${isEnough ? 'border-green-500/50' : 'border-border'}`}>
+              <div className={`mt-6 p-5 rounded-2xl backdrop-blur-sm border-2 transition-all duration-300 ${
+                isEnough 
+                  ? 'bg-green-500/10 border-green-500/50 shadow-lg shadow-green-500/10' 
+                  : 'bg-card border-border'
+              }`}>
                 <div className={`flex justify-between items-center ${largeMode ? 'text-base' : 'text-sm'}`}>
                   <span className="text-muted-foreground">Total Recibido</span>
                   <span className={`font-oswald font-bold ${largeMode ? 'text-2xl' : 'text-xl'} ${isEnough ? 'text-green-500' : 'text-destructive'}`}>
@@ -290,8 +435,11 @@ export default function PaymentScreen() {
                   </span>
                 </div>
                 {change > 0 && (
-                  <div className={`flex justify-between items-center mt-2 pt-2 border-t border-border ${largeMode ? 'text-lg' : 'text-base'}`}>
-                    <span className="font-bold text-green-500">CAMBIO</span>
+                  <div className={`flex justify-between items-center mt-2 pt-2 border-t border-green-500/30 ${largeMode ? 'text-lg' : 'text-base'}`}>
+                    <span className="font-bold text-green-500 flex items-center gap-2">
+                      <Coins size={20} className="animate-bounce" />
+                      CAMBIO
+                    </span>
                     <span className={`font-oswald font-bold text-green-500 ${largeMode ? 'text-3xl' : 'text-2xl'}`}>
                       {formatMoney(change)}
                     </span>
@@ -314,7 +462,7 @@ export default function PaymentScreen() {
                   <button
                     key={amount}
                     onClick={() => handleQuickAmount(amount)}
-                    className={`flex-1 rounded-xl bg-muted hover:bg-primary/20 transition-all active:scale-95 font-oswald font-bold ${
+                    className={`flex-1 rounded-xl bg-muted hover:bg-primary/20 hover:text-primary transition-all active:scale-95 font-oswald font-bold border border-transparent hover:border-primary/30 ${
                       largeMode ? 'text-lg' : 'text-base'
                     }`}
                   >
@@ -323,7 +471,7 @@ export default function PaymentScreen() {
                 ))}
                 <button
                   onClick={handleExact}
-                  className={`flex-1 rounded-xl bg-primary/20 hover:bg-primary/30 text-primary transition-all active:scale-95 font-oswald font-bold ${
+                  className={`flex-1 rounded-xl bg-gradient-to-r from-primary/30 to-primary/10 hover:from-primary/40 hover:to-primary/20 text-primary border border-primary/30 transition-all active:scale-95 font-oswald font-bold ${
                     largeMode ? 'text-lg' : 'text-base'
                   }`}
                 >
@@ -345,7 +493,7 @@ export default function PaymentScreen() {
             <Button
               onClick={handlePayment}
               disabled={!isEnough || processing}
-              className={`flex-[2] ${largeMode ? 'h-16 text-xl' : 'h-14 text-lg'} font-oswald font-bold bg-green-600 hover:bg-green-700 disabled:bg-muted disabled:text-muted-foreground`}
+              className={`flex-[2] ${largeMode ? 'h-16 text-xl' : 'h-14 text-lg'} font-oswald font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-muted disabled:to-muted disabled:text-muted-foreground shadow-lg shadow-green-500/30 transition-all`}
               data-testid="confirm-payment-btn"
             >
               {processing ? (
