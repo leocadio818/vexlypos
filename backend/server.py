@@ -468,12 +468,12 @@ async def list_payment_methods():
     methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
     if not methods:
         defaults = [
-            {"id": gen_id(), "name": "Efectivo RD$", "icon": "banknote", "icon_type": "lucide", "brand_icon": None, "bg_color": "#16a34a", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 0},
-            {"id": gen_id(), "name": "Tarjeta de Crédito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "visa", "bg_color": "#1e40af", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 1},
-            {"id": gen_id(), "name": "Tarjeta de Débito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "mastercard", "bg_color": "#7c3aed", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 2},
-            {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "icon_type": "lucide", "brand_icon": None, "bg_color": "#0891b2", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 3},
-            {"id": gen_id(), "name": "USD Dólar", "icon": "dollar-sign", "icon_type": "lucide", "brand_icon": None, "bg_color": "#059669", "text_color": "#ffffff", "currency": "USD", "exchange_rate": 58.50, "active": True, "order": 4},
-            {"id": gen_id(), "name": "EUR Euro", "icon": "euro", "icon_type": "lucide", "brand_icon": None, "bg_color": "#d97706", "text_color": "#ffffff", "currency": "EUR", "exchange_rate": 63.20, "active": True, "order": 5},
+            {"id": gen_id(), "name": "Efectivo RD$", "icon": "banknote", "icon_type": "lucide", "brand_icon": None, "bg_color": "#16a34a", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 0, "is_cash": True},
+            {"id": gen_id(), "name": "Tarjeta de Crédito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "visa", "bg_color": "#1e40af", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 1, "is_cash": False},
+            {"id": gen_id(), "name": "Tarjeta de Débito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "mastercard", "bg_color": "#7c3aed", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 2, "is_cash": False},
+            {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "icon_type": "lucide", "brand_icon": None, "bg_color": "#0891b2", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 3, "is_cash": False},
+            {"id": gen_id(), "name": "USD Dólar", "icon": "dollar-sign", "icon_type": "lucide", "brand_icon": None, "bg_color": "#059669", "text_color": "#ffffff", "currency": "USD", "exchange_rate": 58.50, "active": True, "order": 4, "is_cash": True},
+            {"id": gen_id(), "name": "EUR Euro", "icon": "euro", "icon_type": "lucide", "brand_icon": None, "bg_color": "#d97706", "text_color": "#ffffff", "currency": "EUR", "exchange_rate": 63.20, "active": True, "order": 5, "is_cash": True},
         ]
         await db.payment_methods.insert_many(defaults)
         return defaults
@@ -486,6 +486,8 @@ async def list_payment_methods():
         "USD": "#059669", "USD DOLAR": "#059669", "USD Dólar": "#059669", "Dolar (USD)": "#059669",
         "EUR": "#d97706", "EUR Euro": "#d97706", "Euro (EUR)": "#d97706",
     }
+    # Detect cash methods by name for migration
+    cash_keywords = ["efectivo", "cash", "usd", "eur", "dolar", "euro", "dollar"]
     for m in methods:
         if "bg_color" not in m or not m["bg_color"]:
             m["bg_color"] = default_colors.get(m.get("name", ""), "#6b7280")
@@ -497,6 +499,10 @@ async def list_payment_methods():
             m["brand_icon"] = None
         if "order" not in m:
             m["order"] = 0
+        # Auto-detect is_cash based on name if not set
+        if "is_cash" not in m:
+            name_lower = m.get("name", "").lower()
+            m["is_cash"] = any(kw in name_lower for kw in cash_keywords)
     return methods
 
 @api.post("/payment-methods")
@@ -513,7 +519,8 @@ async def create_payment_method(input: dict):
         "currency": input.get("currency", "DOP"),
         "exchange_rate": input.get("exchange_rate", 1),
         "active": True,
-        "order": count
+        "order": count,
+        "is_cash": input.get("is_cash", True)
     }
     await db.payment_methods.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
