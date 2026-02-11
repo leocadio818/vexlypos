@@ -930,7 +930,7 @@ export default function OrderScreen() {
                       <Send size={14} className="mr-1.5" /> ENVIAR ({pendingCount})
                     </Button>
                   )}
-                  <Button onClick={() => navigate(`/billing/${order.id}`)} size="sm" data-testid="go-to-billing" 
+                  <Button onClick={handleDirectBilling} size="sm" data-testid="go-to-billing" 
                     className={`h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-xs font-bold ${pendingCount > 0 ? '' : 'col-span-2'}`}>
                     <Receipt size={14} className="mr-1.5" /> FACTURAR
                   </Button>
