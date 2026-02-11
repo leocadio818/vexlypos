@@ -280,10 +280,10 @@ export default function PaymentScreen() {
       </div>
 
       {/* Main Content */}
-      <div className={`flex-1 flex overflow-hidden relative z-10 ${isMobile || (isTablet && !isLandscape) ? 'flex-col' : 'flex-row'}`}>
+      <div className={`flex-1 flex relative z-10 ${isMobile || (isTablet && !isLandscape) ? 'flex-col overflow-auto' : 'flex-row overflow-hidden'}`}>
         
         {/* Left Panel - Bill Details */}
-        <div className={`${isMobile ? 'w-full' : isTablet && !isLandscape ? 'w-full' : 'w-80 lg:w-96'} ${!isMobile && (isTablet && isLandscape || !isTablet) ? 'border-r border-white/10' : 'border-b border-white/10'} flex flex-col`}>
+        <div className={`${isMobile ? 'w-full shrink-0' : isTablet && !isLandscape ? 'w-full' : 'w-80 lg:w-96'} ${!isMobile && (isTablet && isLandscape || !isTablet) ? 'border-r border-white/10' : 'border-b border-white/10'} flex flex-col`}>
           
           {/* Customer Selection - Glass Card */}
           <div className="p-4">
