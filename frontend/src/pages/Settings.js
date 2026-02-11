@@ -1239,27 +1239,45 @@ export default function Settings() {
                 {/* Accent Color */}
                 <div className="bg-card border border-border rounded-xl p-4">
                   <h3 className="text-sm font-semibold mb-3">Color de Acento (Botones Principales)</h3>
-                  <div className="flex gap-4 items-center">
-                    <input
-                      type="color"
-                      value={theme.accentColor}
-                      onChange={(e) => setTheme(prev => ({ ...prev, accentColor: e.target.value }))}
-                      className="w-12 h-12 rounded-lg cursor-pointer border-0"
-                    />
-                    <input
-                      value={theme.accentColor}
-                      onChange={(e) => setTheme(prev => ({ ...prev, accentColor: e.target.value }))}
-                      className="w-32 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
-                    />
-                    <div className="flex gap-2">
-                      {['#FF6600', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b'].map(c => (
-                        <button
-                          key={c}
-                          onClick={() => setTheme(prev => ({ ...prev, accentColor: c }))}
-                          className={`w-8 h-8 rounded-full border-2 transition-all ${theme.accentColor === c ? 'border-white scale-110' : 'border-transparent'}`}
-                          style={{ backgroundColor: c }}
-                        />
-                      ))}
+                  <div className="flex flex-col gap-4">
+                    <div className="flex gap-4 items-center flex-wrap">
+                      <input
+                        type="color"
+                        value={theme.accentColor}
+                        onChange={(e) => setTheme(prev => ({ ...prev, accentColor: e.target.value }))}
+                        className="w-12 h-12 rounded-lg cursor-pointer border-0"
+                      />
+                      <input
+                        value={theme.accentColor}
+                        onChange={(e) => setTheme(prev => ({ ...prev, accentColor: e.target.value }))}
+                        className="w-28 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
+                      />
+                      <div className="flex gap-2 flex-wrap">
+                        {['#FF6600', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b', '#ef4444', '#06b6d4'].map(c => (
+                          <button
+                            key={c}
+                            onClick={() => setTheme(prev => ({ ...prev, accentColor: c }))}
+                            className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${theme.accentColor === c ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`}
+                            style={{ backgroundColor: c, boxShadow: theme.accentColor === c ? `0 0 12px ${c}` : 'none' }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {/* Preview button with accent color */}
+                    <div className="flex gap-3 items-center">
+                      <span className="text-xs text-muted-foreground">Vista previa:</span>
+                      <button 
+                        className="px-4 py-2 rounded-xl font-oswald font-bold text-white transition-all active:scale-95"
+                        style={{ backgroundColor: theme.accentColor }}
+                      >
+                        BOTÓN DE EJEMPLO
+                      </button>
+                      <div 
+                        className="w-10 h-10 rounded-xl flex items-center justify-center font-oswald font-bold text-white text-sm"
+                        style={{ backgroundColor: theme.accentColor }}
+                      >
+                        RD
+                      </div>
                     </div>
                   </div>
                 </div>
