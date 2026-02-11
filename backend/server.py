@@ -481,7 +481,20 @@ async def list_payment_methods():
 
 @api.post("/payment-methods")
 async def create_payment_method(input: dict):
-    doc = {"id": gen_id(), "name": input.get("name", ""), "icon": input.get("icon", "circle"), "active": True}
+    count = await db.payment_methods.count_documents({})
+    doc = {
+        "id": gen_id(), 
+        "name": input.get("name", ""), 
+        "icon": input.get("icon", "circle"),
+        "icon_type": input.get("icon_type", "lucide"),
+        "brand_icon": input.get("brand_icon"),
+        "bg_color": input.get("bg_color", "#6b7280"),
+        "text_color": input.get("text_color", "#ffffff"),
+        "currency": input.get("currency", "DOP"),
+        "exchange_rate": input.get("exchange_rate", 1),
+        "active": True,
+        "order": count
+    }
     await db.payment_methods.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
