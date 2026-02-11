@@ -479,14 +479,14 @@ export default function PaymentScreen() {
             MONTO EXACTO ({formatMoney(billTotal)})
           </button>
 
-          {/* Payment Summary - Floating glass card */}
-          <div className={`mt-auto pt-4 ${isMobile ? 'fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent' : ''}`}>
+          {/* Payment Summary - Glass card (NO fixed positioning on mobile) */}
+          <div className="mt-auto pt-4">
             <div className={`${glassStyles.card} rounded-3xl p-4 mb-4 transition-all duration-500 ${
               isEnough ? 'border-green-400/30 shadow-[0_0_30px_rgba(34,197,94,0.2)]' : ''
             }`}>
               <div className="flex justify-between items-center">
                 <span className="text-white/60 font-medium">Total Recibido</span>
-                <span className={`font-oswald font-bold ${isMobile ? 'text-2xl' : 'text-3xl'} ${
+                <span className={`font-oswald font-bold ${isMobile ? 'text-xl' : 'text-3xl'} ${
                   isEnough 
                     ? 'bg-gradient-to-r from-green-300 to-emerald-400 bg-clip-text text-transparent' 
                     : 'text-red-400'
@@ -498,10 +498,10 @@ export default function PaymentScreen() {
               {change > 0 && (
                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-green-400/20">
                   <span className="font-bold text-green-400 flex items-center gap-2">
-                    <Coins size={20} className="animate-bounce" />
+                    <Coins size={isMobile ? 16 : 20} className="animate-bounce" />
                     CAMBIO
                   </span>
-                  <span className={`font-oswald font-bold bg-gradient-to-r from-green-300 to-emerald-400 bg-clip-text text-transparent ${isMobile ? 'text-2xl' : 'text-3xl'}`}>
+                  <span className={`font-oswald font-bold bg-gradient-to-r from-green-300 to-emerald-400 bg-clip-text text-transparent ${isMobile ? 'text-xl' : 'text-3xl'}`}>
                     {formatMoney(change)}
                   </span>
                 </div>
@@ -519,14 +519,14 @@ export default function PaymentScreen() {
             <div className="flex gap-3">
               <button
                 onClick={() => navigate(-1)}
-                className={`flex-1 ${isMobile ? 'h-14' : 'h-16'} rounded-2xl ${glassStyles.card} ${glassStyles.cardHover} font-oswald font-bold text-white/70 transition-all duration-300 active:scale-95`}
+                className={`flex-1 ${isMobile ? 'h-12' : 'h-16'} rounded-2xl ${glassStyles.card} ${glassStyles.cardHover} font-oswald font-bold text-white/70 transition-all duration-300 active:scale-95`}
               >
                 CANCELAR
               </button>
               <button
                 onClick={handlePayment}
                 disabled={!isEnough || processing}
-                className={`flex-[2] ${isMobile ? 'h-14' : 'h-16'} rounded-2xl font-oswald font-bold transition-all duration-300 active:scale-95 flex items-center justify-center gap-2
+                className={`flex-[2] ${isMobile ? 'h-12' : 'h-16'} rounded-2xl font-oswald font-bold transition-all duration-300 active:scale-95 flex items-center justify-center gap-2
                   ${isEnough 
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white shadow-lg shadow-green-500/30' 
                     : 'bg-white/5 text-white/30 cursor-not-allowed'
@@ -538,8 +538,8 @@ export default function PaymentScreen() {
                   <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full" />
                 ) : (
                   <>
-                    <Check size={isMobile ? 20 : 24} />
-                    <span className={isMobile ? 'text-base' : 'text-lg'}>CONFIRMAR PAGO</span>
+                    <Check size={isMobile ? 18 : 24} />
+                    <span className={isMobile ? 'text-sm' : 'text-lg'}>CONFIRMAR PAGO</span>
                   </>
                 )}
               </button>
