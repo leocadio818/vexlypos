@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, BarChart3, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor } from 'lucide-react';
+import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, BarChart3, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import '@/App.css';
 
@@ -14,7 +14,7 @@ const navItems = [
 ];
 
 export default function Layout() {
-  const { user, logout, isOnline, hasPermission, largeMode, toggleLargeMode, device } = useAuth();
+  const { user, logout, isOnline, hasPermission, largeMode, toggleLargeMode, device, offline } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => { logout(); navigate('/login'); };
@@ -22,6 +22,9 @@ export default function Layout() {
   // Responsive helpers
   const isMobile = device?.isMobile;
   const isTablet = device?.isTablet;
+  
+  // Offline state
+  const { isSyncing, pendingCount, syncNow } = offline || {};
 
   const filteredNav = navItems.filter(item => {
     if (item.to === '/dashboard') return hasPermission('view_dashboard');
