@@ -66,7 +66,7 @@ export default function Settings() {
   const [userDialog, setUserDialog] = useState({ open: false, name: '', pin: '', role: 'waiter', editId: null, permissions: {} });
   const [payDialog, setPayDialog] = useState({ 
     open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
-    bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null 
+    bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true 
   });
   const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null });
   const [channelDialog, setChannelDialog] = useState({ open: false, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null });
