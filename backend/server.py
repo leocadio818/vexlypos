@@ -477,6 +477,26 @@ async def list_payment_methods():
         ]
         await db.payment_methods.insert_many(defaults)
         return defaults
+    # Add default values for missing fields (migration support)
+    default_colors = {
+        "Efectivo": "#16a34a", "Efectivo RD$": "#16a34a",
+        "Tarjeta de Credito": "#1e40af", "Tarjeta de Crédito": "#1e40af", "Tarjeta Crédito": "#1e40af",
+        "Tarjeta de Debito": "#7c3aed", "Tarjeta de Débito": "#7c3aed", "Tarjeta Débito": "#7c3aed",
+        "Transferencia": "#0891b2",
+        "USD": "#059669", "USD DOLAR": "#059669", "USD Dólar": "#059669", "Dolar (USD)": "#059669",
+        "EUR": "#d97706", "EUR Euro": "#d97706", "Euro (EUR)": "#d97706",
+    }
+    for m in methods:
+        if "bg_color" not in m or not m["bg_color"]:
+            m["bg_color"] = default_colors.get(m.get("name", ""), "#6b7280")
+        if "text_color" not in m or not m["text_color"]:
+            m["text_color"] = "#ffffff"
+        if "icon_type" not in m:
+            m["icon_type"] = "lucide"
+        if "brand_icon" not in m:
+            m["brand_icon"] = None
+        if "order" not in m:
+            m["order"] = 0
     return methods
 
 @api.post("/payment-methods")
