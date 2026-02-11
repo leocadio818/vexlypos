@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { billsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, QrCode, X, Check, Wallet, Coins, CircleDollarSign, BadgeDollarSign } from 'lucide-react';
+import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, QrCode, X, Check, Wallet, Coins, CircleDollarSign, BadgeDollarSign, ChevronUp, ChevronDown, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -119,7 +119,7 @@ export { BRAND_ICONS_LIST, BrandIcons };
 export default function PaymentScreen() {
   const { billId } = useParams();
   const navigate = useNavigate();
-  const { largeMode } = useAuth();
+  const { largeMode, device } = useAuth();
   const [bill, setBill] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [payAmounts, setPayAmounts] = useState({});
@@ -131,8 +131,14 @@ export default function PaymentScreen() {
   const [keypadValue, setKeypadValue] = useState('');
   const [quickAmounts, setQuickAmounts] = useState([100, 200, 500, 1000, 2000, 5000]);
   const [processing, setProcessing] = useState(false);
+  const [showDetails, setShowDetails] = useState(false); // For mobile collapsible details
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
+  
+  // Responsive helpers
+  const isMobile = device?.isMobile;
+  const isTablet = device?.isTablet;
+  const isLandscape = device?.isLandscape;
 
   const fetchData = useCallback(async () => {
     try {
@@ -142,11 +148,9 @@ export default function PaymentScreen() {
         fetch(`${API_BASE}/api/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json())
       ]);
       setBill(billRes.data);
-      // Sort by order field
       const sortedMethods = pmRes.filter(m => m.active).sort((a, b) => (a.order || 0) - (b.order || 0));
       setPaymentMethods(sortedMethods);
       setCustomers(custRes);
-      // Load quick amounts from settings
       try {
         const configRes = await fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
         const config = await configRes.json();
@@ -191,7 +195,6 @@ export default function PaymentScreen() {
       if (pts > 0) msg += ` | +${pts} pts fidelidad`;
       toast.success(msg);
       
-      // Navigate back to billing
       navigate(-1);
     } catch {
       toast.error('Error procesando pago');
@@ -209,7 +212,6 @@ export default function PaymentScreen() {
   };
 
   const handleQuickAmount = (amount) => {
-    // Find the first active DOP method or just first method
     const targetMethod = paymentMethods.find(m => m.currency === 'DOP')?.name || paymentMethods[0]?.name;
     if (targetMethod) {
       setPayAmounts(p => ({ ...p, [targetMethod]: String(amount) }));
@@ -230,19 +232,33 @@ export default function PaymentScreen() {
   );
 
   // Render payment method icon
-  const renderPaymentIcon = (method) => {
-    // If it's a brand icon
+  const renderPaymentIcon = (method, size = 'normal') => {
+    const iconSize = size === 'small' ? (isMobile ? 20 : 24) : (isMobile ? 24 : largeMode ? 32 : 28);
     if (method.icon_type === 'brand' && method.brand_icon && BrandIcons[method.brand_icon]) {
       const BrandIcon = BrandIcons[method.brand_icon];
       return (
-        <div className={`${largeMode ? 'w-14 h-10' : 'w-12 h-8'}`}>
+        <div className={`${size === 'small' ? 'w-8 h-6' : isMobile ? 'w-10 h-7' : largeMode ? 'w-14 h-10' : 'w-12 h-8'}`}>
           <BrandIcon />
         </div>
       );
     }
-    // Otherwise use lucide icon
     const LucideIcon = lucideIcons[method.icon] || lucideIcons.default;
-    return <LucideIcon size={largeMode ? 32 : 28} />;
+    return <LucideIcon size={iconSize} />;
+  };
+
+  // Grid columns based on device
+  const getMethodGridCols = () => {
+    if (isMobile) return 'grid-cols-2';
+    if (isTablet && !isLandscape) return 'grid-cols-2';
+    if (isTablet && isLandscape) return 'grid-cols-3';
+    return largeMode ? 'grid-cols-2' : 'grid-cols-3';
+  };
+
+  // Quick amounts layout
+  const getQuickAmountsLayout = () => {
+    if (isMobile) return 'grid grid-cols-3 gap-2';
+    if (isTablet && !isLandscape) return 'grid grid-cols-3 gap-2';
+    return 'flex flex-col gap-2';
   };
 
   if (!bill) {
@@ -253,46 +269,241 @@ export default function PaymentScreen() {
     );
   }
 
+  // =====================
+  // MOBILE LAYOUT
+  // =====================
+  if (isMobile) {
+    return (
+      <div className="h-full flex flex-col bg-background" data-testid="payment-screen">
+        {/* Mobile Header - Compact */}
+        <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-card/50">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-10 w-10">
+              <ArrowLeft size={20} />
+            </Button>
+            <div>
+              <h1 className="font-oswald font-bold text-lg">COBRAR</h1>
+              <p className="text-xs text-muted-foreground">{bill.label}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-oswald font-bold text-xl text-primary">{formatMoney(billTotal)}</p>
+          </div>
+        </div>
+
+        {/* Collapsible Bill Details */}
+        <button 
+          onClick={() => setShowDetails(!showDetails)}
+          className="px-3 py-2 border-b border-border flex items-center justify-between bg-card/30"
+        >
+          <span className="text-sm text-muted-foreground flex items-center gap-2">
+            <Receipt size={16} />
+            Ver detalle ({bill.items?.length || 0} artículos)
+          </span>
+          {showDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </button>
+        
+        {showDetails && (
+          <div className="px-3 py-2 border-b border-border bg-card/20 max-h-40 overflow-y-auto">
+            {bill.items?.map((item, i) => (
+              <div key={i} className="flex justify-between text-xs py-1">
+                <span><span className="font-oswald text-primary">{item.quantity}x</span> {item.product_name}</span>
+                <span className="font-oswald">{formatMoney(item.total)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Main Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-3">
+          {/* Customer Button */}
+          <button
+            onClick={() => setCustomerDialog(true)}
+            className={`w-full h-12 mb-3 rounded-xl border-2 border-dashed transition-all flex items-center justify-center gap-2 ${
+              selectedCustomer 
+                ? 'border-primary bg-primary/10 text-primary' 
+                : 'border-border text-muted-foreground'
+            }`}
+            data-testid="customer-fidelity-btn"
+          >
+            <User size={20} />
+            <span className="text-sm font-medium">
+              {selectedCustomer ? `${selectedCustomer.name} (${selectedCustomer.points} pts)` : 'Cliente Fidelidad'}
+            </span>
+            {selectedCustomer && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); setSelectedCustomer(null); }}
+                className="ml-auto p-1 rounded-full hover:bg-destructive/20 text-destructive"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </button>
+
+          {/* Payment Methods Grid - 2 columns on mobile */}
+          <h3 className="font-oswald font-bold text-sm mb-2">FORMAS DE PAGO</h3>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {paymentMethods.map(method => {
+              const amount = payAmounts[method.name];
+              const hasAmount = amount && parseFloat(amount) > 0;
+              const bgColor = method.bg_color || '#6b7280';
+              const textColor = method.text_color || '#ffffff';
+              
+              return (
+                <button
+                  key={method.id}
+                  onClick={() => {
+                    setKeypadValue(amount || '');
+                    setKeypadDialog({ open: true, method: method.name });
+                  }}
+                  className={`relative rounded-xl transition-all active:scale-95 flex flex-col items-center justify-center gap-1 h-20 overflow-hidden ${
+                    hasAmount ? 'ring-2 ring-white/40 shadow-lg' : ''
+                  }`}
+                  style={{ backgroundColor: bgColor, color: textColor }}
+                  data-testid={`payment-method-${method.id}`}
+                >
+                  {renderPaymentIcon(method, 'small')}
+                  <span className="font-oswald font-bold text-xs text-center leading-tight px-1">
+                    {method.name}
+                  </span>
+                  {method.currency !== 'DOP' && (
+                    <span className="absolute bottom-1 right-1 bg-black/30 px-1 rounded text-[8px]">
+                      1={method.exchange_rate}
+                    </span>
+                  )}
+                  {hasAmount && (
+                    <div className="absolute -top-1 -right-1 bg-white text-gray-900 rounded-full px-2 py-0.5 font-oswald font-bold text-[10px] shadow-lg">
+                      {formatMoney(parseFloat(amount) * (method.exchange_rate || 1))}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Amounts - 3 columns on mobile */}
+          <h3 className="font-oswald font-bold text-sm mb-2">MONTOS RÁPIDOS</h3>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {quickAmounts.slice(0, 6).map(amount => (
+              <button
+                key={amount}
+                onClick={() => handleQuickAmount(amount)}
+                className="h-12 rounded-lg bg-muted hover:bg-primary/20 hover:text-primary transition-all active:scale-95 font-oswald font-bold text-sm"
+              >
+                {amount >= 1000 ? `${amount / 1000}K` : amount}
+              </button>
+            ))}
+          </div>
+          
+          <button
+            onClick={handleExact}
+            className="w-full h-12 rounded-lg bg-gradient-to-r from-primary/30 to-primary/10 text-primary border border-primary/30 font-oswald font-bold text-sm mb-4"
+          >
+            MONTO EXACTO ({formatMoney(billTotal)})
+          </button>
+        </div>
+
+        {/* Fixed Bottom - Summary & Actions */}
+        <div className="border-t border-border bg-card p-3 space-y-2">
+          {/* Payment Summary */}
+          <div className={`p-3 rounded-xl ${isEnough ? 'bg-green-500/10 border border-green-500/30' : 'bg-card border border-border'}`}>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Recibido</span>
+              <span className={`font-oswald font-bold text-lg ${isEnough ? 'text-green-500' : 'text-destructive'}`}>
+                {formatMoney(totalPaidDOP)}
+              </span>
+            </div>
+            {change > 0 && (
+              <div className="flex justify-between items-center mt-1 pt-1 border-t border-green-500/30">
+                <span className="font-bold text-green-500 flex items-center gap-1 text-sm">
+                  <Coins size={16} /> CAMBIO
+                </span>
+                <span className="font-oswald font-bold text-green-500 text-xl">
+                  {formatMoney(change)}
+                </span>
+              </div>
+            )}
+            {change < 0 && (
+              <div className="flex justify-between items-center mt-1 text-xs">
+                <span className="text-destructive">Falta</span>
+                <span className="font-oswald font-bold text-destructive">{formatMoney(Math.abs(change))}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate(-1)} className="flex-1 h-14 font-oswald font-bold">
+              CANCELAR
+            </Button>
+            <Button
+              onClick={handlePayment}
+              disabled={!isEnough || processing}
+              className="flex-[2] h-14 font-oswald font-bold bg-gradient-to-r from-green-600 to-green-500 disabled:from-muted disabled:to-muted text-lg"
+              data-testid="confirm-payment-btn"
+            >
+              {processing ? (
+                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                <>
+                  <Check size={22} className="mr-1" />
+                  COBRAR
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Dialogs */}
+        {renderCustomerDialog()}
+        {renderKeypadDialog()}
+      </div>
+    );
+  }
+
+  // =====================
+  // TABLET/DESKTOP LAYOUT
+  // =====================
   return (
     <div className="h-full flex flex-col bg-background" data-testid="payment-screen">
       {/* Header */}
-      <div className={`px-4 ${largeMode ? 'py-4' : 'py-3'} border-b border-border flex items-center justify-between bg-card/50`}>
+      <div className={`px-4 ${isTablet ? 'py-2' : largeMode ? 'py-4' : 'py-3'} border-b border-border flex items-center justify-between bg-card/50`}>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className={`${largeMode ? 'h-12 w-12' : 'h-10 w-10'}`}>
-            <ArrowLeft size={largeMode ? 22 : 18} />
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className={`${isTablet ? 'h-10 w-10' : largeMode ? 'h-12 w-12' : 'h-10 w-10'}`}>
+            <ArrowLeft size={isTablet ? 18 : largeMode ? 22 : 18} />
           </Button>
           <div>
-            <h1 className={`font-oswald font-bold tracking-wide ${largeMode ? 'text-2xl' : 'text-xl'}`}>PROCESAR PAGO</h1>
-            <p className={`text-muted-foreground ${largeMode ? 'text-sm' : 'text-xs'}`}>{bill.label} - Factura #{billId?.slice(0, 8)}</p>
+            <h1 className={`font-oswald font-bold tracking-wide ${isTablet ? 'text-lg' : largeMode ? 'text-2xl' : 'text-xl'}`}>PROCESAR PAGO</h1>
+            <p className={`text-muted-foreground ${isTablet ? 'text-xs' : largeMode ? 'text-sm' : 'text-xs'}`}>{bill.label} - Factura #{billId?.slice(0, 8)}</p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className={`flex-1 flex overflow-hidden ${isTablet && !isLandscape ? 'flex-col' : 'flex-row'}`}>
         {/* Left Panel - Bill Details & Customer */}
-        <div className={`${largeMode ? 'w-96' : 'w-80'} border-r border-border flex flex-col bg-card/30`}>
+        <div className={`${isTablet && !isLandscape ? 'w-full border-b' : isTablet ? 'w-72' : largeMode ? 'w-96' : 'w-80'} border-r border-border flex flex-col bg-card/30`}>
           {/* Customer Fidelity Button */}
-          <div className="p-4 border-b border-border">
+          <div className={`p-3 ${isTablet ? 'p-2' : 'p-4'} border-b border-border`}>
             <button
               onClick={() => setCustomerDialog(true)}
-              className={`w-full ${largeMode ? 'h-16' : 'h-14'} rounded-2xl border-2 border-dashed transition-all flex items-center justify-center gap-3 ${
+              className={`w-full ${isTablet ? 'h-12' : largeMode ? 'h-16' : 'h-14'} rounded-2xl border-2 border-dashed transition-all flex items-center justify-center gap-3 ${
                 selectedCustomer 
                   ? 'border-primary bg-primary/10 text-primary' 
                   : 'border-border hover:border-primary/50 text-muted-foreground hover:text-foreground'
               }`}
               data-testid="customer-fidelity-btn"
             >
-              <User size={largeMode ? 28 : 24} />
+              <User size={isTablet ? 20 : largeMode ? 28 : 24} />
               <div className="text-left">
                 {selectedCustomer ? (
                   <>
-                    <p className={`font-bold ${largeMode ? 'text-base' : 'text-sm'}`}>{selectedCustomer.name}</p>
-                    <p className={`${largeMode ? 'text-sm' : 'text-xs'} opacity-70`}>{selectedCustomer.points} puntos</p>
+                    <p className={`font-bold ${isTablet ? 'text-sm' : largeMode ? 'text-base' : 'text-sm'}`}>{selectedCustomer.name}</p>
+                    <p className={`${isTablet ? 'text-xs' : largeMode ? 'text-sm' : 'text-xs'} opacity-70`}>{selectedCustomer.points} puntos</p>
                   </>
                 ) : (
                   <>
-                    <p className={`font-semibold ${largeMode ? 'text-base' : 'text-sm'}`}>Cliente Fidelidad</p>
-                    <p className={`${largeMode ? 'text-sm' : 'text-xs'} opacity-70`}>Toca para buscar</p>
+                    <p className={`font-semibold ${isTablet ? 'text-sm' : largeMode ? 'text-base' : 'text-sm'}`}>Cliente Fidelidad</p>
+                    <p className={`${isTablet ? 'text-xs' : largeMode ? 'text-sm' : 'text-xs'} opacity-70`}>Toca para buscar</p>
                   </>
                 )}
               </div>
@@ -307,53 +518,65 @@ export default function PaymentScreen() {
             </button>
           </div>
 
-          {/* Bill Items Summary */}
-          <ScrollArea className="flex-1 p-4">
-            <h3 className={`font-oswald font-bold mb-3 text-muted-foreground ${largeMode ? 'text-base' : 'text-sm'}`}>DETALLE DE FACTURA</h3>
-            <div className="space-y-2">
-              {bill.items?.map((item, i) => (
-                <div key={i} className={`flex justify-between ${largeMode ? 'text-sm' : 'text-xs'}`}>
-                  <span className="flex-1">
-                    <span className="font-oswald font-bold text-primary">{item.quantity}x</span> {item.product_name}
-                  </span>
-                  <span className="font-oswald font-bold ml-2">{formatMoney(item.total)}</span>
+          {/* Bill Items Summary - Collapsible on tablet portrait */}
+          {isTablet && !isLandscape ? (
+            <button 
+              onClick={() => setShowDetails(!showDetails)}
+              className="px-3 py-2 flex items-center justify-between"
+            >
+              <span className="text-xs text-muted-foreground">Ver detalle ({bill.items?.length} artículos)</span>
+              {showDetails ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          ) : null}
+          
+          {((!isTablet || isLandscape) || showDetails) && (
+            <ScrollArea className={`flex-1 ${isTablet ? 'p-2' : 'p-4'} ${isTablet && !isLandscape ? 'max-h-32' : ''}`}>
+              <h3 className={`font-oswald font-bold mb-2 text-muted-foreground ${isTablet ? 'text-xs' : largeMode ? 'text-base' : 'text-sm'}`}>DETALLE DE FACTURA</h3>
+              <div className="space-y-1">
+                {bill.items?.map((item, i) => (
+                  <div key={i} className={`flex justify-between ${isTablet ? 'text-[10px]' : largeMode ? 'text-sm' : 'text-xs'}`}>
+                    <span className="flex-1">
+                      <span className="font-oswald font-bold text-primary">{item.quantity}x</span> {item.product_name}
+                    </span>
+                    <span className="font-oswald font-bold ml-2">{formatMoney(item.total)}</span>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Totals */}
+              <div className={`mt-3 pt-3 border-t border-border space-y-1 ${isTablet ? 'text-[10px]' : largeMode ? 'text-sm' : 'text-xs'}`}>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-oswald">{formatMoney(bill.subtotal)}</span>
                 </div>
-              ))}
-            </div>
-            
-            {/* Totals */}
-            <div className={`mt-4 pt-4 border-t border-border space-y-1 ${largeMode ? 'text-sm' : 'text-xs'}`}>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-oswald">{formatMoney(bill.subtotal)}</span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ITBIS ({bill.itbis_rate}%)</span>
+                  <span className="font-oswald">{formatMoney(bill.itbis)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Propina ({bill.propina_percentage}%)</span>
+                  <span className="font-oswald">{formatMoney(bill.propina_legal)}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">ITBIS ({bill.itbis_rate}%)</span>
-                <span className="font-oswald">{formatMoney(bill.itbis)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Propina Legal ({bill.propina_percentage}%)</span>
-                <span className="font-oswald">{formatMoney(bill.propina_legal)}</span>
-              </div>
-            </div>
-          </ScrollArea>
+            </ScrollArea>
+          )}
 
           {/* Total to Pay */}
-          <div className={`p-4 border-t border-border bg-card ${largeMode ? 'space-y-2' : 'space-y-1'}`}>
+          <div className={`${isTablet ? 'p-2' : 'p-4'} border-t border-border bg-card`}>
             <div className="flex justify-between items-center">
-              <span className={`font-bold ${largeMode ? 'text-lg' : 'text-base'}`}>TOTAL A COBRAR</span>
-              <span className={`font-oswald font-bold text-primary ${largeMode ? 'text-3xl' : 'text-2xl'}`}>{formatMoney(billTotal)}</span>
+              <span className={`font-bold ${isTablet ? 'text-sm' : largeMode ? 'text-lg' : 'text-base'}`}>TOTAL</span>
+              <span className={`font-oswald font-bold text-primary ${isTablet ? 'text-xl' : largeMode ? 'text-3xl' : 'text-2xl'}`}>{formatMoney(billTotal)}</span>
             </div>
           </div>
         </div>
 
         {/* Right Panel - Payment Methods & Amounts */}
-        <div className="flex-1 flex flex-col p-6 overflow-hidden">
-          <div className="flex-1 flex gap-6">
-            {/* Payment Methods Grid - NUEVO DISEÑO ESPECTACULAR */}
+        <div className={`flex-1 flex flex-col ${isTablet ? 'p-3' : 'p-6'} overflow-hidden`}>
+          <div className={`flex-1 flex ${isTablet && !isLandscape ? 'flex-col' : 'flex-row'} gap-4`}>
+            {/* Payment Methods Grid */}
             <div className="flex-1 flex flex-col">
-              <h3 className={`font-oswald font-bold mb-4 ${largeMode ? 'text-lg' : 'text-base'}`}>FORMAS DE PAGO</h3>
-              <div className={`grid ${largeMode ? 'grid-cols-2 gap-4' : 'grid-cols-3 gap-3'}`}>
+              <h3 className={`font-oswald font-bold mb-3 ${isTablet ? 'text-sm' : largeMode ? 'text-lg' : 'text-base'}`}>FORMAS DE PAGO</h3>
+              <div className={`grid ${getMethodGridCols()} gap-2 ${isTablet ? 'gap-2' : 'gap-3'}`}>
                 {paymentMethods.map(method => {
                   const amount = payAmounts[method.name];
                   const hasAmount = amount && parseFloat(amount) > 0;
@@ -367,13 +590,10 @@ export default function PaymentScreen() {
                         setKeypadValue(amount || '');
                         setKeypadDialog({ open: true, method: method.name });
                       }}
-                      className={`group relative rounded-2xl transition-all duration-300 active:scale-95 flex flex-col items-center justify-center gap-2 overflow-hidden ${
-                        largeMode ? 'h-36 p-4' : 'h-28 p-3'
+                      className={`group relative rounded-2xl transition-all duration-300 active:scale-95 flex flex-col items-center justify-center gap-1 overflow-hidden ${
+                        isTablet ? 'h-20 p-2' : largeMode ? 'h-36 p-4' : 'h-28 p-3'
                       } ${hasAmount ? 'ring-4 ring-white/40 shadow-lg shadow-white/20' : 'hover:shadow-xl hover:-translate-y-1'}`}
-                      style={{ 
-                        backgroundColor: bgColor,
-                        color: textColor,
-                      }}
+                      style={{ backgroundColor: bgColor, color: textColor }}
                       data-testid={`payment-method-${method.id}`}
                     >
                       {/* Glassmorphism overlay effect */}
@@ -384,36 +604,26 @@ export default function PaymentScreen() {
                         }}
                       />
                       
-                      {/* Shine effect on hover */}
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        <div 
-                          className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
-                          style={{
-                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-                          }}
-                        />
-                      </div>
-                      
                       {/* Icon */}
                       <div className="relative z-10 transform group-hover:scale-110 transition-transform duration-300">
                         {renderPaymentIcon(method)}
                       </div>
                       
                       {/* Name */}
-                      <span className={`relative z-10 font-oswald font-bold text-center leading-tight drop-shadow-md ${largeMode ? 'text-sm' : 'text-xs'}`}>
+                      <span className={`relative z-10 font-oswald font-bold text-center leading-tight drop-shadow-md ${isTablet ? 'text-[10px]' : largeMode ? 'text-sm' : 'text-xs'}`}>
                         {method.name}
                       </span>
                       
-                      {/* Exchange rate badge for foreign currencies */}
+                      {/* Exchange rate badge */}
                       {method.currency !== 'DOP' && (
-                        <span className={`absolute bottom-2 right-2 bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-full font-oswald ${largeMode ? 'text-xs' : 'text-[10px]'}`}>
+                        <span className={`absolute bottom-1 right-1 bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded-full font-oswald ${isTablet ? 'text-[8px]' : largeMode ? 'text-xs' : 'text-[10px]'}`}>
                           1 = {method.exchange_rate}
                         </span>
                       )}
                       
-                      {/* Amount badge when selected */}
+                      {/* Amount badge */}
                       {hasAmount && (
-                        <div className={`absolute -top-1 -right-1 bg-white text-gray-900 rounded-full px-3 py-1 font-oswald font-bold shadow-lg animate-pulse ${largeMode ? 'text-sm' : 'text-xs'}`}>
+                        <div className={`absolute -top-1 -right-1 bg-white text-gray-900 rounded-full px-2 py-0.5 font-oswald font-bold shadow-lg animate-pulse ${isTablet ? 'text-[10px]' : largeMode ? 'text-sm' : 'text-xs'}`}>
                           {formatMoney(parseFloat(amount) * (method.exchange_rate || 1))}
                         </div>
                       )}
@@ -423,30 +633,30 @@ export default function PaymentScreen() {
               </div>
 
               {/* Payment Summary */}
-              <div className={`mt-6 p-5 rounded-2xl backdrop-blur-sm border-2 transition-all duration-300 ${
+              <div className={`mt-4 ${isTablet ? 'p-3' : 'p-5'} rounded-2xl backdrop-blur-sm border-2 transition-all duration-300 ${
                 isEnough 
                   ? 'bg-green-500/10 border-green-500/50 shadow-lg shadow-green-500/10' 
                   : 'bg-card border-border'
               }`}>
-                <div className={`flex justify-between items-center ${largeMode ? 'text-base' : 'text-sm'}`}>
+                <div className={`flex justify-between items-center ${isTablet ? 'text-sm' : largeMode ? 'text-base' : 'text-sm'}`}>
                   <span className="text-muted-foreground">Total Recibido</span>
-                  <span className={`font-oswald font-bold ${largeMode ? 'text-2xl' : 'text-xl'} ${isEnough ? 'text-green-500' : 'text-destructive'}`}>
+                  <span className={`font-oswald font-bold ${isTablet ? 'text-lg' : largeMode ? 'text-2xl' : 'text-xl'} ${isEnough ? 'text-green-500' : 'text-destructive'}`}>
                     {formatMoney(totalPaidDOP)}
                   </span>
                 </div>
                 {change > 0 && (
-                  <div className={`flex justify-between items-center mt-2 pt-2 border-t border-green-500/30 ${largeMode ? 'text-lg' : 'text-base'}`}>
+                  <div className={`flex justify-between items-center mt-2 pt-2 border-t border-green-500/30 ${isTablet ? 'text-sm' : largeMode ? 'text-lg' : 'text-base'}`}>
                     <span className="font-bold text-green-500 flex items-center gap-2">
-                      <Coins size={20} className="animate-bounce" />
+                      <Coins size={isTablet ? 16 : 20} className="animate-bounce" />
                       CAMBIO
                     </span>
-                    <span className={`font-oswald font-bold text-green-500 ${largeMode ? 'text-3xl' : 'text-2xl'}`}>
+                    <span className={`font-oswald font-bold text-green-500 ${isTablet ? 'text-xl' : largeMode ? 'text-3xl' : 'text-2xl'}`}>
                       {formatMoney(change)}
                     </span>
                   </div>
                 )}
                 {change < 0 && (
-                  <div className={`flex justify-between items-center mt-2 pt-2 border-t border-border ${largeMode ? 'text-sm' : 'text-xs'}`}>
+                  <div className={`flex justify-between items-center mt-2 pt-2 border-t border-border ${isTablet ? 'text-xs' : largeMode ? 'text-sm' : 'text-xs'}`}>
                     <span className="text-destructive">Falta</span>
                     <span className="font-oswald font-bold text-destructive">{formatMoney(Math.abs(change))}</span>
                   </div>
@@ -455,15 +665,15 @@ export default function PaymentScreen() {
             </div>
 
             {/* Quick Amounts */}
-            <div className={`${largeMode ? 'w-48' : 'w-40'} flex flex-col`}>
-              <h3 className={`font-oswald font-bold mb-4 ${largeMode ? 'text-lg' : 'text-base'}`}>MONTOS RÁPIDOS</h3>
-              <div className="flex-1 flex flex-col gap-2">
+            <div className={`${isTablet && !isLandscape ? 'w-full' : isTablet ? 'w-32' : largeMode ? 'w-48' : 'w-40'} flex flex-col`}>
+              <h3 className={`font-oswald font-bold mb-3 ${isTablet ? 'text-sm' : largeMode ? 'text-lg' : 'text-base'}`}>MONTOS RÁPIDOS</h3>
+              <div className={getQuickAmountsLayout()}>
                 {quickAmounts.map(amount => (
                   <button
                     key={amount}
                     onClick={() => handleQuickAmount(amount)}
-                    className={`flex-1 rounded-xl bg-muted hover:bg-primary/20 hover:text-primary transition-all active:scale-95 font-oswald font-bold border border-transparent hover:border-primary/30 ${
-                      largeMode ? 'text-lg' : 'text-base'
+                    className={`${isTablet && !isLandscape ? 'h-10' : 'flex-1'} rounded-xl bg-muted hover:bg-primary/20 hover:text-primary transition-all active:scale-95 font-oswald font-bold border border-transparent hover:border-primary/30 ${
+                      isTablet ? 'text-sm' : largeMode ? 'text-lg' : 'text-base'
                     }`}
                   >
                     {amount.toLocaleString()}
@@ -471,8 +681,8 @@ export default function PaymentScreen() {
                 ))}
                 <button
                   onClick={handleExact}
-                  className={`flex-1 rounded-xl bg-gradient-to-r from-primary/30 to-primary/10 hover:from-primary/40 hover:to-primary/20 text-primary border border-primary/30 transition-all active:scale-95 font-oswald font-bold ${
-                    largeMode ? 'text-lg' : 'text-base'
+                  className={`${isTablet && !isLandscape ? 'h-10 col-span-3' : 'flex-1'} rounded-xl bg-gradient-to-r from-primary/30 to-primary/10 hover:from-primary/40 hover:to-primary/20 text-primary border border-primary/30 transition-all active:scale-95 font-oswald font-bold ${
+                    isTablet ? 'text-sm' : largeMode ? 'text-lg' : 'text-base'
                   }`}
                 >
                   EXACTO
@@ -482,25 +692,25 @@ export default function PaymentScreen() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 mt-6">
+          <div className={`flex gap-3 ${isTablet ? 'mt-3' : 'mt-6'}`}>
             <Button
               variant="outline"
               onClick={() => navigate(-1)}
-              className={`flex-1 ${largeMode ? 'h-16 text-lg' : 'h-14 text-base'} font-oswald font-bold`}
+              className={`flex-1 ${isTablet ? 'h-12 text-sm' : largeMode ? 'h-16 text-lg' : 'h-14 text-base'} font-oswald font-bold`}
             >
               CANCELAR
             </Button>
             <Button
               onClick={handlePayment}
               disabled={!isEnough || processing}
-              className={`flex-[2] ${largeMode ? 'h-16 text-xl' : 'h-14 text-lg'} font-oswald font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-muted disabled:to-muted disabled:text-muted-foreground shadow-lg shadow-green-500/30 transition-all`}
+              className={`flex-[2] ${isTablet ? 'h-12 text-base' : largeMode ? 'h-16 text-xl' : 'h-14 text-lg'} font-oswald font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-muted disabled:to-muted disabled:text-muted-foreground shadow-lg shadow-green-500/30 transition-all`}
               data-testid="confirm-payment-btn"
             >
               {processing ? (
                 <div className="animate-spin w-6 h-6 border-3 border-white border-t-transparent rounded-full" />
               ) : (
                 <>
-                  <Check size={largeMode ? 28 : 24} className="mr-2" />
+                  <Check size={isTablet ? 20 : largeMode ? 28 : 24} className="mr-2" />
                   CONFIRMAR PAGO
                 </>
               )}
@@ -509,39 +719,37 @@ export default function PaymentScreen() {
         </div>
       </div>
 
-      {/* Customer Search Dialog */}
+      {/* Dialogs */}
+      {renderCustomerDialog()}
+      {renderKeypadDialog()}
+    </div>
+  );
+
+  // =====================
+  // SHARED DIALOGS
+  // =====================
+  function renderCustomerDialog() {
+    return (
       <Dialog open={customerDialog} onOpenChange={setCustomerDialog}>
-        <DialogContent className={`${largeMode ? 'max-w-lg' : 'max-w-md'} bg-card border-border`}>
+        <DialogContent className={`${isMobile ? 'max-w-[95vw]' : isTablet ? 'max-w-md' : largeMode ? 'max-w-lg' : 'max-w-md'} bg-card border-border`}>
           <DialogHeader>
-            <DialogTitle className={`font-oswald ${largeMode ? 'text-xl' : 'text-lg'}`}>Buscar Cliente</DialogTitle>
+            <DialogTitle className={`font-oswald ${isMobile ? 'text-lg' : largeMode ? 'text-xl' : 'text-lg'}`}>Buscar Cliente</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Search Input */}
             <div className="relative">
-              <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={customerSearch}
                 onChange={e => setCustomerSearch(e.target.value)}
-                placeholder="Buscar por nombre, teléfono o email..."
-                className={`w-full bg-background border border-border rounded-xl pl-10 pr-4 ${largeMode ? 'py-4 text-base' : 'py-3 text-sm'}`}
+                placeholder="Buscar por nombre, teléfono..."
+                className={`w-full bg-background border border-border rounded-xl pl-10 pr-4 ${isMobile ? 'py-3 text-base' : largeMode ? 'py-4 text-base' : 'py-3 text-sm'}`}
                 autoFocus
               />
             </div>
 
-            {/* Future: QR/Barcode Scanner */}
-            <div className="flex gap-2">
-              <button className={`flex-1 ${largeMode ? 'h-14' : 'h-12'} rounded-xl border-2 border-dashed border-border flex items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors`}>
-                <QrCode size={largeMode ? 24 : 20} />
-                <span className={largeMode ? 'text-sm' : 'text-xs'}>Escanear QR</span>
-              </button>
-              <button className={`flex-1 ${largeMode ? 'h-14' : 'h-12'} rounded-xl border-2 border-dashed border-border flex items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors`}>
-                <Smartphone size={largeMode ? 24 : 20} />
-                <span className={largeMode ? 'text-sm' : 'text-xs'}>Código de Barras</span>
-              </button>
-            </div>
-
             {/* Customer List */}
-            <ScrollArea className="h-64">
+            <ScrollArea className={`${isMobile ? 'h-52' : 'h-64'}`}>
               <div className="space-y-2">
                 {filteredCustomers.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No se encontraron clientes</p>
@@ -554,20 +762,20 @@ export default function PaymentScreen() {
                         setCustomerDialog(false);
                         setCustomerSearch('');
                       }}
-                      className={`w-full ${largeMode ? 'p-4' : 'p-3'} rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all text-left flex items-center gap-3`}
+                      className={`w-full ${isMobile ? 'p-3' : largeMode ? 'p-4' : 'p-3'} rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all text-left flex items-center gap-3`}
                     >
-                      <div className={`${largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold`}>
+                      <div className={`${isMobile ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold`}>
                         {customer.name[0]}
                       </div>
                       <div className="flex-1">
-                        <p className={`font-semibold ${largeMode ? 'text-base' : 'text-sm'}`}>{customer.name}</p>
-                        <p className={`text-muted-foreground ${largeMode ? 'text-sm' : 'text-xs'}`}>
+                        <p className={`font-semibold ${isMobile ? 'text-sm' : largeMode ? 'text-base' : 'text-sm'}`}>{customer.name}</p>
+                        <p className={`text-muted-foreground ${isMobile ? 'text-xs' : largeMode ? 'text-sm' : 'text-xs'}`}>
                           {customer.phone || customer.email || 'Sin contacto'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className={`font-oswald font-bold text-primary ${largeMode ? 'text-lg' : 'text-base'}`}>{customer.points}</p>
-                        <p className={`text-muted-foreground ${largeMode ? 'text-xs' : 'text-[10px]'}`}>puntos</p>
+                        <p className={`font-oswald font-bold text-primary ${isMobile ? 'text-base' : largeMode ? 'text-lg' : 'text-base'}`}>{customer.points}</p>
+                        <p className={`text-muted-foreground ${isMobile ? 'text-[10px]' : largeMode ? 'text-xs' : 'text-[10px]'}`}>puntos</p>
                       </div>
                     </button>
                   ))
@@ -577,19 +785,22 @@ export default function PaymentScreen() {
           </div>
         </DialogContent>
       </Dialog>
+    );
+  }
 
-      {/* Keypad Dialog for Amount Entry */}
+  function renderKeypadDialog() {
+    return (
       <Dialog open={keypadDialog.open} onOpenChange={(open) => { if (!open) { setKeypadDialog({ open: false, method: null }); setKeypadValue(''); } }}>
-        <DialogContent className="max-w-xs bg-card border-border p-4">
+        <DialogContent className={`${isMobile ? 'max-w-[90vw]' : 'max-w-xs'} bg-card border-border p-4`}>
           <DialogHeader>
-            <DialogTitle className={`font-oswald text-center ${largeMode ? 'text-xl' : 'text-lg'}`}>
+            <DialogTitle className={`font-oswald text-center ${isMobile ? 'text-lg' : largeMode ? 'text-xl' : 'text-lg'}`}>
               {keypadDialog.method}
             </DialogTitle>
           </DialogHeader>
           
           {/* Display */}
-          <div className="bg-background rounded-xl border border-border p-4 text-center mb-4">
-            <span className={`font-oswald font-bold text-primary ${largeMode ? 'text-4xl' : 'text-3xl'}`}>
+          <div className={`bg-background rounded-xl border border-border ${isMobile ? 'p-3' : 'p-4'} text-center mb-3`}>
+            <span className={`font-oswald font-bold text-primary ${isMobile ? 'text-3xl' : largeMode ? 'text-4xl' : 'text-3xl'}`}>
               {keypadValue || '0'}
             </span>
           </div>
@@ -610,7 +821,7 @@ export default function PaymentScreen() {
                     setKeypadValue(prev => prev + key);
                   }
                 }}
-                className={`${largeMode ? 'h-16 text-2xl' : 'h-14 text-xl'} rounded-xl font-oswald font-bold transition-all active:scale-95 ${
+                className={`${isMobile ? 'h-14 text-xl' : largeMode ? 'h-16 text-2xl' : 'h-14 text-xl'} rounded-xl font-oswald font-bold transition-all active:scale-95 ${
                   key === 'DEL' 
                     ? 'bg-destructive/20 text-destructive hover:bg-destructive/30'
                     : 'bg-muted hover:bg-primary/20'
@@ -622,23 +833,23 @@ export default function PaymentScreen() {
           </div>
 
           {/* Actions */}
-          <div className="grid grid-cols-2 gap-2 mt-4">
+          <div className="grid grid-cols-2 gap-2 mt-3">
             <Button
               variant="outline"
               onClick={() => { setKeypadDialog({ open: false, method: null }); setKeypadValue(''); }}
-              className={`${largeMode ? 'h-14' : 'h-12'} font-oswald font-bold`}
+              className={`${isMobile ? 'h-12' : largeMode ? 'h-14' : 'h-12'} font-oswald font-bold`}
             >
               Cancelar
             </Button>
             <Button
               onClick={handleKeypadConfirm}
-              className={`${largeMode ? 'h-14' : 'h-12'} font-oswald font-bold bg-primary`}
+              className={`${isMobile ? 'h-12' : largeMode ? 'h-14' : 'h-12'} font-oswald font-bold bg-primary`}
             >
               Confirmar
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    );
+  }
 }
