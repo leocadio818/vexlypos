@@ -246,10 +246,12 @@ export default function TableMap() {
 
   return (
     <div className="h-full flex flex-col" data-testid="table-map-page">
-      <div className={`px-4 ${largeMode ? 'py-4' : 'py-3'} border-b border-border flex items-center justify-between bg-card/50`}>
-        <h1 className={`font-oswald font-bold tracking-wide ${largeMode ? 'text-2xl' : 'text-xl'}`}>MAPA DE MESAS</h1>
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-3 flex-wrap ${largeMode ? 'text-sm' : 'text-xs'}`}>
+      {/* Header - Responsive */}
+      <div className={`px-3 sm:px-4 ${isMobile ? 'py-2' : largeMode ? 'py-4' : 'py-3'} border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-card/50`}>
+        <h1 className={`font-oswald font-bold tracking-wide ${isMobile ? 'text-lg' : largeMode ? 'text-2xl' : 'text-xl'}`}>MAPA DE MESAS</h1>
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {/* Legend - Hidden on mobile, collapsed on tablet */}
+          <div className={`items-center gap-2 sm:gap-3 flex-wrap ${isMobile ? 'hidden' : isTablet ? 'hidden sm:flex' : 'flex'} ${largeMode ? 'text-sm' : 'text-xs'}`}>
             <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full bg-table-free`} /> Libre</span>
             <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full bg-table-occupied`} /> Mis mesas</span>
             <span className="flex items-center gap-1.5"><span className={`${largeMode ? 'w-4 h-4' : 'w-3 h-3'} rounded-full`} style={{backgroundColor:'#1565C0'}} /> De otros</span>
@@ -260,22 +262,23 @@ export default function TableMap() {
           {canMoveTable && (
             <Button
               variant={editMode ? 'default' : 'outline'}
-              size={largeMode ? 'default' : 'sm'}
+              size={isMobile ? 'sm' : largeMode ? 'default' : 'sm'}
               onClick={() => setEditMode(!editMode)}
               data-testid="edit-mode-toggle"
-              className={`${largeMode ? 'text-sm' : 'text-xs'} ${editMode ? 'bg-primary text-white' : 'border-primary/50 text-primary'}`}
+              className={`${isMobile ? 'text-xs h-9' : largeMode ? 'text-sm' : 'text-xs'} ${editMode ? 'bg-primary text-white' : 'border-primary/50 text-primary'}`}
             >
-              {editMode ? <><Unlock size={largeMode ? 18 : 14} className="mr-1" /> Editando</> : <><Lock size={largeMode ? 18 : 14} className="mr-1" /> Editar</>}
+              {editMode ? <><Unlock size={isMobile ? 14 : largeMode ? 18 : 14} className="mr-1" /> Editando</> : <><Lock size={isMobile ? 14 : largeMode ? 18 : 14} className="mr-1" /> Editar</>}
             </Button>
           )}
         </div>
       </div>
 
-      <div className={`flex gap-1 px-4 pt-3 overflow-x-auto`} data-testid="area-tabs">
+      {/* Area Tabs - Scrollable on mobile */}
+      <div className={`flex gap-1 px-3 sm:px-4 pt-2 sm:pt-3 overflow-x-auto scrollbar-hide`} data-testid="area-tabs">
         {areas.map(area => (
           <button key={area.id} onClick={() => setActiveArea(area.id)}
             data-testid={`area-tab-${area.name.toLowerCase().replace(/\s/g, '-')}`}
-            className={`${largeMode ? 'px-6 py-3 text-base' : 'px-5 py-2.5 text-sm'} rounded-t-lg font-oswald tracking-wide whitespace-nowrap transition-all btn-press ${
+            className={`${isMobile ? 'px-4 py-2 text-sm min-w-fit' : largeMode ? 'px-6 py-3 text-base' : 'px-5 py-2.5 text-sm'} rounded-t-lg font-oswald tracking-wide whitespace-nowrap transition-all btn-press ${
               activeArea === area.id ? 'bg-background border-t-2 border-x border-border text-primary' : 'bg-card/50 text-muted-foreground hover:text-foreground border-t border-x border-transparent'
             }`} style={activeArea === area.id ? { borderTopColor: area.color } : {}}>
             {area.name}
@@ -283,22 +286,23 @@ export default function TableMap() {
         ))}
       </div>
 
-      <div ref={containerRef} className="flex-1 relative bg-background grid-bg mx-4 mb-4 rounded-b-xl rounded-tr-xl border border-border overflow-hidden" data-testid="table-canvas">
+      {/* Table Canvas */}
+      <div ref={containerRef} className="flex-1 relative bg-background grid-bg mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-b-xl rounded-tr-xl border border-border overflow-hidden" data-testid="table-canvas">
         {editMode && (
-          <div className={`absolute top-2 left-2 z-50 bg-primary/90 text-white ${largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
-            MODO EDICION - Arrastra o toca para redimensionar
+          <div className={`absolute top-2 left-2 z-50 bg-primary/90 text-white ${isMobile ? 'text-[10px] px-3 py-1' : largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
+            {isMobile ? 'MODO EDICION' : 'MODO EDICION - Arrastra o toca para redimensionar'}
           </div>
         )}
         {containerSize.w > 0 && filteredTables.map(table => (
           <DraggableTable key={table.id} table={table} containerSize={containerSize}
             onDragEnd={handleDragEnd} onClick={handleTableClick}
-            editMode={editMode} onResize={handleResize} currentUserId={currentUserId} largeMode={largeMode} />
+            editMode={editMode} onResize={handleResize} currentUserId={currentUserId} largeMode={largeMode} device={device} />
         ))}
         {filteredTables.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <Plus size={largeMode ? 40 : 32} className="mx-auto mb-2 opacity-40" />
-              <p className={largeMode ? 'text-base' : 'text-sm'}>No hay mesas en esta area</p>
+              <Plus size={isMobile ? 28 : largeMode ? 40 : 32} className="mx-auto mb-2 opacity-40" />
+              <p className={isMobile ? 'text-sm' : largeMode ? 'text-base' : 'text-sm'}>No hay mesas en esta area</p>
             </div>
           </div>
         )}
