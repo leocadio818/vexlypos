@@ -167,14 +167,27 @@ export default function Settings() {
   const handleSavePayMethod = async () => {
     if (!payDialog.name) return;
     try {
-      const data = { name: payDialog.name, icon: payDialog.icon, currency: payDialog.currency, exchange_rate: parseFloat(payDialog.exchange_rate) || 1 };
+      const data = { 
+        name: payDialog.name, 
+        icon: payDialog.icon, 
+        icon_type: payDialog.icon_type,
+        brand_icon: payDialog.brand_icon,
+        bg_color: payDialog.bg_color,
+        text_color: payDialog.text_color,
+        currency: payDialog.currency, 
+        exchange_rate: parseFloat(payDialog.exchange_rate) || 1 
+      };
       if (payDialog.editId) {
         await axios.put(`${API}/payment-methods/${payDialog.editId}`, data, { headers: hdrs() });
       } else {
         await axios.post(`${API}/payment-methods`, data, { headers: hdrs() });
       }
       toast.success(payDialog.editId ? 'Actualizado' : 'Creado');
-      setPayDialog({ open: false, name: '', icon: 'circle', currency: 'DOP', exchange_rate: 1, editId: null }); fetchAll();
+      setPayDialog({ 
+        open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
+        bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null 
+      }); 
+      fetchAll();
     } catch { toast.error('Error'); }
   };
 
