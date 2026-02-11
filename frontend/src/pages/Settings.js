@@ -948,6 +948,234 @@ export default function Settings() {
               </div>
             </div>
           </TabsContent>
+
+          {/* THEME / PALETA DE COLORES - Only for admin/manager/owner */}
+          {canAccessTheme && (
+            <TabsContent value="theme">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-oswald text-base font-bold flex items-center gap-2">
+                      <Palette size={20} className="text-purple-500" />
+                      Paleta de Colores Glassmorphism
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Personaliza los colores del diseño en todo el sistema (excepto Cocina y TV)
+                    </p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const ok = await resetTheme();
+                      if (ok) toast.success('Tema restablecido');
+                      else toast.error('Error al restablecer');
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-medium hover:bg-destructive/20 hover:text-destructive transition-colors"
+                  >
+                    <RotateCcw size={12} /> Restablecer
+                  </button>
+                </div>
+
+                {/* Live Preview */}
+                <div 
+                  className="rounded-xl overflow-hidden border border-border h-32 relative"
+                  style={{
+                    background: `linear-gradient(135deg, ${theme.gradientStart} 0%, ${theme.gradientMid1} 25%, ${theme.gradientMid2} 50%, ${theme.gradientEnd} 100%)`,
+                  }}
+                >
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-10 -left-10 w-24 h-24 rounded-full blur-[40px] animate-pulse" style={{ backgroundColor: theme.orbColor1 }} />
+                    <div className="absolute top-1/2 -right-5 w-20 h-20 rounded-full blur-[30px] animate-pulse" style={{ backgroundColor: theme.orbColor2 }} />
+                    <div className="absolute -bottom-5 left-1/3 w-24 h-24 rounded-full blur-[35px] animate-pulse" style={{ backgroundColor: theme.orbColor3 }} />
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl px-6 py-3 shadow-lg">
+                      <span className="font-oswald text-white font-bold">Vista Previa en Vivo</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gradient Colors */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Inicio del Gradiente</label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={theme.gradientStart}
+                        onChange={(e) => setTheme(prev => ({ ...prev, gradientStart: e.target.value }))}
+                        className="w-10 h-10 rounded-lg cursor-pointer border-0"
+                      />
+                      <input
+                        value={theme.gradientStart}
+                        onChange={(e) => setTheme(prev => ({ ...prev, gradientStart: e.target.value }))}
+                        className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Gradiente Medio 1</label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={theme.gradientMid1}
+                        onChange={(e) => setTheme(prev => ({ ...prev, gradientMid1: e.target.value }))}
+                        className="w-10 h-10 rounded-lg cursor-pointer border-0"
+                      />
+                      <input
+                        value={theme.gradientMid1}
+                        onChange={(e) => setTheme(prev => ({ ...prev, gradientMid1: e.target.value }))}
+                        className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Gradiente Medio 2</label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={theme.gradientMid2}
+                        onChange={(e) => setTheme(prev => ({ ...prev, gradientMid2: e.target.value }))}
+                        className="w-10 h-10 rounded-lg cursor-pointer border-0"
+                      />
+                      <input
+                        value={theme.gradientMid2}
+                        onChange={(e) => setTheme(prev => ({ ...prev, gradientMid2: e.target.value }))}
+                        className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Final del Gradiente</label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={theme.gradientEnd}
+                        onChange={(e) => setTheme(prev => ({ ...prev, gradientEnd: e.target.value }))}
+                        className="w-10 h-10 rounded-lg cursor-pointer border-0"
+                      />
+                      <input
+                        value={theme.gradientEnd}
+                        onChange={(e) => setTheme(prev => ({ ...prev, gradientEnd: e.target.value }))}
+                        className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Accent Color */}
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <h3 className="text-sm font-semibold mb-3">Color de Acento (Botones Principales)</h3>
+                  <div className="flex gap-4 items-center">
+                    <input
+                      type="color"
+                      value={theme.accentColor}
+                      onChange={(e) => setTheme(prev => ({ ...prev, accentColor: e.target.value }))}
+                      className="w-12 h-12 rounded-lg cursor-pointer border-0"
+                    />
+                    <input
+                      value={theme.accentColor}
+                      onChange={(e) => setTheme(prev => ({ ...prev, accentColor: e.target.value }))}
+                      className="w-32 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
+                    />
+                    <div className="flex gap-2">
+                      {['#FF6600', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b'].map(c => (
+                        <button
+                          key={c}
+                          onClick={() => setTheme(prev => ({ ...prev, accentColor: c }))}
+                          className={`w-8 h-8 rounded-full border-2 transition-all ${theme.accentColor === c ? 'border-white scale-110' : 'border-transparent'}`}
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Glass Effect Settings */}
+                <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+                  <h3 className="text-sm font-semibold">Efecto Glass</h3>
+                  
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <label className="text-xs text-muted-foreground">Opacidad del Vidrio</label>
+                      <span className="text-xs font-mono">{Math.round(theme.glassOpacity * 100)}%</span>
+                    </div>
+                    <Slider
+                      value={[theme.glassOpacity * 100]}
+                      onValueChange={([v]) => setTheme(prev => ({ ...prev, glassOpacity: v / 100 }))}
+                      min={5}
+                      max={30}
+                      step={1}
+                      className="py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <label className="text-xs text-muted-foreground">Intensidad del Blur</label>
+                      <span className="text-xs font-mono">{theme.glassBlur}px</span>
+                    </div>
+                    <Slider
+                      value={[theme.glassBlur]}
+                      onValueChange={([v]) => setTheme(prev => ({ ...prev, glassBlur: v }))}
+                      min={4}
+                      max={24}
+                      step={1}
+                      className="py-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Orb Colors */}
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <h3 className="text-sm font-semibold mb-3">Colores de Orbes Animados</h3>
+                  <p className="text-[10px] text-muted-foreground mb-3">
+                    Los orbes son las esferas de luz que aparecen en el fondo (formato: rgba)
+                  </p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground">Orbe 1 (Púrpura)</label>
+                      <input
+                        value={theme.orbColor1}
+                        onChange={(e) => setTheme(prev => ({ ...prev, orbColor1: e.target.value }))}
+                        className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
+                        placeholder="rgba(168, 85, 247, 0.3)"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground">Orbe 2 (Azul)</label>
+                      <input
+                        value={theme.orbColor2}
+                        onChange={(e) => setTheme(prev => ({ ...prev, orbColor2: e.target.value }))}
+                        className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
+                        placeholder="rgba(59, 130, 246, 0.2)"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground">Orbe 3 (Cyan)</label>
+                      <input
+                        value={theme.orbColor3}
+                        onChange={(e) => setTheme(prev => ({ ...prev, orbColor3: e.target.value }))}
+                        className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
+                        placeholder="rgba(6, 182, 212, 0.2)"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <button
+                  onClick={async () => {
+                    const ok = await saveTheme(theme);
+                    if (ok) toast.success('Tema guardado correctamente');
+                    else toast.error('Error al guardar el tema');
+                  }}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-oswald font-bold text-lg transition-all active:scale-95"
+                >
+                  GUARDAR PALETA DE COLORES
+                </button>
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
