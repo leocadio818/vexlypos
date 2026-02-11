@@ -1857,6 +1857,49 @@ async def update_system_config(input: dict):
 async def get_timezone_options():
     return TIMEZONE_OPTIONS
 
+# ─── THEME CONFIG (Glassmorphism) ───
+DEFAULT_THEME = {
+    "gradientStart": "#0f0f23",
+    "gradientMid1": "#1a1a3e",
+    "gradientMid2": "#2d1b4e",
+    "gradientEnd": "#1e3a5f",
+    "accentColor": "#ff6600",
+    "glassOpacity": 0.1,
+    "glassBlur": 12,
+    "orbColor1": "rgba(168, 85, 247, 0.3)",
+    "orbColor2": "rgba(59, 130, 246, 0.2)",
+    "orbColor3": "rgba(6, 182, 212, 0.2)",
+}
+
+@api.get("/theme-config")
+async def get_theme_config():
+    config = await db.theme_config.find_one({}, {"_id": 0})
+    return config or DEFAULT_THEME
+
+@api.put("/theme-config")
+async def update_theme_config(input: dict, user=Depends(get_current_user)):
+    # Only admin, manager, owner can update theme
+    perms = get_permissions(user.get("role", "waiter"), user.get("permissions"))
+    is_admin = user.get("role") in ["admin", "manager", "owner", "propietario", "gerente"]
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="No tienes permiso para cambiar el tema")
+    
+    if "_id" in input: del input["_id"]
+    # Merge with defaults to ensure all keys exist
+    theme_data = {**DEFAULT_THEME, **input}
+    await db.theme_config.update_one({}, {"$set": theme_data}, upsert=True)
+    return {"ok": True}
+
+@api.post("/theme-config/reset")
+async def reset_theme_config(user=Depends(get_current_user)):
+    # Only admin, manager, owner can reset theme
+    is_admin = user.get("role") in ["admin", "manager", "owner", "propietario", "gerente"]
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="No tienes permiso para restablecer el tema")
+    
+    await db.theme_config.update_one({}, {"$set": DEFAULT_THEME}, upsert=True)
+    return {"ok": True, "theme": DEFAULT_THEME}
+
 # ─── REPORTS ───
 @api.get("/reports/dashboard")
 async def dashboard_kpis():
