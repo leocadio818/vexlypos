@@ -426,7 +426,7 @@ export default function Settings() {
                     <Plus size={14} className="mr-1" /> Agregar
                   </Button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 mb-6">
                   {payMethods.map(m => (
                     <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`payment-${m.id}`}>
                       <div>
@@ -449,6 +449,74 @@ export default function Settings() {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Quick Amounts Configuration */}
+                <div className="bg-card border-2 border-primary/30 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Banknote size={20} className="text-primary" />
+                    <h3 className="font-oswald text-base font-bold">Montos Rápidos de Pago</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Estos botones aparecerán en la pantalla de cobro para agilizar el proceso de pago.
+                  </p>
+                  
+                  {/* Current amounts */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {(systemConfig.quick_amounts || []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">No hay montos configurados</p>
+                    ) : (
+                      (systemConfig.quick_amounts || []).map((amount, i) => (
+                        <div key={i} className="flex items-center gap-1 bg-primary/20 text-primary rounded-xl px-4 py-2 font-oswald font-bold">
+                          <span className="text-lg">{amount.toLocaleString()}</span>
+                          <button 
+                            onClick={() => setSystemConfig(p => ({
+                              ...p, 
+                              quick_amounts: p.quick_amounts.filter((_, idx) => idx !== i)
+                            }))}
+                            className="ml-2 hover:text-destructive transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  {/* Add new amount */}
+                  <div className="flex gap-2">
+                    <input 
+                      type="number"
+                      value={quickAmountInput}
+                      onChange={e => setQuickAmountInput(e.target.value)}
+                      placeholder="Agregar monto (ej: 500, 1000, 5000)..."
+                      className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-sm font-oswald"
+                    />
+                    <Button 
+                      variant="default" 
+                      onClick={() => {
+                        const val = parseInt(quickAmountInput);
+                        if (val > 0) {
+                          setSystemConfig(p => ({
+                            ...p,
+                            quick_amounts: [...(p.quick_amounts || []), val].sort((a, b) => a - b)
+                          }));
+                          setQuickAmountInput('');
+                        }
+                      }}
+                      className="px-6 bg-primary text-primary-foreground font-oswald font-bold"
+                    >
+                      <Plus size={18} className="mr-1" /> Agregar
+                    </Button>
+                  </div>
+                  
+                  {/* Save button for quick amounts */}
+                  <Button 
+                    onClick={handleSaveSystemConfig} 
+                    className="w-full mt-4 h-11 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold"
+                  >
+                    <Check size={18} className="mr-2" /> Guardar Montos Rápidos
+                  </Button>
                 </div>
               </>
             )}
