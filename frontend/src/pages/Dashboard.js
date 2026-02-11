@@ -35,99 +35,100 @@ export default function Dashboard() {
   const CustomTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null;
     return (
-      <div className="bg-card border border-border rounded-lg px-3 py-2 text-xs shadow-xl">
-        <p className="font-mono text-muted-foreground">{payload[0]?.payload?.hour}</p>
-        <p className="font-oswald text-primary text-base font-bold">{formatMoney(payload[0]?.value)}</p>
+      <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-xs shadow-xl">
+        <p className="font-mono text-white/60">{payload[0]?.payload?.hour}</p>
+        <p className="font-oswald text-white text-base font-bold">{formatMoney(payload[0]?.value)}</p>
       </div>
     );
   };
 
   return (
     <div className="h-full flex flex-col" data-testid="dashboard-page">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
+      {/* Header - Glassmorphism */}
+      <div className="px-4 py-3 backdrop-blur-xl bg-white/5 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <BarChart3 size={22} className="text-primary" />
-          <h1 className="font-oswald text-xl font-bold tracking-wide">DASHBOARD</h1>
+          <BarChart3 size={22} className="text-orange-400" />
+          <h1 className="font-oswald text-xl font-bold tracking-wide text-white">DASHBOARD</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-mono text-xs animate-pulse border-primary text-primary">EN VIVO</Badge>
-          <span className="text-xs text-muted-foreground font-mono">{new Date().toLocaleDateString('es-DO')}</span>
+          <Badge variant="outline" className="font-mono text-xs animate-pulse border-orange-400 text-orange-400 bg-orange-400/10">EN VIVO</Badge>
+          <span className="text-xs text-white/60 font-mono">{new Date().toLocaleDateString('es-DO')}</span>
         </div>
       </div>
 
       <div className="flex-1 p-4 overflow-auto">
         <div className="max-w-6xl mx-auto space-y-4">
-          {/* Top KPI Row */}
+          {/* Top KPI Row - Glassmorphism */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="kpi-cards">
-            <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-full" />
-              <DollarSign size={16} className="text-primary mb-2" />
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ventas Hoy</p>
-              <p className="font-oswald text-2xl font-bold text-primary mt-1">{formatMoney(today.total_sales)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{today.bills_count} facturas | Promedio: {formatMoney(today.avg_ticket)}</p>
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/10 rounded-bl-full" />
+              <DollarSign size={16} className="text-orange-400 mb-2" />
+              <p className="text-[10px] text-white/50 uppercase tracking-wider">Ventas Hoy</p>
+              <p className="font-oswald text-2xl font-bold text-orange-400 mt-1">{formatMoney(today.total_sales)}</p>
+              <p className="text-[10px] text-white/50 mt-1">{today.bills_count} facturas | Promedio: {formatMoney(today.avg_ticket)}</p>
             </div>
-            <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/5 rounded-bl-full" />
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/10 rounded-bl-full" />
               <Banknote size={16} className="text-green-400 mb-2" />
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Efectivo</p>
+              <p className="text-[10px] text-white/50 uppercase tracking-wider">Efectivo</p>
               <p className="font-oswald text-2xl font-bold text-green-400 mt-1">{formatMoney(today.cash)}</p>
               <div className="flex items-center gap-2 mt-1">
                 <CreditCard size={10} className="text-blue-400" />
                 <span className="text-[10px] text-blue-400 font-oswald">Tarjeta: {formatMoney(today.card)}</span>
               </div>
             </div>
-            <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-bl-full" />
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-bl-full" />
               <TrendingUp size={16} className="text-blue-400 mb-2" />
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">ITBIS Recaudado</p>
+              <p className="text-[10px] text-white/50 uppercase tracking-wider">ITBIS Recaudado</p>
               <p className="font-oswald text-2xl font-bold text-blue-400 mt-1">{formatMoney(today.itbis)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">Propinas: {formatMoney(today.tips)}</p>
+              <p className="text-[10px] text-white/50 mt-1">Propinas: {formatMoney(today.tips)}</p>
             </div>
-            <div className="bg-card border border-border rounded-xl p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-500/5 rounded-bl-full" />
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-500/10 rounded-bl-full" />
               <Utensils size={16} className="text-yellow-400 mb-2" />
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ocupacion</p>
+              <p className="text-[10px] text-white/50 uppercase tracking-wider">Ocupacion</p>
               <p className="font-oswald text-2xl font-bold text-yellow-400 mt-1">{operations.occupancy_pct}%</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{operations.occupied_tables}/{operations.total_tables} mesas ocupadas</p>
+              <p className="text-[10px] text-white/50 mt-1">{operations.occupied_tables}/{operations.total_tables} mesas ocupadas</p>
             </div>
           </div>
 
-          {/* Operations Row */}
+          {/* Operations Row - Glassmorphism */}
           <div className="grid grid-cols-4 gap-3" data-testid="operations-cards">
-            <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <ShoppingCart size={18} className="text-primary" />
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                <ShoppingCart size={18} className="text-orange-400" />
               </div>
               <div>
-                <p className="font-oswald text-xl font-bold">{operations.active_orders}</p>
-                <p className="text-[10px] text-muted-foreground">Ordenes Activas</p>
+                <p className="font-oswald text-xl font-bold text-white">{operations.active_orders}</p>
+                <p className="text-[10px] text-white/50">Ordenes Activas</p>
               </div>
             </div>
-            <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
                 <Clock size={18} className="text-green-400" />
               </div>
               <div>
-                <p className="font-oswald text-xl font-bold">{operations.open_shifts}</p>
-                <p className="text-[10px] text-muted-foreground">Turnos Abiertos</p>
+                <p className="font-oswald text-xl font-bold text-white">{operations.open_shifts}</p>
+                <p className="text-[10px] text-white/50">Turnos Abiertos</p>
               </div>
             </div>
-            <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${operations.inventory_alerts > 0 ? 'bg-destructive/10' : 'bg-muted'}`}>
-                <AlertTriangle size={18} className={operations.inventory_alerts > 0 ? 'text-destructive' : 'text-muted-foreground'} />
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${operations.inventory_alerts > 0 ? 'bg-red-500/20' : 'bg-white/5'}`}>
+                <AlertTriangle size={18} className={operations.inventory_alerts > 0 ? 'text-red-400' : 'text-white/40'} />
               </div>
               <div>
-                <p className={`font-oswald text-xl font-bold ${operations.inventory_alerts > 0 ? 'text-destructive' : ''}`}>{operations.inventory_alerts}</p>
-                <p className="text-[10px] text-muted-foreground">Alertas Inventario</p>
+                <p className={`font-oswald text-xl font-bold ${operations.inventory_alerts > 0 ? 'text-red-400' : 'text-white'}`}>{operations.inventory_alerts}</p>
+                <p className="text-[10px] text-white/50">Alertas Inventario</p>
               </div>
             </div>
-            <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center">
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center">
                 <Heart size={18} className="text-pink-400" />
               </div>
               <div>
-                <p className="font-oswald text-xl font-bold">{loyalty.total_customers}</p>
-                <p className="text-[10px] text-muted-foreground">Clientes Fidelidad</p>
+                <p className="font-oswald text-xl font-bold text-white">{loyalty.total_customers}</p>
+                <p className="text-[10px] text-white/50">Clientes Fidelidad</p>
               </div>
             </div>
           </div>
