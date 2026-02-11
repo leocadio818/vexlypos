@@ -21,6 +21,7 @@ const PERM_LABELS = {
   create_bill: 'Crear Factura', collect_payment: 'Cobrar', split_bill: 'Dividir Cuenta',
   manage_users: 'Config: Usuarios', manage_areas: 'Config: Areas',
   manage_tables: 'Config: Mesas', manage_payment_methods: 'Config: Pagos',
+  manage_payment_config: 'Config: Montos Rápidos',
   manage_cancellation_reasons: 'Config: Anulaciones', manage_products: 'Config: Productos',
   manage_sale_types: 'Config: Ventas', manage_print_channels: 'Config: Impresion',
   manage_station_config: 'Config: Estacion',
