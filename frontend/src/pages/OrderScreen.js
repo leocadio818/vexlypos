@@ -966,20 +966,20 @@ export default function OrderScreen() {
       {/* Right (visually): Categories & Products - Now rendered first but appears on right */}
       {!splitMode && !accessDenied && (
         <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Grid Settings Bar */}
-        <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-border bg-card/30`}>
+        {/* Grid Settings Bar - Glassmorphism */}
+        <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-white/10 backdrop-blur-xl bg-white/5`}>
           <div className="flex items-center gap-2">
             {activeCat ? (
-              <button onClick={() => setActiveCat(null)} className={`flex items-center gap-1.5 text-primary hover:underline font-semibold ${largeMode ? 'text-base' : 'text-sm'}`} data-testid="back-to-categories">
+              <button onClick={() => setActiveCat(null)} className={`flex items-center gap-1.5 text-orange-400 hover:underline font-semibold ${largeMode ? 'text-base' : 'text-sm'}`} data-testid="back-to-categories">
                 <Grid3X3 size={largeMode ? 18 : 14} /> Categorías
               </button>
             ) : (
-              <span className={`font-semibold flex items-center gap-1.5 ${largeMode ? 'text-base' : 'text-sm'}`}><Grid3X3 size={largeMode ? 18 : 14} /> Categorías</span>
+              <span className={`font-semibold flex items-center gap-1.5 text-white ${largeMode ? 'text-base' : 'text-sm'}`}><Grid3X3 size={largeMode ? 18 : 14} /> Categorías</span>
             )}
             {activeCat && (
               <>
-                <span className={`text-muted-foreground ${largeMode ? 'text-base' : 'text-sm'}`}>/</span>
-                <span className={`font-semibold ${largeMode ? 'text-base' : 'text-sm'}`}>{categories.find(c => c.id === activeCat)?.name}</span>
+                <span className={`text-white/50 ${largeMode ? 'text-base' : 'text-sm'}`}>/</span>
+                <span className={`font-semibold text-white ${largeMode ? 'text-base' : 'text-sm'}`}>{categories.find(c => c.id === activeCat)?.name}</span>
               </>
             )}
           </div>
@@ -995,8 +995,8 @@ export default function OrderScreen() {
                 }}
                 className={`${largeMode ? 'w-10 h-8' : 'w-9 h-8'} rounded-lg ${largeMode ? 'text-sm' : 'text-xs'} font-bold transition-colors flex items-center justify-center ${
                   presetQty > 0
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted hover:bg-primary/20 text-muted-foreground'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white/10 hover:bg-orange-500/20 text-white/60'
                 }`}
                 title="Selector de cantidad"
               >
@@ -1004,7 +1004,7 @@ export default function OrderScreen() {
                 {presetQty > 0 && <span className="ml-0.5">{presetQty}</span>}
               </button>
             )}
-            <span className={`text-muted-foreground mx-1 ${largeMode ? 'text-xs' : 'text-[10px]'}`}>Col:</span>
+            <span className={`text-white/50 mx-1 ${largeMode ? 'text-xs' : 'text-[10px]'}`}>Col:</span>
             {[2, 3, 4, 5].map(num => (
               <button
                 key={num}
@@ -1017,8 +1017,8 @@ export default function OrderScreen() {
                 }}
                 className={`${largeMode ? 'w-8 h-8 text-sm' : 'w-7 h-7 text-xs'} rounded-lg font-bold transition-colors ${
                   (activeCat ? gridSettings.productColumns : gridSettings.categoryColumns) === num
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white/10 hover:bg-white/20 text-white/60'
                 }`}
               >
                 {num}
@@ -1029,13 +1029,13 @@ export default function OrderScreen() {
 
         {/* Preset Qty Indicator */}
         {presetQty > 0 && activeCat && (
-          <div className="flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 border-b border-primary/30">
-            <span className={`font-bold text-primary ${largeMode ? 'text-base' : 'text-sm'}`}>
+          <div className="flex items-center justify-center gap-2 px-3 py-2 bg-orange-500/20 border-b border-orange-500/30">
+            <span className={`font-bold text-orange-400 ${largeMode ? 'text-base' : 'text-sm'}`}>
               Próximo producto: x{presetQty}
             </span>
             <button
               onClick={() => setPresetQty(0)}
-              className={`text-primary/70 hover:text-primary underline ${largeMode ? 'text-base' : 'text-sm'}`}
+              className={`text-orange-400/70 hover:text-orange-400 underline ${largeMode ? 'text-base' : 'text-sm'}`}
             >
               Cancelar
             </button>
