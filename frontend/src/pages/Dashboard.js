@@ -133,26 +133,26 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Hourly Sales Chart */}
-          <div className="bg-card border border-border rounded-xl p-4" data-testid="hourly-chart">
-            <h3 className="font-oswald text-sm font-bold mb-3 uppercase tracking-wider text-muted-foreground">Ventas por Hora - Hoy</h3>
+          {/* Hourly Sales Chart - Glassmorphism */}
+          <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4" data-testid="hourly-chart">
+            <h3 className="font-oswald text-sm font-bold mb-3 uppercase tracking-wider text-white/50">Ventas por Hora - Hoy</h3>
             {hourly_sales.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={hourly_sales}>
                   <defs>
                     <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#FF6600" stopOpacity={0.3}/>
+                      <stop offset="5%" stopColor="#FF6600" stopOpacity={0.4}/>
                       <stop offset="95%" stopColor="#FF6600" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="hour" tick={{ fontSize: 10, fill: '#666' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#666' }} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
+                  <XAxis dataKey="hour" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.5)' }} />
+                  <YAxis tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.5)' }} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
                   <Tooltip content={<CustomTooltip />} />
                   <Area type="monotone" dataKey="total" stroke="#FF6600" strokeWidth={2} fill="url(#colorSales)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
+              <div className="flex items-center justify-center h-40 text-white/40 text-sm">
                 Las ventas del dia se mostraran aqui en tiempo real
               </div>
             )}
