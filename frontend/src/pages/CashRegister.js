@@ -70,59 +70,60 @@ export default function CashRegister() {
 
   return (
     <div className="h-full flex flex-col" data-testid="cash-register-page">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
+      {/* Header - Glassmorphism */}
+      <div className="px-4 py-3 backdrop-blur-xl bg-white/5 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CircleDollarSign size={22} className="text-primary" />
-          <h1 className="font-oswald text-xl font-bold tracking-wide">CAJA / TURNOS</h1>
+          <CircleDollarSign size={22} className="text-orange-400" />
+          <h1 className="font-oswald text-xl font-bold tracking-wide text-white">CAJA / TURNOS</h1>
         </div>
         {!currentShift ? (
-          <Button onClick={() => setOpenDialog(true)} data-testid="open-shift-btn"
-            className="bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
-            <Play size={16} className="mr-2" /> ABRIR TURNO
-          </Button>
+          <button onClick={() => setOpenDialog(true)} data-testid="open-shift-btn"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all">
+            <Play size={16} /> ABRIR TURNO
+          </button>
         ) : (
-          <Button onClick={() => setCloseDialog(true)} variant="destructive" data-testid="close-shift-btn"
-            className="font-oswald font-bold active:scale-95">
-            <Square size={16} className="mr-2" /> CERRAR TURNO
-          </Button>
+          <button onClick={() => setCloseDialog(true)} data-testid="close-shift-btn"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all">
+            <Square size={16} /> CERRAR TURNO
+          </button>
         )}
       </div>
 
       <div className="flex-1 p-4 overflow-auto">
-        {/* Current Shift */}
+        {/* Current Shift - Glassmorphism */}
         {currentShift && (
           <div className="max-w-2xl mx-auto mb-8" data-testid="current-shift">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="bg-primary/10 border-b border-primary/20 px-6 py-4 flex items-center justify-between">
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl overflow-hidden">
+              <div className="bg-green-500/20 border-b border-green-500/30 px-6 py-4 flex items-center justify-between">
                 <div>
-                  <h2 className="font-oswald text-lg font-bold">Turno Activo</h2>
-                  <p className="text-xs text-muted-foreground">{currentShift.station} - {currentShift.user_name}</p>
+                  <h2 className="font-oswald text-lg font-bold text-white">Turno Activo</h2>
+                  <p className="text-xs text-white/60">{currentShift.station} - {currentShift.user_name}</p>
                 </div>
-                <Badge className="bg-green-600 animate-pulse">En Curso</Badge>
+                <Badge className="bg-green-500 animate-pulse text-white">En Curso</Badge>
               </div>
               <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 rounded-lg bg-background border border-border">
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
                   <Banknote size={20} className="mx-auto mb-1 text-green-400" />
-                  <p className="text-[10px] text-muted-foreground uppercase">Efectivo</p>
+                  <p className="text-[10px] text-white/50 uppercase">Efectivo</p>
                   <p className="font-oswald text-lg font-bold text-green-400">{formatMoney(currentShift.cash_sales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-background border border-border">
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
                   <CreditCard size={20} className="mx-auto mb-1 text-blue-400" />
-                  <p className="text-[10px] text-muted-foreground uppercase">Tarjeta</p>
+                  <p className="text-[10px] text-white/50 uppercase">Tarjeta</p>
                   <p className="font-oswald text-lg font-bold text-blue-400">{formatMoney(currentShift.card_sales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-background border border-border">
-                  <TrendingUp size={20} className="mx-auto mb-1 text-primary" />
-                  <p className="text-[10px] text-muted-foreground uppercase">Total Ventas</p>
-                  <p className="font-oswald text-lg font-bold text-primary">{formatMoney(currentShift.total_sales)}</p>
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
+                  <TrendingUp size={20} className="mx-auto mb-1 text-orange-400" />
+                  <p className="text-[10px] text-white/50 uppercase">Total Ventas</p>
+                  <p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(currentShift.total_sales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-background border border-border">
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
                   <CircleDollarSign size={20} className="mx-auto mb-1 text-yellow-400" />
-                  <p className="text-[10px] text-muted-foreground uppercase">Propinas</p>
+                  <p className="text-[10px] text-white/50 uppercase">Propinas</p>
                   <p className="font-oswald text-lg font-bold text-yellow-400">{formatMoney(currentShift.total_tips)}</p>
                 </div>
               </div>
-              <div className="px-6 pb-4 flex items-center justify-between text-xs text-muted-foreground">
+              <div className="px-6 pb-4 flex items-center justify-between text-xs text-white/50">
                 <span className="flex items-center gap-1"><Clock size={12} /> Abierto: {new Date(currentShift.opened_at).toLocaleString('es-DO')}</span>
                 <span className="flex items-center gap-1"><AlertTriangle size={12} /> Anulaciones: {currentShift.cancelled_count}</span>
               </div>
@@ -130,92 +131,92 @@ export default function CashRegister() {
           </div>
         )}
 
-        {/* Shift History */}
+        {/* Shift History - Glassmorphism */}
         <div className="max-w-2xl mx-auto">
-          <h3 className="font-oswald text-sm font-bold text-muted-foreground mb-3 uppercase tracking-wider">Historial de Turnos</h3>
+          <h3 className="font-oswald text-sm font-bold text-white/50 mb-3 uppercase tracking-wider">Historial de Turnos</h3>
           <div className="space-y-2">
             {shifts.filter(s => s.status === 'closed').map(shift => (
               <div key={shift.id} data-testid={`shift-${shift.id}`}
-                className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
+                className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold">{shift.user_name} - {shift.station}</p>
-                  <p className="text-[10px] text-muted-foreground font-mono">
+                  <p className="text-sm font-semibold text-white">{shift.user_name} - {shift.station}</p>
+                  <p className="text-[10px] text-white/50 font-mono">
                     {new Date(shift.opened_at).toLocaleString('es-DO')} → {shift.closed_at ? new Date(shift.closed_at).toLocaleString('es-DO') : '-'}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-oswald text-base font-bold text-primary">{formatMoney(shift.total_sales)}</p>
-                  <p className="text-[10px] text-muted-foreground">Propinas: {formatMoney(shift.total_tips)}</p>
+                  <p className="font-oswald text-base font-bold text-orange-400">{formatMoney(shift.total_sales)}</p>
+                  <p className="text-[10px] text-white/50">Propinas: {formatMoney(shift.total_tips)}</p>
                 </div>
               </div>
             ))}
             {shifts.filter(s => s.status === 'closed').length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No hay turnos cerrados</p>
+              <p className="text-sm text-white/40 text-center py-4">No hay turnos cerrados</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Open Shift Dialog */}
+      {/* Open Shift Dialog - Glassmorphism */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="open-shift-dialog">
-          <DialogHeader><DialogTitle className="font-oswald">Abrir Turno</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="open-shift-dialog">
+          <DialogHeader><DialogTitle className="font-oswald text-white">Abrir Turno</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-semibold text-muted-foreground mb-2 block">Estacion</label>
+              <label className="text-sm font-semibold text-white/60 mb-2 block">Estacion</label>
               <div className="grid grid-cols-2 gap-2">
                 {stations.map(s => (
                   <button key={s} onClick={() => setStation(s)}
                     className={`p-2.5 rounded-lg text-sm font-medium transition-all border ${
-                      station === s ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background'
+                      station === s ? 'border-orange-400 bg-orange-400/20 text-orange-400' : 'border-white/10 bg-white/5 text-white/70'
                     }`}>{s}</button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="text-sm font-semibold text-muted-foreground mb-1 block">Monto de Apertura (RD$)</label>
+              <label className="text-sm font-semibold text-white/60 mb-1 block">Monto de Apertura (RD$)</label>
               <input
                 type="number"
                 value={openingAmount}
                 onChange={e => setOpeningAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald text-lg"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-white/30 focus:bg-white/10 outline-none transition-all"
                 data-testid="opening-amount-input"
               />
             </div>
-            <Button onClick={handleOpenShift} data-testid="confirm-open-shift"
-              className="w-full h-12 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
+            <button onClick={handleOpenShift} data-testid="confirm-open-shift"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold active:scale-95 transition-all">
               ABRIR TURNO
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Close Shift Dialog */}
+      {/* Close Shift Dialog - Glassmorphism */}
       <Dialog open={closeDialog} onOpenChange={setCloseDialog}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="close-shift-dialog">
-          <DialogHeader><DialogTitle className="font-oswald">Cerrar Turno</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="close-shift-dialog">
+          <DialogHeader><DialogTitle className="font-oswald text-white">Cerrar Turno</DialogTitle></DialogHeader>
           <div className="space-y-4">
             {currentShift && (
-              <div className="bg-background rounded-lg p-3 space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Ventas Efectivo</span><span className="font-oswald">{formatMoney(currentShift.cash_sales)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Ventas Tarjeta</span><span className="font-oswald">{formatMoney(currentShift.card_sales)}</span></div>
-                <div className="flex justify-between font-bold border-t border-border pt-1"><span>Total Ventas</span><span className="font-oswald text-primary">{formatMoney(currentShift.total_sales)}</span></div>
+              <div className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-1 text-sm">
+                <div className="flex justify-between"><span className="text-white/60">Ventas Efectivo</span><span className="font-oswald text-white">{formatMoney(currentShift.cash_sales)}</span></div>
+                <div className="flex justify-between"><span className="text-white/60">Ventas Tarjeta</span><span className="font-oswald text-white">{formatMoney(currentShift.card_sales)}</span></div>
+                <div className="flex justify-between font-bold border-t border-white/10 pt-1"><span className="text-white">Total Ventas</span><span className="font-oswald text-orange-400">{formatMoney(currentShift.total_sales)}</span></div>
               </div>
             )}
             <div>
-              <label className="text-sm font-semibold text-muted-foreground mb-1 block">Monto de Cierre (RD$)</label>
+              <label className="text-sm font-semibold text-white/60 mb-1 block">Monto de Cierre (RD$)</label>
               <input
                 type="number"
                 value={closingAmount}
                 onChange={e => setClosingAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald text-lg"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-white/30 focus:bg-white/10 outline-none transition-all"
                 data-testid="closing-amount-input"
               />
             </div>
             <div>
-              <label className="text-sm font-semibold text-muted-foreground mb-1 block flex items-center gap-1">
+              <label className="text-sm font-semibold text-white/60 mb-1 block flex items-center gap-1">
                 <Mail size={12} /> Enviar reporte por correo (opcional)
               </label>
               <input
@@ -223,14 +224,14 @@ export default function CashRegister() {
                 value={emailTo}
                 onChange={e => setEmailTo(e.target.value)}
                 placeholder="correo@ejemplo.com"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-white/30 focus:bg-white/10 outline-none transition-all"
                 data-testid="shift-email-input"
               />
             </div>
-            <Button onClick={handleCloseShift} variant="destructive" data-testid="confirm-close-shift"
-              className="w-full h-12 font-oswald font-bold active:scale-95">
+            <button onClick={handleCloseShift} data-testid="confirm-close-shift"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-oswald font-bold active:scale-95 transition-all">
               CERRAR TURNO
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
