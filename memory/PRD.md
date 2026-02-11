@@ -185,6 +185,33 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - Botón "Cancelar" para salir del modo de movimiento
 - **Testing**: 100% tests pasados (10/10 backend, 10/10 frontend)
 
+### Phase 10 (Feb 11, 2026) - Personalización de Botones de Pago
+- **Sistema de Personalización de Formas de Pago (COMPLETADO)**:
+  - **Nuevo diseño visual de botones de pago** con gradientes, sombras y efectos de hover
+  - **Dos tipos de iconos**:
+    - Iconos simples de Lucide: Billetes, Tarjeta, Teléfono, Banco, Dólar
+    - Iconos de marcas/procesadores: Visa, Mastercard, American Express, Discover, PayPal, Efectivo, Banco, Dólar, Euro
+  - **Paleta de colores personalizable**:
+    - 10+ colores de fondo disponibles (verde, cyan, azul, violeta, magenta, rojo, naranja, gris, negro)
+    - 4 colores de texto (blanco, negro, crema, verde claro)
+  - **Vista previa en tiempo real** del botón mientras se edita
+  - **Interfaz renovada en Configuración > Ventas > Formas de Pago**:
+    - Grid de tarjetas con colores personalizados
+    - Botones de edición/eliminar visibles al hacer hover
+    - Diálogo mejorado con selector de tipo de icono, paleta de colores y vista previa
+  - **Pantalla de Pago rediseñada**:
+    - Botones con colores vibrantes y efectos de brillo al hacer hover
+    - Iconos SVG de alta calidad para procesadores de pago
+    - Badges de tipo de cambio para monedas extranjeras
+  - **Campos nuevos en modelo de datos**:
+    - `icon_type`: "lucide" | "brand"
+    - `brand_icon`: null | "visa" | "mastercard" | "amex" | etc.
+    - `bg_color`: Color de fondo en formato hex
+    - `text_color`: Color de texto en formato hex
+    - `order`: Orden de visualización
+  - **Migración automática**: Métodos de pago existentes reciben colores por defecto basados en su nombre
+- **Testing**: 100% tests pasados (14/14 frontend tests)
+
 ## PINs de Acceso (Datos de Demo)
 | Usuario | PIN | Rol |
 |---------|-----|-----|
