@@ -1,347 +1,180 @@
-# Mesa POS RD - PRD (Product Requirements Document)
+# MESA POS - Sistema de Punto de Venta para Restaurantes
 
-## Problem Statement
-Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Funcionalidades completas incluyendo inventario, proveedores, reportes, fidelidad de clientes, impresion virtual y envio de correos.
+## Descripción General
+Sistema POS (Point of Sale) completo para restaurantes con características avanzadas de gestión de mesas, pedidos, pagos, inventario, y reportes. Diseñado con un estilo visual moderno "Glassmorphism" (Liquid Glass).
 
-## Architecture
-- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Recharts
-- **Backend**: FastAPI + Motor (async MongoDB) + Resend (email)
-- **Database**: MongoDB
-- **Auth**: JWT + PIN numerico
+## Idioma de Usuario
+**Español (República Dominicana)**
 
-## What's Been Implemented
+---
 
-### Phase 1 (Feb 2026)
-- PIN login con teclado numerico
-- Mapa de mesas arrastrables con areas
-- Gestion de ordenes con categorias, modificadores, cantidad fraccionada
-- Pantalla de cocina con flujo de estados
-- Facturacion DGII (ITBIS 18%, Propina, NCF B01)
-- Division de cuentas con etiquetas
-- Razones de anulacion configurables con retorno a inventario
-- Turnos de caja por estacion
-- Indicador online/offline + cola de sincronizacion
-- Tema oscuro industrial
+## Estado Actual del Proyecto
 
-### Phase 2 (Feb 2026)
-- Inventario completo: stock, almacenes, recetas, alertas
-- Proveedores: CRUD + ordenes de compra + recepcion de mercancia
-- Reportes: ventas diarias, por categoria (pie chart), top productos (bar chart), por mesero
-- Clientes & Fidelidad: registro, puntos por consumo, canjeo de puntos
-- Email (Resend): cierre de turno, cierre diario por correo
-- Impresion virtual: recibos y comandas con vista previa + print CSS
-- 31 endpoints backend probados al 100%
+### ✅ Funcionalidades Completadas
 
-### Phase 4 (Feb 2026)
-- Sistema de permisos por rol con personalizacion por usuario
-- Gestion de usuarios completa (crear, editar, eliminar, asignar permisos)
-- Mesas con modo edicion protegido (solo usuarios autorizados mueven/redimensionan)
-- Redimensionar mesas con slider (adaptable a PC/tablet/celular)
-- Formas de pago CRUD (agregar, editar, eliminar)
-- Reportes de inventario con costos y margenes de ganancia
-- Reporte de rentabilidad por producto (ingreso vs costo de receta)
-- Exportacion DGII formato 607 (ingresos) y 608 (gastos)
-- Movimientos de inventario con log de auditorla
-- Dashboard y reportes ocultos para roles no autorizados
-- 48 endpoints backend probados al 100%
+#### Core del Sistema
+- **Autenticación PIN**: Sistema de login con PIN numérico de 4-6 dígitos
+- **Roles y Permisos**: Admin, Gerente, Propietario, Cajero, Mesero, Chef con permisos granulares
+- **Diseño Responsivo**: Adaptación automática para móvil, tablet y escritorio
 
-### Phase 5 (Feb 2026)
-- 9 recetas con costos reales dominicanos (Bandera RD$50, Churrasco RD$90, Langosta RD$390, etc.)
-- Tab "Costos y Margenes" en Inventario (precio venta vs costo receta = % margen)
-- Tab "Movimientos" en Inventario (log de ajustes con usuario y razon)
-- Endpoints ESC/POS para impresoras termicas (recibos y comandas en formato raw)
-- Kitchen TV Display (/kitchen-tv) - pantalla completa negra para TV de cocina
-  - Auto-refresh cada 4 segundos
-  - Reloj en tiempo real
-  - Indicadores de urgencia (amarillo >15min, rojo >25min con pulso)
-  - Boton fullscreen
-  - Click para avanzar estado de items
-- Boton "PANTALLA TV" en pagina de cocina regular
+#### Gestión de Mesas
+- **Mapa Interactivo**: Mesas arrastrables con estados visuales (libre, ocupada, facturada, reservada)
+- **Áreas Configurables**: Terraza, Salón Principal, Bar, etc.
+- **Cuentas Múltiples**: Soporte para múltiples cuentas por mesa
 
-### Phase 6 (Dec 2025)
-- **Módulo Avanzado de Configuración de Productos** con interfaz de pestañas:
-  - **Tab General**: Descripción del producto, descripción impresa (para tickets), categoría del menú, categoría de reporte, control de inventario
-  - **Tab General - Estilo del Botón POS**: Selector de colores para fondo y texto del botón en pantalla de ventas con vista previa en tiempo real
-  - **Tab Precios**: 5 niveles de precios (Precio A-E) con valores decimales para diferentes horarios/tipos de cliente
-  - **Tab Receta**: Enlace al módulo de inventario para gestión de ingredientes
-  - **Tab Modificadores**: Asignación de grupos de preguntas forzadas con configuración de selecciones mínimas/máximas y opción de múltiples selecciones
-- Nuevos endpoints backend:
-  - GET/POST/PUT /api/products con campos extendidos (printed_name, report_category_id, price_a-e, button_bg_color, button_text_color, modifier_assignments)
-  - GET /api/products/{id} para obtener producto específico
-  - CRUD completo /api/report-categories para categorías de reporte fiscal
-  - CRUD /api/modifiers/{id} para gestión individual de grupos de modificadores
-- **Reorganización del menú de Configuración**: 
-  - Reducido de 14 tabs a 8 tabs principales
-  - **Mesas**: Contiene sub-tabs "Mesas" y "Areas"
-  - **Ventas**: Contiene sub-tabs "Formas de Pago", "Impuestos", "Anulaciones", "Tipos de Venta"
-  - **Inventario**: Contiene sub-tabs "Productos", "Compras", "Stock"
-- **Módulo Avanzado de Configuración de Empleados** (/user/:userId):
-  - **Tab Informc.Empleado**: Datos personales completos (nombre, apellido, dirección, ciudad, estado, código postal, cédula/IMSS, teléfonos, email, fecha nacimiento), configuración POS (inicio/fin día, centro de ingresos, tarjeta #, referencia, PIN), foto del empleado, modo entrenamiento
-  - **Tab Avanzado**: Interfase Sistema (Capacidad Restaurante, Orden Rápida, Host/Hostess, Repartidor, Modo Reparto, Solo Marca E/S), opciones adicionales
-  - **Tab Empleador**: Config. Puesto (tabla con tarifa/hora y puesto primario), Selector de Puesto Labores
-  - **Horarios**: Grid visual semanal (7 días × 24 horas) con estados (No Requerido, Requerido, No puede trabajar), horas preferidas, nivel de habilidad 1-10
-- **Función Mover Mesa**: Permite mover una cuenta completa a otra mesa
-  - Diálogo visual con todas las mesas organizadas por área
-  - Mesas libres en verde, ocupadas en amarillo
-  - Si la mesa destino está ocupada, pregunta si desea unir las cuentas
-  - Al unir cuentas: todos los items de origen se mueven a destino, mesa origen queda libre
-- **Sistema de División de Cuenta mejorado**: 
-  - Modo visual con tabs de divisiones (Mesa #X División 1, División 2, etc.)
-  - Selección de items tocándolos (se resaltan en rojo)
-  - Botón "+ Nueva" para crear más divisiones
-  - Mensaje "1 item(s) seleccionado(s)" con instrucciones
-  - División vacía muestra botón "✓ Mover X item(s) aquí"
-  - Total por división
-  - Backend: POST /api/orders/{id}/move, POST /api/orders/{id}/split
-- 100% de tests pasados (backend y frontend)
+#### Pedidos
+- **Categorías y Productos**: Grid configurable con colores personalizados
+- **Modificadores**: Sistema de modificadores con grupos y opciones
+- **Envío a Cocina**: Items marcados por estado (pendiente, preparando, listo)
+- **División de Cuentas**: Mover items entre cuentas
 
-### Phase 7 (Feb 2026) - División de Cuentas Múltiples
-- **Sistema de Múltiples Cuentas por Mesa (COMPLETADO)**:
-  - Cada mesa puede tener múltiples órdenes/cuentas independientes
-  - Nuevo endpoint: POST /api/orders/{id}/split-to-new - crea nueva orden moviendo items seleccionados
-  - Nuevo endpoint: GET /api/tables/{tableId}/orders - obtiene todas las órdenes activas de una mesa
-  - **Nuevo endpoint: POST /api/tables/{tableId}/orders/new - crea cuenta vacía directamente**
-  - **Nuevo endpoint: DELETE /api/orders/{orderId}/empty - elimina cuenta vacía**
-  - **Nuevo endpoint: POST /api/orders/{id}/merge/{targetId} - fusiona dos cuentas**
-  - Estado de mesa "divided" cuando tiene más de una cuenta activa
-  - Indicador visual en el mapa de mesas: patrón de rayas diagonales para mesas divididas
-  - **UI mejorada con tabs de cuentas visibles en vista normal** (no solo en modo dividir)
-  - **Botón "+ Nueva" para crear cuentas vacías sin entrar al modo dividir**
-  - **Botón "X" para eliminar cuentas vacías** (solo aparece si la cuenta está vacía y hay más de una cuenta)
-  - **Botón "Unir" azul para fusionar cuentas** (solo aparece cuando hay 2+ cuentas)
-  - **Diálogo de fusión muestra cuentas destino con cantidad de items y total RD$**
-  - **Ícono de impresora 🖨️ en cada tab de cuenta** para imprimir pre-cuenta individual (solo visible con 2+ cuentas)
-  - Título dinámico muestra "Mesa X - Cuenta #Y" cuando hay múltiples cuentas
-  - Navegación entre cuentas con un toque
-  - Botón "CREAR NUEVA CUENTA" visible cuando hay items seleccionados en modo dividir
-  - Validaciones: no permite fusionar consigo misma ni entre mesas diferentes
-  - Fix crítico: Corregido error require_auth → get_current_user en endpoint split-to-new
-- **Testing Exhaustivo**: 100% tests pasados (backend y frontend)
+#### Pagos
+- **Métodos Personalizables**: Efectivo, tarjeta (Visa/MC logos), transferencia, USD, EUR
+- **Tasas de Cambio**: Configurables para monedas extranjeras
+- **Propinas**: Cálculo automático con porcentajes predefinidos
+- **ITBIS**: Impuesto dominicano calculado automáticamente
 
-### Phase 8 (Feb 2026) - Mejoras UX y Seguridad
-- **Control de Acceso a Mesas por Usuario**:
-  - **Meseros** solo pueden acceder a mesas que ellos abrieron
-  - **Cajeros** pueden acceder a cualquier mesa (necesitan cobrar)
-  - **Supervisores, Gerentes, Admin** pueden acceder a todas las mesas
-  - Nuevo permiso: `access_all_tables` en sistema de permisos
-  - Nuevo rol: `supervisor` con permisos intermedios
-  - Pantalla de "Acceso Denegado" con ícono de candado y nombre del mesero dueño
-  - Botón "Volver a Mesas" para regresar fácilmente
-- **Layout Mejorado de Pantalla de Órdenes**:
-  - **Layout invertido**: Cuenta a la derecha, Menú a la izquierda
-  - **Botones de acción fijos** en la parte inferior del panel (ENVIAR, FACTURAR, Mover, Dividir, Pre-Cuenta)
-  - **Selector de columnas** para categorías y productos (2-6 columnas)
-  - Configuración guardada en localStorage
-- **Mejoras de UX**:
-  - Toast notifications reducidos a 500ms
-  - Botón "ENVIAR" simplificado (antes era "ENVIAR A COCINA")
-  - Bug fix: Montos rápidos en pago ahora respetan el método de pago seleccionado
-- **Mover Mesa con Múltiples Cuentas (Feb 9, 2026)**:
-  - **Nuevo endpoint: POST /api/tables/{tableId}/move-all** - Mueve TODAS las órdenes de una mesa a otra
-  - Al mover una mesa dividida, todas las cuentas se trasladan automáticamente
-  - La mesa destino hereda el estado "divided" si recibe más de una cuenta
-  - La mesa origen queda automáticamente libre
-  - Validaciones: no permite mover a la misma mesa, verifica existencia de ambas mesas
-  - Si la mesa destino tiene órdenes activas, retorna `needs_merge` para confirmación del usuario
-  - Frontend actualizado para detectar mesas con múltiples cuentas y usar el nuevo endpoint
-  - **Archivo de sonido para notificaciones de cocina creado**: `/public/sounds/notification.mp3`
-- **Historial de Movimientos de Mesas para Auditoría (Feb 9, 2026)**:
-  - Nueva colección `table_movements` en MongoDB para registro de auditoría
-  - **Nuevo endpoint: GET /api/reports/table-movements** - Lista todos los movimientos con filtro por fecha
-  - **Nuevo endpoint: GET /api/reports/table-movements/stats** - Estadísticas de movimientos (totales, por tipo, por usuario)
-  - Cada movimiento registra: usuario (id, nombre, rol), mesa origen/destino, tipo (single/bulk), cantidad de cuentas, si hubo unión
-  - Nueva sección en página de Reportes: "HISTORIAL DE MOVIMIENTOS DE MESAS"
-  - Muestra estadísticas: Total movimientos, Simples, Múltiples, Cuentas unidas
-  - Tabla detallada: Hora, Usuario, Origen, Destino, Tipo, Cuentas
-- **Sistema de Reservas Avanzado con Zonas Horarias (Feb 9, 2026)**:
-  - Configuración de tiempo de pre-activación (minutos antes de la reserva para marcar mesa como reservada)
-  - Período de tolerancia (minutos de espera antes de liberar mesa si cliente no llega)
-  - Soporte multi-zona horaria para restaurantes en diferentes países
-  - **Nuevo endpoint: PUT /api/reservations/{id}** - Editar reserva existente
-  - **Nuevo endpoint: POST /api/reservations/check-activations** - Verificar y actualizar estados de reservas
-  - **Nuevo endpoint: GET/PUT /api/system/config** - Configuración del sistema (zona horaria, moneda, etc.)
-  - Nueva sección "Sistema" en Configuración para ajustes de zona horaria
-  - Frontend con polling cada 30 segundos para actualizar estados de reservas
-- **Mejoras Visuales del Mapa de Mesas (Feb 9, 2026)**:
-  - Colores diferenciados: Mis mesas (rojo), Mesas de otros (azul), Divididas (naranja), Reservadas (púrpura)
-  - Leyenda actualizada con todos los estados
-  - Mesas divididas con patrón de rayas más visible
+#### Cocina (KDS)
+- **Pantalla de Cocina**: Vista de órdenes pendientes por canal
+- **Pantalla TV**: Vista expandida para monitores de cocina
+- **Estados de Items**: Pendiente → Preparando → Listo
 
-### Phase 9 (Feb 10, 2026) - Mover Ítems Entre Cuentas
-- **Función "Mover Ítems Entre Cuentas" (COMPLETADO)**:
-  - Permite mover ítems seleccionados de una cuenta a otra cuenta existente en la misma mesa
-  - **Nuevo endpoint: POST /api/orders/{order_id}/move-items** - Mueve ítems seleccionados a otra orden
-  - Flujo de usuario:
-    1. Entrar a mesa dividida con múltiples cuentas
-    2. Clic en botón "Dividir"
-    3. Seleccionar uno o más ítems (se resaltan en naranja)
-    4. Clic en botón morado "Mover a Cuenta"
-    5. Aparecen botones "→ Mover aquí (#X)" en las otras cuentas (animación púrpura pulsante)
-    6. Indicador "Desde aquí →" (amarillo) muestra cuenta origen
-    7. Clic en cuenta destino para completar el movimiento
-    8. Toast de confirmación "X artículo(s) movido(s)"
-  - Los totales de ambas cuentas se actualizan automáticamente
-  - Validaciones backend: requiere target_order_id y item_ids válidos
-  - Botón "Cancelar" para salir del modo de movimiento
-- **Testing**: 100% tests pasados (10/10 backend, 10/10 frontend)
+#### Caja y Turnos
+- **Apertura/Cierre de Turno**: Con conteo de efectivo
+- **Historial de Turnos**: Registro completo de ventas por turno
+- **Reportes por Email**: Envío de reporte de cierre
 
-### Phase 10 (Feb 11, 2026) - Personalización de Botones de Pago
-- **Sistema de Personalización de Formas de Pago (COMPLETADO)**:
-  - **Nuevo diseño visual de botones de pago** con gradientes, sombras y efectos de hover
-  - **Dos tipos de iconos**:
-    - Iconos simples de Lucide: Billetes, Tarjeta, Teléfono, Banco, Dólar
-    - Iconos de marcas/procesadores: Visa, Mastercard, American Express, Discover, PayPal, Efectivo, Banco, Dólar, Euro
-  - **Paleta de colores personalizable**:
-    - 10+ colores de fondo disponibles (verde, cyan, azul, violeta, magenta, rojo, naranja, gris, negro)
-    - 4 colores de texto (blanco, negro, crema, verde claro)
-  - **Vista previa en tiempo real** del botón mientras se edita
-  - **Interfaz renovada en Configuración > Ventas > Formas de Pago**:
-    - Grid de tarjetas con colores personalizados
-    - Botones de edición/eliminar visibles al hacer hover
-    - Diálogo mejorado con selector de tipo de icono, paleta de colores y vista previa
-  - **Pantalla de Pago rediseñada**:
-    - Botones con colores vibrantes y efectos de brillo al hacer hover
-    - Iconos SVG de alta calidad para procesadores de pago
-    - Badges de tipo de cambio para monedas extranjeras
-  - **Campos nuevos en modelo de datos**:
-    - `icon_type`: "lucide" | "brand"
-    - `brand_icon`: null | "visa" | "mastercard" | "amex" | etc.
-    - `bg_color`: Color de fondo en formato hex
-    - `text_color`: Color de texto en formato hex
-    - `order`: Orden de visualización
-  - **Migración automática**: Métodos de pago existentes reciben colores por defecto basados en su nombre
-- **Testing**: 100% tests pasados (14/14 frontend tests)
+#### Reservaciones
+- **Calendario**: Vista por fecha con slots de tiempo
+- **Bloqueo de Mesas**: Mesas se marcan reservadas automáticamente
+- **Tolerancia**: Liberación automática si no llegan
 
-### Phase 11 (Feb 11, 2026) - Sistema Responsivo Inteligente
-- **Detección Automática de Dispositivos (COMPLETADO)**:
-  - **Nuevo hook `useDeviceDetect.js`**: Detecta automáticamente el tipo de dispositivo y tamaño de pantalla
-    - `isMobile`: width < 768px
-    - `isTablet`: 768px <= width <= 1024px  
-    - `isDesktop`: width > 1024px
-    - Detecta orientación (landscape/portrait)
-    - Detecta si es dispositivo táctil
-  - **Layout Adaptativo**:
-    - **Móvil**: Navegación inferior (bottom nav) con 6 botones principales + botón salir
-    - **Tablet/Desktop**: Sidebar lateral con iconos y etiquetas
-    - Indicador de tipo de dispositivo (Smartphone/Tablet/Monitor) en el sidebar
-  - **Mapa de Mesas Responsivo**:
-    - Escalado automático de mesas según tamaño de pantalla
-    - Leyenda oculta en móvil, visible en tablet/desktop
-    - Tabs de áreas con scroll horizontal en móvil
-    - Modo edición adaptado para táctil
-  - **Pantalla de Pago Completamente Adaptativa**:
-    - **Layout Móvil**:
-      - Grid de pagos: 2 columnas
-      - Montos rápidos: 3x2 grid + botón exacto
-      - Detalle de factura colapsable
-      - Barra de total y acciones fija en la parte inferior
-    - **Layout Tablet Portrait**:
-      - Similar a móvil pero con más espacio
-      - Detalle de factura colapsable
-    - **Layout Tablet Landscape / Desktop**:
-      - Panel izquierdo: detalles de factura y cliente
-      - Panel derecho: métodos de pago (3 columnas) y montos rápidos (columna vertical)
-  - **Estilos CSS para Dispositivos Táctiles**:
-    - Safe-area-inset para iPhone (notch y home indicator)
-    - Targets táctiles mínimos de 44px
-    - Prevención de overscroll/pull-to-refresh
-    - Scrollbar oculto pero funcional
-- **Testing**: 100% tests pasados (12/12 tests en 4 viewports diferentes)
-- **Viewports testeados**:
-  - Móvil: 390x844 (iPhone 14 Pro)
-  - Tablet Portrait: 768x1024 (iPad)
-  - Tablet Landscape: 1024x768
-  - Desktop: 1920x1080
+#### Dashboard
+- **KPIs en Tiempo Real**: Ventas, efectivo, tarjeta, propinas
+- **Gráfico de Ventas por Hora**: Visualización del flujo de ventas
+- **Alertas de Inventario**: Productos bajo stock mínimo
 
-### Phase 12 (Feb 11, 2026) - Modo Offline Completo
-- **Sistema Offline con Sincronización Automática (COMPLETADO)**:
-  - **Nuevo módulo `offlineDB.js`**: Base de datos local con IndexedDB
-    - Almacena operaciones pendientes sin límite de tiempo
-    - Cola de sincronización con prioridades
-    - Caché de datos esenciales (productos, categorías, mesas, áreas, métodos de pago)
-  - **Nuevo hook `useOfflineSync.js`**: Gestión de estado offline
-    - Sincronización automática al recuperar conexión
-    - Polling cada 30 segundos para sincronizar pendientes
-    - Hooks para datos cacheados y mutaciones offline
-  - **Funciones Disponibles Offline**:
-    - ✅ Ver menú y productos (desde caché)
-    - ✅ Ver mesas y su estado (última información conocida)
-    - ✅ Tomar pedidos (agregar productos a órdenes)
-    - ✅ Enviar a cocina (se encola)
-    - ✅ Dividir cuentas (se encola)
-    - ✅ Mover ítems entre cuentas (se encola)
-  - **Indicadores Visuales**:
-    - 🟢 WiFi verde: Conexión activa
-    - 🔵 Nube azul pulsante: Sincronizando
-    - 🟠 WiFi naranja pulsante: Sin conexión
-    - 🔶 Badge con contador: Operaciones pendientes
-    - Banner en móvil con estado y botón de sincronización
-  - **Notificaciones Toast**:
-    - "📴 Modo Offline Activado" al perder conexión
-    - "🌐 Conexión restaurada" al recuperar
-    - "✓ X operación(es) sincronizada(s)" tras sync exitoso
-    - "Guardado offline" al crear operación sin conexión
-- **Archivos nuevos**:
-  - `frontend/src/lib/offlineDB.js` - Base de datos IndexedDB
-  - `frontend/src/hooks/useOfflineSync.js` - Hooks de sincronización
-- **Dependencia nueva**: `idb@8.0.3` (IndexedDB wrapper)
+### 🎨 Diseño Glassmorphism (NUEVO - Diciembre 2025)
+- **Fondo con Gradiente**: Púrpura/azul con orbes animados
+- **Efecto de Vidrio Esmerilado**: Backdrop blur en todos los paneles
+- **Paleta de Colores Personalizable**: Accesible desde Configuración (solo admin/gerente/propietario)
+- **Pantallas Aplicadas**: Login, Mapa de Mesas, Dashboard, Caja, Reservaciones, Pedidos, Configuración
+- **Excluidas por Visibilidad**: Cocina y Pantalla TV (mantienen diseño original oscuro)
 
-### Phase 13 (Feb 11, 2026) - Servidor Local Independiente
-- **Paquete de Instalación Local (COMPLETADO)**:
-  - **Arquitectura Docker Compose** para fácil despliegue:
-    - MongoDB: Base de datos local
-    - Backend: FastAPI en contenedor
-    - Frontend: React servido por Nginx
-    - Watchtower: Auto-actualización opcional
-  - **Scripts de Instalación**:
-    - `instalar-windows.bat` - Instalador para Windows 10/11
-    - `instalar-linux.sh` - Instalador para Ubuntu/Debian
-    - `backup.bat` / `backup.sh` - Scripts de respaldo
-  - **Configuración IP Fija**:
-    - Archivo `.env` para configurar IP del servidor
-    - Nginx como proxy reverso con /api redirigido al backend
-    - Todos los dispositivos apuntan a la IP local
-  - **Ventajas del Servidor Local**:
-    - ✅ 100% independiente del internet
-    - ✅ Comunicación entre dispositivos vía WiFi local
-    - ✅ KDS recibe pedidos en tiempo real incluso sin internet
-    - ✅ Backups automáticos locales
-    - ✅ Auto-inicio al encender la computadora
-  - **Guía de Instalación Completa**:
-    - Requisitos de hardware y software
-    - Configuración de IP fija (Windows/Linux)
-    - Acceso desde tablets y celulares
-    - Comandos útiles y solución de problemas
-- **Archivos en `/app/local-server/`**:
-  - `docker-compose.yml` - Orquestación de servicios
-  - `backend/Dockerfile` - Imagen del backend
-  - `frontend/Dockerfile` - Imagen del frontend
-  - `frontend/nginx.conf` - Configuración del proxy
-  - `.env.example` - Plantilla de configuración
-  - `GUIA_INSTALACION.md` - Documentación completa
+#### Opciones de Personalización (Paleta de Colores):
+- 4 colores del gradiente (inicio, medio1, medio2, final)
+- Color de acento (naranja por defecto)
+- Opacidad del efecto glass (5-30%)
+- Intensidad del blur (4-24px)
+- 3 colores de orbes animados (formato rgba)
 
-## PINs de Acceso (Datos de Demo)
-| Usuario | PIN | Rol |
-|---------|-----|-----|
-| Admin | 0000 | admin |
-| Carlos | 1234 | waiter |
-| Maria | 5678 | waiter |
-| Luis (Cajero) | 4321 | cashier |
-| Chef Pedro | 9999 | kitchen |
+### 📡 Modo Offline
+- **Service Worker**: Cache de datos críticos
+- **IndexedDB**: Almacenamiento local de pedidos pendientes
+- **Indicadores de Estado**: Icono WiFi con badge de pendientes
+- **Sincronización**: Automática al recuperar conexión
 
-## Prioritized Backlog
+### 🖥️ Paquete de Servidor Local
+- **Docker Compose**: Configuración completa para despliegue on-premise
+- **Scripts de Instalación**: Windows (.bat) y Linux/Mac (.sh)
+- **Guía de Instalación**: `/app/local-server/GUIA_INSTALACION.md`
 
-### P0
-- Integración con impresoras térmicas ESC/POS físicas (USB/Red)
-- Verificar dominio en Resend para email real
+---
 
-### P1
-- Generación de reportes DGII (607, 608) desde frontend
-- Multi-sucursal
-- App móvil nativa
-- Reservaciones avanzadas (reservar áreas completas)
+## Tareas Pendientes
 
-### P2
-- Refactorización: Dividir server.py en módulos separados
-- Refactorización: Extraer tabs de Settings.js en componentes independientes
+### P1 - Alta Prioridad
+- [ ] **Crear paquete ZIP descargable** del servidor local
+- [ ] **Integración de impresora ESC/POS** física
 
+### P2 - Media Prioridad
+- [ ] **Reloj de empleados**: Check-in/out con reportes
+- [ ] **Reportes DGII**: Generación de formatos 607, 608
+- [ ] **Imágenes de productos**: Soporte para fotos/iconos en botones
+- [ ] **Cache de imágenes offline**: Para menú sin conexión
+
+### P3 - Baja Prioridad
+- [ ] **Drag-and-drop**: Reordenar métodos de pago
+- [ ] **Exportar auditoría**: Historial de movimientos de mesas a Excel/CSV
+- [ ] **Duplicar productos**: Botón de duplicación rápida
+
+---
+
+## Arquitectura Técnica
+
+### Backend
+- **FastAPI**: Framework Python
+- **MongoDB**: Base de datos
+- **Endpoints**: `/api/*` con autenticación JWT
+
+### Frontend
+- **React**: Framework JavaScript
+- **Shadcn/UI**: Componentes base
+- **TailwindCSS**: Estilos
+- **Recharts**: Gráficos
+
+### Archivos Clave
+```
+/app
+├── backend/
+│   └── server.py              # API monolítica (necesita refactoring)
+├── frontend/
+│   ├── src/
+│   │   ├── context/
+│   │   │   ├── AuthContext.js   # Autenticación y estado global
+│   │   │   └── ThemeContext.js  # Estado del tema Glassmorphism
+│   │   ├── components/
+│   │   │   ├── Layout.js        # Layout principal con glassmorphism
+│   │   │   └── GlassUI.js       # Componentes glass reutilizables
+│   │   ├── pages/
+│   │   │   ├── Login.js         # Login con glassmorphism
+│   │   │   ├── TableMap.js      # Mapa de mesas
+│   │   │   ├── OrderScreen.js   # Pantalla de pedidos
+│   │   │   ├── PaymentScreen.js # Pantalla de cobro (glassmorphism)
+│   │   │   ├── Dashboard.js     # Dashboard KPIs
+│   │   │   ├── CashRegister.js  # Caja y turnos
+│   │   │   ├── Reservations.js  # Reservaciones
+│   │   │   ├── Settings.js      # Configuración (incluye Paleta)
+│   │   │   ├── Kitchen.js       # KDS (sin glassmorphism)
+│   │   │   └── KitchenTV.js     # TV Cocina (sin glassmorphism)
+│   │   └── hooks/
+│   │       ├── useDeviceDetect.js  # Detección de dispositivo
+│   │       └── useOfflineSync.js   # Sincronización offline
+│   └── package.json
+└── local-server/                # Paquete de despliegue local
+    ├── GUIA_INSTALACION.md
+    └── docker-compose.yml
+```
+
+---
+
+## Credenciales de Prueba
+- **Admin**: PIN `0000`
+- **Mesero Carlos**: PIN `1234`
+- **Cajero Luis**: PIN `4321`
+- **Chef Pedro**: PIN `9999`
+- **María**: PIN `5678`
+
+---
+
+## Integraciones de Terceros
+- **Resend**: Configurado para envío de emails (requiere API key del usuario)
+- **Impresión**: Mocked (vista previa en pantalla, sin impresora física)
+
+---
+
+## Changelog Reciente
+
+### Diciembre 2025
+- ✅ Implementado diseño Glassmorphism en todo el sistema
+- ✅ Creado panel de Paleta de Colores en Configuración
+- ✅ Excluidas pantallas de Cocina del glassmorphism (visibilidad)
+- ✅ APIs de tema: GET/PUT /api/theme-config, POST /api/theme-config/reset
+- ✅ Verificación de roles para acceso a personalización de tema
+
+### Anteriores
+- ✅ Botones de pago personalizables con iconos de marca
+- ✅ UI totalmente responsiva (móvil/tablet/escritorio)
+- ✅ Modo offline con IndexedDB
+- ✅ Paquete de servidor local con Docker
+- ✅ Ocultación de Configuración para no-admins
