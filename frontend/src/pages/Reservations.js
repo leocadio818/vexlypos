@@ -199,29 +199,29 @@ export default function Reservations() {
         </div>
       </div>
 
-      {/* New/Edit Reservation Dialog */}
+      {/* New/Edit Reservation Dialog - Glassmorphism */}
       <Dialog open={dialog.open} onOpenChange={(o) => !o && setDialog(p => ({ ...p, open: false, editId: null }))}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="new-reservation-dialog">
-          <DialogHeader><DialogTitle className="font-oswald">{dialog.editId ? 'Editar Reservacion' : 'Nueva Reservacion'}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="new-reservation-dialog">
+          <DialogHeader><DialogTitle className="font-oswald text-white">{dialog.editId ? 'Editar Reservacion' : 'Nueva Reservacion'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={dialog.customer_name} onChange={e => setDialog(p => ({ ...p, customer_name: e.target.value }))}
-              placeholder="Nombre del cliente" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="res-name" />
+              placeholder="Nombre del cliente" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 outline-none" data-testid="res-name" />
             <input value={dialog.phone} onChange={e => setDialog(p => ({ ...p, phone: e.target.value }))}
-              placeholder="Telefono" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="res-phone" />
+              placeholder="Telefono" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 outline-none" data-testid="res-phone" />
             <div className="grid grid-cols-2 gap-2">
               <input type="date" value={dialog.date} onChange={e => setDialog(p => ({ ...p, date: e.target.value }))}
-                className="bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono" />
+                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:border-white/30 outline-none" />
               <input type="time" value={dialog.time} onChange={e => setDialog(p => ({ ...p, time: e.target.value }))}
-                className="bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono" />
+                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:border-white/30 outline-none" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Personas</label>
+                <label className="text-xs text-white/50 mb-1 block">Personas</label>
                 <input type="number" value={dialog.party_size} onChange={e => setDialog(p => ({ ...p, party_size: parseInt(e.target.value) || 1 }))}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm font-oswald text-white focus:border-white/30 outline-none" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Area</label>
+                <label className="text-xs text-white/50 mb-1 block">Area</label>
                 <select value={dialog.area_id} onChange={e => {
                   const aid = e.target.value;
                   setDialog(p => ({ ...p, area_id: aid }));
@@ -229,20 +229,20 @@ export default function Reservations() {
                     const areaTables = tables.filter(t => t.status === 'free');
                     setDialog(p => ({ ...p, table_ids: areaTables.map(t => t.id) }));
                   }
-                }} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
+                }} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 outline-none">
                   <option value="">Seleccionar area...</option>
                   {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Mesas ({dialog.table_ids.length} seleccionadas)</label>
-              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-background rounded-lg border border-border">
+              <label className="text-xs text-white/50 mb-1 block">Mesas ({dialog.table_ids.length} seleccionadas)</label>
+              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-white/5 rounded-lg border border-white/10">
                 {dialog.area_id && (
                   <button onClick={() => {
                     const areaTables = tables.filter(t => t.area_id === dialog.area_id && t.status === 'free');
                     setDialog(p => ({ ...p, table_ids: areaTables.map(t => t.id) }));
-                  }} className="px-2 py-1 rounded bg-primary/20 text-primary text-[10px] font-bold">
+                  }} className="px-2 py-1 rounded bg-orange-500/20 text-orange-400 text-[10px] font-bold">
                     Seleccionar toda el area
                   </button>
                 )}
@@ -252,7 +252,7 @@ export default function Reservations() {
                     <button key={t.id} onClick={() => {
                       setDialog(p => ({ ...p, table_ids: selected ? p.table_ids.filter(id => id !== t.id) : [...p.table_ids, t.id] }));
                     }} className={`px-2.5 py-1.5 rounded-lg text-xs font-oswald font-bold transition-all ${
-                      selected ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      selected ? 'bg-purple-600 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'
                     }`}>
                       Mesa {t.number}
                     </button>
@@ -261,16 +261,16 @@ export default function Reservations() {
               </div>
             </div>
             <input value={dialog.notes} onChange={e => setDialog(p => ({ ...p, notes: e.target.value }))}
-              placeholder="Notas (cumpleanos, alergias, etc.)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
+              placeholder="Notas (cumpleanos, alergias, etc.)" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 outline-none" />
             
             {/* Timing Configuration */}
-            <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg space-y-2">
+            <div className="p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg space-y-2">
               <p className="text-xs font-semibold text-purple-400">⏰ Configuración de Tiempos</p>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-muted-foreground mb-1 block">Activar (min antes)</label>
+                  <label className="text-[10px] text-white/50 mb-1 block">Activar (min antes)</label>
                   <select value={dialog.activation_minutes} onChange={e => setDialog(p => ({ ...p, activation_minutes: parseInt(e.target.value) }))}
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1.5 text-xs">
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-white/30 outline-none">
                     <option value={15}>15 minutos</option>
                     <option value={30}>30 minutos</option>
                     <option value={45}>45 minutos</option>
@@ -280,9 +280,9 @@ export default function Reservations() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground mb-1 block">Tolerancia si no llega</label>
+                  <label className="text-[10px] text-white/50 mb-1 block">Tolerancia si no llega</label>
                   <select value={dialog.tolerance_minutes} onChange={e => setDialog(p => ({ ...p, tolerance_minutes: parseInt(e.target.value) }))}
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1.5 text-xs">
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-white/30 outline-none">
                     <option value={10}>10 minutos</option>
                     <option value={15}>15 minutos</option>
                     <option value={20}>20 minutos</option>
@@ -292,15 +292,15 @@ export default function Reservations() {
                   </select>
                 </div>
               </div>
-              <p className="text-[9px] text-muted-foreground">
+              <p className="text-[9px] text-white/40">
                 La mesa se marcará como reservada {dialog.activation_minutes} min antes de la hora. 
                 Si no llega después de {dialog.tolerance_minutes} min, se liberará automáticamente.
               </p>
             </div>
             
-            <Button onClick={dialog.editId ? handleUpdate : handleCreate} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-reservation">
+            <button onClick={dialog.editId ? handleUpdate : handleCreate} className="w-full h-11 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-oswald font-bold active:scale-95 transition-all" data-testid="confirm-reservation">
               {dialog.editId ? 'ACTUALIZAR' : 'RESERVAR'}
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
