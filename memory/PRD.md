@@ -212,6 +212,47 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - **Migración automática**: Métodos de pago existentes reciben colores por defecto basados en su nombre
 - **Testing**: 100% tests pasados (14/14 frontend tests)
 
+### Phase 11 (Feb 11, 2026) - Sistema Responsivo Inteligente
+- **Detección Automática de Dispositivos (COMPLETADO)**:
+  - **Nuevo hook `useDeviceDetect.js`**: Detecta automáticamente el tipo de dispositivo y tamaño de pantalla
+    - `isMobile`: width < 768px
+    - `isTablet`: 768px <= width <= 1024px  
+    - `isDesktop`: width > 1024px
+    - Detecta orientación (landscape/portrait)
+    - Detecta si es dispositivo táctil
+  - **Layout Adaptativo**:
+    - **Móvil**: Navegación inferior (bottom nav) con 6 botones principales + botón salir
+    - **Tablet/Desktop**: Sidebar lateral con iconos y etiquetas
+    - Indicador de tipo de dispositivo (Smartphone/Tablet/Monitor) en el sidebar
+  - **Mapa de Mesas Responsivo**:
+    - Escalado automático de mesas según tamaño de pantalla
+    - Leyenda oculta en móvil, visible en tablet/desktop
+    - Tabs de áreas con scroll horizontal en móvil
+    - Modo edición adaptado para táctil
+  - **Pantalla de Pago Completamente Adaptativa**:
+    - **Layout Móvil**:
+      - Grid de pagos: 2 columnas
+      - Montos rápidos: 3x2 grid + botón exacto
+      - Detalle de factura colapsable
+      - Barra de total y acciones fija en la parte inferior
+    - **Layout Tablet Portrait**:
+      - Similar a móvil pero con más espacio
+      - Detalle de factura colapsable
+    - **Layout Tablet Landscape / Desktop**:
+      - Panel izquierdo: detalles de factura y cliente
+      - Panel derecho: métodos de pago (3 columnas) y montos rápidos (columna vertical)
+  - **Estilos CSS para Dispositivos Táctiles**:
+    - Safe-area-inset para iPhone (notch y home indicator)
+    - Targets táctiles mínimos de 44px
+    - Prevención de overscroll/pull-to-refresh
+    - Scrollbar oculto pero funcional
+- **Testing**: 100% tests pasados (12/12 tests en 4 viewports diferentes)
+- **Viewports testeados**:
+  - Móvil: 390x844 (iPhone 14 Pro)
+  - Tablet Portrait: 768x1024 (iPad)
+  - Tablet Landscape: 1024x768
+  - Desktop: 1920x1080
+
 ## PINs de Acceso (Datos de Demo)
 | Usuario | PIN | Rol |
 |---------|-----|-----|
