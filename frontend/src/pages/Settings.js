@@ -1299,43 +1299,6 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {/* Orb Colors */}
-                <div className="bg-card border border-border rounded-xl p-4">
-                  <h3 className="text-sm font-semibold mb-3">Colores de Orbes Animados</h3>
-                  <p className="text-[10px] text-muted-foreground mb-3">
-                    Los orbes son las esferas de luz que aparecen en el fondo (formato: rgba)
-                  </p>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs text-muted-foreground">Orbe 1 (Púrpura)</label>
-                      <input
-                        value={theme.orbColor1}
-                        onChange={(e) => setTheme(prev => ({ ...prev, orbColor1: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
-                        placeholder="rgba(168, 85, 247, 0.3)"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs text-muted-foreground">Orbe 2 (Azul)</label>
-                      <input
-                        value={theme.orbColor2}
-                        onChange={(e) => setTheme(prev => ({ ...prev, orbColor2: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
-                        placeholder="rgba(59, 130, 246, 0.2)"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs text-muted-foreground">Orbe 3 (Cyan)</label>
-                      <input
-                        value={theme.orbColor3}
-                        onChange={(e) => setTheme(prev => ({ ...prev, orbColor3: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono"
-                        placeholder="rgba(6, 182, 212, 0.2)"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Save Button */}
                 <button
                   onClick={async () => {
