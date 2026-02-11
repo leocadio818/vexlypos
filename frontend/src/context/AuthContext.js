@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authAPI, seedAPI, processOfflineQueue } from '@/lib/api';
+import useDeviceDetect from '@/hooks/useDeviceDetect';
 
 const AuthContext = createContext(null);
 
@@ -7,6 +8,9 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  // Device detection for responsive UI
+  const device = useDeviceDetect();
   
   // Global accessibility mode - Large text
   const [largeMode, setLargeMode] = useState(() => {
