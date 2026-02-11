@@ -511,14 +511,6 @@ export default function Settings() {
                     </div>
                   ))}
                 </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
-                          onClick={() => handleDeletePayMethod(m.id)}>
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
                 {/* Quick Amounts Configuration */}
                 <div className="bg-card border-2 border-primary/30 rounded-xl p-5">
