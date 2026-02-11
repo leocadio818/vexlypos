@@ -286,6 +286,40 @@ Sistema POS para restaurante en Republica Dominicana con cumplimiento DGII. Func
   - `frontend/src/hooks/useOfflineSync.js` - Hooks de sincronización
 - **Dependencia nueva**: `idb@8.0.3` (IndexedDB wrapper)
 
+### Phase 13 (Feb 11, 2026) - Servidor Local Independiente
+- **Paquete de Instalación Local (COMPLETADO)**:
+  - **Arquitectura Docker Compose** para fácil despliegue:
+    - MongoDB: Base de datos local
+    - Backend: FastAPI en contenedor
+    - Frontend: React servido por Nginx
+    - Watchtower: Auto-actualización opcional
+  - **Scripts de Instalación**:
+    - `instalar-windows.bat` - Instalador para Windows 10/11
+    - `instalar-linux.sh` - Instalador para Ubuntu/Debian
+    - `backup.bat` / `backup.sh` - Scripts de respaldo
+  - **Configuración IP Fija**:
+    - Archivo `.env` para configurar IP del servidor
+    - Nginx como proxy reverso con /api redirigido al backend
+    - Todos los dispositivos apuntan a la IP local
+  - **Ventajas del Servidor Local**:
+    - ✅ 100% independiente del internet
+    - ✅ Comunicación entre dispositivos vía WiFi local
+    - ✅ KDS recibe pedidos en tiempo real incluso sin internet
+    - ✅ Backups automáticos locales
+    - ✅ Auto-inicio al encender la computadora
+  - **Guía de Instalación Completa**:
+    - Requisitos de hardware y software
+    - Configuración de IP fija (Windows/Linux)
+    - Acceso desde tablets y celulares
+    - Comandos útiles y solución de problemas
+- **Archivos en `/app/local-server/`**:
+  - `docker-compose.yml` - Orquestación de servicios
+  - `backend/Dockerfile` - Imagen del backend
+  - `frontend/Dockerfile` - Imagen del frontend
+  - `frontend/nginx.conf` - Configuración del proxy
+  - `.env.example` - Plantilla de configuración
+  - `GUIA_INSTALACION.md` - Documentación completa
+
 ## PINs de Acceso (Datos de Demo)
 | Usuario | PIN | Rol |
 |---------|-----|-----|
