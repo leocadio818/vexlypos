@@ -111,14 +111,45 @@ export default function Layout() {
               <span className={`font-bold ${isTablet ? 'text-xs' : largeMode ? 'text-base' : 'text-sm'}`}>A+</span>
             </button>
             
+            {/* Sync Status - NEW */}
+            {pendingCount > 0 && (
+              <button
+                onClick={isOnline ? syncNow : undefined}
+                disabled={isSyncing || !isOnline}
+                className={`relative ${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-xl flex items-center justify-center transition-all ${
+                  isSyncing 
+                    ? 'bg-blue-500/20 text-blue-500' 
+                    : isOnline 
+                      ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30' 
+                      : 'bg-orange-500/20 text-orange-500'
+                }`}
+                title={isSyncing ? 'Sincronizando...' : `${pendingCount} operación(es) pendiente(s)`}
+                data-testid="sync-status-btn"
+              >
+                {isSyncing ? (
+                  <RefreshCw size={isTablet ? 14 : largeMode ? 18 : 16} className="animate-spin" />
+                ) : (
+                  <CloudOff size={isTablet ? 14 : largeMode ? 18 : 16} />
+                )}
+                {/* Pending count badge */}
+                <span className={`absolute -top-1 -right-1 ${isTablet ? 'w-4 h-4 text-[8px]' : 'w-5 h-5 text-[10px]'} rounded-full bg-orange-500 text-white font-bold flex items-center justify-center`}>
+                  {pendingCount > 9 ? '9+' : pendingCount}
+                </span>
+              </button>
+            )}
+            
             {/* Device & Connection Status */}
             <div className="flex flex-col items-center gap-1" data-testid="status-indicators">
               <DeviceIcon size={isTablet ? 14 : largeMode ? 18 : 14} className="text-muted-foreground/50" title={device?.deviceLabel} />
-              <div data-testid="online-status">
+              <div data-testid="online-status" className="relative">
                 {isOnline ? (
-                  <Wifi size={isTablet ? 14 : largeMode ? 20 : 16} className="text-table-free" />
+                  isSyncing ? (
+                    <Cloud size={isTablet ? 14 : largeMode ? 20 : 16} className="text-blue-500 animate-pulse" />
+                  ) : (
+                    <Wifi size={isTablet ? 14 : largeMode ? 20 : 16} className="text-table-free" />
+                  )
                 ) : (
-                  <WifiOff size={isTablet ? 14 : largeMode ? 20 : 16} className="text-destructive animate-pulse" />
+                  <WifiOff size={isTablet ? 14 : largeMode ? 20 : 16} className="text-orange-500 animate-pulse" />
                 )}
               </div>
             </div>
