@@ -1123,7 +1123,10 @@ export default function OrderScreen() {
                 const heightClass = largeMode 
                   ? (gridSettings.productColumns > 3 ? 'h-28' : 'h-32')
                   : (gridSettings.productColumns > 4 ? 'h-24' : 'h-28');
-                const hasModifiers = product.modifier_group_ids?.length > 0;
+                // Check modifiers from both old and new systems
+                const assignmentIds = (product.modifier_assignments || []).map(a => a.group_id);
+                const legacyIds = product.modifier_group_ids || [];
+                const hasModifiers = [...new Set([...assignmentIds, ...legacyIds])].length > 0;
                 let pressTimer = null;
                 
                 const handleTouchStart = () => {
