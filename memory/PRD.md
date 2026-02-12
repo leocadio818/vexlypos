@@ -24,7 +24,8 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 
 #### Pedidos
 - **Categorías y Productos**: Grid configurable con colores personalizados
-- **Modificadores**: Sistema de modificadores con grupos y opciones
+- **Modificadores Avanzados**: Sistema de modificadores con grupos, opciones con precios individuales, validación de requeridos
+- **Visualización de Modificadores**: Precios individuales visibles en carrito y cocina
 - **Envío a Cocina**: Items marcados por estado (pendiente, preparando, listo)
 - **División de Cuentas**: Mover items entre cuentas
 
