@@ -127,7 +127,7 @@ export default function Kitchen() {
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {item.modifiers.map((m, i) => (
                                   <span key={i} className="text-[10px] bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-medium">
-                                    {m.name}{m.price > 0 ? ` (+$${m.price.toFixed(0)})` : ''}
+                                    {m.name}
                                   </span>
                                 ))}
                               </div>
