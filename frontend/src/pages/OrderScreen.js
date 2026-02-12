@@ -918,7 +918,7 @@ export default function OrderScreen() {
                         )}
                       </div>
                     </div>
-                  ))
+                  )})
                 )}
               </div>
             </ScrollArea>
