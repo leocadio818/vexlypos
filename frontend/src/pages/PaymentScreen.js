@@ -415,9 +415,25 @@ export default function PaymentScreen() {
         <div className={`flex-1 flex flex-col p-4 ${isMobile ? 'shrink-0' : 'overflow-auto'}`}>
           
           {/* Payment Methods Grid */}
-          <h3 className={`font-oswald font-bold text-white/70 mb-3 ${isMobile ? 'text-sm' : 'text-base'}`}>
-            FORMAS DE PAGO
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className={`font-oswald font-bold text-white/70 ${isMobile ? 'text-sm' : 'text-base'}`}>
+              FORMAS DE PAGO
+            </h3>
+            {pendingAmount !== null && (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-400/30 animate-pulse">
+                <Sparkles size={14} className="text-yellow-400" />
+                <span className="text-yellow-300 text-xs font-bold">
+                  Selecciona método para {formatMoney(pendingAmount)}
+                </span>
+                <button 
+                  onClick={() => { setPendingAmount(null); setMethodSelectorOpen(false); }}
+                  className="ml-1 text-yellow-400 hover:text-yellow-200"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+          </div>
           
           <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : isTablet ? 'grid-cols-3 gap-3' : 'grid-cols-3 gap-4'} mb-4`}>
             {paymentMethods.map((method, index) => {
