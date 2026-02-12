@@ -58,7 +58,7 @@ export default function Settings() {
   // Sub-tab states
   const [mesasSubTab, setMesasSubTab] = useState('mesas');
   const [ventasSubTab, setVentasSubTab] = useState('pagos');
-  const [inventarioSubTab, setInventarioSubTab] = useState('productos');
+  const [inventarioSubTab, setInventarioSubTab] = useState('categorias');
 
   const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
   const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round' });
@@ -70,6 +70,7 @@ export default function Settings() {
   });
   const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null });
   const [channelDialog, setChannelDialog] = useState({ open: false, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null });
+  const [categoryDialog, setCategoryDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
   
   // System Config
   const [systemConfig, setSystemConfig] = useState({ 
