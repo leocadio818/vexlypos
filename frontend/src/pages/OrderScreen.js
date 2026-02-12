@@ -144,6 +144,30 @@ export default function OrderScreen() {
     return () => clearInterval(interval);
   }, [API_BASE]);
 
+  // Auto-send pending items to kitchen when leaving the page
+  const orderRef = useRef(order);
+  useEffect(() => { orderRef.current = order; }, [order]);
+  
+  const sendPendingToKitchenSilently = useCallback(async () => {
+    const currentOrder = orderRef.current;
+    if (!currentOrder) return;
+    const pendingItems = currentOrder.items?.filter(i => i.status === 'pending') || [];
+    if (pendingItems.length === 0) return;
+    try {
+      await ordersAPI.sendToKitchen(currentOrder.id);
+      console.log('Auto-enviado a cocina:', pendingItems.length, 'items');
+    } catch (e) {
+      console.error('Error auto-enviando a cocina:', e);
+    }
+  }, []);
+
+  // Cleanup effect - send to kitchen when component unmounts (navigation away)
+  useEffect(() => {
+    return () => {
+      sendPendingToKitchenSilently();
+    };
+  }, [sendPendingToKitchenSilently]);
+
   useEffect(() => { orderRef.current = order; }, [order]);
 
   // Auto-send pending items when leaving
