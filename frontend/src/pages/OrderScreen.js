@@ -144,6 +144,13 @@ export default function OrderScreen() {
     return () => clearInterval(interval);
   }, [API_BASE]);
 
+  // Keep orderRef in sync with order state
+  useEffect(() => {
+    if (order) {
+      orderRef.current = order;
+    }
+  }, [order]);
+
   // Auto-send pending items to kitchen when leaving the page
   const sendPendingToKitchenSilently = useCallback(async (showToast = false) => {
     const currentOrder = orderRef.current;
@@ -172,6 +179,7 @@ export default function OrderScreen() {
       // Only intercept internal navigation away from order screen
       if (href && !href.startsWith('/order/') && href !== '#') {
         const currentOrder = orderRef.current;
+        console.log('Nav click intercepted, order:', currentOrder?.id, 'pending:', currentOrder?.items?.filter(i => i.status === 'pending')?.length);
         if (currentOrder) {
           const pendingItems = currentOrder.items?.filter(i => i.status === 'pending') || [];
           if (pendingItems.length > 0) {
@@ -180,11 +188,13 @@ export default function OrderScreen() {
             try {
               await ordersAPI.sendToKitchen(currentOrder.id);
               toast.success('Comanda enviada automáticamente');
+              console.log('Comanda enviada exitosamente');
             } catch (err) {
               console.error('Error enviando a cocina:', err);
             }
             // Navigate after sending
             navigate(href);
+            return;
           }
         }
       }
