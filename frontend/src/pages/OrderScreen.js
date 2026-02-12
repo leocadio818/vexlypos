@@ -211,6 +211,20 @@ export default function OrderScreen() {
 
   const handleConfirmModifiers = () => {
     const { product, selectedMods, qty, notes } = modDialog;
+    
+    // Validate required modifier groups
+    const requiredGroups = modifierGroups.filter(
+      mg => product?.modifier_group_ids?.includes(mg.id) && mg.required
+    );
+    
+    for (const group of requiredGroups) {
+      const selectedForGroup = selectedMods[group.id] || [];
+      if (selectedForGroup.length === 0) {
+        toast.error(`Debes seleccionar una opción para "${group.name}"`);
+        return;
+      }
+    }
+    
     const mods = Object.values(selectedMods).flat().filter(Boolean);
     addItemToOrder(product, parseFloat(qty) || 1, mods, notes);
     setModDialog({ open: false, product: null, selectedMods: {}, qty: '1', notes: '' });
