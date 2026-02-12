@@ -210,17 +210,41 @@ export default function PaymentScreen() {
     setKeypadValue('');
   };
 
+  // Smart payment flow: Quick amount -> Select method
   const handleQuickAmount = (amount) => {
-    const targetMethod = paymentMethods.find(m => m.currency === 'DOP')?.name || paymentMethods[0]?.name;
-    if (targetMethod) {
-      setPayAmounts(p => ({ ...p, [targetMethod]: String(amount) }));
+    setPendingAmount(amount);
+    setMethodSelectorOpen(true);
+  };
+
+  // Smart payment flow: Exact amount -> Select method
+  const handleExact = () => {
+    setPendingAmount(billTotal);
+    setMethodSelectorOpen(true);
+  };
+
+  // When method is selected after choosing amount
+  const handleMethodSelect = (method) => {
+    if (pendingAmount !== null) {
+      // Convert amount if foreign currency
+      const amountInMethodCurrency = method.currency !== 'DOP' && method.exchange_rate
+        ? (pendingAmount / method.exchange_rate).toFixed(2)
+        : String(pendingAmount);
+      setPayAmounts(p => ({ ...p, [method.name]: amountInMethodCurrency }));
+      setPendingAmount(null);
+      setMethodSelectorOpen(false);
     }
   };
 
-  const handleExact = () => {
-    const targetMethod = paymentMethods.find(m => m.currency === 'DOP')?.name || paymentMethods[0]?.name;
-    if (targetMethod) {
-      setPayAmounts(p => ({ ...p, [targetMethod]: String(billTotal) }));
+  // Direct method click: Open keypad for manual amount entry
+  const handleMethodClick = (method) => {
+    if (pendingAmount !== null) {
+      // If there's a pending amount, apply it to this method
+      handleMethodSelect(method);
+    } else {
+      // Open keypad for manual entry
+      const currentAmount = payAmounts[method.name];
+      setKeypadValue(currentAmount || '');
+      setKeypadDialog({ open: true, method: method.name });
     }
   };
 
