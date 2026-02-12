@@ -244,6 +244,77 @@ export default function Settings() {
     catch { toast.error('Error al eliminar'); }
   };
 
+  // Modifier handlers
+  const handleSaveModifier = async () => {
+    if (!modifierDialog.name.trim()) {
+      toast.error('El nombre es requerido');
+      return;
+    }
+    if (modifierDialog.options.length === 0) {
+      toast.error('Debe agregar al menos una opción');
+      return;
+    }
+    try {
+      const data = {
+        name: modifierDialog.name,
+        required: modifierDialog.required,
+        max_selections: parseInt(modifierDialog.max_selections) || 5,
+        options: modifierDialog.options.map(opt => ({
+          id: opt.id || `opt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: opt.name,
+          price: parseFloat(opt.price) || 0
+        }))
+      };
+      if (modifierDialog.editId) {
+        await axios.put(`${API}/modifiers/${modifierDialog.editId}`, data, { headers: hdrs() });
+      } else {
+        await axios.post(`${API}/modifiers`, data, { headers: hdrs() });
+      }
+      toast.success(modifierDialog.editId ? 'Modificador actualizado' : 'Modificador creado');
+      setModifierDialog({ open: false, name: '', required: false, max_selections: 5, options: [], editId: null });
+      setNewOptionName('');
+      setNewOptionPrice(0);
+      fetchAll();
+    } catch { toast.error('Error al guardar modificador'); }
+  };
+
+  const handleDeleteModifier = async (id) => {
+    try { 
+      await axios.delete(`${API}/modifiers/${id}`, { headers: hdrs() }); 
+      toast.success('Modificador eliminado'); 
+      fetchAll(); 
+    }
+    catch { toast.error('Error al eliminar'); }
+  };
+
+  const addOptionToModifier = () => {
+    if (!newOptionName.trim()) return;
+    setModifierDialog(p => ({
+      ...p,
+      options: [...p.options, { 
+        id: `opt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: newOptionName, 
+        price: parseFloat(newOptionPrice) || 0 
+      }]
+    }));
+    setNewOptionName('');
+    setNewOptionPrice(0);
+  };
+
+  const removeOptionFromModifier = (optId) => {
+    setModifierDialog(p => ({
+      ...p,
+      options: p.options.filter(o => o.id !== optId)
+    }));
+  };
+
+  const updateOptionInModifier = (optId, field, value) => {
+    setModifierDialog(p => ({
+      ...p,
+      options: p.options.map(o => o.id === optId ? { ...o, [field]: value } : o)
+    }));
+  };
+
   // Sale type handlers
   const handleSaveSaleType = async () => {
     if (!saleDialog.name) return;
