@@ -2051,6 +2051,145 @@ export default function Settings() {
         </DialogContent>
       </Dialog>
 
+      {/* Modifier Dialog */}
+      <Dialog open={modifierDialog.open} onOpenChange={(o) => !o && setModifierDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-lg bg-card border-border" data-testid="modifier-dialog">
+          <DialogHeader><DialogTitle className="font-oswald">{modifierDialog.editId ? 'Editar' : 'Nuevo'} Grupo de Modificadores</DialogTitle></DialogHeader>
+          <ScrollArea className="max-h-[70vh] pr-4">
+            <div className="space-y-4">
+              {/* Name */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Nombre del Grupo</label>
+                <input 
+                  value={modifierDialog.name} 
+                  onChange={e => setModifierDialog(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Ej: Punto de cocción, Extras, Aderezos..." 
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" 
+                  data-testid="modifier-name-input"
+                />
+              </div>
+              
+              {/* Settings Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-border">
+                  <div>
+                    <label className="text-sm font-semibold block">¿Es Requerido?</label>
+                    <p className="text-[10px] text-muted-foreground">El cliente debe elegir al menos una opción</p>
+                  </div>
+                  <Switch 
+                    checked={modifierDialog.required} 
+                    onCheckedChange={(checked) => setModifierDialog(p => ({ ...p, required: checked }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Máximo de Selecciones</label>
+                  <input 
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={modifierDialog.max_selections} 
+                    onChange={e => setModifierDialog(p => ({ ...p, max_selections: parseInt(e.target.value) || 5 }))}
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" 
+                  />
+                </div>
+              </div>
+
+              {/* Options List */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-2 block">Opciones ({modifierDialog.options.length})</label>
+                <div className="space-y-2 mb-3">
+                  {modifierDialog.options.map((opt, idx) => (
+                    <div key={opt.id || idx} className="flex items-center gap-2 p-2 bg-background rounded-lg border border-border">
+                      <input 
+                        value={opt.name}
+                        onChange={e => updateOptionInModifier(opt.id, 'name', e.target.value)}
+                        placeholder="Nombre de opción"
+                        className="flex-1 bg-transparent border-0 text-sm outline-none"
+                      />
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground">+RD$</span>
+                        <input 
+                          type="number"
+                          step="0.01"
+                          value={opt.price}
+                          onChange={e => updateOptionInModifier(opt.id, 'price', parseFloat(e.target.value) || 0)}
+                          className="w-20 bg-muted rounded px-2 py-1 text-sm font-oswald text-right outline-none"
+                        />
+                      </div>
+                      <button 
+                        onClick={() => removeOptionFromModifier(opt.id)}
+                        className="p-1.5 rounded hover:bg-destructive/10 text-destructive/60 hover:text-destructive transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Add New Option */}
+                <div className="flex items-center gap-2 p-2 bg-primary/5 rounded-lg border-2 border-dashed border-primary/30">
+                  <input 
+                    value={newOptionName}
+                    onChange={e => setNewOptionName(e.target.value)}
+                    placeholder="Nueva opción..."
+                    className="flex-1 bg-transparent border-0 text-sm outline-none"
+                    onKeyDown={e => e.key === 'Enter' && addOptionToModifier()}
+                  />
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">+RD$</span>
+                    <input 
+                      type="number"
+                      step="0.01"
+                      value={newOptionPrice}
+                      onChange={e => setNewOptionPrice(parseFloat(e.target.value) || 0)}
+                      className="w-20 bg-muted rounded px-2 py-1 text-sm font-oswald text-right outline-none"
+                      onKeyDown={e => e.key === 'Enter' && addOptionToModifier()}
+                    />
+                  </div>
+                  <button 
+                    onClick={addOptionToModifier}
+                    className="p-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+                
+                {/* Quick Add Suggestions */}
+                {modifierDialog.options.length === 0 && (
+                  <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                    <p className="text-[10px] text-muted-foreground mb-2">Sugerencias rápidas:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {['Término medio', 'Bien cocido', '3/4', 'Sin cebolla', 'Extra queso', 'Sin sal', 'Picante'].map(sug => (
+                        <button
+                          key={sug}
+                          onClick={() => {
+                            setModifierDialog(p => ({
+                              ...p,
+                              options: [...p.options, { 
+                                id: `opt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                name: sug, 
+                                price: 0 
+                              }]
+                            }));
+                          }}
+                          className="px-2 py-1 text-[10px] rounded bg-background border border-border hover:border-primary/50 transition-colors"
+                        >
+                          + {sug}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Button onClick={handleSaveModifier} className="w-full h-12 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-modifier">
+                {modifierDialog.editId ? 'GUARDAR CAMBIOS' : 'CREAR MODIFICADOR'}
+              </Button>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
       {/* Sale Type Dialog */}
       <Dialog open={saleDialog.open} onOpenChange={(o) => !o && setSaleDialog(p => ({ ...p, open: false }))}>
         <DialogContent className="max-w-sm bg-card border-border" data-testid="saletype-dialog">
