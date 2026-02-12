@@ -1806,6 +1806,70 @@ export default function Settings() {
         </DialogContent>
       </Dialog>
 
+      {/* Category Dialog */}
+      <Dialog open={categoryDialog.open} onOpenChange={(o) => !o && setCategoryDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="category-dialog">
+          <DialogHeader><DialogTitle className="font-oswald">{categoryDialog.editId ? 'Editar' : 'Nueva'} Categoría</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Nombre de la Categoría</label>
+              <input 
+                value={categoryDialog.name} 
+                onChange={e => setCategoryDialog(p => ({ ...p, name: e.target.value }))}
+                placeholder="Ej: Bebidas, Postres, Entradas..." 
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" 
+                data-testid="category-name-input"
+              />
+            </div>
+            
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Color de la Categoría</label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="color"
+                  value={categoryDialog.color}
+                  onChange={(e) => setCategoryDialog(p => ({ ...p, color: e.target.value }))}
+                  className="w-12 h-12 rounded-lg cursor-pointer border-0"
+                />
+                <input
+                  value={categoryDialog.color}
+                  onChange={(e) => setCategoryDialog(p => ({ ...p, color: e.target.value }))}
+                  className="w-24 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
+                />
+                <div className="flex gap-1 flex-wrap">
+                  {['#FF6600', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16', '#f97316'].map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCategoryDialog(p => ({ ...p, color: c }))}
+                      className={`w-7 h-7 rounded-lg border-2 transition-all ${categoryDialog.color === c ? 'border-white scale-110' : 'border-transparent'}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="p-4 rounded-xl border-2" style={{ borderColor: categoryDialog.color + '50', backgroundColor: categoryDialog.color + '15' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: categoryDialog.color }}>
+                  <Tag size={20} className="text-white" />
+                </div>
+                <div>
+                  <span className="font-oswald font-bold text-lg">{categoryDialog.name || 'Nombre de Categoría'}</span>
+                  <p className="text-[10px] text-muted-foreground">Vista previa del botón</p>
+                </div>
+              </div>
+            </div>
+
+            <Button onClick={handleSaveCategory} className="w-full h-12 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-category">
+              {categoryDialog.editId ? 'GUARDAR CAMBIOS' : 'CREAR CATEGORÍA'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Sale Type Dialog */}
       <Dialog open={saleDialog.open} onOpenChange={(o) => !o && setSaleDialog(p => ({ ...p, open: false }))}>
         <DialogContent className="max-w-sm bg-card border-border" data-testid="saletype-dialog">
