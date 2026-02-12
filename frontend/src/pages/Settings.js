@@ -1014,14 +1014,21 @@ export default function Settings() {
                             variant="ghost" 
                             size="icon" 
                             className="h-8 w-8"
-                            onClick={() => setModifierDialog({ 
-                              open: true, 
-                              name: mod.name, 
-                              required: mod.required || false,
-                              max_selections: mod.max_selections || 5,
-                              options: mod.options || [], 
-                              editId: mod.id 
-                            })}
+                            onClick={() => {
+                              // Ensure all options have unique IDs
+                              const optionsWithIds = (mod.options || []).map((opt, idx) => ({
+                                ...opt,
+                                id: opt.id || `opt-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 9)}`
+                              }));
+                              setModifierDialog({ 
+                                open: true, 
+                                name: mod.name, 
+                                required: mod.required || false,
+                                max_selections: mod.max_selections || 5,
+                                options: optionsWithIds, 
+                                editId: mod.id 
+                              });
+                            }}
                           >
                             <Pencil size={14} />
                           </Button>
