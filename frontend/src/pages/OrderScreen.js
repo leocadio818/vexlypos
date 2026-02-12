@@ -66,6 +66,9 @@ export default function OrderScreen() {
   const [tableOrders, setTableOrders] = useState([]); // All orders for this table
   const [activeOrderId, setActiveOrderId] = useState(null); // Currently selected order
   
+  // Required modifiers alert modal
+  const [requiredAlert, setRequiredAlert] = useState({ open: false, missingGroups: [] });
+  
   const orderRef = useRef(null);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
