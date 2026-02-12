@@ -81,17 +81,25 @@ export default function Settings() {
   });
   const [timezones, setTimezones] = useState([]);
   const [quickAmountInput, setQuickAmountInput] = useState('');
+  const [modifiers, setModifiers] = useState([]);
+  const [modifierDialog, setModifierDialog] = useState({ 
+    open: false, name: '', required: false, max_selections: 5, options: [], editId: null 
+  });
+  const [newOptionName, setNewOptionName] = useState('');
+  const [newOptionPrice, setNewOptionPrice] = useState(0);
 
   const fetchAll = async () => {
     try {
-      const [aRes, tRes, rRes, cRes, pRes, uRes, pmRes] = await Promise.all([
+      const [aRes, tRes, rRes, cRes, pRes, uRes, pmRes, modRes] = await Promise.all([
         areasAPI.list(), tablesAPI.list(), reasonsAPI.list(), categoriesAPI.list(), productsAPI.list(),
         axios.get(`${API}/users`, { headers: hdrs() }),
         axios.get(`${API}/payment-methods`, { headers: hdrs() }),
+        axios.get(`${API}/modifiers`, { headers: hdrs() }),
       ]);
       setAreas(aRes.data); setTables(tRes.data); setReasons(rRes.data);
       setCategories(cRes.data); setProducts(pRes.data);
       setUsers(uRes.data); setPayMethods(pmRes.data);
+      setModifiers(modRes.data);
       try {
         const [stRes, pcRes, scRes, sysRes, tzRes] = await Promise.all([
           axios.get(`${API}/sale-types`, { headers: hdrs() }),
