@@ -880,7 +880,10 @@ export default function OrderScreen() {
                 {activeItems.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-4">Selecciona productos</p>
                 ) : (
-                  activeItems.map(item => (
+                  activeItems.map(item => {
+                    const modTotal = (item.modifiers || []).reduce((s, m) => s + (m.price || 0), 0);
+                    const itemTotal = (item.unit_price + modTotal) * item.quantity;
+                    return (
                     <div key={item.id} data-testid={`order-item-${item.id}`}
                       className="flex items-start gap-1.5 p-1.5 rounded-lg bg-background/50 border border-border/50">
                       <div className="flex-1 min-w-0">
@@ -889,10 +892,16 @@ export default function OrderScreen() {
                           <span className="text-xs font-medium truncate">{item.product_name}</span>
                         </div>
                         {item.modifiers?.length > 0 && (
-                          <div className="flex flex-wrap gap-0.5 mt-0.5">
-                            {item.modifiers.map((m, i) => <Badge key={i} variant="secondary" className="text-[7px] h-3.5 px-1">{m.name}</Badge>)}
+                          <div className="mt-0.5 space-y-0.5">
+                            {item.modifiers.map((m, i) => (
+                              <div key={i} className="flex items-center justify-between text-[9px]">
+                                <span className="text-muted-foreground">+ {m.name}</span>
+                                {m.price > 0 && <span className="font-oswald text-primary/70">+{formatMoney(m.price)}</span>}
+                              </div>
+                            ))}
                           </div>
                         )}
+                        {item.notes && <p className="text-[8px] text-yellow-500 mt-0.5 italic">📝 {item.notes}</p>}
                         <div className="mt-0.5">
                           {item.status === 'pending' && <Badge variant="outline" className="text-[7px] h-3 border-yellow-600 text-yellow-500">Pendiente</Badge>}
                           {item.status === 'sent' && <Badge variant="outline" className="text-[7px] h-3 border-blue-500 text-blue-400">Enviado</Badge>}
@@ -901,7 +910,7 @@ export default function OrderScreen() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-oswald text-[11px]">{formatMoney(item.unit_price * item.quantity)}</span>
+                        <span className="font-oswald text-[11px]">{formatMoney(itemTotal)}</span>
                         {item.status === 'pending' && (
                           <button onClick={() => setCancelDialog({ open: true, itemId: item.id })} className="block ml-auto text-destructive/50 hover:text-destructive">
                             <Trash2 size={10} />
