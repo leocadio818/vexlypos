@@ -145,16 +145,14 @@ export default function OrderScreen() {
   }, [API_BASE]);
 
   // Auto-send pending items to kitchen when leaving the page
-  const orderRef = useRef(order);
-  useEffect(() => { orderRef.current = order; }, [order]);
-  
-  const sendPendingToKitchenSilently = useCallback(async () => {
+  const sendPendingToKitchenSilently = useCallback(async (showToast = false) => {
     const currentOrder = orderRef.current;
     if (!currentOrder) return;
     const pendingItems = currentOrder.items?.filter(i => i.status === 'pending') || [];
     if (pendingItems.length === 0) return;
     try {
       await ordersAPI.sendToKitchen(currentOrder.id);
+      if (showToast) toast.success('Comanda enviada automáticamente');
       console.log('Auto-enviado a cocina:', pendingItems.length, 'items');
     } catch (e) {
       console.error('Error auto-enviando a cocina:', e);
@@ -164,25 +162,9 @@ export default function OrderScreen() {
   // Cleanup effect - send to kitchen when component unmounts (navigation away)
   useEffect(() => {
     return () => {
-      sendPendingToKitchenSilently();
+      sendPendingToKitchenSilently(false);
     };
   }, [sendPendingToKitchenSilently]);
-
-  useEffect(() => { orderRef.current = order; }, [order]);
-
-  // Auto-send pending items when leaving
-  const autoSendPending = async () => {
-    const cur = orderRef.current;
-    if (cur) {
-      const pending = cur.items?.filter(i => i.status === 'pending') || [];
-      if (pending.length > 0) {
-        try {
-          await ordersAPI.sendToKitchen(cur.id);
-          toast.success('Comanda enviada automaticamente');
-        } catch {}
-      }
-    }
-  };
 
   // Load grid settings from localStorage
   useEffect(() => {
@@ -194,7 +176,10 @@ export default function OrderScreen() {
     }
   }, []);
 
-  const handleBack = async () => { await autoSendPending(); navigate('/tables'); };
+  const handleBack = async () => { 
+    await sendPendingToKitchenSilently(true); 
+    navigate('/tables'); 
+  };
 
   const filteredProducts = activeCat ? products.filter(p => p.category_id === activeCat) : [];
 
