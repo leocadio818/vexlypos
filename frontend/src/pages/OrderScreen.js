@@ -1637,6 +1637,70 @@ export default function OrderScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Beautiful Required Modifiers Alert Modal */}
+      {requiredAlert.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Backdrop with blur */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setRequiredAlert({ open: false, missingGroups: [] })}
+          />
+          
+          {/* Modal Card */}
+          <div className="relative animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 w-full max-w-sm">
+            {/* Glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-3xl blur-lg opacity-50 animate-pulse" />
+            
+            {/* Card content */}
+            <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-3xl border border-white/20 p-6 shadow-2xl">
+              {/* Icon */}
+              <div className="flex justify-center mb-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-orange-500/30 rounded-full blur-xl animate-pulse" />
+                  <div className="relative w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30">
+                    <AlertTriangle size={32} className="text-white drop-shadow-lg" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-center font-oswald text-xl font-bold text-white mb-2">
+                ¡Selección Requerida!
+              </h3>
+              
+              {/* Message */}
+              <p className="text-center text-white/60 text-sm mb-4">
+                Para agregar este producto debes elegir una opción en:
+              </p>
+              
+              {/* Missing groups list */}
+              <div className="space-y-2 mb-6">
+                {requiredAlert.missingGroups.map((group, index) => (
+                  <div 
+                    key={group.id}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-400/30"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-red-400 font-bold text-sm">{index + 1}</span>
+                    </div>
+                    <span className="text-white font-medium">{group.name}</span>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Button */}
+              <button
+                onClick={() => setRequiredAlert({ open: false, missingGroups: [] })}
+                className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-oswald font-bold text-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/30"
+              >
+                ¡Entendido!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
