@@ -963,6 +963,107 @@ export default function Settings() {
               </>
             )}
 
+            {/* MODIFICADORES TAB */}
+            {inventarioSubTab === 'modificadores' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="font-oswald text-base font-bold">Grupos de Modificadores</h2>
+                    <p className="text-xs text-muted-foreground">Opciones adicionales que se pueden agregar a los productos</p>
+                  </div>
+                  <Button 
+                    onClick={() => setModifierDialog({ open: true, name: '', required: false, max_selections: 5, options: [], editId: null })} 
+                    size="sm"
+                    className="bg-primary text-primary-foreground font-bold active:scale-95" 
+                    data-testid="add-modifier-btn"
+                  >
+                    <Plus size={14} className="mr-1" /> Nuevo Modificador
+                  </Button>
+                </div>
+                
+                <div className="space-y-3">
+                  {modifiers.map(mod => (
+                    <div 
+                      key={mod.id} 
+                      className="bg-card border border-border rounded-xl overflow-hidden"
+                      data-testid={`modifier-${mod.id}`}
+                    >
+                      {/* Modifier Header */}
+                      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <ListChecks size={18} className="text-primary" />
+                          </div>
+                          <div>
+                            <span className="font-oswald font-bold">{mod.name}</span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {mod.required && (
+                                <Badge variant="destructive" className="text-[9px]">Requerido</Badge>
+                              )}
+                              <Badge variant="outline" className="text-[9px]">
+                                Max: {mod.max_selections || 5} selecciones
+                              </Badge>
+                              <span className="text-[10px] text-muted-foreground">
+                                {mod.options?.length || 0} opciones
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => setModifierDialog({ 
+                              open: true, 
+                              name: mod.name, 
+                              required: mod.required || false,
+                              max_selections: mod.max_selections || 5,
+                              options: mod.options || [], 
+                              editId: mod.id 
+                            })}
+                          >
+                            <Pencil size={14} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteModifier(mod.id)}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Modifier Options */}
+                      <div className="p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        {mod.options?.map((opt, idx) => (
+                          <div 
+                            key={opt.id || idx} 
+                            className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border/50"
+                          >
+                            <span className="text-sm">{opt.name}</span>
+                            <span className={`font-oswald text-sm ${opt.price > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                              {opt.price > 0 ? `+RD$ ${opt.price.toFixed(2)}` : 'Gratis'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {modifiers.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <ListChecks size={40} className="mx-auto mb-3 opacity-30" />
+                    <p>No hay modificadores creados</p>
+                    <p className="text-sm">Crea modificadores como "Punto de cocción", "Extras", etc.</p>
+                  </div>
+                )}
+              </>
+            )}
+
             {inventarioSubTab === 'compras' && (
               <div className="text-center py-8">
                 <Truck size={40} className="mx-auto mb-3 text-primary opacity-50" />
