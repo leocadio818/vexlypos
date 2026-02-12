@@ -277,12 +277,15 @@ export default function OrderScreen() {
       return assignment ? assignment.min_selections > 0 : mg.required;
     });
     
-    for (const group of requiredGroups) {
+    // Find missing required groups
+    const missingGroups = requiredGroups.filter(group => {
       const selectedForGroup = selectedMods[group.id] || [];
-      if (selectedForGroup.length === 0) {
-        toast.error(`Debes seleccionar una opción para "${group.name}"`);
-        return;
-      }
+      return selectedForGroup.length === 0;
+    });
+    
+    if (missingGroups.length > 0) {
+      setRequiredAlert({ open: true, missingGroups });
+      return;
     }
     
     const mods = Object.values(selectedMods).flat().filter(Boolean);
