@@ -184,8 +184,11 @@ export default function OrderScreen() {
   const filteredProducts = activeCat ? products.filter(p => p.category_id === activeCat) : [];
 
   const handleProductClick = (product) => {
-    // Check if product has any modifiers (not just required ones)
-    const hasModifiers = product.modifier_group_ids?.length > 0;
+    // Check if product has any modifiers (from either old or new system)
+    const assignmentIds = (product.modifier_assignments || []).map(a => a.group_id);
+    const legacyIds = product.modifier_group_ids || [];
+    const allModifierIds = [...new Set([...assignmentIds, ...legacyIds])];
+    const hasModifiers = allModifierIds.length > 0;
     
     // If product has modifiers, open dialog to let user choose
     if (hasModifiers) {
