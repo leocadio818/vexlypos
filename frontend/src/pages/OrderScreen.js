@@ -224,15 +224,26 @@ export default function OrderScreen() {
   const handleConfirmModifiers = () => {
     const { product, selectedMods, qty, notes } = modDialog;
     
-    // Validate required modifier groups
-    const requiredGroups = modifierGroups.filter(
-      mg => product?.modifier_group_ids?.includes(mg.id) && mg.required
-    );
+    // Validate required modifier groups - support both old and new systems
+    const assignmentIds = (product?.modifier_assignments || []).map(a => a.group_id);
+    const legacyIds = product?.modifier_group_ids || [];
+    const allModifierIds = [...new Set([...assignmentIds, ...legacyIds])];
+    
+    const requiredGroups = modifierGroups.filter(mg => {
+      if (!allModifierIds.includes(mg.id)) return false;
+      
+      // Check if required from assignment or from group itself
+      const assignment = (product?.modifier_assignments || []).find(a => a.group_id === mg.id);
+      return assignment ? assignment.min_selections > 0 : mg.required;
+    });
     
     for (const group of requiredGroups) {
       const selectedForGroup = selectedMods[group.id] || [];
-      if (selectedForGroup.length === 0) {
-        toast.error(`Debes seleccionar una opción para "${group.name}"`);
+      const assignment = (product?.modifier_assignments || []).find(a => a.group_id === group.id);
+      const minRequired = assignment ? assignment.min_selections : 1;
+      
+      if (selectedForGroup.length < minRequired) {
+        toast.error(`Debes seleccionar al menos ${minRequired} opción(es) para "${group.name}"`);
         return;
       }
     }
