@@ -206,6 +206,36 @@ export default function Settings() {
     catch { toast.error('Error'); }
   };
 
+  // Category handlers
+  const handleSaveCategory = async () => {
+    if (!categoryDialog.name) return;
+    try {
+      const data = { name: categoryDialog.name, color: categoryDialog.color };
+      if (categoryDialog.editId) {
+        await categoriesAPI.update(categoryDialog.editId, data);
+      } else {
+        await categoriesAPI.create(data);
+      }
+      toast.success(categoryDialog.editId ? 'Categoría actualizada' : 'Categoría creada');
+      setCategoryDialog({ open: false, name: '', color: '#FF6600', editId: null }); 
+      fetchAll();
+    } catch { toast.error('Error al guardar categoría'); }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    const hasProducts = products.some(p => p.category_id === id);
+    if (hasProducts) {
+      toast.error('No puedes eliminar una categoría con productos. Mueve los productos primero.');
+      return;
+    }
+    try { 
+      await categoriesAPI.delete(id); 
+      toast.success('Categoría eliminada'); 
+      fetchAll(); 
+    }
+    catch { toast.error('Error al eliminar'); }
+  };
+
   // Sale type handlers
   const handleSaveSaleType = async () => {
     if (!saleDialog.name) return;
