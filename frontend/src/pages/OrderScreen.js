@@ -147,24 +147,52 @@ export default function OrderScreen() {
   // Auto-send pending items to kitchen when leaving the page
   const sendPendingToKitchenSilently = useCallback(async (showToast = false) => {
     const currentOrder = orderRef.current;
-    if (!currentOrder) return;
+    if (!currentOrder) return false;
     const pendingItems = currentOrder.items?.filter(i => i.status === 'pending') || [];
-    if (pendingItems.length === 0) return;
+    if (pendingItems.length === 0) return false;
     try {
       await ordersAPI.sendToKitchen(currentOrder.id);
       if (showToast) toast.success('Comanda enviada automáticamente');
       console.log('Auto-enviado a cocina:', pendingItems.length, 'items');
+      return true;
     } catch (e) {
       console.error('Error auto-enviando a cocina:', e);
+      return false;
     }
   }, []);
 
-  // Cleanup effect - send to kitchen when component unmounts (navigation away)
+  // Intercept all navigation clicks to send pending items first
   useEffect(() => {
-    return () => {
-      sendPendingToKitchenSilently(false);
+    const handleNavClick = async (e) => {
+      // Check if click is on a navigation link
+      const link = e.target.closest('a[href]');
+      if (!link) return;
+      
+      const href = link.getAttribute('href');
+      // Only intercept internal navigation away from order screen
+      if (href && !href.startsWith('/order/') && href !== '#') {
+        const currentOrder = orderRef.current;
+        if (currentOrder) {
+          const pendingItems = currentOrder.items?.filter(i => i.status === 'pending') || [];
+          if (pendingItems.length > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+              await ordersAPI.sendToKitchen(currentOrder.id);
+              toast.success('Comanda enviada automáticamente');
+            } catch (err) {
+              console.error('Error enviando a cocina:', err);
+            }
+            // Navigate after sending
+            navigate(href);
+          }
+        }
+      }
     };
-  }, [sendPendingToKitchenSilently]);
+
+    document.addEventListener('click', handleNavClick, true);
+    return () => document.removeEventListener('click', handleNavClick, true);
+  }, [navigate]);
 
   // Load grid settings from localStorage
   useEffect(() => {
