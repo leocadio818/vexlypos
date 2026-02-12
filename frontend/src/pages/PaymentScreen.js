@@ -117,6 +117,10 @@ export default function PaymentScreen() {
   const [quickAmounts, setQuickAmounts] = useState([100, 200, 500, 1000, 2000, 5000]);
   const [processing, setProcessing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  
+  // New state for smart payment flow
+  const [pendingAmount, setPendingAmount] = useState(null); // Amount waiting for method selection
+  const [methodSelectorOpen, setMethodSelectorOpen] = useState(false);
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
   const isMobile = device?.isMobile;
