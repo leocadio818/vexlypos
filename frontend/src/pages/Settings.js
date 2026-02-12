@@ -729,10 +729,82 @@ export default function Settings() {
           {/* INVENTARIO (includes Productos, Compras, Stock) */}
           <TabsContent value="inventario">
             <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <SubTabButton active={inventarioSubTab === 'categorias'} onClick={() => setInventarioSubTab('categorias')} icon={Tag} label="Categorías" />
               <SubTabButton active={inventarioSubTab === 'productos'} onClick={() => setInventarioSubTab('productos')} icon={Package} label="Productos" />
               <SubTabButton active={inventarioSubTab === 'compras'} onClick={() => setInventarioSubTab('compras')} icon={Truck} label="Compras" />
               <SubTabButton active={inventarioSubTab === 'stock'} onClick={() => setInventarioSubTab('stock')} icon={BarChart3} label="Stock" />
             </div>
+
+            {/* CATEGORIAS TAB */}
+            {inventarioSubTab === 'categorias' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-oswald text-base font-bold">Categorías de Productos</h2>
+                  <Button onClick={() => setCategoryDialog({ open: true, name: '', color: '#FF6600', editId: null })} size="sm"
+                    className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-category-btn">
+                    <Plus size={14} className="mr-1" /> Nueva Categoría
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {categories.map(cat => (
+                    <div 
+                      key={cat.id} 
+                      className="flex items-center justify-between p-4 rounded-xl border-2 transition-all hover:shadow-md"
+                      style={{ 
+                        borderColor: cat.color + '50', 
+                        backgroundColor: cat.color + '10' 
+                      }}
+                      data-testid={`category-${cat.id}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: cat.color }}
+                        >
+                          <Tag size={18} className="text-white" />
+                        </div>
+                        <div>
+                          <span className="font-oswald font-bold">{cat.name}</span>
+                          <p className="text-[10px] text-muted-foreground">
+                            {products.filter(p => p.category_id === cat.id).length} productos
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 hover:bg-white/50"
+                          onClick={() => setCategoryDialog({ 
+                            open: true, 
+                            name: cat.name, 
+                            color: cat.color || '#FF6600', 
+                            editId: cat.id 
+                          })}
+                        >
+                          <Pencil size={14} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDeleteCategory(cat.id)}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {categories.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Tag size={40} className="mx-auto mb-3 opacity-30" />
+                    <p>No hay categorías creadas</p>
+                    <p className="text-sm">Crea tu primera categoría para organizar tus productos</p>
+                  </div>
+                )}
+              </>
+            )}
 
             {inventarioSubTab === 'productos' && (
               <>
