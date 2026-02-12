@@ -1638,12 +1638,12 @@ export default function OrderScreen() {
         </DialogContent>
       </Dialog>
 
-      {/* Beautiful Required Modifiers Alert Modal */}
+      {/* Beautiful Required Modifiers Alert Modal - Portal to body for highest z-index */}
       {requiredAlert.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 99999 }}>
           {/* Backdrop with blur */}
           <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
             onClick={() => setRequiredAlert({ open: false, missingGroups: [] })}
           />
           
@@ -1653,7 +1653,7 @@ export default function OrderScreen() {
             <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-3xl blur-lg opacity-50 animate-pulse" />
             
             {/* Card content */}
-            <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-3xl border border-white/20 p-6 shadow-2xl">
+            <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 backdrop-blur-xl rounded-3xl border border-white/20 p-6 shadow-2xl">
               {/* Icon */}
               <div className="flex justify-center mb-4">
                 <div className="relative">
