@@ -1264,27 +1264,18 @@ export default function OrderScreen() {
 
       {/* Product Dialog with Numpad */}
       <Dialog open={modDialog.open} onOpenChange={(open) => !open && setModDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border p-4" data-testid="modifier-dialog">
+        <DialogContent className="max-w-md bg-card border-border p-4" data-testid="modifier-dialog">
           <DialogHeader><DialogTitle className="font-oswald text-base">{modDialog.product?.name}</DialogTitle></DialogHeader>
-          <div className="space-y-3 max-h-[65vh] overflow-y-auto">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Cantidad</label>
-              <div className="bg-background rounded-xl border border-border p-2">
-                <div className="text-center mb-2">
-                  <span className="font-oswald text-3xl font-bold text-primary" data-testid="qty-display">{modDialog.qty}</span>
-                </div>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {['1','2','3','C','4','5','6','DEL','7','8','9','.','','0',''].map((k, i) => {
-                    if (k === '') return <div key={i} />;
-                    const isAction = k === 'C' || k === 'DEL';
-                    return (
-                      <button key={i} onClick={() => handleQtyKey(k)} data-testid={`qty-key-${k}`}
-                        className={`h-10 rounded-lg font-oswald font-bold text-base transition-colors active:scale-95 ${
-                          isAction ? 'bg-destructive/20 text-destructive text-xs' : 'bg-muted hover:bg-primary hover:text-white'
-                        }`}>{k}</button>
-                    );
-                  })}
-                </div>
+          <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-1 scrollbar-thin">
+            {/* Compact Quantity Section */}
+            <div className="flex items-center gap-3 bg-background rounded-lg border border-border p-2">
+              <span className="text-xs font-semibold text-muted-foreground">Cantidad:</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setModDialog(p => ({ ...p, qty: String(Math.max(1, (parseInt(p.qty) || 1) - 1)) }))}
+                  className="h-8 w-8 rounded-lg bg-muted hover:bg-destructive/20 font-bold text-lg">-</button>
+                <span className="font-oswald text-2xl font-bold text-primary w-12 text-center" data-testid="qty-display">{modDialog.qty}</span>
+                <button onClick={() => setModDialog(p => ({ ...p, qty: String((parseInt(p.qty) || 1) + 1) }))}
+                  className="h-8 w-8 rounded-lg bg-muted hover:bg-primary hover:text-white font-bold text-lg">+</button>
               </div>
             </div>
 
