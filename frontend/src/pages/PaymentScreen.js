@@ -434,13 +434,10 @@ export default function PaymentScreen() {
               return (
                 <button
                   key={method.id}
-                  onClick={() => {
-                    setKeypadValue(amount || '');
-                    setKeypadDialog({ open: true, method: method.name });
-                  }}
+                  onClick={() => handleMethodClick(method)}
                   className={`group relative rounded-3xl transition-all duration-500 flex flex-col items-center justify-center overflow-hidden
                     ${isMobile ? 'h-24 p-3' : largeMode ? 'h-36 p-4' : 'h-28 p-3'}
-                    ${hasAmount ? glassStyles.cardActive : glassStyles.card}
+                    ${hasAmount ? glassStyles.cardActive : pendingAmount !== null ? 'ring-2 ring-yellow-400/50 ' + glassStyles.card : glassStyles.card}
                     ${glassStyles.cardHover}
                     active:scale-95 transform
                   `}
