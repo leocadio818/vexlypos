@@ -1291,11 +1291,23 @@ export default function OrderScreen() {
               </div>
             </div>
 
-            {modifierGroups.filter(mg => modDialog.product?.modifier_group_ids?.includes(mg.id)).map(group => (
+            {(() => {
+              // Get all modifier group IDs from both old and new systems
+              const assignmentIds = (modDialog.product?.modifier_assignments || []).map(a => a.group_id);
+              const legacyIds = modDialog.product?.modifier_group_ids || [];
+              const allModifierIds = [...new Set([...assignmentIds, ...legacyIds])];
+              
+              return modifierGroups.filter(mg => allModifierIds.includes(mg.id)).map(group => {
+                // Check if required from assignment or from group itself
+                const assignment = (modDialog.product?.modifier_assignments || []).find(a => a.group_id === group.id);
+                const isRequired = assignment ? assignment.min_selections > 0 : group.required;
+                const maxSelections = assignment ? assignment.max_selections : group.max_selections;
+                
+                return (
               <div key={group.id}>
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <span className="text-xs font-semibold">{group.name}</span>
-                  {group.required && <Badge variant="destructive" className="text-[8px] h-3.5">Requerido</Badge>}
+                  {isRequired && <Badge variant="destructive" className="text-[8px] h-3.5">Requerido</Badge>}
                 </div>
                 <div className="grid grid-cols-2 gap-1">
                   {group.options.map(opt => {
@@ -1304,7 +1316,7 @@ export default function OrderScreen() {
                       <button key={opt.id} onClick={() => {
                         setModDialog(prev => {
                           const current = prev.selectedMods[group.id] || [];
-                          const updated = group.max_selections === 1 ? (isSelected ? [] : [opt]) : (isSelected ? current.filter(m => m.id !== opt.id) : [...current, opt]);
+                          const updated = maxSelections === 1 ? (isSelected ? [] : [opt]) : (isSelected ? current.filter(m => m.id !== opt.id) : [...current, opt]);
                           return { ...prev, selectedMods: { ...prev.selectedMods, [group.id]: updated } };
                         });
                       }} className={`p-1.5 rounded-lg text-left text-[11px] transition-all border ${
@@ -1317,7 +1329,9 @@ export default function OrderScreen() {
                   })}
                 </div>
               </div>
-            ))}
+                );
+              });
+            })()}
 
             <input value={modDialog.notes} onChange={e => setModDialog(p => ({ ...p, notes: e.target.value }))}
               placeholder="Notas especiales..." className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs" data-testid="item-notes-input" />
