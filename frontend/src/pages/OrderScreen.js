@@ -1591,22 +1591,114 @@ export default function OrderScreen() {
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Dialog */}
-      <Dialog open={cancelDialog.open} onOpenChange={(open) => !open && setCancelDialog({ open: false, itemId: null })}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="cancel-dialog">
-          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2">
-            <AlertTriangle size={16} className="text-destructive" /> Razon de Anulacion
-          </DialogTitle></DialogHeader>
-          <div className="space-y-1.5">
-            {cancelReasons.map(reason => (
-              <button key={reason.id} onClick={() => handleCancelItem(reason.id)} data-testid={`cancel-reason-${reason.id}`}
-                className="w-full p-2.5 rounded-lg border border-border bg-background hover:border-destructive/50 text-left transition-colors active:scale-[0.98]">
-                <span className="text-xs font-medium">{reason.name}</span>
-                <span className={`block text-[9px] mt-0.5 ${reason.return_to_inventory ? 'text-table-free' : 'text-destructive'}`}>
-                  {reason.return_to_inventory ? 'Retorna al inventario' : 'No retorna'}
-                </span>
-              </button>
-            ))}
+      {/* Cancel Dialog - Enhanced VoidReasonModal */}
+      <Dialog open={cancelDialog.open} onOpenChange={(open) => !open && setCancelDialog({ 
+        open: false, itemId: null, itemIds: [], mode: 'single',
+        selectedReasonId: null, returnToInventory: true, comments: ''
+      })}>
+        <DialogContent className="max-w-md bg-card border-border" data-testid="cancel-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <AlertTriangle size={18} className="text-destructive" /> 
+              {cancelDialog.mode === 'multiple' 
+                ? `Anular ${cancelDialog.itemIds.length} Items` 
+                : 'Anular Item'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Reason Selector */}
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-2 block">Razón de Anulación</label>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {cancelReasons.map(reason => (
+                  <button 
+                    key={reason.id} 
+                    onClick={() => handleReasonSelect(reason.id)} 
+                    data-testid={`cancel-reason-${reason.id}`}
+                    className={`w-full p-3 rounded-lg border-2 text-left transition-all active:scale-[0.98] ${
+                      cancelDialog.selectedReasonId === reason.id 
+                        ? 'border-destructive bg-destructive/10' 
+                        : 'border-border bg-background hover:border-destructive/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{reason.name}</span>
+                      {reason.return_to_inventory ? (
+                        <Badge variant="outline" className="text-[9px] bg-green-500/10 text-green-500 border-green-500/30">
+                          <RotateCcw size={10} className="mr-1" /> Retorna
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[9px] bg-red-500/10 text-red-500 border-red-500/30">
+                          <Ban size={10} className="mr-1" /> Merma
+                        </Badge>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Inventory Toggle - Can override the default from reason */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  {cancelDialog.returnToInventory ? (
+                    <RotateCcw size={16} className="text-green-500" />
+                  ) : (
+                    <Ban size={16} className="text-red-500" />
+                  )}
+                  <span className="text-sm font-semibold">¿Devolver a Inventario?</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {cancelDialog.returnToInventory 
+                    ? 'Los insumos volverán al stock' 
+                    : 'Se registrará como merma/pérdida'}
+                </p>
+              </div>
+              <Switch 
+                checked={cancelDialog.returnToInventory}
+                onCheckedChange={(v) => setCancelDialog(prev => ({ ...prev, returnToInventory: v }))}
+                data-testid="toggle-return-inventory"
+              />
+            </div>
+
+            {/* Comments Field */}
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                Comentarios (opcional)
+              </label>
+              <textarea 
+                value={cancelDialog.comments}
+                onChange={(e) => setCancelDialog(prev => ({ ...prev, comments: e.target.value }))}
+                placeholder="Detalles adicionales..."
+                rows={2}
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm resize-none focus:outline-none focus:border-destructive/50"
+                data-testid="cancel-comments"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setCancelDialog({ 
+                  open: false, itemId: null, itemIds: [], mode: 'single',
+                  selectedReasonId: null, returnToInventory: true, comments: ''
+                })}
+                className="flex-1 font-oswald"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleCancelItem}
+                disabled={!cancelDialog.selectedReasonId}
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-white font-oswald font-bold"
+                data-testid="confirm-cancel-btn"
+              >
+                <Trash2 size={14} className="mr-1" /> Anular
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
