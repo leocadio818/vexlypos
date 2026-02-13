@@ -234,7 +234,7 @@ export default function ProductConfig() {
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} data-testid="back-btn">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} data-testid="back-btn">
             <ArrowLeft size={20} />
           </Button>
           <Package size={22} className="text-primary" />
@@ -245,7 +245,7 @@ export default function ProductConfig() {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline"
-            onClick={() => navigate('/settings')} 
+            onClick={() => navigate(-1)} 
             className="font-oswald font-bold"
             data-testid="back-to-list-btn"
           >
