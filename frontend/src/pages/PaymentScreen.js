@@ -194,7 +194,8 @@ export default function PaymentScreen() {
       if (pts > 0) msg += ` | +${pts} pts fidelidad`;
       toast.success(msg);
       
-      navigate(-1);
+      // Navigate to table map after successful payment
+      navigate('/tables');
     } catch {
       toast.error('Error procesando pago');
     } finally {
