@@ -956,6 +956,7 @@ export default function Settings() {
 
             {inventarioSubTab === 'productos' && (
               <>
+                {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-oswald text-base font-bold flex items-center gap-2">
                     <Package size={18} className="text-primary" />
@@ -967,37 +968,153 @@ export default function Settings() {
                     <Plus size={14} /> Nuevo Producto
                   </a>
                 </div>
+
+                {/* Smart Search Bar */}
+                <div className={`relative mb-5 transition-all duration-300 ${searchFocused ? 'scale-[1.01]' : ''}`}>
+                  <div className={`relative flex items-center bg-background border-2 rounded-2xl overflow-hidden transition-all duration-300 ${
+                    searchFocused ? 'border-primary shadow-lg shadow-primary/20' : 'border-border'
+                  }`}>
+                    <div className={`pl-4 transition-colors ${searchFocused ? 'text-primary' : 'text-muted-foreground'}`}>
+                      <Search size={20} />
+                    </div>
+                    <input
+                      type="text"
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={() => setSearchFocused(false)}
+                      placeholder="Buscar producto por nombre, categoría o precio..."
+                      className="flex-1 bg-transparent px-3 py-3.5 text-sm outline-none placeholder:text-muted-foreground/50"
+                      data-testid="product-search-input"
+                    />
+                    {productSearch && (
+                      <button
+                        onClick={() => setProductSearch('')}
+                        className="p-2 mr-2 rounded-full hover:bg-muted transition-colors"
+                      >
+                        <X size={16} className="text-muted-foreground" />
+                      </button>
+                    )}
+                    {!productSearch && searchFocused && (
+                      <div className="pr-4 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <Sparkles size={12} className="text-primary animate-pulse" />
+                        <span>Búsqueda inteligente</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Search results count */}
+                  {productSearch && (
+                    <div className="mt-2 px-1 text-xs text-muted-foreground flex items-center gap-2">
+                      <Search size={12} />
+                      {(() => {
+                        const filtered = products.filter(p => 
+                          p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                          categories.find(c => c.id === p.category_id)?.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                          String(p.price || p.price_a || 0).includes(productSearch)
+                        );
+                        return `${filtered.length} producto${filtered.length !== 1 ? 's' : ''} encontrado${filtered.length !== 1 ? 's' : ''}`;
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Products List */}
                 <div className="space-y-1">
-                  {categories.map(cat => (
-                    <div key={cat.id}>
-                      <h3 className="font-oswald text-xs uppercase text-muted-foreground tracking-wider mt-4 mb-2 flex items-center gap-2">
-                        <Tag size={12} style={{ color: cat.color }} /> {cat.name}
-                        <Badge variant="outline" className="text-[9px] h-4">{products.filter(p => p.category_id === cat.id).length}</Badge>
-                      </h3>
-                      {products.filter(p => p.category_id === cat.id).map(prod => (
-                        <a 
-                          key={prod.id} 
-                          href={`/product/${prod.id}?from=products`}
-                          className="flex items-center justify-between p-3 rounded-xl bg-card/50 border border-border/50 ml-4 mb-1.5 hover:border-primary/50 hover:bg-card hover:shadow-md transition-all cursor-pointer group"
-                          data-testid={`product-${prod.id}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            {prod.button_bg_color ? (
-                              <div 
-                                className="w-10 h-10 rounded-lg flex items-center justify-center shadow-inner"
-                                style={{ backgroundColor: prod.button_bg_color }}
-                              >
-                                <Package size={18} style={{ color: prod.button_text_color || '#fff' }} />
+                  {(() => {
+                    // Filter products based on search
+                    const filteredProducts = productSearch 
+                      ? products.filter(p => 
+                          p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                          categories.find(c => c.id === p.category_id)?.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                          String(p.price || p.price_a || 0).includes(productSearch)
+                        )
+                      : products;
+
+                    // Group by category
+                    const categoriesWithProducts = categories.filter(cat => 
+                      filteredProducts.some(p => p.category_id === cat.id)
+                    );
+
+                    if (filteredProducts.length === 0 && productSearch) {
+                      return (
+                        <div className="text-center py-12">
+                          <Search size={48} className="mx-auto mb-3 text-muted-foreground/30" />
+                          <p className="text-muted-foreground font-medium">No se encontraron productos</p>
+                          <p className="text-sm text-muted-foreground/70 mt-1">Intenta con "{productSearch.substring(0, 3)}..." u otro término</p>
+                        </div>
+                      );
+                    }
+
+                    return categoriesWithProducts.map(cat => {
+                      const catProducts = filteredProducts.filter(p => p.category_id === cat.id);
+                      
+                      // Function to highlight matching text
+                      const highlightText = (text) => {
+                        if (!productSearch) return text;
+                        const regex = new RegExp(`(${productSearch})`, 'gi');
+                        const parts = String(text).split(regex);
+                        return parts.map((part, i) => 
+                          regex.test(part) ? <mark key={i} className="bg-yellow-400/40 text-yellow-200 rounded px-0.5">{part}</mark> : part
+                        );
+                      };
+
+                      return (
+                        <div key={cat.id}>
+                          <h3 className="font-oswald text-xs uppercase text-muted-foreground tracking-wider mt-4 mb-2 flex items-center gap-2">
+                            <Tag size={12} style={{ color: cat.color }} /> 
+                            {highlightText(cat.name)}
+                            <Badge variant="outline" className="text-[9px] h-4">{catProducts.length}</Badge>
+                          </h3>
+                          {catProducts.map(prod => (
+                            <a 
+                              key={prod.id} 
+                              href={`/product/${prod.id}?from=products`}
+                              className="flex items-center justify-between p-3 rounded-xl bg-card/50 border border-border/50 ml-4 mb-1.5 hover:border-primary/50 hover:bg-card hover:shadow-md transition-all cursor-pointer group"
+                              data-testid={`product-${prod.id}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                {prod.button_bg_color ? (
+                                  <div 
+                                    className="w-10 h-10 rounded-lg flex items-center justify-center shadow-inner"
+                                    style={{ backgroundColor: prod.button_bg_color }}
+                                  >
+                                    <Package size={18} style={{ color: prod.button_text_color || '#fff' }} />
+                                  </div>
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                                    <Package size={18} className="text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="text-sm font-medium block group-hover:text-primary transition-colors">
+                                    {highlightText(prod.name)}
+                                  </span>
+                                  {prod.printed_name && prod.printed_name !== prod.name && (
+                                    <span className="text-[10px] text-muted-foreground">📝 {prod.printed_name}</span>
+                                  )}
+                                </div>
                               </div>
-                            ) : (
-                              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                                <Package size={18} className="text-muted-foreground" />
+                              <div className="text-right">
+                                <span className="font-oswald text-sm font-bold text-primary">
+                                  RD$ {(prod.price_a || prod.price || 0).toLocaleString()}
+                                </span>
+                                <div className="flex items-center gap-1 justify-end mt-0.5">
+                                  {!prod.active && <Badge variant="destructive" className="text-[8px] h-4">Inactivo</Badge>}
+                                  {(prod.modifier_group_ids?.length > 0 || prod.modifier_assignments?.length > 0) && (
+                                    <Badge variant="secondary" className="text-[8px] h-4">
+                                      {(prod.modifier_group_ids?.length || 0) + (prod.modifier_assignments?.length || 0)} mod
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
-                            )}
-                            <div>
-                              <span className="text-sm font-medium block group-hover:text-primary transition-colors">{prod.name}</span>
-                              {prod.printed_name && prod.printed_name !== prod.name && (
-                                <span className="text-[10px] text-muted-foreground">📝 {prod.printed_name}</span>
+                            </a>
+                          ))}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
                               )}
                             </div>
                           </div>
