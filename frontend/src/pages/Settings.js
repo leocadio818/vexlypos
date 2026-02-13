@@ -433,7 +433,7 @@ export default function Settings() {
       </div>
 
       <div className="flex-1 p-4 overflow-auto">
-        <Tabs defaultValue="users" className="max-w-4xl mx-auto">
+        <Tabs value={mainTab} onValueChange={setMainTab} className="max-w-4xl mx-auto">
           <TabsList className="bg-card border border-border mb-4 flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-users">
               <Users size={14} className="mr-1" /> Usuarios
