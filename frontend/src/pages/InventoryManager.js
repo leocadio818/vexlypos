@@ -94,6 +94,9 @@ export default function InventoryManager() {
   const [receiveDialog, setReceiveDialog] = useState({ open: false, po: null });
   const [transferDialog, setTransferDialog] = useState({ open: false, data: null });
   const [adjustDialog, setAdjustDialog] = useState({ open: false, data: null });
+  const [productionDialog, setProductionDialog] = useState({ open: false, data: null });
+  const [productionHistory, setProductionHistory] = useState([]);
+  const [producingItem, setProducingItem] = useState(false);
 
   // Fetch all data
   const fetchAll = async () => {
