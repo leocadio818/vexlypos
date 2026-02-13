@@ -72,6 +72,12 @@ export default function InventoryManager() {
   const [stockMovements, setStockMovements] = useState([]);
   const [products, setProducts] = useState([]);
   
+  // Alert states
+  const [alertConfig, setAlertConfig] = useState({ enabled: false, emails: [], frequency: 'daily' });
+  const [alertDialog, setAlertDialog] = useState({ open: false });
+  const [lowStockItems, setLowStockItems] = useState([]);
+  const [sendingAlert, setSendingAlert] = useState(false);
+  
   // Search/filter states
   const [ingredientSearch, setIngredientSearch] = useState('');
   const [ingredientCategory, setIngredientCategory] = useState('');
@@ -91,7 +97,7 @@ export default function InventoryManager() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [ingRes, whRes, supRes, recRes, poRes, stockRes, movRes, prodRes] = await Promise.all([
+      const [ingRes, whRes, supRes, recRes, poRes, stockRes, movRes, prodRes, alertRes] = await Promise.all([
         ingredientsAPI.list(),
         warehousesAPI.list(),
         suppliersAPI.list(),
@@ -100,6 +106,7 @@ export default function InventoryManager() {
         stockAPI.list(),
         stockMovementsAPI.list({ limit: 100 }),
         productsAPI.list(),
+        stockAlertsAPI.getConfig(),
       ]);
       setIngredients(ingRes.data);
       setWarehouses(whRes.data);
@@ -109,6 +116,7 @@ export default function InventoryManager() {
       setStock(stockRes.data);
       setStockMovements(movRes.data);
       setProducts(prodRes.data);
+      setAlertConfig(alertRes.data || { enabled: false, emails: [], frequency: 'daily' });
     } catch (e) {
       toast.error('Error al cargar datos');
     }
