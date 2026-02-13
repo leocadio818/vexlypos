@@ -1211,7 +1211,13 @@ export default function OrderScreen() {
                 const hasModifiers = [...new Set([...assignmentIds, ...legacyIds])].length > 0;
                 let pressTimer = null;
                 
+                // Stock control logic
+                const productStock = stockStatus[product.id];
+                const isOutOfStock = !allowSaleWithoutStock && productStock && !productStock.in_stock;
+                const isLowStock = productStock?.is_low_stock && !isOutOfStock;
+                
                 const handleTouchStart = () => {
+                  if (isOutOfStock) return; // Don't allow long press on out of stock items
                   pressTimer = setTimeout(() => {
                     handleProductLongPress(product);
                   }, 500); // 500ms for long press
@@ -1227,19 +1233,42 @@ export default function OrderScreen() {
                 return (
                   <button 
                     key={product.id} 
-                    onClick={() => handleProductClick(product)} 
+                    onClick={() => !isOutOfStock && handleProductClick(product)} 
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                     onTouchCancel={handleTouchEnd}
                     onMouseDown={handleTouchStart}
                     onMouseUp={handleTouchEnd}
                     onMouseLeave={handleTouchEnd}
+                    disabled={isOutOfStock}
                     data-testid={`product-${product.id}`}
-                    className={`group relative overflow-hidden bg-card border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] rounded-xl flex flex-col justify-between ${largeMode ? 'p-4' : 'p-3'} ${heightClass} text-left`}
+                    className={`group relative overflow-hidden border-2 transition-all rounded-xl flex flex-col justify-between ${largeMode ? 'p-4' : 'p-3'} ${heightClass} text-left ${
+                      isOutOfStock 
+                        ? 'bg-card/50 border-red-500/50 opacity-60 cursor-not-allowed' 
+                        : isLowStock
+                          ? 'bg-card border-yellow-500/50 hover:border-yellow-500 active:scale-[0.97]'
+                          : 'bg-card border-border hover:border-primary/50 active:scale-[0.97]'
+                    }`}
                   >
-                    <span className={`font-semibold leading-tight line-clamp-2 ${largeMode ? 'text-base' : 'text-sm'}`}>{product.name}</span>
-                    <span className={`font-oswald font-bold text-primary ${largeMode ? 'text-xl' : 'text-lg'}`}>{formatMoney(product.price)}</span>
-                    {hasModifiers && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
+                    <span className={`font-semibold leading-tight line-clamp-2 ${largeMode ? 'text-base' : 'text-sm'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
+                    <span className={`font-oswald font-bold ${largeMode ? 'text-xl' : 'text-lg'} ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>{formatMoney(product.price)}</span>
+                    {hasModifiers && !isOutOfStock && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
+                    
+                    {/* Out of Stock Badge */}
+                    {isOutOfStock && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="px-3 py-1.5 rounded-lg bg-red-600/90 text-white text-xs font-bold uppercase tracking-wide shadow-lg">
+                          Agotado
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Low Stock Indicator */}
+                    {isLowStock && !isOutOfStock && (
+                      <div className={`absolute top-2 ${hasModifiers ? 'right-5' : 'right-2'}`}>
+                        <AlertTriangle size={largeMode ? 16 : 14} className="text-yellow-500" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
