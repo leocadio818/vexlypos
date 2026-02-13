@@ -2910,7 +2910,7 @@ async def get_products_stock_status(warehouse_id: Optional[str] = Query(None)):
             "name": product.get("name", "?"),
             "has_recipe": recipe is not None,
             "in_stock": True,
-            "available_quantity": float('inf'),  # No limit if no recipe
+            "available_quantity": -1,  # -1 means unlimited (no recipe)
             "is_low_stock": False,
             "needs_reorder": False
         }
@@ -2924,7 +2924,7 @@ async def get_products_stock_status(warehouse_id: Optional[str] = Query(None)):
             # Calculate how many can be made
             if availability["available"]:
                 # Simple heuristic: check each ingredient
-                min_available = float('inf')
+                min_available = None
                 for ing in recipe.get("ingredients", []):
                     ing_id = ing.get("ingredient_id")
                     if not ing_id:
@@ -2941,7 +2941,8 @@ async def get_products_stock_status(warehouse_id: Optional[str] = Query(None)):
                     required = ing.get("quantity", 0)
                     if required > 0:
                         can_make = current / required
-                        min_available = min(min_available, can_make)
+                        if min_available is None or can_make < min_available:
+                            min_available = can_make
                         
                         # Check if needs reorder
                         min_stock = ingredient.get("min_stock", 0)
@@ -2949,7 +2950,7 @@ async def get_products_stock_status(warehouse_id: Optional[str] = Query(None)):
                             stock_status["needs_reorder"] = True
                             stock_status["is_low_stock"] = True
                 
-                stock_status["available_quantity"] = int(min_available) if min_available != float('inf') else 0
+                stock_status["available_quantity"] = int(min_available) if min_available is not None else 0
             else:
                 stock_status["available_quantity"] = 0
         
