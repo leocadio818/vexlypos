@@ -30,7 +30,12 @@ export default function OrderScreen() {
     mode: 'single', // 'single', 'multiple', 'order'
     selectedReasonId: null,
     returnToInventory: true,
-    comments: ''
+    comments: '',
+    requiresManagerAuth: false,
+    showManagerPin: false,
+    managerPin: '',
+    managerAuthError: '',
+    authorizedBy: null // { id, name }
   });
   const [preCheckHtml, setPreCheckHtml] = useState('');
   const [preCheckOpen, setPreCheckOpen] = useState(false);
