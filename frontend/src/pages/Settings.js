@@ -1114,21 +1114,6 @@ export default function Settings() {
                     });
                   })()}
                 </div>
-                              <span className="text-[10px] text-muted-foreground font-mono">({prod.printed_name})</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {prod.modifier_assignments?.length > 0 && (
-                              <Badge variant="outline" className="text-[9px]">{prod.modifier_assignments.length} mod</Badge>
-                            )}
-                            <span className="font-oswald text-sm text-primary font-bold">RD$ {prod.price?.toFixed(2)}</span>
-                            <Pencil size={12} className="text-muted-foreground" />
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-                  ))}
-                </div>
               </>
             )}
 
