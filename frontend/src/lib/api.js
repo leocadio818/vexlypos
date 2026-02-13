@@ -245,8 +245,8 @@ export const inventorySettingsAPI = {
   get: () => api.get('/inventory/settings'),
   update: (data) => api.put('/inventory/settings', data),
   getReorderAlerts: () => api.get('/inventory/reorder-alerts'),
-  getProductsStockStatus: (warehouseId) => api.get('/products/stock-status', { params: warehouseId ? { warehouse_id: warehouseId } : {} }),
-  getProductStockStatus: (productId, warehouseId) => api.get(`/products/${productId}/stock-status`, { params: warehouseId ? { warehouse_id: warehouseId } : {} }),
+  getProductsStockStatus: (warehouseId) => api.get('/inventory/products-stock', { params: warehouseId ? { warehouse_id: warehouseId } : {} }),
+  getProductStockStatus: (productId, warehouseId) => api.get(`/inventory/product-stock/${productId}`, { params: warehouseId ? { warehouse_id: warehouseId } : {} }),
 };
 
 // Purchase Orders
