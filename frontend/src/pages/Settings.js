@@ -138,6 +138,15 @@ export default function Settings() {
         setRoles(rolesRes.data);
         const taxRes = await axios.get(`${API}/tax-config`, { headers: hdrs() });
         setTaxConfig(taxRes.data);
+        // Load inventory settings and warehouses
+        try {
+          const [invSettingsRes, whRes] = await Promise.all([
+            inventorySettingsAPI.get(),
+            warehousesAPI.list()
+          ]);
+          setInventorySettings(invSettingsRes.data);
+          setWarehouses(whRes.data || []);
+        } catch {}
       } catch {}
     } catch {}
   };
