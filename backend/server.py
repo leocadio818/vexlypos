@@ -1681,33 +1681,163 @@ async def close_shift(shift_id: str, input: ShiftCloseInput):
 @api.get("/inventory")
 async def list_inventory(warehouse_id: Optional[str] = Query(None)):
     query = {"warehouse_id": warehouse_id} if warehouse_id else {}
-    return await db.inventory.find(query, {"_id": 0}).to_list(500)
+    return await db.stock.find(query, {"_id": 0}).to_list(500)
 
 @api.get("/inventory/alerts")
 async def inventory_alerts():
-    items = await db.inventory.find({"$expr": {"$lte": ["$stock", "$min_stock"]}}, {"_id": 0}).to_list(100)
+    items = await db.stock.find({"$expr": {"$lte": ["$current_stock", "$min_stock"]}}, {"_id": 0}).to_list(100)
     return items
-
-@api.put("/inventory/{product_id}")
-async def update_inventory(product_id: str, input: dict):
-    if "_id" in input:
-        del input["_id"]
-    await db.inventory.update_one({"product_id": product_id}, {"$set": input}, upsert=True)
-    return {"ok": True}
 
 @api.post("/inventory/adjust")
 async def adjust_inventory(input: InventoryAdjustInput, user=Depends(get_current_user)):
-    await db.inventory.update_one(
-        {"product_id": input.product_id, "warehouse_id": input.warehouse_id},
-        {"$inc": {"stock": input.quantity}, "$set": {"last_updated": now_iso()}},
+    # Update stock
+    await db.stock.update_one(
+        {"ingredient_id": input.ingredient_id, "warehouse_id": input.warehouse_id},
+        {"$inc": {"current_stock": input.quantity}, "$set": {"last_updated": now_iso()}},
         upsert=True
     )
-    await db.inventory_logs.insert_one({
-        "id": gen_id(), "product_id": input.product_id, "warehouse_id": input.warehouse_id,
-        "quantity": input.quantity, "reason": input.reason,
-        "user_id": user["user_id"], "user_name": user["name"], "created_at": now_iso()
+    # Log movement
+    await db.stock_movements.insert_one({
+        "id": gen_id(), "ingredient_id": input.ingredient_id, "warehouse_id": input.warehouse_id,
+        "quantity": input.quantity, "movement_type": "adjustment", "reference_id": "",
+        "notes": input.reason, "user_id": user["user_id"], "user_name": user["name"], 
+        "created_at": now_iso()
     })
     return {"ok": True}
+
+# ─── INGREDIENTS ───
+@api.get("/ingredients")
+async def list_ingredients(category: Optional[str] = Query(None)):
+    query = {"category": category} if category else {}
+    return await db.ingredients.find(query, {"_id": 0}).to_list(500)
+
+@api.get("/ingredients/{ingredient_id}")
+async def get_ingredient(ingredient_id: str):
+    ing = await db.ingredients.find_one({"id": ingredient_id}, {"_id": 0})
+    if not ing:
+        raise HTTPException(404, "Ingrediente no encontrado")
+    return ing
+
+@api.post("/ingredients")
+async def create_ingredient(input: IngredientInput):
+    doc = {
+        "id": gen_id(), "name": input.name, "unit": input.unit,
+        "category": input.category, "min_stock": input.min_stock,
+        "avg_cost": input.avg_cost, "active": True, "created_at": now_iso()
+    }
+    await db.ingredients.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/ingredients/{ingredient_id}")
+async def update_ingredient(ingredient_id: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.ingredients.update_one({"id": ingredient_id}, {"$set": input})
+    return {"ok": True}
+
+@api.delete("/ingredients/{ingredient_id}")
+async def delete_ingredient(ingredient_id: str):
+    # Check if used in recipes
+    recipe_count = await db.recipes.count_documents({"ingredients.ingredient_id": ingredient_id})
+    if recipe_count > 0:
+        raise HTTPException(400, f"No se puede eliminar: {recipe_count} recetas usan este ingrediente")
+    await db.ingredients.delete_one({"id": ingredient_id})
+    return {"ok": True}
+
+# ─── STOCK ───
+@api.get("/stock")
+async def list_stock(warehouse_id: Optional[str] = Query(None), ingredient_id: Optional[str] = Query(None)):
+    query = {}
+    if warehouse_id: query["warehouse_id"] = warehouse_id
+    if ingredient_id: query["ingredient_id"] = ingredient_id
+    return await db.stock.find(query, {"_id": 0}).to_list(500)
+
+@api.get("/stock/by-ingredient/{ingredient_id}")
+async def get_stock_by_ingredient(ingredient_id: str):
+    return await db.stock.find({"ingredient_id": ingredient_id}, {"_id": 0}).to_list(50)
+
+@api.post("/stock")
+async def upsert_stock(input: StockInput):
+    existing = await db.stock.find_one({
+        "ingredient_id": input.ingredient_id, 
+        "warehouse_id": input.warehouse_id
+    })
+    if existing:
+        await db.stock.update_one(
+            {"ingredient_id": input.ingredient_id, "warehouse_id": input.warehouse_id},
+            {"$set": {"current_stock": input.current_stock, "min_stock": input.min_stock, "last_updated": now_iso()}}
+        )
+    else:
+        doc = {
+            "id": gen_id(), "ingredient_id": input.ingredient_id, "warehouse_id": input.warehouse_id,
+            "current_stock": input.current_stock, "min_stock": input.min_stock, 
+            "last_updated": now_iso()
+        }
+        await db.stock.insert_one(doc)
+    return {"ok": True}
+
+@api.post("/stock/transfer")
+async def transfer_stock(input: StockTransferInput, user=Depends(get_current_user)):
+    # Check source has enough stock
+    source = await db.stock.find_one({
+        "ingredient_id": input.ingredient_id, 
+        "warehouse_id": input.from_warehouse_id
+    })
+    if not source or source.get("current_stock", 0) < input.quantity:
+        raise HTTPException(400, "Stock insuficiente en almacén origen")
+    
+    # Decrease from source
+    await db.stock.update_one(
+        {"ingredient_id": input.ingredient_id, "warehouse_id": input.from_warehouse_id},
+        {"$inc": {"current_stock": -input.quantity}, "$set": {"last_updated": now_iso()}}
+    )
+    # Increase in destination
+    await db.stock.update_one(
+        {"ingredient_id": input.ingredient_id, "warehouse_id": input.to_warehouse_id},
+        {"$inc": {"current_stock": input.quantity}, "$set": {"last_updated": now_iso()}},
+        upsert=True
+    )
+    # Log movements
+    transfer_id = gen_id()
+    await db.stock_movements.insert_one({
+        "id": gen_id(), "ingredient_id": input.ingredient_id, "warehouse_id": input.from_warehouse_id,
+        "quantity": -input.quantity, "movement_type": "transfer_out", "reference_id": transfer_id,
+        "notes": input.notes, "user_id": user["user_id"], "user_name": user["name"], "created_at": now_iso()
+    })
+    await db.stock_movements.insert_one({
+        "id": gen_id(), "ingredient_id": input.ingredient_id, "warehouse_id": input.to_warehouse_id,
+        "quantity": input.quantity, "movement_type": "transfer_in", "reference_id": transfer_id,
+        "notes": input.notes, "user_id": user["user_id"], "user_name": user["name"], "created_at": now_iso()
+    })
+    return {"ok": True, "transfer_id": transfer_id}
+
+@api.post("/stock/waste")
+async def register_waste(input: StockMovementInput, user=Depends(get_current_user)):
+    # Decrease stock
+    await db.stock.update_one(
+        {"ingredient_id": input.ingredient_id, "warehouse_id": input.warehouse_id},
+        {"$inc": {"current_stock": -abs(input.quantity)}, "$set": {"last_updated": now_iso()}}
+    )
+    # Log movement
+    await db.stock_movements.insert_one({
+        "id": gen_id(), "ingredient_id": input.ingredient_id, "warehouse_id": input.warehouse_id,
+        "quantity": -abs(input.quantity), "movement_type": "waste", "reference_id": input.reference_id,
+        "notes": input.notes, "user_id": user["user_id"], "user_name": user["name"], "created_at": now_iso()
+    })
+    return {"ok": True}
+
+# ─── STOCK MOVEMENTS ───
+@api.get("/stock-movements")
+async def list_stock_movements(
+    warehouse_id: Optional[str] = Query(None),
+    ingredient_id: Optional[str] = Query(None),
+    movement_type: Optional[str] = Query(None),
+    limit: int = Query(100)
+):
+    query = {}
+    if warehouse_id: query["warehouse_id"] = warehouse_id
+    if ingredient_id: query["ingredient_id"] = ingredient_id
+    if movement_type: query["movement_type"] = movement_type
+    return await db.stock_movements.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
 
 # ─── WAREHOUSES ───
 @api.get("/warehouses")
@@ -1728,6 +1858,10 @@ async def update_warehouse(wid: str, input: dict):
 
 @api.delete("/warehouses/{wid}")
 async def delete_warehouse(wid: str):
+    # Check if has stock
+    stock_count = await db.stock.count_documents({"warehouse_id": wid, "current_stock": {"$gt": 0}})
+    if stock_count > 0:
+        raise HTTPException(400, "No se puede eliminar: el almacén tiene stock")
     await db.warehouses.delete_one({"id": wid})
     return {"ok": True}
 
@@ -1735,6 +1869,13 @@ async def delete_warehouse(wid: str):
 @api.get("/suppliers")
 async def list_suppliers():
     return await db.suppliers.find({}, {"_id": 0}).to_list(100)
+
+@api.get("/suppliers/{sid}")
+async def get_supplier(sid: str):
+    sup = await db.suppliers.find_one({"id": sid}, {"_id": 0})
+    if not sup:
+        raise HTTPException(404, "Proveedor no encontrado")
+    return sup
 
 @api.post("/suppliers")
 async def create_supplier(input: SupplierInput):
