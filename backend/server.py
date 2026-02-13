@@ -1857,6 +1857,399 @@ async def list_stock_movements(
     if movement_type: query["movement_type"] = movement_type
     return await db.stock_movements.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
 
+# ─── INVENTORY EXPLOSION SYSTEM ───
+
+async def get_ingredient_stock(ingredient_id: str, warehouse_id: str) -> float:
+    """Get current stock of an ingredient in a warehouse"""
+    stock_doc = await db.stock.find_one(
+        {"ingredient_id": ingredient_id, "warehouse_id": warehouse_id}, 
+        {"_id": 0}
+    )
+    return stock_doc.get("current_stock", 0) if stock_doc else 0
+
+async def get_recipe_for_ingredient(ingredient_id: str) -> dict:
+    """Get the recipe that produces a sub-recipe ingredient"""
+    ingredient = await db.ingredients.find_one({"id": ingredient_id}, {"_id": 0})
+    if not ingredient or not ingredient.get("is_subrecipe"):
+        return None
+    recipe_id = ingredient.get("recipe_id")
+    if recipe_id:
+        return await db.recipes.find_one({"id": recipe_id}, {"_id": 0})
+    # Also check by produces_ingredient_id
+    return await db.recipes.find_one({"produces_ingredient_id": ingredient_id}, {"_id": 0})
+
+async def calculate_recipe_cost(recipe: dict, depth: int = 0) -> float:
+    """Recursively calculate the cost of a recipe including sub-recipes"""
+    if depth > 10:  # Prevent infinite recursion
+        return 0
+    
+    total_cost = 0
+    for ing in recipe.get("ingredients", []):
+        ingredient = await db.ingredients.find_one({"id": ing["ingredient_id"]}, {"_id": 0})
+        if not ingredient:
+            continue
+        
+        quantity = ing.get("quantity", 0)
+        waste = quantity * (ing.get("waste_percentage", 0) / 100)
+        effective_quantity = quantity + waste
+        
+        if ingredient.get("is_subrecipe"):
+            # Get sub-recipe and calculate its cost
+            sub_recipe = await get_recipe_for_ingredient(ingredient["id"])
+            if sub_recipe:
+                sub_cost = await calculate_recipe_cost(sub_recipe, depth + 1)
+                total_cost += sub_cost * effective_quantity
+        else:
+            # Base ingredient - use avg_cost
+            total_cost += ingredient.get("avg_cost", 0) * effective_quantity
+    
+    yield_qty = recipe.get("yield_quantity", 1) or 1
+    return total_cost / yield_qty
+
+async def update_subrecipe_costs():
+    """Update costs for all sub-recipe ingredients based on their component costs"""
+    subrecipe_ingredients = await db.ingredients.find({"is_subrecipe": True}, {"_id": 0}).to_list(500)
+    
+    for ing in subrecipe_ingredients:
+        recipe = await get_recipe_for_ingredient(ing["id"])
+        if recipe:
+            new_cost = await calculate_recipe_cost(recipe)
+            if new_cost != ing.get("avg_cost", 0):
+                await db.ingredients.update_one(
+                    {"id": ing["id"]},
+                    {"$set": {"avg_cost": round(new_cost, 2), "cost_updated_at": now_iso()}}
+                )
+
+async def explode_and_deduct_recipe(
+    recipe: dict,
+    warehouse_id: str,
+    quantity: float,
+    user_id: str,
+    user_name: str,
+    parent_product_id: str,
+    order_id: str,
+    depth: int = 0
+) -> dict:
+    """
+    Recursively explode a recipe and deduct ingredients from stock.
+    If a sub-recipe doesn't have enough stock, explode its components.
+    Returns: {"success": bool, "movements": [...], "errors": [...]}
+    """
+    if depth > 10:
+        return {"success": False, "movements": [], "errors": ["Recursión máxima alcanzada"]}
+    
+    movements = []
+    errors = []
+    yield_qty = recipe.get("yield_quantity", 1) or 1
+    
+    for ing in recipe.get("ingredients", []):
+        ingredient = await db.ingredients.find_one({"id": ing["ingredient_id"]}, {"_id": 0})
+        if not ingredient:
+            errors.append(f"Ingrediente no encontrado: {ing.get('ingredient_name', ing['ingredient_id'])}")
+            continue
+        
+        # Calculate required quantity with waste
+        base_quantity = ing.get("quantity", 0)
+        waste = base_quantity * (ing.get("waste_percentage", 0) / 100)
+        required_per_unit = (base_quantity + waste) / yield_qty
+        total_required = required_per_unit * quantity
+        
+        # Check current stock
+        current_stock = await get_ingredient_stock(ingredient["id"], warehouse_id)
+        
+        if ingredient.get("is_subrecipe"):
+            # This is a sub-recipe ingredient
+            if current_stock >= total_required:
+                # We have enough prepared sub-recipe, just deduct it
+                await db.stock.update_one(
+                    {"ingredient_id": ingredient["id"], "warehouse_id": warehouse_id},
+                    {"$inc": {"current_stock": -total_required}, "$set": {"last_updated": now_iso()}}
+                )
+                movement = {
+                    "id": gen_id(),
+                    "ingredient_id": ingredient["id"],
+                    "ingredient_name": ingredient["name"],
+                    "warehouse_id": warehouse_id,
+                    "quantity": -total_required,
+                    "movement_type": "sale",
+                    "reference_id": order_id,
+                    "parent_product_id": parent_product_id,
+                    "parent_recipe_id": recipe.get("id", ""),
+                    "notes": f"Venta - Sub-receta consumida",
+                    "user_id": user_id,
+                    "user_name": user_name,
+                    "created_at": now_iso()
+                }
+                await db.stock_movements.insert_one(movement)
+                movements.append(movement)
+            else:
+                # Not enough prepared sub-recipe - EXPLODE IT
+                # First use whatever stock we have
+                if current_stock > 0:
+                    await db.stock.update_one(
+                        {"ingredient_id": ingredient["id"], "warehouse_id": warehouse_id},
+                        {"$set": {"current_stock": 0, "last_updated": now_iso()}}
+                    )
+                    movement = {
+                        "id": gen_id(),
+                        "ingredient_id": ingredient["id"],
+                        "ingredient_name": ingredient["name"],
+                        "warehouse_id": warehouse_id,
+                        "quantity": -current_stock,
+                        "movement_type": "sale",
+                        "reference_id": order_id,
+                        "parent_product_id": parent_product_id,
+                        "parent_recipe_id": recipe.get("id", ""),
+                        "notes": f"Venta - Sub-receta parcial consumida",
+                        "user_id": user_id,
+                        "user_name": user_name,
+                        "created_at": now_iso()
+                    }
+                    await db.stock_movements.insert_one(movement)
+                    movements.append(movement)
+                
+                # Now explode the remaining requirement
+                remaining = total_required - current_stock
+                sub_recipe = await get_recipe_for_ingredient(ingredient["id"])
+                
+                if sub_recipe:
+                    explosion_result = await explode_and_deduct_recipe(
+                        sub_recipe, warehouse_id, remaining,
+                        user_id, user_name, parent_product_id, order_id, depth + 1
+                    )
+                    movements.extend(explosion_result["movements"])
+                    errors.extend(explosion_result["errors"])
+                    
+                    # Log the explosion event
+                    explosion_movement = {
+                        "id": gen_id(),
+                        "ingredient_id": ingredient["id"],
+                        "ingredient_name": ingredient["name"],
+                        "warehouse_id": warehouse_id,
+                        "quantity": 0,  # Virtual - represents explosion
+                        "movement_type": "explosion",
+                        "reference_id": order_id,
+                        "parent_product_id": parent_product_id,
+                        "parent_recipe_id": recipe.get("id", ""),
+                        "notes": f"Explosión de sub-receta: {remaining:.4f} {ingredient.get('unit', 'unidad')}",
+                        "user_id": user_id,
+                        "user_name": user_name,
+                        "created_at": now_iso()
+                    }
+                    await db.stock_movements.insert_one(explosion_movement)
+                    movements.append(explosion_movement)
+                else:
+                    errors.append(f"Sub-receta sin receta definida: {ingredient['name']}")
+        else:
+            # Base ingredient - just deduct
+            if current_stock < total_required:
+                # Not enough stock - log warning but continue
+                errors.append(f"Stock insuficiente: {ingredient['name']} (tiene {current_stock:.2f}, necesita {total_required:.2f})")
+            
+            # Deduct whatever we can (allow negative for tracking)
+            await db.stock.update_one(
+                {"ingredient_id": ingredient["id"], "warehouse_id": warehouse_id},
+                {"$inc": {"current_stock": -total_required}, "$set": {"last_updated": now_iso()}},
+                upsert=True
+            )
+            movement = {
+                "id": gen_id(),
+                "ingredient_id": ingredient["id"],
+                "ingredient_name": ingredient["name"],
+                "warehouse_id": warehouse_id,
+                "quantity": -total_required,
+                "movement_type": "sale",
+                "reference_id": order_id,
+                "parent_product_id": parent_product_id,
+                "parent_recipe_id": recipe.get("id", ""),
+                "notes": f"Venta - Ingrediente base",
+                "user_id": user_id,
+                "user_name": user_name,
+                "created_at": now_iso()
+            }
+            await db.stock_movements.insert_one(movement)
+            movements.append(movement)
+    
+    return {"success": len(errors) == 0, "movements": movements, "errors": errors}
+
+async def check_recipe_availability(recipe: dict, warehouse_id: str, quantity: float, depth: int = 0) -> dict:
+    """
+    Check if a recipe can be produced with available stock.
+    Returns availability status and missing items.
+    """
+    if depth > 10:
+        return {"available": False, "missing": [], "requires_explosion": False}
+    
+    missing = []
+    requires_explosion = False
+    yield_qty = recipe.get("yield_quantity", 1) or 1
+    
+    for ing in recipe.get("ingredients", []):
+        ingredient = await db.ingredients.find_one({"id": ing["ingredient_id"]}, {"_id": 0})
+        if not ingredient:
+            missing.append({"name": ing.get("ingredient_name", "?"), "required": 0, "available": 0, "reason": "no_existe"})
+            continue
+        
+        base_quantity = ing.get("quantity", 0)
+        waste = base_quantity * (ing.get("waste_percentage", 0) / 100)
+        required_per_unit = (base_quantity + waste) / yield_qty
+        total_required = required_per_unit * quantity
+        
+        current_stock = await get_ingredient_stock(ingredient["id"], warehouse_id)
+        
+        if ingredient.get("is_subrecipe"):
+            if current_stock < total_required:
+                # Check if we can explode
+                sub_recipe = await get_recipe_for_ingredient(ingredient["id"])
+                if sub_recipe:
+                    remaining = total_required - current_stock
+                    sub_check = await check_recipe_availability(sub_recipe, warehouse_id, remaining, depth + 1)
+                    if not sub_check["available"]:
+                        missing.extend(sub_check["missing"])
+                    requires_explosion = True
+                else:
+                    missing.append({
+                        "name": ingredient["name"],
+                        "required": total_required,
+                        "available": current_stock,
+                        "reason": "subreceta_sin_receta"
+                    })
+        else:
+            if current_stock < total_required:
+                missing.append({
+                    "name": ingredient["name"],
+                    "required": total_required,
+                    "available": current_stock,
+                    "deficit": total_required - current_stock,
+                    "reason": "stock_insuficiente"
+                })
+    
+    return {
+        "available": len(missing) == 0,
+        "missing": missing,
+        "requires_explosion": requires_explosion
+    }
+
+@api.post("/inventory/deduct-for-product")
+async def deduct_inventory_for_product(input: StockDeductInput, user=Depends(get_current_user)):
+    """
+    Deduct inventory for a product sale with full explosion logic.
+    This is the main entry point for inventory deduction.
+    """
+    # Get product
+    product = await db.products.find_one({"id": input.product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(404, "Producto no encontrado")
+    
+    # Get recipe for product
+    recipe = await db.recipes.find_one({"product_id": input.product_id}, {"_id": 0})
+    if not recipe:
+        return {"ok": True, "message": "Producto sin receta - no se descuenta inventario", "movements": []}
+    
+    # Check availability first
+    availability = await check_recipe_availability(recipe, input.warehouse_id, input.quantity)
+    
+    # Execute deduction with explosion
+    result = await explode_and_deduct_recipe(
+        recipe=recipe,
+        warehouse_id=input.warehouse_id,
+        quantity=input.quantity,
+        user_id=user["user_id"],
+        user_name=user["name"],
+        parent_product_id=input.product_id,
+        order_id=input.order_id
+    )
+    
+    # Update sub-recipe costs after deduction
+    await update_subrecipe_costs()
+    
+    return {
+        "ok": result["success"],
+        "product_name": product.get("name", "?"),
+        "quantity_deducted": input.quantity,
+        "movements_count": len(result["movements"]),
+        "movements": result["movements"],
+        "errors": result["errors"],
+        "availability_check": availability
+    }
+
+@api.post("/inventory/check-availability")
+async def check_inventory_availability(input: StockDeductInput):
+    """Check if a product can be produced with available inventory"""
+    recipe = await db.recipes.find_one({"product_id": input.product_id}, {"_id": 0})
+    if not recipe:
+        return {"available": True, "message": "Producto sin receta", "missing": []}
+    
+    result = await check_recipe_availability(recipe, input.warehouse_id, input.quantity)
+    return result
+
+@api.post("/inventory/recalculate-costs")
+async def recalculate_all_costs():
+    """Recalculate costs for all sub-recipe ingredients"""
+    await update_subrecipe_costs()
+    
+    # Also recalculate recipe costs
+    recipes = await db.recipes.find({}, {"_id": 0}).to_list(500)
+    updated = []
+    for recipe in recipes:
+        cost = await calculate_recipe_cost(recipe)
+        await db.recipes.update_one(
+            {"id": recipe["id"]},
+            {"$set": {"calculated_cost": round(cost, 2), "cost_updated_at": now_iso()}}
+        )
+        updated.append({"recipe_id": recipe["id"], "product_name": recipe.get("product_name", "?"), "cost": round(cost, 2)})
+    
+    return {"ok": True, "recipes_updated": len(updated), "details": updated}
+
+@api.get("/inventory/recipe-cost/{product_id}")
+async def get_recipe_cost(product_id: str):
+    """Get the calculated cost of a product's recipe including sub-recipes"""
+    recipe = await db.recipes.find_one({"product_id": product_id}, {"_id": 0})
+    if not recipe:
+        return {"cost": 0, "message": "Producto sin receta"}
+    
+    cost = await calculate_recipe_cost(recipe)
+    
+    # Get detailed breakdown
+    breakdown = []
+    for ing in recipe.get("ingredients", []):
+        ingredient = await db.ingredients.find_one({"id": ing["ingredient_id"]}, {"_id": 0})
+        if not ingredient:
+            continue
+        
+        quantity = ing.get("quantity", 0)
+        waste = quantity * (ing.get("waste_percentage", 0) / 100)
+        effective_quantity = quantity + waste
+        
+        item = {
+            "ingredient_id": ingredient["id"],
+            "name": ingredient["name"],
+            "quantity": quantity,
+            "waste_percentage": ing.get("waste_percentage", 0),
+            "effective_quantity": effective_quantity,
+            "unit_cost": ingredient.get("avg_cost", 0),
+            "total_cost": ingredient.get("avg_cost", 0) * effective_quantity,
+            "is_subrecipe": ingredient.get("is_subrecipe", False)
+        }
+        
+        if ingredient.get("is_subrecipe"):
+            sub_recipe = await get_recipe_for_ingredient(ingredient["id"])
+            if sub_recipe:
+                item["sub_cost"] = await calculate_recipe_cost(sub_recipe)
+                item["total_cost"] = item["sub_cost"] * effective_quantity
+        
+        breakdown.append(item)
+    
+    yield_qty = recipe.get("yield_quantity", 1) or 1
+    return {
+        "product_id": product_id,
+        "product_name": recipe.get("product_name", "?"),
+        "total_cost": round(cost, 2),
+        "yield_quantity": yield_qty,
+        "cost_per_unit": round(cost, 2),
+        "breakdown": breakdown
+    }
+
 # ─── WAREHOUSES ───
 @api.get("/warehouses")
 async def list_warehouses():
