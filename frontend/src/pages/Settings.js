@@ -518,8 +518,22 @@ export default function Settings() {
                         <span className="text-sm ml-2">{areas.find(a => a.id === table.area_id)?.name}</span>
                         <span className="text-xs text-muted-foreground ml-2">Cap: {table.capacity} | {table.shape}</span>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => { tablesAPI.delete(table.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
-                        className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" 
+                          onClick={() => setTableDialog({ 
+                            open: true, 
+                            number: String(table.number), 
+                            area_id: table.area_id, 
+                            capacity: table.capacity, 
+                            shape: table.shape, 
+                            editId: table.id 
+                          })}
+                          className="text-muted-foreground hover:text-primary h-8 w-8">
+                          <Pencil size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => { tablesAPI.delete(table.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
+                          className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
+                      </div>
                     </div>
                   ))}
                 </div>
