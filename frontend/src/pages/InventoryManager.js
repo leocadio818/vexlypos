@@ -672,6 +672,17 @@ export default function InventoryManager() {
                           <span className="text-xs text-muted-foreground ml-1">{ing.unit}</span>
                         </div>
                         <div className="flex gap-1">
+                          {ing.is_subrecipe && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
+                              onClick={() => handleOpenProduction(ing)}
+                              data-testid={`produce-${ing.id}`}
+                            >
+                              <Factory size={14} className="mr-1" /> Producir
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
                             size="icon" 
