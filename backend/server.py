@@ -1893,7 +1893,13 @@ async def update_supplier(sid: str, input: dict):
 
 @api.delete("/suppliers/{sid}")
 async def delete_supplier(sid: str):
-    await db.suppliers.delete_one({"id": sid})
+    # Check if has purchase orders
+    po_count = await db.purchase_orders.count_documents({"supplier_id": sid})
+    if po_count > 0:
+        # Soft delete
+        await db.suppliers.update_one({"id": sid}, {"$set": {"active": False}})
+    else:
+        await db.suppliers.delete_one({"id": sid})
     return {"ok": True}
 
 # ─── RECIPES ───
@@ -1908,12 +1914,27 @@ async def get_recipe(product_id: str):
 
 @api.post("/recipes")
 async def create_recipe(input: RecipeInput):
-    ingredients = [{"id": gen_id(), **i.model_dump()} for i in input.ingredients]
-    doc = {"id": gen_id(), "product_id": input.product_id, "product_name": input.product_name,
-           "ingredients": ingredients, "yield_quantity": input.yield_quantity, "created_at": now_iso()}
+    ingredients = []
+    for i in input.ingredients:
+        ing_data = i.model_dump()
+        ing_data["id"] = gen_id()
+        # Get ingredient name if not provided
+        if not ing_data.get("ingredient_name"):
+            ing = await db.ingredients.find_one({"id": ing_data["ingredient_id"]}, {"_id": 0})
+            ing_data["ingredient_name"] = ing["name"] if ing else "?"
+        ingredients.append(ing_data)
+    
+    doc = {
+        "id": gen_id(), "product_id": input.product_id, "product_name": input.product_name,
+        "ingredients": ingredients, "yield_quantity": input.yield_quantity,
+        "notes": input.notes, "created_at": now_iso()
+    }
     existing = await db.recipes.find_one({"product_id": input.product_id})
     if existing:
-        await db.recipes.update_one({"product_id": input.product_id}, {"$set": {"ingredients": ingredients, "yield_quantity": input.yield_quantity}})
+        await db.recipes.update_one(
+            {"product_id": input.product_id}, 
+            {"$set": {"ingredients": ingredients, "yield_quantity": input.yield_quantity, "notes": input.notes}}
+        )
         return await db.recipes.find_one({"product_id": input.product_id}, {"_id": 0})
     await db.recipes.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
@@ -1923,30 +1944,72 @@ async def delete_recipe(rid: str):
     await db.recipes.delete_one({"id": rid})
     return {"ok": True}
 
+@api.delete("/recipes/product/{product_id}")
+async def delete_recipe_by_product(product_id: str):
+    await db.recipes.delete_one({"product_id": product_id})
+    return {"ok": True}
+
 # ─── PURCHASE ORDERS ───
 @api.get("/purchase-orders")
-async def list_purchase_orders(status: Optional[str] = Query(None)):
-    query = {"status": status} if status else {}
+async def list_purchase_orders(status: Optional[str] = Query(None), supplier_id: Optional[str] = Query(None)):
+    query = {}
+    if status: query["status"] = status
+    if supplier_id: query["supplier_id"] = supplier_id
     return await db.purchase_orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+
+@api.get("/purchase-orders/{po_id}")
+async def get_purchase_order(po_id: str):
+    po = await db.purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(404, "Orden no encontrada")
+    return po
 
 @api.post("/purchase-orders")
 async def create_purchase_order(input: PurchaseOrderInput, user=Depends(get_current_user)):
     supplier = await db.suppliers.find_one({"id": input.supplier_id}, {"_id": 0})
-    items = [{"id": gen_id(), "product_id": i.product_id, "product_name": i.product_name,
-              "quantity": i.quantity, "unit_price": i.unit_price, "received_quantity": 0} for i in input.items]
+    items = []
+    for i in input.items:
+        item_data = {
+            "id": gen_id(), 
+            "ingredient_id": i.ingredient_id, 
+            "ingredient_name": i.ingredient_name,
+            "quantity": i.quantity, 
+            "unit_price": i.unit_price, 
+            "received_quantity": 0,
+            "actual_unit_price": i.unit_price  # Will be updated on receive
+        }
+        # Get ingredient name if not provided
+        if not item_data["ingredient_name"]:
+            ing = await db.ingredients.find_one({"id": i.ingredient_id}, {"_id": 0})
+            item_data["ingredient_name"] = ing["name"] if ing else "?"
+        items.append(item_data)
+    
     total = sum(i.quantity * i.unit_price for i in input.items)
-    doc = {"id": gen_id(), "supplier_id": input.supplier_id,
-           "supplier_name": supplier["name"] if supplier else "?",
-           "warehouse_id": input.warehouse_id, "items": items, "total": round(total, 2),
-           "notes": input.notes, "status": "draft",
-           "created_by": user["name"], "created_at": now_iso(), "received_at": None}
+    doc = {
+        "id": gen_id(), "supplier_id": input.supplier_id,
+        "supplier_name": supplier["name"] if supplier else "?",
+        "warehouse_id": input.warehouse_id, "items": items, "total": round(total, 2),
+        "notes": input.notes, "expected_date": input.expected_date,
+        "status": "draft",  # draft -> pending -> partial -> received
+        "created_by": user["name"], "created_at": now_iso(), "received_at": None
+    }
     await db.purchase_orders.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @api.put("/purchase-orders/{po_id}")
 async def update_purchase_order(po_id: str, input: dict):
     if "_id" in input: del input["_id"]
+    # Recalculate total if items changed
+    if "items" in input:
+        input["total"] = round(sum(i.get("quantity", 0) * i.get("unit_price", 0) for i in input["items"]), 2)
     await db.purchase_orders.update_one({"id": po_id}, {"$set": input})
+    return {"ok": True}
+
+@api.put("/purchase-orders/{po_id}/status")
+async def update_po_status(po_id: str, status: str = Query(...)):
+    if status not in ["draft", "pending", "partial", "received", "cancelled"]:
+        raise HTTPException(400, "Estado inválido")
+    await db.purchase_orders.update_one({"id": po_id}, {"$set": {"status": status}})
     return {"ok": True}
 
 @api.post("/purchase-orders/{po_id}/receive")
@@ -1954,25 +2017,75 @@ async def receive_purchase_order(po_id: str, input: ReceivePOInput, user=Depends
     po = await db.purchase_orders.find_one({"id": po_id}, {"_id": 0})
     if not po:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    warehouse_id = input.warehouse_id or po.get("warehouse_id", "")
+    
     for recv_item in input.items:
         for po_item in po["items"]:
-            if po_item["product_id"] == recv_item.product_id:
+            if po_item["ingredient_id"] == recv_item.ingredient_id:
+                # Update received quantity
                 po_item["received_quantity"] = po_item.get("received_quantity", 0) + recv_item.received_quantity
-                await db.inventory.update_one(
-                    {"product_id": recv_item.product_id, "warehouse_id": input.warehouse_id},
-                    {"$inc": {"stock": recv_item.received_quantity}, "$set": {"last_updated": now_iso()}},
+                
+                # Update actual unit price if provided (for cost reconciliation)
+                if recv_item.actual_unit_price > 0:
+                    po_item["actual_unit_price"] = recv_item.actual_unit_price
+                
+                # Update stock
+                await db.stock.update_one(
+                    {"ingredient_id": recv_item.ingredient_id, "warehouse_id": warehouse_id},
+                    {"$inc": {"current_stock": recv_item.received_quantity}, "$set": {"last_updated": now_iso()}},
                     upsert=True
                 )
+                
+                # Log movement
+                await db.stock_movements.insert_one({
+                    "id": gen_id(), "ingredient_id": recv_item.ingredient_id, "warehouse_id": warehouse_id,
+                    "quantity": recv_item.received_quantity, "movement_type": "purchase",
+                    "reference_id": po_id, "notes": f"OC recibida",
+                    "user_id": user["user_id"], "user_name": user["name"], "created_at": now_iso()
+                })
+                
+                # Update ingredient avg_cost using weighted average
+                if recv_item.actual_unit_price > 0:
+                    ing = await db.ingredients.find_one({"id": recv_item.ingredient_id}, {"_id": 0})
+                    if ing:
+                        old_cost = ing.get("avg_cost", 0)
+                        # Get total stock across all warehouses
+                        total_stock_docs = await db.stock.find({"ingredient_id": recv_item.ingredient_id}, {"_id": 0}).to_list(50)
+                        total_stock = sum(s.get("current_stock", 0) for s in total_stock_docs)
+                        old_stock = total_stock - recv_item.received_quantity
+                        
+                        # Weighted average cost
+                        if total_stock > 0:
+                            new_avg = ((old_cost * old_stock) + (recv_item.actual_unit_price * recv_item.received_quantity)) / total_stock
+                            await db.ingredients.update_one(
+                                {"id": recv_item.ingredient_id},
+                                {"$set": {"avg_cost": round(new_avg, 2)}}
+                            )
+                break
+    
+    # Determine new status
     all_received = all(i["received_quantity"] >= i["quantity"] for i in po["items"])
     partial = any(i["received_quantity"] > 0 for i in po["items"])
     new_status = "received" if all_received else "partial" if partial else po["status"]
+    
+    # Recalculate total based on actual prices
+    actual_total = sum(i.get("received_quantity", 0) * i.get("actual_unit_price", i.get("unit_price", 0)) for i in po["items"])
+    
     await db.purchase_orders.update_one({"id": po_id}, {"$set": {
-        "items": po["items"], "status": new_status, "received_at": now_iso() if all_received else None
+        "items": po["items"], 
+        "status": new_status, 
+        "actual_total": round(actual_total, 2),
+        "received_at": now_iso() if all_received else None,
+        "received_by": user["name"] if all_received else None
     }})
     return await db.purchase_orders.find_one({"id": po_id}, {"_id": 0})
 
 @api.delete("/purchase-orders/{po_id}")
 async def delete_purchase_order(po_id: str):
+    po = await db.purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if po and po.get("status") not in ["draft", "pending"]:
+        raise HTTPException(400, "Solo se pueden eliminar órdenes en borrador o pendientes")
     await db.purchase_orders.delete_one({"id": po_id})
     return {"ok": True}
 
