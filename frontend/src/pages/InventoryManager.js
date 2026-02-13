@@ -98,7 +98,7 @@ export default function InventoryManager() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [ingRes, whRes, supRes, recRes, poRes, stockRes, movRes, prodRes, alertRes] = await Promise.all([
+      const [ingRes, whRes, supRes, recRes, poRes, stockRes, movRes, prodRes, alertRes, schedRes] = await Promise.all([
         ingredientsAPI.list(),
         warehousesAPI.list(),
         suppliersAPI.list(),
@@ -108,6 +108,7 @@ export default function InventoryManager() {
         stockMovementsAPI.list({ limit: 100 }),
         productsAPI.list(),
         stockAlertsAPI.getConfig(),
+        stockAlertsAPI.getSchedulerStatus(),
       ]);
       setIngredients(ingRes.data);
       setWarehouses(whRes.data);
@@ -117,7 +118,8 @@ export default function InventoryManager() {
       setStock(stockRes.data);
       setStockMovements(movRes.data);
       setProducts(prodRes.data);
-      setAlertConfig(alertRes.data || { enabled: false, emails: [], frequency: 'daily' });
+      setAlertConfig(alertRes.data || { enabled: false, emails: [], frequency: 'daily', schedule_time: '08:00' });
+      setSchedulerStatus(schedRes.data || { active: false, next_run: null });
     } catch (e) {
       toast.error('Error al cargar datos');
     }
