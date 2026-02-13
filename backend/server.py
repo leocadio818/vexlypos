@@ -1130,6 +1130,11 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
     # Get cancellation reason for audit
     reason = await db.cancellation_reasons.find_one({"id": input.reason_id}, {"_id": 0})
     reason_name = reason.get("name", "Sin razón") if reason else "Sin razón"
+    requires_manager = reason.get("requires_manager_auth", False) if reason else False
+    
+    # Check if manager authorization is required but not provided
+    if requires_manager and not input.authorized_by_id:
+        raise HTTPException(status_code=403, detail="Esta anulación requiere autorización de gerente")
     
     items_cancelled = []
     total_value = 0
@@ -1149,14 +1154,17 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
                 "items.$.cancelled_comments": input.comments,
                 "items.$.cancelled_at": now_iso(),
                 "items.$.cancelled_by_id": user["user_id"],
-                "items.$.cancelled_by_name": user["name"]
+                "items.$.cancelled_by_name": user["name"],
+                "items.$.authorized_by_id": input.authorized_by_id,
+                "items.$.authorized_by_name": input.authorized_by_name
             }}
         )
         
         items_cancelled.append({
             "id": item_id,
             "product_name": item.get("product_name", "?"),
-            "quantity": item.get("quantity", 1)
+            "quantity": item.get("quantity", 1),
+            "unit_price": item.get("unit_price", 0)
         })
         total_value += item.get("unit_price", 0) * item.get("quantity", 1)
         
