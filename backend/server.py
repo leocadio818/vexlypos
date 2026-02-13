@@ -296,37 +296,72 @@ class SupplierInput(BaseModel):
     address: str = ""
     rnc: str = ""
 
+# ─── INGREDIENT SYSTEM ───
+class IngredientInput(BaseModel):
+    name: str
+    unit: str = "unidad"  # unidad, kg, g, lt, ml, oz
+    category: str = "general"  # general, carnes, lacteos, vegetales, bebidas, etc
+    min_stock: float = 0
+    avg_cost: float = 0
+
 class RecipeIngredientInput(BaseModel):
-    ingredient_name: str
+    ingredient_id: str
+    ingredient_name: str = ""
     quantity: float
     unit: str = "unidad"
-    cost: float = 0
+    waste_percentage: float = 0  # % de merma
 
 class RecipeInput(BaseModel):
     product_id: str
     product_name: str
     ingredients: List[RecipeIngredientInput]
     yield_quantity: float = 1
+    notes: str = ""
+
+class StockInput(BaseModel):
+    ingredient_id: str
+    warehouse_id: str
+    current_stock: float
+    min_stock: float = 0
+
+class StockMovementInput(BaseModel):
+    ingredient_id: str
+    warehouse_id: str
+    quantity: float  # positive for in, negative for out
+    movement_type: str  # purchase, sale, transfer_in, transfer_out, waste, adjustment
+    reference_id: str = ""  # PO id, order id, etc
+    notes: str = ""
+
+class StockTransferInput(BaseModel):
+    ingredient_id: str
+    from_warehouse_id: str
+    to_warehouse_id: str
+    quantity: float
+    notes: str = ""
 
 class POItemInput(BaseModel):
-    product_id: str
-    product_name: str
+    ingredient_id: str
+    ingredient_name: str = ""
     quantity: float
     unit_price: float
+    received_quantity: float = 0
 
 class PurchaseOrderInput(BaseModel):
     supplier_id: str
-    warehouse_id: str = ""
+    warehouse_id: str
     items: List[POItemInput]
     notes: str = ""
+    expected_date: str = ""
 
 class ReceivePOItemInput(BaseModel):
-    product_id: str
+    ingredient_id: str
     received_quantity: float
+    actual_unit_price: float = 0  # For cost reconciliation
 
 class ReceivePOInput(BaseModel):
     warehouse_id: str
     items: List[ReceivePOItemInput]
+    notes: str = ""
 
 class CustomerInput(BaseModel):
     name: str
@@ -334,7 +369,7 @@ class CustomerInput(BaseModel):
     email: str = ""
 
 class InventoryAdjustInput(BaseModel):
-    product_id: str
+    ingredient_id: str
     warehouse_id: str
     quantity: float
     reason: str = "Ajuste manual"
