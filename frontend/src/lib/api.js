@@ -195,6 +195,7 @@ export const stockAlertsAPI = {
   getConfig: () => api.get('/inventory/alert-config'),
   updateConfig: (data) => api.put('/inventory/alert-config', data),
   getLogs: (limit = 20) => api.get('/inventory/alert-logs', { params: { limit } }),
+  getSchedulerStatus: () => api.get('/inventory/scheduler-status'),
 };
 
 // Warehouses
