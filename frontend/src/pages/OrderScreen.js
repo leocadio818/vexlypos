@@ -356,40 +356,88 @@ export default function OrderScreen() {
   };
 
   const handleCancelItem = async () => {
-    const { itemId, itemIds, mode, selectedReasonId, returnToInventory, comments } = cancelDialog;
+    const { itemId, itemIds, mode, selectedReasonId, returnToInventory, comments, requiresManagerAuth, authorizedBy } = cancelDialog;
     
     if (!selectedReasonId) {
       toast.error('Selecciona una razón de anulación');
       return;
     }
     
+    // Check if manager auth is required but not yet provided
+    if (requiresManagerAuth && !authorizedBy) {
+      setCancelDialog(prev => ({ ...prev, showManagerPin: true, managerAuthError: '' }));
+      return;
+    }
+    
     try {
       let res;
+      const cancelData = {
+        reason_id: selectedReasonId,
+        return_to_inventory: returnToInventory,
+        comments: comments,
+        authorized_by_id: authorizedBy?.id || null,
+        authorized_by_name: authorizedBy?.name || null
+      };
+      
       if (mode === 'multiple' && itemIds.length > 0) {
         // Bulk cancellation
         res = await ordersAPI.cancelItems(order.id, {
-          item_ids: itemIds,
-          reason_id: selectedReasonId,
-          return_to_inventory: returnToInventory,
-          comments: comments
+          ...cancelData,
+          item_ids: itemIds
         });
         toast.success(`${itemIds.length} items anulados`);
       } else {
         // Single item cancellation
-        res = await ordersAPI.cancelItem(order.id, itemId, {
-          reason_id: selectedReasonId,
-          return_to_inventory: returnToInventory,
-          comments: comments
-        });
+        res = await ordersAPI.cancelItem(order.id, itemId, cancelData);
         toast.success('Item anulado');
       }
       setOrder(res.data);
-      setCancelDialog({ 
-        open: false, itemId: null, itemIds: [], mode: 'single',
-        selectedReasonId: null, returnToInventory: true, comments: ''
+      resetCancelDialog();
+    } catch (e) { 
+      const msg = e.response?.data?.detail || 'Error anulando item(s)';
+      toast.error(msg); 
+    }
+  };
+
+  const resetCancelDialog = () => {
+    setCancelDialog({ 
+      open: false, itemId: null, itemIds: [], mode: 'single',
+      selectedReasonId: null, returnToInventory: true, comments: '',
+      requiresManagerAuth: false, showManagerPin: false, managerPin: '',
+      managerAuthError: '', authorizedBy: null
+    });
+  };
+
+  // Verify manager PIN
+  const verifyManagerPin = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/verify-manager`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+        body: JSON.stringify({ pin: cancelDialog.managerPin })
       });
-    } catch { 
-      toast.error('Error anulando item(s)'); 
+      
+      if (!res.ok) {
+        const data = await res.json();
+        setCancelDialog(prev => ({ ...prev, managerAuthError: data.detail || 'PIN inválido', managerPin: '' }));
+        return;
+      }
+      
+      const data = await res.json();
+      // Manager verified, proceed with cancellation
+      setCancelDialog(prev => ({ 
+        ...prev, 
+        showManagerPin: false, 
+        managerPin: '',
+        managerAuthError: '',
+        authorizedBy: { id: data.user_id, name: data.user_name }
+      }));
+      toast.success(`Autorizado por ${data.user_name}`);
+      
+      // Auto-submit after authorization
+      setTimeout(() => handleCancelItem(), 100);
+    } catch {
+      setCancelDialog(prev => ({ ...prev, managerAuthError: 'Error verificando PIN', managerPin: '' }));
     }
   };
 
@@ -403,8 +451,13 @@ export default function OrderScreen() {
       itemIds: [], 
       mode: 'single',
       selectedReasonId: null,
-      returnToInventory: wasSent, // Default based on whether inventory was deducted
-      comments: ''
+      returnToInventory: wasSent,
+      comments: '',
+      requiresManagerAuth: false,
+      showManagerPin: false,
+      managerPin: '',
+      managerAuthError: '',
+      authorizedBy: null
     });
   };
 
@@ -421,17 +474,24 @@ export default function OrderScreen() {
       mode: 'multiple',
       selectedReasonId: null,
       returnToInventory: anyWasSent,
-      comments: ''
+      comments: '',
+      requiresManagerAuth: false,
+      showManagerPin: false,
+      managerPin: '',
+      managerAuthError: '',
+      authorizedBy: null
     });
   };
 
-  // Handle reason selection - auto-set return_to_inventory based on reason default
+  // Handle reason selection - auto-set return_to_inventory and requiresManagerAuth
   const handleReasonSelect = (reasonId) => {
     const reason = cancelReasons.find(r => r.id === reasonId);
     setCancelDialog(prev => ({
       ...prev,
       selectedReasonId: reasonId,
-      returnToInventory: reason?.return_to_inventory ?? prev.returnToInventory
+      returnToInventory: reason?.return_to_inventory ?? prev.returnToInventory,
+      requiresManagerAuth: reason?.requires_manager_auth ?? false,
+      authorizedBy: null // Reset authorization when changing reason
     }));
   };
 
