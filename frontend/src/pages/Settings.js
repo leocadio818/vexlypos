@@ -945,7 +945,7 @@ export default function Settings() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-oswald text-base font-bold">Productos</h2>
-                  <a href="/product/new"
+                  <a href="/product/new?from=products"
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold active:scale-95 transition-transform" data-testid="add-product-btn">
                     <Plus size={14} /> Nuevo Producto
                   </a>
@@ -959,7 +959,7 @@ export default function Settings() {
                       {products.filter(p => p.category_id === cat.id).map(prod => (
                         <a 
                           key={prod.id} 
-                          href={`/product/${prod.id}`}
+                          href={`/product/${prod.id}?from=products`}
                           className="flex items-center justify-between p-2 rounded bg-card/50 border border-border/50 ml-4 mb-1 hover:border-primary/50 hover:bg-card transition-colors cursor-pointer"
                           data-testid={`product-${prod.id}`}
                         >
