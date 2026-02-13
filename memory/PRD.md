@@ -77,6 +77,14 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Actualización dinámica de costos de sub-recetas cuando cambian precios de ingredientes
   - Trazabilidad completa con `parent_product_id` y `parent_recipe_id` en movimientos
   - Tipos de movimiento: sale, explosion, purchase, transfer, adjustment
+- **Producción de Sub-recetas (Batch)**:
+  - Botón "Producir" en ingredientes tipo sub-receta
+  - Diálogo para seleccionar cantidad y almacén
+  - Verificación de disponibilidad antes de producir
+  - Cálculo automático de costo de producción
+  - Consumo de ingredientes base y generación de stock de sub-receta
+  - Registro de producción con notas (ej: número de lote)
+  - Historial de producciones
 - **Tolerancia**: Liberación automática si no llegan
 
 #### Dashboard
