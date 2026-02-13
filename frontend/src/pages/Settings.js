@@ -61,7 +61,7 @@ export default function Settings() {
   const [inventarioSubTab, setInventarioSubTab] = useState('categorias');
 
   const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
-  const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round' });
+  const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round', editId: null });
   const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', return_to_inventory: true });
   const [userDialog, setUserDialog] = useState({ open: false, name: '', pin: '', role: 'waiter', editId: null, permissions: {} });
   const [payDialog, setPayDialog] = useState({ 
