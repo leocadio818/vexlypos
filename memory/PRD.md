@@ -179,13 +179,16 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 ## Changelog Reciente
 
 ### Febrero 2026
-- ✅ **Búsqueda inteligente de productos**: Barra de búsqueda en Configuración > Inventario > Productos con:
-  - Filtrado por nombre, categoría y precio
-  - Resaltado de texto coincidente
-  - Contador de resultados
-  - Efecto de foco animado
-  - Botón para limpiar búsqueda
-- 🔧 **Arreglado error de sintaxis** en Settings.js (código duplicado eliminado)
+- ✅ **Búsqueda inteligente de productos**: Barra de búsqueda en Configuración > Inventario > Productos
+- ✅ **Módulo de Inventario Maestro**: Sistema completo de gestión de inventario:
+  - CRUD de Insumos/Ingredientes con categorías y unidades
+  - Gestión de Almacenes múltiples
+  - Gestión de Proveedores con datos de contacto
+  - Recetas vinculando productos con ingredientes + % merma
+  - Stock por almacén con transferencias y ajustes
+  - Órdenes de Compra con ciclo completo y conciliación de precios
+  - Historial de movimientos de stock
+  - Nueva página: `/inventory-manager` con 6 tabs
 
 ### Diciembre 2025
 - ✅ Implementado diseño Glassmorphism en todo el sistema
