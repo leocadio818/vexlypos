@@ -3,14 +3,15 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
   ingredientsAPI, stockAPI, stockMovementsAPI, warehousesAPI, 
-  suppliersAPI, recipesAPI, purchaseOrdersAPI, productsAPI, stockAlertsAPI 
+  suppliersAPI, recipesAPI, purchaseOrdersAPI, productsAPI, stockAlertsAPI, productionAPI 
 } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { toast } from 'sonner';
 import { 
   Package, Warehouse, Truck, FileText, ArrowLeftRight, AlertTriangle,
   Plus, Pencil, Trash2, Search, X, Check, ChevronRight, ChevronDown,
-  ArrowLeft, Save, RefreshCw, Filter, Download, Upload, Mail, Bell, Send
+  ArrowLeft, Save, RefreshCw, Filter, Download, Upload, Mail, Bell, Send,
+  Factory, Play, History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
