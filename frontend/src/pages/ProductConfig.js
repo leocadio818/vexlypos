@@ -131,13 +131,21 @@ export default function ProductConfig() {
       };
 
       if (isNew) {
-        await productsAPI.create(data);
+        const result = await productsAPI.create(data);
         toast.success('Producto creado exitosamente');
+        // Reset form for creating another product, but stay on the page
+        setProduct({
+          name: '', price: '', category_id: product.category_id, // Keep category
+          active: true, modifier_group_ids: [], modifier_assignments: [],
+          button_bg_color: '#6366f1', button_text_color: '#ffffff', printed_name: ''
+        });
+        // Show option to go back to list
+        toast.info('Puedes crear otro producto o volver a la lista', { duration: 3000 });
       } else {
         await productsAPI.update(productId, data);
         toast.success('Producto actualizado exitosamente');
+        // Stay on the same product page
       }
-      navigate('/settings');
     } catch (e) {
       toast.error('Error guardando producto');
     } finally {
