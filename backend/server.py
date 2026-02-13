@@ -2192,7 +2192,7 @@ async def deduct_inventory_for_product(input: StockDeductInput, user=Depends(get
         "product_name": product.get("name", "?"),
         "quantity_deducted": input.quantity,
         "movements_count": len(result["movements"]),
-        "movements": result["movements"],
+        "movements": [{k: v for k, v in m.items() if k != "_id"} for m in result["movements"]],
         "errors": result["errors"],
         "availability_check": availability
     }
