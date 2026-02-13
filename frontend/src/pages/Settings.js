@@ -135,14 +135,24 @@ export default function Settings() {
     } catch { toast.error('Error'); }
   };
 
-  const handleAddTable = async () => {
+  const handleSaveTable = async () => {
     if (!tableDialog.number || !tableDialog.area_id) return;
     try {
-      await tablesAPI.create({ number: parseInt(tableDialog.number), area_id: tableDialog.area_id,
-        capacity: parseInt(tableDialog.capacity) || 4, shape: tableDialog.shape,
-        x: 20 + Math.random() * 60, y: 20 + Math.random() * 60 });
-      toast.success('Mesa creada');
-      setTableDialog({ open: false, number: '', area_id: '', capacity: 4, shape: 'round' }); fetchAll();
+      const data = { 
+        number: parseInt(tableDialog.number), 
+        area_id: tableDialog.area_id,
+        capacity: parseInt(tableDialog.capacity) || 4, 
+        shape: tableDialog.shape 
+      };
+      if (tableDialog.editId) {
+        await tablesAPI.update(tableDialog.editId, data);
+        toast.success('Mesa actualizada');
+      } else {
+        await tablesAPI.create({ ...data, x: 20 + Math.random() * 60, y: 20 + Math.random() * 60 });
+        toast.success('Mesa creada');
+      }
+      setTableDialog({ open: false, number: '', area_id: '', capacity: 4, shape: 'round', editId: null }); 
+      fetchAll();
     } catch { toast.error('Error'); }
   };
 
