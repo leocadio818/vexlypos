@@ -1267,6 +1267,136 @@ export default function Settings() {
                 </a>
               </div>
             )}
+
+            {/* INVENTORY CONFIG SUBTAB */}
+            {inventarioSubTab === 'config' && (
+              <div className="space-y-4 max-w-2xl">
+                <h2 className="font-oswald text-base font-bold mb-4">Configuración de Inventario</h2>
+                
+                {/* Allow Sale Without Stock Toggle */}
+                <div className="flex items-center justify-between p-4 rounded-xl bg-card border-2 border-border hover:border-primary/30 transition-colors">
+                  <div className="flex-1 pr-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertTriangle size={18} className="text-yellow-500" />
+                      <span className="text-sm font-semibold">Permitir Venta sin Stock</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Si está <strong>activado</strong>, los productos se pueden vender aunque no haya stock suficiente (inventario negativo). 
+                      Si está <strong>desactivado</strong>, los productos agotados se deshabilitan y muestran "Agotado".
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={inventorySettings.allow_sale_without_stock}
+                    onCheckedChange={async (v) => {
+                      const updated = { ...inventorySettings, allow_sale_without_stock: v };
+                      setInventorySettings(updated);
+                      setSavingInventorySettings(true);
+                      try {
+                        await inventorySettingsAPI.update(updated);
+                        toast.success(v ? 'Venta sin stock activada' : 'Control de stock activado');
+                      } catch { toast.error('Error guardando configuración'); }
+                      setSavingInventorySettings(false);
+                    }}
+                    disabled={savingInventorySettings}
+                    data-testid="toggle-allow-sale-without-stock"
+                  />
+                </div>
+
+                {/* Auto Deduct on Payment Toggle */}
+                <div className="flex items-center justify-between p-4 rounded-xl bg-card border-2 border-border hover:border-primary/30 transition-colors">
+                  <div className="flex-1 pr-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Package size={18} className="text-primary" />
+                      <span className="text-sm font-semibold">Deducir Inventario al Cobrar</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Al pagar una cuenta, el sistema descuenta automáticamente los ingredientes del inventario 
+                      según las recetas de los productos vendidos.
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={inventorySettings.auto_deduct_on_payment}
+                    onCheckedChange={async (v) => {
+                      const updated = { ...inventorySettings, auto_deduct_on_payment: v };
+                      setInventorySettings(updated);
+                      setSavingInventorySettings(true);
+                      try {
+                        await inventorySettingsAPI.update(updated);
+                        toast.success(v ? 'Deducción automática activada' : 'Deducción automática desactivada');
+                      } catch { toast.error('Error guardando configuración'); }
+                      setSavingInventorySettings(false);
+                    }}
+                    disabled={savingInventorySettings}
+                    data-testid="toggle-auto-deduct"
+                  />
+                </div>
+
+                {/* Default Warehouse Select */}
+                <div className="p-4 rounded-xl bg-card border-2 border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 size={18} className="text-primary" />
+                    <span className="text-sm font-semibold">Almacén Principal</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    El almacén desde donde se deducirá el stock cuando se cobren las ventas.
+                  </p>
+                  <select 
+                    value={inventorySettings.default_warehouse_id || ''}
+                    onChange={async (e) => {
+                      const updated = { ...inventorySettings, default_warehouse_id: e.target.value };
+                      setInventorySettings(updated);
+                      setSavingInventorySettings(true);
+                      try {
+                        await inventorySettingsAPI.update(updated);
+                        toast.success('Almacén principal actualizado');
+                      } catch { toast.error('Error guardando configuración'); }
+                      setSavingInventorySettings(false);
+                    }}
+                    disabled={savingInventorySettings}
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:border-primary"
+                    data-testid="select-default-warehouse"
+                  >
+                    <option value="">-- Seleccionar Almacén --</option>
+                    {warehouses.map(wh => (
+                      <option key={wh.id} value={wh.id}>{wh.name}</option>
+                    ))}
+                  </select>
+                  {warehouses.length === 0 && (
+                    <p className="text-[10px] text-yellow-500 mt-2">
+                      No hay almacenes creados. Ve a Inventario Maestro para crear uno.
+                    </p>
+                  )}
+                </div>
+
+                {/* Show Stock Alerts Toggle */}
+                <div className="flex items-center justify-between p-4 rounded-xl bg-card border-2 border-border hover:border-primary/30 transition-colors">
+                  <div className="flex-1 pr-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertTriangle size={18} className="text-orange-500" />
+                      <span className="text-sm font-semibold">Mostrar Alertas de Stock Bajo</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Muestra indicadores visuales en los productos cuando el stock está por debajo del mínimo.
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={inventorySettings.show_stock_alerts}
+                    onCheckedChange={async (v) => {
+                      const updated = { ...inventorySettings, show_stock_alerts: v };
+                      setInventorySettings(updated);
+                      setSavingInventorySettings(true);
+                      try {
+                        await inventorySettingsAPI.update(updated);
+                        toast.success(v ? 'Alertas de stock activadas' : 'Alertas de stock desactivadas');
+                      } catch { toast.error('Error guardando configuración'); }
+                      setSavingInventorySettings(false);
+                    }}
+                    disabled={savingInventorySettings}
+                    data-testid="toggle-stock-alerts"
+                  />
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* PRINT CHANNELS */}
