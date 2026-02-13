@@ -77,6 +77,7 @@ export default function InventoryManager() {
   const [alertDialog, setAlertDialog] = useState({ open: false });
   const [lowStockItems, setLowStockItems] = useState([]);
   const [sendingAlert, setSendingAlert] = useState(false);
+  const [schedulerStatus, setSchedulerStatus] = useState({ active: false, next_run: null });
   
   // Search/filter states
   const [ingredientSearch, setIngredientSearch] = useState('');
