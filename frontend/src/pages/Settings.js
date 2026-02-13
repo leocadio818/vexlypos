@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { areasAPI, tablesAPI, reasonsAPI, categoriesAPI, productsAPI } from '@/lib/api';
+import { areasAPI, tablesAPI, reasonsAPI, categoriesAPI, productsAPI, inventorySettingsAPI, warehousesAPI } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil, Printer, ShoppingBag, Cog, BarChart3, Truck, Heart, Percent, ChevronRight, Banknote, X, Check, Smartphone, Building2, DollarSign, Euro, Palette, GripVertical, RotateCcw, ListChecks, CirclePlus, Search, Sparkles } from 'lucide-react';
