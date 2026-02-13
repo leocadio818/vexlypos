@@ -135,9 +135,22 @@ export default function ProductConfig() {
         toast.success('Producto creado exitosamente');
         // Reset form for creating another product, but stay on the page
         setProduct({
-          name: '', price: '', category_id: product.category_id, // Keep category
-          active: true, modifier_group_ids: [], modifier_assignments: [],
-          button_bg_color: '#6366f1', button_text_color: '#ffffff', printed_name: ''
+          name: '', 
+          price: '', 
+          price_a: '',
+          price_b: '',
+          price_c: '',
+          price_d: '',
+          price_e: '',
+          category_id: product.category_id, // Keep category
+          report_category_id: product.report_category_id,
+          active: true, 
+          modifier_group_ids: [], 
+          modifier_assignments: [],
+          button_bg_color: '#6366f1', 
+          button_text_color: '#ffffff', 
+          printed_name: '',
+          track_inventory: false
         });
         // Show option to go back to list
         toast.info('Puedes crear otro producto o volver a la lista', { duration: 3000 });
