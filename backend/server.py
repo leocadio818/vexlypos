@@ -613,6 +613,28 @@ async def create_category(input: CategoryInput):
     await db.categories.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
+@api.put("/categories/{cat_id}")
+async def update_category(cat_id: str, input: dict):
+    existing = await db.categories.find_one({"id": cat_id})
+    if not existing:
+        raise HTTPException(404, "Category not found")
+    update_data = {k: v for k, v in input.items() if k not in ["id", "_id"]}
+    await db.categories.update_one({"id": cat_id}, {"$set": update_data})
+    updated = await db.categories.find_one({"id": cat_id}, {"_id": 0})
+    return updated
+
+@api.delete("/categories/{cat_id}")
+async def delete_category(cat_id: str):
+    existing = await db.categories.find_one({"id": cat_id})
+    if not existing:
+        raise HTTPException(404, "Category not found")
+    # Check if any products use this category
+    products_count = await db.products.count_documents({"category_id": cat_id})
+    if products_count > 0:
+        raise HTTPException(400, f"No se puede eliminar: {products_count} productos usan esta categoría")
+    await db.categories.delete_one({"id": cat_id})
+    return {"status": "deleted"}
+
 # ─── PRODUCTS ───
 @api.get("/products")
 async def list_products(category_id: Optional[str] = Query(None)):
