@@ -232,6 +232,14 @@ export const inventoryExplosionAPI = {
   checkAvailability: (data) => api.post('/inventory/check-availability', data),
 };
 
+// Sub-recipe Production
+export const productionAPI = {
+  listSubrecipes: () => api.get('/inventory/subrecipes'),
+  checkProduction: (data) => api.post('/inventory/check-production', data),
+  produce: (data) => api.post('/inventory/produce', data),
+  getHistory: (params) => api.get('/inventory/production-history', { params }),
+};
+
 // Purchase Orders
 export const purchaseOrdersAPI = {
   list: (params) => api.get('/purchase-orders', { params }),
