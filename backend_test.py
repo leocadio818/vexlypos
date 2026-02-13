@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 class POS_Phase10_Tester:
-    def __init__(self, base_url="https://glassui-restaurant.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://payment-flow-mobile.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
