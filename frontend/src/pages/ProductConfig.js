@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { productsAPI, categoriesAPI, modifiersAPI, reportCategoriesAPI } from '@/lib/api';
 import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,7 +19,17 @@ const PRESET_COLORS = [
 export default function ProductConfig() {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isNew = productId === 'new';
+  const fromProducts = searchParams.get('from') === 'products';
+
+  const handleGoBack = () => {
+    if (fromProducts) {
+      navigate('/settings?tab=inventario&subtab=productos');
+    } else {
+      navigate(-1);
+    }
+  };
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
