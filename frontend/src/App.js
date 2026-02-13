@@ -11,6 +11,7 @@ import PaymentScreen from "@/pages/PaymentScreen";
 import CashRegister from "@/pages/CashRegister";
 import Settings from "@/pages/Settings";
 import Inventory from "@/pages/Inventory";
+import InventoryManager from "@/pages/InventoryManager";
 import Suppliers from "@/pages/Suppliers";
 import Reports from "@/pages/Reports";
 import Customers from "@/pages/Customers";
