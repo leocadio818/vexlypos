@@ -2886,7 +2886,7 @@ async def update_inventory_settings(input: dict):
     )
     return {"ok": True}
 
-@api.get("/products/stock-status")
+@api.get("/inventory/products-stock")
 async def get_products_stock_status(warehouse_id: Optional[str] = Query(None)):
     """Get stock status for all products (for POS display)"""
     config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
