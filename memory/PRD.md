@@ -94,6 +94,14 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Botón "Producir Ahora" para acción rápida
   - Historial de producciones recientes con fecha, cantidad, costo y notas
 - **Tolerancia**: Liberación automática si no llegan
+- **Control de Stock en Ventas (NUEVO - Febrero 2026)**:
+  - Toggle "Permitir Venta sin Stock" en Configuración > Inventario > Config
+  - Cuando está desactivado, productos sin stock muestran badge "Agotado" y botón deshabilitado
+  - Toggle "Deducir Inventario al Cobrar" para auto-deducción al pagar
+  - Selector de "Almacén Principal" para definir origen del stock
+  - Toggle "Mostrar Alertas de Stock Bajo" para indicadores visuales
+  - Endpoint `/api/inventory/products-stock` para consultar estado de stock de todos los productos
+  - Explosión automática de inventario al pagar factura cuando hay receta
 
 #### Dashboard
 - **KPIs en Tiempo Real**: Ventas, efectivo, tarjeta, propinas
