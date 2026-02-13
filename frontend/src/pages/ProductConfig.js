@@ -37,6 +37,9 @@ export default function ProductConfig() {
   const [reportCategories, setReportCategories] = useState([]);
   const [modifierGroups, setModifierGroups] = useState([]);
   const [activeTab, setActiveTab] = useState('general');
+  
+  // Price keypad state
+  const [priceKeypad, setPriceKeypad] = useState({ open: false, field: null, value: '' });
 
   // Product form state
   const [product, setProduct] = useState({
