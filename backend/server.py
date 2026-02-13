@@ -2860,6 +2860,176 @@ async def update_system_config(input: dict):
 async def get_timezone_options():
     return TIMEZONE_OPTIONS
 
+# ─── INVENTORY SETTINGS ───
+@api.get("/inventory/settings")
+async def get_inventory_settings():
+    """Get inventory configuration"""
+    config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+    return config or {
+        "id": "inventory_settings",
+        "allow_sale_without_stock": False,
+        "auto_deduct_on_payment": True,
+        "default_warehouse_id": "",
+        "show_stock_alerts": True
+    }
+
+@api.put("/inventory/settings")
+async def update_inventory_settings(input: dict):
+    """Update inventory configuration"""
+    if "_id" in input: del input["_id"]
+    input["id"] = "inventory_settings"
+    input["updated_at"] = now_iso()
+    await db.system_config.update_one(
+        {"id": "inventory_settings"}, 
+        {"$set": input}, 
+        upsert=True
+    )
+    return {"ok": True}
+
+@api.get("/products/stock-status")
+async def get_products_stock_status(warehouse_id: Optional[str] = Query(None)):
+    """Get stock status for all products (for POS display)"""
+    config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+    allow_negative = config.get("allow_sale_without_stock", False) if config else False
+    
+    # Get default warehouse if not specified
+    if not warehouse_id:
+        warehouse_id = config.get("default_warehouse_id", "") if config else ""
+        if not warehouse_id:
+            wh = await db.warehouses.find_one({}, {"_id": 0})
+            warehouse_id = wh["id"] if wh else ""
+    
+    products = await db.products.find({"active": True}, {"_id": 0}).to_list(500)
+    result = []
+    
+    for product in products:
+        recipe = await db.recipes.find_one({"product_id": product["id"]}, {"_id": 0})
+        
+        stock_status = {
+            "product_id": product["id"],
+            "name": product.get("name", "?"),
+            "has_recipe": recipe is not None,
+            "in_stock": True,
+            "available_quantity": float('inf'),  # No limit if no recipe
+            "is_low_stock": False,
+            "needs_reorder": False
+        }
+        
+        if recipe and warehouse_id:
+            # Check availability through recipe
+            availability = await check_recipe_availability(recipe, warehouse_id, 1)
+            stock_status["in_stock"] = availability["available"] or allow_negative
+            stock_status["missing_ingredients"] = availability.get("missing", [])
+            
+            # Calculate how many can be made
+            if availability["available"]:
+                # Simple heuristic: check each ingredient
+                min_available = float('inf')
+                for ing in recipe.get("ingredients", []):
+                    ing_id = ing.get("ingredient_id")
+                    if not ing_id:
+                        continue
+                    ingredient = await db.ingredients.find_one({"id": ing_id}, {"_id": 0})
+                    if not ingredient:
+                        continue
+                    
+                    stock_doc = await db.stock.find_one(
+                        {"ingredient_id": ing_id, "warehouse_id": warehouse_id},
+                        {"_id": 0}
+                    )
+                    current = stock_doc.get("current_stock", 0) if stock_doc else 0
+                    required = ing.get("quantity", 0)
+                    if required > 0:
+                        can_make = current / required
+                        min_available = min(min_available, can_make)
+                        
+                        # Check if needs reorder
+                        min_stock = ingredient.get("min_stock", 0)
+                        if current <= min_stock:
+                            stock_status["needs_reorder"] = True
+                            stock_status["is_low_stock"] = True
+                
+                stock_status["available_quantity"] = int(min_available) if min_available != float('inf') else 0
+            else:
+                stock_status["available_quantity"] = 0
+        
+        result.append(stock_status)
+    
+    return result
+
+@api.get("/products/{product_id}/stock-status")
+async def get_product_stock_status(product_id: str, warehouse_id: Optional[str] = Query(None)):
+    """Get stock status for a specific product"""
+    config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+    allow_negative = config.get("allow_sale_without_stock", False) if config else False
+    
+    if not warehouse_id:
+        warehouse_id = config.get("default_warehouse_id", "") if config else ""
+        if not warehouse_id:
+            wh = await db.warehouses.find_one({}, {"_id": 0})
+            warehouse_id = wh["id"] if wh else ""
+    
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(404, "Producto no encontrado")
+    
+    recipe = await db.recipes.find_one({"product_id": product_id}, {"_id": 0})
+    
+    if not recipe:
+        return {
+            "product_id": product_id,
+            "in_stock": True,
+            "can_sell": True,
+            "message": "Sin receta - siempre disponible"
+        }
+    
+    if not warehouse_id:
+        return {
+            "product_id": product_id,
+            "in_stock": True,
+            "can_sell": allow_negative,
+            "message": "Sin almacén configurado"
+        }
+    
+    availability = await check_recipe_availability(recipe, warehouse_id, 1)
+    
+    return {
+        "product_id": product_id,
+        "in_stock": availability["available"],
+        "can_sell": availability["available"] or allow_negative,
+        "missing": availability.get("missing", []),
+        "requires_explosion": availability.get("requires_explosion", False)
+    }
+
+# ─── REORDER ALERTS ───
+@api.get("/inventory/reorder-alerts")
+async def get_reorder_alerts():
+    """Get products that need to be reordered (stock at or below minimum)"""
+    ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
+    alerts = []
+    
+    for ing in ingredients:
+        # Get total stock
+        stock_docs = await db.stock.find({"ingredient_id": ing["id"]}, {"_id": 0}).to_list(50)
+        total_stock = sum(s.get("current_stock", 0) for s in stock_docs)
+        min_stock = ing.get("min_stock", 0)
+        
+        if total_stock <= min_stock:
+            alerts.append({
+                "ingredient_id": ing["id"],
+                "name": ing["name"],
+                "unit": ing.get("unit", "unidad"),
+                "category": ing.get("category", "general"),
+                "current_stock": total_stock,
+                "min_stock": min_stock,
+                "deficit": min_stock - total_stock,
+                "suggested_order": max(min_stock * 2 - total_stock, min_stock),  # Order to reach 2x minimum
+                "is_subrecipe": ing.get("is_subrecipe", False),
+                "avg_cost": ing.get("avg_cost", 0)
+            })
+    
+    return sorted(alerts, key=lambda x: x["deficit"], reverse=True)
+
 # ─── THEME CONFIG (Glassmorphism) ───
 DEFAULT_THEME = {
     "gradientStart": "#0f0f23",
