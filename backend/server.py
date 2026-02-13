@@ -3498,6 +3498,155 @@ async def seed_data():
     return {"message": "Datos sembrados exitosamente", "seeded": True,
             "users": [{"name": u["name"], "role": u["role"]} for u in users]}
 
+# ─── SCHEDULED STOCK ALERT JOB ───
+async def scheduled_stock_alert_job():
+    """Background job to check and send stock alerts"""
+    try:
+        # Get config
+        config = await db.system_config.find_one({"id": "stock_alerts"}, {"_id": 0})
+        if not config or not config.get("enabled"):
+            return
+        
+        alert_emails = config.get("emails", [])
+        if not alert_emails or not resend.api_key:
+            return
+        
+        # Get all ingredients and check stock
+        ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
+        
+        low_stock_items = []
+        for ing in ingredients:
+            stock_docs = await db.stock.find({"ingredient_id": ing["id"]}, {"_id": 0}).to_list(50)
+            total_stock = sum(s.get("current_stock", 0) for s in stock_docs)
+            min_stock = ing.get("min_stock", 0)
+            
+            if total_stock <= min_stock:
+                low_stock_items.append({
+                    "ingredient_id": ing["id"],
+                    "name": ing["name"],
+                    "unit": ing.get("unit", "unidad"),
+                    "category": ing.get("category", "general"),
+                    "current_stock": total_stock,
+                    "min_stock": min_stock,
+                    "deficit": min_stock - total_stock
+                })
+        
+        if not low_stock_items:
+            return  # Nothing to alert
+        
+        # Build HTML email
+        items_html = ""
+        for item in low_stock_items:
+            color = "#dc2626" if item["current_stock"] == 0 else "#f59e0b"
+            items_html += f"""<tr>
+                <td style='padding:8px;border-bottom:1px solid #333;'>{item['name']}</td>
+                <td style='padding:8px;border-bottom:1px solid #333;'>{item['category']}</td>
+                <td style='padding:8px;border-bottom:1px solid #333;text-align:center;color:{color};font-weight:bold;'>{item['current_stock']:.2f} {item['unit']}</td>
+                <td style='padding:8px;border-bottom:1px solid #333;text-align:center;'>{item['min_stock']:.2f} {item['unit']}</td>
+            </tr>"""
+        
+        html = f"""
+        <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#1a1a2e;color:#eee;padding:20px;border-radius:10px;'>
+            <div style='border-bottom:2px solid #FF6600;padding-bottom:15px;margin-bottom:20px;'>
+                <h2 style='color:#FF6600;margin:0;'>⚠️ Alerta Programada de Stock Bajo</h2>
+                <p style='color:#888;margin:5px 0 0;font-size:14px;'>Mesa POS RD - Reporte Automático</p>
+            </div>
+            <p style='margin-bottom:15px;'>Se detectaron <strong style='color:#FF6600;'>{len(low_stock_items)}</strong> insumos por debajo del stock mínimo:</p>
+            <table style='width:100%;border-collapse:collapse;background:#252542;border-radius:8px;overflow:hidden;'>
+                <thead>
+                    <tr style='background:#FF6600;color:white;'>
+                        <th style='padding:10px;text-align:left;'>Insumo</th>
+                        <th style='padding:10px;text-align:left;'>Categoría</th>
+                        <th style='padding:10px;text-align:center;'>Stock Actual</th>
+                        <th style='padding:10px;text-align:center;'>Stock Mínimo</th>
+                    </tr>
+                </thead>
+                <tbody>{items_html}</tbody>
+            </table>
+            <div style='margin-top:20px;padding:15px;background:#252542;border-radius:8px;border-left:4px solid #FF6600;'>
+                <p style='margin:0;font-size:14px;'><strong>Acción recomendada:</strong> Crear una orden de compra para reponer estos insumos.</p>
+            </div>
+            <p style='margin-top:20px;font-size:12px;color:#666;text-align:center;'>
+                Reporte automático generado el {now_iso()[:19].replace('T', ' ')}
+            </p>
+        </div>
+        """
+        
+        for email in alert_emails:
+            params = {
+                "from": SENDER_EMAIL, 
+                "to": [email], 
+                "subject": f"⚠️ Alerta Programada: {len(low_stock_items)} items con stock bajo", 
+                "html": html
+            }
+            await asyncio.to_thread(resend.Emails.send, params)
+        
+        # Log
+        await db.stock_alert_logs.insert_one({
+            "id": gen_id(),
+            "type": "scheduled",
+            "item_count": len(low_stock_items),
+            "emails_sent": alert_emails,
+            "sent_at": now_iso()
+        })
+        
+        logger.info(f"Scheduled stock alert sent: {len(low_stock_items)} items to {len(alert_emails)} recipients")
+        
+    except Exception as e:
+        logger.error(f"Scheduled stock alert error: {e}")
+
+def setup_stock_alert_schedule():
+    """Setup or update the scheduled job based on config"""
+    # Remove existing job if any
+    if scheduler.get_job("stock_alert"):
+        scheduler.remove_job("stock_alert")
+
+async def update_scheduler_from_config():
+    """Read config from DB and update scheduler"""
+    config = await db.system_config.find_one({"id": "stock_alerts"}, {"_id": 0})
+    if not config or not config.get("enabled"):
+        if scheduler.get_job("stock_alert"):
+            scheduler.remove_job("stock_alert")
+        return
+    
+    schedule_time = config.get("schedule_time", "08:00")
+    try:
+        hour, minute = map(int, schedule_time.split(":"))
+    except:
+        hour, minute = 8, 0
+    
+    # Remove old job
+    if scheduler.get_job("stock_alert"):
+        scheduler.remove_job("stock_alert")
+    
+    # Add new job
+    scheduler.add_job(
+        scheduled_stock_alert_job,
+        CronTrigger(hour=hour, minute=minute),
+        id="stock_alert",
+        replace_existing=True
+    )
+    logger.info(f"Stock alert scheduled for {hour:02d}:{minute:02d}")
+
+@api.post("/inventory/alert-config/schedule")
+async def update_alert_schedule():
+    """Update scheduler after config change"""
+    await update_scheduler_from_config()
+    return {"ok": True, "message": "Scheduler actualizado"}
+
+@api.get("/inventory/scheduler-status")
+async def get_scheduler_status():
+    """Get current scheduler status"""
+    job = scheduler.get_job("stock_alert")
+    if job:
+        next_run = job.next_run_time.isoformat() if job.next_run_time else None
+        return {
+            "active": True,
+            "job_id": job.id,
+            "next_run": next_run
+        }
+    return {"active": False, "job_id": None, "next_run": None}
+
 # ─── APP CONFIG ───
 app.include_router(api)
 app.add_middleware(
