@@ -2087,9 +2087,21 @@ async def check_recipe_availability(recipe: dict, warehouse_id: str, quantity: f
     yield_qty = recipe.get("yield_quantity", 1) or 1
     
     for ing in recipe.get("ingredients", []):
-        ingredient = await db.ingredients.find_one({"id": ing["ingredient_id"]}, {"_id": 0})
+        # Handle both ingredient_id and ingredient_name (legacy)
+        ingredient_id = ing.get("ingredient_id")
+        ingredient_name = ing.get("ingredient_name", "")
+        
+        ingredient = None
+        if ingredient_id:
+            ingredient = await db.ingredients.find_one({"id": ingredient_id}, {"_id": 0})
+        
+        # If no ingredient found by id, this is a legacy recipe with just names
+        if not ingredient and ingredient_name:
+            # Legacy recipe - skip ingredient tracking
+            continue
+        
         if not ingredient:
-            missing.append({"name": ing.get("ingredient_name", "?"), "required": 0, "available": 0, "reason": "no_existe"})
+            missing.append({"name": ingredient_name or "?", "required": 0, "available": 0, "reason": "no_existe"})
             continue
         
         base_quantity = ing.get("quantity", 0)
