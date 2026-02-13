@@ -935,28 +935,313 @@ async def update_order_item(order_id: str, item_id: str, input: dict):
     )
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
+# ─── HELPER: Restore inventory from recipe ───
+async def restore_inventory_for_item(item: dict, warehouse_id: str, user_id: str, user_name: str, order_id: str):
+    """Restore inventory for a cancelled item using recipe explosion logic"""
+    recipe = await db.recipes.find_one({"product_id": item["product_id"]}, {"_id": 0})
+    if not recipe:
+        return  # No recipe, nothing to restore
+    
+    quantity = item.get("quantity", 1)
+    
+    for recipe_ing in recipe.get("ingredients", []):
+        ing_id = recipe_ing.get("ingredient_id")
+        required_qty = recipe_ing.get("quantity", 0)
+        waste_pct = recipe_ing.get("waste_percentage", 0)
+        
+        if not ing_id or required_qty <= 0:
+            continue
+        
+        ingredient = await db.ingredients.find_one({"id": ing_id}, {"_id": 0})
+        if not ingredient:
+            continue
+        
+        # Calculate restore amount including waste
+        restore_amount = required_qty * quantity * (1 + waste_pct / 100)
+        
+        # Check if this is a sub-recipe
+        if ingredient.get("is_subrecipe") and ingredient.get("recipe_id"):
+            # Restore sub-recipe stock
+            await db.stock.update_one(
+                {"ingredient_id": ing_id, "warehouse_id": warehouse_id},
+                {"$inc": {"current_stock": restore_amount}},
+                upsert=True
+            )
+        else:
+            # Restore regular ingredient
+            await db.stock.update_one(
+                {"ingredient_id": ing_id, "warehouse_id": warehouse_id},
+                {"$inc": {"current_stock": restore_amount}},
+                upsert=True
+            )
+        
+        # Log the stock movement as restoration
+        movement = {
+            "id": gen_id(),
+            "ingredient_id": ing_id,
+            "ingredient_name": ingredient.get("name", "?"),
+            "warehouse_id": warehouse_id,
+            "quantity": restore_amount,
+            "type": "void_restoration",
+            "reason": "Item cancelled - inventory restored",
+            "parent_product_id": item["product_id"],
+            "order_id": order_id,
+            "user_id": user_id,
+            "user_name": user_name,
+            "created_at": now_iso()
+        }
+        await db.stock_movements.insert_one(movement)
+
 @api.post("/orders/{order_id}/cancel-item/{item_id}")
-async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput):
+async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput, user: dict = Depends(get_current_user)):
+    """Cancel a single order item with optional inventory restoration and audit logging"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    item = next((i for i in order["items"] if i["id"] == item_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item no encontrado")
+    
+    # Get cancellation reason for audit
+    reason = await db.cancellation_reasons.find_one({"id": input.reason_id}, {"_id": 0})
+    reason_name = reason.get("name", "Sin razón") if reason else "Sin razón"
+    
+    # Update item status
     await db.orders.update_one(
         {"id": order_id, "items.id": item_id},
         {"$set": {
             "items.$.status": "cancelled",
             "items.$.cancelled_reason_id": input.reason_id,
             "items.$.return_to_inventory": input.return_to_inventory,
+            "items.$.cancelled_comments": input.comments,
+            "items.$.cancelled_at": now_iso(),
+            "items.$.cancelled_by_id": user["user_id"],
+            "items.$.cancelled_by_name": user["name"],
             "updated_at": now_iso()
         }}
     )
-    if input.return_to_inventory:
-        order = await db.orders.find_one({"id": order_id}, {"_id": 0})
-        if order:
-            item = next((i for i in order["items"] if i["id"] == item_id), None)
-            if item:
-                await db.inventory.update_one(
-                    {"product_id": item["product_id"]},
-                    {"$inc": {"stock": item["quantity"]}},
-                    upsert=True
-                )
+    
+    # Check if item was already sent to kitchen (inventory was deducted)
+    item_was_sent = item.get("status") == "sent" or item.get("sent_to_kitchen", False)
+    inventory_was_deducted = item.get("inventory_deducted", False) or item_was_sent
+    
+    # Only restore inventory if it was previously deducted AND user selected return_to_inventory
+    if input.return_to_inventory and inventory_was_deducted:
+        inventory_config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+        default_warehouse = inventory_config.get("default_warehouse_id", "") if inventory_config else ""
+        if not default_warehouse:
+            wh = await db.warehouses.find_one({}, {"_id": 0})
+            default_warehouse = wh["id"] if wh else ""
+        
+        if default_warehouse:
+            await restore_inventory_for_item(
+                item=item,
+                warehouse_id=default_warehouse,
+                user_id=user["user_id"],
+                user_name=user["name"],
+                order_id=order_id
+            )
+    
+    # ─── CREATE AUDIT LOG ───
+    audit_log = {
+        "id": gen_id(),
+        "order_id": order_id,
+        "item_id": item_id,
+        "item_ids": [item_id],
+        "product_id": item.get("product_id"),
+        "product_name": item.get("product_name", "?"),
+        "quantity": item.get("quantity", 1),
+        "unit_price": item.get("unit_price", 0),
+        "user_id": user["user_id"],
+        "user_name": user["name"],
+        "reason_id": input.reason_id,
+        "reason": reason_name,
+        "restored_to_inventory": input.return_to_inventory and inventory_was_deducted,
+        "was_inventory_deducted": inventory_was_deducted,
+        "comments": input.comments,
+        "void_type": "single_item",
+        "created_at": now_iso()
+    }
+    await db.void_audit_logs.insert_one(audit_log)
+    
+    # If not restoring inventory but it was deducted, log as waste
+    if not input.return_to_inventory and inventory_was_deducted:
+        recipe = await db.recipes.find_one({"product_id": item["product_id"]}, {"_id": 0})
+        if recipe:
+            inventory_config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+            default_warehouse = inventory_config.get("default_warehouse_id", "") if inventory_config else ""
+            if not default_warehouse:
+                wh = await db.warehouses.find_one({}, {"_id": 0})
+                default_warehouse = wh["id"] if wh else ""
+            
+            if default_warehouse:
+                for recipe_ing in recipe.get("ingredients", []):
+                    ing_id = recipe_ing.get("ingredient_id")
+                    required_qty = recipe_ing.get("quantity", 0)
+                    if not ing_id or required_qty <= 0:
+                        continue
+                    ingredient = await db.ingredients.find_one({"id": ing_id}, {"_id": 0})
+                    if not ingredient:
+                        continue
+                    waste_amount = required_qty * item.get("quantity", 1)
+                    # Log as waste movement (no stock change, just record)
+                    movement = {
+                        "id": gen_id(),
+                        "ingredient_id": ing_id,
+                        "ingredient_name": ingredient.get("name", "?"),
+                        "warehouse_id": default_warehouse,
+                        "quantity": -waste_amount,
+                        "type": "waste",
+                        "reason": f"Anulación: {reason_name}",
+                        "parent_product_id": item["product_id"],
+                        "order_id": order_id,
+                        "user_id": user["user_id"],
+                        "user_name": user["name"],
+                        "created_at": now_iso()
+                    }
+                    await db.stock_movements.insert_one(movement)
+    
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
+
+@api.post("/orders/{order_id}/cancel-items")
+async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dict = Depends(get_current_user)):
+    """Cancel multiple order items at once with optional inventory restoration and audit logging"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    # Get cancellation reason for audit
+    reason = await db.cancellation_reasons.find_one({"id": input.reason_id}, {"_id": 0})
+    reason_name = reason.get("name", "Sin razón") if reason else "Sin razón"
+    
+    items_cancelled = []
+    total_value = 0
+    
+    for item_id in input.item_ids:
+        item = next((i for i in order["items"] if i["id"] == item_id), None)
+        if not item:
+            continue
+        
+        # Update item status
+        await db.orders.update_one(
+            {"id": order_id, "items.id": item_id},
+            {"$set": {
+                "items.$.status": "cancelled",
+                "items.$.cancelled_reason_id": input.reason_id,
+                "items.$.return_to_inventory": input.return_to_inventory,
+                "items.$.cancelled_comments": input.comments,
+                "items.$.cancelled_at": now_iso(),
+                "items.$.cancelled_by_id": user["user_id"],
+                "items.$.cancelled_by_name": user["name"]
+            }}
+        )
+        
+        items_cancelled.append({
+            "id": item_id,
+            "product_name": item.get("product_name", "?"),
+            "quantity": item.get("quantity", 1)
+        })
+        total_value += item.get("unit_price", 0) * item.get("quantity", 1)
+        
+        # Check if item was sent (inventory was deducted)
+        item_was_sent = item.get("status") == "sent" or item.get("sent_to_kitchen", False)
+        inventory_was_deducted = item.get("inventory_deducted", False) or item_was_sent
+        
+        # Handle inventory restoration or waste logging
+        if inventory_was_deducted:
+            inventory_config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+            default_warehouse = inventory_config.get("default_warehouse_id", "") if inventory_config else ""
+            if not default_warehouse:
+                wh = await db.warehouses.find_one({}, {"_id": 0})
+                default_warehouse = wh["id"] if wh else ""
+            
+            if default_warehouse:
+                if input.return_to_inventory:
+                    await restore_inventory_for_item(
+                        item=item,
+                        warehouse_id=default_warehouse,
+                        user_id=user["user_id"],
+                        user_name=user["name"],
+                        order_id=order_id
+                    )
+                else:
+                    # Log as waste
+                    recipe = await db.recipes.find_one({"product_id": item["product_id"]}, {"_id": 0})
+                    if recipe:
+                        for recipe_ing in recipe.get("ingredients", []):
+                            ing_id = recipe_ing.get("ingredient_id")
+                            required_qty = recipe_ing.get("quantity", 0)
+                            if not ing_id or required_qty <= 0:
+                                continue
+                            ingredient = await db.ingredients.find_one({"id": ing_id}, {"_id": 0})
+                            if not ingredient:
+                                continue
+                            waste_amount = required_qty * item.get("quantity", 1)
+                            movement = {
+                                "id": gen_id(),
+                                "ingredient_id": ing_id,
+                                "ingredient_name": ingredient.get("name", "?"),
+                                "warehouse_id": default_warehouse,
+                                "quantity": -waste_amount,
+                                "type": "waste",
+                                "reason": f"Anulación múltiple: {reason_name}",
+                                "parent_product_id": item["product_id"],
+                                "order_id": order_id,
+                                "user_id": user["user_id"],
+                                "user_name": user["name"],
+                                "created_at": now_iso()
+                            }
+                            await db.stock_movements.insert_one(movement)
+    
+    await db.orders.update_one({"id": order_id}, {"$set": {"updated_at": now_iso()}})
+    
+    # ─── CREATE BULK AUDIT LOG ───
+    audit_log = {
+        "id": gen_id(),
+        "order_id": order_id,
+        "item_id": None,
+        "item_ids": input.item_ids,
+        "items_cancelled": items_cancelled,
+        "total_value": total_value,
+        "user_id": user["user_id"],
+        "user_name": user["name"],
+        "reason_id": input.reason_id,
+        "reason": reason_name,
+        "restored_to_inventory": input.return_to_inventory,
+        "comments": input.comments,
+        "void_type": "multiple_items",
+        "created_at": now_iso()
+    }
+    await db.void_audit_logs.insert_one(audit_log)
+    
+    return await db.orders.find_one({"id": order_id}, {"_id": 0})
+
+# ─── GET VOID AUDIT LOGS ───
+@api.get("/void-audit-logs")
+async def list_void_audit_logs(
+    order_id: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
+    from_date: Optional[str] = Query(None),
+    to_date: Optional[str] = Query(None),
+    limit: int = Query(100)
+):
+    """Get void audit logs with optional filters"""
+    query = {}
+    if order_id:
+        query["order_id"] = order_id
+    if user_id:
+        query["user_id"] = user_id
+    if from_date:
+        query["created_at"] = {"$gte": from_date}
+    if to_date:
+        if "created_at" in query:
+            query["created_at"]["$lte"] = to_date
+        else:
+            query["created_at"] = {"$lte": to_date}
+    
+    logs = await db.void_audit_logs.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
+    return logs
 
 @api.post("/orders/{order_id}/send-kitchen")
 async def send_to_kitchen(order_id: str, user: dict = Depends(get_current_user)):
