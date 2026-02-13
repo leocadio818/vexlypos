@@ -162,4 +162,68 @@ export const tableMovementsAPI = {
   stats: (date) => api.get('/reports/table-movements/stats', { params: date ? { date } : {} }),
 };
 
+// ─── INVENTORY MANAGEMENT ───
+
+// Ingredients
+export const ingredientsAPI = {
+  list: (category) => api.get('/ingredients', { params: category ? { category } : {} }),
+  get: (id) => api.get(`/ingredients/${id}`),
+  create: (data) => api.post('/ingredients', data),
+  update: (id, data) => api.put(`/ingredients/${id}`, data),
+  delete: (id) => api.delete(`/ingredients/${id}`),
+};
+
+// Stock
+export const stockAPI = {
+  list: (params) => api.get('/stock', { params }),
+  byIngredient: (ingredientId) => api.get(`/stock/by-ingredient/${ingredientId}`),
+  upsert: (data) => api.post('/stock', data),
+  transfer: (data) => api.post('/stock/transfer', data),
+  waste: (data) => api.post('/stock/waste', data),
+  adjust: (data) => api.post('/inventory/adjust', data),
+  alerts: () => api.get('/inventory/alerts'),
+};
+
+// Stock Movements
+export const stockMovementsAPI = {
+  list: (params) => api.get('/stock-movements', { params }),
+};
+
+// Warehouses
+export const warehousesAPI = {
+  list: () => api.get('/warehouses'),
+  create: (data) => api.post('/warehouses', data),
+  update: (id, data) => api.put(`/warehouses/${id}`, data),
+  delete: (id) => api.delete(`/warehouses/${id}`),
+};
+
+// Suppliers
+export const suppliersAPI = {
+  list: () => api.get('/suppliers'),
+  get: (id) => api.get(`/suppliers/${id}`),
+  create: (data) => api.post('/suppliers', data),
+  update: (id, data) => api.put(`/suppliers/${id}`, data),
+  delete: (id) => api.delete(`/suppliers/${id}`),
+};
+
+// Recipes
+export const recipesAPI = {
+  list: () => api.get('/recipes'),
+  get: (productId) => api.get(`/recipes/product/${productId}`),
+  create: (data) => api.post('/recipes', data),
+  delete: (id) => api.delete(`/recipes/${id}`),
+  deleteByProduct: (productId) => api.delete(`/recipes/product/${productId}`),
+};
+
+// Purchase Orders
+export const purchaseOrdersAPI = {
+  list: (params) => api.get('/purchase-orders', { params }),
+  get: (id) => api.get(`/purchase-orders/${id}`),
+  create: (data) => api.post('/purchase-orders', data),
+  update: (id, data) => api.put(`/purchase-orders/${id}`, data),
+  updateStatus: (id, status) => api.put(`/purchase-orders/${id}/status`, null, { params: { status } }),
+  receive: (id, data) => api.post(`/purchase-orders/${id}/receive`, data),
+  delete: (id) => api.delete(`/purchase-orders/${id}`),
+};
+
 export default api;
