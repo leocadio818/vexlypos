@@ -48,6 +48,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 #### Reservaciones
 - **Calendario**: Vista por fecha con slots de tiempo
 - **Bloqueo de Mesas**: Mesas se marcan reservadas automáticamente
+
+#### Inventario Maestro (NUEVO - Febrero 2026)
+- **Insumos/Ingredientes**: CRUD completo con unidad de medida, categoría, stock mínimo y costo promedio
+- **Almacenes**: Múltiples ubicaciones para gestionar stock separadamente
+- **Proveedores**: Gestión de proveedores con contacto, teléfono, email, RNC
+- **Recetas**: Vinculación de productos de venta con ingredientes, incluyendo % de merma
+- **Stock por Almacén**: Niveles de inventario por ubicación con alertas de stock bajo
+- **Transferencias**: Mover insumos entre almacenes con historial completo
+- **Ajustes de Inventario**: Ajustes manuales con razón (conteo físico, merma, vencimiento, etc.)
+- **Órdenes de Compra**: Ciclo completo (Borrador → Pendiente → Parcial → Recibida)
+- **Conciliación de Precios**: Al recibir OC, comparar cantidad pedida vs recibida y actualizar costo promedio automáticamente
+- **Historial de Movimientos**: Registro de todos los movimientos de stock (compras, transferencias, ajustes, mermas)
 - **Tolerancia**: Liberación automática si no llegan
 
 #### Dashboard
