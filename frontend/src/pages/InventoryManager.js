@@ -565,6 +565,9 @@ export default function InventoryManager() {
             <TabsTrigger value="ingredients" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs">
               <Package size={14} className="mr-1" /> Insumos
             </TabsTrigger>
+            <TabsTrigger value="production" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white font-oswald text-xs">
+              <Factory size={14} className="mr-1" /> Producción
+            </TabsTrigger>
             <TabsTrigger value="warehouses" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs">
               <Warehouse size={14} className="mr-1" /> Almacenes
             </TabsTrigger>
