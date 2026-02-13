@@ -1645,11 +1645,11 @@ export default function OrderScreen() {
           {/* Backdrop with blur */}
           <div 
             className="absolute inset-0 bg-black/70 backdrop-blur-md"
-            onClick={() => setRequiredAlert({ open: false, missingGroups: [] })}
+            onClick={(e) => { e.stopPropagation(); setRequiredAlert({ open: false, missingGroups: [] }); }}
           />
           
           {/* Modal Card */}
-          <div className="relative w-full max-w-sm animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-sm animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
             {/* Glow effect */}
             <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-3xl blur-lg opacity-50 animate-pulse" />
             
