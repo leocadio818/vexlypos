@@ -351,6 +351,72 @@ export default function InventoryManager() {
     }
   };
 
+  // ─── ALERT HANDLERS ───
+  const handleCheckAlerts = async () => {
+    try {
+      const res = await stockAlertsAPI.check(false);
+      setLowStockItems(res.data.items || []);
+      if (res.data.items?.length === 0) {
+        toast.success('No hay items con stock bajo');
+      }
+    } catch (e) {
+      toast.error('Error al verificar alertas');
+    }
+  };
+
+  const handleSendAlert = async () => {
+    if (!alertConfig.emails?.length) {
+      toast.error('Configura al menos un email');
+      return;
+    }
+    setSendingAlert(true);
+    try {
+      const res = await stockAlertsAPI.check(true);
+      if (res.data.email_sent) {
+        toast.success(`Alerta enviada a ${res.data.sent_to?.length} destinatario(s)`);
+      } else {
+        toast.error(res.data.reason || 'No se pudo enviar');
+      }
+    } catch (e) {
+      toast.error('Error al enviar alerta');
+    }
+    setSendingAlert(false);
+  };
+
+  const handleSaveAlertConfig = async () => {
+    try {
+      await stockAlertsAPI.updateConfig(alertConfig);
+      toast.success('Configuración guardada');
+      setAlertDialog({ open: false });
+    } catch (e) {
+      toast.error('Error al guardar');
+    }
+  };
+
+  const addAlertEmail = () => {
+    const email = alertDialog.newEmail?.trim();
+    if (!email || !email.includes('@')) {
+      toast.error('Email inválido');
+      return;
+    }
+    if (alertConfig.emails?.includes(email)) {
+      toast.error('Email ya existe');
+      return;
+    }
+    setAlertConfig(prev => ({
+      ...prev,
+      emails: [...(prev.emails || []), email]
+    }));
+    setAlertDialog(prev => ({ ...prev, newEmail: '' }));
+  };
+
+  const removeAlertEmail = (email) => {
+    setAlertConfig(prev => ({
+      ...prev,
+      emails: prev.emails?.filter(e => e !== email) || []
+    }));
+  };
+
   // Filter ingredients
   const filteredIngredients = ingredients.filter(ing => {
     const matchSearch = !ingredientSearch || 
