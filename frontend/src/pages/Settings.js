@@ -100,6 +100,16 @@ export default function Settings() {
   });
   const [newOptionName, setNewOptionName] = useState('');
   const [newOptionPrice, setNewOptionPrice] = useState(0);
+  
+  // Inventory Settings State
+  const [inventorySettings, setInventorySettings] = useState({
+    allow_sale_without_stock: false,
+    auto_deduct_on_payment: true,
+    default_warehouse_id: '',
+    show_stock_alerts: true
+  });
+  const [warehouses, setWarehouses] = useState([]);
+  const [savingInventorySettings, setSavingInventorySettings] = useState(false);
 
   const fetchAll = async () => {
     try {
