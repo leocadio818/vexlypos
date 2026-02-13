@@ -276,6 +276,13 @@ class PayBillInput(BaseModel):
 class CancelItemInput(BaseModel):
     reason_id: str
     return_to_inventory: bool = False
+    comments: str = ""
+    
+class BulkCancelInput(BaseModel):
+    item_ids: List[str]
+    reason_id: str
+    return_to_inventory: bool = False
+    comments: str = ""
 
 class CancellationReasonInput(BaseModel):
     name: str
