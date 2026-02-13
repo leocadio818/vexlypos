@@ -229,15 +229,26 @@ export default function ProductConfig() {
             {isNew ? 'NUEVO PRODUCTO' : 'EDITAR PRODUCTO'}
           </h1>
         </div>
-        <Button 
-          onClick={handleSave} 
-          disabled={saving}
-          className="bg-primary text-primary-foreground font-oswald font-bold active:scale-95"
-          data-testid="save-product-btn"
-        >
-          <Save size={16} className="mr-2" />
-          {saving ? 'GUARDANDO...' : 'GUARDAR'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => navigate('/settings')} 
+            className="font-oswald font-bold"
+            data-testid="back-to-list-btn"
+          >
+            <List size={16} className="mr-2" />
+            VOLVER A LISTA
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            disabled={saving}
+            className="bg-primary text-primary-foreground font-oswald font-bold active:scale-95"
+            data-testid="save-product-btn"
+          >
+            <Save size={16} className="mr-2" />
+            {saving ? 'GUARDANDO...' : 'GUARDAR'}
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
