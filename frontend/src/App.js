@@ -20,6 +20,7 @@ import KitchenTV from "@/pages/KitchenTV";
 import Reservations from "@/pages/Reservations";
 import ProductConfig from "@/pages/ProductConfig";
 import UserConfig from "@/pages/UserConfig";
+import AnulacionesReport from "@/pages/AnulacionesReport";
 import Layout from "@/components/Layout";
 
 function ProtectedRoute({ children }) {
