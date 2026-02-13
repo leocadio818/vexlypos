@@ -1692,7 +1692,7 @@ export default function OrderScreen() {
               
               {/* Button */}
               <button
-                onClick={() => setRequiredAlert({ open: false, missingGroups: [] })}
+                onClick={(e) => { e.stopPropagation(); setRequiredAlert({ open: false, missingGroups: [] }); }}
                 className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-oswald font-bold text-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/30"
               >
                 ¡Entendido!
