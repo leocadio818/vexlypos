@@ -1945,9 +1945,19 @@ async def explode_and_deduct_recipe(
     yield_qty = recipe.get("yield_quantity", 1) or 1
     
     for ing in recipe.get("ingredients", []):
-        ingredient = await db.ingredients.find_one({"id": ing["ingredient_id"]}, {"_id": 0})
+        # Handle both ingredient_id and ingredient_name (legacy)
+        ingredient_id = ing.get("ingredient_id")
+        ingredient_name = ing.get("ingredient_name", "")
+        
+        ingredient = None
+        if ingredient_id:
+            ingredient = await db.ingredients.find_one({"id": ingredient_id}, {"_id": 0})
+        
+        # If no ingredient found by id, this is a legacy recipe with just names
         if not ingredient:
-            errors.append(f"Ingrediente no encontrado: {ing.get('ingredient_name', ing['ingredient_id'])}")
+            # Legacy recipe - skip ingredient tracking but log
+            if ingredient_name:
+                errors.append(f"Ingrediente '{ingredient_name}' no vinculado al sistema de inventario")
             continue
         
         # Calculate required quantity with waste
