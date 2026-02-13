@@ -1813,15 +1813,36 @@ export default function InventoryManager() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
-              <div>
-                <span className="font-medium">Alertas activas</span>
-                <p className="text-xs text-muted-foreground">Enviar emails automáticamente</p>
+            {/* Schedule Time */}
+            <div className="p-3 rounded-lg bg-card border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="font-medium">Alertas programadas</span>
+                  <p className="text-xs text-muted-foreground">Enviar reporte diario automático</p>
+                </div>
+                <Switch
+                  checked={alertConfig.enabled}
+                  onCheckedChange={(checked) => setAlertConfig(p => ({ ...p, enabled: checked }))}
+                />
               </div>
-              <Switch
-                checked={alertConfig.enabled}
-                onCheckedChange={(checked) => setAlertConfig(p => ({ ...p, enabled: checked }))}
-              />
+              {alertConfig.enabled && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm">Hora de envío:</label>
+                    <input
+                      type="time"
+                      value={alertConfig.schedule_time || '08:00'}
+                      onChange={e => setAlertConfig(p => ({ ...p, schedule_time: e.target.value }))}
+                      className="px-3 py-1.5 bg-background border border-border rounded-lg text-sm"
+                    />
+                  </div>
+                  {schedulerStatus.active && schedulerStatus.next_run && (
+                    <p className="text-xs text-green-500 mt-2">
+                      ✓ Próximo envío: {new Date(schedulerStatus.next_run).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2">
