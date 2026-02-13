@@ -1657,10 +1657,7 @@ export default function OrderScreen() {
       </Dialog>
 
       {/* Cancel Dialog - Enhanced VoidReasonModal */}
-      <Dialog open={cancelDialog.open} onOpenChange={(open) => !open && setCancelDialog({ 
-        open: false, itemId: null, itemIds: [], mode: 'single',
-        selectedReasonId: null, returnToInventory: true, comments: ''
-      })}>
+      <Dialog open={cancelDialog.open} onOpenChange={(open) => !open && resetCancelDialog()}>
         <DialogContent className="max-w-md bg-card border-border" data-testid="cancel-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald flex items-center gap-2">
@@ -1671,100 +1668,195 @@ export default function OrderScreen() {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            {/* Reason Selector */}
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-2 block">Razón de Anulación</label>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {cancelReasons.map(reason => (
-                  <button 
-                    key={reason.id} 
-                    onClick={() => handleReasonSelect(reason.id)} 
-                    data-testid={`cancel-reason-${reason.id}`}
-                    className={`w-full p-3 rounded-lg border-2 text-left transition-all active:scale-[0.98] ${
-                      cancelDialog.selectedReasonId === reason.id 
-                        ? 'border-destructive bg-destructive/10' 
-                        : 'border-border bg-background hover:border-destructive/50'
+          {/* Manager PIN Entry View */}
+          {cancelDialog.showManagerPin ? (
+            <div className="space-y-4">
+              <div className="text-center py-2">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-yellow-500/10 mb-3">
+                  <Lock size={28} className="text-yellow-500" />
+                </div>
+                <h3 className="font-oswald text-base font-bold">Autorización de Gerente</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Esta anulación requiere PIN de administrador
+                </p>
+              </div>
+              
+              {/* PIN Display */}
+              <div className="flex justify-center gap-2 py-2">
+                {[0, 1, 2, 3].map(i => (
+                  <div 
+                    key={i} 
+                    className={`w-4 h-4 rounded-full transition-all ${
+                      cancelDialog.managerPin.length > i ? 'bg-primary scale-110' : 'bg-border'
+                    }`}
+                  />
+                ))}
+              </div>
+              
+              {/* Error Message */}
+              {cancelDialog.managerAuthError && (
+                <p className="text-center text-xs text-destructive font-medium animate-shake">
+                  {cancelDialog.managerAuthError}
+                </p>
+              )}
+              
+              {/* Numeric Keypad */}
+              <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'CLR', '0', '⌫'].map(key => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      if (key === 'CLR') {
+                        setCancelDialog(prev => ({ ...prev, managerPin: '', managerAuthError: '' }));
+                      } else if (key === '⌫') {
+                        setCancelDialog(prev => ({ ...prev, managerPin: prev.managerPin.slice(0, -1), managerAuthError: '' }));
+                      } else if (cancelDialog.managerPin.length < 6) {
+                        const newPin = cancelDialog.managerPin + key;
+                        setCancelDialog(prev => ({ ...prev, managerPin: newPin, managerAuthError: '' }));
+                        // Auto-verify when 4 digits entered
+                        if (newPin.length === 4) {
+                          setTimeout(() => verifyManagerPin(), 100);
+                        }
+                      }
+                    }}
+                    className={`h-12 rounded-xl font-oswald text-lg font-bold transition-all active:scale-95 ${
+                      key === 'CLR' ? 'bg-muted text-muted-foreground text-sm' :
+                      key === '⌫' ? 'bg-muted text-muted-foreground' :
+                      'bg-background border-2 border-border hover:border-primary/50'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{reason.name}</span>
-                      {reason.return_to_inventory ? (
-                        <Badge variant="outline" className="text-[9px] bg-green-500/10 text-green-500 border-green-500/30">
-                          <RotateCcw size={10} className="mr-1" /> Retorna
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[9px] bg-red-500/10 text-red-500 border-red-500/30">
-                          <Ban size={10} className="mr-1" /> Merma
-                        </Badge>
-                      )}
-                    </div>
+                    {key}
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* Inventory Toggle - Can override the default from reason */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  {cancelDialog.returnToInventory ? (
-                    <RotateCcw size={16} className="text-green-500" />
-                  ) : (
-                    <Ban size={16} className="text-red-500" />
-                  )}
-                  <span className="text-sm font-semibold">¿Devolver a Inventario?</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {cancelDialog.returnToInventory 
-                    ? 'Los insumos volverán al stock' 
-                    : 'Se registrará como merma/pérdida'}
-                </p>
-              </div>
-              <Switch 
-                checked={cancelDialog.returnToInventory}
-                onCheckedChange={(v) => setCancelDialog(prev => ({ ...prev, returnToInventory: v }))}
-                data-testid="toggle-return-inventory"
-              />
-            </div>
-
-            {/* Comments Field */}
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
-                Comentarios (opcional)
-              </label>
-              <textarea 
-                value={cancelDialog.comments}
-                onChange={(e) => setCancelDialog(prev => ({ ...prev, comments: e.target.value }))}
-                placeholder="Detalles adicionales..."
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm resize-none focus:outline-none focus:border-destructive/50"
-                data-testid="cancel-comments"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
+              
+              {/* Back Button */}
               <Button 
                 variant="outline" 
-                onClick={() => setCancelDialog({ 
-                  open: false, itemId: null, itemIds: [], mode: 'single',
-                  selectedReasonId: null, returnToInventory: true, comments: ''
-                })}
-                className="flex-1 font-oswald"
+                onClick={() => setCancelDialog(prev => ({ ...prev, showManagerPin: false, managerPin: '', managerAuthError: '' }))}
+                className="w-full font-oswald"
               >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleCancelItem}
-                disabled={!cancelDialog.selectedReasonId}
-                className="flex-1 bg-destructive hover:bg-destructive/90 text-white font-oswald font-bold"
-                data-testid="confirm-cancel-btn"
-              >
-                <Trash2 size={14} className="mr-1" /> Anular
+                <X size={14} className="mr-1" /> Volver
               </Button>
             </div>
-          </div>
+          ) : (
+            /* Normal Cancel Dialog View */
+            <div className="space-y-4">
+              {/* Reason Selector */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground mb-2 block">Razón de Anulación</label>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {cancelReasons.map(reason => (
+                    <button 
+                      key={reason.id} 
+                      onClick={() => handleReasonSelect(reason.id)} 
+                      data-testid={`cancel-reason-${reason.id}`}
+                      className={`w-full p-3 rounded-lg border-2 text-left transition-all active:scale-[0.98] ${
+                        cancelDialog.selectedReasonId === reason.id 
+                          ? 'border-destructive bg-destructive/10' 
+                          : 'border-border bg-background hover:border-destructive/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium flex-1">{reason.name}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {reason.requires_manager_auth && (
+                            <Badge variant="outline" className="text-[9px] bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
+                              <Lock size={8} className="mr-0.5" /> Auth
+                            </Badge>
+                          )}
+                          {reason.return_to_inventory ? (
+                            <Badge variant="outline" className="text-[9px] bg-green-500/10 text-green-500 border-green-500/30">
+                              <RotateCcw size={10} className="mr-1" /> Retorna
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[9px] bg-red-500/10 text-red-500 border-red-500/30">
+                              <Ban size={10} className="mr-1" /> Merma
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Inventory Toggle - Can override the default from reason */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    {cancelDialog.returnToInventory ? (
+                      <RotateCcw size={16} className="text-green-500" />
+                    ) : (
+                      <Ban size={16} className="text-red-500" />
+                    )}
+                    <span className="text-sm font-semibold">¿Devolver a Inventario?</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {cancelDialog.returnToInventory 
+                      ? 'Los insumos volverán al stock' 
+                      : 'Se registrará como merma/pérdida'}
+                  </p>
+                </div>
+                <Switch 
+                  checked={cancelDialog.returnToInventory}
+                  onCheckedChange={(v) => setCancelDialog(prev => ({ ...prev, returnToInventory: v }))}
+                  data-testid="toggle-return-inventory"
+                />
+              </div>
+
+              {/* Manager Auth Required Notice */}
+              {cancelDialog.requiresManagerAuth && (
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                  <Lock size={14} className="text-yellow-500" />
+                  <span className="text-xs text-yellow-500">
+                    {cancelDialog.authorizedBy 
+                      ? `Autorizado por: ${cancelDialog.authorizedBy.name}` 
+                      : 'Esta razón requiere autorización de gerente'}
+                  </span>
+                  {cancelDialog.authorizedBy && <Check size={14} className="text-green-500 ml-auto" />}
+                </div>
+              )}
+
+              {/* Comments Field */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
+                  Comentarios (opcional)
+                </label>
+                <textarea 
+                  value={cancelDialog.comments}
+                  onChange={(e) => setCancelDialog(prev => ({ ...prev, comments: e.target.value }))}
+                  placeholder="Detalles adicionales..."
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm resize-none focus:outline-none focus:border-destructive/50"
+                  data-testid="cancel-comments"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={resetCancelDialog}
+                  className="flex-1 font-oswald"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleCancelItem}
+                  disabled={!cancelDialog.selectedReasonId}
+                  className="flex-1 bg-destructive hover:bg-destructive/90 text-white font-oswald font-bold"
+                  data-testid="confirm-cancel-btn"
+                >
+                  {cancelDialog.requiresManagerAuth && !cancelDialog.authorizedBy ? (
+                    <><Lock size={14} className="mr-1" /> Autorizar</>
+                  ) : (
+                    <><Trash2 size={14} className="mr-1" /> Anular</>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
