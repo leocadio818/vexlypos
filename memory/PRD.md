@@ -69,6 +69,14 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Alertas programadas**: Scheduler con APScheduler para envío diario automático
   - Selector de hora configurable (ej: 08:00 AM)
   - Muestra próxima ejecución programada
+- **Sistema de Explosión de Inventario (Sub-recetas)**:
+  - Soporte para sub-recetas (ingredientes que se producen a partir de otros ingredientes)
+  - Verificación recursiva de disponibilidad de stock
+  - Explosión automática cuando no hay stock de sub-receta preparada
+  - Descuento proporcional de ingredientes base
+  - Actualización dinámica de costos de sub-recetas cuando cambian precios de ingredientes
+  - Trazabilidad completa con `parent_product_id` y `parent_recipe_id` en movimientos
+  - Tipos de movimiento: sale, explosion, purchase, transfer, adjustment
 - **Tolerancia**: Liberación automática si no llegan
 
 #### Dashboard
