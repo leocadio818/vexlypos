@@ -48,6 +48,7 @@ function AppRoutes() {
         <Route path="inventory-manager" element={<InventoryManager />} />
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="reports/anulaciones" element={<AnulacionesReport />} />
         <Route path="customers" element={<Customers />} />
         <Route path="reservations" element={<Reservations />} />
         <Route path="settings" element={<Settings />} />
