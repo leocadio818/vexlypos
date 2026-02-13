@@ -1021,8 +1021,6 @@ export default function Settings() {
                 </div>
               </>
             )}
-              </>
-            )}
 
             {/* MODIFICADORES TAB */}
             {inventarioSubTab === 'modificadores' && (
