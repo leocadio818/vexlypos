@@ -1673,14 +1673,15 @@ export default function Settings() {
       </Dialog>
 
       {/* Table Dialog */}
-      <Dialog open={tableDialog.open} onOpenChange={(o) => !o && setTableDialog(p => ({ ...p, open: false }))}>
+      <Dialog open={tableDialog.open} onOpenChange={(o) => !o && setTableDialog(p => ({ ...p, open: false, editId: null }))}>
         <DialogContent className="max-w-sm bg-card border-border">
-          <DialogHeader><DialogTitle className="font-oswald">Nueva Mesa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-oswald">{tableDialog.editId ? 'Editar Mesa' : 'Nueva Mesa'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={tableDialog.number} onChange={e => setTableDialog(p => ({ ...p, number: e.target.value }))}
               type="number" placeholder="Numero de mesa" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             <select value={tableDialog.area_id} onChange={e => setTableDialog(p => ({ ...p, area_id: e.target.value }))}
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm">
+              <option value="">Seleccionar área</option>
               {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
             <input value={tableDialog.capacity} onChange={e => setTableDialog(p => ({ ...p, capacity: e.target.value }))}
@@ -1693,7 +1694,9 @@ export default function Settings() {
                   }`}>{s === 'round' ? 'Redonda' : s === 'square' ? 'Cuadrada' : 'Rectangular'}</button>
               ))}
             </div>
-            <Button onClick={handleAddTable} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">CREAR MESA</Button>
+            <Button onClick={handleSaveTable} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
+              {tableDialog.editId ? 'GUARDAR CAMBIOS' : 'CREAR MESA'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
