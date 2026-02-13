@@ -1666,45 +1666,8 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
 
     order_id = bill["order_id"]
     
-    # ─── AUTO DEDUCT INVENTORY ON PAYMENT ───
-    inventory_config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
-    auto_deduct = inventory_config.get("auto_deduct_on_payment", True) if inventory_config else True
-    
-    if auto_deduct:
-        # Get order items and deduct inventory
-        order = await db.orders.find_one({"id": order_id}, {"_id": 0})
-        if order:
-            default_warehouse = inventory_config.get("default_warehouse_id", "") if inventory_config else ""
-            if not default_warehouse:
-                # Get first warehouse
-                wh = await db.warehouses.find_one({}, {"_id": 0})
-                default_warehouse = wh["id"] if wh else ""
-            
-            if default_warehouse:
-                deduction_errors = []
-                for item in order.get("items", []):
-                    if item.get("status") == "cancelled":
-                        continue
-                    try:
-                        # Deduct inventory for this product
-                        await explode_and_deduct_recipe(
-                            recipe=await db.recipes.find_one({"product_id": item["product_id"]}, {"_id": 0}) or {},
-                            warehouse_id=default_warehouse,
-                            quantity=item.get("qty", 1),
-                            user_id=user["user_id"],
-                            user_name=user["name"],
-                            parent_product_id=item["product_id"],
-                            order_id=order_id
-                        )
-                    except Exception as e:
-                        deduction_errors.append(f"{item.get('name', '?')}: {str(e)}")
-                
-                # Mark order as inventory deducted
-                await db.orders.update_one({"id": order_id}, {"$set": {
-                    "inventory_deducted": True,
-                    "inventory_deducted_at": now_iso(),
-                    "inventory_errors": deduction_errors
-                }})
+    # NOTE: Inventory deduction now happens at send_to_kitchen, not at payment
+    # This section was removed as requested by user
     
     open_bills = await db.bills.count_documents({"order_id": order_id, "status": "open"})
     if open_bills == 0:
