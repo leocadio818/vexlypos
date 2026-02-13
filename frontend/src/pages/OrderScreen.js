@@ -349,14 +349,84 @@ export default function OrderScreen() {
     } catch { toast.error('Error enviando a cocina'); }
   };
 
-  const handleCancelItem = async (reasonId) => {
-    const { itemId } = cancelDialog;
-    const reason = cancelReasons.find(r => r.id === reasonId);
+  const handleCancelItem = async () => {
+    const { itemId, itemIds, mode, selectedReasonId, returnToInventory, comments } = cancelDialog;
+    
+    if (!selectedReasonId) {
+      toast.error('Selecciona una razón de anulación');
+      return;
+    }
+    
     try {
-      const res = await ordersAPI.cancelItem(order.id, itemId, { reason_id: reasonId, return_to_inventory: reason?.return_to_inventory || false });
-      setOrder(res.data); toast.success('Item anulado');
-      setCancelDialog({ open: false, itemId: null });
-    } catch { toast.error('Error anulando item'); }
+      let res;
+      if (mode === 'multiple' && itemIds.length > 0) {
+        // Bulk cancellation
+        res = await ordersAPI.cancelItems(order.id, {
+          item_ids: itemIds,
+          reason_id: selectedReasonId,
+          return_to_inventory: returnToInventory,
+          comments: comments
+        });
+        toast.success(`${itemIds.length} items anulados`);
+      } else {
+        // Single item cancellation
+        res = await ordersAPI.cancelItem(order.id, itemId, {
+          reason_id: selectedReasonId,
+          return_to_inventory: returnToInventory,
+          comments: comments
+        });
+        toast.success('Item anulado');
+      }
+      setOrder(res.data);
+      setCancelDialog({ 
+        open: false, itemId: null, itemIds: [], mode: 'single',
+        selectedReasonId: null, returnToInventory: true, comments: ''
+      });
+    } catch { 
+      toast.error('Error anulando item(s)'); 
+    }
+  };
+
+  // Open cancel dialog for a single item
+  const openCancelDialog = (itemId) => {
+    const item = order?.items?.find(i => i.id === itemId);
+    const wasSent = item?.status === 'sent' || item?.sent_to_kitchen;
+    setCancelDialog({ 
+      open: true, 
+      itemId, 
+      itemIds: [], 
+      mode: 'single',
+      selectedReasonId: null,
+      returnToInventory: wasSent, // Default based on whether inventory was deducted
+      comments: ''
+    });
+  };
+
+  // Open cancel dialog for multiple items
+  const openBulkCancelDialog = (itemIds) => {
+    const anyWasSent = itemIds.some(id => {
+      const item = order?.items?.find(i => i.id === id);
+      return item?.status === 'sent' || item?.sent_to_kitchen;
+    });
+    setCancelDialog({ 
+      open: true, 
+      itemId: null, 
+      itemIds, 
+      mode: 'multiple',
+      selectedReasonId: null,
+      returnToInventory: anyWasSent,
+      comments: ''
+    });
+  };
+
+  // Handle reason selection - auto-set return_to_inventory based on reason default
+  const handleReasonSelect = (reasonId) => {
+    const reason = cancelReasons.find(r => r.id === reasonId);
+    setCancelDialog(prev => ({
+      ...prev,
+      selectedReasonId: reasonId,
+      returnToInventory: reason?.return_to_inventory ?? prev.returnToInventory
+    }));
   };
 
   const activeItems = order?.items?.filter(i => i.status !== 'cancelled') || [];
