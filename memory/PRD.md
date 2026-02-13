@@ -66,6 +66,9 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Configuración de emails destinatarios
   - Toggle para activar/desactivar alertas automáticas
   - Botón para verificar y enviar alerta manualmente
+  - **Alertas programadas**: Scheduler con APScheduler para envío diario automático
+  - Selector de hora configurable (ej: 08:00 AM)
+  - Muestra próxima ejecución programada
 - **Tolerancia**: Liberación automática si no llegan
 
 #### Dashboard
