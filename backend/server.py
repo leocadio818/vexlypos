@@ -277,12 +277,16 @@ class CancelItemInput(BaseModel):
     reason_id: str
     return_to_inventory: bool = False
     comments: str = ""
+    authorized_by_id: Optional[str] = None  # Manager who authorized (if required)
+    authorized_by_name: Optional[str] = None
     
 class BulkCancelInput(BaseModel):
     item_ids: List[str]
     reason_id: str
     return_to_inventory: bool = False
     comments: str = ""
+    authorized_by_id: Optional[str] = None
+    authorized_by_name: Optional[str] = None
 
 class CancellationReasonInput(BaseModel):
     name: str
