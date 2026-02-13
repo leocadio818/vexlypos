@@ -1641,17 +1641,22 @@ export default function OrderScreen() {
 
       {/* Beautiful Required Modifiers Alert Modal - Using Portal to render above everything */}
       {requiredAlert.open && createPortal(
-        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 999999 }}>
+        <div 
+          className="fixed inset-0 flex items-center justify-center p-4" 
+          style={{ zIndex: 999999 }}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setRequiredAlert({ open: false, missingGroups: [] });
+            }
+          }}
+        >
           {/* Backdrop with blur */}
-          <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-md"
-            onClick={(e) => { e.stopPropagation(); setRequiredAlert({ open: false, missingGroups: [] }); }}
-          />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md pointer-events-none" />
           
           {/* Modal Card */}
-          <div className="relative w-full max-w-sm animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+          <div className="relative w-full max-w-sm animate-in zoom-in-95 duration-200">
             {/* Glow effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-3xl blur-lg opacity-50 animate-pulse" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-3xl blur-lg opacity-50 animate-pulse pointer-events-none" />
             
             {/* Card content */}
             <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl border border-white/20 p-6 shadow-2xl">
