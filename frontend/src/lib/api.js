@@ -240,6 +240,15 @@ export const productionAPI = {
   getHistory: (params) => api.get('/inventory/production-history', { params }),
 };
 
+// Inventory Settings
+export const inventorySettingsAPI = {
+  get: () => api.get('/inventory/settings'),
+  update: (data) => api.put('/inventory/settings', data),
+  getReorderAlerts: () => api.get('/inventory/reorder-alerts'),
+  getProductsStockStatus: (warehouseId) => api.get('/products/stock-status', { params: warehouseId ? { warehouse_id: warehouseId } : {} }),
+  getProductStockStatus: (productId, warehouseId) => api.get(`/products/${productId}/stock-status`, { params: warehouseId ? { warehouse_id: warehouseId } : {} }),
+};
+
 // Purchase Orders
 export const purchaseOrdersAPI = {
   list: (params) => api.get('/purchase-orders', { params }),
