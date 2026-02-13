@@ -551,23 +551,34 @@ export default function InventoryManager() {
                   return (
                     <div 
                       key={ing.id} 
-                      className={`flex items-center justify-between p-3 rounded-xl border ${isLow ? 'border-red-500/50 bg-red-500/10' : 'border-border bg-card'}`}
+                      className={`flex items-center justify-between p-3 rounded-xl border ${isLow ? 'border-red-500/50 bg-red-500/10' : ing.is_subrecipe ? 'border-blue-500/30 bg-blue-500/5' : 'border-border bg-card'}`}
                       data-testid={`ingredient-${ing.id}`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Package size={18} className="text-primary" />
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${ing.is_subrecipe ? 'bg-blue-500/20' : 'bg-primary/10'}`}>
+                          {ing.is_subrecipe ? (
+                            <FileText size={18} className="text-blue-500" />
+                          ) : (
+                            <Package size={18} className="text-primary" />
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-semibold">{ing.name}</span>
                             <Badge variant="secondary" className="text-[9px]">{ing.unit}</Badge>
+                            {ing.is_subrecipe && <Badge className="text-[9px] bg-blue-500">Sub-receta</Badge>}
                             {isLow && <Badge variant="destructive" className="text-[9px]">Stock bajo</Badge>}
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-2">
                             <span>{INGREDIENT_CATEGORIES.find(c => c.value === ing.category)?.label}</span>
                             <span>•</span>
                             <span>Costo: {formatMoney(ing.avg_cost)}</span>
+                            {ing.is_subrecipe && ing.cost_updated_at && (
+                              <>
+                                <span>•</span>
+                                <span className="text-blue-400 text-[10px]">Actualizado: {new Date(ing.cost_updated_at).toLocaleDateString()}</span>
+                              </>
+                            )}
                             <span>•</span>
                             <span>Min: {ing.min_stock} {ing.unit}</span>
                           </div>
