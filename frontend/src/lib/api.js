@@ -116,6 +116,7 @@ export const ordersAPI = {
   addItems: (id, items) => api.post(`/orders/${id}/items`, { items }),
   updateItem: (orderId, itemId, data) => api.put(`/orders/${orderId}/items/${itemId}`, data),
   cancelItem: (orderId, itemId, data) => api.post(`/orders/${orderId}/cancel-item/${itemId}`, data),
+  cancelItems: (orderId, data) => api.post(`/orders/${orderId}/cancel-items`, data),
   sendToKitchen: (id) => api.post(`/orders/${id}/send-kitchen`),
   moveToTable: (orderId, targetTableId, merge = false) => api.post(`/orders/${orderId}/move`, { target_table_id: targetTableId, merge }),
   splitToNewOrder: (orderId, itemIds) => api.post(`/orders/${orderId}/split-to-new`, { item_ids: itemIds }),
@@ -124,6 +125,11 @@ export const ordersAPI = {
   deleteEmpty: (orderId) => api.delete(`/orders/${orderId}/empty`),
   mergeOrders: (sourceOrderId, targetOrderId) => api.post(`/orders/${sourceOrderId}/merge/${targetOrderId}`),
   moveAllToTable: (sourceTableId, targetTableId) => api.post(`/tables/${sourceTableId}/move-all`, { target_table_id: targetTableId }),
+};
+
+// Void Audit Logs
+export const voidAuditAPI = {
+  list: (params) => api.get('/void-audit-logs', { params }),
 };
 
 // Kitchen
