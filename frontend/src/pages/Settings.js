@@ -1231,7 +1231,7 @@ export default function Settings() {
                 <Truck size={40} className="mx-auto mb-3 text-primary opacity-50" />
                 <h2 className="font-oswald text-lg mb-2">Proveedores & Compras</h2>
                 <p className="text-sm text-muted-foreground mb-4">Proveedores, ordenes de compra, recepcion de mercancia</p>
-                <a href="/suppliers" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
+                <a href="/inventory-manager?tab=purchases" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
                   <Truck size={16} /> Abrir Compras
                 </a>
               </div>
@@ -1240,9 +1240,9 @@ export default function Settings() {
             {inventarioSubTab === 'stock' && (
               <div className="text-center py-8">
                 <Package size={40} className="mx-auto mb-3 text-primary opacity-50" />
-                <h2 className="font-oswald text-lg mb-2">Inventario</h2>
-                <p className="text-sm text-muted-foreground mb-4">Stock, almacenes, recetas, costos y movimientos</p>
-                <a href="/inventory" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
+                <h2 className="font-oswald text-lg mb-2">Inventario Maestro</h2>
+                <p className="text-sm text-muted-foreground mb-4">Insumos, almacenes, recetas, stock y movimientos</p>
+                <a href="/inventory-manager" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold active:scale-95 transition-transform">
                   <Package size={16} /> Abrir Inventario
                 </a>
               </div>
