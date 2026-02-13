@@ -900,6 +900,7 @@ export default function Settings() {
               <SubTabButton active={inventarioSubTab === 'modificadores'} onClick={() => setInventarioSubTab('modificadores')} icon={ListChecks} label="Modificadores" />
               <SubTabButton active={inventarioSubTab === 'compras'} onClick={() => setInventarioSubTab('compras')} icon={Truck} label="Compras" />
               <SubTabButton active={inventarioSubTab === 'stock'} onClick={() => setInventarioSubTab('stock')} icon={BarChart3} label="Stock" />
+              <SubTabButton active={inventarioSubTab === 'config'} onClick={() => setInventarioSubTab('config')} icon={Cog} label="Config" />
             </div>
 
             {/* CATEGORIAS TAB */}
