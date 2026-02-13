@@ -189,6 +189,14 @@ export const stockMovementsAPI = {
   list: (params) => api.get('/stock-movements', { params }),
 };
 
+// Stock Alerts
+export const stockAlertsAPI = {
+  check: (sendEmail = false) => api.get('/inventory/check-alerts', { params: { send_email: sendEmail } }),
+  getConfig: () => api.get('/inventory/alert-config'),
+  updateConfig: (data) => api.put('/inventory/alert-config', data),
+  getLogs: (limit = 20) => api.get('/inventory/alert-logs', { params: { limit } }),
+};
+
 // Warehouses
 export const warehousesAPI = {
   list: () => api.get('/warehouses'),
