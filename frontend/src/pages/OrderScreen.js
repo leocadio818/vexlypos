@@ -140,6 +140,39 @@ export default function OrderScreen() {
     fetchAll(); fetchOrder();
   }, [fetchOrder, API_BASE]);
 
+  // Load inventory settings and stock status
+  useEffect(() => {
+    const loadStockData = async () => {
+      try {
+        // Load inventory settings to check if we need to enforce stock control
+        const settingsRes = await inventorySettingsAPI.get();
+        const settings = settingsRes.data;
+        setAllowSaleWithoutStock(settings.allow_sale_without_stock ?? true);
+        
+        // Only load stock status if stock control is enabled
+        if (!settings.allow_sale_without_stock) {
+          setStockLoading(true);
+          const stockRes = await inventorySettingsAPI.getProductsStockStatus();
+          const stockMap = {};
+          (stockRes.data || []).forEach(item => {
+            stockMap[item.product_id] = {
+              in_stock: item.in_stock,
+              available_quantity: item.available_quantity,
+              is_low_stock: item.is_low_stock,
+              has_recipe: item.has_recipe
+            };
+          });
+          setStockStatus(stockMap);
+          setStockLoading(false);
+        }
+      } catch (err) {
+        console.error('Error loading stock data:', err);
+        setAllowSaleWithoutStock(true); // Default to allowing sales if settings fail
+      }
+    };
+    loadStockData();
+  }, []);
+
   // Re-sync tax config every 30s so changes reflect immediately
   useEffect(() => {
     const interval = setInterval(async () => {
