@@ -1370,7 +1370,8 @@ async def get_void_report(
 async def verify_manager_pin(pin_data: dict):
     """Verify if a PIN belongs to a manager/admin user"""
     pin = pin_data.get("pin", "")
-    user = await db.users.find_one({"pin": pin, "active": True}, {"_id": 0})
+    hashed = hash_pin(pin)
+    user = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=401, detail="PIN inválido")
     
