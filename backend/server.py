@@ -2957,7 +2957,7 @@ async def get_products_stock_status(warehouse_id: Optional[str] = Query(None)):
     
     return result
 
-@api.get("/products/{product_id}/stock-status")
+@api.get("/inventory/product-stock/{product_id}")
 async def get_product_stock_status(product_id: str, warehouse_id: Optional[str] = Query(None)):
     """Get stock status for a specific product"""
     config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
