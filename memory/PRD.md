@@ -60,6 +60,12 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **Órdenes de Compra**: Ciclo completo (Borrador → Pendiente → Parcial → Recibida)
 - **Conciliación de Precios**: Al recibir OC, comparar cantidad pedida vs recibida y actualizar costo promedio automáticamente
 - **Historial de Movimientos**: Registro de todos los movimientos de stock (compras, transferencias, ajustes, mermas)
+- **Alertas de Stock Bajo**: 
+  - Banner visual en pantalla cuando hay items bajo mínimo
+  - Envío de alertas por email a múltiples destinatarios
+  - Configuración de emails destinatarios
+  - Toggle para activar/desactivar alertas automáticas
+  - Botón para verificar y enviar alerta manualmente
 - **Tolerancia**: Liberación automática si no llegan
 
 #### Dashboard
