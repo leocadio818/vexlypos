@@ -4675,12 +4675,12 @@ async def seed_data():
     # Cancellation reasons
     reasons = [
         {"id":gen_id(),"name":"Botella no abierta","return_to_inventory":True,"active":True},
-        {"id":gen_id(),"name":"Error de digitacion","return_to_inventory":True,"active":True},
-        {"id":gen_id(),"name":"Plato no preparado","return_to_inventory":True,"active":True},
-        {"id":gen_id(),"name":"Plato mal preparado","return_to_inventory":False,"active":True},
-        {"id":gen_id(),"name":"Cliente se fue","return_to_inventory":False,"active":True},
-        {"id":gen_id(),"name":"Botella/bebida abierta","return_to_inventory":False,"active":True},
-        {"id":gen_id(),"name":"Comida rechazada","return_to_inventory":False,"active":True},
+        {"id":gen_id(),"name":"Error de digitacion","return_to_inventory":True,"requires_manager_auth":False,"active":True},
+        {"id":gen_id(),"name":"Plato no preparado","return_to_inventory":True,"requires_manager_auth":False,"active":True},
+        {"id":gen_id(),"name":"Plato mal preparado","return_to_inventory":False,"requires_manager_auth":True,"active":True},
+        {"id":gen_id(),"name":"Cliente se fue","return_to_inventory":False,"requires_manager_auth":True,"active":True},
+        {"id":gen_id(),"name":"Botella/bebida abierta","return_to_inventory":False,"requires_manager_auth":True,"active":True},
+        {"id":gen_id(),"name":"Comida rechazada","return_to_inventory":False,"requires_manager_auth":True,"active":True},
     ]
     await db.cancellation_reasons.insert_many(reasons)
 
