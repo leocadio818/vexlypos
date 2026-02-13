@@ -830,6 +830,13 @@ export default function InventoryManager() {
                 <div className="flex gap-2">
                   <Button 
                     variant="outline"
+                    onClick={() => setAlertDialog({ open: true, newEmail: '' })}
+                    data-testid="alert-config-btn"
+                  >
+                    <Bell size={16} className="mr-1" /> Alertas
+                  </Button>
+                  <Button 
+                    variant="outline"
                     onClick={() => setTransferDialog({ open: true, data: { ingredient_id: '', from_warehouse_id: '', to_warehouse_id: '', quantity: 0, notes: '' } })}
                     data-testid="transfer-btn"
                   >
@@ -844,6 +851,31 @@ export default function InventoryManager() {
                   </Button>
                 </div>
               </div>
+
+              {/* Low Stock Alert Banner */}
+              {ingredients.filter(ing => getTotalStock(ing.id) <= ing.min_stock).length > 0 && (
+                <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="text-red-500" size={24} />
+                    <div>
+                      <span className="font-oswald font-bold text-red-500">
+                        {ingredients.filter(ing => getTotalStock(ing.id) <= ing.min_stock).length} insumos con stock bajo
+                      </span>
+                      <p className="text-xs text-muted-foreground">Revisa los items marcados en rojo</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={handleSendAlert}
+                    disabled={sendingAlert || !alertConfig.emails?.length}
+                    data-testid="send-alert-btn"
+                  >
+                    {sendingAlert ? <RefreshCw size={14} className="mr-1 animate-spin" /> : <Send size={14} className="mr-1" />}
+                    Enviar Alerta
+                  </Button>
+                </div>
+              )}
 
               {/* Stock by warehouse */}
               {warehouses.map(wh => {
