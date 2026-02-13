@@ -69,6 +69,11 @@ export default function OrderScreen() {
   // Required modifiers alert modal
   const [requiredAlert, setRequiredAlert] = useState({ open: false, missingGroups: [] });
   
+  // Stock Control State
+  const [stockStatus, setStockStatus] = useState({}); // { productId: { in_stock: bool, available_quantity: num } }
+  const [allowSaleWithoutStock, setAllowSaleWithoutStock] = useState(true); // Default to true (no restrictions)
+  const [stockLoading, setStockLoading] = useState(false);
+  
   const orderRef = useRef(null);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
