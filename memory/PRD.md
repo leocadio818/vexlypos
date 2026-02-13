@@ -115,6 +115,23 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Flag `restored_to_inventory` para trazabilidad
     - Comentarios adicionales
   - Movimientos de stock registrados como `void_restoration` o `waste`
+- **Reporte de Anulaciones (NUEVO - Febrero 2026)**:
+  - Nueva página `/reports/anulaciones` con análisis completo
+  - Resumen ejecutivo: Total Anulado, Recuperado, Pérdida/Merma, Tasa de Recuperación
+  - Ranking de Razones con gráfico de barras (Recharts)
+  - Distribución por Razón con gráfico circular (Pie Chart)
+  - Auditoría por Usuario: tabla con anulaciones, valores, y % de pérdida
+  - Filtros temporales: Hoy, Semana, Mes
+  - Exportación a Excel (xlsx) con múltiples hojas
+  - Endpoint `/api/void-audit-logs/report` con agregaciones
+- **Autorización Jerárquica para Anulaciones (NUEVO - Febrero 2026)**:
+  - Campo `requires_manager_auth` en razones de anulación
+  - Razones que requieren auth: Botella no abierta, Plato mal preparado, Cliente se fue, Botella/bebida abierta, Comida rechazada
+  - Razones sin auth: Error de digitación, Plato no preparado
+  - Teclado numérico para ingreso de PIN de gerente
+  - Endpoint `/api/auth/verify-manager` para validar PIN
+  - Registro de `authorized_by_id` y `authorized_by_name` en auditoría
+  - Badge visual "Auth" en razones que requieren autorización
 
 #### Dashboard
 - **KPIs en Tiempo Real**: Ventas, efectivo, tarjeta, propinas
