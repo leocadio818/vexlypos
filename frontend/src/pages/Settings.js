@@ -1115,27 +1115,6 @@ export default function Settings() {
                     });
                   })()}
                 </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-oswald text-sm font-bold text-primary">
-                              RD$ {(prod.price_a || prod.price || 0).toLocaleString()}
-                            </span>
-                            <div className="flex items-center gap-1 justify-end mt-0.5">
-                              {!prod.active && <Badge variant="destructive" className="text-[8px] h-4">Inactivo</Badge>}
-                              {prod.modifier_group_ids?.length > 0 && (
-                                <Badge variant="secondary" className="text-[8px] h-4">
-                                  {prod.modifier_group_ids.length} mod
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-                  ))}
-                </div>
               </>
             )}
 
