@@ -2490,6 +2490,10 @@ async def receive_purchase_order(po_id: str, input: ReceivePOInput, user=Depends
         "received_at": now_iso() if all_received else None,
         "received_by": user["name"] if all_received else None
     }})
+    
+    # Update sub-recipe costs when ingredient costs change
+    await update_subrecipe_costs()
+    
     return await db.purchase_orders.find_one({"id": po_id}, {"_id": 0})
 
 @api.delete("/purchase-orders/{po_id}")
