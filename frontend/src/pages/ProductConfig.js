@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { productsAPI, categoriesAPI, modifiersAPI, reportCategoriesAPI } from '@/lib/api';
-import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText } from 'lucide-react';
+import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
