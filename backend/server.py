@@ -287,6 +287,7 @@ class BulkCancelInput(BaseModel):
 class CancellationReasonInput(BaseModel):
     name: str
     return_to_inventory: bool = True
+    requires_manager_auth: bool = False
 
 class ShiftOpenInput(BaseModel):
     station: str = "Caja 1"
