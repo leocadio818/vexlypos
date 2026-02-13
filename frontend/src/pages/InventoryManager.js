@@ -716,6 +716,172 @@ export default function InventoryManager() {
               </div>
             </TabsContent>
 
+            {/* ─── PRODUCTION DASHBOARD TAB ─── */}
+            <TabsContent value="production" className="mt-0">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="font-oswald text-lg font-bold">Dashboard de Producción</h2>
+                  <p className="text-xs text-muted-foreground">Sub-recetas que necesitan ser producidas</p>
+                </div>
+                <Button variant="outline" onClick={loadProductionHistory}>
+                  <History size={16} className="mr-1" /> Ver Historial
+                </Button>
+              </div>
+
+              {/* Sub-recipes needing production */}
+              {(() => {
+                const subrecipesNeedingProduction = ingredients
+                  .filter(ing => ing.is_subrecipe)
+                  .map(ing => {
+                    const totalStock = getTotalStock(ing.id);
+                    const isLow = totalStock <= ing.min_stock;
+                    const deficit = ing.min_stock - totalStock;
+                    const suggestedProduction = Math.max(0, Math.ceil(deficit));
+                    return { ...ing, totalStock, isLow, deficit, suggestedProduction };
+                  })
+                  .sort((a, b) => b.deficit - a.deficit);
+
+                const urgentItems = subrecipesNeedingProduction.filter(s => s.isLow);
+                const okItems = subrecipesNeedingProduction.filter(s => !s.isLow);
+
+                return (
+                  <>
+                    {/* Urgent Production Needed */}
+                    {urgentItems.length > 0 && (
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <AlertTriangle className="text-red-500" size={18} />
+                          <h3 className="font-oswald text-sm font-bold text-red-500">PRODUCCIÓN URGENTE ({urgentItems.length})</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {urgentItems.map(sr => (
+                            <div key={sr.id} className="p-4 rounded-xl border-2 border-red-500/50 bg-red-500/10">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                                    <Factory size={20} className="text-red-500" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-oswald font-bold">{sr.name}</h4>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <span className="text-red-500 font-bold">{sr.totalStock.toFixed(1)}</span>
+                                      <span>/</span>
+                                      <span>{sr.min_stock} {sr.unit}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <Badge variant="destructive" className="text-[10px]">Urgente</Badge>
+                              </div>
+                              
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="text-sm">
+                                  <span className="text-muted-foreground">Producir: </span>
+                                  <span className="font-oswald font-bold text-primary">{sr.suggestedProduction} {sr.unit}</span>
+                                </div>
+                                <div className="text-sm">
+                                  <span className="text-muted-foreground">Costo aprox: </span>
+                                  <span className="font-oswald font-bold">{formatMoney(sr.avg_cost * sr.suggestedProduction)}</span>
+                                </div>
+                              </div>
+                              
+                              <Button 
+                                className="w-full bg-red-600 hover:bg-red-700 text-white font-oswald"
+                                onClick={() => handleOpenProduction({ ...sr, suggested: sr.suggestedProduction })}
+                              >
+                                <Play size={14} className="mr-1" /> Producir Ahora
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* OK Items (optional production) */}
+                    {okItems.length > 0 && (
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Check className="text-green-500" size={18} />
+                          <h3 className="font-oswald text-sm font-bold text-green-500">STOCK ADECUADO ({okItems.length})</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {okItems.map(sr => (
+                            <div key={sr.id} className="p-4 rounded-xl border border-border bg-card">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                                    <Factory size={20} className="text-green-500" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-oswald font-bold">{sr.name}</h4>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <span className="text-green-500 font-bold">{sr.totalStock.toFixed(1)}</span>
+                                      <span>/</span>
+                                      <span>{sr.min_stock} {sr.unit}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <Badge variant="secondary" className="text-[10px] bg-green-500/20 text-green-500">OK</Badge>
+                              </div>
+                              
+                              <Button 
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => handleOpenProduction(sr)}
+                              >
+                                <Factory size={14} className="mr-1" /> Producir Más
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No sub-recipes */}
+                    {subrecipesNeedingProduction.length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Factory size={48} className="mx-auto mb-4 opacity-30" />
+                        <p className="font-medium mb-2">No hay sub-recetas configuradas</p>
+                        <p className="text-sm">Crea ingredientes de tipo "Sub-receta" en la pestaña Insumos</p>
+                      </div>
+                    )}
+
+                    {/* Production History */}
+                    {productionHistory.length > 0 && (
+                      <div className="mt-8">
+                        <h3 className="font-oswald text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
+                          <History size={14} /> Historial de Producción Reciente
+                        </h3>
+                        <div className="space-y-2">
+                          {productionHistory.slice(0, 10).map(prod => (
+                            <div key={prod.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded bg-blue-500/10 flex items-center justify-center">
+                                  <Factory size={14} className="text-blue-500" />
+                                </div>
+                                <div>
+                                  <span className="font-medium">{prod.ingredient_name}</span>
+                                  <div className="text-xs text-muted-foreground">
+                                    {prod.quantity_produced} {prod.unit} • {prod.produced_by}
+                                    {prod.notes && <span className="ml-1">• {prod.notes}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-oswald font-bold text-primary">{formatMoney(prod.total_cost)}</div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {new Date(prod.produced_at).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </TabsContent>
+
             {/* ─── WAREHOUSES TAB ─── */}
             <TabsContent value="warehouses" className="mt-0">
               <div className="flex items-center justify-between mb-4">
