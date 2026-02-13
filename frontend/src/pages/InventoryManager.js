@@ -424,6 +424,82 @@ export default function InventoryManager() {
     }));
   };
 
+  // ─── PRODUCTION HANDLERS ───
+  const handleOpenProduction = async (ingredient) => {
+    // Get production check
+    const defaultWarehouse = warehouses[0]?.id || '';
+    setProductionDialog({ 
+      open: true, 
+      data: { 
+        ingredient_id: ingredient.id,
+        ingredient_name: ingredient.name,
+        unit: ingredient.unit,
+        warehouse_id: defaultWarehouse,
+        quantity: 1,
+        notes: ''
+      },
+      checking: false,
+      checkResult: null
+    });
+  };
+
+  const handleCheckProduction = async () => {
+    const d = productionDialog.data;
+    if (!d?.warehouse_id || !d?.quantity) {
+      toast.error('Completa todos los campos');
+      return;
+    }
+    setProductionDialog(p => ({ ...p, checking: true }));
+    try {
+      const res = await productionAPI.checkProduction({
+        ingredient_id: d.ingredient_id,
+        warehouse_id: d.warehouse_id,
+        quantity: parseFloat(d.quantity) || 1
+      });
+      setProductionDialog(p => ({ ...p, checking: false, checkResult: res.data }));
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error al verificar');
+      setProductionDialog(p => ({ ...p, checking: false }));
+    }
+  };
+
+  const handleProduce = async () => {
+    const d = productionDialog.data;
+    const check = productionDialog.checkResult;
+    if (!check?.can_produce) {
+      toast.error('Verifica la disponibilidad primero');
+      return;
+    }
+    setProducingItem(true);
+    try {
+      const res = await productionAPI.produce({
+        ingredient_id: d.ingredient_id,
+        warehouse_id: d.warehouse_id,
+        quantity: parseFloat(d.quantity) || 1,
+        notes: d.notes || ''
+      });
+      if (res.data.ok) {
+        toast.success(`Producido: ${res.data.quantity_produced} ${res.data.unit} de ${res.data.ingredient_name}`);
+        setProductionDialog({ open: false, data: null });
+        fetchAll();
+      } else {
+        toast.error(res.data.error || 'Error en producción');
+      }
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error al producir');
+    }
+    setProducingItem(false);
+  };
+
+  const loadProductionHistory = async () => {
+    try {
+      const res = await productionAPI.getHistory({ limit: 50 });
+      setProductionHistory(res.data);
+    } catch (e) {
+      console.error('Error loading production history', e);
+    }
+  };
+
   // Filter ingredients
   const filteredIngredients = ingredients.filter(ing => {
     const matchSearch = !ingredientSearch || 
