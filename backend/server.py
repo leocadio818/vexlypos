@@ -1375,19 +1375,30 @@ async def verify_manager_pin(pin_data: dict):
     if not user:
         raise HTTPException(status_code=401, detail="PIN inválido")
     
-    # Get user's role
-    role = await db.roles.find_one({"id": user.get("role_id")}, {"_id": 0})
-    if not role:
-        raise HTTPException(status_code=403, detail="Usuario sin rol asignado")
-    
     # Check if user has manager/admin permissions
-    permissions = role.get("permissions", {})
-    is_manager = (
-        permissions.get("is_admin", False) or
-        permissions.get("manage_users", False) or
-        permissions.get("manage_cancellation_reasons", False) or
-        role.get("name", "").lower() in ["administrador", "admin", "gerente", "manager"]
-    )
+    user_role = user.get("role", "").lower()
+    role_id = user.get("role_id")
+    
+    # Check role from roles collection if role_id exists
+    role_doc = None
+    if role_id:
+        role_doc = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    
+    # Determine if user is a manager
+    is_manager = False
+    role_name = user_role
+    
+    if role_doc:
+        permissions = role_doc.get("permissions", {})
+        is_manager = (
+            permissions.get("is_admin", False) or
+            permissions.get("manage_users", False) or
+            permissions.get("manage_cancellation_reasons", False)
+        )
+        role_name = role_doc.get("name", user_role)
+    else:
+        # Fallback to checking the role field directly
+        is_manager = user_role in ["admin", "administrador", "gerente", "manager"]
     
     if not is_manager:
         raise HTTPException(status_code=403, detail="Este usuario no tiene permisos de gerente")
@@ -1396,7 +1407,7 @@ async def verify_manager_pin(pin_data: dict):
         "authorized": True,
         "user_id": user["id"],
         "user_name": user["name"],
-        "role": role.get("name", "?")
+        "role": role_name
     }
 
 @api.post("/orders/{order_id}/send-kitchen")
