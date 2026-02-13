@@ -1756,6 +1756,89 @@ export default function InventoryManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Alert Config Dialog */}
+      <Dialog open={alertDialog.open} onOpenChange={(o) => !o && setAlertDialog({ open: false })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <Bell size={20} className="text-primary" /> Configuración de Alertas
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
+              <p className="text-sm">
+                Recibe alertas por email cuando un insumo llegue a su stock mínimo.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Emails para alertas</label>
+              <div className="mt-2 space-y-2">
+                {(alertConfig.emails || []).map((email, idx) => (
+                  <div key={idx} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border">
+                    <div className="flex items-center gap-2">
+                      <Mail size={14} className="text-muted-foreground" />
+                      <span className="text-sm">{email}</span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-destructive"
+                      onClick={() => removeAlertEmail(email)}
+                    >
+                      <X size={12} />
+                    </Button>
+                  </div>
+                ))}
+                {alertConfig.emails?.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-2">No hay emails configurados</p>
+                )}
+              </div>
+              <div className="flex gap-2 mt-3">
+                <input
+                  type="email"
+                  value={alertDialog.newEmail || ''}
+                  onChange={e => setAlertDialog(p => ({ ...p, newEmail: e.target.value }))}
+                  placeholder="nuevo@email.com"
+                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                  onKeyPress={e => e.key === 'Enter' && addAlertEmail()}
+                />
+                <Button variant="outline" onClick={addAlertEmail}>
+                  <Plus size={14} />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+              <div>
+                <span className="font-medium">Alertas activas</span>
+                <p className="text-xs text-muted-foreground">Enviar emails automáticamente</p>
+              </div>
+              <Switch
+                checked={alertConfig.enabled}
+                onCheckedChange={(checked) => setAlertConfig(p => ({ ...p, enabled: checked }))}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={handleCheckAlerts}
+              >
+                <AlertTriangle size={14} className="mr-1" /> Verificar Ahora
+              </Button>
+              <Button 
+                onClick={handleSaveAlertConfig} 
+                className="flex-1 bg-primary text-primary-foreground font-oswald"
+              >
+                <Save size={14} className="mr-1" /> Guardar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
