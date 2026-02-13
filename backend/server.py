@@ -1011,6 +1011,11 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput,
     # Get cancellation reason for audit
     reason = await db.cancellation_reasons.find_one({"id": input.reason_id}, {"_id": 0})
     reason_name = reason.get("name", "Sin razón") if reason else "Sin razón"
+    requires_manager = reason.get("requires_manager_auth", False) if reason else False
+    
+    # Check if manager authorization is required but not provided
+    if requires_manager and not input.authorized_by_id:
+        raise HTTPException(status_code=403, detail="Esta anulación requiere autorización de gerente")
     
     # Update item status
     await db.orders.update_one(
@@ -1023,6 +1028,8 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput,
             "items.$.cancelled_at": now_iso(),
             "items.$.cancelled_by_id": user["user_id"],
             "items.$.cancelled_by_name": user["name"],
+            "items.$.authorized_by_id": input.authorized_by_id,
+            "items.$.authorized_by_name": input.authorized_by_name,
             "updated_at": now_iso()
         }}
     )
@@ -1058,8 +1065,12 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput,
         "product_name": item.get("product_name", "?"),
         "quantity": item.get("quantity", 1),
         "unit_price": item.get("unit_price", 0),
-        "user_id": user["user_id"],
-        "user_name": user["name"],
+        "total_value": item.get("unit_price", 0) * item.get("quantity", 1),
+        "requested_by_id": user["user_id"],
+        "requested_by_name": user["name"],
+        "authorized_by_id": input.authorized_by_id,
+        "authorized_by_name": input.authorized_by_name,
+        "required_manager_auth": requires_manager,
         "reason_id": input.reason_id,
         "reason": reason_name,
         "restored_to_inventory": input.return_to_inventory and inventory_was_deducted,
