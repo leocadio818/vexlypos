@@ -166,6 +166,15 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 
 ## Changelog Reciente
 
+### Febrero 2026
+- ✅ **Búsqueda inteligente de productos**: Barra de búsqueda en Configuración > Inventario > Productos con:
+  - Filtrado por nombre, categoría y precio
+  - Resaltado de texto coincidente
+  - Contador de resultados
+  - Efecto de foco animado
+  - Botón para limpiar búsqueda
+- 🔧 **Arreglado error de sintaxis** en Settings.js (código duplicado eliminado)
+
 ### Diciembre 2025
 - ✅ Implementado diseño Glassmorphism en todo el sistema
 - ✅ Creado panel de Paleta de Colores en Configuración
