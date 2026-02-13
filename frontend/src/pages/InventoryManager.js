@@ -1134,9 +1134,38 @@ export default function InventoryManager() {
                   value={ingredientDialog.data?.avg_cost || 0}
                   onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, avg_cost: parseFloat(e.target.value) || 0 } }))}
                   className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                  disabled={ingredientDialog.data?.is_subrecipe}
                 />
+                {ingredientDialog.data?.is_subrecipe && (
+                  <p className="text-[10px] text-muted-foreground mt-1">Costo calculado desde sub-receta</p>
+                )}
               </div>
             </div>
+            
+            {/* Sub-recipe toggle */}
+            <div className="p-3 rounded-lg bg-card border border-border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-medium text-sm">Es Sub-receta</span>
+                  <p className="text-xs text-muted-foreground">Este insumo se produce a partir de otros ingredientes</p>
+                </div>
+                <Switch
+                  checked={ingredientDialog.data?.is_subrecipe || false}
+                  onCheckedChange={(checked) => setIngredientDialog(p => ({ 
+                    ...p, 
+                    data: { ...p.data, is_subrecipe: checked, recipe_id: checked ? p.data?.recipe_id : '' } 
+                  }))}
+                />
+              </div>
+              {ingredientDialog.data?.is_subrecipe && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <p className="text-xs text-primary">
+                    Después de guardar, crea una receta en la pestaña "Recetas" que produzca este ingrediente.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <Button onClick={handleSaveIngredient} className="w-full bg-primary text-primary-foreground font-oswald">
               <Save size={16} className="mr-1" /> Guardar
             </Button>
