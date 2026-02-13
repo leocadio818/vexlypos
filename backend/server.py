@@ -959,17 +959,67 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput)
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
 @api.post("/orders/{order_id}/send-kitchen")
-async def send_to_kitchen(order_id: str):
+async def send_to_kitchen(order_id: str, user: dict = Depends(get_current_user)):
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
-    pending_ids = [i["id"] for i in order["items"] if i["status"] == "pending"]
+    
+    # Get pending items before sending
+    pending_items = [i for i in order["items"] if i["status"] == "pending"]
+    pending_ids = [i["id"] for i in pending_items]
+    
+    # Mark items as sent
     for pid in pending_ids:
         await db.orders.update_one(
             {"id": order_id, "items.id": pid},
-            {"$set": {"items.$.status": "sent", "items.$.sent_to_kitchen": True}}
+            {"$set": {
+                "items.$.status": "sent", 
+                "items.$.sent_to_kitchen": True,
+                "items.$.sent_at": now_iso(),
+                "items.$.inventory_deducted": False  # Will be set to True after deduction
+            }}
         )
     await db.orders.update_one({"id": order_id}, {"$set": {"status": "sent", "updated_at": now_iso()}})
+    
+    # ─── AUTO DEDUCT INVENTORY ON SEND TO KITCHEN ───
+    inventory_config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+    auto_deduct = inventory_config.get("auto_deduct_on_payment", True) if inventory_config else True
+    
+    if auto_deduct and pending_items:
+        default_warehouse = inventory_config.get("default_warehouse_id", "") if inventory_config else ""
+        if not default_warehouse:
+            wh = await db.warehouses.find_one({}, {"_id": 0})
+            default_warehouse = wh["id"] if wh else ""
+        
+        if default_warehouse:
+            deduction_errors = []
+            for item in pending_items:
+                try:
+                    recipe = await db.recipes.find_one({"product_id": item["product_id"]}, {"_id": 0})
+                    if recipe:
+                        await explode_and_deduct_recipe(
+                            recipe=recipe,
+                            warehouse_id=default_warehouse,
+                            quantity=item.get("quantity", 1),
+                            user_id=user["user_id"],
+                            user_name=user["name"],
+                            parent_product_id=item["product_id"],
+                            order_id=order_id
+                        )
+                        # Mark item as inventory deducted
+                        await db.orders.update_one(
+                            {"id": order_id, "items.id": item["id"]},
+                            {"$set": {"items.$.inventory_deducted": True}}
+                        )
+                except Exception as e:
+                    deduction_errors.append(f"{item.get('product_name', '?')}: {str(e)}")
+            
+            if deduction_errors:
+                await db.orders.update_one({"id": order_id}, {"$set": {
+                    "inventory_deduction_errors": deduction_errors,
+                    "inventory_deducted_at": now_iso()
+                }})
+    
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
 # ─── MOVE ORDER / MERGE ORDERS ───
