@@ -2589,7 +2589,7 @@ async def check_low_stock_alerts(send_email: bool = Query(False)):
 async def get_alert_config():
     """Get stock alert configuration"""
     config = await db.system_config.find_one({"id": "stock_alerts"}, {"_id": 0})
-    return config or {"id": "stock_alerts", "enabled": False, "emails": [], "frequency": "daily"}
+    return config or {"id": "stock_alerts", "enabled": False, "emails": [], "frequency": "daily", "schedule_time": "08:00"}
 
 @api.put("/inventory/alert-config")
 async def update_alert_config(input: dict):
@@ -2602,6 +2602,8 @@ async def update_alert_config(input: dict):
         {"$set": input}, 
         upsert=True
     )
+    # Update scheduler
+    await update_scheduler_from_config()
     return {"ok": True}
 
 @api.get("/inventory/alert-logs")
