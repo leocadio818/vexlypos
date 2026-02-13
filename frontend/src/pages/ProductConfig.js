@@ -770,6 +770,105 @@ export default function ProductConfig() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Beautiful Price Keypad Modal */}
+      {priceKeypad.open && (
+        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 99999 }}>
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setPriceKeypad({ open: false, field: null, value: '' })}
+          />
+          
+          {/* Keypad Card */}
+          <div className="relative w-full max-w-xs animate-in zoom-in-95 duration-200">
+            {/* Glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary via-primary/50 to-primary rounded-3xl blur-lg opacity-30" />
+            
+            {/* Card content */}
+            <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl border border-white/10 p-5 shadow-2xl">
+              {/* Header */}
+              <div className="text-center mb-4">
+                <span className="text-xs text-white/50 uppercase tracking-wider">{priceKeypad.label}</span>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <span className="text-white/40 text-lg">RD$</span>
+                  <span className="font-oswald text-4xl font-bold text-white">
+                    {priceKeypad.value || '0'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Keypad Grid */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'].map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      if (key === '⌫') {
+                        setPriceKeypad(p => ({ ...p, value: p.value.slice(0, -1) }));
+                      } else if (key === '.') {
+                        if (!priceKeypad.value.includes('.')) {
+                          setPriceKeypad(p => ({ ...p, value: p.value + '.' }));
+                        }
+                      } else {
+                        setPriceKeypad(p => ({ ...p, value: p.value + key }));
+                      }
+                    }}
+                    className={`h-14 rounded-xl font-oswald text-xl font-bold transition-all active:scale-95 ${
+                      key === '⌫' 
+                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+                        : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Quick amounts */}
+              <div className="grid grid-cols-4 gap-1.5 mb-4">
+                {[50, 100, 250, 500].map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => setPriceKeypad(p => ({ ...p, value: String(amount) }))}
+                    className="py-2 rounded-lg bg-primary/20 text-primary text-xs font-bold hover:bg-primary/30 transition-all active:scale-95"
+                  >
+                    {amount}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Action buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPriceKeypad({ open: false, field: null, value: '' })}
+                  className="py-3 rounded-xl bg-white/10 text-white font-oswald font-bold hover:bg-white/20 transition-all active:scale-95"
+                >
+                  CANCELAR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const val = parseFloat(priceKeypad.value) || 0;
+                    if (priceKeypad.field === 'price_a') {
+                      setProduct(p => ({ ...p, price_a: val, price: val }));
+                    } else {
+                      setProduct(p => ({ ...p, [priceKeypad.field]: val }));
+                    }
+                    setPriceKeypad({ open: false, field: null, value: '' });
+                  }}
+                  className="py-3 rounded-xl bg-gradient-to-r from-primary to-primary/80 text-white font-oswald font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/30"
+                >
+                  CONFIRMAR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
