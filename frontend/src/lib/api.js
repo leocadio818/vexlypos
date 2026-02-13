@@ -222,6 +222,14 @@ export const recipesAPI = {
   create: (data) => api.post('/recipes', data),
   delete: (id) => api.delete(`/recipes/${id}`),
   deleteByProduct: (productId) => api.delete(`/recipes/product/${productId}`),
+  getCost: (productId) => api.get(`/inventory/recipe-cost/${productId}`),
+  recalculateCosts: () => api.post('/inventory/recalculate-costs'),
+};
+
+// Inventory Explosion
+export const inventoryExplosionAPI = {
+  deductForProduct: (data) => api.post('/inventory/deduct-for-product', data),
+  checkAvailability: (data) => api.post('/inventory/check-availability', data),
 };
 
 // Purchase Orders
