@@ -505,7 +505,7 @@ export default function Settings() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-oswald text-base font-bold">Mesas</h2>
-                  <Button onClick={() => setTableDialog({ open: true, number: '', area_id: areas[0]?.id || '', capacity: 4, shape: 'round' })} size="sm"
+                  <Button onClick={() => setTableDialog({ open: true, number: '', area_id: areas[0]?.id || '', capacity: 4, shape: 'round', editId: null })} size="sm"
                     className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-table-btn">
                     <Plus size={14} className="mr-1" /> Agregar
                   </Button>
