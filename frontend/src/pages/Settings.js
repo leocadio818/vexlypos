@@ -56,10 +56,18 @@ export default function Settings() {
   // Check if user can access theme settings (admin, manager, owner, gerente, propietario)
   const canAccessTheme = ['admin', 'manager', 'owner', 'propietario', 'gerente'].includes(user?.role);
 
+  // Read URL params to determine initial tab state
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'users';
+  const initialSubtab = searchParams.get('subtab');
+
+  // Main tab state
+  const [mainTab, setMainTab] = useState(initialTab);
+  
   // Sub-tab states
   const [mesasSubTab, setMesasSubTab] = useState('mesas');
   const [ventasSubTab, setVentasSubTab] = useState('pagos');
-  const [inventarioSubTab, setInventarioSubTab] = useState('categorias');
+  const [inventarioSubTab, setInventarioSubTab] = useState(initialSubtab === 'productos' ? 'productos' : 'categorias');
 
   const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
   const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round', editId: null });
