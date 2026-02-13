@@ -435,7 +435,7 @@ export default function InventoryManager() {
         ingredient_name: ingredient.name,
         unit: ingredient.unit,
         warehouse_id: defaultWarehouse,
-        quantity: 1,
+        quantity: ingredient.suggested || 1,
         notes: ''
       },
       checking: false,
