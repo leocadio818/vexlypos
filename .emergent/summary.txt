@@ -1,74 +1,107 @@
 <analysis>**original_problem_statement:**
-The user is building a comprehensive Point of Sale (POS) system for a restaurant. The initial goal was to improve usability and efficiency.
+The user is building a comprehensive Point of Sale (POS) system. The project has evolved to include a major overhaul of inventory management.
 
-Recent requests have focused on a significant UI/UX overhaul and adding advanced operational capabilities:
-- **System-Wide UI Makeover:** Apply a modern Liquid Glass / Glassmorphism design to the entire application, excluding the Kitchen Display System (KDS) and TV screens for visibility reasons.
-- **Theme Customization:** Allow an administrator or manager to customize all colors of the new Glassmorphism design from a dedicated color palette in the settings. This includes adding predefined color presets (e.g., Pastel, Natural, Elegant).
-- **Advanced Payment Logic:**
-    - On the payment screen, if the amount paid with a non-cash method (like a credit card) is greater than the bill total, the excess amount should be treated as a Tip.
-    - For cash-based payments, the excess should be treated as Change.
-    - Add a setting to define whether a payment method is cash-based or not.
-- **Enhanced UI Information:** On the payment screen, for payment methods in foreign currencies (USD, EUR), display the calculated equivalent amount directly on the button itself.
-- **Full Category Management:** Implement a complete CRUD (Create, Read, Update, Delete) interface for product categories within the inventory settings.
-- **Advanced Modifier System:** Overhaul the modifier functionality. Modifier Groups should act as questions (e.g., Meat temperature?). The answers should be special modifier products (which can have a price) that are hidden from the main product menu but appear on kitchen orders and the final bill.
+**Latest User Requests:**
+1.  **Consolidate Product Management:** Create a unified interface in  for product creation with visual customization options (background and text colors).
+2.  **Build an Inventory Master Module:**
+    *   **Recipes & Ingredients:** Implement a relational schema where a saleable  has a  composed of multiple  (raw materials).
+    *   **Multi-Warehouse Inventory:** Manage stock levels for ingredients across different .
+    *   **Advanced Logistics:** Implement stock transfers between warehouses and record waste/spoilage.
+    *   **Procurement Cycle:** Create a Purchase Order system with status tracking (New, Pending, Received).
+    *   **Stock Reconciliation:** When receiving a PO, allow editing of  vs. , which should automatically update the ingredient's stock level and average cost.
+3.  **Implement Inventory Explosion:**
+    *   When an item is sold, the system must recursively check its recipe.
+    *   If a component is a sub-recipe (e.g., a sauce) and has no pre-made stock, the system must explode it and deduct the base ingredients it's made of.
+    *   The cost of sub-recipes must update dynamically when the cost of their base ingredients changes.
+    *   All stock movements must be logged for traceability.
+4.  **Batch Production of Sub-recipes:** Add a feature to produce sub-recipes in batches (e.g., make 5 liters of a sauce), which consumes the base ingredients and adds to the sub-recipe's stock.
+5.  **Production Dashboard:** Create a dashboard that highlights which sub-recipes are running low and need to be produced.
+6.  **Automated Low-Stock Alerts:**
+    *   Implement manual and scheduled (daily) email alerts via Resend when any ingredient's stock reaches its defined minimum level.
+7.  **Stock Control Logic (Current Task):**
+    *   When an order is paid, automatically deduct the corresponding ingredients from inventory using the explosion logic.
+    *   Add a toggle in Settings: Permitir Venta sin Stock (Allow Sale Without Stock).
+        *   **ON:** Allow sales to proceed, resulting in negative inventory.
+        *   **OFF:** If an item's stock is <= 0, its button on the order screen must be disabled and marked Agotado (Sold Out).
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-A sophisticated Restaurant POS system with a FastAPI backend and a React frontend. The application features secure PIN-based authentication, role-based access control, and a dynamic table map.
+A sophisticated Restaurant POS system with a FastAPI backend and a React frontend, featuring a Glassmorphism theme.
 
-The entire application UI has been redesigned with a Glassmorphism theme. This new theme is fully customizable via a Paleta (Palette) section in the Settings page, which is restricted to admin/manager roles. This section allows for real-time changes to background gradients, accent colors, and the glass effect's opacity/blur, and includes 8 predefined color palettes (e.g., Pastel, Natural, Ocean).
-
-The payment screen has been enhanced with intelligent logic: it automatically calculates Tip for overpayment on card transactions and Change for cash. It also displays the converted amount directly on foreign currency buttons (USD/EUR). Full CRUD functionality for product categories, including a color picker and product counter, has been added to the inventory management section.
+A complete and advanced inventory management module has been implemented from scratch. Key features include:
+-   **Inventory Master:** A dedicated page () for full CRUD management of Ingredients, Warehouses, Suppliers, Recipes, and Purchase Orders.
+-   **Sub-recipes:** The system supports creating recipes that are used as ingredients in other recipes.
+-   **Inventory Explosion:** The backend logic correctly handles recursive inventory deduction for sales, exploding sub-recipes when pre-made stock is unavailable.
+-   **Batch Production:** A feature allows users to produce batches of sub-recipes, which correctly consumes base ingredients and increases the sub-recipe's stock.
+-   **Production Dashboard:** A UI that shows which sub-recipes have low stock and suggests production quantities.
+-   **Low Stock Alerts:** A fully functional system for sending low-stock email alerts, which can be triggered manually or scheduled to run daily at a configured time using APScheduler.
+-   **UI/UX:** The smart product search in settings is functional.
 
 **Last working item**:
--   **Last item agent was working:** The agent was beginning to implement a highly requested, complex feature: an advanced modifier system. The user specified that Modifier Groups should function as questions, and the options within them should be special modifier products (products hidden from the main menu but available for selection as modifiers, with their own price). The agent had just started discovery by fetching existing modifier data and acknowledging the user's detailed requirements.
--   **Status**: NOT STARTED
+-   **Last item agent was working:** The agent was starting the implementation of two related features:
+    1.  Automatically deducting inventory from stock when a customer's bill is paid.
+    2.  Adding a Permitir Venta sin Stock (Allow Sale Without Stock) toggle in the settings to control sales behavior for out-of-stock items.
+    The agent had begun by exploring the relevant backend () and frontend (, ) files to plan the necessary changes.
+-   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
 -   **Which testing method agent to use?**: both
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1 (P0): Implement Advanced Modifier Management.**
--   **Issue 2 (P1): Verify and Fix Payment Screen Mobile Scroll.**
+-   **Issue 1 (P0):** Implement auto-inventory deduction and Allow Sale Without Stock toggle.
+-   **Issue 2 (P1):** Auto-send to kitchen does not work on the first try.
+-   **Issue 3 (P2):** Verify and Fix Payment Screen Mobile Scroll.
 
 **Issues Detail:**
--   **Issue 1:** Implement Advanced Modifier Management
-    -   **Attempted fixes:** The agent acknowledged the user's detailed request and fetched existing modifier data () to understand the current structure. No code for the new, more complex logic has been implemented yet.
+-   **Issue 1:** Implement auto-inventory deduction and Allow Sale Without Stock toggle.
+    -   **Attempted fixes:** The agent has analyzed the existing codebase to identify the files that need modification (, , , ). No code has been written yet.
     -   **Next debug checklist:**
         1.  **Backend ():**
-            *   Add a new boolean field, , to the  model/collection.
-            *   Update  and  to handle this new field.
-            *   Modify  to exclude products where  is true from general menu listings, but include them when fetched for modifier configuration.
-            *   Restructure the  model to link to products via  instead of having inline .
-            *   Update the CRUD endpoints for modifier groups () to work with this new structure.
+            -   Add a new field  to the  collection.
+            -   Create new endpoints to get/set this configuration.
+            -   Modify the  endpoint to trigger inventory deduction upon successful payment.
+            -   Create an endpoint that checks the current stock for a list of product IDs, which the frontend will use to enable/disable buttons.
         2.  **Frontend ():**
-            *   In the Create Product dialog, add a  control for Is Modifier Product?.
-            *   Create a new UI tab for Modifiers within Inventory to manage modifier groups (the questions).
-            *   This new UI should allow searching for and assigning the special modifier products as options to a group.
+            -   Add a  component for Permitir Venta sin Stock that calls the new configuration endpoint.
         3.  **Frontend ():**
-            *   When a product with a modifier group is added to an order, trigger a dialog that presents the group's question and its associated modifier products as selectable answers.
-            *   When an option is selected, add it to the order as a sub-item, ensuring it's reflected in the cart, kitchen printer, and final bill.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a critical user request to create a flexible and powerful menu configuration system, enabling complex product customizations essential for restaurant operations.
-    -   **Status:** NOT STARTED
+            -   Fetch the  setting on component mount.
+            -   If , fetch the stock levels for all displayed products.
+            -   Conditionally add  and  styles to product buttons where stock is <= 0, and display an Agotado badge.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical inventory control feature requested by the user to prevent selling out-of-stock items and ensure inventory accuracy.
+    -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** both
     -   **Blocked on other issue:** None
 
--   **Issue 2:** Verify and Fix Payment Screen Mobile Scroll
-    -   **Attempted fixes:** The agent correctly identified that a  element was obscuring content on mobile. The fix involved removing it and attempting to make the right-hand panel scrollable using . However, verification was inconclusive due to browser crashes and difficulty with screenshotting scrolled content.
+-   **Issue 2:** Auto-send to kitchen does not work on the first try.
+    -   **Attempted fixes:** A fix was previously implemented to intercept navigation clicks and sync state using  and .
     -   **Next debug checklist:**
-        1.  Use the screenshot tool with a mobile viewport on the payment screen ().
-        2.  After adding items and selecting a payment method, confirm the entire right panel (including Total Recibido, PROPINA/CAMBIO, and the CONFIRM/CANCEL buttons) is visible, either directly or via scrolling.
-        3.  If it's not scrollable, inspect . Ensure the parent of the scrollable element has a defined height (e.g.,  within a flex container) to allow  to work correctly.
-    -   **Why fix this issue and what will be achieved with the fix?** Guarantees the core payment workflow is fully functional and usable on mobile devices, a key requirement for the app's responsiveness.
-    -   **Status:** IN PROGRESS
+        1.  Go to an order screen and add new items.
+        2.  Click a sidebar link like Mesas.
+        3.  Verify the Comanda enviada automáticamente toast appears on the *first* click.
+        4.  Check the kitchen screen to confirm the new items are present.
+    -   **Why fix this issue and what will be achieved with the fix?** Prevents data loss from unsent orders.
+    -   **Status:** USER VERIFICATION PENDING
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** frontend
+    -   **Blocked on other issue:** None
+
+-   **Issue 3:** Verify and Fix Payment Screen Mobile Scroll
+    -   **Attempted fixes:** Previous attempts involved adding , but were not conclusively verified.
+    -   **Next debug checklist:**
+        1.  Use the screenshot tool with a mobile viewport on the payment screen.
+        2.  Add enough items to the bill to require scrolling.
+        3.  Confirm the payment method panel on the right is fully scrollable.
+        4.  If not, inspect  and ensure the scrollable container's parent has a defined height ( or ).
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures the payment workflow is usable on mobile devices.
+    -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** frontend
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   None.
+-   None apart from the P0 issue above.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
@@ -78,26 +111,27 @@ The payment screen has been enhanced with intelligent logic: it automatically ca
     *   **P2: DGII Report Generation:** Build the frontend functionality to generate and download Dominican tax reports (607, 608).
 *   **Future Tasks:**
     *   **P2: Image/Icon Support for Product Buttons:** Allow users to upload an image or select an icon for product buttons.
-    *   **P2: Cache Product Images Offline:** Enhance the offline mode to also cache product images for a richer offline menu experience.
-    *   **P3: Drag-and-Drop Reordering:** Allow users to reorder payment methods in the settings via drag-and-drop.
+    *   **P2: Cache Product Images Offline:** Enhance the offline mode to also cache product images.
+    *   **P3: Drag-and-Drop Reordering:** Allow users to reorder payment methods in the settings.
     *   **P3: Export Audit Trail:** Add a button to export the table movement history to Excel/CSV.
     *   **P3: Duplicate Product Feature:** Add a Duplicate button in the product list.
 
 **Completed work in this session**
--   **System-Wide Glassmorphism UI (DONE):** Applied a customizable Glassmorphism theme across the entire application, controlled by a new .
--   **Customizable Color Palette (DONE):** Implemented a Paleta settings page () for admins to customize all theme colors in real-time and choose from 8 predefined palettes.
--   **Advanced Payment Logic (DONE):**
-    -   Implemented the Tip (for non-cash) vs. Change (for cash) logic on the payment screen ().
-    -   Added a setting in  and a backend field () to  to control this behavior.
--   **UI/UX Enhancements (DONE):**
-    -   Payment screen buttons for foreign currencies now show the converted amount.
-    -   Responsive layout issues on the mobile payment screen were partially fixed.
--   **Category Management (DONE):** Added a full CRUD interface for product categories in , complete with a color picker and product count display.
--   **Testing (DONE):** Used the testing agent to validate the system-wide UI overhaul and performed manual screenshot testing for subsequent features.
+-   **Smart Product Search (FIXED):** Resolved a syntax error caused by a faulty rollback and successfully re-implemented the intelligent product search in Settings.
+-   **Inventory Master Module (DONE):** Built a comprehensive inventory system from the ground up, including:
+    -   Backend models and endpoints for Ingredients, Recipes, Sub-recipes, Warehouses, Suppliers, Purchase Orders, and Stock Movements.
+    -   A new frontend page () with a tabbed interface for managing the entire inventory system.
+-   **Inventory Explosion Logic (DONE):** Implemented recursive backend logic to deduct base ingredients from stock when a product with a sub-recipe is sold.
+-   **Sub-recipe Production (DONE):** Created a feature to produce batches of sub-recipes, which correctly consumes ingredients and adds to the sub-recipe's stock.
+-   **Production Dashboard (DONE):** Developed a UI to monitor sub-recipe stock levels and highlight which ones require urgent production.
+-   **Automated Low-Stock Alerts (DONE):**
+    -   Implemented manual and scheduled email alerts for low-stock ingredients using Resend.
+    -   Integrated  on the backend to run the alert job at a user-configurable time.
+-   **ObjectId Serialization Bug (FIXED):** Found and fixed a critical bug where a response from MongoDB included the non-serializable  field, causing an API call to fail.
 
 **Earlier issues found/mentioned but not fixed**
--   **CRITICAL**:  is a monolith and should be broken into router files.
--   **CRITICAL**:  is overly complex and should be decomposed.
+-   **CRITICAL**:  is a massive monolith and should be broken into separate router files. The recent inventory work has significantly worsened this.
+-   **CRITICAL**:  is overly complex and should be decomposed into smaller components.
 -   *User has approved postponing these refactoring tasks.*
 
 **Known issue recurrence from previous fork**
@@ -107,79 +141,83 @@ The payment screen has been enhanced with intelligent logic: it automatically ca
 
 
 **Key Technical Concepts**
--   **Dynamic Theming with React Context:** A new  provides theme properties (colors, opacity, blur) across the entire application, allowing for instant, global style changes.
--   **Live UI Customization:** The Paleta section in  allows administrators to modify the theme and see a live preview without reloading the page.
--   **Conditional Rendering for Business Logic:** The UI in  now conditionally renders PROPINA (Tip) or CAMBIO (Change) with different icons and colors based on the  property of the selected payment method.
--   **Complex, Multi-Tabbed Settings:** The  page has been expanded with nested tabs to organize a growing number of configuration options (Inventory > Categories, Products, etc.).
--   **Backend Model Extension:** The  database model was extended with an  boolean field to support the new tip/change logic. New models and endpoints were created for  and .
+-   **Recursive Inventory Deduction (Explosion):** Implemented complex recursive logic in Python to traverse nested recipe structures and calculate ingredient consumption.
+-   **Background Task Scheduling:** Integrated and configured  within the FastAPI application to run jobs (low-stock alerts) at scheduled times.
+-   **Complex Frontend State Management:** Built a large, single-page interface () managing multiple data types, states, modals, and asynchronous API calls for a full CRUD module.
+-   **ObjectId Serialization:** Debugged and resolved a common  and  issue by explicitly excluding the  field from API responses to ensure JSON serializability.
+-   **Dynamic Cost Calculation:** Implemented logic to recalculate the weighted average cost of ingredients and sub-recipes when a new purchase order is received.
 
 **key DB schema**
--   ****: Added .
--   ** (new collection)**: Stores the global theme object, e.g., .
--   ** (new collection)**: Stores product categories, e.g., .
+-   **ingredients:** 
+-   **recipes:** 
+-   **warehouses:** 
+-   **stock_levels:** 
+-   **stock_movements:** 
+-   **purchase_orders:** 
+-   **suppliers:** 
+-   **system_config:** Document used for global settings like , , and soon .
 
 **changes in tech stack**
--   None.
+-   **Backend:** Added  for running scheduled tasks.
 
 **All files of reference**
--   : New file for the theming system.
--   : New file for the reusable background component.
--   : Heavily modified to add the Color Palette, Category Management, and  toggle.
--   : Modified for Tip vs. Change logic, foreign currency display, and responsive fixes.
--   : Modified to add endpoints for theme config (), categories (), and to update the  model and endpoints.
--   All files in  and : Updated to consume  and apply Glassmorphism styles.
+-   : Massively modified. Contains all backend logic for the entire application, including the new inventory system.
+-   : New file. The single-page application for the entire inventory module.
+-   : Heavily modified with new functions for every inventory feature.
+-   : Modified to link to the new inventory page and is the target for the Allow Sale Without Stock toggle.
+-   : The target for implementing the UI logic for disabling out-of-stock products.
+-   : Modified to add the  route.
 
 **Areas that need refactoring**:
--   **CRITICAL**:  is a growing monolith.
--   **CRITICAL**:  remains overly complex.
--   *(User has approved postponing these tasks)*.
+-   **CRITICAL: :** The file has become extremely large and unmanageable. It urgently needs to be broken down into a proper FastAPI structure with multiple router files (e.g., , , ).
+-   **CRITICAL: :** This new file is already very large. It should be refactored into smaller, reusable components (e.g., , , ).
+-   **CRITICAL: :** This file remains overly complex.
 
 **key api endpoints**
--   **New:**
-    -   : Retrieves the current theme settings.
-    -   : Saves the updated theme settings.
-    -   : Lists all product categories.
-    -   : Creates a new category.
-    -   : Updates an existing category.
-    -   : Deletes a category.
--   **Modified:**
-    -   : Now returns the  field.
-    -   : Now includes the  field.
-    -   : Now includes the  field.
-    -   : Used to read existing modifier structure.
+-   : A full suite of CRUD endpoints for , , , , .
+-   : Endpoints for managing stock levels, transfers, and adjustments.
+-   : Executes a production run for a sub-recipe.
+-   : Gets data for the production dashboard.
+-   : Triggers the inventory explosion logic for a sale.
+-   : Triggers the low-stock email alert.
+-   : Manages alert settings (emails, schedule).
+-   : Endpoints to get status and manage the APScheduler jobs.
 
 **Critical Info for New Agent**
--   The user's primary language is **Spanish**. All communication must be in Spanish.
--   The immediate highest priority (P0) is to implement the **Advanced Modifier System**. This is a large, complex feature requiring significant changes to the backend data models and frontend UI for both configuration (in Settings) and usage (in Order Screen). Refer to the detailed checklist in the Issues Detail section.
--   The Glassmorphism theme is a core part of the application's identity. All new UI components should adhere to this design language.
+-   **Language is Spanish:** All communication with the user must be in Spanish.
+-   **High UX Expectations:** The user values a polished, surprising user experience. New features should be visually appealing and intuitive.
+-   **Test Thoroughly:** The user has previously expressed frustration with bugs. It is crucial to test features completely () before presenting them as done.
+-   **Inventory Data Model:** The distinction between a  (for sale) and an  (for inventory) is critical. A  has a , which is composed of . An  can also be a , meaning it has its own  attached to it. Understanding this model is essential for working on the inventory system.
+-   **Refactoring Debt:** The  monolith is a major technical debt. While the user has postponed refactoring, be aware that adding new features to it will become increasingly difficult.
 
 **documents and test reports created in this job**
 -   
--    (updated)
+-    (updated with all new inventory features)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** me gustaria que cuando vea el boton de dolar y euro... me muestre... el monto en dolar o euro (Wants to see the converted currency amount on the payment buttons). **Status: COMPLETED**
-2.  **User:** esta excelente! (User is happy with the currency display).
-3.  **User:** cuando voy a realizar un pago con tarjeta... el monto que el cajero puso es mayor... no deberia generar un cambio, deberia ser propina (If overpaying with a card, the excess should be a tip, not change). **Status: COMPLETED**
-4.  **User:** y si es posoble cuando yo configure un nuevo forma de pago... poner un select para activarlo para identificar si es efectivo o no. (Wants a toggle in settings to mark a payment method as cash-based). **Status: COMPLETED**
-5.  **User:** ¡PERFECTO! 🎉 (User is happy with the tip/change logic).
-6.  **User:** adentro en configuracion en inventario, veo la pestana de crear nuevo producto, pero no uno boton para crear y editar categorias (Noticed there's no way to create/edit categories). **Status: COMPLETED**
-7.  **User:** ¡Excelente! (User is happy with the new category management UI).
-8.  **User:** ME GUSTARIA EDITAR LOS MODIFICADORES ACTUALES Y NUEVOS (Wants to manage modifiers). **Status: IN PROGRESS**
-9.  **User:** VEO TAMBIEN QUE NO ME PERMITE CONFIGURAR LA PREGUNTA Y LA RESPUESTA Y EL PRECIO DEL MODIFICADOR. (Noticed the current modifier system is too simple).
-10. **User:** CREOQUE SI AGREGAMOS UN SWITCH A LA FUNCION DE CREAR PRODUCTO Y QUE DIGA SI ES MODIFICADOR O NO... (Provided a detailed, intelligent design for the new advanced modifier system, where modifiers are special hidden products). **Status: IN PROGRESS / PENDING**
+1.  **User:** si (approving implementation of Producir Sub-receta feature).
+2.  **User:** Requests a production dashboard to see which sub-recipes need to be made. **Status: COMPLETED**
+3.  **User:** si (approving implementation of production dashboard).
+4.  **User:** Adds a new, large request: Automatically deduct inventory on sale and add a setting Permitir Venta sin Stock which should disable product buttons if stock is zero. **Status: IN PROGRESS**
+5.  **User:** si (approving implementation of the stock control features).
+6.  **User:** si (confirming plan).
+7.  **User:** si (confirming plan).
+8.  **User:** si (confirming plan).
+9.  **User:** si (confirming plan).
+10. **User:** dame el link de prueba fuera de emergent (requesting preview link). **Status: ADDRESSED**
 
 **Project Health Check:**
--   **Broken:** None.
+-   **Broken:** None
 -   **Mocked:**
-    *   **Emailing:** Resend integration is configured but its effectiveness is unverified.
+    *   **Emailing:** Resend integration is configured and used for low-stock alerts.
     *   **Printing:** All printing is mocked with on-screen previews; no physical printer integration exists.
 
 **3rd Party Integrations**
--   **Resend:** Configured for sending emails (requires User API Key).
+-   **Resend:** Used for sending low-stock email alerts. Requires a User API Key.
+-   **APScheduler:** Used for scheduling backend tasks. (Library, not an external service)
 
 **Testing status**
--   **Testing agent used after significant changes**: YES (For the system-wide Glassmorphism UI rollout).
+-   **Testing agent used after significant changes**: YES. The full inventory module was successfully validated by the testing agent.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
 -   **Known regressions**: None.
@@ -190,5 +228,7 @@ The payment screen has been enhanced with intelligent logic: it automatically ca
 -   **Mesero (Waiter):** PIN  (User: Carlos)
 
 **What agent forgot to execute**
--   The user-approved task to create a downloadable ZIP package for the local server installation remains unimplemented.
--   The full resolution and verification of the mobile payment screen's scroll behavior is still pending.</analysis>
+-   The task to create a downloadable ZIP package for the local server installation remains unimplemented.
+-   The task for physical ESC/POS printer integration is still pending.
+-   The task to generate DGII reports is still pending.
+-   The task for an employee time clock is still pending.</analysis>
