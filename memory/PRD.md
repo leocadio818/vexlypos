@@ -85,6 +85,14 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Consumo de ingredientes base y generación de stock de sub-receta
   - Registro de producción con notas (ej: número de lote)
   - Historial de producciones
+- **Dashboard de Producción**:
+  - Tab dedicado "Producción" en Inventario Maestro
+  - Sección "PRODUCCIÓN URGENTE" con items bajo stock mínimo (fondo rojo)
+  - Sección "STOCK ADECUADO" con items OK (fondo verde)
+  - Cantidad sugerida a producir (calculado automáticamente)
+  - Costo aproximado de producción
+  - Botón "Producir Ahora" para acción rápida
+  - Historial de producciones recientes con fecha, cantidad, costo y notas
 - **Tolerancia**: Liberación automática si no llegan
 
 #### Dashboard
