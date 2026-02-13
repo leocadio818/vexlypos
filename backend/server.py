@@ -1999,7 +1999,13 @@ async def list_cancellation_reasons():
 
 @api.post("/cancellation-reasons")
 async def create_cancellation_reason(input: CancellationReasonInput):
-    doc = {"id": gen_id(), "name": input.name, "return_to_inventory": input.return_to_inventory, "active": True}
+    doc = {
+        "id": gen_id(), 
+        "name": input.name, 
+        "return_to_inventory": input.return_to_inventory, 
+        "requires_manager_auth": input.requires_manager_auth,
+        "active": True
+    }
     await db.cancellation_reasons.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
