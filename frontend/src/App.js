@@ -44,6 +44,7 @@ function AppRoutes() {
         <Route path="payment/:billId" element={<PaymentScreen />} />
         <Route path="cash-register" element={<CashRegister />} />
         <Route path="inventory" element={<Inventory />} />
+        <Route path="inventory-manager" element={<InventoryManager />} />
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="reports" element={<Reports />} />
         <Route path="customers" element={<Customers />} />
