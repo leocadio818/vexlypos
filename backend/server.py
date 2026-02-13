@@ -1741,7 +1741,9 @@ async def create_ingredient(input: IngredientInput):
     doc = {
         "id": gen_id(), "name": input.name, "unit": input.unit,
         "category": input.category, "min_stock": input.min_stock,
-        "avg_cost": input.avg_cost, "active": True, "created_at": now_iso()
+        "avg_cost": input.avg_cost, "active": True, 
+        "is_subrecipe": input.is_subrecipe, "recipe_id": input.recipe_id,
+        "created_at": now_iso()
     }
     await db.ingredients.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
