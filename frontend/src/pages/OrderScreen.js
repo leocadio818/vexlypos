@@ -1395,6 +1395,54 @@ export default function OrderScreen() {
             className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold tracking-wider active:scale-95 mt-2">
             AGREGAR ({formatMoney((modDialog.product?.price || 0) * (parseFloat(modDialog.qty) || 1))})
           </Button>
+          
+          {/* Required Modifiers Alert - Inside Dialog */}
+          {requiredAlert.open && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-lg overflow-hidden" style={{ zIndex: 100 }}>
+              {/* Backdrop */}
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+              
+              {/* Alert Card */}
+              <div className="relative w-full mx-4 animate-in zoom-in-95 duration-200">
+                <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-2xl blur opacity-50 animate-pulse" />
+                <div className="relative bg-slate-900 rounded-2xl border border-white/20 p-5">
+                  {/* Icon */}
+                  <div className="flex justify-center mb-3">
+                    <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
+                      <AlertTriangle size={28} className="text-white" />
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-center font-oswald text-lg font-bold text-white mb-2">
+                    ¡Selección Requerida!
+                  </h3>
+                  
+                  <p className="text-center text-white/60 text-xs mb-3">
+                    Debes elegir una opción en:
+                  </p>
+                  
+                  <div className="space-y-1.5 mb-4">
+                    {requiredAlert.missingGroups.map((group, index) => (
+                      <div key={group.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-400/30">
+                        <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center">
+                          <span className="text-red-400 font-bold text-xs">{index + 1}</span>
+                        </div>
+                        <span className="text-white text-sm font-medium">{group.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setRequiredAlert({ open: false, missingGroups: [] })}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-oswald font-bold transition-all active:scale-95 shadow-lg"
+                  >
+                    ¡Entendido!
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
