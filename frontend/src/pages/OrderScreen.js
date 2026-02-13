@@ -1090,8 +1090,8 @@ export default function OrderScreen() {
                       </div>
                       <div className="text-right shrink-0">
                         <span className="font-oswald text-[11px]">{formatMoney(itemTotal)}</span>
-                        {item.status === 'pending' && (
-                          <button onClick={() => setCancelDialog({ open: true, itemId: item.id })} className="block ml-auto text-destructive/50 hover:text-destructive">
+                        {(item.status === 'pending' || item.status === 'sent') && (
+                          <button onClick={() => openCancelDialog(item.id)} className="block ml-auto text-destructive/50 hover:text-destructive" data-testid={`cancel-item-${item.id}`}>
                             <Trash2 size={10} />
                           </button>
                         )}
