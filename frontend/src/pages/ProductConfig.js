@@ -485,7 +485,7 @@ export default function ProductConfig() {
                   <DollarSign size={14} /> Lista de Precios
                 </h3>
                 <p className="text-[11px] text-muted-foreground -mt-2">
-                  Puede configurar hasta 5 precios diferentes (ej: para diferentes horarios, tipos de cliente, etc.)
+                  Toca cualquier precio para editarlo con el teclado numérico
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -494,22 +494,23 @@ export default function ProductConfig() {
                     <label className="text-xs text-muted-foreground mb-1 block font-semibold">
                       Precio Principal (Precio A) *
                     </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">RD$</span>
-                      <input 
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={product.price_a || product.price}
-                        onChange={e => {
-                          const val = parseFloat(e.target.value) || 0;
-                          setProduct(p => ({ ...p, price_a: val, price: val }));
-                        }}
-                        placeholder="0.00"
-                        className="w-full bg-background border border-border rounded-lg pl-12 pr-3 py-3 text-lg font-oswald text-right"
-                        data-testid="price-a-input"
-                      />
-                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => setPriceKeypad({ 
+                        open: true, 
+                        field: 'price_a', 
+                        value: String(product.price_a || product.price || ''),
+                        label: 'Precio Principal'
+                      })}
+                      className="w-full flex items-center justify-between px-4 py-4 bg-gradient-to-r from-primary/5 to-primary/10 border-2 border-primary/30 rounded-xl hover:border-primary/50 transition-all group"
+                      data-testid="price-a-btn"
+                    >
+                      <span className="text-sm text-muted-foreground">RD$</span>
+                      <span className="font-oswald text-2xl font-bold text-primary">
+                        {(product.price_a || product.price || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                      </span>
+                      <DollarSign size={20} className="text-primary/50 group-hover:text-primary transition-colors" />
+                    </button>
                   </div>
 
                   {/* Precios B-E */}
@@ -521,19 +522,23 @@ export default function ProductConfig() {
                   ].map(({ key, label }) => (
                     <div key={key}>
                       <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">RD$</span>
-                        <input 
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={product[key] || ''}
-                          onChange={e => setProduct(p => ({ ...p, [key]: parseFloat(e.target.value) || 0 }))}
-                          placeholder="0.00"
-                          className="w-full bg-background border border-border rounded-lg pl-10 pr-3 py-2.5 text-sm font-oswald text-right"
-                          data-testid={`${key}-input`}
-                        />
-                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => setPriceKeypad({ 
+                          open: true, 
+                          field: key, 
+                          value: String(product[key] || ''),
+                          label
+                        })}
+                        className="w-full flex items-center justify-between px-3 py-3 bg-background border border-border rounded-xl hover:border-primary/50 transition-all group"
+                        data-testid={`${key}-btn`}
+                      >
+                        <span className="text-xs text-muted-foreground">RD$</span>
+                        <span className="font-oswald text-lg font-bold">
+                          {(product[key] || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                        </span>
+                        <DollarSign size={16} className="text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                      </button>
                     </div>
                   ))}
                 </div>
