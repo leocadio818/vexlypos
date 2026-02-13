@@ -22,7 +22,15 @@ export default function OrderScreen() {
   const [activeCat, setActiveCat] = useState(null); // null = show categories grid
   const [cancelReasons, setCancelReasons] = useState([]);
   const [modDialog, setModDialog] = useState({ open: false, product: null, selectedMods: {}, qty: '0', notes: '' });
-  const [cancelDialog, setCancelDialog] = useState({ open: false, itemId: null });
+  const [cancelDialog, setCancelDialog] = useState({ 
+    open: false, 
+    itemId: null, 
+    itemIds: [], // For bulk cancellation
+    mode: 'single', // 'single', 'multiple', 'order'
+    selectedReasonId: null,
+    returnToInventory: true,
+    comments: ''
+  });
   const [preCheckHtml, setPreCheckHtml] = useState('');
   const [preCheckOpen, setPreCheckOpen] = useState(false);
   const [preCheckCount, setPreCheckCount] = useState(0);
