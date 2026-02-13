@@ -130,7 +130,7 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 ```
 /app
 ├── backend/
-│   └── server.py              # API monolítica (necesita refactoring)
+│   └── server.py              # API con endpoints de inventario
 ├── frontend/
 │   ├── src/
 │   │   ├── context/
@@ -139,7 +139,10 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 │   │   ├── components/
 │   │   │   ├── Layout.js        # Layout principal con glassmorphism
 │   │   │   └── GlassUI.js       # Componentes glass reutilizables
+│   │   ├── lib/
+│   │   │   └── api.js           # APIs incluyendo inventario
 │   │   ├── pages/
+│   │   │   ├── InventoryManager.js  # NUEVO: Módulo de inventario maestro
 │   │   │   ├── Login.js         # Login con glassmorphism
 │   │   │   ├── TableMap.js      # Mapa de mesas
 │   │   │   ├── OrderScreen.js   # Pantalla de pedidos
