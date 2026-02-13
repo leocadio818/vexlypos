@@ -308,6 +308,8 @@ class IngredientInput(BaseModel):
     category: str = "general"  # general, carnes, lacteos, vegetales, bebidas, etc
     min_stock: float = 0
     avg_cost: float = 0
+    is_subrecipe: bool = False  # True if this ingredient is produced from a recipe
+    recipe_id: str = ""  # If is_subrecipe, links to the recipe that produces it
 
 class RecipeIngredientInput(BaseModel):
     ingredient_id: str
@@ -315,6 +317,7 @@ class RecipeIngredientInput(BaseModel):
     quantity: float
     unit: str = "unidad"
     waste_percentage: float = 0  # % de merma
+    is_subrecipe: bool = False  # True if this component is a sub-recipe
 
 class RecipeInput(BaseModel):
     product_id: str
@@ -322,6 +325,8 @@ class RecipeInput(BaseModel):
     ingredients: List[RecipeIngredientInput]
     yield_quantity: float = 1
     notes: str = ""
+    is_subrecipe: bool = False  # True if this recipe produces an intermediate ingredient
+    produces_ingredient_id: str = ""  # If is_subrecipe, the ingredient this recipe produces
 
 class StockInput(BaseModel):
     ingredient_id: str
@@ -333,9 +338,17 @@ class StockMovementInput(BaseModel):
     ingredient_id: str
     warehouse_id: str
     quantity: float  # positive for in, negative for out
-    movement_type: str  # purchase, sale, transfer_in, transfer_out, waste, adjustment
+    movement_type: str  # purchase, sale, transfer_in, transfer_out, waste, adjustment, explosion
     reference_id: str = ""  # PO id, order id, etc
+    parent_product_id: str = ""  # For traceability - the top-level product that triggered this
+    parent_recipe_id: str = ""  # The recipe that caused this explosion
     notes: str = ""
+
+class StockDeductInput(BaseModel):
+    product_id: str
+    warehouse_id: str
+    quantity: float = 1  # Number of portions/units to deduct
+    order_id: str = ""  # Reference to the order
 
 class StockTransferInput(BaseModel):
     ingredient_id: str
