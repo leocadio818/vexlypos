@@ -1639,22 +1639,22 @@ export default function OrderScreen() {
         </DialogContent>
       </Dialog>
 
-      {/* Beautiful Required Modifiers Alert Modal - Portal to body for highest z-index */}
-      {requiredAlert.open && (
-        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 99999 }}>
+      {/* Beautiful Required Modifiers Alert Modal - Using Portal to render above everything */}
+      {requiredAlert.open && createPortal(
+        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 999999 }}>
           {/* Backdrop with blur */}
           <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
+            className="absolute inset-0 bg-black/70 backdrop-blur-md"
             onClick={() => setRequiredAlert({ open: false, missingGroups: [] })}
           />
           
           {/* Modal Card */}
-          <div className="relative animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 w-full max-w-sm">
+          <div className="relative w-full max-w-sm animate-in zoom-in-95 duration-200">
             {/* Glow effect */}
             <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-3xl blur-lg opacity-50 animate-pulse" />
             
             {/* Card content */}
-            <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 backdrop-blur-xl rounded-3xl border border-white/20 p-6 shadow-2xl">
+            <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl border border-white/20 p-6 shadow-2xl">
               {/* Icon */}
               <div className="flex justify-center mb-4">
                 <div className="relative">
@@ -1681,7 +1681,6 @@ export default function OrderScreen() {
                   <div 
                     key={group.id}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-400/30"
-                    style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
                       <span className="text-red-400 font-bold text-sm">{index + 1}</span>
@@ -1700,7 +1699,8 @@ export default function OrderScreen() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
