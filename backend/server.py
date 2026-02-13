@@ -2274,6 +2274,211 @@ async def get_recipe_cost(product_id: str):
         "breakdown": breakdown
     }
 
+# ─── SUB-RECIPE PRODUCTION ───
+
+class ProductionInput(BaseModel):
+    ingredient_id: str  # The sub-recipe ingredient to produce
+    warehouse_id: str
+    quantity: float  # How many units to produce
+    notes: str = ""
+
+@api.get("/inventory/subrecipes")
+async def list_subrecipes():
+    """List all sub-recipe ingredients that can be produced"""
+    subrecipes = await db.ingredients.find({"is_subrecipe": True}, {"_id": 0}).to_list(100)
+    result = []
+    for sr in subrecipes:
+        recipe = await get_recipe_for_ingredient(sr["id"])
+        if recipe:
+            cost = await calculate_recipe_cost(recipe)
+            result.append({
+                "ingredient_id": sr["id"],
+                "name": sr["name"],
+                "unit": sr.get("unit", "unidad"),
+                "category": sr.get("category", "general"),
+                "avg_cost": sr.get("avg_cost", 0),
+                "calculated_cost": round(cost, 2),
+                "recipe_id": recipe.get("id"),
+                "recipe_yield": recipe.get("yield_quantity", 1),
+                "ingredients_count": len(recipe.get("ingredients", []))
+            })
+    return result
+
+@api.post("/inventory/check-production")
+async def check_production_availability(input: ProductionInput):
+    """Check if we can produce a sub-recipe with available ingredients"""
+    ingredient = await db.ingredients.find_one({"id": input.ingredient_id}, {"_id": 0})
+    if not ingredient:
+        raise HTTPException(404, "Ingrediente no encontrado")
+    if not ingredient.get("is_subrecipe"):
+        raise HTTPException(400, "Este ingrediente no es una sub-receta")
+    
+    recipe = await get_recipe_for_ingredient(input.ingredient_id)
+    if not recipe:
+        raise HTTPException(400, "No hay receta definida para producir este ingrediente")
+    
+    result = await check_recipe_availability(recipe, input.warehouse_id, input.quantity)
+    
+    # Calculate production details
+    yield_qty = recipe.get("yield_quantity", 1) or 1
+    cost = await calculate_recipe_cost(recipe)
+    
+    return {
+        "ingredient_name": ingredient["name"],
+        "can_produce": result["available"],
+        "quantity_to_produce": input.quantity,
+        "unit": ingredient.get("unit", "unidad"),
+        "production_cost": round(cost * input.quantity, 2),
+        "cost_per_unit": round(cost, 2),
+        "missing_ingredients": result["missing"],
+        "requires_explosion": result.get("requires_explosion", False)
+    }
+
+@api.post("/inventory/produce")
+async def produce_subrecipe(input: ProductionInput, user=Depends(get_current_user)):
+    """
+    Produce a batch of sub-recipe by consuming its ingredients.
+    This is the reverse of explosion - we consume base ingredients to create the sub-recipe stock.
+    """
+    ingredient = await db.ingredients.find_one({"id": input.ingredient_id}, {"_id": 0})
+    if not ingredient:
+        raise HTTPException(404, "Ingrediente no encontrado")
+    if not ingredient.get("is_subrecipe"):
+        raise HTTPException(400, "Este ingrediente no es una sub-receta")
+    
+    recipe = await get_recipe_for_ingredient(input.ingredient_id)
+    if not recipe:
+        raise HTTPException(400, "No hay receta definida para producir este ingrediente")
+    
+    # Check availability first
+    availability = await check_recipe_availability(recipe, input.warehouse_id, input.quantity)
+    if not availability["available"] and availability["missing"]:
+        return {
+            "ok": False,
+            "error": "Ingredientes insuficientes",
+            "missing": availability["missing"]
+        }
+    
+    movements = []
+    errors = []
+    yield_qty = recipe.get("yield_quantity", 1) or 1
+    production_id = gen_id()
+    
+    # Deduct ingredients used in production
+    for ing in recipe.get("ingredients", []):
+        ing_id = ing.get("ingredient_id")
+        if not ing_id:
+            continue
+        
+        ing_doc = await db.ingredients.find_one({"id": ing_id}, {"_id": 0})
+        if not ing_doc:
+            continue
+        
+        base_quantity = ing.get("quantity", 0)
+        waste = base_quantity * (ing.get("waste_percentage", 0) / 100)
+        required_per_unit = (base_quantity + waste) / yield_qty
+        total_required = required_per_unit * input.quantity
+        
+        # Deduct from stock
+        await db.stock.update_one(
+            {"ingredient_id": ing_id, "warehouse_id": input.warehouse_id},
+            {"$inc": {"current_stock": -total_required}, "$set": {"last_updated": now_iso()}},
+            upsert=True
+        )
+        
+        # Log movement
+        movement = {
+            "id": gen_id(),
+            "ingredient_id": ing_id,
+            "ingredient_name": ing_doc["name"],
+            "warehouse_id": input.warehouse_id,
+            "quantity": -total_required,
+            "movement_type": "production_consume",
+            "reference_id": production_id,
+            "parent_product_id": input.ingredient_id,
+            "parent_recipe_id": recipe.get("id", ""),
+            "notes": f"Consumido para producir {input.quantity} {ingredient.get('unit', 'unidad')} de {ingredient['name']}",
+            "user_id": user["user_id"],
+            "user_name": user["name"],
+            "created_at": now_iso()
+        }
+        await db.stock_movements.insert_one(movement)
+        movements.append({k: v for k, v in movement.items() if k != "_id"})
+    
+    # Add the produced sub-recipe to stock
+    await db.stock.update_one(
+        {"ingredient_id": input.ingredient_id, "warehouse_id": input.warehouse_id},
+        {"$inc": {"current_stock": input.quantity}, "$set": {"last_updated": now_iso()}},
+        upsert=True
+    )
+    
+    # Log production output
+    production_movement = {
+        "id": gen_id(),
+        "ingredient_id": input.ingredient_id,
+        "ingredient_name": ingredient["name"],
+        "warehouse_id": input.warehouse_id,
+        "quantity": input.quantity,
+        "movement_type": "production_output",
+        "reference_id": production_id,
+        "parent_product_id": "",
+        "parent_recipe_id": recipe.get("id", ""),
+        "notes": input.notes or f"Producción de {input.quantity} {ingredient.get('unit', 'unidad')}",
+        "user_id": user["user_id"],
+        "user_name": user["name"],
+        "created_at": now_iso()
+    }
+    await db.stock_movements.insert_one(production_movement)
+    movements.append({k: v for k, v in production_movement.items() if k != "_id"})
+    
+    # Log production record
+    cost = await calculate_recipe_cost(recipe)
+    production_record = {
+        "id": production_id,
+        "ingredient_id": input.ingredient_id,
+        "ingredient_name": ingredient["name"],
+        "recipe_id": recipe.get("id"),
+        "warehouse_id": input.warehouse_id,
+        "quantity_produced": input.quantity,
+        "unit": ingredient.get("unit", "unidad"),
+        "total_cost": round(cost * input.quantity, 2),
+        "cost_per_unit": round(cost, 2),
+        "ingredients_consumed": len(movements) - 1,
+        "notes": input.notes,
+        "produced_by": user["name"],
+        "produced_at": now_iso()
+    }
+    await db.production_records.insert_one(production_record)
+    
+    # Update sub-recipe cost
+    await db.ingredients.update_one(
+        {"id": input.ingredient_id},
+        {"$set": {"avg_cost": round(cost, 2), "cost_updated_at": now_iso()}}
+    )
+    
+    return {
+        "ok": True,
+        "production_id": production_id,
+        "ingredient_name": ingredient["name"],
+        "quantity_produced": input.quantity,
+        "unit": ingredient.get("unit", "unidad"),
+        "total_cost": round(cost * input.quantity, 2),
+        "movements_count": len(movements),
+        "movements": movements
+    }
+
+@api.get("/inventory/production-history")
+async def get_production_history(
+    ingredient_id: Optional[str] = Query(None),
+    warehouse_id: Optional[str] = Query(None),
+    limit: int = Query(50)
+):
+    """Get history of sub-recipe productions"""
+    query = {}
+    if ingredient_id: query["ingredient_id"] = ingredient_id
+    if warehouse_id: query["warehouse_id"] = warehouse_id
+    return await db.production_records.find(query, {"_id": 0}).sort("produced_at", -1).to_list(limit)
+
 # ─── WAREHOUSES ───
 @api.get("/warehouses")
 async def list_warehouses():
