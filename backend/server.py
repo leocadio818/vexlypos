@@ -1270,6 +1270,134 @@ async def list_void_audit_logs(
     logs = await db.void_audit_logs.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
     return logs
 
+# ─── VOID REPORT ENDPOINT ───
+@api.get("/void-audit-logs/report")
+async def get_void_report(
+    from_date: Optional[str] = Query(None),
+    to_date: Optional[str] = Query(None),
+    period: Optional[str] = Query(None)  # 'day', 'week', 'month'
+):
+    """Get aggregated void report for AnulacionesReport page"""
+    from datetime import datetime, timedelta
+    
+    # Build date filter
+    now = datetime.utcnow()
+    if period == 'day':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat() + "Z"
+    elif period == 'week':
+        start_date = (now - timedelta(days=7)).isoformat() + "Z"
+    elif period == 'month':
+        start_date = (now - timedelta(days=30)).isoformat() + "Z"
+    else:
+        start_date = from_date
+    
+    query = {}
+    if start_date:
+        query["created_at"] = {"$gte": start_date}
+    if to_date:
+        if "created_at" in query:
+            query["created_at"]["$lte"] = to_date
+        else:
+            query["created_at"] = {"$lte": to_date}
+    
+    logs = await db.void_audit_logs.find(query, {"_id": 0}).to_list(1000)
+    
+    # Calculate totals
+    total_voided = 0
+    recovered_value = 0
+    loss_value = 0
+    reason_counts = {}
+    user_counts = {}
+    
+    for log in logs:
+        value = log.get("total_value", 0)
+        if not value and log.get("unit_price"):
+            value = log.get("unit_price", 0) * log.get("quantity", 1)
+        
+        total_voided += value
+        
+        if log.get("restored_to_inventory"):
+            recovered_value += value
+        else:
+            loss_value += value
+        
+        # Reason ranking
+        reason = log.get("reason", "Sin razón")
+        reason_counts[reason] = reason_counts.get(reason, 0) + 1
+        
+        # User audit - use requested_by for newer logs, fallback to user_id for older
+        user_id = log.get("requested_by_id") or log.get("user_id")
+        user_name = log.get("requested_by_name") or log.get("user_name", "Desconocido")
+        if user_id:
+            if user_id not in user_counts:
+                user_counts[user_id] = {
+                    "user_id": user_id,
+                    "user_name": user_name,
+                    "count": 0,
+                    "total_value": 0,
+                    "recovered": 0,
+                    "loss": 0
+                }
+            user_counts[user_id]["count"] += 1
+            user_counts[user_id]["total_value"] += value
+            if log.get("restored_to_inventory"):
+                user_counts[user_id]["recovered"] += value
+            else:
+                user_counts[user_id]["loss"] += value
+    
+    # Convert to sorted lists
+    reason_ranking = [{"reason": r, "count": c} for r, c in reason_counts.items()]
+    reason_ranking.sort(key=lambda x: x["count"], reverse=True)
+    
+    user_audit = list(user_counts.values())
+    user_audit.sort(key=lambda x: x["count"], reverse=True)
+    
+    return {
+        "summary": {
+            "total_voided": round(total_voided, 2),
+            "recovered_value": round(recovered_value, 2),
+            "loss_value": round(loss_value, 2),
+            "total_count": len(logs),
+            "period": period or "custom"
+        },
+        "reason_ranking": reason_ranking,
+        "user_audit": user_audit,
+        "logs": logs[:100]  # Return last 100 logs for detail view
+    }
+
+# ─── VERIFY MANAGER PIN ───
+@api.post("/auth/verify-manager")
+async def verify_manager_pin(pin_data: dict):
+    """Verify if a PIN belongs to a manager/admin user"""
+    pin = pin_data.get("pin", "")
+    user = await db.users.find_one({"pin": pin, "active": True}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="PIN inválido")
+    
+    # Get user's role
+    role = await db.roles.find_one({"id": user.get("role_id")}, {"_id": 0})
+    if not role:
+        raise HTTPException(status_code=403, detail="Usuario sin rol asignado")
+    
+    # Check if user has manager/admin permissions
+    permissions = role.get("permissions", {})
+    is_manager = (
+        permissions.get("is_admin", False) or
+        permissions.get("manage_users", False) or
+        permissions.get("manage_cancellation_reasons", False) or
+        role.get("name", "").lower() in ["administrador", "admin", "gerente", "manager"]
+    )
+    
+    if not is_manager:
+        raise HTTPException(status_code=403, detail="Este usuario no tiene permisos de gerente")
+    
+    return {
+        "authorized": True,
+        "user_id": user["id"],
+        "user_name": user["name"],
+        "role": role.get("name", "?")
+    }
+
 @api.post("/orders/{order_id}/send-kitchen")
 async def send_to_kitchen(order_id: str, user: dict = Depends(get_current_user)):
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
