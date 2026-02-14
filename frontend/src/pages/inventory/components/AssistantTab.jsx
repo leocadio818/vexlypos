@@ -327,27 +327,53 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
           </div>
 
           {/* Action buttons */}
-          {purchaseSuggestions.suggestions?.length > 0 && (
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={selectAllSuggestions}>
-                  <Check size={12} className="mr-1" /> Seleccionar Todo
-                </Button>
-                <Button variant="outline" size="sm" onClick={deselectAllSuggestions}>
-                  <X size={12} className="mr-1" /> Deseleccionar
-                </Button>
+          {purchaseSuggestions.suggestions?.length > 0 && (() => {
+            // Calculate unique suppliers for selected items
+            const selectedItems = purchaseSuggestions.suggestions.filter(s => 
+              selectedSuggestions.includes(s.ingredient_id)
+            );
+            const uniqueSuppliers = new Set(
+              selectedItems
+                .filter(s => s.default_supplier_id)
+                .map(s => s.default_supplier_id)
+            );
+            const supplierCount = uniqueSuppliers.size;
+            const itemsWithoutSupplier = selectedItems.filter(s => !s.default_supplier_id).length;
+            
+            return (
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={selectAllSuggestions}>
+                    <Check size={12} className="mr-1" /> Seleccionar Todo
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={deselectAllSuggestions}>
+                    <X size={12} className="mr-1" /> Deseleccionar
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedSuggestions.length > 0 && supplierCount > 1 && (
+                    <span className="text-xs text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-full border border-cyan-500/30">
+                      {supplierCount} proveedores = {supplierCount} OCs
+                    </span>
+                  )}
+                  {itemsWithoutSupplier > 0 && (
+                    <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/30">
+                      {itemsWithoutSupplier} sin proveedor
+                    </span>
+                  )}
+                  <Button
+                    onClick={handleGeneratePO}
+                    disabled={selectedSuggestions.length === 0 || !assistantFilters.warehouse_id}
+                    className="bg-green-600 hover:bg-green-700 text-white font-oswald"
+                    data-testid="generate-po-btn"
+                  >
+                    <Zap size={14} className="mr-1" />
+                    Generar OC ({selectedSuggestions.length} items{supplierCount > 1 ? `, ${supplierCount} prov.` : ''})
+                  </Button>
+                </div>
               </div>
-              <Button
-                onClick={handleGeneratePO}
-                disabled={selectedSuggestions.length === 0 || !assistantFilters.warehouse_id}
-                className="bg-green-600 hover:bg-green-700 text-white font-oswald"
-                data-testid="generate-po-btn"
-              >
-                <Zap size={14} className="mr-1" />
-                Generar OC ({selectedSuggestions.length} items)
-              </Button>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Suggestions table */}
           {loadingAssistant ? (
