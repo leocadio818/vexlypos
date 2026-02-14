@@ -391,38 +391,6 @@ export default function InventoryManager() {
   //            loadPriceHistory, handleGeneratePO, toggleSuggestionSelection,
   //            selectAllSuggestions, deselectAllSuggestions
 
-  // ─── RECIPE HANDLERS ───
-  const handleSaveRecipe = async () => {
-    const d = recipeDialog.data;
-    if (!d?.product_id) { toast.error('Producto requerido'); return; }
-    if (!d?.ingredients?.length) { toast.error('Agrega ingredientes'); return; }
-    try {
-      await recipesAPI.create({
-        product_id: d.product_id,
-        product_name: d.product_name,
-        ingredients: d.ingredients,
-        yield_quantity: d.yield_quantity || 1,
-        notes: d.notes || '',
-      });
-      toast.success('Receta guardada');
-      setRecipeDialog({ open: false, data: null });
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
-  const handleDeleteRecipe = async (id) => {
-    if (!window.confirm('¿Eliminar receta?')) return;
-    try {
-      await recipesAPI.delete(id);
-      toast.success('Receta eliminada');
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
   // ─── PURCHASE ORDER HANDLERS ───
   const handleSavePO = async () => {
     const d = poDialog.data;
