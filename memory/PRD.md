@@ -301,16 +301,22 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 
 ## Tareas Pendientes
 
+### P0 - En Progreso
+- [x] **Refactorización Backend Fase 2** (Completado 14 Feb 2026) ✅
+- [ ] **Refactorización Frontend**: Descomponer `InventoryManager.js` (~4500 líneas) en componentes modulares
+
 ### P1 - Alta Prioridad
 - [x] **Sistema de Control de Costos y Asistente de Compras** (Febrero 2026) ✅
 - [ ] **Crear paquete ZIP descargable** del servidor local
 - [ ] **Integración de impresora ESC/POS** física
+- [ ] **Verificar bug "Auto-envío a cocina"** (no funciona al primer intento)
 
 ### P2 - Media Prioridad
 - [ ] **Reloj de empleados**: Check-in/out con reportes
 - [ ] **Reportes DGII**: Generación de formatos 607, 608
 - [ ] **Imágenes de productos**: Soporte para fotos/iconos en botones
 - [ ] **Cache de imágenes offline**: Para menú sin conexión
+- [ ] **Verificar scroll en pantalla de pago móvil**
 
 ### P3 - Baja Prioridad
 - [ ] **Drag-and-drop**: Reordenar métodos de pago
