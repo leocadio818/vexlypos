@@ -169,6 +169,7 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Generación de Órdenes de Compra (1-click)**:
     - Botón "Generar OC" crea PO automáticamente con items seleccionados
     - **Agrupación automática por proveedor**: Si se seleccionan items de múltiples proveedores, genera una OC separada para cada uno
+    - **Indicador visual de proveedores**: Badge que muestra "X proveedores = X OCs" antes de generar
     - Estado inicial "draft" para revisión antes de enviar
     - Toast de éxito muestra resumen de OCs creadas
     - Items sin proveedor asignado son ignorados con aviso
