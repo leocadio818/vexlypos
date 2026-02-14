@@ -179,6 +179,7 @@ export const ingredientsAPI = {
   delete: (id) => api.delete(`/ingredients/${id}`),
   getAffectedRecipes: (id) => api.get(`/ingredients/${id}/affected-recipes`),
   getAuditLogs: (id, limit = 50) => api.get(`/ingredients/${id}/audit-logs`, { params: { limit } }),
+  getAllAuditLogs: (params) => api.get('/ingredients/audit-logs/all', { params }),
 };
 
 // Unit Definitions (Custom Units)
