@@ -296,6 +296,119 @@ async def get_ingredient_price_history(ingredient_id: str, limit: int = Query(50
     }
 
 
+async def _get_purchase_suggestions_internal(
+    supplier_id: Optional[str] = None,
+    warehouse_id: Optional[str] = None,
+    include_ok_stock: bool = False
+):
+    """Internal function for getting purchase suggestions."""
+    ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
+    
+    if supplier_id:
+        ingredients = [i for i in ingredients if i.get("default_supplier_id") == supplier_id]
+    
+    suggestions = []
+    
+    for ing in ingredients:
+        stock_query = {"ingredient_id": ing["id"]}
+        if warehouse_id:
+            stock_query["warehouse_id"] = warehouse_id
+        stock_docs = await db.stock.find(stock_query, {"_id": 0}).to_list(50)
+        current_stock = sum(s.get("current_stock", 0) for s in stock_docs)
+        
+        min_stock = ing.get("min_stock", 0)
+        is_low = current_stock <= min_stock
+        
+        if not include_ok_stock and not is_low:
+            continue
+        
+        thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+        consumption_docs = await db.stock_movements.find({
+            "ingredient_id": ing["id"],
+            "movement_type": {"$in": ["sale", "explosion", "production_consume"]},
+            "created_at": {"$gte": thirty_days_ago}
+        }, {"_id": 0}).to_list(500)
+        
+        total_consumption = sum(abs(m.get("quantity", 0)) for m in consumption_docs)
+        avg_daily_consumption = total_consumption / 30
+        
+        target_stock = max(min_stock * 2, avg_daily_consumption * 14)
+        suggested_qty = max(0, target_stock - current_stock)
+        
+        conversion_factor = ing.get("conversion_factor", 1)
+        purchase_unit = ing.get("purchase_unit", ing.get("unit", "unidad"))
+        
+        if conversion_factor > 0:
+            suggested_purchase_units = suggested_qty / conversion_factor
+            suggested_purchase_units = max(1, round(suggested_purchase_units + 0.49))
+            suggested_qty_dispatch = suggested_purchase_units * conversion_factor
+        else:
+            suggested_purchase_units = suggested_qty
+            suggested_qty_dispatch = suggested_qty
+        
+        last_po = await db.purchase_orders.find_one(
+            {"items.ingredient_id": ing["id"], "status": "received"},
+            {"_id": 0},
+            sort=[("received_at", -1)]
+        )
+        
+        last_price = ing.get("avg_cost", 0)
+        if last_po:
+            for item in last_po.get("items", []):
+                if item["ingredient_id"] == ing["id"]:
+                    last_price = item.get("actual_unit_price", item.get("unit_price", 0))
+                    break
+        
+        days_of_stock = 999 if avg_daily_consumption == 0 else current_stock / avg_daily_consumption
+        
+        supplier_name = None
+        if ing.get("default_supplier_id"):
+            supplier_doc = await db.suppliers.find_one({"id": ing["default_supplier_id"]}, {"_id": 0, "name": 1})
+            supplier_name = supplier_doc.get("name") if supplier_doc else None
+        
+        suggestions.append({
+            "ingredient_id": ing["id"],
+            "ingredient_name": ing["name"],
+            "category": ing.get("category", ""),
+            "current_stock": round(current_stock, 2),
+            "min_stock": min_stock,
+            "dispatch_unit": ing.get("dispatch_unit", ing.get("unit", "unidad")),
+            "purchase_unit": purchase_unit,
+            "avg_daily_consumption": round(avg_daily_consumption, 2),
+            "days_of_stock": round(days_of_stock, 1),
+            "suggested_purchase_units": suggested_purchase_units,
+            "suggested_qty_dispatch": round(suggested_qty_dispatch, 2),
+            "last_unit_price": round(last_price, 2),
+            "estimated_total": round(suggested_purchase_units * last_price, 2),
+            "is_low_stock": is_low,
+            "is_out_of_stock": current_stock <= 0,
+            "default_supplier_id": ing.get("default_supplier_id"),
+            "default_supplier_name": supplier_name
+        })
+    
+    suggestions.sort(key=lambda x: (not x["is_out_of_stock"], not x["is_low_stock"], x["days_of_stock"]))
+    
+    supplier_totals = {}
+    for s in suggestions:
+        sid = s.get("default_supplier_id") or "sin_proveedor"
+        sname = s.get("default_supplier_name") or "Sin proveedor"
+        if sid not in supplier_totals:
+            supplier_totals[sid] = {"name": sname, "total": 0, "items": 0}
+        supplier_totals[sid]["total"] += s["estimated_total"]
+        supplier_totals[sid]["items"] += 1
+    
+    return {
+        "suggestions": suggestions,
+        "summary": {
+            "total_items": len(suggestions),
+            "low_stock_items": len([s for s in suggestions if s["is_low_stock"]]),
+            "out_of_stock_items": len([s for s in suggestions if s["is_out_of_stock"]]),
+            "estimated_total": round(sum(s.get("estimated_total", 0) for s in suggestions), 2),
+            "by_supplier": supplier_totals
+        }
+    }
+
+
 @router.get("/purchasing/suggestions")
 async def get_purchase_suggestions(
     supplier_id: Optional[str] = Query(None),
@@ -303,6 +416,17 @@ async def get_purchase_suggestions(
     include_ok_stock: bool = Query(False)
 ):
     """Intelligent shopping assistant - suggests items to reorder based on consumption patterns."""
+    return await _get_purchase_suggestions_internal(supplier_id, warehouse_id, include_ok_stock)
+
+
+@router.get("/purchasing/suggestions-internal-endpoint-placeholder")
+async def _old_get_purchase_suggestions_placeholder():
+    """Placeholder to maintain code structure - actual logic moved to _get_purchase_suggestions_internal"""
+    pass
+
+# The following is the old duplicated code that will be removed by the next search_replace
+# BEGIN OLD CODE MARKER
+async def _temp_placeholder_for_old_code():
     ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
     
     if supplier_id:
