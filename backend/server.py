@@ -327,6 +327,10 @@ class IngredientInput(BaseModel):
     purchase_quantity: float = 1  # Quantity in purchase unit (e.g., 1)
     dispatch_quantity: float = 1  # Equivalent quantity in dispatch unit (e.g., 16 for 16 oz per lb)
     conversion_factor: float = 1  # dispatch_quantity / purchase_quantity
+    # Supplier assignment
+    default_supplier_id: str = ""  # Default supplier for this ingredient
+    # Cost control
+    margin_threshold: float = 30.0  # Minimum acceptable margin percentage
 
 class UnitDefinitionInput(BaseModel):
     name: str  # Display name (e.g., "Libra", "Kilogramo")
