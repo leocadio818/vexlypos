@@ -203,15 +203,194 @@ export default function RecipesTab({
           <h2 className="font-oswald text-lg font-bold">Recetas</h2>
           <p className="text-xs text-muted-foreground">Vincula productos con ingredientes y controla tus márgenes</p>
         </div>
-        <Button 
-          onClick={() => openRecipeDialog({ product_id: '', product_name: '', ingredients: [], yield_quantity: 1, notes: '' })}
-          className="bg-primary text-primary-foreground font-oswald"
-          data-testid="add-recipe-btn"
-        >
-          <Plus size={16} className="mr-1" /> Nueva Receta
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex bg-muted rounded-lg p-1">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="h-8 px-3"
+              data-testid="view-list-btn"
+            >
+              <List size={14} className="mr-1" /> Lista
+            </Button>
+            <Button
+              variant={viewMode === 'report' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('report')}
+              className="h-8 px-3"
+              data-testid="view-report-btn"
+            >
+              <BarChart3 size={14} className="mr-1" /> Reporte
+            </Button>
+          </div>
+          <Button 
+            onClick={() => openRecipeDialog({ product_id: '', product_name: '', ingredients: [], yield_quantity: 1, notes: '' })}
+            className="bg-primary text-primary-foreground font-oswald"
+            data-testid="add-recipe-btn"
+          >
+            <Plus size={16} className="mr-1" /> Nueva Receta
+          </Button>
+        </div>
       </div>
 
+      {/* ─── MARGIN REPORT VIEW ─── */}
+      {viewMode === 'report' && (
+        <div className="space-y-4" data-testid="margin-report">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="p-4 rounded-xl bg-card border border-border text-center">
+              <div className="text-2xl font-bold font-mono">{marginReport.summary.total}</div>
+              <div className="text-xs text-muted-foreground">Total Recetas</div>
+            </div>
+            <div 
+              className={`p-4 rounded-xl text-center cursor-pointer transition-all ${marginFilter === 'critical' ? 'ring-2 ring-red-500' : ''} bg-red-500/10 border border-red-500/30`}
+              onClick={() => setMarginFilter(marginFilter === 'critical' ? 'all' : 'critical')}
+            >
+              <div className="text-2xl font-bold font-mono text-red-500">{marginReport.summary.critical}</div>
+              <div className="text-xs text-red-400">Críticas (&lt;{MARGIN_CRITICAL}%)</div>
+            </div>
+            <div 
+              className={`p-4 rounded-xl text-center cursor-pointer transition-all ${marginFilter === 'warning' ? 'ring-2 ring-amber-500' : ''} bg-amber-500/10 border border-amber-500/30`}
+              onClick={() => setMarginFilter(marginFilter === 'warning' ? 'all' : 'warning')}
+            >
+              <div className="text-2xl font-bold font-mono text-amber-500">{marginReport.summary.warning}</div>
+              <div className="text-xs text-amber-400">Advertencia (&lt;{MARGIN_WARNING}%)</div>
+            </div>
+            <div 
+              className={`p-4 rounded-xl text-center cursor-pointer transition-all ${marginFilter === 'ok' ? 'ring-2 ring-green-500' : ''} bg-green-500/10 border border-green-500/30`}
+              onClick={() => setMarginFilter(marginFilter === 'ok' ? 'all' : 'ok')}
+            >
+              <div className="text-2xl font-bold font-mono text-green-500">{marginReport.summary.ok}</div>
+              <div className="text-xs text-green-400">Saludables (≥{MARGIN_WARNING}%)</div>
+            </div>
+            <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-center">
+              <div className="text-2xl font-bold font-mono text-cyan-400">{marginReport.summary.avgMargin}%</div>
+              <div className="text-xs text-cyan-400">Margen Promedio</div>
+            </div>
+          </div>
+
+          {/* Filter indicator */}
+          {marginFilter !== 'all' && (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                <Filter size={10} className="mr-1" />
+                Filtro: {marginFilter === 'critical' ? 'Críticas' : marginFilter === 'warning' ? 'Advertencias' : 'Saludables'}
+              </Badge>
+              <Button variant="ghost" size="sm" onClick={() => setMarginFilter('all')} className="h-6 px-2 text-xs">
+                <X size={12} className="mr-1" /> Limpiar
+              </Button>
+            </div>
+          )}
+
+          {/* Margin Table */}
+          <div className="rounded-xl border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left p-3 font-medium">Producto</th>
+                  <th className="text-right p-3 font-medium">Costo</th>
+                  <th className="text-right p-3 font-medium">PVP</th>
+                  <th 
+                    className="text-right p-3 font-medium cursor-pointer hover:text-primary flex items-center justify-end gap-1"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  >
+                    Margen %
+                    <ArrowUpDown size={12} />
+                  </th>
+                  <th className="text-right p-3 font-medium">Ganancia</th>
+                  <th className="text-center p-3 font-medium">Estado</th>
+                  <th className="text-center p-3 font-medium">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {marginReport.items.map((item, idx) => (
+                  <tr 
+                    key={item.id} 
+                    className={`border-t border-border hover:bg-muted/30 transition-colors ${
+                      item.status === 'critical' ? 'bg-red-500/5' : 
+                      item.status === 'warning' ? 'bg-amber-500/5' : ''
+                    }`}
+                    data-testid={`margin-row-${item.id}`}
+                  >
+                    <td className="p-3">
+                      <div className="font-medium">{item.product_name}</div>
+                      <div className="text-xs text-muted-foreground">{item.ingredients?.length || 0} ingredientes</div>
+                    </td>
+                    <td className="p-3 text-right font-mono">{formatMoney(item.cost)}</td>
+                    <td className="p-3 text-right font-mono">{formatMoney(item.price)}</td>
+                    <td className={`p-3 text-right font-mono font-bold ${
+                      item.status === 'critical' ? 'text-red-500' :
+                      item.status === 'warning' ? 'text-amber-500' : 'text-green-500'
+                    }`}>
+                      {item.margin}%
+                    </td>
+                    <td className={`p-3 text-right font-mono ${item.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {formatMoney(item.profit)}
+                    </td>
+                    <td className="p-3 text-center">
+                      {item.status === 'critical' && (
+                        <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                          <AlertTriangle size={10} className="mr-1" /> Crítico
+                        </Badge>
+                      )}
+                      {item.status === 'warning' && (
+                        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                          <AlertTriangle size={10} className="mr-1" /> Bajo
+                        </Badge>
+                      )}
+                      {item.status === 'ok' && (
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                          <Check size={10} className="mr-1" /> OK
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="p-3 text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openRecipeDialog({ ...item })}
+                        className="h-7 px-2 text-xs"
+                        data-testid={`adjust-price-${item.id}`}
+                      >
+                        <Pencil size={12} className="mr-1" /> Ajustar
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {marginReport.items.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                      No hay recetas {marginFilter !== 'all' ? 'con este filtro' : 'creadas'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground pt-2">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-red-500"></span>
+              Crítico: &lt;{MARGIN_CRITICAL}% margen
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+              Advertencia: {MARGIN_CRITICAL}-{MARGIN_WARNING}% margen
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-green-500"></span>
+              Saludable: ≥{MARGIN_WARNING}% margen
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ─── LIST VIEW ─── */}
+      {viewMode === 'list' && (
+        <>
       {/* Recipes List */}
       <div className="space-y-3">
         {recipes.map(rec => {
