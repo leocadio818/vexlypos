@@ -566,7 +566,205 @@ export default function PurchasesTab({
         )}
       </div>
 
-      {/* PO list */}
+      {/* ─── CHART VIEW ─── */}
+      {viewMode === 'chart' && (
+        <div className="space-y-6" data-testid="chart-view">
+          {/* Timeline Chart - Spending over time */}
+          <div className="p-4 rounded-xl bg-card border border-border">
+            <h3 className="font-oswald font-bold mb-4 flex items-center gap-2">
+              <TrendingUp size={18} className="text-cyan-500" />
+              Evolución de Gastos por Proveedor
+            </h3>
+            {chartData.timeline.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={chartData.timeline}>
+                  <defs>
+                    {chartData.suppliers.map((supplier, idx) => (
+                      <linearGradient key={supplier} id={`color-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={CHART_COLORS[idx % CHART_COLORS.length]} stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor={CHART_COLORS[idx % CHART_COLORS.length]} stopOpacity={0.1}/>
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis dataKey="date" stroke="#888" fontSize={12} />
+                  <YAxis stroke="#888" fontSize={12} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1a1a2e', 
+                      border: '1px solid #333',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value) => formatMoney(value)}
+                  />
+                  <Legend />
+                  {chartData.suppliers.map((supplier, idx) => (
+                    <Area 
+                      key={supplier}
+                      type="monotone" 
+                      dataKey={supplier} 
+                      stackId="1"
+                      stroke={CHART_COLORS[idx % CHART_COLORS.length]} 
+                      fill={`url(#color-${idx})`}
+                      name={supplier}
+                    />
+                  ))}
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                No hay datos para mostrar en el periodo seleccionado
+              </div>
+            )}
+          </div>
+
+          {/* Bottom row - Pie chart and Bar chart */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Pie Chart - Distribution by Supplier */}
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <h3 className="font-oswald font-bold mb-4 flex items-center gap-2">
+                <Building2 size={18} className="text-purple-500" />
+                Distribución por Proveedor
+              </h3>
+              {chartData.pie.length > 0 ? (
+                <div className="flex items-center">
+                  <ResponsiveContainer width="60%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={chartData.pie}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {chartData.pie.map((entry, idx) => (
+                          <Cell key={idx} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1a1a2e', 
+                          border: '1px solid #333',
+                          borderRadius: '8px'
+                        }}
+                        formatter={(value) => formatMoney(value)}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="w-[40%] space-y-2">
+                    {chartData.pie.map((entry, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs">
+                        <span 
+                          className="w-3 h-3 rounded-full flex-shrink-0" 
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <span className="truncate flex-1">{entry.name}</span>
+                        <span className="font-mono text-muted-foreground">{entry.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="h-[220px] flex items-center justify-center text-muted-foreground">
+                  Sin datos
+                </div>
+              )}
+            </div>
+
+            {/* Bar Chart - By Status */}
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <h3 className="font-oswald font-bold mb-4 flex items-center gap-2">
+                <BarChart3 size={18} className="text-amber-500" />
+                Órdenes por Estado
+              </h3>
+              {chartData.status.length > 0 ? (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={chartData.status} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
+                    <XAxis type="number" stroke="#888" fontSize={12} />
+                    <YAxis type="category" dataKey="name" stroke="#888" fontSize={12} width={80} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1a1a2e', 
+                        border: '1px solid #333',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                      {chartData.status.map((entry, idx) => {
+                        const colorMap = {
+                          'gray-500': '#6b7280',
+                          'yellow-500': '#eab308',
+                          'blue-500': '#3b82f6',
+                          'green-500': '#22c55e',
+                          'red-500': '#ef4444'
+                        };
+                        return <Cell key={idx} fill={colorMap[entry.color] || '#6b7280'} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[220px] flex items-center justify-center text-muted-foreground">
+                  Sin datos
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Top Suppliers Table */}
+          <div className="p-4 rounded-xl bg-card border border-border">
+            <h3 className="font-oswald font-bold mb-4">Resumen por Proveedor</h3>
+            <table className="w-full text-sm">
+              <thead className="border-b border-border">
+                <tr>
+                  <th className="text-left p-2">Proveedor</th>
+                  <th className="text-right p-2">Órdenes</th>
+                  <th className="text-right p-2">Total</th>
+                  <th className="text-right p-2">% del Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.pie.map((supplier, idx) => (
+                  <tr key={idx} className="border-b border-border/50 hover:bg-muted/30">
+                    <td className="p-2 flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: supplier.color }} />
+                      {supplier.name}
+                    </td>
+                    <td className="text-right p-2 font-mono">{supplier.count}</td>
+                    <td className="text-right p-2 font-mono">{formatMoney(supplier.value)}</td>
+                    <td className="text-right p-2 font-mono text-muted-foreground">
+                      {summaryStats.total > 0 ? ((supplier.value / summaryStats.total) * 100).toFixed(1) : 0}%
+                    </td>
+                  </tr>
+                ))}
+                {chartData.pie.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                      No hay datos en el periodo seleccionado
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+              {chartData.pie.length > 0 && (
+                <tfoot className="border-t border-border">
+                  <tr className="font-bold">
+                    <td className="p-2">TOTAL</td>
+                    <td className="text-right p-2 font-mono">{summaryStats.count}</td>
+                    <td className="text-right p-2 font-mono text-cyan-400">{formatMoney(summaryStats.total)}</td>
+                    <td className="text-right p-2 font-mono">100%</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ─── LIST VIEW ─── */}
+      {viewMode === 'list' && (
       <div className="space-y-3">
         {filteredPOs.map(po => {
           const status = PO_STATUS[po.status] || PO_STATUS.draft;
