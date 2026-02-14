@@ -67,6 +67,14 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Botón "Usar precio recomendado" para aplicar precio sugerido con 1 click
     - Badge de margen visible en la lista de recetas
     - Borde de color en cada receta según estado del margen
+  - **Reporte de Márgenes (NUEVO - Febrero 2026)**:
+    - Toggle "Lista | Reporte" en el header de Recetas
+    - **Tarjetas de resumen**: Total, Críticas, Advertencias, Saludables, Margen Promedio
+    - **Filtros clickeables**: Click en tarjeta para filtrar por estado
+    - **Tabla ordenable** por margen (ascendente = críticas primero)
+    - Columnas: Producto, Costo, PVP, Margen %, Ganancia, Estado, Acción
+    - Botón "Ajustar" abre directamente el editor de receta
+    - Filas coloreadas según estado del margen
 - **Stock por Almacén**: Niveles de inventario por ubicación con alertas de stock bajo
 - **Transferencias**: Mover insumos entre almacenes con historial completo
 - **Ajustes de Inventario**: Ajustes manuales con razón (conteo físico, merma, vencimiento, etc.)
