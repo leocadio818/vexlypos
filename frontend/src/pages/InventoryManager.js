@@ -208,6 +208,38 @@ export default function InventoryManager() {
     }
   };
 
+  // ─── CUSTOM UNITS HANDLERS ───
+  const handleSaveUnit = async () => {
+    const d = unitDialog.data;
+    if (!d?.name?.trim()) { toast.error('Nombre requerido'); return; }
+    if (!d?.abbreviation?.trim()) { toast.error('Abreviatura requerida'); return; }
+    try {
+      if (d.id) {
+        const res = await unitDefinitionsAPI.update(d.id, d);
+        const updated = res.data?.ingredients_updated || 0;
+        toast.success(`Unidad actualizada${updated > 0 ? `. ${updated} ingrediente(s) actualizados automáticamente.` : ''}`);
+      } else {
+        await unitDefinitionsAPI.create(d);
+        toast.success('Unidad creada');
+      }
+      setUnitDialog({ open: false, data: null });
+      fetchAll();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error');
+    }
+  };
+
+  const handleDeleteUnit = async (id) => {
+    if (!window.confirm('¿Eliminar unidad? Solo se puede eliminar si no está en uso.')) return;
+    try {
+      await unitDefinitionsAPI.delete(id);
+      toast.success('Unidad eliminada');
+      fetchAll();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error');
+    }
+  };
+
   // ─── WAREHOUSE HANDLERS ───
   const handleSaveWarehouse = async () => {
     const d = warehouseDialog.data;
