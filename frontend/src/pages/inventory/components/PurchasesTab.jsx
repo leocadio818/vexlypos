@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { 
-  FileText, Plus, Pencil, Trash2, Check, X, Save, AlertCircle, ArrowLeftRight, Package
+  FileText, Plus, Pencil, Trash2, Check, X, Save, AlertCircle, ArrowLeftRight, Package,
+  Calendar, Download, Filter, TrendingUp, Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { purchaseOrdersAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 const PO_STATUS = {
   draft: { label: 'Borrador', color: 'bg-gray-500' },
@@ -15,6 +17,41 @@ const PO_STATUS = {
   partial: { label: 'Parcial', color: 'bg-blue-500' },
   received: { label: 'Recibida', color: 'bg-green-500' },
   cancelled: { label: 'Cancelada', color: 'bg-red-500' },
+};
+
+// Date helpers
+const getToday = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const getYesterday = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const getStartOfWeek = () => {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const getStartOfMonth = () => {
+  const d = new Date();
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const formatDateInput = (date) => {
+  if (!date) return '';
+  return date.toISOString().split('T')[0];
 };
 
 export default function PurchasesTab({ 
@@ -27,11 +64,126 @@ export default function PurchasesTab({
   const [poStatusFilter, setPOStatusFilter] = useState('');
   const [poDialog, setPODialog] = useState({ open: false, data: null });
   const [receiveDialog, setReceiveDialog] = useState({ open: false, po: null });
-
-  // Filter POs
-  const filteredPOs = purchaseOrders.filter(po => {
-    return !poStatusFilter || po.status === poStatusFilter;
+  
+  // Date filters - default to today
+  const [dateRange, setDateRange] = useState({
+    start: getToday(),
+    end: new Date()
   });
+  const [activePeriod, setActivePeriod] = useState('today');
+  
+  // Supplier filter
+  const [supplierFilter, setSupplierFilter] = useState('');
+
+  // Apply quick period filter
+  const applyPeriod = (period) => {
+    setActivePeriod(period);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    
+    switch (period) {
+      case 'today':
+        setDateRange({ start: getToday(), end: today });
+        break;
+      case 'yesterday':
+        const yesterdayEnd = getYesterday();
+        yesterdayEnd.setHours(23, 59, 59, 999);
+        setDateRange({ start: getYesterday(), end: yesterdayEnd });
+        break;
+      case 'week':
+        setDateRange({ start: getStartOfWeek(), end: today });
+        break;
+      case 'month':
+        setDateRange({ start: getStartOfMonth(), end: today });
+        break;
+      case 'all':
+        setDateRange({ start: null, end: null });
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Handle custom date change
+  const handleDateChange = (field, value) => {
+    setActivePeriod('custom');
+    const date = value ? new Date(value + 'T00:00:00') : null;
+    if (field === 'end' && date) {
+      date.setHours(23, 59, 59, 999);
+    }
+    setDateRange(prev => ({ ...prev, [field]: date }));
+  };
+
+  // Filter POs by status, date range, and supplier
+  const filteredPOs = useMemo(() => {
+    return purchaseOrders.filter(po => {
+      // Status filter
+      if (poStatusFilter && po.status !== poStatusFilter) return false;
+      
+      // Supplier filter
+      if (supplierFilter && po.supplier_id !== supplierFilter) return false;
+      
+      // Date filter
+      if (dateRange.start || dateRange.end) {
+        const poDate = new Date(po.created_at);
+        if (dateRange.start && poDate < dateRange.start) return false;
+        if (dateRange.end && poDate > dateRange.end) return false;
+      }
+      
+      return true;
+    });
+  }, [purchaseOrders, poStatusFilter, supplierFilter, dateRange]);
+
+  // Calculate summary stats
+  const summaryStats = useMemo(() => {
+    const total = filteredPOs.reduce((sum, po) => sum + (po.actual_total || po.total || 0), 0);
+    const bySupplier = {};
+    
+    filteredPOs.forEach(po => {
+      const supplierId = po.supplier_id || 'unknown';
+      const supplierName = po.supplier_name || 'Sin proveedor';
+      if (!bySupplier[supplierId]) {
+        bySupplier[supplierId] = { name: supplierName, total: 0, count: 0 };
+      }
+      bySupplier[supplierId].total += po.actual_total || po.total || 0;
+      bySupplier[supplierId].count++;
+    });
+    
+    const byStatus = {};
+    filteredPOs.forEach(po => {
+      byStatus[po.status] = (byStatus[po.status] || 0) + 1;
+    });
+    
+    return { total, bySupplier, byStatus, count: filteredPOs.length };
+  }, [filteredPOs]);
+
+  // Export to Excel
+  const handleExport = () => {
+    if (filteredPOs.length === 0) {
+      toast.error('No hay datos para exportar');
+      return;
+    }
+    
+    const data = filteredPOs.map(po => ({
+      'Fecha': new Date(po.created_at).toLocaleDateString(),
+      'Proveedor': po.supplier_name,
+      'Estado': PO_STATUS[po.status]?.label || po.status,
+      'Items': po.items?.length || 0,
+      'Total Estimado': po.total,
+      'Total Real': po.actual_total || '',
+      'Notas': po.notes || ''
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Órdenes de Compra');
+    
+    const dateStr = activePeriod === 'custom' 
+      ? `${formatDateInput(dateRange.start)}_${formatDateInput(dateRange.end)}`
+      : activePeriod;
+    XLSX.writeFile(wb, `ordenes_compra_${dateStr}.xlsx`);
+    toast.success('Archivo exportado');
+  };
 
   // Get ingredients filtered by selected supplier
   const filteredIngredients = useMemo(() => {
