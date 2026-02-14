@@ -730,14 +730,6 @@ export default function InventoryManager() {
     }
   };
 
-  // Filter ingredients
-  const filteredIngredients = ingredients.filter(ing => {
-    const matchSearch = !ingredientSearch || 
-      ing.name.toLowerCase().includes(ingredientSearch.toLowerCase());
-    const matchCategory = !ingredientCategory || ing.category === ingredientCategory;
-    return matchSearch && matchCategory;
-  });
-
   // Filter POs
   const filteredPOs = purchaseOrders.filter(po => {
     return !poStatusFilter || po.status === poStatusFilter;
