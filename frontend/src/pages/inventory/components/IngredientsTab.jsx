@@ -117,7 +117,17 @@ export default function IngredientsTab({
   // ─── INGREDIENT HANDLERS ───
   const handleSaveIngredient = async () => {
     const d = ingredientDialog.data;
-    if (!d?.name?.trim()) { toast.error('Nombre requerido'); return; }
+    
+    // Mark validation as attempted to show errors
+    setValidationAttempted(true);
+    
+    // Validate all fields
+    const validation = validateIngredient(d);
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
+      return;
+    }
     
     const saveData = {
       ...d,
@@ -138,6 +148,7 @@ export default function IngredientsTab({
       setIngredientDialog({ open: false, data: null });
       setAffectedRecipes({ count: 0, recipes: [] });
       setShowAuditHistory(false);
+      setValidationAttempted(false);
       onRefreshAll?.();
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Error');
