@@ -463,51 +463,49 @@ export default function IngredientsTab({
               </div>
             </div>
             
-            {/* Conversion Factor Calculator */}
-            <div className="p-3 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
-              <div className="flex items-center gap-2 mb-3">
-                <Calculator size={16} className="text-primary" />
-                <span className="font-medium text-sm">Calculadora de Factor de Conversión</span>
+            {/* Conversion Factor Calculator - Human Friendly Version */}
+            <div className="p-4 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+              <div className="flex items-center gap-2 mb-4">
+                <ArrowLeftRight size={16} className="text-primary" />
+                <span className="font-medium text-sm">Conversión de Unidades</span>
               </div>
               
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className="text-xs text-muted-foreground">Unidad de Compra</label>
+              {/* Human-readable sentence */}
+              <div className="bg-background/60 rounded-lg p-4 border border-border/50 mb-4">
+                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                  Completa la siguiente oración para configurar la conversión:
+                </p>
+                
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-foreground">Yo compro por</span>
                   <select
                     value={ingredientDialog.data?.purchase_unit || ingredientDialog.data?.unit || 'unidad'}
-                    onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, purchase_unit: e.target.value } }))}
-                    className="w-full mt-1 px-2 py-1.5 text-sm bg-background border border-border rounded-lg"
+                    onChange={e => {
+                      const newPurchaseUnit = e.target.value;
+                      setIngredientDialog(p => ({ ...p, data: { ...p.data, purchase_unit: newPurchaseUnit } }));
+                    }}
+                    className="px-2 py-1 text-sm bg-primary/10 border border-primary/30 rounded-md font-medium text-primary min-w-[100px]"
+                    data-testid="purchase-unit-select"
                   >
                     {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
                     {customUnits.map(u => <option key={u.id} value={u.abbreviation}>{u.name}</option>)}
                   </select>
+                  
+                  <span className="text-foreground">y despacho por</span>
+                  <span className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-md font-medium text-emerald-400">
+                    {UNITS.find(u => u.value === ingredientDialog.data?.unit)?.label || 
+                     customUnits.find(u => u.abbreviation === ingredientDialog.data?.unit)?.name ||
+                     ingredientDialog.data?.unit || 'Unidad'}
+                  </span>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Cantidad de Compra</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    value={ingredientDialog.data?.purchase_quantity || 1}
-                    onChange={e => {
-                      const pq = parseFloat(e.target.value) || 1;
-                      const dq = ingredientDialog.data?.dispatch_quantity || 1;
-                      const factor = dq / pq;
-                      setIngredientDialog(p => ({ 
-                        ...p, 
-                        data: { ...p.data, purchase_quantity: pq, conversion_factor: factor } 
-                      }));
-                      if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
-                    }}
-                    className="w-full mt-1 px-2 py-1.5 text-sm bg-background border border-border rounded-lg"
-                    placeholder="Ej: 1"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className="text-xs text-muted-foreground">Equivalencia en Despacho</label>
+                
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-foreground">Por eso, 1</span>
+                  <span className="font-medium text-primary">
+                    {UNITS.find(u => u.value === (ingredientDialog.data?.purchase_unit || ingredientDialog.data?.unit))?.label || 
+                     ingredientDialog.data?.purchase_unit || 'Unidad'}
+                  </span>
+                  <span className="text-foreground">trae</span>
                   <input
                     type="number"
                     step="0.01"
@@ -523,43 +521,173 @@ export default function IngredientsTab({
                       }));
                       if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
                     }}
-                    className="w-full mt-1 px-2 py-1.5 text-sm bg-background border border-border rounded-lg"
-                    placeholder="Ej: 16"
+                    className="w-20 px-2 py-1 text-sm bg-background border-2 border-primary/50 rounded-md font-bold text-center text-primary focus:border-primary focus:ring-1 focus:ring-primary"
+                    placeholder="16"
+                    data-testid="dispatch-quantity-input"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    En {ingredientDialog.data?.unit || 'unidad'}(s)
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Factor de Conversión</label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    min="0.0001"
-                    value={ingredientDialog.data?.conversion_factor || 1}
-                    onChange={e => {
-                      const factor = parseFloat(e.target.value) || 1;
-                      setIngredientDialog(p => ({ ...p, data: { ...p.data, conversion_factor: factor } }));
-                      if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
-                    }}
-                    className="w-full mt-1 px-2 py-1.5 text-sm bg-background border border-border rounded-lg font-mono"
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Edición libre permitida</p>
+                  <span className="font-medium text-emerald-400">
+                    {UNITS.find(u => u.value === ingredientDialog.data?.unit)?.label || 
+                     customUnits.find(u => u.abbreviation === ingredientDialog.data?.unit)?.name ||
+                     ingredientDialog.data?.unit || 'Unidad'}(s)
+                  </span>
                 </div>
               </div>
               
-              {/* Cost Preview */}
-              <div className="p-2 rounded bg-background/80 border border-border/50">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Costo por {ingredientDialog.data?.unit || 'unidad'}:</span>
-                  <span className="font-oswald font-bold text-primary">
+              {/* Smart Validation Warnings */}
+              {(() => {
+                const purchaseUnit = (ingredientDialog.data?.purchase_unit || ingredientDialog.data?.unit || '').toLowerCase();
+                const dispatchUnit = (ingredientDialog.data?.unit || '').toLowerCase();
+                const qty = ingredientDialog.data?.dispatch_quantity || 1;
+                
+                // Industry standard validations
+                const validations = [];
+                
+                // Libra to Onza
+                if (purchaseUnit === 'lb' && dispatchUnit === 'oz' && qty !== 16) {
+                  validations.push({
+                    type: 'warning',
+                    message: `¿Estás seguro? Normalmente 1 Libra tiene 16 Onzas.`,
+                    suggestion: 16
+                  });
+                }
+                
+                // Kilogramo to Gramo
+                if (purchaseUnit === 'kg' && dispatchUnit === 'g' && qty !== 1000) {
+                  validations.push({
+                    type: 'warning',
+                    message: `¿Estás seguro? Normalmente 1 Kilogramo tiene 1000 Gramos.`,
+                    suggestion: 1000
+                  });
+                }
+                
+                // Litro to Mililitro
+                if (purchaseUnit === 'lt' && dispatchUnit === 'ml' && qty !== 1000) {
+                  validations.push({
+                    type: 'warning',
+                    message: `¿Estás seguro? Normalmente 1 Litro tiene 1000 Mililitros.`,
+                    suggestion: 1000
+                  });
+                }
+                
+                // Galón to Litro
+                if (purchaseUnit === 'gal' && dispatchUnit === 'lt' && qty !== 3.785) {
+                  validations.push({
+                    type: 'warning',
+                    message: `¿Estás seguro? Normalmente 1 Galón tiene 3.785 Litros.`,
+                    suggestion: 3.785
+                  });
+                }
+                
+                // Botella to Onza (700ml = 23.6oz, 750ml = 25.3oz)
+                if (purchaseUnit === 'botella' && dispatchUnit === 'oz' && 
+                    qty !== 23.6 && qty !== 25.3 && qty !== 25.4) {
+                  validations.push({
+                    type: 'info',
+                    message: `Verifica la capacidad de la botella. ¿Es de 700ml (23.6 oz) o 750ml (25.3 oz)?`,
+                    suggestions: [{ label: '700ml', value: 23.6 }, { label: '750ml', value: 25.3 }]
+                  });
+                }
+                
+                // Botella to Mililitro
+                if (purchaseUnit === 'botella' && dispatchUnit === 'ml' && 
+                    qty !== 700 && qty !== 750 && qty !== 1000) {
+                  validations.push({
+                    type: 'info',
+                    message: `Verifica la capacidad de la botella. ¿Cuántos ml tiene?`,
+                    suggestions: [{ label: '700ml', value: 700 }, { label: '750ml', value: 750 }, { label: '1L', value: 1000 }]
+                  });
+                }
+                
+                if (validations.length === 0) return null;
+                
+                return (
+                  <div className="space-y-2 mb-4">
+                    {validations.map((v, idx) => (
+                      <div 
+                        key={idx}
+                        className={`p-3 rounded-lg border ${
+                          v.type === 'warning' 
+                            ? 'bg-amber-500/10 border-amber-500/30' 
+                            : 'bg-blue-500/10 border-blue-500/30'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle size={14} className={`mt-0.5 shrink-0 ${
+                            v.type === 'warning' ? 'text-amber-500' : 'text-blue-400'
+                          }`} />
+                          <div className="flex-1">
+                            <p className={`text-xs font-medium ${
+                              v.type === 'warning' ? 'text-amber-500' : 'text-blue-400'
+                            }`}>
+                              {v.message}
+                            </p>
+                            {v.suggestion && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const factor = v.suggestion / (ingredientDialog.data?.purchase_quantity || 1);
+                                  setIngredientDialog(p => ({ 
+                                    ...p, 
+                                    data: { ...p.data, dispatch_quantity: v.suggestion, conversion_factor: factor } 
+                                  }));
+                                }}
+                                className="mt-2 text-xs px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 rounded text-amber-400 transition-colors"
+                              >
+                                Usar {v.suggestion}
+                              </button>
+                            )}
+                            {v.suggestions && (
+                              <div className="flex gap-2 mt-2">
+                                {v.suggestions.map((s, sidx) => (
+                                  <button
+                                    key={sidx}
+                                    type="button"
+                                    onClick={() => {
+                                      const factor = s.value / (ingredientDialog.data?.purchase_quantity || 1);
+                                      setIngredientDialog(p => ({ 
+                                        ...p, 
+                                        data: { ...p.data, dispatch_quantity: s.value, conversion_factor: factor } 
+                                      }));
+                                    }}
+                                    className="text-xs px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 rounded text-blue-400 transition-colors"
+                                  >
+                                    {s.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              
+              {/* Real Money Result */}
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calculator size={14} className="text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-400 uppercase tracking-wide">Resultado en Dinero Real</span>
+                </div>
+                <p className="text-sm text-foreground leading-relaxed">
+                  Esto significa que cada{' '}
+                  <span className="font-bold text-emerald-400">
+                    {UNITS.find(u => u.value === ingredientDialog.data?.unit)?.label || 
+                     ingredientDialog.data?.unit || 'Unidad'}
+                  </span>
+                  {ingredientDialog.data?.name && (
+                    <span className="text-muted-foreground"> de {ingredientDialog.data.name}</span>
+                  )}
+                  {' '}te cuesta{' '}
+                  <span className="font-oswald font-bold text-lg text-primary">
                     {formatMoney(
                       (ingredientDialog.data?.avg_cost || 0) / (ingredientDialog.data?.conversion_factor || 1)
                     )}
                   </span>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  = {formatMoney(ingredientDialog.data?.avg_cost || 0)} (costo compra) ÷ {ingredientDialog.data?.conversion_factor || 1} (factor)
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-2 opacity-70">
+                  Cálculo: {formatMoney(ingredientDialog.data?.avg_cost || 0)} ÷ {ingredientDialog.data?.dispatch_quantity || 1} = {formatMoney((ingredientDialog.data?.avg_cost || 0) / (ingredientDialog.data?.conversion_factor || 1))} por unidad
                 </p>
               </div>
               
