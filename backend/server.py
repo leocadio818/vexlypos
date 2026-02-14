@@ -3830,6 +3830,457 @@ async def delete_purchase_order(po_id: str):
     await db.purchase_orders.delete_one({"id": po_id})
     return {"ok": True}
 
+# ─── COST CONTROL & SHOPPING ASSISTANT ───
+
+@api.get("/ingredients/{ingredient_id}/price-history")
+async def get_ingredient_price_history(ingredient_id: str, limit: int = Query(50)):
+    """
+    Get the price history for an ingredient from received purchase orders.
+    Used for cost control and price increase detection.
+    """
+    # Get ingredient info
+    ingredient = await db.ingredients.find_one({"id": ingredient_id}, {"_id": 0})
+    if not ingredient:
+        raise HTTPException(404, "Ingrediente no encontrado")
+    
+    # Find all received POs that include this ingredient
+    pipeline = [
+        {"$match": {"status": {"$in": ["received", "partial"]}, "items.ingredient_id": ingredient_id}},
+        {"$unwind": "$items"},
+        {"$match": {"items.ingredient_id": ingredient_id, "items.received_quantity": {"$gt": 0}}},
+        {"$project": {
+            "po_id": "$id",
+            "supplier_id": "$supplier_id",
+            "supplier_name": "$supplier_name",
+            "received_at": {"$ifNull": ["$received_at", "$created_at"]},
+            "quantity": "$items.received_quantity",
+            "unit_price": {"$ifNull": ["$items.actual_unit_price", "$items.unit_price"]},
+            "total": {"$multiply": [
+                {"$ifNull": ["$items.received_quantity", 0]},
+                {"$ifNull": ["$items.actual_unit_price", "$items.unit_price"]}
+            ]}
+        }},
+        {"$sort": {"received_at": -1}},
+        {"$limit": limit}
+    ]
+    
+    history = await db.purchase_orders.aggregate(pipeline).to_list(limit)
+    
+    # Calculate statistics
+    if history:
+        prices = [h["unit_price"] for h in history if h.get("unit_price", 0) > 0]
+        avg_price = sum(prices) / len(prices) if prices else 0
+        min_price = min(prices) if prices else 0
+        max_price = max(prices) if prices else 0
+        latest_price = prices[0] if prices else 0
+        
+        # Detect trend (compare last 3 vs previous 3)
+        if len(prices) >= 6:
+            recent_avg = sum(prices[:3]) / 3
+            older_avg = sum(prices[3:6]) / 3
+            trend = "up" if recent_avg > older_avg * 1.05 else "down" if recent_avg < older_avg * 0.95 else "stable"
+            trend_percentage = ((recent_avg - older_avg) / older_avg * 100) if older_avg > 0 else 0
+        else:
+            trend = "insufficient_data"
+            trend_percentage = 0
+    else:
+        avg_price = min_price = max_price = latest_price = 0
+        trend = "no_data"
+        trend_percentage = 0
+    
+    return {
+        "ingredient_id": ingredient_id,
+        "ingredient_name": ingredient.get("name", "?"),
+        "current_avg_cost": ingredient.get("avg_cost", 0),
+        "history": history,
+        "stats": {
+            "avg_price": round(avg_price, 2),
+            "min_price": round(min_price, 2),
+            "max_price": round(max_price, 2),
+            "latest_price": round(latest_price, 2),
+            "total_purchases": len(history),
+            "trend": trend,
+            "trend_percentage": round(trend_percentage, 2)
+        }
+    }
+
+@api.get("/purchasing/suggestions")
+async def get_purchase_suggestions(
+    supplier_id: Optional[str] = Query(None),
+    warehouse_id: Optional[str] = Query(None),
+    include_ok_stock: bool = Query(False)
+):
+    """
+    Intelligent shopping assistant - suggests items to reorder based on:
+    - Stock below minimum
+    - Recent consumption patterns
+    - Default supplier assignment
+    Returns suggestions rounded to nearest purchase unit for convenience.
+    """
+    # Get all ingredients
+    ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
+    
+    # Filter by default supplier if specified
+    if supplier_id:
+        ingredients = [i for i in ingredients if i.get("default_supplier_id") == supplier_id]
+    
+    # Get warehouses for stock lookup
+    wh_filter = {"warehouse_id": warehouse_id} if warehouse_id else {}
+    
+    suggestions = []
+    
+    for ing in ingredients:
+        # Get total stock across relevant warehouses
+        stock_query = {"ingredient_id": ing["id"]}
+        if warehouse_id:
+            stock_query["warehouse_id"] = warehouse_id
+        stock_docs = await db.stock.find(stock_query, {"_id": 0}).to_list(50)
+        current_stock = sum(s.get("current_stock", 0) for s in stock_docs)
+        
+        min_stock = ing.get("min_stock", 0)
+        is_low = current_stock <= min_stock
+        
+        if not include_ok_stock and not is_low:
+            continue
+        
+        # Get consumption from last 30 days (stock movements of type 'sale')
+        thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+        consumption_docs = await db.stock_movements.find({
+            "ingredient_id": ing["id"],
+            "movement_type": {"$in": ["sale", "explosion", "production_consume"]},
+            "created_at": {"$gte": thirty_days_ago}
+        }, {"_id": 0}).to_list(500)
+        
+        total_consumption = sum(abs(m.get("quantity", 0)) for m in consumption_docs)
+        avg_daily_consumption = total_consumption / 30
+        
+        # Calculate suggested quantity
+        # Target: bring stock to 2x minimum or 14 days supply, whichever is higher
+        target_stock = max(min_stock * 2, avg_daily_consumption * 14)
+        suggested_qty = max(0, target_stock - current_stock)
+        
+        # Round to nearest purchase unit
+        conversion_factor = ing.get("conversion_factor", 1)
+        purchase_unit = ing.get("purchase_unit", ing.get("unit", "unidad"))
+        
+        if conversion_factor > 0:
+            # Convert dispatch units to purchase units and round up
+            suggested_purchase_units = suggested_qty / conversion_factor
+            suggested_purchase_units = max(1, round(suggested_purchase_units + 0.49))  # Round up
+            suggested_qty_dispatch = suggested_purchase_units * conversion_factor
+        else:
+            suggested_purchase_units = suggested_qty
+            suggested_qty_dispatch = suggested_qty
+        
+        # Get last purchase price
+        last_po = await db.purchase_orders.find_one(
+            {"status": {"$in": ["received", "partial"]}, "items.ingredient_id": ing["id"]},
+            {"_id": 0, "items": 1}
+        )
+        last_price = 0
+        if last_po:
+            for item in last_po.get("items", []):
+                if item.get("ingredient_id") == ing["id"]:
+                    last_price = item.get("actual_unit_price") or item.get("unit_price", 0)
+                    break
+        
+        # If no purchase history, use avg_cost
+        if last_price == 0:
+            last_price = ing.get("avg_cost", 0)
+        
+        # Get supplier info
+        supplier = None
+        if ing.get("default_supplier_id"):
+            supplier = await db.suppliers.find_one({"id": ing["default_supplier_id"]}, {"_id": 0})
+        
+        suggestions.append({
+            "ingredient_id": ing["id"],
+            "ingredient_name": ing["name"],
+            "category": ing.get("category", "general"),
+            "current_stock": round(current_stock, 2),
+            "min_stock": min_stock,
+            "deficit": round(max(0, min_stock - current_stock), 2),
+            "is_low_stock": is_low,
+            "is_out_of_stock": current_stock <= 0,
+            # Consumption data
+            "avg_daily_consumption": round(avg_daily_consumption, 4),
+            "days_of_stock": round(current_stock / avg_daily_consumption, 1) if avg_daily_consumption > 0 else 999,
+            # Suggestion
+            "suggested_quantity": round(suggested_qty_dispatch, 2),
+            "suggested_purchase_units": suggested_purchase_units,
+            "purchase_unit": purchase_unit,
+            "dispatch_unit": ing.get("unit", "unidad"),
+            "conversion_factor": conversion_factor,
+            # Pricing
+            "last_unit_price": round(last_price, 2),
+            "estimated_total": round(last_price * suggested_purchase_units, 2),
+            # Supplier
+            "default_supplier_id": ing.get("default_supplier_id"),
+            "default_supplier_name": supplier.get("name") if supplier else None
+        })
+    
+    # Sort by urgency (out of stock first, then days of stock)
+    suggestions.sort(key=lambda x: (not x["is_out_of_stock"], x.get("days_of_stock", 999)))
+    
+    # Calculate totals by supplier
+    supplier_totals = {}
+    for s in suggestions:
+        sup_id = s.get("default_supplier_id") or "sin_proveedor"
+        sup_name = s.get("default_supplier_name") or "Sin proveedor asignado"
+        if sup_id not in supplier_totals:
+            supplier_totals[sup_id] = {"name": sup_name, "items": 0, "total": 0}
+        supplier_totals[sup_id]["items"] += 1
+        supplier_totals[sup_id]["total"] += s.get("estimated_total", 0)
+    
+    return {
+        "suggestions": suggestions,
+        "summary": {
+            "total_items": len(suggestions),
+            "low_stock_items": len([s for s in suggestions if s["is_low_stock"]]),
+            "out_of_stock_items": len([s for s in suggestions if s["is_out_of_stock"]]),
+            "estimated_total": round(sum(s.get("estimated_total", 0) for s in suggestions), 2),
+            "by_supplier": supplier_totals
+        }
+    }
+
+class GeneratePOFromSuggestionsInput(BaseModel):
+    supplier_id: str
+    warehouse_id: str
+    ingredient_ids: List[str]  # List of ingredient IDs to include
+    notes: str = ""
+
+@api.post("/purchasing/generate-po")
+async def generate_po_from_suggestions(input: GeneratePOFromSuggestionsInput, user=Depends(get_current_user)):
+    """
+    Generate a purchase order from shopping assistant suggestions.
+    Creates a PO with items pre-filled based on suggested quantities.
+    """
+    # Get supplier
+    supplier = await db.suppliers.find_one({"id": input.supplier_id}, {"_id": 0})
+    if not supplier:
+        raise HTTPException(404, "Proveedor no encontrado")
+    
+    # Get suggestions for selected ingredients
+    suggestions_res = await get_purchase_suggestions(supplier_id=input.supplier_id, include_ok_stock=True)
+    suggestions = suggestions_res["suggestions"]
+    
+    # Filter to selected ingredients
+    selected = [s for s in suggestions if s["ingredient_id"] in input.ingredient_ids]
+    
+    if not selected:
+        raise HTTPException(400, "No se encontraron ingredientes para la orden")
+    
+    # Build PO items
+    items = []
+    for s in selected:
+        items.append({
+            "id": gen_id(),
+            "ingredient_id": s["ingredient_id"],
+            "ingredient_name": s["ingredient_name"],
+            "quantity": s["suggested_purchase_units"],
+            "unit_price": s["last_unit_price"],
+            "received_quantity": 0,
+            "actual_unit_price": s["last_unit_price"]
+        })
+    
+    total = sum(i["quantity"] * i["unit_price"] for i in items)
+    
+    # Create PO
+    doc = {
+        "id": gen_id(),
+        "supplier_id": input.supplier_id,
+        "supplier_name": supplier["name"],
+        "warehouse_id": input.warehouse_id,
+        "items": items,
+        "total": round(total, 2),
+        "notes": input.notes or "Generada desde Asistente de Compras",
+        "expected_date": "",
+        "status": "draft",
+        "created_by": user["name"],
+        "created_at": now_iso(),
+        "received_at": None,
+        "generated_from_assistant": True
+    }
+    
+    await db.purchase_orders.insert_one(doc)
+    
+    return {
+        "ok": True,
+        "purchase_order": {k: v for k, v in doc.items() if k != "_id"},
+        "items_count": len(items),
+        "total": round(total, 2)
+    }
+
+@api.get("/purchasing/price-alerts")
+async def check_price_alerts():
+    """
+    Check for price increases across all ingredients.
+    Compares current avg_cost with the last received purchase price.
+    """
+    ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
+    
+    alerts = []
+    
+    for ing in ingredients:
+        # Get price history
+        pipeline = [
+            {"$match": {"status": {"$in": ["received", "partial"]}, "items.ingredient_id": ing["id"]}},
+            {"$unwind": "$items"},
+            {"$match": {"items.ingredient_id": ing["id"], "items.received_quantity": {"$gt": 0}}},
+            {"$project": {
+                "received_at": {"$ifNull": ["$received_at", "$created_at"]},
+                "unit_price": {"$ifNull": ["$items.actual_unit_price", "$items.unit_price"]}
+            }},
+            {"$sort": {"received_at": -1}},
+            {"$limit": 5}
+        ]
+        
+        history = await db.purchase_orders.aggregate(pipeline).to_list(5)
+        
+        if len(history) >= 2:
+            latest_price = history[0]["unit_price"]
+            previous_price = history[1]["unit_price"]
+            
+            if previous_price > 0:
+                change_pct = ((latest_price - previous_price) / previous_price) * 100
+                
+                # Alert if price increased more than 5%
+                if change_pct > 5:
+                    # Get recipes affected
+                    recipes_count = await db.recipes.count_documents({"ingredients.ingredient_id": ing["id"]})
+                    
+                    alerts.append({
+                        "ingredient_id": ing["id"],
+                        "ingredient_name": ing["name"],
+                        "category": ing.get("category", "general"),
+                        "previous_price": round(previous_price, 2),
+                        "latest_price": round(latest_price, 2),
+                        "change_percentage": round(change_pct, 2),
+                        "change_amount": round(latest_price - previous_price, 2),
+                        "current_avg_cost": ing.get("avg_cost", 0),
+                        "recipes_affected": recipes_count,
+                        "purchase_unit": ing.get("purchase_unit", ing.get("unit", "unidad")),
+                        "margin_threshold": ing.get("margin_threshold", 30)
+                    })
+    
+    # Sort by change percentage descending
+    alerts.sort(key=lambda x: x["change_percentage"], reverse=True)
+    
+    return {
+        "alerts": alerts,
+        "summary": {
+            "total_alerts": len(alerts),
+            "avg_increase": round(sum(a["change_percentage"] for a in alerts) / len(alerts), 2) if alerts else 0,
+            "total_recipes_affected": len(set(a["ingredient_id"] for a in alerts))
+        }
+    }
+
+@api.post("/purchasing/recalculate-recipe-margins")
+async def recalculate_recipe_margins():
+    """
+    Recalculate costs and margins for all recipes based on current ingredient costs.
+    Identifies recipes where margins have fallen below threshold.
+    """
+    recipes = await db.recipes.find({}, {"_id": 0}).to_list(500)
+    products_map = {p["id"]: p for p in await db.products.find({}, {"_id": 0}).to_list(500)}
+    
+    results = []
+    
+    for recipe in recipes:
+        product = products_map.get(recipe.get("product_id"))
+        if not product:
+            continue
+        
+        # Calculate current recipe cost
+        total_cost = 0
+        for ing in recipe.get("ingredients", []):
+            ingredient = await db.ingredients.find_one({"id": ing.get("ingredient_id")}, {"_id": 0})
+            if not ingredient:
+                continue
+            
+            quantity = ing.get("quantity", 0)
+            waste_pct = ing.get("waste_percentage", 0)
+            effective_qty = quantity * (1 + waste_pct / 100)
+            
+            # Use dispatch_unit_cost for accurate cost calculation
+            unit_cost = ingredient.get("dispatch_unit_cost", ingredient.get("avg_cost", 0))
+            total_cost += unit_cost * effective_qty
+        
+        yield_qty = recipe.get("yield_quantity", 1) or 1
+        cost_per_unit = total_cost / yield_qty
+        
+        # Get selling price
+        selling_price = product.get("price", 0)
+        
+        # Calculate margin
+        if selling_price > 0:
+            margin_amount = selling_price - cost_per_unit
+            margin_pct = (margin_amount / selling_price) * 100
+        else:
+            margin_amount = 0
+            margin_pct = 0
+        
+        # Get margin threshold from first ingredient or use default
+        margin_threshold = 30  # Default 30%
+        for ing in recipe.get("ingredients", []):
+            ingredient = await db.ingredients.find_one({"id": ing.get("ingredient_id")}, {"_id": 0})
+            if ingredient and ingredient.get("margin_threshold"):
+                margin_threshold = ingredient.get("margin_threshold")
+                break
+        
+        # Determine status
+        if margin_pct < margin_threshold:
+            status = "critical" if margin_pct < margin_threshold / 2 else "warning"
+            # Calculate suggested price to restore margin
+            suggested_price = cost_per_unit / (1 - margin_threshold / 100) if margin_threshold < 100 else cost_per_unit * 2
+        else:
+            status = "ok"
+            suggested_price = selling_price
+        
+        # Update recipe with calculated cost
+        await db.recipes.update_one(
+            {"id": recipe["id"]},
+            {"$set": {
+                "calculated_cost": round(cost_per_unit, 2),
+                "margin_percentage": round(margin_pct, 2),
+                "cost_updated_at": now_iso()
+            }}
+        )
+        
+        results.append({
+            "recipe_id": recipe["id"],
+            "product_id": product["id"],
+            "product_name": product.get("name", "?"),
+            "cost_per_unit": round(cost_per_unit, 2),
+            "selling_price": round(selling_price, 2),
+            "margin_amount": round(margin_amount, 2),
+            "margin_percentage": round(margin_pct, 2),
+            "margin_threshold": margin_threshold,
+            "status": status,
+            "suggested_price": round(suggested_price, 2) if status != "ok" else None
+        })
+    
+    # Sort by margin percentage ascending (lowest margins first)
+    results.sort(key=lambda x: x["margin_percentage"])
+    
+    # Separate by status
+    critical = [r for r in results if r["status"] == "critical"]
+    warning = [r for r in results if r["status"] == "warning"]
+    ok = [r for r in results if r["status"] == "ok"]
+    
+    return {
+        "results": results,
+        "summary": {
+            "total_recipes": len(results),
+            "critical_count": len(critical),
+            "warning_count": len(warning),
+            "ok_count": len(ok),
+            "avg_margin": round(sum(r["margin_percentage"] for r in results) / len(results), 2) if results else 0
+        },
+        "critical": critical,
+        "warning": warning
+    }
+
 # ─── CUSTOMERS / LOYALTY ───
 @api.get("/customers")
 async def list_customers(search: Optional[str] = Query(None)):
