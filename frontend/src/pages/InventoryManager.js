@@ -3867,13 +3867,10 @@ export default function InventoryManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Price History Dialog */}
-      <Dialog open={priceHistoryDialog.open} onOpenChange={(o) => !o && setPriceHistoryDialog({ open: false, data: null, loading: false })}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-oswald flex items-center gap-2">
-              <LineChart size={20} className="text-cyan-500" /> Historial de Precios
-            </DialogTitle>
+      {/* Price History Dialog - Moved to AssistantTab component */}
+    </div>
+  );
+}
           </DialogHeader>
           
           {priceHistoryDialog.loading ? (
