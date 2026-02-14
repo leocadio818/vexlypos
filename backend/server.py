@@ -2360,6 +2360,92 @@ async def get_affected_recipes(ingredient_id: str):
         "recipes": recipes
     }
 
+@api.get("/ingredients/{ingredient_id}/conversion-analysis")
+async def get_ingredient_conversion_analysis(ingredient_id: str):
+    """
+    Get complete conversion analysis for an ingredient showing:
+    - Conversion setup (purchase unit -> dispatch unit)
+    - All linked recipes/products with their consumption and dynamic costs
+    """
+    # Get ingredient
+    ingredient = await db.ingredients.find_one({"id": ingredient_id}, {"_id": 0})
+    if not ingredient:
+        raise HTTPException(404, "Ingrediente no encontrado")
+    
+    # Calculate dispatch unit cost
+    avg_cost = ingredient.get("avg_cost", 0)
+    conversion_factor = ingredient.get("conversion_factor", 1)
+    dispatch_unit_cost = avg_cost / conversion_factor if conversion_factor > 0 else avg_cost
+    
+    # Get all recipes that use this ingredient
+    recipes = await db.recipes.find(
+        {"ingredients.ingredient_id": ingredient_id},
+        {"_id": 0}
+    ).to_list(500)
+    
+    # Get products for recipe names
+    product_ids = [r.get("product_id") for r in recipes if r.get("product_id")]
+    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(500)
+    product_map = {p["id"]: p for p in products}
+    
+    # Build linked recipes with cost calculations
+    linked_recipes = []
+    for recipe in recipes:
+        product = product_map.get(recipe.get("product_id"), {})
+        
+        # Find this ingredient in the recipe
+        for ing in recipe.get("ingredients", []):
+            if ing.get("ingredient_id") == ingredient_id:
+                quantity = ing.get("quantity", 0)
+                waste_pct = ing.get("waste_percentage", 0)
+                
+                # Calculate dynamic cost: (dispatch_unit_cost * quantity) * (1 + waste/100)
+                base_cost = dispatch_unit_cost * quantity
+                cost_with_waste = base_cost * (1 + waste_pct / 100)
+                
+                linked_recipes.append({
+                    "recipe_id": recipe.get("id"),
+                    "product_id": recipe.get("product_id"),
+                    "product_name": recipe.get("product_name", product.get("name", "?")),
+                    "product_price": product.get("price", 0),
+                    "quantity_used": quantity,
+                    "unit": ing.get("unit", ingredient.get("unit", "unidad")),
+                    "waste_percentage": waste_pct,
+                    "cost_per_unit": round(dispatch_unit_cost, 4),
+                    "base_ingredient_cost": round(base_cost, 4),
+                    "cost_with_waste": round(cost_with_waste, 4),
+                    "cost_formula": f"({formatMoney_server(avg_cost)} ÷ {conversion_factor}) × {quantity} = {formatMoney_server(base_cost)}"
+                })
+    
+    # Sort by cost descending
+    linked_recipes.sort(key=lambda x: x["cost_with_waste"], reverse=True)
+    
+    return {
+        "ingredient": {
+            "id": ingredient.get("id"),
+            "name": ingredient.get("name"),
+            "category": ingredient.get("category"),
+            # Conversion setup
+            "purchase_unit": ingredient.get("purchase_unit", ingredient.get("unit")),
+            "purchase_quantity": ingredient.get("purchase_quantity", 1),
+            "dispatch_unit": ingredient.get("unit"),
+            "dispatch_quantity": ingredient.get("dispatch_quantity", 1),
+            "conversion_factor": conversion_factor,
+            # Costs
+            "purchase_cost": avg_cost,
+            "dispatch_unit_cost": round(dispatch_unit_cost, 4),
+            # Conversion explanation
+            "conversion_explanation": f"1 {ingredient.get('purchase_unit', ingredient.get('unit'))} = {conversion_factor} {ingredient.get('unit')}"
+        },
+        "linked_products_count": len(linked_recipes),
+        "linked_recipes": linked_recipes,
+        "total_cost_impact": round(sum(r["cost_with_waste"] for r in linked_recipes), 2)
+    }
+
+def formatMoney_server(amount):
+    """Format money for server-side use"""
+    return f"RD$ {amount:,.2f}"
+
 @api.get("/ingredients/{ingredient_id}/audit-logs")
 async def get_ingredient_audit_logs(ingredient_id: str, limit: int = Query(50)):
     """Get audit history for an ingredient"""
