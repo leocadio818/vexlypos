@@ -92,7 +92,6 @@ export default function InventoryManager() {
   const [poStatusFilter, setPOStatusFilter] = useState('');
   
   // Dialog states (ingredientDialog, unitDialog moved to IngredientsTab)
-  const [recipeDialog, setRecipeDialog] = useState({ open: false, data: null });
   const [poDialog, setPODialog] = useState({ open: false, data: null });
   const [receiveDialog, setReceiveDialog] = useState({ open: false, po: null });
   const [transferDialog, setTransferDialog] = useState({ open: false, data: null });
