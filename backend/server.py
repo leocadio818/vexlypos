@@ -316,12 +316,30 @@ class SupplierInput(BaseModel):
 # ─── INGREDIENT SYSTEM ───
 class IngredientInput(BaseModel):
     name: str
-    unit: str = "unidad"  # unidad, kg, g, lt, ml, oz
+    unit: str = "unidad"  # unidad de despacho (dispatch unit)
     category: str = "general"  # general, carnes, lacteos, vegetales, bebidas, etc
     min_stock: float = 0
-    avg_cost: float = 0
+    avg_cost: float = 0  # Costo por unidad de compra
     is_subrecipe: bool = False  # True if this ingredient is produced from a recipe
     recipe_id: str = ""  # If is_subrecipe, links to the recipe that produces it
+    # Conversion factor fields
+    purchase_unit: str = ""  # Unit used for purchasing (e.g., "Libra")
+    purchase_quantity: float = 1  # Quantity in purchase unit (e.g., 1)
+    dispatch_quantity: float = 1  # Equivalent quantity in dispatch unit (e.g., 16 for 16 oz per lb)
+    conversion_factor: float = 1  # dispatch_quantity / purchase_quantity
+
+class UnitDefinitionInput(BaseModel):
+    name: str  # Display name (e.g., "Libra", "Kilogramo")
+    abbreviation: str  # Short form (e.g., "lb", "kg")
+    category: str = "custom"  # weight, volume, count, custom
+
+class IngredientAuditInput(BaseModel):
+    ingredient_id: str
+    field_changed: str
+    old_value: str
+    new_value: str
+    changed_by_id: str
+    changed_by_name: str
 
 class RecipeIngredientInput(BaseModel):
     ingredient_id: str
