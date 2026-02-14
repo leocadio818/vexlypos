@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { 
   FileText, Plus, Pencil, Trash2, Check, X, Save, AlertCircle, ArrowLeftRight, Package,
-  Calendar, Download, Filter, TrendingUp, Building2
+  Calendar, Download, Filter, TrendingUp, Building2, BarChart3, List
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,10 @@ import { purchaseOrdersAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Legend, PieChart, Pie, Cell
+} from 'recharts';
 
 const PO_STATUS = {
   draft: { label: 'Borrador', color: 'bg-gray-500' },
