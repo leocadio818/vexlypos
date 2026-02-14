@@ -126,6 +126,17 @@ export default function InventoryManager() {
   const [multilevelStock, setMultilevelStock] = useState([]);
   const [loadingMultilevel, setLoadingMultilevel] = useState(false);
   const [differenceDialog, setDifferenceDialog] = useState({ open: false, data: null });
+  
+  // Shopping Assistant state
+  const [purchaseSuggestions, setPurchaseSuggestions] = useState({ suggestions: [], summary: {} });
+  const [assistantFilters, setAssistantFilters] = useState({ supplier_id: '', warehouse_id: '', include_ok_stock: false });
+  const [loadingAssistant, setLoadingAssistant] = useState(false);
+  const [selectedSuggestions, setSelectedSuggestions] = useState([]);
+  const [priceAlerts, setPriceAlerts] = useState({ alerts: [], summary: {} });
+  const [marginResults, setMarginResults] = useState({ results: [], summary: {}, critical: [], warning: [] });
+  const [loadingMargins, setLoadingMargins] = useState(false);
+  const [priceHistoryDialog, setPriceHistoryDialog] = useState({ open: false, data: null, loading: false });
+  const [assistantView, setAssistantView] = useState('suggestions'); // suggestions | alerts | margins
 
   // Fetch all data
   const fetchAll = async () => {
