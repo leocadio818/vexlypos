@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, AlertTriangle, Check } from 'lucide-react';
+import { FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, AlertTriangle, Check, BarChart3, List, ArrowUpDown, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { recipesAPI, formatMoney } from '@/lib/api';
