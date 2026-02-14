@@ -17,10 +17,68 @@ export default function RecipesTab({
   const [marginMode, setMarginMode] = useState('price'); // 'price' or 'margin'
   const [targetMargin, setTargetMargin] = useState(30);
   const [customPrice, setCustomPrice] = useState(0);
+  
+  // View state: 'list' or 'report'
+  const [viewMode, setViewMode] = useState('list');
+  const [marginFilter, setMarginFilter] = useState('all'); // 'all', 'critical', 'warning', 'ok'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' = lowest margin first
 
   // Margin threshold configuration
   const MARGIN_CRITICAL = 15;
   const MARGIN_WARNING = 30;
+
+  // Calculate margin data for all recipes (for report)
+  const marginReport = useMemo(() => {
+    const data = recipes.map(rec => {
+      const cost = calculateRecipeCost(rec);
+      const product = products.find(p => p.id === rec.product_id);
+      const price = product?.price_a || product?.price || 0;
+      const margin = price > 0 ? ((price - cost) / price) * 100 : 0;
+      const profit = price - cost;
+      
+      let status = 'ok';
+      if (margin < MARGIN_CRITICAL) status = 'critical';
+      else if (margin < MARGIN_WARNING) status = 'warning';
+      
+      return {
+        ...rec,
+        cost,
+        price,
+        margin: Math.round(margin * 10) / 10,
+        profit,
+        status,
+        product
+      };
+    });
+    
+    // Filter
+    let filtered = data;
+    if (marginFilter !== 'all') {
+      filtered = data.filter(r => r.status === marginFilter);
+    }
+    
+    // Sort by margin
+    filtered.sort((a, b) => sortOrder === 'asc' ? a.margin - b.margin : b.margin - a.margin);
+    
+    // Summary stats
+    const critical = data.filter(r => r.status === 'critical').length;
+    const warning = data.filter(r => r.status === 'warning').length;
+    const ok = data.filter(r => r.status === 'ok').length;
+    const avgMargin = data.length > 0 ? data.reduce((sum, r) => sum + r.margin, 0) / data.length : 0;
+    const totalProfit = data.reduce((sum, r) => sum + r.profit, 0);
+    
+    return {
+      items: filtered,
+      summary: {
+        total: data.length,
+        critical,
+        warning,
+        ok,
+        avgMargin: Math.round(avgMargin * 10) / 10,
+        totalProfit
+      }
+    };
+  }, [recipes, products, calculateRecipeCost, marginFilter, sortOrder]);
 
   // Calculate dynamic margin data for current recipe
   const marginData = useMemo(() => {
