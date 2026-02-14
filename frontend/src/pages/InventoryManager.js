@@ -523,6 +523,127 @@ export default function InventoryManager() {
     }
   }, [activeTab]);
 
+  // ─── SHOPPING ASSISTANT HANDLERS ───
+  const fetchPurchaseSuggestions = async (filters = assistantFilters) => {
+    setLoadingAssistant(true);
+    try {
+      const params = {};
+      if (filters.supplier_id) params.supplier_id = filters.supplier_id;
+      if (filters.warehouse_id) params.warehouse_id = filters.warehouse_id;
+      params.include_ok_stock = filters.include_ok_stock;
+      
+      const res = await purchasingAPI.getSuggestions(params);
+      setPurchaseSuggestions(res.data);
+      setSelectedSuggestions([]);
+    } catch (e) {
+      toast.error('Error al cargar sugerencias de compra');
+    }
+    setLoadingAssistant(false);
+  };
+
+  const fetchPriceAlerts = async () => {
+    setLoadingAssistant(true);
+    try {
+      const res = await purchasingAPI.getPriceAlerts();
+      setPriceAlerts(res.data);
+    } catch (e) {
+      toast.error('Error al cargar alertas de precios');
+    }
+    setLoadingAssistant(false);
+  };
+
+  const fetchMarginAnalysis = async () => {
+    setLoadingMargins(true);
+    try {
+      const res = await purchasingAPI.recalculateMargins();
+      setMarginResults(res.data);
+      toast.success('Márgenes recalculados correctamente');
+    } catch (e) {
+      toast.error('Error al recalcular márgenes');
+    }
+    setLoadingMargins(false);
+  };
+
+  const loadPriceHistory = async (ingredientId) => {
+    setPriceHistoryDialog({ open: true, data: null, loading: true });
+    try {
+      const res = await purchasingAPI.getIngredientPriceHistory(ingredientId);
+      setPriceHistoryDialog({ open: true, data: res.data, loading: false });
+    } catch (e) {
+      toast.error('Error al cargar historial de precios');
+      setPriceHistoryDialog({ open: false, data: null, loading: false });
+    }
+  };
+
+  const handleGeneratePO = async () => {
+    if (selectedSuggestions.length === 0) {
+      toast.error('Selecciona al menos un insumo');
+      return;
+    }
+    
+    // Get first supplier from selection (should filter by supplier first)
+    const firstSupplier = purchaseSuggestions.suggestions.find(s => selectedSuggestions.includes(s.ingredient_id))?.default_supplier_id;
+    
+    if (!firstSupplier) {
+      toast.error('Los insumos seleccionados no tienen proveedor asignado');
+      return;
+    }
+    
+    // Filter to items with same supplier
+    const itemsForSupplier = selectedSuggestions.filter(id => {
+      const item = purchaseSuggestions.suggestions.find(s => s.ingredient_id === id);
+      return item?.default_supplier_id === firstSupplier;
+    });
+    
+    if (!assistantFilters.warehouse_id) {
+      toast.error('Selecciona un almacén de destino');
+      return;
+    }
+    
+    try {
+      const res = await purchasingAPI.generatePO({
+        supplier_id: firstSupplier,
+        warehouse_id: assistantFilters.warehouse_id,
+        ingredient_ids: itemsForSupplier,
+        notes: 'Generada automáticamente desde Asistente de Compras'
+      });
+      
+      toast.success(`Orden de compra creada con ${res.data.items_count} items por ${formatMoney(res.data.total)}`);
+      setSelectedSuggestions([]);
+      fetchAll(); // Refresh POs
+      setActiveTab('purchases');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error al generar orden de compra');
+    }
+  };
+
+  const toggleSuggestionSelection = (ingredientId) => {
+    setSelectedSuggestions(prev => 
+      prev.includes(ingredientId) 
+        ? prev.filter(id => id !== ingredientId)
+        : [...prev, ingredientId]
+    );
+  };
+
+  const selectAllSuggestions = () => {
+    const allIds = purchaseSuggestions.suggestions
+      .filter(s => s.default_supplier_id === assistantFilters.supplier_id || !assistantFilters.supplier_id)
+      .map(s => s.ingredient_id);
+    setSelectedSuggestions(allIds);
+  };
+
+  const deselectAllSuggestions = () => {
+    setSelectedSuggestions([]);
+  };
+
+  // Load assistant data when tab changes
+  useEffect(() => {
+    if (activeTab === 'assistant') {
+      fetchPurchaseSuggestions();
+      fetchPriceAlerts();
+    }
+  }, [activeTab]);
+
   // ─── SUPPLIER HANDLERS ───
   const handleSaveSupplier = async () => {
     const d = supplierDialog.data;
