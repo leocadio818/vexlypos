@@ -98,12 +98,18 @@ export default function InventoryManager() {
   const [productionDialog, setProductionDialog] = useState({ open: false, data: null });
   const [productionHistory, setProductionHistory] = useState([]);
   const [producingItem, setProducingItem] = useState(false);
+  
+  // Custom units state
+  const [customUnits, setCustomUnits] = useState([]);
+  const [affectedRecipes, setAffectedRecipes] = useState({ count: 0, recipes: [] });
+  const [showAuditHistory, setShowAuditHistory] = useState(false);
+  const [auditLogs, setAuditLogs] = useState([]);
 
   // Fetch all data
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [ingRes, whRes, supRes, recRes, poRes, stockRes, movRes, prodRes, alertRes, schedRes] = await Promise.all([
+      const [ingRes, whRes, supRes, recRes, poRes, stockRes, movRes, prodRes, alertRes, schedRes, unitsRes] = await Promise.all([
         ingredientsAPI.list(),
         warehousesAPI.list(),
         suppliersAPI.list(),
@@ -114,6 +120,7 @@ export default function InventoryManager() {
         productsAPI.list(),
         stockAlertsAPI.getConfig(),
         stockAlertsAPI.getSchedulerStatus(),
+        unitDefinitionsAPI.list().catch(() => ({ data: [] })),
       ]);
       setIngredients(ingRes.data);
       setWarehouses(whRes.data);
@@ -125,6 +132,7 @@ export default function InventoryManager() {
       setProducts(prodRes.data);
       setAlertConfig(alertRes.data || { enabled: false, emails: [], frequency: 'daily', schedule_time: '08:00' });
       setSchedulerStatus(schedRes.data || { active: false, next_run: null });
+      setCustomUnits(unitsRes.data || []);
     } catch (e) {
       toast.error('Error al cargar datos');
     }
