@@ -749,6 +749,7 @@ export default function InventoryManager() {
                 customUnits={customUnits}
                 getTotalStock={getTotalStock}
                 onRefreshAll={fetchAll}
+                onNavigateToProduction={() => setActiveTab('production')}
                 onLoadConversionAnalysis={loadConversionAnalysis}
               />
             </TabsContent>
