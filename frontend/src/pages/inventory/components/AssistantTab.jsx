@@ -88,6 +88,11 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
       return;
     }
     
+    if (!assistantFilters.warehouse_id) {
+      toast.error('Selecciona un almacén de destino');
+      return;
+    }
+    
     // Get ONLY selected items
     const selectedItems = purchaseSuggestions.suggestions.filter(s => 
       selectedSuggestions.includes(s.ingredient_id)
@@ -101,49 +106,82 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
       return;
     }
     
-    // Get the supplier from the first item with supplier
-    const firstSupplier = itemsWithSupplier[0].default_supplier_id;
-    
-    // Filter items for this specific supplier
-    const itemsForSupplier = itemsWithSupplier
-      .filter(item => item.default_supplier_id === firstSupplier)
-      .map(item => item.ingredient_id);
-    
-    // Count items without supplier (for warning)
+    // Count items without supplier (for warning message later)
     const itemsWithoutSupplier = selectedItems.filter(s => !s.default_supplier_id);
     
-    if (!assistantFilters.warehouse_id) {
-      toast.error('Selecciona un almacén de destino');
-      return;
+    // Group items by supplier_id
+    const itemsBySupplier = {};
+    itemsWithSupplier.forEach(item => {
+      const supplierId = item.default_supplier_id;
+      if (!itemsBySupplier[supplierId]) {
+        itemsBySupplier[supplierId] = {
+          supplier_id: supplierId,
+          supplier_name: item.default_supplier_name,
+          ingredient_ids: []
+        };
+      }
+      itemsBySupplier[supplierId].ingredient_ids.push(item.ingredient_id);
+    });
+    
+    const supplierGroups = Object.values(itemsBySupplier);
+    
+    // Generate one PO per supplier
+    let successCount = 0;
+    let errorCount = 0;
+    let totalAmount = 0;
+    let totalItems = 0;
+    const createdPOs = [];
+    
+    for (const group of supplierGroups) {
+      try {
+        const res = await purchasingAPI.generatePO({
+          supplier_id: group.supplier_id,
+          warehouse_id: assistantFilters.warehouse_id,
+          ingredient_ids: group.ingredient_ids,
+          notes: 'Generada automáticamente desde Asistente de Compras'
+        });
+        
+        successCount++;
+        totalAmount += res.data.total || 0;
+        totalItems += res.data.items_count || 0;
+        createdPOs.push({
+          supplier: group.supplier_name,
+          items: res.data.items_count,
+          total: res.data.total
+        });
+      } catch (e) {
+        errorCount++;
+        console.error(`Error creating PO for supplier ${group.supplier_name}:`, e);
+      }
     }
     
-    try {
-      const res = await purchasingAPI.generatePO({
-        supplier_id: firstSupplier,
-        warehouse_id: assistantFilters.warehouse_id,
-        ingredient_ids: itemsForSupplier,
-        notes: 'Generada automáticamente desde Asistente de Compras'
-      });
+    // Build success/error message
+    if (successCount > 0) {
+      let message = '';
+      if (supplierGroups.length === 1) {
+        // Single supplier - simple message
+        message = `Orden de compra creada con ${totalItems} items por ${formatMoney(totalAmount)}`;
+      } else {
+        // Multiple suppliers - detailed message
+        message = `${successCount} orden(es) de compra creada(s) para ${successCount} proveedor(es) con ${totalItems} items totales por ${formatMoney(totalAmount)}`;
+      }
       
-      let message = `Orden de compra creada con ${res.data.items_count} items por ${formatMoney(res.data.total)}`;
-      
-      // Warn if some items were skipped
       if (itemsWithoutSupplier.length > 0) {
         message += `. ${itemsWithoutSupplier.length} item(s) sin proveedor fueron ignorados.`;
       }
       
-      // Warn if items for other suppliers were not included
-      const otherSupplierItems = itemsWithSupplier.filter(item => item.default_supplier_id !== firstSupplier);
-      if (otherSupplierItems.length > 0) {
-        message += ` ${otherSupplierItems.length} item(s) de otros proveedores no fueron incluidos.`;
+      if (errorCount > 0) {
+        message += ` ${errorCount} orden(es) fallaron.`;
+        toast.warning(message);
+      } else {
+        toast.success(message);
       }
       
-      toast.success(message);
       setSelectedSuggestions([]);
       onRefreshAll?.();
       onChangeTab?.('purchases');
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error al generar orden de compra');
+    } else {
+      toast.error('No se pudo crear ninguna orden de compra');
     }
   };
 
