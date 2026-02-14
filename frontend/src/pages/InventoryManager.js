@@ -4372,6 +4372,110 @@ export default function InventoryManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Price History Dialog */}
+      <Dialog open={priceHistoryDialog.open} onOpenChange={(o) => !o && setPriceHistoryDialog({ open: false, data: null, loading: false })}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <LineChart size={20} className="text-cyan-500" /> Historial de Precios
+            </DialogTitle>
+          </DialogHeader>
+          
+          {priceHistoryDialog.loading ? (
+            <div className="text-center py-8">
+              <RefreshCw size={24} className="mx-auto animate-spin text-cyan-500 mb-2" />
+              Cargando historial...
+            </div>
+          ) : priceHistoryDialog.data && (
+            <div className="space-y-4">
+              {/* Ingredient Header */}
+              <div className="p-3 rounded-lg bg-cyan-950/30 border border-cyan-600/30">
+                <h4 className="font-medium text-lg text-cyan-400">{priceHistoryDialog.data.ingredient_name}</h4>
+                <p className="text-sm text-muted-foreground">
+                  Costo promedio actual: <span className="font-mono font-bold text-cyan-300">{formatMoney(priceHistoryDialog.data.current_avg_cost)}</span>
+                </p>
+              </div>
+
+              {/* Stats */}
+              {priceHistoryDialog.data.stats && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-card border border-border">
+                    <div className="text-xs text-muted-foreground">Precio Mínimo</div>
+                    <div className="font-mono font-bold text-green-400">{formatMoney(priceHistoryDialog.data.stats.min_price)}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-card border border-border">
+                    <div className="text-xs text-muted-foreground">Precio Máximo</div>
+                    <div className="font-mono font-bold text-red-400">{formatMoney(priceHistoryDialog.data.stats.max_price)}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-card border border-border">
+                    <div className="text-xs text-muted-foreground">Precio Promedio</div>
+                    <div className="font-mono font-bold">{formatMoney(priceHistoryDialog.data.stats.avg_price)}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-card border border-border">
+                    <div className="text-xs text-muted-foreground">Tendencia</div>
+                    <div className="flex items-center gap-1">
+                      {priceHistoryDialog.data.stats.trend === 'up' && (
+                        <>
+                          <TrendingUp size={16} className="text-red-400" />
+                          <span className="text-red-400">+{priceHistoryDialog.data.stats.trend_percentage?.toFixed(1)}%</span>
+                        </>
+                      )}
+                      {priceHistoryDialog.data.stats.trend === 'down' && (
+                        <>
+                          <TrendingDown size={16} className="text-green-400" />
+                          <span className="text-green-400">{priceHistoryDialog.data.stats.trend_percentage?.toFixed(1)}%</span>
+                        </>
+                      )}
+                      {priceHistoryDialog.data.stats.trend === 'stable' && (
+                        <span className="text-muted-foreground">Estable</span>
+                      )}
+                      {(priceHistoryDialog.data.stats.trend === 'no_data' || priceHistoryDialog.data.stats.trend === 'insufficient_data') && (
+                        <span className="text-muted-foreground">Sin datos</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* History Table */}
+              {priceHistoryDialog.data.history?.length > 0 ? (
+                <div className="overflow-x-auto rounded-lg border border-border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-oswald">Fecha</th>
+                        <th className="px-3 py-2 text-left font-oswald">Proveedor</th>
+                        <th className="px-3 py-2 text-right font-oswald">Cantidad</th>
+                        <th className="px-3 py-2 text-right font-oswald">Precio Unit.</th>
+                        <th className="px-3 py-2 text-right font-oswald">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {priceHistoryDialog.data.history.map((h, idx) => (
+                        <tr key={h.po_id + idx} className="hover:bg-muted/30">
+                          <td className="px-3 py-2">
+                            {new Date(h.received_at).toLocaleDateString('es-DO')}
+                          </td>
+                          <td className="px-3 py-2">{h.supplier_name || '-'}</td>
+                          <td className="px-3 py-2 text-right font-mono">{h.quantity?.toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right font-mono font-bold">{formatMoney(h.unit_price)}</td>
+                          <td className="px-3 py-2 text-right font-mono">{formatMoney(h.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <History size={24} className="mx-auto mb-2 opacity-50" />
+                  No hay historial de compras para este insumo
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
