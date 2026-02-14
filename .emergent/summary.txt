@@ -1,70 +1,84 @@
 <analysis>**original_problem_statement:**
-The user is building a comprehensive Point of Sale (POS) system. The project has evolved to include advanced inventory management, a sophisticated order cancellation/void system with manager authorization, and detailed reporting.
+The user is building a comprehensive Point of Sale (POS) system for a restaurant. The project has evolved to include a highly advanced inventory management module.
 
-**Latest User Request:**
-The user has noticed two separate inventory management sections in the UI: a legacy one and the new Inventario Maestro. The user wants to clean this up by:
-1.  Removing the old, redundant inventory system completely.
-2.  Ensuring that Inventario Maestro is the sole, correctly integrated inventory solution.
-3.  Organizing the UI so that product configuration seamlessly links to the recipe management within the Inventario Maestro.
+The most recent requests focus on adding business intelligence and automation features to the inventory system:
+1.  **Cost Control System:** The system should track historical purchase prices, alert users to price increases, and dynamically recalculate recipe costs and suggest new selling prices if profit margins are impacted.
+2.  **Intelligent Shopping Assistant:** The system should suggest items to reorder based on consumption, filtered by a default supplier, and allow for one-click generation of purchase orders.
+
+These features build upon a series of recently completed advanced inventory functionalities, including universal conversion logic, multi-level stock visualization, inventory valuation reports, and detailed audit trails.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-A sophisticated Restaurant POS system with a FastAPI backend and a React frontend. The system includes:
--   A complete and advanced **Inventory Master** module () for managing ingredients, recipes, warehouses, suppliers, purchase orders, and production.
--   A fully functional **Stock Control System**: Inventory is automatically deducted when an order is sent to the kitchen. A setting allows or disallows sales of out-of-stock items, disabling product buttons on the order screen accordingly.
--   An **Advanced Cancellation/Void System**: A modal allows users to select a reason for voiding an item. Based on the reason, inventory can be returned to stock or marked as waste.
--   **Hierarchical Authorization for Voids**: Voids for critical reasons (e.g., Plato dañado) require a manager's PIN for approval.
--   A **Cancellations Report** () that provides a dashboard with summary stats, charts, and a detailed audit log that can be exported to Excel.
--   A redundant, older inventory page exists at , which is the source of the user's current request.
+A sophisticated Restaurant POS system with a FastAPI backend and a React frontend. The application features a comprehensive Inventario Maestro (Inventory Master) module which includes:
+-   **Core Inventory Management:** Full CRUD for ingredients, suppliers, warehouses, and recipes.
+-   **Advanced Unit & Conversion Management:** A system to define custom units of measure (e.g., Box, Bottle) and calculate conversion factors (e.g., 1 Box = 24 Units). Includes an in-modal calculator for ease of use.
+-   **Universal Conversion Logic:** A feature that allows a single ingredient to be linked to multiple saleable products with different consumption units, all while tracking back to a single inventory stock. A dedicated Analysis view shows this relationship and calculates costs dynamically.
+-   **Multi-Level Stock Visualization:** The main stock view displays inventory in a hierarchical format (e.g., ) for intuitive, at-a-glance counting.
+-   **Stock Difference Management:** A streamlined process for adjusting inventory for Differences (formerly Waste), such as physical count discrepancies or damaged goods, with full audit logging.
+-   **Financial Reporting & Auditing:**
+    -   **Inventory Valuation Report:** A dedicated report showing the total financial value of stock, broken down by category and warehouse, and highlighting dead stock (high-value, low-rotation items).
+    -   **Ingredient Audit History:** A detailed, filterable, and exportable log of every change made to an ingredient (cost, conversion factor, etc.).
+-   **Order & Sales Flow:** A complete order screen, advanced item cancellation/void system with manager PIN authorization, and reporting.
 
 **Last working item**:
--   **Last item agent was working:** The agent was addressing the user's request to clean up the UI by removing the old, redundant inventory system. The goal is to leave only the Inventario Maestro as the single source of truth for inventory management. The agent had just begun exploring the codebase, starting with , to identify the components and routes that need to be removed or updated.
+-   **Last item agent was working:** The agent began implementing the backend for the Cost Control System and Intelligent Shopping Assistant features. It updated the ingredient data model to include a default supplier and started scaffolding the new API endpoints in .
 -   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
--   **Which testing method agent to use?**: frontend testing agent
+-   **Which testing method agent to use?**: both
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1 (P0):** Consolidate inventory UI by removing the old inventory system.
+-   **Issue 1 (P0):** Implement the Cost Control System & Intelligent Shopping Assistant.
 -   **Issue 2 (P1):** Auto-send to kitchen does not work on the first try.
 -   **Issue 3 (P2):** Verify and Fix Payment Screen Mobile Scroll.
 
 **Issues Detail:**
--   **Issue 1:** Consolidate inventory UI by removing the old inventory system.
-    -   **Attempted fixes:** The agent confirmed the existence of two routes ( and ) by viewing .
+-   **Issue 1: Implement the Cost Control System & Intelligent Shopping Assistant**
+    -   **Attempted fixes:** The agent started backend implementation by updating the  model in  to include  and began adding new, incomplete endpoints for the features.
     -   **Next debug checklist:**
-        1.  Delete the route for the old inventory page () from .
-        2.  Identify and delete the component file for the old inventory page (likely  or similar).
-        3.  Search the entire codebase (especially in  and any navigation components) for links pointing to  and update them to point to .
-        4.  Ensure the product settings page links correctly to the recipe management section within  for a seamless workflow.
-        5.  Run the frontend testing agent to verify that the old page is gone and all navigation works as expected.
-    -   **Why fix this issue and what will be achieved with the fix?** To eliminate user confusion, remove redundant code, and streamline the application's user interface.
+        1.  **Backend ():**
+            -   Complete the endpoints for the shopping assistant, including logic to get purchase suggestions filtered by supplier and rounded to the nearest purchase unit.
+            -   Complete the endpoint for the cost control system, including logic to get an ingredient's price history.
+            -   Update the purchase order logic to check for price increases against the last purchase and trigger an alert.
+            -   Implement a mechanism to automatically recalculate the costs of all linked recipes when an ingredient's base cost changes.
+        2.  **Frontend ():**
+            -   Create a new Purchase Suggestions or Shopping Assistant tab/view.
+            -   Implement UI to display suggestions, allow filtering by supplier, and generate a purchase order.
+            -   Add a UI element (e.g., modal, graph) to display the price history of an ingredient.
+            -   Implement the frontend alert for price increases during purchase order creation.
+            -   Add the Default Supplier selector to the ingredient creation/edit dialog.
+    -   **Why fix this issue and what will be achieved with the fix?** To provide critical business intelligence, automate and streamline the purchasing workflow, control costs, and protect profit margins.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** frontend
+    -   **Should Test frontend/backend/both after fix?** both
     -   **Blocked on other issue:** None
 
--   **Issue 2:** Auto-send to kitchen does not work on the first try.
-    -   **Attempted fixes:** A previous fix was implemented, but its success is unconfirmed.
-    -   **Next debug checklist:** Test the workflow of adding items to an order and navigating away to confirm if the Comanda enviada toast appears on the very first attempt.
-    -   **Why fix this issue and what will be achieved with the fix?** Prevents potential loss of order data and ensures a reliable workflow for kitchen staff.
+-   **Issue 2: Auto-send to kitchen does not work on the first try.**
+    -   **Attempted fixes:** A previous fix was implemented, but its success has not been verified by the user in this session.
+    -   **Next debug checklist:** Thoroughly test the workflow of adding items to an order, navigating away from the order screen, and returning to see if the Comanda enviada (Order Sent) toast appears on the very first attempt without fail.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures a reliable workflow for kitchen staff and prevents potential loss of order information.
     -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** frontend
     -   **Blocked on other issue:** None
 
--   **Issue 3:** Verify and Fix Payment Screen Mobile Scroll
-    -   **Attempted fixes:** None recently. Previous attempts were inconclusive.
-    -   **Next debug checklist:** Use the screenshot tool with a mobile viewport on the payment screen after adding many items to confirm the payment method panel is fully scrollable.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures the app is usable on mobile devices, which is critical for a POS system.
+-   **Issue 3: Verify and Fix Payment Screen Mobile Scroll**
+    -   **Attempted fixes:** None in this session.
+    -   **Next debug checklist:** Use the screenshot tool with a mobile viewport on the payment screen. Add a large number of items to an order to ensure the cart overflows, then confirm the payment method panel on the right is fully scrollable and all methods are accessible.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures the app is fully usable on mobile/tablet devices, which is critical for a modern POS system.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** frontend
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   None apart from the P0 issue above.
+-   **Task 1: Implement the Cost Control System & Intelligent Shopping Assistant**
+    -   **Where to resume:** Continue building out the backend endpoints in  as outlined in the Next debug checklist for Issue 1. After the backend is complete and tested, move to the frontend implementation in .
+    -   **What will be achieved with this?** A fully functional purchasing assistant and cost control module.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
@@ -76,31 +90,21 @@ A sophisticated Restaurant POS system with a FastAPI backend and a React fronten
     *   **P2: Image/Icon Support for Product Buttons.**
     *   **P2: Cache Product Images Offline.**
     *   **P3: Drag-and-Drop Reordering of payment methods.**
-    -   **P3: Export Audit Trail:** Add a button to export the table movement history to Excel/CSV.
+    *   **P3: Export Audit Trail:** Add a button to export the table movement history to Excel/CSV.
     *   **P3: Duplicate Product Feature.**
 
 **Completed work in this session**
--   **Stock Control & Sales Logic (DONE):**
-    -   Moved inventory deduction from on payment to on send to kitchen.
-    -   Implemented the Allow Sale Without Stock toggle in settings and the corresponding UI logic on the  to disable buttons for out-of-stock items.
--   **Advanced Cancellation/Void System (DONE):**
-    -   Created a  component for handling item cancellations.
-    -   Implemented backend logic to either return ingredients to inventory or mark them as waste () based on the cancellation reason.
-    -   Created a new  collection in MongoDB for full traceability.
--   **Manager Authorization for Voids (DONE):**
-    -   Implemented a hierarchical PIN-based authorization system. Voids for sensitive reasons now require a manager's PIN.
-    -   The  dynamically shows a PIN pad when authorization is needed.
--   **Cancellations Report (DONE):**
-    -   Created a new report page at  with summary cards, data visualizations (charts), and a detailed audit log table.
-    -   Added date filters and an Export to Excel feature.
--   **Bug Fixes (DONE):**
-    -   Resolved a FastAPI route conflict between a static path and a dynamic path parameter.
-    -   Fixed a JSON serialization error by converting  to a valid number.
-    -   Corrected the manager PIN verification logic to use the hashed PIN and proper role checks.
+-   **Inventory UI Consolidation (DONE):** Removed the redundant legacy inventory page (), ensuring all navigation points to the unified Inventario Maestro ().
+-   **Unit of Measure Management (DONE):** Implemented a full CRUD system for custom units of measure and a UI to manage them within the Inventory Manager.
+-   **Factor Calculator & Cost Preview (DONE):** Added an in-modal calculator to auto-compute conversion factors and show real-time unit cost previews.
+-   **Ingredient Audit History (DONE):** Created a new Auditoría tab with a detailed, filterable, and exportable log of all ingredient changes, styled with a gold-and-dark theme.
+-   **Inventory Valuation Report (DONE):** Created a Valorización tab that provides a financial analysis of stock, including total value, breakdowns, and a dead stock detector, styled with an emerald-and-dark theme.
+-   **Universal Conversion Analysis (DONE):** Implemented a view to show how a single ingredient is used across multiple recipes, with dynamically calculated costs for each.
+-   **Multi-Level Stock View & Difference Adjustment (DONE):** Revamped the Stock tab to display inventory hierarchically (e.g., Cajas > Botellas > Oz) and implemented an audited Difference adjustment feature.
 
 **Earlier issues found/mentioned but not fixed**
--   **CRITICAL**:  is a massive monolith. The recent additions have made this refactoring task even more urgent.
--   **CRITICAL**:  and  are overly complex and should be decomposed into smaller components. User has approved postponing these refactoring tasks.
+-   **CRITICAL**:  is a massive monolith. With each new feature, its size and complexity grow, making it harder to maintain and debug.
+-   **CRITICAL**:  is also a monolith component that is now extremely large and complex. It handles the state and UI for over 8 different tabs and numerous modals.
 
 **Known issue recurrence from previous fork**
 -   None.
@@ -109,60 +113,61 @@ A sophisticated Restaurant POS system with a FastAPI backend and a React fronten
 
 
 **Key Technical Concepts**
--   **Hierarchical Authorization:** Gating access to sensitive actions (voids) based on user roles and requiring PIN verification from a higher-privileged user ().
--   **Dynamic UI Rendering:** Conditionally rendering a PIN pad within the void modal based on whether the selected cancellation reason requires manager authorization.
--   **Data Aggregation & Reporting:** Using backend logic to process  and provide aggregated data (totals, counts) for the reporting dashboard.
--   **Client-Side File Generation:** Using the  library on the frontend to generate and trigger the download of an Excel file from JSON data.
+-   **Hierarchical Data Representation:** Displaying stock in a multi-level format (e.g., Cases > Bottles > Oz) derived from a single base unit quantity and conversion factors.
+-   **Dynamic Cost Calculation:** Real-time cost updates based on changing conversion factors and purchase prices, propagated through recipes.
+-   **Complex UI State Management:**  now manages state for multiple tabs, complex modals, filters, and data fetching for all aspects of inventory.
+-   **Backend Data Aggregation:** The backend performs complex aggregations for financial reports (valuation) and historical logs (auditing).
 
 **key DB schema**
--   **cancellation_reasons:** Schema updated to include .
--   **VoidAuditLogs:** (New Collection) .
+-   **ingredients:** Heavily modified to include , , and references to units.
+-   **unit_definitions:** (New Collection)  - Stores custom units of measure.
+-   **ingredient_audit_logs:** (New Collection)  - Tracks all changes to ingredients.
+-   **stock_differences:** (New Collection)  - Logs all inventory adjustments.
 
 **changes in tech stack**
--   **Frontend:** Added  library for Excel export functionality.
+-   None.
 
 **All files of reference**
--   : Contains all business logic, including the new void, authorization, and reporting endpoints.
--   : Contains the updated UI and logic for the  and manager PIN authorization flow.
--   : New file for the cancellations report page.
--   : Contains the stock control toggles.
--   : Defines the frontend functions for calling the new backend APIs.
--   : Contains the route definitions for the application.
+-   : The monolithic FastAPI application containing all backend logic.
+-   : The monolithic React component for the entire inventory module.
+-   : Defines all frontend functions for calling backend APIs.
 
 **Areas that need refactoring**:
--   **CRITICAL: :** The monolith issue is severe. It needs to be broken down into separate FastAPI routers (e.g., , , ).
--   **CRITICAL: :** This component's complexity has increased significantly. The void logic and state management should be extracted into custom hooks or smaller components.
+-   **CRITICAL: :** The monolith issue is severe. It urgently needs to be broken down into separate FastAPI routers (e.g., , , ).
+-   **CRITICAL: :** This component is unmaintainable at its current size. It must be decomposed. Each tab's content should become a separate component, and complex modals/logic should be extracted into their own files or custom hooks.
 
 **key api endpoints**
--   : (GET) Retrieves aggregated data for the cancellations report.
--   : (POST) Verifies a manager's PIN for authorization.
--   , : (POST) Endpoints updated to handle the new cancellation logic, including authorization and audit logging.
--   : (GET, POST) CRUD endpoints for managing cancellation reasons.
--   : (GET, POST) Endpoints for managing inventory configuration, including the Allow Sale Without Stock toggle.
+-   : (CRUD) For custom units of measure.
+-   : (GET) For the global, filterable audit history report.
+-   : (GET) For the inventory valuation report.
+-   : (GET) For the universal conversion analysis view.
+-   : (GET) For the multi-level stock view.
+-   : (POST) For recording inventory adjustments.
 
 **Critical Info for New Agent**
--   The user's immediate priority is **UI cleanup**. Focus on removing the old inventory system and ensuring the Inventario Maestro is properly integrated before moving to other tasks.
--   The user has confirmed all recently implemented features are working ().
--   The agent successfully used the  multiple times in this session to validate large feature implementations before handing off to the user.
+-   The user is focused on incrementally adding high-value business intelligence features to the inventory module.
+-   The agent has successfully used the  after each major feature completion, which is a pattern that should be continued.
+-   The codebase, particularly  and , is accumulating significant technical debt. While the user has postponed refactoring, the next agent should be prepared to address this, perhaps after completing the current high-priority feature request. Proposing a refactoring step after the next delivery would be a wise move.
 
 **documents and test reports created in this job**
 -   Multiple  files were generated and reviewed.
--    was updated multiple times to reflect completed work.
+-    was updated after each major feature completion.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requests the preview link. **Status: ADDRESSED**
-2.  **User:** El descuento debe ser automático al enviar la comanda... (The deduction should be automatic when sending the order...). This initiated a large feature request to change when inventory is deducted and to create an advanced cancellation system with manager authorization. **Status: COMPLETED**
-3.  **User:** Implementa un sistema de Autorización Jerárquica... (Implement a Hierarchical Authorization system...). This was part of the same large request. **Status: COMPLETED**
-4.  **User:** Asks for a new report view for cancellations (). **Status: COMPLETED**
-5.  **User:** Requests the preview link after the features were implemented. **Status: ADDRESSED**
-6.  **User:** si, funciona (Yes, it works). Confirms the new features are working correctly. **Status: ADDRESSED**
-7.  **User:** Asks why there are two inventory configurations, pointing out the old vs. new system via screenshots. **Status: IN PROGRESS**
-8.  **User:** por favor asgurate de revisar minuciosamente y dejar solo Inventario maestro... (please make sure to review thoroughly and leave only the Inventory Master...). Clarifies the request to clean up the UI, remove the old system, and properly integrate the new one. **Status: IN PROGRESS**
+1.  **User:** Requests ability to edit Units of Measure & Conversion Factors with impact analysis and audit history. **Status: COMPLETED**
+2.  **User:** Adds request for an in-modal Factor Calculator. **Status: COMPLETED**
+3.  **User:** Re-iterates request, leading agent to implement the missing UI for managing custom units. **Status: COMPLETED**
+4.  **User:** Requests a detailed Ingredient Audit History view. **Status: COMPLETED**
+5.  **User:** Requests an Inventory Valuation Report for financial analysis. **Status: COMPLETED**
+6.  **User:** Requests a Universal Conversion Logic feature to visualize ingredient usage across products. **Status: COMPLETED**
+7.  **User:** Requests Multi-Level Stock Visualization and an integrated Difference Adjustment feature. **Status: COMPLETED**
+8.  **User:** Requests a Cost Control System with price memory, alerts, and recipe cost updates. **Status: IN PROGRESS**
+9.  **User:** Requests an Intelligent Shopping Assistant with supplier-based suggestions and PO generation. **Status: IN PROGRESS** (Part of the same task as above).
 
 **Project Health Check:**
 -   **Broken:** None
 -   **Mocked:**
-    *   **Emailing:** Resend integration is used for low-stock alerts.
+    *   **Emailing:** Resend integration is used for alerts but is dependent on a user-provided key.
     *   **Printing:** All printing is mocked with on-screen previews.
 
 **3rd Party Integrations**
@@ -171,15 +176,16 @@ A sophisticated Restaurant POS system with a FastAPI backend and a React fronten
 -   **xlsx:** A frontend library used for exporting data to Excel files.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES. The testing agent was used successfully to validate the stock control, void, authorization, and reporting features.
+-   **Testing agent used after significant changes**: YES. The testing agent was used successfully to validate every major feature implemented in this session.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
 -   **Known regressions**: None.
 
 **Credentials to test flow:**
--   **Admin:** PIN  (can authorize voids)
+-   **Admin:** PIN 
 -   **Cajero (Cashier):** PIN  (User: Luis)
--   **Mesero (Waiter):** PIN  (User: Carlos, cannot authorize voids)
+-   **Mesero (Waiter):** PIN  (User: Carlos)
+-   **Chef Pedro:** PIN 
 
 **What agent forgot to execute**
--   The upcoming and future tasks from the previous handoff (e.g., local server package, printer integration) were correctly postponed to address the user's more immediate and higher-priority requests for new features and UI cleanup.</analysis>
+-   The agent correctly prioritized the user's explicit feature requests over the long-standing Upcoming/Future Tasks and the critical-but-postponed refactoring tasks. Nothing was forgotten; work was intentionally deferred based on user priority.</analysis>
