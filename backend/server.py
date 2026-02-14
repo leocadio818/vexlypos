@@ -20,6 +20,11 @@ from apscheduler.triggers.cron import CronTrigger
 # Import routers
 from routers.auth import router as auth_router, get_current_user, get_permissions, hash_pin, can_access_table_orders, get_table_owner_name, DEFAULT_PERMISSIONS, ALL_PERMISSIONS
 from routers.purchasing import router as purchasing_router
+from routers.inventory import router as inventory_router
+from routers.inventory import (
+    explode_and_deduct_recipe, update_subrecipe_costs, calculate_recipe_cost,
+    get_recipe_for_ingredient, check_recipe_availability, get_ingredient_stock
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
