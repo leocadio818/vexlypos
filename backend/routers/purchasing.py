@@ -151,49 +151,49 @@ async def receive_purchase_order(po_id: str, input: ReceivePOInput, user=Depends
                     total_stock_docs = await db.stock.find({"ingredient_id": recv_item.ingredient_id}, {"_id": 0}).to_list(50)
                     total_stock = sum(s.get("current_stock", 0) for s in total_stock_docs)
                     old_stock = total_stock - stock_to_add
-                        
-                        # Check for price increase
-                        if old_cost > 0:
-                            price_change_pct = ((recv_item.actual_unit_price - old_cost) / old_cost) * 100
-                            if price_change_pct > 5:
-                                recipes_count = await db.recipes.count_documents({"ingredients.ingredient_id": recv_item.ingredient_id})
-                                price_alerts.append({
-                                    "ingredient_id": recv_item.ingredient_id,
-                                    "ingredient_name": ing.get("name", "?"),
-                                    "old_price": round(old_cost, 2),
-                                    "new_price": round(recv_item.actual_unit_price, 2),
-                                    "change_percentage": round(price_change_pct, 2),
-                                    "recipes_affected": recipes_count
-                                })
-                                
-                                await db.ingredient_audit_logs.insert_one({
-                                    "id": gen_id(),
-                                    "ingredient_id": recv_item.ingredient_id,
-                                    "ingredient_name": ing.get("name", ""),
-                                    "field_changed": "avg_cost",
-                                    "old_value": str(old_cost),
-                                    "new_value": str(recv_item.actual_unit_price),
-                                    "changed_by_id": user["user_id"],
-                                    "changed_by_name": user["name"],
-                                    "timestamp": now_iso(),
-                                    "source": "purchase_order",
-                                    "po_id": po_id
-                                })
-                        
-                        if total_stock > 0:
-                            new_avg = ((old_cost * old_stock) + (recv_item.actual_unit_price * recv_item.received_quantity)) / total_stock
-                            conversion_factor = ing.get("conversion_factor", 1)
-                            dispatch_unit_cost = new_avg / conversion_factor if conversion_factor > 0 else new_avg
+                    
+                    # Check for price increase
+                    if old_cost > 0:
+                        price_change_pct = ((recv_item.actual_unit_price - old_cost) / old_cost) * 100
+                        if price_change_pct > 5:
+                            recipes_count = await db.recipes.count_documents({"ingredients.ingredient_id": recv_item.ingredient_id})
+                            price_alerts.append({
+                                "ingredient_id": recv_item.ingredient_id,
+                                "ingredient_name": ing.get("name", "?"),
+                                "old_price": round(old_cost, 2),
+                                "new_price": round(recv_item.actual_unit_price, 2),
+                                "change_percentage": round(price_change_pct, 2),
+                                "recipes_affected": recipes_count
+                            })
                             
-                            await db.ingredients.update_one(
-                                {"id": recv_item.ingredient_id},
-                                {"$set": {
-                                    "avg_cost": round(new_avg, 2),
-                                    "dispatch_unit_cost": round(dispatch_unit_cost, 4),
-                                    "last_purchase_price": round(recv_item.actual_unit_price, 2),
-                                    "last_purchase_date": now_iso()
-                                }}
-                            )
+                            await db.ingredient_audit_logs.insert_one({
+                                "id": gen_id(),
+                                "ingredient_id": recv_item.ingredient_id,
+                                "ingredient_name": ing.get("name", ""),
+                                "field_changed": "avg_cost",
+                                "old_value": str(old_cost),
+                                "new_value": str(recv_item.actual_unit_price),
+                                "changed_by_id": user["user_id"],
+                                "changed_by_name": user["name"],
+                                "timestamp": now_iso(),
+                                "source": "purchase_order",
+                                "po_id": po_id
+                            })
+                    
+                    if total_stock > 0:
+                        # avg_cost is stored in purchase units, calculate using received quantity
+                        new_avg = ((old_cost * (old_stock / conversion_factor)) + (recv_item.actual_unit_price * recv_item.received_quantity)) / (total_stock / conversion_factor) if conversion_factor > 0 else ((old_cost * old_stock) + (recv_item.actual_unit_price * recv_item.received_quantity)) / total_stock
+                        dispatch_unit_cost = new_avg / conversion_factor if conversion_factor > 0 else new_avg
+                        
+                        await db.ingredients.update_one(
+                            {"id": recv_item.ingredient_id},
+                            {"$set": {
+                                "avg_cost": round(new_avg, 2),
+                                "dispatch_unit_cost": round(dispatch_unit_cost, 4),
+                                "last_purchase_price": round(recv_item.actual_unit_price, 2),
+                                "last_purchase_date": now_iso()
+                            }}
+                        )
                 break
     
     all_received = all(i["received_quantity"] >= i["quantity"] for i in po["items"])
