@@ -1393,11 +1393,59 @@ export default function InventoryManager() {
       {/* ─── DIALOGS ─── */}
       
       {/* Ingredient Dialog */}
-      <Dialog open={ingredientDialog.open} onOpenChange={(o) => !o && setIngredientDialog({ open: false, data: null })}>
-        <DialogContent className="max-w-md">
+      <Dialog open={ingredientDialog.open} onOpenChange={(o) => {
+        if (!o) {
+          setIngredientDialog({ open: false, data: null });
+          setAffectedRecipes({ count: 0, recipes: [] });
+          setShowAuditHistory(false);
+          setAuditLogs([]);
+        }
+      }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-oswald">{ingredientDialog.data?.id ? 'Editar' : 'Nuevo'} Insumo</DialogTitle>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              {ingredientDialog.data?.id ? 'Editar' : 'Nuevo'} Insumo
+              {ingredientDialog.data?.id && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => loadAuditHistory(ingredientDialog.data.id)}
+                  className="ml-auto"
+                >
+                  <History size={14} className="mr-1" /> Historial
+                </Button>
+              )}
+            </DialogTitle>
           </DialogHeader>
+          
+          {/* Audit History Panel */}
+          {showAuditHistory && (
+            <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Historial de Cambios</span>
+                <Button variant="ghost" size="sm" onClick={() => setShowAuditHistory(false)}>
+                  <X size={14} />
+                </Button>
+              </div>
+              <div className="max-h-32 overflow-y-auto space-y-1">
+                {auditLogs.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Sin cambios registrados</p>
+                ) : auditLogs.map((log, i) => (
+                  <div key={i} className="text-xs p-2 bg-background rounded border border-border/50">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{log.field_changed}</span>
+                      <span className="text-muted-foreground">{new Date(log.timestamp).toLocaleDateString()}</span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      {log.old_value} → {log.new_value}
+                    </div>
+                    <div className="text-primary text-[10px]">Por: {log.changed_by_name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Nombre *</label>
@@ -1409,15 +1457,21 @@ export default function InventoryManager() {
                 data-testid="ingredient-name-input"
               />
             </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Unidad</label>
+                <label className="text-sm font-medium">Unidad de Despacho</label>
                 <select
                   value={ingredientDialog.data?.unit || 'unidad'}
-                  onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, unit: e.target.value } }))}
+                  onChange={e => {
+                    const newUnit = e.target.value;
+                    setIngredientDialog(p => ({ ...p, data: { ...p.data, unit: newUnit } }));
+                    if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
+                  }}
                   className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
                 >
                   {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                  {customUnits.map(u => <option key={u.id} value={u.abbreviation}>{u.name} ({u.abbreviation})</option>)}
                 </select>
               </div>
               <div>
@@ -1431,6 +1485,126 @@ export default function InventoryManager() {
                 </select>
               </div>
             </div>
+            
+            {/* Conversion Factor Calculator */}
+            <div className="p-3 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+              <div className="flex items-center gap-2 mb-3">
+                <Calculator size={16} className="text-primary" />
+                <span className="font-medium text-sm">Calculadora de Factor de Conversión</span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Unidad de Compra</label>
+                  <select
+                    value={ingredientDialog.data?.purchase_unit || ingredientDialog.data?.unit || 'unidad'}
+                    onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, purchase_unit: e.target.value } }))}
+                    className="w-full mt-1 px-2 py-1.5 text-sm bg-background border border-border rounded-lg"
+                  >
+                    {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                    {customUnits.map(u => <option key={u.id} value={u.abbreviation}>{u.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Cantidad de Compra</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={ingredientDialog.data?.purchase_quantity || 1}
+                    onChange={e => {
+                      const pq = parseFloat(e.target.value) || 1;
+                      const dq = ingredientDialog.data?.dispatch_quantity || 1;
+                      const factor = dq / pq;
+                      setIngredientDialog(p => ({ 
+                        ...p, 
+                        data: { ...p.data, purchase_quantity: pq, conversion_factor: factor } 
+                      }));
+                      if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
+                    }}
+                    className="w-full mt-1 px-2 py-1.5 text-sm bg-background border border-border rounded-lg"
+                    placeholder="Ej: 1"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Equivalencia en Despacho</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={ingredientDialog.data?.dispatch_quantity || 1}
+                    onChange={e => {
+                      const dq = parseFloat(e.target.value) || 1;
+                      const pq = ingredientDialog.data?.purchase_quantity || 1;
+                      const factor = dq / pq;
+                      setIngredientDialog(p => ({ 
+                        ...p, 
+                        data: { ...p.data, dispatch_quantity: dq, conversion_factor: factor } 
+                      }));
+                      if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
+                    }}
+                    className="w-full mt-1 px-2 py-1.5 text-sm bg-background border border-border rounded-lg"
+                    placeholder="Ej: 16"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    En {ingredientDialog.data?.unit || 'unidad'}(s)
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Factor de Conversión</label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0.0001"
+                    value={ingredientDialog.data?.conversion_factor || 1}
+                    onChange={e => {
+                      const factor = parseFloat(e.target.value) || 1;
+                      setIngredientDialog(p => ({ ...p, data: { ...p.data, conversion_factor: factor } }));
+                      if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
+                    }}
+                    className="w-full mt-1 px-2 py-1.5 text-sm bg-background border border-border rounded-lg font-mono"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Edición libre permitida</p>
+                </div>
+              </div>
+              
+              {/* Cost Preview */}
+              <div className="p-2 rounded bg-background/80 border border-border/50">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Costo por {ingredientDialog.data?.unit || 'unidad'}:</span>
+                  <span className="font-oswald font-bold text-primary">
+                    {formatMoney(
+                      (ingredientDialog.data?.avg_cost || 0) / (ingredientDialog.data?.conversion_factor || 1)
+                    )}
+                  </span>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  = {formatMoney(ingredientDialog.data?.avg_cost || 0)} (costo compra) ÷ {ingredientDialog.data?.conversion_factor || 1} (factor)
+                </p>
+              </div>
+              
+              {/* Affected Recipes Warning */}
+              {affectedRecipes.count > 0 && (
+                <div className="mt-3 p-2 rounded bg-amber-500/10 border border-amber-500/30">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium text-amber-600">
+                        Este cambio afectará el costo de {affectedRecipes.count} receta(s) vinculada(s)
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {affectedRecipes.recipes.slice(0, 3).map(r => r.product_name).join(', ')}
+                        {affectedRecipes.count > 3 && ` y ${affectedRecipes.count - 3} más...`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Stock Mínimo</label>
@@ -1442,12 +1616,16 @@ export default function InventoryManager() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Costo Promedio</label>
+                <label className="text-sm font-medium">Costo Promedio (Compra)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={ingredientDialog.data?.avg_cost || 0}
-                  onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, avg_cost: parseFloat(e.target.value) || 0 } }))}
+                  onChange={e => {
+                    const cost = parseFloat(e.target.value) || 0;
+                    setIngredientDialog(p => ({ ...p, data: { ...p.data, avg_cost: cost } }));
+                    if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
+                  }}
                   className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
                   disabled={ingredientDialog.data?.is_subrecipe}
                 />
