@@ -27,6 +27,9 @@ import WarehousesTab from './inventory/components/WarehousesTab';
 import SuppliersTab from './inventory/components/SuppliersTab';
 import RecipesTab from './inventory/components/RecipesTab';
 import StockTab from './inventory/components/StockTab';
+import PurchasesTab from './inventory/components/PurchasesTab';
+import ValuationTab from './inventory/components/ValuationTab';
+import AuditTab from './inventory/components/AuditTab';
 
 const INGREDIENT_CATEGORIES = [
   { value: 'general', label: 'General' },
