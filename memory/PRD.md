@@ -478,6 +478,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Panel de gestión de unidades
   - Props limpios pasados desde el padre: ingredients, suppliers, customUnits, getTotalStock, onRefreshAll, onOpenProduction, onLoadConversionAnalysis
   - **16/16 tests pasados** en la verificación frontend
+- ✅ **REFACTORIZACIÓN DEL FRONTEND - Fase 3** (14 Feb 2026):
+  - Extraído `ProductionTab.jsx` (~401 líneas) como componente independiente
+  - `InventoryManager.js` reducido de ~3191 a ~2823 líneas (-12% adicional)
+  - El tab "Producción" ahora es un componente modular con:
+    - Dashboard de producción con secciones urgente/OK
+    - Diálogo de producción de sub-recetas
+    - Verificación de disponibilidad de ingredientes
+    - Historial de producción
+  - Modificado `IngredientsTab` para usar `onNavigateToProduction` en lugar de abrir el diálogo
+  - Props limpios: ingredients, warehouses, getTotalStock, onRefreshAll
+  - **16/16 tests pasados** en la verificación frontend
+  - **Reducción total acumulada**: de 4503 a 2823 líneas (-37%)
 
 ### Diciembre 2025
 - ✅ Implementado diseño Glassmorphism en todo el sistema
