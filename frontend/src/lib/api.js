@@ -180,6 +180,7 @@ export const ingredientsAPI = {
   getAffectedRecipes: (id) => api.get(`/ingredients/${id}/affected-recipes`),
   getAuditLogs: (id, limit = 50) => api.get(`/ingredients/${id}/audit-logs`, { params: { limit } }),
   getAllAuditLogs: (params) => api.get('/ingredients/audit-logs/all', { params }),
+  getConversionAnalysis: (id) => api.get(`/ingredients/${id}/conversion-analysis`),
 };
 
 // Unit Definitions (Custom Units)
