@@ -298,100 +298,180 @@ export default function PurchasesTab({
                   variant="outline" 
                   size="sm"
                   onClick={() => {
+                    if (!poDialog.data?.supplier_id) {
+                      toast.error('Primero selecciona un proveedor');
+                      return;
+                    }
                     setPODialog(p => ({
                       ...p,
                       data: {
                         ...p.data,
-                        items: [...(p.data?.items || []), { ingredient_id: '', ingredient_name: '', quantity: 1, unit_price: 0 }]
+                        items: [...(p.data?.items || []), { 
+                          ingredient_id: '', 
+                          ingredient_name: '', 
+                          quantity: 1, 
+                          unit_price: 0,
+                          purchase_unit: '',
+                          dispatch_unit: '',
+                          conversion_factor: 1
+                        }]
                       }
                     }));
                   }}
+                  disabled={!poDialog.data?.supplier_id}
                   data-testid="add-po-item-btn"
                 >
                   <Plus size={14} className="mr-1" /> Agregar
                 </Button>
               </div>
-              <div className="space-y-2">
-                {(poDialog.data?.items || []).map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border">
-                    <select
-                      value={item.ingredient_id}
-                      onChange={e => {
-                        const ing = ingredients.find(i => i.id === e.target.value);
-                        setPODialog(p => ({
-                          ...p,
-                          data: {
-                            ...p.data,
-                            items: p.data.items.map((i, j) => j === idx ? { 
-                              ...i, 
-                              ingredient_id: e.target.value,
-                              ingredient_name: ing?.name || '',
-                              unit_price: ing?.avg_cost || i.unit_price
-                            } : i)
-                          }
-                        }));
-                      }}
-                      className="flex-1 px-2 py-1 bg-card border border-border rounded text-sm"
-                    >
-                      <option value="">Seleccionar insumo...</option>
-                      {ingredients.map(i => <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>)}
-                    </select>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={e => {
-                        setPODialog(p => ({
-                          ...p,
-                          data: {
-                            ...p.data,
-                            items: p.data.items.map((i, j) => j === idx ? { ...i, quantity: parseFloat(e.target.value) || 0 } : i)
-                          }
-                        }));
-                      }}
-                      className="w-20 px-2 py-1 bg-card border border-border rounded text-sm"
-                      placeholder="Cant."
-                    />
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={item.unit_price}
-                      onChange={e => {
-                        setPODialog(p => ({
-                          ...p,
-                          data: {
-                            ...p.data,
-                            items: p.data.items.map((i, j) => j === idx ? { ...i, unit_price: parseFloat(e.target.value) || 0 } : i)
-                          }
-                        }));
-                      }}
-                      className="w-24 px-2 py-1 bg-card border border-border rounded text-sm"
-                      placeholder="Precio"
-                    />
-                    <span className="text-xs text-muted-foreground w-20">
-                      {formatMoney((item.quantity || 0) * (item.unit_price || 0))}
-                    </span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-7 w-7 text-destructive"
-                      onClick={() => {
-                        setPODialog(p => ({
-                          ...p,
-                          data: {
-                            ...p.data,
-                            items: p.data.items.filter((_, j) => j !== idx)
-                          }
-                        }));
-                      }}
-                    >
-                      <X size={14} />
-                    </Button>
+              
+              {/* Supplier filter notice */}
+              {poDialog.data?.supplier_id && filteredIngredients.length === 0 && (
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 mb-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-500">
+                      No hay insumos asignados a este proveedor. Configura el "Proveedor Predeterminado" en la ficha de cada insumo.
+                    </p>
                   </div>
-                ))}
+                </div>
+              )}
+              
+              {!poDialog.data?.supplier_id && (
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle size={14} className="text-blue-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-blue-400">
+                      Selecciona un proveedor para ver los insumos disponibles.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                {(poDialog.data?.items || []).map((item, idx) => {
+                  const selectedIng = ingredients.find(i => i.id === item.ingredient_id);
+                  return (
+                    <div key={idx} className="p-3 rounded-lg bg-background border border-border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <select
+                          value={item.ingredient_id}
+                          onChange={e => {
+                            const ing = ingredients.find(i => i.id === e.target.value);
+                            setPODialog(p => ({
+                              ...p,
+                              data: {
+                                ...p.data,
+                                items: p.data.items.map((i, j) => j === idx ? { 
+                                  ...i, 
+                                  ingredient_id: e.target.value,
+                                  ingredient_name: ing?.name || '',
+                                  unit_price: ing?.avg_cost || 0,
+                                  purchase_unit: ing?.purchase_unit || ing?.unit || 'unidad',
+                                  dispatch_unit: ing?.unit || 'unidad',
+                                  conversion_factor: ing?.conversion_factor || 1
+                                } : i)
+                              }
+                            }));
+                          }}
+                          className="flex-1 px-2 py-1.5 bg-card border border-border rounded text-sm"
+                        >
+                          <option value="">Seleccionar insumo...</option>
+                          {filteredIngredients.map(i => (
+                            <option key={i.id} value={i.id}>
+                              {i.name} ({getUnitLabel(i.purchase_unit || i.unit)})
+                            </option>
+                          ))}
+                        </select>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 text-destructive shrink-0"
+                          onClick={() => {
+                            setPODialog(p => ({
+                              ...p,
+                              data: {
+                                ...p.data,
+                                items: p.data.items.filter((_, j) => j !== idx)
+                              }
+                            }));
+                          }}
+                        >
+                          <X size={14} />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <label className="text-[10px] text-muted-foreground">Cantidad ({getUnitLabel(item.purchase_unit || selectedIng?.purchase_unit)})</label>
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={e => {
+                              setPODialog(p => ({
+                                ...p,
+                                data: {
+                                  ...p.data,
+                                  items: p.data.items.map((i, j) => j === idx ? { ...i, quantity: parseFloat(e.target.value) || 0 } : i)
+                                }
+                              }));
+                            }}
+                            className="w-full px-2 py-1.5 bg-card border border-border rounded text-sm"
+                            placeholder="Cant."
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] text-muted-foreground">Precio por {getUnitLabel(item.purchase_unit || selectedIng?.purchase_unit)}</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={item.unit_price}
+                            onChange={e => {
+                              setPODialog(p => ({
+                                ...p,
+                                data: {
+                                  ...p.data,
+                                  items: p.data.items.map((i, j) => j === idx ? { ...i, unit_price: parseFloat(e.target.value) || 0 } : i)
+                                }
+                              }));
+                            }}
+                            className="w-full px-2 py-1.5 bg-card border border-border rounded text-sm"
+                            placeholder="Precio"
+                          />
+                        </div>
+                        <div className="text-right min-w-[80px]">
+                          <label className="text-[10px] text-muted-foreground">Subtotal</label>
+                          <div className="font-oswald font-bold text-primary">
+                            {formatMoney((item.quantity || 0) * (item.unit_price || 0))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Conversion info */}
+                      {selectedIng && selectedIng.conversion_factor > 1 && item.quantity > 0 && (
+                        <div className="mt-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                          <div className="flex items-center gap-1 text-[10px] text-emerald-400">
+                            <ArrowLeftRight size={10} />
+                            <span>
+                              Al recibir: {item.quantity} {getUnitLabel(item.purchase_unit)} = {' '}
+                              <span className="font-bold">
+                                {(item.quantity * (item.conversion_factor || selectedIng.conversion_factor || 1)).toFixed(2)} {getUnitLabel(selectedIng.unit)}
+                              </span>
+                              {' '}en inventario
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {poDialog.data?.items?.length > 0 && (
-                <div className="text-right mt-2 font-oswald font-bold">
-                  Total: {formatMoney((poDialog.data?.items || []).reduce((s, i) => s + (i.quantity || 0) * (i.unit_price || 0), 0))}
+                <div className="text-right mt-3 p-2 rounded-lg bg-primary/10 border border-primary/30">
+                  <span className="text-sm text-muted-foreground mr-2">Total Orden:</span>
+                  <span className="font-oswald font-bold text-lg text-primary">
+                    {formatMoney((poDialog.data?.items || []).reduce((s, i) => s + (i.quantity || 0) * (i.unit_price || 0), 0))}
+                  </span>
                 </div>
               )}
             </div>
