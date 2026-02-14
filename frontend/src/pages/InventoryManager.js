@@ -22,6 +22,7 @@ import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AssistantTab from './inventory/components/AssistantTab';
 import IngredientsTab from './inventory/components/IngredientsTab';
+import ProductionTab from './inventory/components/ProductionTab';
 
 const INGREDIENT_CATEGORIES = [
   { value: 'general', label: 'General' },
