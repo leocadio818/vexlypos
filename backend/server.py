@@ -2295,11 +2295,20 @@ async def adjust_inventory(input: InventoryAdjustInput, user=Depends(get_current
     })
     return {"ok": True}
 
-# ─── INGREDIENTS ───
-@api.get("/ingredients")
-async def list_ingredients(category: Optional[str] = Query(None)):
-    query = {"category": category} if category else {}
-    return await db.ingredients.find(query, {"_id": 0}).to_list(500)
+# NOTE: The following sections have been migrated to modular routers:
+# - Ingredients, Unit Definitions, Stock, Stock Movements → routers/inventory.py  
+# - Inventory Explosion, Sub-recipe Production, Warehouses → routers/inventory.py
+# - Suppliers, Purchase Orders, Cost Control/Shopping Assistant → routers/purchasing.py
+# - Recipes → routers/recipes.py
+
+# ─── CUSTOMERS / LOYALTY ───
+@api.get("/customers")
+async def list_customers(search: Optional[str] = Query(None)):
+    query = {}
+    if search:
+        query = {"$or": [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"phone": {"$regex": search, "$options": "i"}}
 
 @api.get("/ingredients/{ingredient_id}")
 async def get_ingredient(ingredient_id: str):
