@@ -2369,6 +2369,67 @@ async def get_ingredient_audit_logs(ingredient_id: str, limit: int = Query(50)):
     ).sort("timestamp", -1).to_list(limit)
     return logs
 
+@api.get("/ingredients/audit-logs/all")
+async def get_all_ingredient_audit_logs(
+    ingredient_name: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    field_changed: Optional[str] = Query(None),
+    limit: int = Query(500)
+):
+    """Get all ingredient audit logs with optional filters"""
+    query = {}
+    
+    # Filter by ingredient name (partial match)
+    if ingredient_name:
+        query["ingredient_name"] = {"$regex": ingredient_name, "$options": "i"}
+    
+    # Filter by field changed
+    if field_changed:
+        query["field_changed"] = field_changed
+    
+    # Filter by date range
+    if start_date or end_date:
+        date_query = {}
+        if start_date:
+            date_query["$gte"] = start_date
+        if end_date:
+            # Add time to end date to include the whole day
+            date_query["$lte"] = end_date + "T23:59:59"
+        if date_query:
+            query["timestamp"] = date_query
+    
+    logs = await db.ingredient_audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).to_list(limit)
+    
+    # Get summary stats
+    total_count = await db.ingredient_audit_logs.count_documents(query)
+    
+    # Get unique ingredients affected
+    pipeline = [
+        {"$match": query},
+        {"$group": {"_id": "$ingredient_name"}},
+        {"$count": "count"}
+    ]
+    unique_result = await db.ingredient_audit_logs.aggregate(pipeline).to_list(1)
+    unique_ingredients = unique_result[0]["count"] if unique_result else 0
+    
+    # Get changes by field
+    field_pipeline = [
+        {"$match": query},
+        {"$group": {"_id": "$field_changed", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    field_stats = await db.ingredient_audit_logs.aggregate(field_pipeline).to_list(10)
+    
+    return {
+        "logs": logs,
+        "stats": {
+            "total_changes": total_count,
+            "unique_ingredients": unique_ingredients,
+            "changes_by_field": {item["_id"]: item["count"] for item in field_stats}
+        }
+    }
+
 @api.delete("/ingredients/{ingredient_id}")
 async def delete_ingredient(ingredient_id: str):
     # Check if used in recipes
