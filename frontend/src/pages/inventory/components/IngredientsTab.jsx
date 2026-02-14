@@ -712,16 +712,52 @@ export default function IngredientsTab({
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Stock Mínimo</label>
+                <label className="text-sm font-medium">
+                  Stock Mínimo {ingredientDialog.data?.unit && `(en ${
+                    UNITS.find(u => u.value === ingredientDialog.data?.unit)?.label || 
+                    customUnits.find(u => u.abbreviation === ingredientDialog.data?.unit)?.name ||
+                    ingredientDialog.data?.unit || 'Unidades'
+                  }s)`}
+                </label>
                 <input
                   type="number"
                   value={ingredientDialog.data?.min_stock || 0}
                   onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, min_stock: parseFloat(e.target.value) || 0 } }))}
                   className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                  data-testid="min-stock-input"
                 />
+                {/* Dynamic equivalence note */}
+                {ingredientDialog.data?.min_stock > 0 && ingredientDialog.data?.conversion_factor > 0 && (
+                  <div className="mt-2 p-2 rounded bg-blue-500/10 border border-blue-500/20">
+                    <p className="text-[11px] text-blue-400 leading-relaxed">
+                      <span className="font-medium">Avisarme cuando me queden menos de </span>
+                      <span className="font-bold">{ingredientDialog.data.min_stock} {
+                        UNITS.find(u => u.value === ingredientDialog.data?.unit)?.label || 
+                        ingredientDialog.data?.unit || 'Unidades'
+                      }s</span>
+                      {ingredientDialog.data?.purchase_unit && ingredientDialog.data?.purchase_unit !== ingredientDialog.data?.unit && (
+                        <>
+                          <span className="text-muted-foreground"> (Equivalente a </span>
+                          <span className="font-bold text-primary">
+                            {(ingredientDialog.data.min_stock / (ingredientDialog.data.conversion_factor || 1)).toFixed(2)} {
+                              UNITS.find(u => u.value === ingredientDialog.data?.purchase_unit)?.label || 
+                              ingredientDialog.data?.purchase_unit || 'Unidades'
+                            }s
+                          </span>
+                          <span className="text-muted-foreground">)</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
               <div>
-                <label className="text-sm font-medium">Costo Promedio (Compra)</label>
+                <label className="text-sm font-medium">
+                  Costo Promedio {ingredientDialog.data?.purchase_unit && `(por ${
+                    UNITS.find(u => u.value === ingredientDialog.data?.purchase_unit)?.label || 
+                    ingredientDialog.data?.purchase_unit || 'Unidad'
+                  })`}
+                </label>
                 <input
                   type="number"
                   step="0.01"
@@ -733,6 +769,7 @@ export default function IngredientsTab({
                   }}
                   className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
                   disabled={ingredientDialog.data?.is_subrecipe}
+                  data-testid="avg-cost-input"
                 />
                 {ingredientDialog.data?.is_subrecipe && (
                   <p className="text-[10px] text-muted-foreground mt-1">Costo calculado desde sub-receta</p>
