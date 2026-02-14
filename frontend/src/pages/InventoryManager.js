@@ -226,72 +226,8 @@ export default function InventoryManager() {
   //            loadPriceHistory, handleGeneratePO, toggleSuggestionSelection,
   //            selectAllSuggestions, deselectAllSuggestions
 
-  // ─── PURCHASE ORDER HANDLERS ───
-  const handleSavePO = async () => {
-    const d = poDialog.data;
-    if (!d?.supplier_id) { toast.error('Proveedor requerido'); return; }
-    if (!d?.warehouse_id) { toast.error('Almacén requerido'); return; }
-    if (!d?.items?.length) { toast.error('Agrega items'); return; }
-    try {
-      if (d.id) {
-        await purchaseOrdersAPI.update(d.id, d);
-        toast.success('Orden actualizada');
-      } else {
-        await purchaseOrdersAPI.create(d);
-        toast.success('Orden creada');
-      }
-      setPODialog({ open: false, data: null });
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
-  const handleReceivePO = async () => {
-    const po = receiveDialog.po;
-    const items = receiveDialog.items || [];
-    if (!items.some(i => i.received_quantity > 0)) {
-      toast.error('Ingresa cantidades recibidas');
-      return;
-    }
-    try {
-      await purchaseOrdersAPI.receive(po.id, {
-        warehouse_id: po.warehouse_id,
-        items: items.filter(i => i.received_quantity > 0).map(i => ({
-          ingredient_id: i.ingredient_id,
-          received_quantity: parseFloat(i.received_quantity) || 0,
-          actual_unit_price: parseFloat(i.actual_unit_price) || 0,
-        })),
-        notes: receiveDialog.notes || '',
-      });
-      toast.success('Mercancía recibida');
-      setReceiveDialog({ open: false, po: null });
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
-  const handleUpdatePOStatus = async (poId, status) => {
-    try {
-      await purchaseOrdersAPI.updateStatus(poId, status);
-      toast.success('Estado actualizado');
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
-  const handleDeletePO = async (id) => {
-    if (!window.confirm('¿Eliminar orden?')) return;
-    try {
-      await purchaseOrdersAPI.delete(id);
-      toast.success('Orden eliminada');
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
+  // ─── PURCHASE ORDER HANDLERS (Moved to PurchasesTab component) ───
+  // handleSavePO, handleReceivePO, handleUpdatePOStatus, handleDeletePO moved to PurchasesTab
 
   // ─── STOCK HANDLERS ───
   const handleTransfer = async () => {
