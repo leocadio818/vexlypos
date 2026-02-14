@@ -175,36 +175,6 @@ export default function InventoryManager() {
     }
   };
 
-  // ─── WAREHOUSE HANDLERS ───
-  const handleSaveWarehouse = async () => {
-    const d = warehouseDialog.data;
-    if (!d?.name?.trim()) { toast.error('Nombre requerido'); return; }
-    try {
-      if (d.id) {
-        await warehousesAPI.update(d.id, d);
-        toast.success('Almacén actualizado');
-      } else {
-        await warehousesAPI.create(d);
-        toast.success('Almacén creado');
-      }
-      setWarehouseDialog({ open: false, data: null });
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
-  const handleDeleteWarehouse = async (id) => {
-    if (!window.confirm('¿Eliminar almacén?')) return;
-    try {
-      await warehousesAPI.delete(id);
-      toast.success('Almacén eliminado');
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
   // ─── AUDIT HANDLERS ───
   const fetchAuditLogs = async (filters = auditFilters) => {
     setLoadingAudit(true);
