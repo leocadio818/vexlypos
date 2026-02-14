@@ -161,61 +161,11 @@ export default function InventoryManager() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  // ─── INGREDIENTS HANDLERS ───
-  const handleSaveIngredient = async () => {
-    const d = ingredientDialog.data;
-    if (!d?.name?.trim()) { toast.error('Nombre requerido'); return; }
-    
-    // Prepare data with conversion fields
-    const saveData = {
-      ...d,
-      purchase_unit: d.purchase_unit || d.unit,
-      purchase_quantity: d.purchase_quantity || 1,
-      dispatch_quantity: d.dispatch_quantity || 1,
-      conversion_factor: d.conversion_factor || 1,
-    };
-    
-    try {
-      if (d.id) {
-        const res = await ingredientsAPI.update(d.id, saveData);
-        toast.success(`Ingrediente actualizado${res.data?.audit_logs_created > 0 ? ' (cambios registrados en auditoría)' : ''}`);
-      } else {
-        await ingredientsAPI.create(saveData);
-        toast.success('Ingrediente creado');
-      }
-      setIngredientDialog({ open: false, data: null });
-      setAffectedRecipes({ count: 0, recipes: [] });
-      setShowAuditHistory(false);
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
+  // ─── INGREDIENTS HANDLERS (Moved to IngredientsTab component) ───
+  // handleSaveIngredient, handleDeleteIngredient, checkAffectedRecipes, loadAuditHistory, 
+  // handleSaveUnit, handleDeleteUnit are now in IngredientsTab
   
-  // Check affected recipes when conversion factor changes
-  const checkAffectedRecipes = useCallback(async (ingredientId) => {
-    if (!ingredientId) return;
-    try {
-      const res = await ingredientsAPI.getAffectedRecipes(ingredientId);
-      setAffectedRecipes(res.data);
-    } catch (e) {
-      console.error('Error fetching affected recipes:', e);
-    }
-  }, []);
-  
-  // Load audit history for ingredient
-  const loadAuditHistory = async (ingredientId) => {
-    if (!ingredientId) return;
-    try {
-      const res = await ingredientsAPI.getAuditLogs(ingredientId);
-      setAuditLogs(res.data || []);
-      setShowAuditHistory(true);
-    } catch (e) {
-      toast.error('Error al cargar historial');
-    }
-  };
-  
-  // Load conversion analysis for ingredient
+  // Load conversion analysis for ingredient - kept here as it's passed to child
   const loadConversionAnalysis = async (ingredientId) => {
     if (!ingredientId) return;
     setConversionAnalysis({ open: true, data: null, loading: true });
@@ -225,49 +175,6 @@ export default function InventoryManager() {
     } catch (e) {
       toast.error('Error al cargar análisis de conversión');
       setConversionAnalysis({ open: false, data: null, loading: false });
-    }
-  };
-
-  const handleDeleteIngredient = async (id) => {
-    if (!window.confirm('¿Eliminar ingrediente?')) return;
-    try {
-      await ingredientsAPI.delete(id);
-      toast.success('Ingrediente eliminado');
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
-  // ─── CUSTOM UNITS HANDLERS ───
-  const handleSaveUnit = async () => {
-    const d = unitDialog.data;
-    if (!d?.name?.trim()) { toast.error('Nombre requerido'); return; }
-    if (!d?.abbreviation?.trim()) { toast.error('Abreviatura requerida'); return; }
-    try {
-      if (d.id) {
-        const res = await unitDefinitionsAPI.update(d.id, d);
-        const updated = res.data?.ingredients_updated || 0;
-        toast.success(`Unidad actualizada${updated > 0 ? `. ${updated} ingrediente(s) actualizados automáticamente.` : ''}`);
-      } else {
-        await unitDefinitionsAPI.create(d);
-        toast.success('Unidad creada');
-      }
-      setUnitDialog({ open: false, data: null });
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
-  const handleDeleteUnit = async (id) => {
-    if (!window.confirm('¿Eliminar unidad? Solo se puede eliminar si no está en uso.')) return;
-    try {
-      await unitDefinitionsAPI.delete(id);
-      toast.success('Unidad eliminada');
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
     }
   };
 
