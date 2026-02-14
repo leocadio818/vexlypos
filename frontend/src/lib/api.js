@@ -177,6 +177,16 @@ export const ingredientsAPI = {
   create: (data) => api.post('/ingredients', data),
   update: (id, data) => api.put(`/ingredients/${id}`, data),
   delete: (id) => api.delete(`/ingredients/${id}`),
+  getAffectedRecipes: (id) => api.get(`/ingredients/${id}/affected-recipes`),
+  getAuditLogs: (id, limit = 50) => api.get(`/ingredients/${id}/audit-logs`, { params: { limit } }),
+};
+
+// Unit Definitions (Custom Units)
+export const unitDefinitionsAPI = {
+  list: () => api.get('/unit-definitions'),
+  create: (data) => api.post('/unit-definitions', data),
+  update: (id, data) => api.put(`/unit-definitions/${id}`, data),
+  delete: (id) => api.delete(`/unit-definitions/${id}`),
 };
 
 // Stock
