@@ -332,11 +332,6 @@ export default function InventoryManager() {
     }));
   };
 
-  // Filter POs
-  const filteredPOs = purchaseOrders.filter(po => {
-    return !poStatusFilter || po.status === poStatusFilter;
-  });
-
   // Get stock for ingredient
   const getIngredientStock = (ingredientId) => {
     return stock.filter(s => s.ingredient_id === ingredientId);
