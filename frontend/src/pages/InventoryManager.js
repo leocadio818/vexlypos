@@ -10,7 +10,7 @@ import { formatMoney } from '@/lib/api';
 import { toast } from 'sonner';
 import { 
   Package, Warehouse, Truck, FileText, ArrowLeftRight,
-  ChevronRight, ArrowLeft, RefreshCw, Mail, Bell,
+  ChevronRight, ArrowLeft, RefreshCw, Mail, Bell, Check,
   Factory, History, Calculator, Info, DollarSign, TrendingDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
