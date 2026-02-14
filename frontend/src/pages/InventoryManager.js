@@ -1045,6 +1045,16 @@ export default function InventoryManager() {
                           <Button 
                             variant="ghost" 
                             size="icon" 
+                            className="h-8 w-8 text-emerald-500 hover:text-emerald-400"
+                            onClick={() => loadConversionAnalysis(ing.id)}
+                            title="Ver Análisis de Conversión"
+                            data-testid={`conversion-analysis-btn-${ing.id}`}
+                          >
+                            <Calculator size={14} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
                             className="h-8 w-8"
                             onClick={() => setIngredientDialog({ open: true, data: { ...ing } })}
                           >
