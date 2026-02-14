@@ -14,6 +14,91 @@ export default function RecipesTab({
   onRefreshAll 
 }) {
   const [recipeDialog, setRecipeDialog] = useState({ open: false, data: null });
+  const [marginMode, setMarginMode] = useState('price'); // 'price' or 'margin'
+  const [targetMargin, setTargetMargin] = useState(30);
+  const [customPrice, setCustomPrice] = useState(0);
+
+  // Margin threshold configuration
+  const MARGIN_CRITICAL = 15;
+  const MARGIN_WARNING = 30;
+
+  // Calculate dynamic margin data for current recipe
+  const marginData = useMemo(() => {
+    if (!recipeDialog.data?.product_id) return null;
+    
+    const product = products.find(p => p.id === recipeDialog.data.product_id);
+    if (!product) return null;
+
+    const cost = calculateRecipeCost(recipeDialog.data);
+    const currentPrice = customPrice || product.price_a || product.price || 0;
+    
+    // Calculate current margin percentage
+    const currentMargin = currentPrice > 0 ? ((currentPrice - cost) / currentPrice) * 100 : 0;
+    
+    // Calculate suggested price based on target margin
+    // margin = (price - cost) / price
+    // margin * price = price - cost
+    // cost = price - margin * price
+    // cost = price * (1 - margin)
+    // price = cost / (1 - margin)
+    const suggestedPrice = targetMargin < 100 ? cost / (1 - targetMargin / 100) : cost;
+    
+    // Determine color status
+    let status = 'ok';
+    let statusColor = 'text-green-500';
+    let bgColor = 'bg-green-500/10 border-green-500/30';
+    if (currentMargin < MARGIN_CRITICAL) {
+      status = 'critical';
+      statusColor = 'text-red-500';
+      bgColor = 'bg-red-500/10 border-red-500/30';
+    } else if (currentMargin < MARGIN_WARNING) {
+      status = 'warning';
+      statusColor = 'text-amber-500';
+      bgColor = 'bg-amber-500/10 border-amber-500/30';
+    }
+
+    return {
+      cost,
+      currentPrice,
+      currentMargin: Math.round(currentMargin * 10) / 10,
+      suggestedPrice: Math.round(suggestedPrice * 100) / 100,
+      status,
+      statusColor,
+      bgColor,
+      profit: currentPrice - cost
+    };
+  }, [recipeDialog.data, products, calculateRecipeCost, customPrice, targetMargin]);
+
+  // Handle applying suggested price
+  const handleApplySuggestedPrice = async () => {
+    if (!marginData || !recipeDialog.data?.product_id) return;
+    
+    try {
+      const product = products.find(p => p.id === recipeDialog.data.product_id);
+      if (!product) return;
+
+      // Update product price via API
+      const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+      await fetch(`${API_URL}/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...product, price_a: marginData.suggestedPrice, price: marginData.suggestedPrice })
+      });
+      
+      setCustomPrice(marginData.suggestedPrice);
+      toast.success(`Precio actualizado a ${formatMoney(marginData.suggestedPrice)}`);
+      onRefreshAll?.();
+    } catch (e) {
+      toast.error('Error al actualizar precio');
+    }
+  };
+
+  // Initialize customPrice when opening dialog
+  const openRecipeDialog = (data) => {
+    const product = products.find(p => p.id === data?.product_id);
+    setCustomPrice(product?.price_a || product?.price || 0);
+    setRecipeDialog({ open: true, data });
+  };
 
   // ─── RECIPE HANDLERS ───
   const handleSaveRecipe = async () => {
