@@ -486,6 +486,8 @@ export default function RecipesTab({
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* ─── RECIPE DIALOG ─── */}
       <Dialog open={recipeDialog.open} onOpenChange={(o) => !o && setRecipeDialog({ open: false, data: null })}>
