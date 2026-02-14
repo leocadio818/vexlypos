@@ -3900,6 +3900,7 @@ async def get_ingredient_price_history(ingredient_id: str, limit: int = Query(50
         {"$unwind": "$items"},
         {"$match": {"items.ingredient_id": ingredient_id, "items.received_quantity": {"$gt": 0}}},
         {"$project": {
+            "_id": 0,  # Exclude MongoDB _id field
             "po_id": "$id",
             "supplier_id": "$supplier_id",
             "supplier_name": "$supplier_name",
