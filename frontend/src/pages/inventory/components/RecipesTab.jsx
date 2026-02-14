@@ -141,9 +141,12 @@ export default function RecipesTab({
     <div data-testid="recipes-tab">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-oswald text-lg font-bold">Recetas</h2>
+        <div>
+          <h2 className="font-oswald text-lg font-bold">Recetas</h2>
+          <p className="text-xs text-muted-foreground">Vincula productos con ingredientes y controla tus márgenes</p>
+        </div>
         <Button 
-          onClick={() => setRecipeDialog({ open: true, data: { product_id: '', product_name: '', ingredients: [], yield_quantity: 1, notes: '' } })}
+          onClick={() => openRecipeDialog({ product_id: '', product_name: '', ingredients: [], yield_quantity: 1, notes: '' })}
           className="bg-primary text-primary-foreground font-oswald"
           data-testid="add-recipe-btn"
         >
