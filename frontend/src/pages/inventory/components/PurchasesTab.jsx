@@ -33,6 +33,32 @@ export default function PurchasesTab({
     return !poStatusFilter || po.status === poStatusFilter;
   });
 
+  // Get ingredients filtered by selected supplier
+  const filteredIngredients = useMemo(() => {
+    const supplierId = poDialog.data?.supplier_id;
+    if (!supplierId) return [];
+    
+    return ingredients.filter(ing => ing.default_supplier_id === supplierId);
+  }, [poDialog.data?.supplier_id, ingredients]);
+
+  // Get unit label helper
+  const getUnitLabel = (unitValue) => {
+    const UNITS = [
+      { value: 'unidad', label: 'Unidad' },
+      { value: 'kg', label: 'Kilogramo' },
+      { value: 'g', label: 'Gramo' },
+      { value: 'lb', label: 'Libra' },
+      { value: 'oz', label: 'Onza' },
+      { value: 'lt', label: 'Litro' },
+      { value: 'ml', label: 'Mililitro' },
+      { value: 'gal', label: 'Galón' },
+      { value: 'botella', label: 'Botella' },
+      { value: 'caja', label: 'Caja' },
+      { value: 'paquete', label: 'Paquete' },
+    ];
+    return UNITS.find(u => u.value === unitValue)?.label || unitValue || 'Unidad';
+  };
+
   // ─── PURCHASE ORDER HANDLERS ───
   const handleSavePO = async () => {
     const d = poDialog.data;
