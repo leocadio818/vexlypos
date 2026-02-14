@@ -145,18 +145,53 @@ export default function InventoryManager() {
   const handleSaveIngredient = async () => {
     const d = ingredientDialog.data;
     if (!d?.name?.trim()) { toast.error('Nombre requerido'); return; }
+    
+    // Prepare data with conversion fields
+    const saveData = {
+      ...d,
+      purchase_unit: d.purchase_unit || d.unit,
+      purchase_quantity: d.purchase_quantity || 1,
+      dispatch_quantity: d.dispatch_quantity || 1,
+      conversion_factor: d.conversion_factor || 1,
+    };
+    
     try {
       if (d.id) {
-        await ingredientsAPI.update(d.id, d);
-        toast.success('Ingrediente actualizado');
+        const res = await ingredientsAPI.update(d.id, saveData);
+        toast.success(`Ingrediente actualizado${res.data?.audit_logs_created > 0 ? ' (cambios registrados en auditoría)' : ''}`);
       } else {
-        await ingredientsAPI.create(d);
+        await ingredientsAPI.create(saveData);
         toast.success('Ingrediente creado');
       }
       setIngredientDialog({ open: false, data: null });
+      setAffectedRecipes({ count: 0, recipes: [] });
+      setShowAuditHistory(false);
       fetchAll();
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Error');
+    }
+  };
+  
+  // Check affected recipes when conversion factor changes
+  const checkAffectedRecipes = useCallback(async (ingredientId) => {
+    if (!ingredientId) return;
+    try {
+      const res = await ingredientsAPI.getAffectedRecipes(ingredientId);
+      setAffectedRecipes(res.data);
+    } catch (e) {
+      console.error('Error fetching affected recipes:', e);
+    }
+  }, []);
+  
+  // Load audit history for ingredient
+  const loadAuditHistory = async (ingredientId) => {
+    if (!ingredientId) return;
+    try {
+      const res = await ingredientsAPI.getAuditLogs(ingredientId);
+      setAuditLogs(res.data || []);
+      setShowAuditHistory(true);
+    } catch (e) {
+      toast.error('Error al cargar historial');
     }
   };
 
