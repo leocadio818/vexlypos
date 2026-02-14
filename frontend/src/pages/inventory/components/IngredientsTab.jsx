@@ -484,20 +484,49 @@ export default function IngredientsTab({
           )}
           
           <div className="space-y-4">
+            {/* Validation Error Summary */}
+            {validationAttempted && !currentValidation.isValid && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle size={14} className="text-red-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-red-500">
+                      Completa todos los campos obligatorios para guardar
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Los campos marcados en rojo son necesarios para que tus órdenes de compra y costos sean exactos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div>
-              <label className="text-sm font-medium">Nombre *</label>
+              <label className={`text-sm font-medium ${validationAttempted && currentValidation.errors.name ? 'text-red-500' : ''}`}>
+                Nombre del Insumo *
+              </label>
               <input
                 type="text"
                 value={ingredientDialog.data?.name || ''}
                 onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, name: e.target.value } }))}
-                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                className={`w-full mt-1 px-3 py-2 bg-background border rounded-lg ${
+                  validationAttempted && currentValidation.errors.name 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-border'
+                }`}
                 data-testid="ingredient-name-input"
+                placeholder="Ej: Ron Brugal, Carne de Res..."
               />
+              {validationAttempted && currentValidation.errors.name && (
+                <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.name}</p>
+              )}
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Unidad de Despacho</label>
+                <label className={`text-sm font-medium ${validationAttempted && currentValidation.errors.unit ? 'text-red-500' : ''}`}>
+                  Unidad de Despacho *
+                </label>
                 <select
                   value={ingredientDialog.data?.unit || 'unidad'}
                   onChange={e => {
@@ -505,21 +534,37 @@ export default function IngredientsTab({
                     setIngredientDialog(p => ({ ...p, data: { ...p.data, unit: newUnit } }));
                     if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
                   }}
-                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                  className={`w-full mt-1 px-3 py-2 bg-background border rounded-lg ${
+                    validationAttempted && currentValidation.errors.unit 
+                      ? 'border-red-500' 
+                      : 'border-border'
+                  }`}
                 >
                   {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
                   {customUnits.map(u => <option key={u.id} value={u.abbreviation}>{u.name} ({u.abbreviation})</option>)}
                 </select>
+                {validationAttempted && currentValidation.errors.unit && (
+                  <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.unit}</p>
+                )}
               </div>
               <div>
-                <label className="text-sm font-medium">Categoría</label>
+                <label className={`text-sm font-medium ${validationAttempted && currentValidation.errors.category ? 'text-red-500' : ''}`}>
+                  Categoría *
+                </label>
                 <select
                   value={ingredientDialog.data?.category || 'general'}
                   onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, category: e.target.value } }))}
-                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                  className={`w-full mt-1 px-3 py-2 bg-background border rounded-lg ${
+                    validationAttempted && currentValidation.errors.category 
+                      ? 'border-red-500' 
+                      : 'border-border'
+                  }`}
                 >
                   {INGREDIENT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
+                {validationAttempted && currentValidation.errors.category && (
+                  <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.category}</p>
+                )}
               </div>
             </div>
             
