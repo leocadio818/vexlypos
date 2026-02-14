@@ -21,7 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import AssistantTab from './inventory/AssistantTab';
+import AssistantTab from './inventory/components/AssistantTab';
+import IngredientsTab from './inventory/components/IngredientsTab';
 
 const INGREDIENT_CATEGORIES = [
   { value: 'general', label: 'General' },
