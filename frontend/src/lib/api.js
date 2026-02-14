@@ -194,10 +194,13 @@ export const unitDefinitionsAPI = {
 // Stock
 export const stockAPI = {
   list: (params) => api.get('/stock', { params }),
+  listMultilevel: (params) => api.get('/stock/multilevel', { params }),
   byIngredient: (ingredientId) => api.get(`/stock/by-ingredient/${ingredientId}`),
   upsert: (data) => api.post('/stock', data),
   transfer: (data) => api.post('/stock/transfer', data),
   waste: (data) => api.post('/stock/waste', data),
+  difference: (data) => api.post('/stock/difference', data),
+  listDifferences: (params) => api.get('/stock/differences', { params }),
   adjust: (data) => api.post('/inventory/adjust', data),
   alerts: () => api.get('/inventory/alerts'),
 };
