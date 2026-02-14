@@ -131,8 +131,16 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Indicador de Stock Muerto en rojo (alto valor >RD$1000, <10% movimiento en 30 días)
   - Tabla detallada con columnas: Insumo, Categoría, Almacén, Stock, Costo Unit., Valor Stock, Mov. 30d
   - Badges visuales: "Stock Muerto" (rojo), "Stock Bajo" (ámbar)
-  - Exportar a Excel con 3 hojas: Valorización, Resumen, Por Categoría
+  - Exportar a Excel con 4 hojas: Valorización, Resumen, Por Categoría, Tendencias
   - Endpoint `/api/reports/inventory-valuation` con filtros warehouse_id y category
+  - **Gráficos de Tendencias (NUEVO - Febrero 2026)**:
+    - Gráfico de Línea: Evolución del valor del inventario día a día (Recharts)
+    - Gráfico de Pastel: Distribución porcentual por categoría con colores distintivos
+    - Filtro de período: 7 días, 30 días, Año Fiscal completo
+    - Selector de año fiscal (2024, 2025, 2026)
+    - Indicador de tendencia: % de cambio vs período anterior (sube/baja/estable)
+    - Tooltip interactivo con valores formateados en RD$
+    - Endpoint `/api/reports/valuation-trends` con params `period` y `year`
 - **Alertas de Stock Bajo**: 
   - Banner visual en pantalla cuando hay items bajo mínimo
   - Envío de alertas por email a múltiples destinatarios
