@@ -4,15 +4,14 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   ingredientsAPI, stockAPI, stockMovementsAPI, warehousesAPI, 
   suppliersAPI, recipesAPI, purchaseOrdersAPI, productsAPI, stockAlertsAPI,
-  unitDefinitionsAPI, reportsAPI
+  unitDefinitionsAPI
 } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { toast } from 'sonner';
 import { 
-  Package, Warehouse, Truck, FileText, ArrowLeftRight, AlertTriangle,
-  Plus, Pencil, Trash2, Search, X, Check, ChevronRight,
-  ArrowLeft, Save, RefreshCw, Filter, Download, Mail, Bell, Send,
-  Factory, Play, History, Calculator, Info, DollarSign, TrendingDown, PieChart
+  Package, Warehouse, Truck, FileText, ArrowLeftRight,
+  ChevronRight, ArrowLeft, RefreshCw, Mail, Bell,
+  Factory, History, Calculator, Info, DollarSign, TrendingDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
