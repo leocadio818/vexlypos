@@ -332,8 +332,9 @@ class TestIngredientConversionFactor:
         # Find the conversion_factor change
         cf_log = next((log for log in audit_logs if log.get("field_changed") == "conversion_factor"), None)
         assert cf_log is not None, "Audit log for conversion_factor not found"
-        assert cf_log.get("old_value") == "16"
-        assert cf_log.get("new_value") == "18"
+        # Values may be stored as "16" or "16.0" depending on serialization
+        assert cf_log.get("old_value") in ["16", "16.0"]
+        assert cf_log.get("new_value") in ["18", "18.0"]
         print("✓ Audit log has correct old/new values")
     
     # ─── TEST: Dispatch Cost Recalculates ───
