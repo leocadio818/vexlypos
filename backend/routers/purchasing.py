@@ -121,29 +121,36 @@ async def receive_purchase_order(po_id: str, input: ReceivePOInput, user=Depends
                 if recv_item.actual_unit_price > 0:
                     po_item["actual_unit_price"] = recv_item.actual_unit_price
                 
-                # Update stock
+                # Get ingredient to apply conversion factor
+                ing = await db.ingredients.find_one({"id": recv_item.ingredient_id}, {"_id": 0})
+                conversion_factor = ing.get("conversion_factor", 1) if ing else 1
+                
+                # Calculate stock to add in dispatch units (using conversion factor)
+                # If user receives 10 Bottles and conversion_factor is 23.6, add 236 oz to stock
+                stock_to_add = recv_item.received_quantity * conversion_factor
+                
+                # Update stock (in dispatch units)
                 await db.stock.update_one(
                     {"ingredient_id": recv_item.ingredient_id, "warehouse_id": warehouse_id},
-                    {"$inc": {"current_stock": recv_item.received_quantity}, "$set": {"last_updated": now_iso()}},
+                    {"$inc": {"current_stock": stock_to_add}, "$set": {"last_updated": now_iso()}},
                     upsert=True
                 )
                 
-                # Log movement
+                # Log movement (in dispatch units for accurate tracking)
                 await db.stock_movements.insert_one({
                     "id": gen_id(), "ingredient_id": recv_item.ingredient_id, "warehouse_id": warehouse_id,
-                    "quantity": recv_item.received_quantity, "movement_type": "purchase",
-                    "reference_id": po_id, "notes": f"OC recibida",
+                    "quantity": stock_to_add, "movement_type": "purchase",
+                    "reference_id": po_id, 
+                    "notes": f"OC recibida: {recv_item.received_quantity} {ing.get('purchase_unit', 'unidad') if ing else 'unidad'} = {stock_to_add} {ing.get('unit', 'unidad') if ing else 'unidad'}",
                     "user_id": user["user_id"], "user_name": user["name"], "created_at": now_iso()
                 })
                 
                 # Update ingredient avg_cost using weighted average
-                if recv_item.actual_unit_price > 0:
-                    ing = await db.ingredients.find_one({"id": recv_item.ingredient_id}, {"_id": 0})
-                    if ing:
-                        old_cost = ing.get("avg_cost", 0)
-                        total_stock_docs = await db.stock.find({"ingredient_id": recv_item.ingredient_id}, {"_id": 0}).to_list(50)
-                        total_stock = sum(s.get("current_stock", 0) for s in total_stock_docs)
-                        old_stock = total_stock - recv_item.received_quantity
+                if recv_item.actual_unit_price > 0 and ing:
+                    old_cost = ing.get("avg_cost", 0)
+                    total_stock_docs = await db.stock.find({"ingredient_id": recv_item.ingredient_id}, {"_id": 0}).to_list(50)
+                    total_stock = sum(s.get("current_stock", 0) for s in total_stock_docs)
+                    old_stock = total_stock - stock_to_add
                         
                         # Check for price increase
                         if old_cost > 0:
