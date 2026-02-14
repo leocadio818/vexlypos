@@ -263,6 +263,7 @@ export default function RecipesTab({
                 value={recipeDialog.data?.product_id || ''}
                 onChange={e => {
                   const prod = products.find(p => p.id === e.target.value);
+                  setCustomPrice(prod?.price_a || prod?.price || 0);
                   setRecipeDialog(p => ({ ...p, data: { ...p.data, product_id: e.target.value, product_name: prod?.name || '' } }));
                 }}
                 className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
