@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { purchasingAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { INGREDIENT_CATEGORIES } from './constants';
+import { INGREDIENT_CATEGORIES } from '../constants';
 
 const getCategoryLabel = (value) => {
   const cat = INGREDIENT_CATEGORIES.find(c => c.value === value);
