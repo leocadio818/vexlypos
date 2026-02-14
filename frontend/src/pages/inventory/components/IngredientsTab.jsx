@@ -569,10 +569,19 @@ export default function IngredientsTab({
             </div>
             
             {/* Conversion Factor Calculator - Human Friendly Version */}
-            <div className="p-4 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
-              <div className="flex items-center gap-2 mb-4">
-                <ArrowLeftRight size={16} className="text-primary" />
-                <span className="font-medium text-sm">Conversión de Unidades</span>
+            <div className={`p-4 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border ${
+              validationAttempted && currentValidation.errors.dispatch_quantity 
+                ? 'border-red-500' 
+                : 'border-primary/20'
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <ArrowLeftRight size={16} className="text-primary" />
+                  <span className="font-medium text-sm">Conversión de Unidades *</span>
+                </div>
+                {validationAttempted && currentValidation.errors.dispatch_quantity && (
+                  <span className="text-[10px] text-red-500">{currentValidation.errors.dispatch_quantity}</span>
+                )}
               </div>
               
               {/* Human-readable sentence */}
