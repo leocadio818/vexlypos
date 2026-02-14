@@ -88,17 +88,29 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
       return;
     }
     
-    const firstSupplier = purchaseSuggestions.suggestions.find(s => selectedSuggestions.includes(s.ingredient_id))?.default_supplier_id;
+    // Get ONLY selected items
+    const selectedItems = purchaseSuggestions.suggestions.filter(s => 
+      selectedSuggestions.includes(s.ingredient_id)
+    );
     
-    if (!firstSupplier) {
-      toast.error('Los insumos seleccionados no tienen proveedor asignado');
+    // Filter selected items that HAVE a supplier
+    const itemsWithSupplier = selectedItems.filter(s => s.default_supplier_id);
+    
+    if (itemsWithSupplier.length === 0) {
+      toast.error('Ninguno de los insumos seleccionados tiene proveedor asignado');
       return;
     }
     
-    const itemsForSupplier = selectedSuggestions.filter(id => {
-      const item = purchaseSuggestions.suggestions.find(s => s.ingredient_id === id);
-      return item?.default_supplier_id === firstSupplier;
-    });
+    // Get the supplier from the first item with supplier
+    const firstSupplier = itemsWithSupplier[0].default_supplier_id;
+    
+    // Filter items for this specific supplier
+    const itemsForSupplier = itemsWithSupplier
+      .filter(item => item.default_supplier_id === firstSupplier)
+      .map(item => item.ingredient_id);
+    
+    // Count items without supplier (for warning)
+    const itemsWithoutSupplier = selectedItems.filter(s => !s.default_supplier_id);
     
     if (!assistantFilters.warehouse_id) {
       toast.error('Selecciona un almacén de destino');
@@ -113,7 +125,20 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
         notes: 'Generada automáticamente desde Asistente de Compras'
       });
       
-      toast.success(`Orden de compra creada con ${res.data.items_count} items por ${formatMoney(res.data.total)}`);
+      let message = `Orden de compra creada con ${res.data.items_count} items por ${formatMoney(res.data.total)}`;
+      
+      // Warn if some items were skipped
+      if (itemsWithoutSupplier.length > 0) {
+        message += `. ${itemsWithoutSupplier.length} item(s) sin proveedor fueron ignorados.`;
+      }
+      
+      // Warn if items for other suppliers were not included
+      const otherSupplierItems = itemsWithSupplier.filter(item => item.default_supplier_id !== firstSupplier);
+      if (otherSupplierItems.length > 0) {
+        message += ` ${otherSupplierItems.length} item(s) de otros proveedores no fueron incluidos.`;
+      }
+      
+      toast.success(message);
       setSelectedSuggestions([]);
       onRefreshAll?.();
       onChangeTab?.('purchases');
