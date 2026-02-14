@@ -104,6 +104,8 @@ export default function InventoryManager() {
   const [affectedRecipes, setAffectedRecipes] = useState({ count: 0, recipes: [] });
   const [showAuditHistory, setShowAuditHistory] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [unitDialog, setUnitDialog] = useState({ open: false, data: null });
+  const [showUnitsManager, setShowUnitsManager] = useState(false);
 
   // Fetch all data
   const fetchAll = async () => {
