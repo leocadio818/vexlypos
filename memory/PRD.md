@@ -86,6 +86,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Filtros de búsqueda: Nombre del Insumo (búsqueda parcial), Fecha Inicio/Fin, Campo Editado
   - Botón "Exportar Historial" genera archivo Excel con datos y resumen
   - Endpoint `/api/ingredients/audit-logs/all` con filtros opcionales
+- **Valorización de Inventario (NUEVO - Febrero 2026)**:
+  - Nueva pestaña "Valorización" en Inventario Maestro con estilo esmeralda financiero
+  - Cálculo de valor: Stock Actual × Costo Unitario por cada insumo
+  - Tarjeta destacada con Valor Total del Inventario en tiempo real
+  - Desglose por Categoría con valores, porcentajes y barras de progreso
+  - Desglose por Almacén con valores, porcentajes y barras de progreso
+  - Filtros por Almacén y Categoría con botón "Aplicar Filtros"
+  - Indicador de Stock Muerto en rojo (alto valor >RD$1000, <10% movimiento en 30 días)
+  - Tabla detallada con columnas: Insumo, Categoría, Almacén, Stock, Costo Unit., Valor Stock, Mov. 30d
+  - Badges visuales: "Stock Muerto" (rojo), "Stock Bajo" (ámbar)
+  - Exportar a Excel con 3 hojas: Valorización, Resumen, Por Categoría
+  - Endpoint `/api/reports/inventory-valuation` con filtros warehouse_id y category
 - **Alertas de Stock Bajo**: 
   - Banner visual en pantalla cuando hay items bajo mínimo
   - Envío de alertas por email a múltiples destinatarios
