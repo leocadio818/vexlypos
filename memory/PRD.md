@@ -54,6 +54,19 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **Almacenes**: Múltiples ubicaciones para gestionar stock separadamente
 - **Proveedores**: Gestión de proveedores con contacto, teléfono, email, RNC
 - **Recetas**: Vinculación de productos de venta con ingredientes, incluyendo % de merma
+  - **Módulo de Margen de Ganancia Dinámico (NUEVO - Febrero 2026)**:
+    - Calculadora de Margen integrada en el diálogo de Editar/Nueva Receta
+    - Indicador de margen en vivo junto al precio de venta
+    - **Cálculo bidireccional**:
+      - Si el usuario ingresa % de margen → sistema sugiere precio de venta
+      - Si el usuario ingresa precio → sistema calcula margen actual en tiempo real
+    - **Alertas visuales con código de colores**:
+      - 🔴 Rojo (Crítico): Margen < 15%
+      - 🟡 Amarillo (Advertencia): Margen < 30%
+      - 🟢 Verde (Saludable): Margen ≥ 30%
+    - Botón "Usar precio recomendado" para aplicar precio sugerido con 1 click
+    - Badge de margen visible en la lista de recetas
+    - Borde de color en cada receta según estado del margen
 - **Stock por Almacén**: Niveles de inventario por ubicación con alertas de stock bajo
 - **Transferencias**: Mover insumos entre almacenes con historial completo
 - **Ajustes de Inventario**: Ajustes manuales con razón (conteo físico, merma, vencimiento, etc.)
