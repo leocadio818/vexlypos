@@ -3434,6 +3434,155 @@ export default function InventoryManager() {
         </DialogContent>
       </Dialog>
 
+      {/* Difference Dialog */}
+      <Dialog open={differenceDialog.open} onOpenChange={(o) => !o && setDifferenceDialog({ open: false, data: null })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <AlertTriangle size={20} className="text-amber-500" /> Registrar Diferencia de Inventario
+            </DialogTitle>
+          </DialogHeader>
+          {differenceDialog.data && (
+            <div className="space-y-4">
+              {/* Ingredient Info */}
+              <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                <div className="font-medium">{differenceDialog.data.ingredient_name}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {differenceDialog.data.warehouse_name} • Stock actual: {differenceDialog.data.stock_detailed}
+                </div>
+              </div>
+              
+              {/* Difference Type */}
+              <div>
+                <label className="text-sm font-medium">Tipo de Diferencia</label>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant={differenceDialog.data.difference_type === 'faltante' ? 'default' : 'outline'}
+                    className={differenceDialog.data.difference_type === 'faltante' ? 'bg-red-600 hover:bg-red-500' : ''}
+                    onClick={() => setDifferenceDialog(p => ({ ...p, data: { ...p.data, difference_type: 'faltante' } }))}
+                  >
+                    <TrendingDown size={14} className="mr-1" /> Faltante
+                  </Button>
+                  <Button
+                    variant={differenceDialog.data.difference_type === 'sobrante' ? 'default' : 'outline'}
+                    className={differenceDialog.data.difference_type === 'sobrante' ? 'bg-green-600 hover:bg-green-500' : ''}
+                    onClick={() => setDifferenceDialog(p => ({ ...p, data: { ...p.data, difference_type: 'sobrante' } }))}
+                  >
+                    <ChevronRight size={14} className="mr-1" /> Sobrante
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Quantity and Unit */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium">Cantidad</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={differenceDialog.data.quantity || ''}
+                    onChange={e => setDifferenceDialog(p => ({ ...p, data: { ...p.data, quantity: e.target.value } }))}
+                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                    placeholder="Ej: 2"
+                    data-testid="difference-quantity-input"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Unidad de Entrada</label>
+                  <select
+                    value={differenceDialog.data.input_unit}
+                    onChange={e => setDifferenceDialog(p => ({ ...p, data: { ...p.data, input_unit: e.target.value } }))}
+                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                    data-testid="difference-unit-select"
+                  >
+                    <option value={differenceDialog.data.dispatch_unit}>
+                      {differenceDialog.data.dispatch_unit} (Despacho)
+                    </option>
+                    {differenceDialog.data.purchase_unit !== differenceDialog.data.dispatch_unit && (
+                      <option value={differenceDialog.data.purchase_unit}>
+                        {differenceDialog.data.purchase_unit} (Compra)
+                      </option>
+                    )}
+                  </select>
+                </div>
+              </div>
+              
+              {/* Auto-calculated monetary value */}
+              {differenceDialog.data.quantity > 0 && (
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-amber-400">Valor Monetario Estimado:</span>
+                    <span className="font-oswald font-bold text-amber-300">
+                      {formatMoney(
+                        (differenceDialog.data.input_unit === differenceDialog.data.purchase_unit
+                          ? differenceDialog.data.quantity * differenceDialog.data.conversion_factor
+                          : differenceDialog.data.quantity
+                        ) * differenceDialog.data.dispatch_unit_cost
+                      )}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-1">
+                    = {differenceDialog.data.quantity} {differenceDialog.data.input_unit} 
+                    {differenceDialog.data.input_unit === differenceDialog.data.purchase_unit && 
+                      ` × ${differenceDialog.data.conversion_factor} = ${(differenceDialog.data.quantity * differenceDialog.data.conversion_factor).toFixed(2)} ${differenceDialog.data.dispatch_unit}`
+                    }
+                    {' '}× {formatMoney(differenceDialog.data.dispatch_unit_cost)}/u
+                  </div>
+                </div>
+              )}
+              
+              {/* Reason */}
+              <div>
+                <label className="text-sm font-medium">Razón de la Diferencia *</label>
+                <select
+                  value={differenceDialog.data.reason}
+                  onChange={e => setDifferenceDialog(p => ({ ...p, data: { ...p.data, reason: e.target.value } }))}
+                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                  data-testid="difference-reason-select"
+                >
+                  <option value="">Seleccionar razón...</option>
+                  <option value="Conteo físico">Conteo físico</option>
+                  <option value="Error de registro">Error de registro</option>
+                  <option value="Producto dañado">Producto dañado</option>
+                  <option value="Vencimiento">Vencimiento</option>
+                  <option value="Pérdida desconocida">Pérdida desconocida</option>
+                  <option value="Robo/Sustracción">Robo/Sustracción</option>
+                  <option value="Excedente encontrado">Excedente encontrado</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              
+              {/* Observations */}
+              <div>
+                <label className="text-sm font-medium">Observaciones</label>
+                <textarea
+                  value={differenceDialog.data.observations || ''}
+                  onChange={e => setDifferenceDialog(p => ({ ...p, data: { ...p.data, observations: e.target.value } }))}
+                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                  rows={2}
+                  placeholder="Detalles adicionales..."
+                  data-testid="difference-observations-input"
+                />
+              </div>
+              
+              {/* Info about audit */}
+              <div className="p-2 rounded bg-blue-500/10 border border-blue-500/30 text-xs text-blue-300">
+                <Info size={12} className="inline mr-1" />
+                Esta diferencia quedará registrada con tu nombre ({user?.name}) como Administrador que autoriza.
+              </div>
+              
+              <Button 
+                onClick={handleRegisterDifference} 
+                className={`w-full font-oswald ${differenceDialog.data.difference_type === 'faltante' ? 'bg-red-600 hover:bg-red-500' : 'bg-green-600 hover:bg-green-500'}`}
+              >
+                <Check size={16} className="mr-1" /> Registrar Diferencia
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Alert Config Dialog */}
       <Dialog open={alertDialog.open} onOpenChange={(o) => !o && setAlertDialog({ open: false })}>
         <DialogContent className="max-w-md">
