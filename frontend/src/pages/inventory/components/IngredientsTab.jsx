@@ -23,7 +23,7 @@ export default function IngredientsTab({
   customUnits,
   getTotalStock,
   onRefreshAll,
-  onOpenProduction,
+  onNavigateToProduction,
   onLoadConversionAnalysis
 }) {
   // Search/filter states
