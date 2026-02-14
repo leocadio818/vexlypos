@@ -99,16 +99,7 @@ export default function InventoryManager() {
   // Custom units state (customUnits remains for passing to child, others moved to IngredientsTab)
   const [customUnits, setCustomUnits] = useState([]);
   
-  // Audit tab state
-  const [allAuditLogs, setAllAuditLogs] = useState([]);
-  const [auditStats, setAuditStats] = useState({ total_changes: 0, unique_ingredients: 0, changes_by_field: {} });
-  const [auditFilters, setAuditFilters] = useState({ ingredient_name: '', start_date: '', end_date: '', field_changed: '' });
-  const [loadingAudit, setLoadingAudit] = useState(false);
-  
-  // Valuation tab state
-  const [valuationData, setValuationData] = useState(null);
-  const [valuationFilters, setValuationFilters] = useState({ warehouse_id: '', category: '' });
-  const [loadingValuation, setLoadingValuation] = useState(false);
+  // Valuation and Audit tab states moved to their respective components (ValuationTab, AuditTab)
   
   // Conversion Analysis Dialog state
   const [conversionAnalysis, setConversionAnalysis] = useState({ open: false, data: null, loading: false });
