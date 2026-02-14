@@ -10,7 +10,6 @@ import Billing from "@/pages/Billing";
 import PaymentScreen from "@/pages/PaymentScreen";
 import CashRegister from "@/pages/CashRegister";
 import Settings from "@/pages/Settings";
-import Inventory from "@/pages/Inventory";
 import InventoryManager from "@/pages/InventoryManager";
 import Suppliers from "@/pages/Suppliers";
 import Reports from "@/pages/Reports";
@@ -44,7 +43,7 @@ function AppRoutes() {
         <Route path="billing/:orderId" element={<Billing />} />
         <Route path="payment/:billId" element={<PaymentScreen />} />
         <Route path="cash-register" element={<CashRegister />} />
-        <Route path="inventory" element={<Inventory />} />
+        <Route path="inventory" element={<Navigate to="/inventory-manager" replace />} />
         <Route path="inventory-manager" element={<InventoryManager />} />
         <Route path="suppliers" element={<Suppliers />} />
         <Route path="reports" element={<Reports />} />

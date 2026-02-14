@@ -557,13 +557,13 @@ export default function ProductConfig() {
                 <div className="text-center py-8 border border-dashed border-border rounded-xl bg-background/50">
                   <Tag size={32} className="mx-auto mb-2 text-muted-foreground/40" />
                   <p className="text-sm text-muted-foreground mb-2">
-                    La receta se configura en el módulo de Inventario
+                    La receta se configura en el módulo de Inventario Maestro
                   </p>
                   <a 
-                    href="/inventory" 
+                    href="/inventory-manager?tab=recipes" 
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
                   >
-                    <Tag size={14} /> Ir a Inventario
+                    <Tag size={14} /> Ir a Inventario Maestro
                   </a>
                 </div>
 
