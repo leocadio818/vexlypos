@@ -635,7 +635,11 @@ export default function IngredientsTab({
                       }));
                       if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
                     }}
-                    className="w-20 px-2 py-1 text-sm bg-background border-2 border-primary/50 rounded-md font-bold text-center text-primary focus:border-primary focus:ring-1 focus:ring-primary"
+                    className={`w-20 px-2 py-1 text-sm bg-background border-2 rounded-md font-bold text-center focus:ring-1 ${
+                      validationAttempted && currentValidation.errors.dispatch_quantity 
+                        ? 'border-red-500 text-red-500 focus:border-red-500 focus:ring-red-500' 
+                        : 'border-primary/50 text-primary focus:border-primary focus:ring-primary'
+                    }`}
                     placeholder="16"
                     data-testid="dispatch-quantity-input"
                   />
