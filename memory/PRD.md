@@ -60,6 +60,16 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **Órdenes de Compra**: Ciclo completo (Borrador → Pendiente → Parcial → Recibida)
 - **Conciliación de Precios**: Al recibir OC, comparar cantidad pedida vs recibida y actualizar costo promedio automáticamente
 - **Historial de Movimientos**: Registro de todos los movimientos de stock (compras, transferencias, ajustes, mermas)
+- **Calculadora de Factor de Conversión (NUEVO - Febrero 2026)**:
+  - Campos configurables: Unidad de Compra, Cantidad de Compra, Equivalencia en Despacho
+  - Cálculo automático del Factor de Conversión (dispatch_qty / purchase_qty)
+  - Preview en tiempo real del Costo por Unidad de Despacho (avg_cost / factor)
+  - Edición libre del factor permitida para ajustes finos
+  - Historial de auditoría: registra quién cambió qué campo y cuándo
+  - Aviso de impacto: muestra cuántas recetas se verán afectadas por cambios
+  - Colección `ingredient_audit_logs` para trazabilidad completa
+  - Endpoint `/api/ingredients/{id}/affected-recipes` para consultar recetas vinculadas
+  - Endpoint `/api/ingredients/{id}/audit-logs` para historial de cambios
 - **Alertas de Stock Bajo**: 
   - Banner visual en pantalla cuando hay items bajo mínimo
   - Envío de alertas por email a múltiples destinatarios
