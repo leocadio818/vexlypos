@@ -96,6 +96,24 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Colección `ingredient_audit_logs` para trazabilidad completa
   - Endpoint `/api/ingredients/{id}/affected-recipes` para consultar recetas vinculadas
   - Endpoint `/api/ingredients/{id}/audit-logs` para historial de cambios
+- **Stock Multinivel & Diferencias (NUEVO - Febrero 2026)**:
+  - Pestaña "Stock" renombrada a "Stock Multinivel & Diferencias"
+  - Tabla con columna "Stock Detallado" mostrando desglose en cascada:
+    - Ejemplo: 18 lb > 0.35 lb (18 unidades de compra + residuo en unidades de despacho)
+    - Relación de conversión visible: "1 lb = 1 lb" o "1 caja = 12 botella"
+  - Cálculo en cascada universal: funciona con cualquier jerarquía (Cajas > Botellas > Oz, Sacos > Libras > Onzas)
+  - Botón "Diferencia" en cada fila para registrar ajustes de conteo físico
+  - Diálogo "Registrar Diferencia de Inventario":
+    - Selector de tipo: Faltante (rojo) o Sobrante (verde)
+    - Entrada de cantidad en cualquier unidad (Compra o Despacho)
+    - Cálculo automático del valor monetario: cantidad × costo_unitario_despacho
+    - Selector de razón: Conteo físico, Error de registro, Producto dañado, Vencimiento, Pérdida desconocida, etc.
+    - Campo de observaciones
+    - Registro de quién autoriza (nombre del administrador)
+  - Colección `stock_difference_logs` para auditoría completa
+  - Endpoint GET `/api/stock/multilevel` con desglose calculado
+  - Endpoint POST `/api/stock/difference` con conversión automática
+  - Endpoint GET `/api/stock/differences` con estadísticas agregadas
 - **Historial de Auditoría de Insumos (NUEVO - Febrero 2026)**:
   - Nueva pestaña "Auditoría" en Inventario Maestro con estilo Keep Money (Dorado y Oscuro)
   - Tabla cronológica de cambios con columnas: Fecha/Hora, Usuario, Insumo, Campo Editado, Valor Anterior (rojo), Valor Nuevo (verde)
