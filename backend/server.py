@@ -3,7 +3,13 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
-import os, logging, uuid, hashlib, jwt, asyncio, resend
+import os
+import logging
+import uuid
+import hashlib
+import jwt
+import asyncio
+import resend
 from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Optional
@@ -1998,7 +2004,7 @@ async def merge_orders(order_id: str, target_order_id: str, user: dict = Depends
     updated_target = await db.orders.find_one({"id": target_order_id}, {"_id": 0})
     
     return {
-        "message": f"Cuentas fusionadas exitosamente",
+        "message": "Cuentas fusionadas exitosamente",
         "merged_order": updated_target,
         "remaining_orders": len(remaining_orders)
     }
@@ -3084,7 +3090,7 @@ async def explode_and_deduct_recipe(
                     "reference_id": order_id,
                     "parent_product_id": parent_product_id,
                     "parent_recipe_id": recipe.get("id", ""),
-                    "notes": f"Venta - Sub-receta consumida",
+                    "notes": "Venta - Sub-receta consumida",
                     "user_id": user_id,
                     "user_name": user_name,
                     "created_at": now_iso()
@@ -3109,7 +3115,7 @@ async def explode_and_deduct_recipe(
                         "reference_id": order_id,
                         "parent_product_id": parent_product_id,
                         "parent_recipe_id": recipe.get("id", ""),
-                        "notes": f"Venta - Sub-receta parcial consumida",
+                        "notes": "Venta - Sub-receta parcial consumida",
                         "user_id": user_id,
                         "user_name": user_name,
                         "created_at": now_iso()
@@ -3171,7 +3177,7 @@ async def explode_and_deduct_recipe(
                 "reference_id": order_id,
                 "parent_product_id": parent_product_id,
                 "parent_recipe_id": recipe.get("id", ""),
-                "notes": f"Venta - Ingrediente base",
+                "notes": "Venta - Ingrediente base",
                 "user_id": user_id,
                 "user_name": user_name,
                 "created_at": now_iso()
@@ -3779,7 +3785,7 @@ async def receive_purchase_order(po_id: str, input: ReceivePOInput, user=Depends
                 await db.stock_movements.insert_one({
                     "id": gen_id(), "ingredient_id": recv_item.ingredient_id, "warehouse_id": warehouse_id,
                     "quantity": recv_item.received_quantity, "movement_type": "purchase",
-                    "reference_id": po_id, "notes": f"OC recibida",
+                    "reference_id": po_id, "notes": "OC recibida",
                     "user_id": user["user_id"], "user_name": user["name"], "created_at": now_iso()
                 })
                 
