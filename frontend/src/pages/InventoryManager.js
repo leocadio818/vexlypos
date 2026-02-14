@@ -1786,6 +1786,74 @@ export default function InventoryManager() {
         </DialogContent>
       </Dialog>
 
+      {/* Unit Definition Dialog */}
+      <Dialog open={unitDialog.open} onOpenChange={(o) => !o && setUnitDialog({ open: false, data: null })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-oswald">{unitDialog.data?.id ? 'Editar' : 'Nueva'} Unidad de Medida</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Nombre *</label>
+              <input
+                type="text"
+                value={unitDialog.data?.name || ''}
+                onChange={e => setUnitDialog(p => ({ ...p, data: { ...p.data, name: e.target.value } }))}
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                placeholder="Ej: Libra, Galón, Caja Grande"
+                data-testid="unit-name-input"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Abreviatura *</label>
+              <input
+                type="text"
+                value={unitDialog.data?.abbreviation || ''}
+                onChange={e => setUnitDialog(p => ({ ...p, data: { ...p.data, abbreviation: e.target.value.toLowerCase() } }))}
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg font-mono"
+                placeholder="Ej: lb, gal, cj"
+                data-testid="unit-abbreviation-input"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Se usará en minúsculas. Esta abreviatura aparecerá junto al stock y costos.
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Categoría</label>
+              <select
+                value={unitDialog.data?.category || 'custom'}
+                onChange={e => setUnitDialog(p => ({ ...p, data: { ...p.data, category: e.target.value } }))}
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+              >
+                <option value="custom">Personalizada</option>
+                <option value="weight">Peso</option>
+                <option value="volume">Volumen</option>
+                <option value="count">Conteo</option>
+              </select>
+            </div>
+            
+            {unitDialog.data?.id && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                  <div className="text-xs">
+                    <p className="font-medium text-amber-600">Cambiar la abreviatura actualizará automáticamente:</p>
+                    <ul className="mt-1 text-muted-foreground list-disc list-inside">
+                      <li>Todos los insumos que usen esta unidad</li>
+                      <li>Unidad de compra en los insumos vinculados</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <Button onClick={handleSaveUnit} className="w-full bg-primary text-primary-foreground font-oswald">
+              <Save size={16} className="mr-1" /> Guardar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Warehouse Dialog */}
       <Dialog open={warehouseDialog.open} onOpenChange={(o) => !o && setWarehouseDialog({ open: false, data: null })}>
         <DialogContent className="max-w-md">
