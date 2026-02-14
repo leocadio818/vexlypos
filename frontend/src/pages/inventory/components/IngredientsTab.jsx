@@ -978,8 +978,17 @@ export default function IngredientsTab({
               )}
             </div>
 
-            <Button onClick={handleSaveIngredient} className="w-full bg-primary text-primary-foreground font-oswald">
-              <Save size={16} className="mr-1" /> Guardar
+            <Button 
+              onClick={handleSaveIngredient} 
+              className={`w-full font-oswald ${
+                currentValidation.isValid 
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                  : 'bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted'
+              }`}
+              data-testid="save-ingredient-btn"
+            >
+              <Save size={16} className="mr-1" /> 
+              {currentValidation.isValid ? 'Guardar' : 'Completa los campos obligatorios'}
             </Button>
           </div>
         </DialogContent>
