@@ -60,6 +60,15 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **Órdenes de Compra**: Ciclo completo (Borrador → Pendiente → Parcial → Recibida)
 - **Conciliación de Precios**: Al recibir OC, comparar cantidad pedida vs recibida y actualizar costo promedio automáticamente
 - **Historial de Movimientos**: Registro de todos los movimientos de stock (compras, transferencias, ajustes, mermas)
+- **Gestión de Unidades de Medida (NUEVO - Febrero 2026)**:
+  - Panel "Gestionar Unidades" en pestaña Insumos
+  - CRUD de unidades personalizadas (nombre, abreviatura, categoría)
+  - Propagación automática: al renombrar una unidad, se actualiza en todos los insumos vinculados
+  - Bloqueo de eliminación si la unidad está en uso
+  - Prevención de duplicados por nombre o abreviatura
+  - Aviso visual de impacto al editar unidades
+  - Colección `unit_definitions` para almacenar unidades personalizadas
+  - Colección `unit_audit_logs` para trazabilidad de cambios
 - **Calculadora de Factor de Conversión (NUEVO - Febrero 2026)**:
   - Campos configurables: Unidad de Compra, Cantidad de Compra, Equivalencia en Despacho
   - Cálculo automático del Factor de Conversión (dispatch_qty / purchase_qty)
