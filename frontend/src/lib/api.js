@@ -281,6 +281,15 @@ export const purchaseOrdersAPI = {
   delete: (id) => api.delete(`/purchase-orders/${id}`),
 };
 
+// Shopping Assistant & Cost Control
+export const purchasingAPI = {
+  getSuggestions: (params) => api.get('/purchasing/suggestions', { params }),
+  generatePO: (data) => api.post('/purchasing/generate-po', data),
+  getPriceAlerts: () => api.get('/purchasing/price-alerts'),
+  recalculateMargins: () => api.post('/purchasing/recalculate-recipe-margins'),
+  getIngredientPriceHistory: (id, limit = 50) => api.get(`/ingredients/${id}/price-history`, { params: { limit } }),
+};
+
 // Reports
 export const reportsAPI = {
   inventoryValuation: (params) => api.get('/reports/inventory-valuation', { params }),
