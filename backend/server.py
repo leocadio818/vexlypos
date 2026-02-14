@@ -2309,15 +2309,6 @@ async def list_customers(search: Optional[str] = Query(None)):
         query = {"$or": [
             {"name": {"$regex": search, "$options": "i"}},
             {"phone": {"$regex": search, "$options": "i"}}
-
-# ─── CUSTOMERS / LOYALTY ───
-@api.get("/customers")
-async def list_customers(search: Optional[str] = Query(None)):
-    query = {}
-    if search:
-        query = {"$or": [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"phone": {"$regex": search, "$options": "i"}}
         ]}
     return await db.customers.find(query, {"_id": 0}).sort("name", 1).to_list(500)
 
