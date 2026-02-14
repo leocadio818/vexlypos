@@ -401,7 +401,10 @@ export default function IngredientsTab({
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8"
-                    onClick={() => setIngredientDialog({ open: true, data: { ...ing } })}
+                    onClick={() => {
+                      setValidationAttempted(false);
+                      setIngredientDialog({ open: true, data: { ...ing } });
+                    }}
                   >
                     <Pencil size={14} />
                   </Button>
