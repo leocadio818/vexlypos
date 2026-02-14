@@ -152,6 +152,14 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - Intensidad del blur (4-24px)
 - 3 colores de orbes animados (formato rgba)
 
+### 🔄 Consolidación de UI de Inventario (Febrero 2026)
+- **Eliminado**: Sistema de inventario antiguo (`/inventory` y `Inventory.js`)
+- **Unificado**: Solo existe "Inventario Maestro" (`/inventory-manager` y `InventoryManager.js`)
+- **Redirección**: `/inventory` redirige automáticamente a `/inventory-manager`
+- **Enlaces actualizados**: 
+  - ProductConfig → `/inventory-manager?tab=recipes`
+  - Settings → `/inventory-manager` y `/inventory-manager?tab=purchases`
+
 ### 📡 Modo Offline
 - **Service Worker**: Cache de datos críticos
 - **IndexedDB**: Almacenamiento local de pedidos pendientes
