@@ -908,6 +908,9 @@ export default function InventoryManager() {
             <TabsTrigger value="audit" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white font-oswald text-xs">
               <History size={14} className="mr-1" /> Auditoría
             </TabsTrigger>
+            <TabsTrigger value="assistant" className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white font-oswald text-xs">
+              <TrendingDown size={14} className="mr-1" /> Asistente
+            </TabsTrigger>
           </TabsList>
         </div>
 
