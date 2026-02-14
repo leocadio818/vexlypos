@@ -323,8 +323,9 @@ export default function IngredientsTab({
                       variant="outline" 
                       size="sm" 
                       className="h-8 text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
-                      onClick={() => onOpenProduction?.(ing)}
+                      onClick={() => onNavigateToProduction?.()}
                       data-testid={`produce-${ing.id}`}
+                      title="Ir a Producción"
                     >
                       <Factory size={14} className="mr-1" /> Producir
                     </Button>
