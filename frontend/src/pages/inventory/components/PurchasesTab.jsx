@@ -348,6 +348,27 @@ export default function PurchasesTab({
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-oswald text-lg font-bold">Órdenes de Compra</h2>
         <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex bg-muted rounded-lg p-1">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="h-8 px-3"
+              data-testid="view-list-btn"
+            >
+              <List size={14} className="mr-1" /> Lista
+            </Button>
+            <Button
+              variant={viewMode === 'chart' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('chart')}
+              className="h-8 px-3"
+              data-testid="view-chart-btn"
+            >
+              <BarChart3 size={14} className="mr-1" /> Gráficos
+            </Button>
+          </div>
           <Button 
             variant="outline"
             onClick={handleExport}
