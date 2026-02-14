@@ -79,6 +79,22 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **Transferencias**: Mover insumos entre almacenes con historial completo
 - **Ajustes de Inventario**: Ajustes manuales con razón (conteo físico, merma, vencimiento, etc.)
 - **Órdenes de Compra**: Ciclo completo (Borrador → Pendiente → Parcial → Recibida)
+  - **Filtros Avanzados (NUEVO - Febrero 2026)**:
+    - Botones de periodo rápido: Hoy, Ayer, Esta Semana, Mes Actual, Todo
+    - Date Range Picker personalizado con fechas inicio/fin
+    - Por defecto muestra solo órdenes de "Hoy"
+    - Filtro por proveedor con selector desplegable
+    - Filtro por estado (Borrador, Pendiente, Parcial, Recibida, Cancelada)
+    - Lógica combinada: filtrar por proveedor + rango de fechas + estado
+  - **Resumen Financiero del Periodo**:
+    - Tarjeta "Total en Rango" con suma de todas las órdenes filtradas
+    - Tarjeta específica del proveedor seleccionado con su total
+    - Indicador "Por Estado" con badges de conteo
+    - Indicador del periodo seleccionado con fechas
+  - **Exportación a Excel**:
+    - Botón "Exportar" genera archivo .xlsx
+    - Solo exporta órdenes visibles según filtros activos
+    - Nombre del archivo incluye el periodo seleccionado
 - **Conciliación de Precios**: Al recibir OC, comparar cantidad pedida vs recibida y actualizar costo promedio automáticamente
 - **Historial de Movimientos**: Registro de todos los movimientos de stock (compras, transferencias, ajustes, mermas)
 - **Lógica de Conversión Universal (NUEVO - Febrero 2026)**:
