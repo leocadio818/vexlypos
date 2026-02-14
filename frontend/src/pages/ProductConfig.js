@@ -308,7 +308,7 @@ export default function ProductConfig() {
                 className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald"
                 data-testid="tab-modificadores"
               >
-                <ListChecks size={14} className="mr-1" /> Modificadores
+                <ListChecks size={14} className="mr-1" /> Asignar Modificadores
               </TabsTrigger>
             </TabsList>
 
