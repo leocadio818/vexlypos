@@ -2378,6 +2378,118 @@ async def delete_ingredient(ingredient_id: str):
     await db.ingredients.delete_one({"id": ingredient_id})
     return {"ok": True}
 
+# ─── UNIT DEFINITIONS (Custom Units) ───
+@api.get("/unit-definitions")
+async def list_unit_definitions():
+    """List all custom unit definitions"""
+    return await db.unit_definitions.find({}, {"_id": 0}).to_list(500)
+
+@api.post("/unit-definitions")
+async def create_unit_definition(input: UnitDefinitionInput, request: Request):
+    """Create a new custom unit"""
+    # Check for duplicate
+    existing = await db.unit_definitions.find_one({
+        "$or": [
+            {"name": {"$regex": f"^{input.name}$", "$options": "i"}},
+            {"abbreviation": {"$regex": f"^{input.abbreviation}$", "$options": "i"}}
+        ]
+    })
+    if existing:
+        raise HTTPException(400, "Ya existe una unidad con ese nombre o abreviatura")
+    
+    doc = {
+        "id": gen_id(),
+        "name": input.name,
+        "abbreviation": input.abbreviation.lower(),
+        "category": input.category,
+        "is_system": False,  # Custom units are not system units
+        "created_at": now_iso()
+    }
+    await db.unit_definitions.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api.put("/unit-definitions/{unit_id}")
+async def update_unit_definition(unit_id: str, input: dict, request: Request):
+    """Update a custom unit - propagates name changes to ingredients"""
+    if "_id" in input: del input["_id"]
+    
+    unit = await db.unit_definitions.find_one({"id": unit_id}, {"_id": 0})
+    if not unit:
+        raise HTTPException(404, "Unidad no encontrada")
+    
+    if unit.get("is_system"):
+        raise HTTPException(400, "No se pueden modificar unidades del sistema")
+    
+    old_abbreviation = unit.get("abbreviation", "")
+    new_abbreviation = input.get("abbreviation", old_abbreviation)
+    
+    # Get user info for audit
+    user_id = ""
+    user_name = "Sistema"
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        try:
+            token = auth_header.split(" ")[1]
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            user_id = payload.get("user_id", "")
+            user_name = payload.get("name", "Sistema")
+        except: pass
+    
+    # Update unit definition
+    await db.unit_definitions.update_one({"id": unit_id}, {"$set": input})
+    
+    # If abbreviation changed, update all ingredients using this unit
+    affected_count = 0
+    if old_abbreviation != new_abbreviation:
+        # Update ingredients where unit matches old abbreviation
+        result = await db.ingredients.update_many(
+            {"unit": old_abbreviation},
+            {"$set": {"unit": new_abbreviation}}
+        )
+        affected_count += result.modified_count
+        
+        # Also update purchase_unit
+        result2 = await db.ingredients.update_many(
+            {"purchase_unit": old_abbreviation},
+            {"$set": {"purchase_unit": new_abbreviation}}
+        )
+        affected_count += result2.modified_count
+        
+        # Log the unit change
+        await db.unit_audit_logs.insert_one({
+            "id": gen_id(),
+            "unit_id": unit_id,
+            "old_abbreviation": old_abbreviation,
+            "new_abbreviation": new_abbreviation,
+            "ingredients_affected": affected_count,
+            "changed_by_id": user_id,
+            "changed_by_name": user_name,
+            "timestamp": now_iso()
+        })
+    
+    return {"ok": True, "ingredients_updated": affected_count}
+
+@api.delete("/unit-definitions/{unit_id}")
+async def delete_unit_definition(unit_id: str):
+    """Delete a custom unit (only if not in use)"""
+    unit = await db.unit_definitions.find_one({"id": unit_id}, {"_id": 0})
+    if not unit:
+        raise HTTPException(404, "Unidad no encontrada")
+    
+    if unit.get("is_system"):
+        raise HTTPException(400, "No se pueden eliminar unidades del sistema")
+    
+    # Check if in use
+    abbrev = unit.get("abbreviation", "")
+    in_use = await db.ingredients.count_documents({
+        "$or": [{"unit": abbrev}, {"purchase_unit": abbrev}]
+    })
+    if in_use > 0:
+        raise HTTPException(400, f"No se puede eliminar: {in_use} ingredientes usan esta unidad")
+    
+    await db.unit_definitions.delete_one({"id": unit_id})
+    return {"ok": True}
+
 # ─── STOCK ───
 @api.get("/stock")
 async def list_stock(warehouse_id: Optional[str] = Query(None), ingredient_id: Optional[str] = Query(None)):
