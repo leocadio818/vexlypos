@@ -2645,6 +2645,82 @@ async def list_stock(warehouse_id: Optional[str] = Query(None), ingredient_id: O
     if ingredient_id: query["ingredient_id"] = ingredient_id
     return await db.stock.find(query, {"_id": 0}).to_list(500)
 
+@api.get("/stock/multilevel")
+async def list_stock_multilevel(warehouse_id: Optional[str] = Query(None)):
+    """
+    Get stock with multi-level breakdown based on conversion factors.
+    Shows stock in all levels: Purchase Unit > Dispatch Unit (and intermediate levels if defined)
+    """
+    query = {}
+    if warehouse_id:
+        query["warehouse_id"] = warehouse_id
+    
+    stock_records = await db.stock.find(query, {"_id": 0}).to_list(500)
+    ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
+    ing_map = {i["id"]: i for i in ingredients}
+    
+    warehouses = await db.warehouses.find({}, {"_id": 0}).to_list(50)
+    wh_map = {w["id"]: w["name"] for w in warehouses}
+    
+    result = []
+    for stock in stock_records:
+        ing_id = stock.get("ingredient_id")
+        if ing_id not in ing_map:
+            continue
+        
+        ingredient = ing_map[ing_id]
+        current_stock = stock.get("current_stock", 0)
+        
+        # Get conversion info
+        purchase_unit = ingredient.get("purchase_unit", ingredient.get("unit", "unidad"))
+        dispatch_unit = ingredient.get("unit", "unidad")
+        conversion_factor = ingredient.get("conversion_factor", 1)
+        avg_cost = ingredient.get("avg_cost", 0)
+        dispatch_unit_cost = ingredient.get("dispatch_unit_cost", avg_cost / conversion_factor if conversion_factor > 0 else avg_cost)
+        
+        # Calculate multi-level breakdown
+        # Current stock is in dispatch units
+        # Calculate how many full purchase units and remainder
+        purchase_units = int(current_stock // conversion_factor) if conversion_factor > 0 else 0
+        dispatch_remainder = round(current_stock % conversion_factor, 4) if conversion_factor > 0 else current_stock
+        
+        # Build breakdown string
+        breakdown_parts = []
+        if purchase_units > 0:
+            breakdown_parts.append(f"{purchase_units} {purchase_unit}")
+        if dispatch_remainder > 0 or len(breakdown_parts) == 0:
+            breakdown_parts.append(f"{dispatch_remainder:.2f} {dispatch_unit}".rstrip('0').rstrip('.'))
+        
+        stock_detailed = " + ".join(breakdown_parts)
+        
+        # Calculate total value
+        stock_value = current_stock * dispatch_unit_cost
+        
+        result.append({
+            "id": stock.get("id"),
+            "ingredient_id": ing_id,
+            "ingredient_name": ingredient.get("name", "?"),
+            "category": ingredient.get("category", "general"),
+            "warehouse_id": stock.get("warehouse_id"),
+            "warehouse_name": wh_map.get(stock.get("warehouse_id"), "?"),
+            "current_stock": current_stock,
+            "min_stock": stock.get("min_stock", ingredient.get("min_stock", 0)),
+            "dispatch_unit": dispatch_unit,
+            "purchase_unit": purchase_unit,
+            "conversion_factor": conversion_factor,
+            "stock_detailed": stock_detailed,
+            "stock_in_purchase_units": purchase_units,
+            "stock_remainder_dispatch": dispatch_remainder,
+            "dispatch_unit_cost": round(dispatch_unit_cost, 4),
+            "stock_value": round(stock_value, 2),
+            "is_low_stock": current_stock <= stock.get("min_stock", ingredient.get("min_stock", 0)),
+            "last_updated": stock.get("last_updated")
+        })
+    
+    # Sort by name
+    result.sort(key=lambda x: x["ingredient_name"])
+    return result
+
 @api.get("/stock/by-ingredient/{ingredient_id}")
 async def get_stock_by_ingredient(ingredient_id: str):
     return await db.stock.find({"ingredient_id": ingredient_id}, {"_id": 0}).to_list(50)
