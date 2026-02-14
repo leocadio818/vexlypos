@@ -120,6 +120,11 @@ export default function InventoryManager() {
   
   // Conversion Analysis Dialog state
   const [conversionAnalysis, setConversionAnalysis] = useState({ open: false, data: null, loading: false });
+  
+  // Multilevel Stock state
+  const [multilevelStock, setMultilevelStock] = useState([]);
+  const [loadingMultilevel, setLoadingMultilevel] = useState(false);
+  const [differenceDialog, setDifferenceDialog] = useState({ open: false, data: null });
 
   // Fetch all data
   const fetchAll = async () => {
