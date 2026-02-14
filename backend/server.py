@@ -4180,6 +4180,7 @@ async def check_price_alerts():
             {"$unwind": "$items"},
             {"$match": {"items.ingredient_id": ing["id"], "items.received_quantity": {"$gt": 0}}},
             {"$project": {
+                "_id": 0,  # Exclude MongoDB _id field
                 "received_at": {"$ifNull": ["$received_at", "$created_at"]},
                 "unit_price": {"$ifNull": ["$items.actual_unit_price", "$items.unit_price"]}
             }},
