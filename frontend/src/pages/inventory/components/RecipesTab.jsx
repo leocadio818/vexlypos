@@ -286,6 +286,125 @@ export default function RecipesTab({
               />
             </div>
 
+            {/* ─── MARGIN CALCULATOR SECTION ─── */}
+            {marginData && (
+              <div className={`p-4 rounded-xl border ${marginData.bgColor}`} data-testid="margin-calculator">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp size={18} className={marginData.statusColor} />
+                  <h4 className="font-oswald font-medium">Calculadora de Margen</h4>
+                  {marginData.status === 'critical' && (
+                    <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+                      <AlertTriangle size={10} className="mr-1" /> Crítico
+                    </Badge>
+                  )}
+                  {marginData.status === 'warning' && (
+                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
+                      <AlertTriangle size={10} className="mr-1" /> Bajo
+                    </Badge>
+                  )}
+                  {marginData.status === 'ok' && (
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                      <Check size={10} className="mr-1" /> Saludable
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Cost display */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="text-center p-2 rounded-lg bg-background/50">
+                    <div className="text-xs text-muted-foreground">Costo</div>
+                    <div className="font-mono font-bold text-lg">{formatMoney(marginData.cost)}</div>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-background/50">
+                    <div className="text-xs text-muted-foreground">Precio Venta</div>
+                    <div className={`font-mono font-bold text-lg ${marginData.statusColor}`}>{formatMoney(marginData.currentPrice)}</div>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-background/50">
+                    <div className="text-xs text-muted-foreground">Ganancia</div>
+                    <div className={`font-mono font-bold text-lg ${marginData.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {formatMoney(marginData.profit)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Margin controls */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Target Margin Input */}
+                  <div>
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <TrendingUp size={12} /> % Margen Deseado
+                    </label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="number"
+                        value={targetMargin}
+                        onChange={e => setTargetMargin(parseFloat(e.target.value) || 0)}
+                        className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-center font-mono"
+                        min="0"
+                        max="99"
+                        step="1"
+                        data-testid="target-margin-input"
+                      />
+                      <span className="text-muted-foreground">%</span>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Precio sugerido: <span className="font-mono text-cyan-400">{formatMoney(marginData.suggestedPrice)}</span>
+                    </div>
+                  </div>
+
+                  {/* Custom Price Input */}
+                  <div>
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <DollarSign size={12} /> Precio de Venta
+                    </label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-muted-foreground">RD$</span>
+                      <input
+                        type="number"
+                        value={customPrice}
+                        onChange={e => setCustomPrice(parseFloat(e.target.value) || 0)}
+                        className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-center font-mono"
+                        min="0"
+                        step="0.01"
+                        data-testid="custom-price-input"
+                      />
+                    </div>
+                    <div className={`mt-1 text-xs ${marginData.statusColor}`}>
+                      Margen actual: <span className="font-mono font-bold">{marginData.currentMargin}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Apply suggested price button */}
+                {Math.abs(marginData.suggestedPrice - marginData.currentPrice) > 0.01 && (
+                  <Button
+                    onClick={handleApplySuggestedPrice}
+                    className="w-full mt-4 bg-cyan-600 hover:bg-cyan-700 text-white font-oswald"
+                    data-testid="apply-suggested-price-btn"
+                  >
+                    <Check size={14} className="mr-1" />
+                    Usar precio recomendado ({formatMoney(marginData.suggestedPrice)})
+                  </Button>
+                )}
+
+                {/* Margin thresholds legend */}
+                <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-center gap-4 text-xs">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span className="text-muted-foreground">&lt;{MARGIN_CRITICAL}% Crítico</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span className="text-muted-foreground">&lt;{MARGIN_WARNING}% Advertencia</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span className="text-muted-foreground">≥{MARGIN_WARNING}% Saludable</span>
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Ingredients list */}
             <div>
               <div className="flex items-center justify-between mb-2">
