@@ -112,6 +112,11 @@ export default function InventoryManager() {
   const [auditStats, setAuditStats] = useState({ total_changes: 0, unique_ingredients: 0, changes_by_field: {} });
   const [auditFilters, setAuditFilters] = useState({ ingredient_name: '', start_date: '', end_date: '', field_changed: '' });
   const [loadingAudit, setLoadingAudit] = useState(false);
+  
+  // Valuation tab state
+  const [valuationData, setValuationData] = useState(null);
+  const [valuationFilters, setValuationFilters] = useState({ warehouse_id: '', category: '' });
+  const [loadingValuation, setLoadingValuation] = useState(false);
 
   // Fetch all data
   const fetchAll = async () => {
