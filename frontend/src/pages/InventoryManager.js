@@ -43,26 +43,10 @@ const INGREDIENT_CATEGORIES = [
   { value: 'limpieza', label: 'Limpieza' },
 ];
 
-const UNITS = [
-  { value: 'unidad', label: 'Unidad' },
-  { value: 'kg', label: 'Kilogramo (kg)' },
-  { value: 'g', label: 'Gramo (g)' },
-  { value: 'lb', label: 'Libra (lb)' },
-  { value: 'oz', label: 'Onza (oz)' },
-  { value: 'lt', label: 'Litro (lt)' },
-  { value: 'ml', label: 'Mililitro (ml)' },
-  { value: 'gal', label: 'Galón' },
-  { value: 'botella', label: 'Botella' },
-  { value: 'caja', label: 'Caja' },
-  { value: 'paquete', label: 'Paquete' },
-];
-
-const PO_STATUS = {
-  draft: { label: 'Borrador', color: 'bg-gray-500' },
-  pending: { label: 'Pendiente', color: 'bg-yellow-500' },
-  partial: { label: 'Parcial', color: 'bg-blue-500' },
-  received: { label: 'Recibida', color: 'bg-green-500' },
-  cancelled: { label: 'Cancelada', color: 'bg-red-500' },
+// Helper for category labels (used in Conversion Analysis Dialog)
+const getCategoryLabel = (category) => {
+  const cat = INGREDIENT_CATEGORIES.find(c => c.value === category);
+  return cat ? cat.label : category;
 };
 
 export default function InventoryManager() {
