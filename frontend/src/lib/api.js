@@ -293,6 +293,7 @@ export const purchasingAPI = {
 // Reports
 export const reportsAPI = {
   inventoryValuation: (params) => api.get('/reports/inventory-valuation', { params }),
+  valuationTrends: (params) => api.get('/reports/valuation-trends', { params }),
   inventory: () => api.get('/reports/inventory'),
   profit: (date) => api.get('/reports/profit', { params: date ? { date } : {} }),
   voids: (params) => api.get('/reports/voids', { params }),
