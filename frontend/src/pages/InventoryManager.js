@@ -2453,6 +2453,150 @@ export default function InventoryManager() {
         </DialogContent>
       </Dialog>
 
+      {/* Conversion Analysis Dialog */}
+      <Dialog open={conversionAnalysis.open} onOpenChange={(o) => !o && setConversionAnalysis({ open: false, data: null, loading: false })}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <Calculator size={20} className="text-emerald-500" />
+              Análisis de Conversión Universal
+            </DialogTitle>
+          </DialogHeader>
+          
+          {conversionAnalysis.loading ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw size={32} className="animate-spin text-emerald-500" />
+            </div>
+          ) : conversionAnalysis.data ? (
+            <div className="space-y-4">
+              {/* Ingredient Info Card */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 border border-emerald-500/30">
+                <h3 className="font-oswald text-xl font-bold text-emerald-100 mb-3">
+                  {conversionAnalysis.data.ingredient?.name}
+                </h3>
+                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 mb-3">
+                  {getCategoryLabel(conversionAnalysis.data.ingredient?.category)}
+                </Badge>
+                
+                {/* Conversion Flow Visual */}
+                <div className="mt-4 p-4 rounded-lg bg-background/50 border border-border">
+                  <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Lógica de Conversión</div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                      <div className="text-xs text-blue-400 mb-1">Unidad de Compra</div>
+                      <div className="font-oswald font-bold text-lg text-blue-300">
+                        {conversionAnalysis.data.ingredient?.purchase_quantity} {conversionAnalysis.data.ingredient?.purchase_unit}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {formatMoney(conversionAnalysis.data.ingredient?.purchase_cost)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-center">
+                      <ChevronRight size={24} className="text-emerald-500" />
+                      <div className="text-[10px] text-emerald-400 font-mono">
+                        ×{conversionAnalysis.data.ingredient?.conversion_factor}
+                      </div>
+                    </div>
+                    
+                    <div className="text-center p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                      <div className="text-xs text-emerald-400 mb-1">Unidad de Despacho (Base)</div>
+                      <div className="font-oswald font-bold text-lg text-emerald-300">
+                        {conversionAnalysis.data.ingredient?.dispatch_quantity} {conversionAnalysis.data.ingredient?.dispatch_unit}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {formatMoney(conversionAnalysis.data.ingredient?.dispatch_unit_cost)} c/u
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 p-2 rounded bg-muted/50 text-xs text-center text-muted-foreground">
+                    <strong className="text-foreground">{conversionAnalysis.data.ingredient?.conversion_explanation}</strong>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Linked Products Section */}
+              <div className="p-4 rounded-xl bg-card border border-border">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-oswald font-bold flex items-center gap-2">
+                    <FileText size={16} className="text-primary" />
+                    Productos Vinculados ({conversionAnalysis.data.linked_products_count})
+                  </h4>
+                  <Badge variant="outline" className="text-xs">
+                    Impacto Total: {formatMoney(conversionAnalysis.data.total_cost_impact)}
+                  </Badge>
+                </div>
+                
+                {conversionAnalysis.data.linked_recipes?.length > 0 ? (
+                  <div className="space-y-2">
+                    {conversionAnalysis.data.linked_recipes.map((recipe, idx) => (
+                      <div 
+                        key={recipe.recipe_id || idx}
+                        className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-border/50"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium">{recipe.product_name}</div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1">
+                              <Package size={10} />
+                              {recipe.quantity_used} {recipe.unit}
+                            </span>
+                            {recipe.waste_percentage > 0 && (
+                              <span className="text-amber-500">
+                                +{recipe.waste_percentage}% merma
+                              </span>
+                            )}
+                            <span className="text-muted-foreground/60">
+                              PVP: {formatMoney(recipe.product_price)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-oswald font-bold text-emerald-400">
+                            {formatMoney(recipe.cost_with_waste)}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-mono">
+                            {formatMoney(recipe.cost_per_unit)} × {recipe.quantity_used}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Package size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Este insumo no está vinculado a ninguna receta</p>
+                    <p className="text-xs mt-1">Ve a la pestaña "Recetas" para crear un vínculo</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Cost Formula Explanation */}
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <div className="flex items-start gap-2">
+                  <Info size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                  <div className="text-xs">
+                    <p className="font-medium text-amber-400 mb-1">Fórmula de Costo Dinámico:</p>
+                    <p className="text-muted-foreground font-mono">
+                      Costo = (Costo Compra ÷ Factor) × Cantidad en Receta × (1 + Merma%)
+                    </p>
+                    <p className="text-muted-foreground mt-1">
+                      Ejemplo: ({formatMoney(conversionAnalysis.data.ingredient?.purchase_cost)} ÷ {conversionAnalysis.data.ingredient?.conversion_factor}) × Cantidad × (1 + Merma%)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Package size={40} className="mx-auto mb-3 opacity-30" />
+              <p>No hay datos disponibles</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Unit Definition Dialog */}
       <Dialog open={unitDialog.open} onOpenChange={(o) => !o && setUnitDialog({ open: false, data: null })}>
         <DialogContent className="max-w-md">
