@@ -106,6 +106,12 @@ export default function InventoryManager() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [unitDialog, setUnitDialog] = useState({ open: false, data: null });
   const [showUnitsManager, setShowUnitsManager] = useState(false);
+  
+  // Audit tab state
+  const [allAuditLogs, setAllAuditLogs] = useState([]);
+  const [auditStats, setAuditStats] = useState({ total_changes: 0, unique_ingredients: 0, changes_by_field: {} });
+  const [auditFilters, setAuditFilters] = useState({ ingredient_name: '', start_date: '', end_date: '', field_changed: '' });
+  const [loadingAudit, setLoadingAudit] = useState(false);
 
   // Fetch all data
   const fetchAll = async () => {
