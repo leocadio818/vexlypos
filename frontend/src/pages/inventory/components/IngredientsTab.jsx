@@ -830,8 +830,8 @@ export default function IngredientsTab({
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">
-                  Stock Mínimo {ingredientDialog.data?.unit && `(en ${
+                <label className={`text-sm font-medium ${validationAttempted && currentValidation.errors.min_stock ? 'text-red-500' : ''}`}>
+                  Stock Mínimo * {ingredientDialog.data?.unit && `(en ${
                     UNITS.find(u => u.value === ingredientDialog.data?.unit)?.label || 
                     customUnits.find(u => u.abbreviation === ingredientDialog.data?.unit)?.name ||
                     ingredientDialog.data?.unit || 'Unidades'
@@ -839,11 +839,19 @@ export default function IngredientsTab({
                 </label>
                 <input
                   type="number"
-                  value={ingredientDialog.data?.min_stock || 0}
+                  value={ingredientDialog.data?.min_stock ?? ''}
                   onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, min_stock: parseFloat(e.target.value) || 0 } }))}
-                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                  className={`w-full mt-1 px-3 py-2 bg-background border rounded-lg ${
+                    validationAttempted && currentValidation.errors.min_stock 
+                      ? 'border-red-500' 
+                      : 'border-border'
+                  }`}
                   data-testid="min-stock-input"
+                  placeholder="0"
                 />
+                {validationAttempted && currentValidation.errors.min_stock && (
+                  <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.min_stock}</p>
+                )}
                 {/* Dynamic equivalence note */}
                 {ingredientDialog.data?.min_stock > 0 && ingredientDialog.data?.conversion_factor > 0 && (
                   <div className="mt-2 p-2 rounded bg-blue-500/10 border border-blue-500/20">
@@ -870,8 +878,8 @@ export default function IngredientsTab({
                 )}
               </div>
               <div>
-                <label className="text-sm font-medium">
-                  Costo Promedio {ingredientDialog.data?.purchase_unit && `(por ${
+                <label className={`text-sm font-medium ${validationAttempted && currentValidation.errors.avg_cost ? 'text-red-500' : ''}`}>
+                  Costo Promedio * {ingredientDialog.data?.purchase_unit && `(por ${
                     UNITS.find(u => u.value === ingredientDialog.data?.purchase_unit)?.label || 
                     ingredientDialog.data?.purchase_unit || 'Unidad'
                   })`}
@@ -879,16 +887,24 @@ export default function IngredientsTab({
                 <input
                   type="number"
                   step="0.01"
-                  value={ingredientDialog.data?.avg_cost || 0}
+                  value={ingredientDialog.data?.avg_cost ?? ''}
                   onChange={e => {
                     const cost = parseFloat(e.target.value) || 0;
                     setIngredientDialog(p => ({ ...p, data: { ...p.data, avg_cost: cost } }));
                     if (ingredientDialog.data?.id) checkAffectedRecipes(ingredientDialog.data.id);
                   }}
-                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
+                  className={`w-full mt-1 px-3 py-2 bg-background border rounded-lg ${
+                    validationAttempted && currentValidation.errors.avg_cost 
+                      ? 'border-red-500' 
+                      : 'border-border'
+                  }`}
                   disabled={ingredientDialog.data?.is_subrecipe}
                   data-testid="avg-cost-input"
+                  placeholder="0.00"
                 />
+                {validationAttempted && currentValidation.errors.avg_cost && (
+                  <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.avg_cost}</p>
+                )}
                 {ingredientDialog.data?.is_subrecipe && (
                   <p className="text-[10px] text-muted-foreground mt-1">Costo calculado desde sub-receta</p>
                 )}
