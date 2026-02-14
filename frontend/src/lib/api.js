@@ -277,4 +277,12 @@ export const purchaseOrdersAPI = {
   delete: (id) => api.delete(`/purchase-orders/${id}`),
 };
 
+// Reports
+export const reportsAPI = {
+  inventoryValuation: (params) => api.get('/reports/inventory-valuation', { params }),
+  inventory: () => api.get('/reports/inventory'),
+  profit: (date) => api.get('/reports/profit', { params: date ? { date } : {} }),
+  voids: (params) => api.get('/reports/voids', { params }),
+};
+
 export default api;
