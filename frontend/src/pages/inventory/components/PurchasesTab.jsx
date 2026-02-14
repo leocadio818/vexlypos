@@ -509,18 +509,29 @@ export default function PurchasesTab({
 
             <div className="space-y-2">
               {(receiveDialog.items || []).map((item, idx) => {
+                const ing = ingredients.find(i => i.id === item.ingredient_id);
                 const pending = item.quantity - (item.received_quantity || 0);
+                const conversionFactor = ing?.conversion_factor || 1;
+                const purchaseUnit = ing?.purchase_unit || ing?.unit || 'unidad';
+                const dispatchUnit = ing?.unit || 'unidad';
+                const receivedInDispatchUnits = (receiveDialog.items[idx]?.received_quantity || 0) * conversionFactor;
+                
                 return (
                   <div key={idx} className="p-3 rounded-lg bg-background border border-border">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">{item.ingredient_name}</span>
+                      <div>
+                        <span className="font-medium">{item.ingredient_name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          ({getUnitLabel(purchaseUnit)})
+                        </span>
+                      </div>
                       <span className="text-xs text-muted-foreground">
-                        Pedido: {item.quantity} | Pendiente: {pending}
+                        Pedido: {item.quantity} {getUnitLabel(purchaseUnit)} | Pendiente: {pending}
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex-1">
-                        <label className="text-xs text-muted-foreground">Cantidad recibida</label>
+                        <label className="text-xs text-muted-foreground">Cantidad recibida ({getUnitLabel(purchaseUnit)})</label>
                         <input
                           type="number"
                           value={receiveDialog.items[idx]?.received_quantity || ''}
@@ -534,7 +545,7 @@ export default function PurchasesTab({
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="text-xs text-muted-foreground">Precio real</label>
+                        <label className="text-xs text-muted-foreground">Precio real (por {getUnitLabel(purchaseUnit)})</label>
                         <input
                           type="number"
                           step="0.01"
@@ -549,6 +560,21 @@ export default function PurchasesTab({
                         />
                       </div>
                     </div>
+                    
+                    {/* Conversion preview */}
+                    {conversionFactor > 1 && receiveDialog.items[idx]?.received_quantity > 0 && (
+                      <div className="mt-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="flex items-center gap-2 text-xs text-emerald-400">
+                          <Package size={12} />
+                          <span>
+                            Se agregarán <span className="font-bold">{receivedInDispatchUnits.toFixed(2)} {getUnitLabel(dispatchUnit)}</span> al inventario
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-1">
+                          Cálculo: {receiveDialog.items[idx]?.received_quantity} {getUnitLabel(purchaseUnit)} × {conversionFactor} = {receivedInDispatchUnits.toFixed(2)} {getUnitLabel(dispatchUnit)}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
