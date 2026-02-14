@@ -390,36 +390,6 @@ export default function InventoryManager() {
   //            loadPriceHistory, handleGeneratePO, toggleSuggestionSelection,
   //            selectAllSuggestions, deselectAllSuggestions
 
-  // ─── SUPPLIER HANDLERS ───
-  const handleSaveSupplier = async () => {
-    const d = supplierDialog.data;
-    if (!d?.name?.trim()) { toast.error('Nombre requerido'); return; }
-    try {
-      if (d.id) {
-        await suppliersAPI.update(d.id, d);
-        toast.success('Proveedor actualizado');
-      } else {
-        await suppliersAPI.create(d);
-        toast.success('Proveedor creado');
-      }
-      setSupplierDialog({ open: false, data: null });
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
-  const handleDeleteSupplier = async (id) => {
-    if (!window.confirm('¿Eliminar proveedor?')) return;
-    try {
-      await suppliersAPI.delete(id);
-      toast.success('Proveedor eliminado');
-      fetchAll();
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
-    }
-  };
-
   // ─── RECIPE HANDLERS ───
   const handleSaveRecipe = async () => {
     const d = recipeDialog.data;
