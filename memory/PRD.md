@@ -168,8 +168,10 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Botón "Historial" para ver evolución de precios por ingrediente
   - **Generación de Órdenes de Compra (1-click)**:
     - Botón "Generar OC" crea PO automáticamente con items seleccionados
-    - Agrupación por proveedor predeterminado
+    - **Agrupación automática por proveedor**: Si se seleccionan items de múltiples proveedores, genera una OC separada para cada uno
     - Estado inicial "draft" para revisión antes de enviar
+    - Toast de éxito muestra resumen de OCs creadas
+    - Items sin proveedor asignado son ignorados con aviso
   - **Sistema de Alertas de Precio**:
     - Comparación automática del último precio vs precio anterior
     - Alerta visual cuando aumento >5%
