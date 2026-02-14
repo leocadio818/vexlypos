@@ -1,0 +1,173 @@
+{
+  "summary": "Tested Multilevel Stock Visualization & Stock Difference Registration features. All 13 backend tests passed. All 12 UI features verified via Playwright.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dialog component", "issues": ["Warning: Missing `Description` or `aria-describedby` for {DialogContent} - accessibility enhancement suggested"]}
+    ]
+  },
+  "passed_tests": [
+    "Backend: GET /api/stock/multilevel returns 200 with stock list",
+    "Backend: Response contains all required fields (ingredient_id, ingredient_name, stock_detailed, stock_in_purchase_units, stock_remainder_dispatch, dispatch_unit_cost, etc.)",
+    "Backend: stock_detailed format is correct (e.g., '18 lb + 0.35 lb')",
+    "Backend: Conversion relation calculated correctly (stock = purchase_units * conversion_factor + remainder)",
+    "Backend: Filter by warehouse_id works correctly",
+    "Backend: POST /api/stock/difference for 'faltante' decreases stock correctly",
+    "Backend: POST /api/stock/difference for 'sobrante' increases stock correctly",
+    "Backend: Conversion applied correctly when using purchase unit",
+    "Backend: Monetary value calculated correctly (quantity × dispatch_unit_cost)",
+    "Backend: Difference audit logging works (authorized_by_name recorded)",
+    "Backend: GET /api/stock/differences returns logs with stats",
+    "Backend: Stats include total_faltante_value, total_sobrante_value, net_difference",
+    "Frontend: Stock tab shows 'Stock Multinivel & Diferencias' title",
+    "Frontend: Table has 'Stock Detallado' column",
+    "Frontend: Stock breakdown shows multi-level (e.g., '70 unidad > 0.15 unidad', '18 lb > 0.35 lb', '96 botella')",
+    "Frontend: Each row shows conversion relation (e.g., '1 lb = 1 lb', '1 botella = 1 botella')",
+    "Frontend: 'Diferencia' button visible in each stock row",
+    "Frontend: Dialog opens with correct title 'Registrar Diferencia de Inventario'",
+    "Frontend: Dialog shows ingredient name and current stock",
+    "Frontend: Faltante/Sobrante type buttons work",
+    "Frontend: Quantity input and Unit selector (Despacho/Compra) present",
+    "Frontend: Monetary value auto-calculated and displayed",
+    "Frontend: Reason selector with multiple options (Conteo físico, Producto dañado, etc.)",
+    "Frontend: Admin authorization info message displayed",
+    "Frontend: Registration updates stock table and recent movements"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_multilevel_stock_difference.py",
+    "/app/test_reports/pytest/multilevel_stock_difference_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_multilevel_stock_difference.py"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 tests passed)",
+    "frontend": "100% (All UI features verified via Playwright)"
+  },
+  "test_credentials": {
+    "admin_pin": "0000"
+  },
+  "seed_data_tested": {
+    "Limón Verde": {
+      "stock_detailed": "70 unidad > 0.15 unidad",
+      "conversion": "1 unidad = 1 unidad",
+      "value": "RD$ 350.75"
+    },
+    "Pollo Entero": {
+      "before_test": "18 lb > 0.35 lb = 18.35 lb = RD$ 1,559.75",
+      "after_0.5lb_faltante": "17 lb > 0.85 lb = 17.85 lb = RD$ 1,517.25",
+      "monetary_value_calculation": "0.5 lb × RD$ 85.00/lb = RD$ 42.50",
+      "conversion": "1 lb = 1 lb"
+    },
+    "Ron Brugal": {
+      "stock_detailed": "96 botella",
+      "conversion": "1 botella = 1 botella",
+      "value": "RD$ 5,280.00"
+    },
+    "Salsa Criolla": {
+      "status": "Stock Bajo badge displayed",
+      "stock_detailed": "5 lt",
+      "value": "RD$ 137.50"
+    }
+  },
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Multilevel Stock & Difference Registration features fully working. Key endpoints: GET /api/stock/multilevel (returns stock with breakdown into purchase/dispatch units), POST /api/stock/difference (registers faltante/sobrante with auto monetary calculation). Stock tab in Inventory Manager shows table with 'Stock Detallado' column displaying cascading breakdown (e.g., 18 lb > 0.35 lb). Each row has 'Diferencia' button that opens dialog for registering differences with type selection, quantity, unit (Despacho/Compra), reason selector, and auto-calculated monetary value. Audit logs stored in stock_difference_logs collection.",
+  "features_verified": {
+    "multilevel_stock_table": {
+      "status": "WORKING",
+      "location": "Inventory Manager -> Stock tab",
+      "columns": ["Insumo", "Almacén", "Stock Detallado", "Stock Base", "Valor", "Acciones"],
+      "data_testid": "multilevel-stock-table"
+    },
+    "stock_detailed_column": {
+      "status": "WORKING",
+      "display_format": "Purchase Units > Dispatch Remainder (e.g., 18 lb > 0.35 lb)",
+      "conversion_shown": "Below each breakdown (e.g., 1 lb = 1 lb)"
+    },
+    "difference_button": {
+      "status": "WORKING",
+      "location": "Acciones column in each stock row",
+      "data_testid": "difference-btn-{idx}",
+      "styling": "Amber/yellow color with AlertTriangle icon"
+    },
+    "difference_dialog": {
+      "status": "WORKING",
+      "title": "Registrar Diferencia de Inventario",
+      "sections": [
+        "Ingredient info with current stock breakdown",
+        "Tipo de Diferencia (Faltante/Sobrante buttons)",
+        "Cantidad input + Unidad de Entrada selector (Despacho/Compra)",
+        "Valor Monetario Estimado (auto-calculated)",
+        "Razón de la Diferencia selector (8 options)",
+        "Observaciones textarea",
+        "Admin authorization info"
+      ]
+    },
+    "monetary_value_calculation": {
+      "status": "WORKING",
+      "formula": "quantity × dispatch_unit_cost",
+      "conversion_applied": "When using purchase unit, multiplied by conversion_factor",
+      "example": "0.5 lb × RD$ 85.00/lb = RD$ 42.50"
+    },
+    "audit_logging": {
+      "status": "WORKING",
+      "collection": "stock_difference_logs",
+      "fields": ["ingredient_id", "ingredient_name", "difference_type", "input_quantity", "input_unit", "quantity_dispatch_units", "monetary_value", "reason", "observations", "authorized_by_id", "authorized_by_name", "timestamp"]
+    },
+    "differences_endpoint": {
+      "status": "WORKING",
+      "path": "GET /api/stock/differences",
+      "returns": {
+        "logs": "Array of difference records",
+        "stats": "Aggregated totals (total_faltante_value, total_sobrante_value, net_difference)"
+      }
+    }
+  },
+  "api_verification": {
+    "GET /api/stock/multilevel": {
+      "status_code": 200,
+      "response_sample": {
+        "ingredient_name": "Pollo Entero",
+        "stock_detailed": "18 lb + 0.35 lb",
+        "stock_in_purchase_units": 18,
+        "stock_remainder_dispatch": 0.35,
+        "current_stock": 18.35,
+        "dispatch_unit": "lb",
+        "purchase_unit": "lb",
+        "conversion_factor": 1,
+        "dispatch_unit_cost": 85.0,
+        "stock_value": 1559.75
+      }
+    },
+    "POST /api/stock/difference": {
+      "status_code": 200,
+      "request_sample": {
+        "ingredient_id": "...",
+        "warehouse_id": "...",
+        "quantity": 0.5,
+        "input_unit": "lb",
+        "difference_type": "faltante",
+        "reason": "Conteo físico",
+        "observations": "Test"
+      },
+      "response_sample": {
+        "ok": true,
+        "difference_id": "...",
+        "quantity_adjusted": -0.5,
+        "monetary_value": 42.5,
+        "conversion_applied": false
+      }
+    }
+  },
+  "mocked_apis": {
+    "status": "No APIs are mocked - all endpoints are fully functional"
+  }
+}
