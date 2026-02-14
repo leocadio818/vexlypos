@@ -35,10 +35,53 @@ export default function IngredientsTab({
   const [unitDialog, setUnitDialog] = useState({ open: false, data: null });
   const [showUnitsManager, setShowUnitsManager] = useState(false);
   
+  // Validation state - tracks which fields have been touched/attempted to save
+  const [validationAttempted, setValidationAttempted] = useState(false);
+  
   // Audit states
   const [showAuditHistory, setShowAuditHistory] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
   const [affectedRecipes, setAffectedRecipes] = useState({ count: 0, recipes: [] });
+
+  // Validation helper - checks if all required fields are filled
+  const validateIngredient = (data) => {
+    const errors = {};
+    
+    if (!data?.name?.trim()) {
+      errors.name = 'El nombre es obligatorio';
+    }
+    if (!data?.category) {
+      errors.category = 'Selecciona una categoría';
+    }
+    if (!data?.unit) {
+      errors.unit = 'Selecciona la unidad de despacho';
+    }
+    if (!data?.purchase_unit && !data?.unit) {
+      errors.purchase_unit = 'Selecciona la unidad de compra';
+    }
+    if (!data?.dispatch_quantity || data.dispatch_quantity <= 0) {
+      errors.dispatch_quantity = 'Completa la equivalencia de conversión';
+    }
+    if (data?.min_stock === undefined || data?.min_stock === null || data?.min_stock < 0) {
+      errors.min_stock = 'Ingresa el stock mínimo';
+    }
+    if (!data?.avg_cost && data?.avg_cost !== 0 && !data?.is_subrecipe) {
+      errors.avg_cost = 'Ingresa el costo promedio de compra';
+    }
+    if (!data?.default_supplier_id) {
+      errors.default_supplier_id = 'Selecciona un proveedor predeterminado';
+    }
+    
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors
+    };
+  };
+
+  // Get current validation state
+  const currentValidation = validateIngredient(ingredientDialog.data);
+
+  // Filter ingredients
 
   // Filter ingredients
   const filteredIngredients = ingredients.filter(ing => {
