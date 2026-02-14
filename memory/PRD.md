@@ -142,6 +142,59 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Alertas programadas**: Scheduler con APScheduler para envío diario automático
   - Selector de hora configurable (ej: 08:00 AM)
   - Muestra próxima ejecución programada
+- **Sistema de Control de Costos y Asistente de Compras Inteligente (NUEVO - Febrero 2026)**:
+  - Nueva pestaña "Asistente" en Inventario Maestro con tema cian
+  - **Tres vistas integradas**:
+    - **Sugerencias de Compra**: Tabla de items a reordenar basada en consumo y stock mínimo
+    - **Alertas de Precio**: Detección automática de aumentos >5% en precios de compra
+    - **Análisis de Márgenes**: Recálculo de costos y márgenes de todas las recetas
+  - **Funcionalidades de Sugerencias**:
+    - Filtros por Proveedor y Almacén de destino
+    - Toggle "Incluir OK" para ver todos los items o solo los de stock bajo
+    - Cards de resumen: Agotados, Stock Bajo, Sugerencias, Total Estimado
+    - Checkboxes para selección múltiple de items
+    - Botones "Seleccionar Todo" y "Deseleccionar"
+    - Cálculo automático de cantidad sugerida (14 días de supply o 2x mínimo)
+    - Redondeo inteligente a unidades de compra
+    - Columnas: Días de stock, Cantidad sugerida, Precio unitario, Total estimado
+    - Botón "Historial" para ver evolución de precios por ingrediente
+  - **Generación de Órdenes de Compra (1-click)**:
+    - Botón "Generar OC" crea PO automáticamente con items seleccionados
+    - Agrupación por proveedor predeterminado
+    - Estado inicial "draft" para revisión antes de enviar
+  - **Sistema de Alertas de Precio**:
+    - Comparación automática del último precio vs precio anterior
+    - Alerta visual cuando aumento >5%
+    - Muestra: precio anterior, precio nuevo, % de cambio
+    - Indicador de recetas afectadas
+    - Registro en auditoría con campo "source: purchase_order"
+  - **Análisis de Márgenes**:
+    - Botón "Recalcular Márgenes" ejecuta análisis completo
+    - Cálculo: Costo unitario de receta vs precio de venta
+    - Clasificación: Crítico (<15%), Advertencia (<30%), OK (≥30%)
+    - Cards de resumen: Críticos, Advertencia, OK, Margen Promedio
+    - Lista de productos con márgenes problemáticos
+    - Precio sugerido para restaurar margen objetivo
+  - **Historial de Precios**:
+    - Diálogo con estadísticas: Precio min/max/promedio
+    - Indicador de tendencia (subiendo/bajando/estable)
+    - Tabla de compras históricas con fecha, proveedor, cantidad, precio
+  - **Proveedor Predeterminado**:
+    - Nuevo campo en diálogo de edición de ingredientes
+    - Selector con todos los proveedores activos
+    - Usado por el Asistente para filtrar y generar POs
+    - Helper text explicando uso
+  - **Endpoints nuevos**:
+    - GET `/api/purchasing/suggestions`: Sugerencias de compra con filtros
+    - GET `/api/purchasing/price-alerts`: Alertas de incrementos de precio
+    - POST `/api/purchasing/recalculate-recipe-margins`: Análisis de márgenes
+    - GET `/api/ingredients/{id}/price-history`: Historial de precios con estadísticas
+    - POST `/api/purchasing/generate-po`: Generar PO desde sugerencias
+  - **Mejoras al endpoint de recepción de PO**:
+    - Detección automática de aumentos de precio al recibir
+    - Respuesta incluye array `price_alerts` si hay aumentos
+    - Registro en auditoría de cambios de costo
+    - Actualización de `dispatch_unit_cost` con el nuevo avg_cost
 - **Sistema de Explosión de Inventario (Sub-recetas)**:
   - Soporte para sub-recetas (ingredientes que se producen a partir de otros ingredientes)
   - Verificación recursiva de disponibilidad de stock
