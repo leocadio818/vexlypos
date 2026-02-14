@@ -117,6 +117,9 @@ export default function InventoryManager() {
   const [valuationData, setValuationData] = useState(null);
   const [valuationFilters, setValuationFilters] = useState({ warehouse_id: '', category: '' });
   const [loadingValuation, setLoadingValuation] = useState(false);
+  
+  // Conversion Analysis Dialog state
+  const [conversionAnalysis, setConversionAnalysis] = useState({ open: false, data: null, loading: false });
 
   // Fetch all data
   const fetchAll = async () => {
