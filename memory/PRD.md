@@ -398,6 +398,31 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Órdenes de Compra con ciclo completo y conciliación de precios
   - Historial de movimientos de stock
   - Nueva página: `/inventory-manager` con 6 tabs
+- ✅ **Sistema de Control de Costos y Asistente de Compras Inteligente**
+- ✅ **Verificación de Lógica de Insumo Universal** con caso de prueba completo
+- ✅ **REFACTORIZACIÓN DEL BACKEND - Fase 2** (14 Feb 2026):
+  - **Estructura modular**: `server.py` reducido de ~6200 a ~4200 líneas (-32%)
+  - **Router de Inventario** (`/routers/inventory.py` - ~1400 líneas):
+    - Ingredientes CRUD con auditoría de cambios
+    - Definiciones de unidades con propagación
+    - Stock multinivel con desglose visual
+    - Movimientos de stock y transferencias
+    - Diferencias de inventario con conversión automática
+    - Sistema de explosión de recetas
+    - Producción de sub-recetas (batch)
+    - Almacenes CRUD
+  - **Router de Recetas** (`/routers/recipes.py` - ~70 líneas):
+    - CRUD de recetas por producto
+    - Vinculación con ingredientes
+  - **Router de Purchasing** (`/routers/purchasing.py` - ~600 líneas):
+    - Proveedores CRUD
+    - Órdenes de compra con ciclo completo
+    - Asistente de compras inteligente
+    - Historial de precios y alertas
+    - Análisis de márgenes
+  - **Centralización de modelos** en `/models/schemas.py`
+  - **Conexión de DB** en `/models/database.py`
+  - **24/24 tests pasados** en la verificación
 
 ### Diciembre 2025
 - ✅ Implementado diseño Glassmorphism en todo el sistema
