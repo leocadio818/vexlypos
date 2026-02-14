@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
   ingredientsAPI, stockAPI, stockMovementsAPI, warehousesAPI, 
-  suppliersAPI, recipesAPI, purchaseOrdersAPI, productsAPI, stockAlertsAPI, productionAPI,
+  suppliersAPI, recipesAPI, purchaseOrdersAPI, productsAPI, stockAlertsAPI,
   unitDefinitionsAPI, reportsAPI
 } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
