@@ -455,6 +455,17 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - `InventoryManager.js` reducido de 4503 a 3873 líneas (-14%)
   - Nueva estructura `/pages/inventory/` para componentes modulares
   - Archivo de constantes compartidas `constants.js`
+- ✅ **REFACTORIZACIÓN DEL FRONTEND - Fase 2** (14 Feb 2026):
+  - Extraído `IngredientsTab.jsx` (~736 líneas) como componente independiente
+  - `InventoryManager.js` reducido de ~3873 a ~3191 líneas (-18% adicional)
+  - El tab "Insumos" ahora es un componente modular con:
+    - CRUD de ingredientes
+    - Gestión de unidades personalizadas
+    - Búsqueda y filtros por categoría
+    - Diálogos de creación/edición
+    - Panel de gestión de unidades
+  - Props limpios pasados desde el padre: ingredients, suppliers, customUnits, getTotalStock, onRefreshAll, onOpenProduction, onLoadConversionAnalysis
+  - **16/16 tests pasados** en la verificación frontend
 
 ### Diciembre 2025
 - ✅ Implementado diseño Glassmorphism en todo el sistema
