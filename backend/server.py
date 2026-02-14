@@ -4462,6 +4462,142 @@ async def inventory_report():
         })
     return report
 
+@api.get("/reports/inventory-valuation")
+async def inventory_valuation_report(
+    warehouse_id: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    days_for_rotation: int = Query(30)
+):
+    """
+    Calculate inventory valuation with breakdown by category and warehouse.
+    Also identifies dead stock (high value, low movement).
+    """
+    # Get all ingredients
+    ing_query = {}
+    if category:
+        ing_query["category"] = category
+    ingredients = await db.ingredients.find(ing_query, {"_id": 0}).to_list(500)
+    ing_map = {i["id"]: i for i in ingredients}
+    
+    # Get all stock records
+    stock_query = {}
+    if warehouse_id:
+        stock_query["warehouse_id"] = warehouse_id
+    stock_records = await db.stock.find(stock_query, {"_id": 0}).to_list(1000)
+    
+    # Get warehouses for names
+    warehouses = await db.warehouses.find({}, {"_id": 0}).to_list(50)
+    wh_map = {w["id"]: w["name"] for w in warehouses}
+    
+    # Get recent stock movements to calculate rotation
+    cutoff_date = (datetime.now(timezone.utc) - timedelta(days=days_for_rotation)).isoformat()
+    movements = await db.stock_movements.find(
+        {"timestamp": {"$gte": cutoff_date}, "movement_type": {"$in": ["sale", "explosion"]}},
+        {"_id": 0}
+    ).to_list(5000)
+    
+    # Calculate movement totals per ingredient
+    movement_totals = {}
+    for mov in movements:
+        ing_id = mov.get("ingredient_id", "")
+        qty = abs(mov.get("quantity", 0))
+        if ing_id not in movement_totals:
+            movement_totals[ing_id] = 0
+        movement_totals[ing_id] += qty
+    
+    # Calculate valuations
+    items = []
+    total_value = 0
+    by_category = {}
+    by_warehouse = {}
+    dead_stock_value = 0
+    dead_stock_items = []
+    
+    for stock in stock_records:
+        ing_id = stock.get("ingredient_id", "")
+        wh_id = stock.get("warehouse_id", "")
+        current_stock = stock.get("current_stock", 0)
+        
+        if ing_id not in ing_map:
+            continue
+            
+        ingredient = ing_map[ing_id]
+        
+        # Use dispatch_unit_cost if available, otherwise avg_cost
+        unit_cost = ingredient.get("dispatch_unit_cost", ingredient.get("avg_cost", 0))
+        stock_value = current_stock * unit_cost
+        
+        # Category breakdown
+        cat = ingredient.get("category", "general")
+        if cat not in by_category:
+            by_category[cat] = {"value": 0, "items": 0, "stock_units": 0}
+        by_category[cat]["value"] += stock_value
+        by_category[cat]["items"] += 1
+        by_category[cat]["stock_units"] += current_stock
+        
+        # Warehouse breakdown
+        wh_name = wh_map.get(wh_id, "Sin Almacén")
+        if wh_id not in by_warehouse:
+            by_warehouse[wh_id] = {"name": wh_name, "value": 0, "items": 0}
+        by_warehouse[wh_id]["value"] += stock_value
+        by_warehouse[wh_id]["items"] += 1
+        
+        total_value += stock_value
+        
+        # Check for dead stock (high value, low movement)
+        recent_movement = movement_totals.get(ing_id, 0)
+        is_dead_stock = stock_value > 1000 and recent_movement < (current_stock * 0.1)  # Less than 10% movement
+        
+        if is_dead_stock:
+            dead_stock_value += stock_value
+            dead_stock_items.append({
+                "ingredient_id": ing_id,
+                "name": ingredient.get("name", "?"),
+                "value": round(stock_value, 2),
+                "stock": current_stock,
+                "movement_30d": round(recent_movement, 2)
+            })
+        
+        items.append({
+            "ingredient_id": ing_id,
+            "name": ingredient.get("name", "?"),
+            "category": cat,
+            "unit": ingredient.get("unit", "unidad"),
+            "warehouse_id": wh_id,
+            "warehouse_name": wh_name,
+            "current_stock": current_stock,
+            "unit_cost": round(unit_cost, 2),
+            "stock_value": round(stock_value, 2),
+            "recent_movement": round(recent_movement, 2),
+            "is_dead_stock": is_dead_stock,
+            "min_stock": ingredient.get("min_stock", 0),
+            "is_low_stock": current_stock <= ingredient.get("min_stock", 0)
+        })
+    
+    # Sort items by value descending
+    items.sort(key=lambda x: x["stock_value"], reverse=True)
+    
+    # Round category and warehouse values
+    for cat in by_category:
+        by_category[cat]["value"] = round(by_category[cat]["value"], 2)
+        by_category[cat]["stock_units"] = round(by_category[cat]["stock_units"], 2)
+    for wh_id in by_warehouse:
+        by_warehouse[wh_id]["value"] = round(by_warehouse[wh_id]["value"], 2)
+    
+    return {
+        "total_value": round(total_value, 2),
+        "total_items": len(items),
+        "total_ingredients": len(set(i["ingredient_id"] for i in items)),
+        "by_category": by_category,
+        "by_warehouse": list(by_warehouse.values()),
+        "dead_stock": {
+            "total_value": round(dead_stock_value, 2),
+            "count": len(dead_stock_items),
+            "items": dead_stock_items[:10]  # Top 10 dead stock items
+        },
+        "items": items
+    }
+
 @api.get("/reports/profit")
 async def profit_report(date: Optional[str] = Query(None)):
     if not date:
