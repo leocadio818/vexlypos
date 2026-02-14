@@ -210,6 +210,19 @@ export default function InventoryManager() {
       toast.error('Error al cargar historial');
     }
   };
+  
+  // Load conversion analysis for ingredient
+  const loadConversionAnalysis = async (ingredientId) => {
+    if (!ingredientId) return;
+    setConversionAnalysis({ open: true, data: null, loading: true });
+    try {
+      const res = await ingredientsAPI.getConversionAnalysis(ingredientId);
+      setConversionAnalysis({ open: true, data: res.data, loading: false });
+    } catch (e) {
+      toast.error('Error al cargar análisis de conversión');
+      setConversionAnalysis({ open: false, data: null, loading: false });
+    }
+  };
 
   const handleDeleteIngredient = async (id) => {
     if (!window.confirm('¿Eliminar ingrediente?')) return;
