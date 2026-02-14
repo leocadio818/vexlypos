@@ -955,17 +955,27 @@ export default function IngredientsTab({
               <select
                 value={ingredientDialog.data?.default_supplier_id || ''}
                 onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, default_supplier_id: e.target.value || null } }))}
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                className={`w-full px-3 py-2 bg-background border rounded-lg text-sm ${
+                  validationAttempted && currentValidation.errors.default_supplier_id 
+                    ? 'border-red-500' 
+                    : 'border-border'
+                }`}
                 data-testid="ingredient-default-supplier"
               >
-                <option value="">Sin proveedor asignado</option>
+                <option value="">Seleccionar proveedor...</option>
                 {suppliers.filter(s => s.active !== false).map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Usado por el Asistente de Compras para generar órdenes automáticas
-              </p>
+              {validationAttempted && currentValidation.errors.default_supplier_id ? (
+                <p className="text-xs text-red-500 mt-1">
+                  Este campo es necesario para que tus órdenes de compra y costos sean exactos.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Usado por el Asistente de Compras para generar órdenes automáticas
+                </p>
+              )}
             </div>
 
             <Button onClick={handleSaveIngredient} className="w-full bg-primary text-primary-foreground font-oswald">
