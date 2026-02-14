@@ -2466,23 +2466,16 @@ export default function InventoryManager() {
 
             {/* ─── SHOPPING ASSISTANT TAB ─── */}
             <TabsContent value="assistant" className="mt-0">
-              {/* Header with stats */}
-              <div className="mb-6 bg-gradient-to-r from-cyan-950/50 via-cyan-900/30 to-cyan-950/50 rounded-xl p-4 border border-cyan-600/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="font-oswald text-xl font-bold text-cyan-400 flex items-center gap-2">
-                      <ShoppingCart className="w-6 h-6" /> Asistente de Compras Inteligente
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Sugerencias de reorden basadas en consumo y control de márgenes
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={assistantView === 'suggestions' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setAssistantView('suggestions')}
-                      className={assistantView === 'suggestions' ? 'bg-cyan-600 hover:bg-cyan-700' : ''}
+              <AssistantTab 
+                suppliers={suppliers}
+                warehouses={warehouses}
+                onRefreshAll={fetchAll}
+                onChangeTab={setActiveTab}
+              />
+            </TabsContent>
+          </div>
+        </ScrollArea>
+      </Tabs>
                     >
                       <ShoppingCart size={14} className="mr-1" /> Sugerencias
                     </Button>
