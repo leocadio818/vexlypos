@@ -79,6 +79,13 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Colección `ingredient_audit_logs` para trazabilidad completa
   - Endpoint `/api/ingredients/{id}/affected-recipes` para consultar recetas vinculadas
   - Endpoint `/api/ingredients/{id}/audit-logs` para historial de cambios
+- **Historial de Auditoría de Insumos (NUEVO - Febrero 2026)**:
+  - Nueva pestaña "Auditoría" en Inventario Maestro con estilo Keep Money (Dorado y Oscuro)
+  - Tabla cronológica de cambios con columnas: Fecha/Hora, Usuario, Insumo, Campo Editado, Valor Anterior (rojo), Valor Nuevo (verde)
+  - Tarjetas de estadísticas: Total de Cambios, Insumos Afectados, Tipos de Campo
+  - Filtros de búsqueda: Nombre del Insumo (búsqueda parcial), Fecha Inicio/Fin, Campo Editado
+  - Botón "Exportar Historial" genera archivo Excel con datos y resumen
+  - Endpoint `/api/ingredients/audit-logs/all` con filtros opcionales
 - **Alertas de Stock Bajo**: 
   - Banner visual en pantalla cuando hay items bajo mínimo
   - Envío de alertas por email a múltiples destinatarios
