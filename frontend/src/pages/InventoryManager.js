@@ -84,13 +84,10 @@ export default function InventoryManager() {
   const [sendingAlert, setSendingAlert] = useState(false);
   const [schedulerStatus, setSchedulerStatus] = useState({ active: false, next_run: null });
   
-  // Search/filter states
-  const [ingredientSearch, setIngredientSearch] = useState('');
-  const [ingredientCategory, setIngredientCategory] = useState('');
+  // Search/filter states (ingredients states moved to IngredientsTab)
   const [poStatusFilter, setPOStatusFilter] = useState('');
   
-  // Dialog states
-  const [ingredientDialog, setIngredientDialog] = useState({ open: false, data: null });
+  // Dialog states (ingredientDialog, unitDialog moved to IngredientsTab)
   const [warehouseDialog, setWarehouseDialog] = useState({ open: false, data: null });
   const [supplierDialog, setSupplierDialog] = useState({ open: false, data: null });
   const [recipeDialog, setRecipeDialog] = useState({ open: false, data: null });
@@ -102,13 +99,8 @@ export default function InventoryManager() {
   const [productionHistory, setProductionHistory] = useState([]);
   const [producingItem, setProducingItem] = useState(false);
   
-  // Custom units state
+  // Custom units state (customUnits remains for passing to child, others moved to IngredientsTab)
   const [customUnits, setCustomUnits] = useState([]);
-  const [affectedRecipes, setAffectedRecipes] = useState({ count: 0, recipes: [] });
-  const [showAuditHistory, setShowAuditHistory] = useState(false);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [unitDialog, setUnitDialog] = useState({ open: false, data: null });
-  const [showUnitsManager, setShowUnitsManager] = useState(false);
   
   // Audit tab state
   const [allAuditLogs, setAllAuditLogs] = useState([]);
