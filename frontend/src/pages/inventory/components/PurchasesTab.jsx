@@ -282,28 +282,202 @@ export default function PurchasesTab({
     <div data-testid="purchases-tab">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-oswald text-lg font-bold">Órdenes de Compra</h2>
-        <Button 
-          onClick={() => setPODialog({ open: true, data: { supplier_id: '', warehouse_id: '', items: [], notes: '', expected_date: '' } })}
-          className="bg-primary text-primary-foreground font-oswald"
-          data-testid="add-po-btn"
-        >
-          <Plus size={16} className="mr-1" /> Nueva Orden
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleExport}
+            disabled={filteredPOs.length === 0}
+            data-testid="export-btn"
+          >
+            <Download size={14} className="mr-1" /> Exportar
+          </Button>
+          <Button 
+            onClick={() => setPODialog({ open: true, data: { supplier_id: '', warehouse_id: '', items: [], notes: '', expected_date: '' } })}
+            className="bg-primary text-primary-foreground font-oswald"
+            data-testid="add-po-btn"
+          >
+            <Plus size={16} className="mr-1" /> Nueva Orden
+          </Button>
+        </div>
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-4">
-        <select
-          value={poStatusFilter}
-          onChange={e => setPOStatusFilter(e.target.value)}
-          className="px-3 py-2 bg-background border border-border rounded-lg text-sm"
-          data-testid="po-status-filter"
-        >
-          <option value="">Todos los estados</option>
-          {Object.entries(PO_STATUS).map(([k, v]) => (
-            <option key={k} value={k}>{v.label}</option>
+      {/* ─── SUMMARY CARDS ─── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30">
+          <div className="text-xs text-cyan-400 flex items-center gap-1 mb-1">
+            <TrendingUp size={12} /> Total en Rango
+          </div>
+          <div className="text-2xl font-bold font-mono text-cyan-300">{formatMoney(summaryStats.total)}</div>
+          <div className="text-xs text-muted-foreground">{summaryStats.count} orden(es)</div>
+        </div>
+        
+        {supplierFilter && summaryStats.bySupplier[supplierFilter] && (
+          <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30">
+            <div className="text-xs text-purple-400 flex items-center gap-1 mb-1">
+              <Building2 size={12} /> {summaryStats.bySupplier[supplierFilter].name}
+            </div>
+            <div className="text-2xl font-bold font-mono text-purple-300">
+              {formatMoney(summaryStats.bySupplier[supplierFilter].total)}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {summaryStats.bySupplier[supplierFilter].count} orden(es)
+            </div>
+          </div>
+        )}
+        
+        <div className="p-4 rounded-xl bg-card border border-border">
+          <div className="text-xs text-muted-foreground mb-1">Por Estado</div>
+          <div className="flex flex-wrap gap-1">
+            {Object.entries(summaryStats.byStatus).map(([status, count]) => (
+              <Badge key={status} className={`${PO_STATUS[status]?.color} text-white text-[10px]`}>
+                {PO_STATUS[status]?.label}: {count}
+              </Badge>
+            ))}
+            {Object.keys(summaryStats.byStatus).length === 0 && (
+              <span className="text-xs text-muted-foreground">Sin órdenes</span>
+            )}
+          </div>
+        </div>
+        
+        <div className="p-4 rounded-xl bg-card border border-border">
+          <div className="text-xs text-muted-foreground mb-1">Periodo</div>
+          <div className="text-sm font-medium">
+            {activePeriod === 'today' && 'Hoy'}
+            {activePeriod === 'yesterday' && 'Ayer'}
+            {activePeriod === 'week' && 'Esta Semana'}
+            {activePeriod === 'month' && 'Este Mes'}
+            {activePeriod === 'all' && 'Todo el Historial'}
+            {activePeriod === 'custom' && 'Personalizado'}
+          </div>
+          {dateRange.start && (
+            <div className="text-xs text-muted-foreground">
+              {dateRange.start.toLocaleDateString()} - {dateRange.end?.toLocaleDateString() || 'Hoy'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ─── ADVANCED FILTERS ─── */}
+      <div className="p-4 rounded-xl bg-muted/30 border border-border mb-4 space-y-3">
+        {/* Quick Period Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Calendar size={12} /> Periodo:
+          </span>
+          {[
+            { id: 'today', label: 'Hoy' },
+            { id: 'yesterday', label: 'Ayer' },
+            { id: 'week', label: 'Esta Semana' },
+            { id: 'month', label: 'Mes Actual' },
+            { id: 'all', label: 'Todo' },
+          ].map(period => (
+            <Button
+              key={period.id}
+              variant={activePeriod === period.id ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => applyPeriod(period.id)}
+              className="h-7 text-xs"
+              data-testid={`period-${period.id}`}
+            >
+              {period.label}
+            </Button>
           ))}
-        </select>
+        </div>
+
+        {/* Date Range Picker + Status + Supplier Filters */}
+        <div className="flex flex-wrap items-end gap-3">
+          {/* Custom Date Range */}
+          <div className="flex items-center gap-2">
+            <div>
+              <label className="text-xs text-muted-foreground">Desde</label>
+              <input
+                type="date"
+                value={formatDateInput(dateRange.start)}
+                onChange={e => handleDateChange('start', e.target.value)}
+                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm"
+                data-testid="date-start"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Hasta</label>
+              <input
+                type="date"
+                value={formatDateInput(dateRange.end)}
+                onChange={e => handleDateChange('end', e.target.value)}
+                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm"
+                data-testid="date-end"
+              />
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="text-xs text-muted-foreground">Estado</label>
+            <select
+              value={poStatusFilter}
+              onChange={e => setPOStatusFilter(e.target.value)}
+              className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm min-w-[140px]"
+              data-testid="po-status-filter"
+            >
+              <option value="">Todos los estados</option>
+              {Object.entries(PO_STATUS).map(([k, v]) => (
+                <option key={k} value={k}>{v.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Supplier Filter */}
+          <div>
+            <label className="text-xs text-muted-foreground flex items-center gap-1">
+              <Building2 size={10} /> Proveedor
+            </label>
+            <select
+              value={supplierFilter}
+              onChange={e => setSupplierFilter(e.target.value)}
+              className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm min-w-[180px]"
+              data-testid="supplier-filter"
+            >
+              <option value="">Todos los proveedores</option>
+              {suppliers.filter(s => s.active !== false).map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Clear Filters */}
+          {(poStatusFilter || supplierFilter || activePeriod === 'custom') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setPOStatusFilter('');
+                setSupplierFilter('');
+                applyPeriod('today');
+              }}
+              className="h-8 text-xs"
+            >
+              <X size={12} className="mr-1" /> Limpiar filtros
+            </Button>
+          )}
+        </div>
+
+        {/* Active Filters Summary */}
+        {(supplierFilter || poStatusFilter) && (
+          <div className="flex items-center gap-2 text-xs">
+            <Filter size={12} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Filtros activos:</span>
+            {supplierFilter && (
+              <Badge variant="outline" className="text-xs">
+                Proveedor: {suppliers.find(s => s.id === supplierFilter)?.name}
+              </Badge>
+            )}
+            {poStatusFilter && (
+              <Badge variant="outline" className="text-xs">
+                Estado: {PO_STATUS[poStatusFilter]?.label}
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       {/* PO list */}
