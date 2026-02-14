@@ -670,14 +670,100 @@ export default function InventoryManager() {
             <TabsContent value="ingredients" className="mt-0">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-oswald text-lg font-bold">Insumos / Ingredientes</h2>
-                <Button 
-                  onClick={() => setIngredientDialog({ open: true, data: { name: '', unit: 'unidad', category: 'general', min_stock: 0, avg_cost: 0 } })}
-                  className="bg-primary text-primary-foreground font-oswald"
-                  data-testid="add-ingredient-btn"
-                >
-                  <Plus size={16} className="mr-1" /> Nuevo Insumo
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowUnitsManager(!showUnitsManager)}
+                    className="font-oswald text-xs"
+                    data-testid="manage-units-btn"
+                  >
+                    <ArrowLeftRight size={14} className="mr-1" /> Gestionar Unidades
+                  </Button>
+                  <Button 
+                    onClick={() => setIngredientDialog({ open: true, data: { name: '', unit: 'unidad', category: 'general', min_stock: 0, avg_cost: 0, purchase_unit: '', purchase_quantity: 1, dispatch_quantity: 1, conversion_factor: 1 } })}
+                    className="bg-primary text-primary-foreground font-oswald"
+                    data-testid="add-ingredient-btn"
+                  >
+                    <Plus size={16} className="mr-1" /> Nuevo Insumo
+                  </Button>
+                </div>
               </div>
+              
+              {/* Units Manager Panel */}
+              {showUnitsManager && (
+                <div className="mb-4 p-4 rounded-xl border border-primary/30 bg-primary/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <ArrowLeftRight size={16} className="text-primary" />
+                      <h3 className="font-oswald font-bold">Unidades de Medida Personalizadas</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => setUnitDialog({ open: true, data: { name: '', abbreviation: '', category: 'custom' } })}
+                        className="bg-primary text-primary-foreground font-oswald text-xs"
+                        data-testid="add-unit-btn"
+                      >
+                        <Plus size={12} className="mr-1" /> Nueva Unidad
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowUnitsManager(false)}>
+                        <X size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Crea unidades personalizadas. Al renombrar una unidad, el cambio se reflejará automáticamente en todos los insumos vinculados.
+                  </p>
+                  
+                  {/* System units info */}
+                  <div className="mb-3 p-2 rounded bg-muted/50 text-xs text-muted-foreground">
+                    <strong>Unidades del sistema:</strong> {UNITS.map(u => u.label).join(', ')}
+                  </div>
+                  
+                  {/* Custom units list */}
+                  {customUnits.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No hay unidades personalizadas. Crea una para empezar.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {customUnits.map(unit => (
+                        <div 
+                          key={unit.id} 
+                          className="flex items-center justify-between p-2 rounded-lg border border-border bg-background"
+                          data-testid={`custom-unit-${unit.id}`}
+                        >
+                          <div>
+                            <span className="font-medium text-sm">{unit.name}</span>
+                            <Badge variant="secondary" className="ml-2 text-[10px]">{unit.abbreviation}</Badge>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6"
+                              onClick={() => setUnitDialog({ open: true, data: { ...unit } })}
+                              data-testid={`edit-unit-${unit.id}`}
+                            >
+                              <Pencil size={12} />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteUnit(unit.id)}
+                              data-testid={`delete-unit-${unit.id}`}
+                            >
+                              <Trash2 size={12} />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Search and filter */}
               <div className="flex gap-2 mb-4">
