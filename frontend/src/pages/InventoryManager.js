@@ -461,6 +461,56 @@ export default function InventoryManager() {
     }
   }, [activeTab]);
 
+  // ─── MULTILEVEL STOCK HANDLERS ───
+  const fetchMultilevelStock = async (warehouseId = '') => {
+    setLoadingMultilevel(true);
+    try {
+      const params = warehouseId ? { warehouse_id: warehouseId } : {};
+      const res = await stockAPI.listMultilevel(params);
+      setMultilevelStock(res.data || []);
+    } catch (e) {
+      toast.error('Error al cargar stock multinivel');
+    }
+    setLoadingMultilevel(false);
+  };
+
+  const handleRegisterDifference = async () => {
+    const d = differenceDialog.data;
+    if (!d?.quantity || d.quantity <= 0) {
+      toast.error('Cantidad requerida');
+      return;
+    }
+    if (!d?.reason?.trim()) {
+      toast.error('Razón de la diferencia requerida');
+      return;
+    }
+    
+    try {
+      const res = await stockAPI.difference({
+        ingredient_id: d.ingredient_id,
+        warehouse_id: d.warehouse_id,
+        quantity: parseFloat(d.quantity),
+        input_unit: d.input_unit,
+        difference_type: d.difference_type,
+        reason: d.reason,
+        observations: d.observations || ''
+      });
+      
+      toast.success(`Diferencia registrada: ${formatMoney(res.data.monetary_value)} ${d.difference_type === 'faltante' ? 'perdido' : 'ganado'}`);
+      setDifferenceDialog({ open: false, data: null });
+      fetchMultilevelStock();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error al registrar diferencia');
+    }
+  };
+
+  // Load multilevel stock when stock tab is active
+  useEffect(() => {
+    if (activeTab === 'stock') {
+      fetchMultilevelStock();
+    }
+  }, [activeTab]);
+
   // ─── SUPPLIER HANDLERS ───
   const handleSaveSupplier = async () => {
     const d = supplierDialog.data;
