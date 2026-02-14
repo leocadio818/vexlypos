@@ -213,7 +213,10 @@ export default function IngredientsTab({
             <ArrowLeftRight size={14} className="mr-1" /> Gestionar Unidades
           </Button>
           <Button 
-            onClick={() => setIngredientDialog({ open: true, data: { name: '', unit: 'unidad', category: 'general', min_stock: 0, avg_cost: 0, purchase_unit: '', purchase_quantity: 1, dispatch_quantity: 1, conversion_factor: 1 } })}
+            onClick={() => {
+              setValidationAttempted(false);
+              setIngredientDialog({ open: true, data: { name: '', unit: 'unidad', category: 'general', min_stock: 0, avg_cost: 0, purchase_unit: '', purchase_quantity: 1, dispatch_quantity: 1, conversion_factor: 1 } });
+            }}
             className="bg-primary text-primary-foreground font-oswald"
             data-testid="add-ingredient-btn"
           >
