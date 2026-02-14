@@ -91,12 +91,8 @@ export default function InventoryManager() {
   const [sendingAlert, setSendingAlert] = useState(false);
   const [schedulerStatus, setSchedulerStatus] = useState({ active: false, next_run: null });
   
-  // Search/filter states (ingredients states moved to IngredientsTab)
-  const [poStatusFilter, setPOStatusFilter] = useState('');
-  
   // Dialog states (ingredientDialog, unitDialog moved to IngredientsTab)
-  const [poDialog, setPODialog] = useState({ open: false, data: null });
-  const [receiveDialog, setReceiveDialog] = useState({ open: false, po: null });
+  // (poDialog, receiveDialog moved to PurchasesTab)
   const [transferDialog, setTransferDialog] = useState({ open: false, data: null });
   const [adjustDialog, setAdjustDialog] = useState({ open: false, data: null });
   
