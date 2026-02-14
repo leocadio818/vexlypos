@@ -2804,6 +2804,140 @@ async def register_waste(input: StockMovementInput, user=Depends(get_current_use
     })
     return {"ok": True}
 
+@api.post("/stock/difference")
+async def register_difference(input: StockDifferenceInput, request: Request):
+    """
+    Register a stock difference (faltante or sobrante) found during physical count.
+    Converts the input quantity to dispatch units based on the input_unit.
+    """
+    # Get user from token
+    user_id = ""
+    user_name = "Sistema"
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        try:
+            token = auth_header.split(" ")[1]
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            user_id = payload.get("user_id", "")
+            user_name = payload.get("name", "Sistema")
+        except: pass
+    
+    # Get ingredient for conversion
+    ingredient = await db.ingredients.find_one({"id": input.ingredient_id}, {"_id": 0})
+    if not ingredient:
+        raise HTTPException(404, "Ingrediente no encontrado")
+    
+    # Get conversion info
+    purchase_unit = ingredient.get("purchase_unit", ingredient.get("unit", "unidad"))
+    dispatch_unit = ingredient.get("unit", "unidad")
+    conversion_factor = ingredient.get("conversion_factor", 1)
+    dispatch_unit_cost = ingredient.get("dispatch_unit_cost", ingredient.get("avg_cost", 0) / conversion_factor if conversion_factor > 0 else ingredient.get("avg_cost", 0))
+    
+    # Convert input quantity to dispatch units
+    if input.input_unit == purchase_unit or input.input_unit == "purchase":
+        # User entered in purchase units, convert to dispatch
+        quantity_dispatch = input.quantity * conversion_factor
+    else:
+        # User entered in dispatch units already
+        quantity_dispatch = input.quantity
+    
+    # Calculate monetary value
+    monetary_value = abs(quantity_dispatch) * dispatch_unit_cost
+    
+    # Determine stock change direction
+    if input.difference_type == "faltante":
+        stock_change = -abs(quantity_dispatch)
+    else:  # sobrante
+        stock_change = abs(quantity_dispatch)
+    
+    # Update stock
+    await db.stock.update_one(
+        {"ingredient_id": input.ingredient_id, "warehouse_id": input.warehouse_id},
+        {"$inc": {"current_stock": stock_change}, "$set": {"last_updated": now_iso()}}
+    )
+    
+    # Create difference log for audit
+    difference_id = gen_id()
+    difference_log = {
+        "id": difference_id,
+        "ingredient_id": input.ingredient_id,
+        "ingredient_name": ingredient.get("name", "?"),
+        "warehouse_id": input.warehouse_id,
+        "difference_type": input.difference_type,
+        "input_quantity": input.quantity,
+        "input_unit": input.input_unit,
+        "quantity_dispatch_units": round(abs(quantity_dispatch), 4),
+        "dispatch_unit": dispatch_unit,
+        "monetary_value": round(monetary_value, 2),
+        "reason": input.reason,
+        "observations": input.observations,
+        "authorized_by_id": user_id,
+        "authorized_by_name": user_name,
+        "timestamp": now_iso()
+    }
+    await db.stock_difference_logs.insert_one(difference_log)
+    
+    # Also log as stock movement
+    await db.stock_movements.insert_one({
+        "id": gen_id(),
+        "ingredient_id": input.ingredient_id,
+        "warehouse_id": input.warehouse_id,
+        "quantity": stock_change,
+        "movement_type": "difference",
+        "reference_id": difference_id,
+        "notes": f"{input.difference_type.capitalize()}: {input.reason}. {input.observations}",
+        "user_id": user_id,
+        "user_name": user_name,
+        "created_at": now_iso()
+    })
+    
+    return {
+        "ok": True,
+        "difference_id": difference_id,
+        "quantity_adjusted": round(stock_change, 4),
+        "monetary_value": round(monetary_value, 2),
+        "conversion_applied": input.input_unit == purchase_unit or input.input_unit == "purchase"
+    }
+
+@api.get("/stock/differences")
+async def list_stock_differences(
+    ingredient_id: Optional[str] = Query(None),
+    warehouse_id: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    limit: int = Query(500)
+):
+    """Get stock difference logs with optional filters"""
+    query = {}
+    if ingredient_id:
+        query["ingredient_id"] = ingredient_id
+    if warehouse_id:
+        query["warehouse_id"] = warehouse_id
+    if start_date or end_date:
+        date_query = {}
+        if start_date:
+            date_query["$gte"] = start_date
+        if end_date:
+            date_query["$lte"] = end_date + "T23:59:59"
+        if date_query:
+            query["timestamp"] = date_query
+    
+    logs = await db.stock_difference_logs.find(query, {"_id": 0}).sort("timestamp", -1).to_list(limit)
+    
+    # Calculate totals
+    total_faltante = sum(l.get("monetary_value", 0) for l in logs if l.get("difference_type") == "faltante")
+    total_sobrante = sum(l.get("monetary_value", 0) for l in logs if l.get("difference_type") == "sobrante")
+    
+    return {
+        "logs": logs,
+        "stats": {
+            "total_records": len(logs),
+            "total_faltante_value": round(total_faltante, 2),
+            "total_sobrante_value": round(total_sobrante, 2),
+            "net_difference": round(total_sobrante - total_faltante, 2)
+        }
+    }
+
 # ─── STOCK MOVEMENTS ───
 @api.get("/stock-movements")
 async def list_stock_movements(
