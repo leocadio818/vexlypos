@@ -156,18 +156,48 @@ export default function RecipesTab({
         {recipes.map(rec => {
           const cost = calculateRecipeCost(rec);
           const product = products.find(p => p.id === rec.product_id);
+          const price = product?.price_a || product?.price || 0;
+          const margin = price > 0 ? ((price - cost) / price) * 100 : 0;
+          
+          // Determine margin status
+          let marginStatus = 'ok';
+          let marginBadgeClass = 'bg-green-500/20 text-green-400 border-green-500/30';
+          if (margin < MARGIN_CRITICAL) {
+            marginStatus = 'critical';
+            marginBadgeClass = 'bg-red-500/20 text-red-400 border-red-500/30';
+          } else if (margin < MARGIN_WARNING) {
+            marginStatus = 'warning';
+            marginBadgeClass = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+          }
+          
           return (
             <div 
               key={rec.id} 
-              className="p-4 rounded-xl border border-border bg-card"
+              className={`p-4 rounded-xl border bg-card ${marginStatus === 'critical' ? 'border-red-500/50' : marginStatus === 'warning' ? 'border-amber-500/50' : 'border-border'}`}
               data-testid={`recipe-${rec.id}`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-oswald font-bold text-lg">{rec.product_name}</h3>
-                  <div className="text-xs text-muted-foreground">
-                    Rinde: {rec.yield_quantity} porción(es) • Costo: {formatMoney(cost)}
-                    {product && <span> • PVP: {formatMoney(product.price_a || product.price)}</span>}
+                  <h3 className="font-oswald font-bold text-lg flex items-center gap-2">
+                    {rec.product_name}
+                    <Badge className={`text-xs ${marginBadgeClass}`}>
+                      {margin.toFixed(1)}% margen
+                    </Badge>
+                  </h3>
+                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <span>Rinde: {rec.yield_quantity} porción(es)</span>
+                    <span>•</span>
+                    <span>Costo: {formatMoney(cost)}</span>
+                    {product && (
+                      <>
+                        <span>•</span>
+                        <span>PVP: {formatMoney(price)}</span>
+                        <span>•</span>
+                        <span className={margin < MARGIN_CRITICAL ? 'text-red-400' : margin < MARGIN_WARNING ? 'text-amber-400' : 'text-green-400'}>
+                          Ganancia: {formatMoney(price - cost)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -175,7 +205,7 @@ export default function RecipesTab({
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8"
-                    onClick={() => setRecipeDialog({ open: true, data: { ...rec } })}
+                    onClick={() => openRecipeDialog({ ...rec })}
                     data-testid={`edit-recipe-${rec.id}`}
                   >
                     <Pencil size={14} />
