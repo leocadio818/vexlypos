@@ -3151,6 +3151,28 @@ export default function InventoryManager() {
               )}
             </div>
 
+            {/* Default Supplier */}
+            <div className="p-3 rounded-lg bg-card border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <Truck size={14} className="text-cyan-500" />
+                <span className="font-medium text-sm">Proveedor Predeterminado</span>
+              </div>
+              <select
+                value={ingredientDialog.data?.default_supplier_id || ''}
+                onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, default_supplier_id: e.target.value || null } }))}
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                data-testid="ingredient-default-supplier"
+              >
+                <option value="">Sin proveedor asignado</option>
+                {suppliers.filter(s => s.active !== false).map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Usado por el Asistente de Compras para generar órdenes automáticas
+              </p>
+            </div>
+
             <Button onClick={handleSaveIngredient} className="w-full bg-primary text-primary-foreground font-oswald">
               <Save size={16} className="mr-1" /> Guardar
             </Button>
