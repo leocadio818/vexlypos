@@ -42,6 +42,7 @@ api = APIRouter(prefix="/api")
 # Include routers
 api.include_router(auth_router)
 api.include_router(purchasing_router)
+api.include_router(inventory_router)
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()
