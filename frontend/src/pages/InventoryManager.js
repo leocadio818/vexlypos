@@ -831,6 +831,9 @@ export default function InventoryManager() {
             <TabsTrigger value="purchases" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs">
               <FileText size={14} className="mr-1" /> Compras
             </TabsTrigger>
+            <TabsTrigger value="valuation" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-oswald text-xs">
+              <DollarSign size={14} className="mr-1" /> Valorización
+            </TabsTrigger>
             <TabsTrigger value="audit" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white font-oswald text-xs">
               <History size={14} className="mr-1" /> Auditoría
             </TabsTrigger>
