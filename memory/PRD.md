@@ -325,6 +325,13 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **FastAPI**: Framework Python
 - **MongoDB**: Base de datos
 - **Endpoints**: `/api/*` con autenticación JWT
+- **Arquitectura Modular (NUEVO - Febrero 2026)**:
+  - `/routers/auth.py`: Autenticación, usuarios, roles
+  - `/routers/inventory.py`: Ingredientes, stock, almacenes, unidades
+  - `/routers/recipes.py`: Recetas por producto
+  - `/routers/purchasing.py`: Proveedores, OCs, asistente de compras
+  - `/models/schemas.py`: Modelos Pydantic centralizados
+  - `/models/database.py`: Conexión MongoDB centralizada
 
 ### Frontend
 - **React**: Framework JavaScript
@@ -336,7 +343,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 ```
 /app
 ├── backend/
-│   └── server.py              # API con endpoints de inventario
+│   ├── server.py              # API principal (~4200 líneas)
+│   ├── routers/
+│   │   ├── auth.py            # Autenticación y usuarios
+│   │   ├── inventory.py       # Inventario completo (~1400 líneas)
+│   │   ├── recipes.py         # Recetas (~70 líneas)
+│   │   ├── purchasing.py      # Compras (~600 líneas)
+│   │   └── reports.py         # Reportes (pendiente)
+│   ├── models/
+│   │   ├── database.py        # Conexión MongoDB
+│   │   └── schemas.py         # Modelos Pydantic
+│   └── utils/
+│       └── helpers.py         # Funciones utilitarias
 ├── frontend/
 │   ├── src/
 │   │   ├── context/
@@ -348,7 +366,7 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 │   │   ├── lib/
 │   │   │   └── api.js           # APIs incluyendo inventario
 │   │   ├── pages/
-│   │   │   ├── InventoryManager.js  # NUEVO: Módulo de inventario maestro
+│   │   │   ├── InventoryManager.js  # Módulo de inventario maestro
 │   │   │   ├── Login.js         # Login con glassmorphism
 │   │   │   ├── TableMap.js      # Mapa de mesas
 │   │   │   ├── OrderScreen.js   # Pantalla de pedidos
