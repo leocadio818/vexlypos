@@ -426,7 +426,7 @@ async def generate_po_from_suggestions(input: GeneratePOFromSuggestionsInput, us
     if not supplier:
         raise HTTPException(404, "Proveedor no encontrado")
     
-    suggestions_res = await get_purchase_suggestions(supplier_id=input.supplier_id, include_ok_stock=True)
+    suggestions_res = await _get_purchase_suggestions_internal(supplier_id=input.supplier_id, include_ok_stock=True)
     suggestions = suggestions_res["suggestions"]
     
     selected = [s for s in suggestions if s["ingredient_id"] in input.ingredient_ids]
