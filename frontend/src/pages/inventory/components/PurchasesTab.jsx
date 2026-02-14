@@ -69,6 +69,9 @@ export default function PurchasesTab({
   const [poDialog, setPODialog] = useState({ open: false, data: null });
   const [receiveDialog, setReceiveDialog] = useState({ open: false, po: null });
   
+  // View mode: 'list' or 'chart'
+  const [viewMode, setViewMode] = useState('list');
+  
   // Date filters - default to today
   const [dateRange, setDateRange] = useState({
     start: getToday(),
@@ -78,6 +81,12 @@ export default function PurchasesTab({
   
   // Supplier filter
   const [supplierFilter, setSupplierFilter] = useState('');
+
+  // Chart colors
+  const CHART_COLORS = [
+    '#06b6d4', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', 
+    '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16'
+  ];
 
   // Apply quick period filter
   const applyPeriod = (period) => {
