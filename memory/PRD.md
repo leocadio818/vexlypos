@@ -60,6 +60,23 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **Órdenes de Compra**: Ciclo completo (Borrador → Pendiente → Parcial → Recibida)
 - **Conciliación de Precios**: Al recibir OC, comparar cantidad pedida vs recibida y actualizar costo promedio automáticamente
 - **Historial de Movimientos**: Registro de todos los movimientos de stock (compras, transferencias, ajustes, mermas)
+- **Lógica de Conversión Universal (NUEVO - Febrero 2026)**:
+  - Insumo único en el sistema con tres niveles de medida obligatorios:
+    - Unidad de Compra: presentación del proveedor (Caja, Saco, Paca)
+    - Unidad de Despacho (Base): medida mínima de consumo (Onza, Gramo, Unidad)
+    - Factor de Conversión: multiplicador que conecta ambas (1 Caja = 283.2 Onzas)
+  - Relación Multiplexada: un insumo puede vincularse a múltiples productos de venta con diferentes consumos
+    - Producto A (Botella): descuenta X unidades de despacho
+    - Producto B (Trago): descuenta Y unidades de despacho
+    - Producto C (Coctel): descuenta Z unidades de despacho
+  - Cálculo de Costo Dinámico: (Costo Compra ÷ Factor) × Cantidad en Receta × (1 + Merma%)
+  - Botón de calculadora verde en cada ingrediente para ver análisis completo
+  - Diálogo "Análisis de Conversión Universal" con:
+    - Visualización del flujo de conversión (Compra → Factor → Despacho)
+    - Lista de "Productos Vinculados" con costos calculados
+    - "Impacto Total" sumando costos de todas las recetas
+    - Fórmula de costo explicada con ejemplo
+  - Endpoint `/api/ingredients/{id}/conversion-analysis` para consultas
 - **Gestión de Unidades de Medida (NUEVO - Febrero 2026)**:
   - Panel "Gestionar Unidades" en pestaña Insumos
   - CRUD de unidades personalizadas (nombre, abreviatura, categoría)
