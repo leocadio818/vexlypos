@@ -381,12 +381,13 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 │   │   ├── lib/
 │   │   │   └── api.js           # APIs incluyendo inventario
 │   │   ├── pages/
-│   │   │   ├── InventoryManager.js  # Módulo de inventario maestro (~3191 líneas)
+│   │   │   ├── InventoryManager.js  # Módulo de inventario maestro (~2823 líneas)
 │   │   │   ├── inventory/
 │   │   │   │   ├── constants.js     # Constantes compartidas
 │   │   │   │   └── components/
-│   │   │   │       ├── AssistantTab.jsx   # Tab Asistente (~614 líneas)
-│   │   │   │       └── IngredientsTab.jsx # Tab Insumos (~736 líneas)
+│   │   │   │       ├── AssistantTab.jsx    # Tab Asistente (~614 líneas)
+│   │   │   │       ├── IngredientsTab.jsx  # Tab Insumos (~737 líneas)
+│   │   │   │       └── ProductionTab.jsx   # Tab Producción (~401 líneas)
 │   │   │   ├── Login.js         # Login con glassmorphism
 │   │   │   ├── TableMap.js      # Mapa de mesas
 │   │   │   ├── OrderScreen.js   # Pantalla de pedidos
