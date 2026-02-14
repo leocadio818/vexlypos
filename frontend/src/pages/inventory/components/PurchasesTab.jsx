@@ -170,6 +170,58 @@ export default function PurchasesTab({
     return { total, bySupplier, byStatus, count: filteredPOs.length };
   }, [filteredPOs]);
 
+  // Chart data - spending over time by supplier
+  const chartData = useMemo(() => {
+    // Group by date
+    const byDate = {};
+    const supplierSet = new Set();
+    
+    filteredPOs.forEach(po => {
+      const date = new Date(po.created_at).toLocaleDateString('es-DO', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      const supplierName = po.supplier_name || 'Sin proveedor';
+      const amount = po.actual_total || po.total || 0;
+      
+      supplierSet.add(supplierName);
+      
+      if (!byDate[date]) {
+        byDate[date] = { date, total: 0 };
+      }
+      byDate[date][supplierName] = (byDate[date][supplierName] || 0) + amount;
+      byDate[date].total += amount;
+    });
+    
+    const timelineData = Object.values(byDate).sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateA - dateB;
+    });
+    
+    // Pie chart data - by supplier
+    const pieData = Object.entries(summaryStats.bySupplier).map(([id, data], idx) => ({
+      name: data.name,
+      value: data.total,
+      count: data.count,
+      color: CHART_COLORS[idx % CHART_COLORS.length]
+    }));
+    
+    // Bar chart data - by status
+    const statusData = Object.entries(summaryStats.byStatus).map(([status, count]) => ({
+      name: PO_STATUS[status]?.label || status,
+      count,
+      color: PO_STATUS[status]?.color?.replace('bg-', '') || 'gray-500'
+    }));
+    
+    return {
+      timeline: timelineData,
+      suppliers: Array.from(supplierSet),
+      pie: pieData,
+      status: statusData
+    };
+  }, [filteredPOs, summaryStats, CHART_COLORS]);
+
   // Export to Excel
   const handleExport = () => {
     if (filteredPOs.length === 0) {
