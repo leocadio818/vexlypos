@@ -935,11 +935,22 @@ export default function IngredientsTab({
               )}
             </div>
 
-            {/* Default Supplier */}
-            <div className="p-3 rounded-lg bg-card border border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <Truck size={14} className="text-cyan-500" />
-                <span className="font-medium text-sm">Proveedor Predeterminado</span>
+            {/* Default Supplier - OBLIGATORIO */}
+            <div className={`p-3 rounded-lg bg-card border ${
+              validationAttempted && currentValidation.errors.default_supplier_id 
+                ? 'border-red-500' 
+                : 'border-border'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Truck size={14} className={validationAttempted && currentValidation.errors.default_supplier_id ? 'text-red-500' : 'text-cyan-500'} />
+                  <span className={`font-medium text-sm ${validationAttempted && currentValidation.errors.default_supplier_id ? 'text-red-500' : ''}`}>
+                    Proveedor Predeterminado *
+                  </span>
+                </div>
+                {validationAttempted && currentValidation.errors.default_supplier_id && (
+                  <span className="text-[10px] text-red-500">Obligatorio</span>
+                )}
               </div>
               <select
                 value={ingredientDialog.data?.default_supplier_id || ''}
