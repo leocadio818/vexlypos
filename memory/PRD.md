@@ -302,6 +302,7 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 ## Tareas Pendientes
 
 ### P1 - Alta Prioridad
+- [x] **Sistema de Control de Costos y Asistente de Compras** (Febrero 2026) ✅
 - [ ] **Crear paquete ZIP descargable** del servidor local
 - [ ] **Integración de impresora ESC/POS** física
 
