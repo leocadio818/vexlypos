@@ -2275,21 +2275,99 @@ async def get_ingredient(ingredient_id: str):
 
 @api.post("/ingredients")
 async def create_ingredient(input: IngredientInput):
+    # Calculate dispatch unit cost
+    dispatch_unit_cost = input.avg_cost / input.conversion_factor if input.conversion_factor > 0 else input.avg_cost
+    
     doc = {
         "id": gen_id(), "name": input.name, "unit": input.unit,
         "category": input.category, "min_stock": input.min_stock,
         "avg_cost": input.avg_cost, "active": True, 
         "is_subrecipe": input.is_subrecipe, "recipe_id": input.recipe_id,
+        # Conversion fields
+        "purchase_unit": input.purchase_unit or input.unit,
+        "purchase_quantity": input.purchase_quantity,
+        "dispatch_quantity": input.dispatch_quantity,
+        "conversion_factor": input.conversion_factor,
+        "dispatch_unit_cost": round(dispatch_unit_cost, 4),
         "created_at": now_iso()
     }
     await db.ingredients.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @api.put("/ingredients/{ingredient_id}")
-async def update_ingredient(ingredient_id: str, input: dict):
+async def update_ingredient(ingredient_id: str, input: dict, request: Request):
     if "_id" in input: del input["_id"]
+    
+    # Get old values for audit
+    old_ingredient = await db.ingredients.find_one({"id": ingredient_id}, {"_id": 0})
+    if not old_ingredient:
+        raise HTTPException(404, "Ingrediente no encontrado")
+    
+    # Get user from token for audit
+    user_id = ""
+    user_name = "Sistema"
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        try:
+            token = auth_header.split(" ")[1]
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            user_id = payload.get("user_id", "")
+            user_name = payload.get("name", "Sistema")
+        except: pass
+    
+    # Track changes for audit
+    audit_fields = ["unit", "purchase_unit", "conversion_factor", "purchase_quantity", "dispatch_quantity", "avg_cost"]
+    audit_logs = []
+    
+    for field in audit_fields:
+        if field in input and str(input.get(field)) != str(old_ingredient.get(field, "")):
+            audit_logs.append({
+                "id": gen_id(),
+                "ingredient_id": ingredient_id,
+                "ingredient_name": old_ingredient.get("name", ""),
+                "field_changed": field,
+                "old_value": str(old_ingredient.get(field, "")),
+                "new_value": str(input.get(field, "")),
+                "changed_by_id": user_id,
+                "changed_by_name": user_name,
+                "timestamp": now_iso()
+            })
+    
+    # Recalculate dispatch_unit_cost if conversion factor or avg_cost changed
+    if "conversion_factor" in input or "avg_cost" in input:
+        avg_cost = input.get("avg_cost", old_ingredient.get("avg_cost", 0))
+        conversion_factor = input.get("conversion_factor", old_ingredient.get("conversion_factor", 1))
+        if conversion_factor > 0:
+            input["dispatch_unit_cost"] = round(avg_cost / conversion_factor, 4)
+    
     await db.ingredients.update_one({"id": ingredient_id}, {"$set": input})
-    return {"ok": True}
+    
+    # Save audit logs
+    if audit_logs:
+        await db.ingredient_audit_logs.insert_many(audit_logs)
+    
+    return {"ok": True, "audit_logs_created": len(audit_logs)}
+
+@api.get("/ingredients/{ingredient_id}/affected-recipes")
+async def get_affected_recipes(ingredient_id: str):
+    """Get count of recipes that use this ingredient"""
+    recipes = await db.recipes.find(
+        {"ingredients.ingredient_id": ingredient_id}, 
+        {"_id": 0, "id": 1, "product_name": 1}
+    ).to_list(500)
+    return {
+        "count": len(recipes),
+        "recipes": recipes
+    }
+
+@api.get("/ingredients/{ingredient_id}/audit-logs")
+async def get_ingredient_audit_logs(ingredient_id: str, limit: int = Query(50)):
+    """Get audit history for an ingredient"""
+    logs = await db.ingredient_audit_logs.find(
+        {"ingredient_id": ingredient_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(limit)
+    return logs
 
 @api.delete("/ingredients/{ingredient_id}")
 async def delete_ingredient(ingredient_id: str):
