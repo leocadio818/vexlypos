@@ -361,6 +361,85 @@ export default function InventoryManager() {
     }
   }, [activeTab]);
 
+  // ─── VALUATION HANDLERS ───
+  const fetchValuationData = async (filters = valuationFilters) => {
+    setLoadingValuation(true);
+    try {
+      const params = {};
+      if (filters.warehouse_id) params.warehouse_id = filters.warehouse_id;
+      if (filters.category) params.category = filters.category;
+      
+      const res = await reportsAPI.inventoryValuation(params);
+      setValuationData(res.data);
+    } catch (e) {
+      toast.error('Error al cargar valorización de inventario');
+    }
+    setLoadingValuation(false);
+  };
+
+  const exportValuationToExcel = () => {
+    if (!valuationData || valuationData.items.length === 0) {
+      toast.error('No hay datos para exportar');
+      return;
+    }
+    
+    import('xlsx').then(XLSX => {
+      // Main data sheet
+      const exportData = valuationData.items.map(item => ({
+        'Insumo': item.name,
+        'Categoría': getCategoryLabel(item.category),
+        'Almacén': item.warehouse_name,
+        'Stock Actual': item.current_stock,
+        'Unidad': item.unit,
+        'Costo Unitario': item.unit_cost,
+        'Valor en Stock': item.stock_value,
+        'Movimiento (30d)': item.recent_movement,
+        'Stock Muerto': item.is_dead_stock ? 'Sí' : 'No',
+        'Stock Bajo': item.is_low_stock ? 'Sí' : 'No',
+      }));
+      
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Valorización');
+      
+      // Summary sheet
+      const summaryData = [
+        { 'Métrica': 'Valor Total del Inventario', 'Valor': formatMoney(valuationData.total_value) },
+        { 'Métrica': 'Total de Items', 'Valor': valuationData.total_items },
+        { 'Métrica': 'Ingredientes Únicos', 'Valor': valuationData.total_ingredients },
+        { 'Métrica': 'Valor Stock Muerto', 'Valor': formatMoney(valuationData.dead_stock?.total_value || 0) },
+        { 'Métrica': 'Items Stock Muerto', 'Valor': valuationData.dead_stock?.count || 0 },
+      ];
+      const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumen');
+      
+      // By category sheet
+      const categoryData = Object.entries(valuationData.by_category || {}).map(([cat, data]) => ({
+        'Categoría': getCategoryLabel(cat),
+        'Valor': formatMoney(data.value),
+        'Items': data.items,
+        'Unidades': data.stock_units,
+      }));
+      const wsCategory = XLSX.utils.json_to_sheet(categoryData);
+      XLSX.utils.book_append_sheet(wb, wsCategory, 'Por Categoría');
+      
+      XLSX.writeFile(wb, `valorizacion_inventario_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Valorización exportada a Excel');
+    });
+  };
+
+  const getCategoryLabel = (category) => {
+    const cat = INGREDIENT_CATEGORIES.find(c => c.value === category);
+    return cat ? cat.label : category;
+  };
+
+  // Load valuation when tab changes
+  useEffect(() => {
+    if (activeTab === 'valuation') {
+      fetchValuationData();
+    }
+  }, [activeTab]);
+
   // ─── SUPPLIER HANDLERS ───
   const handleSaveSupplier = async () => {
     const d = supplierDialog.data;
