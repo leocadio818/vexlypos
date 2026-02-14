@@ -368,11 +368,20 @@ class StockMovementInput(BaseModel):
     ingredient_id: str
     warehouse_id: str
     quantity: float  # positive for in, negative for out
-    movement_type: str  # purchase, sale, transfer_in, transfer_out, waste, adjustment, explosion
+    movement_type: str  # purchase, sale, transfer_in, transfer_out, difference, adjustment, explosion
     reference_id: str = ""  # PO id, order id, etc
     parent_product_id: str = ""  # For traceability - the top-level product that triggered this
     parent_recipe_id: str = ""  # The recipe that caused this explosion
     notes: str = ""
+
+class StockDifferenceInput(BaseModel):
+    ingredient_id: str
+    warehouse_id: str
+    quantity: float  # Quantity of difference (in any unit)
+    input_unit: str  # The unit the user entered (purchase or dispatch)
+    difference_type: str = "faltante"  # faltante, sobrante
+    reason: str = ""  # Reason for the difference
+    observations: str = ""  # Additional notes
 
 class StockDeductInput(BaseModel):
     product_id: str
