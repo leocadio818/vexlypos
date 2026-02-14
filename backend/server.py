@@ -3378,6 +3378,151 @@ async def inventory_valuation_report(
         "items": items
     }
 
+
+@api.get("/reports/valuation-trends")
+async def valuation_trends_report(
+    period: str = Query("30d", description="Period: 7d, 30d, year"),
+    year: int = Query(None, description="Fiscal year for 'year' period")
+):
+    """
+    Calculate inventory valuation trends over time.
+    Returns daily valuation snapshots and category distribution.
+    """
+    from collections import defaultdict
+    
+    # Determine date range
+    now = datetime.now(timezone.utc)
+    if period == "7d":
+        start_date = now - timedelta(days=7)
+    elif period == "30d":
+        start_date = now - timedelta(days=30)
+    elif period == "year":
+        fiscal_year = year or now.year
+        start_date = datetime(fiscal_year, 1, 1, tzinfo=timezone.utc)
+    else:
+        start_date = now - timedelta(days=30)
+    
+    start_iso = start_date.isoformat()
+    
+    # Get all ingredients with their costs
+    ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
+    ing_map = {i["id"]: i for i in ingredients}
+    
+    # Get current stock for baseline
+    current_stock = await db.stock.find({}, {"_id": 0}).to_list(1000)
+    stock_map = {}  # {ingredient_id: current_stock}
+    for s in current_stock:
+        ing_id = s.get("ingredient_id", "")
+        stock_map[ing_id] = stock_map.get(ing_id, 0) + s.get("current_stock", 0)
+    
+    # Get all stock movements in the period
+    movements = await db.stock_movements.find(
+        {"timestamp": {"$gte": start_iso}},
+        {"_id": 0}
+    ).sort("timestamp", 1).to_list(10000)
+    
+    # Group movements by date
+    movements_by_date = defaultdict(list)
+    for mov in movements:
+        ts = mov.get("timestamp", "")[:10]  # Extract YYYY-MM-DD
+        movements_by_date[ts].append(mov)
+    
+    # Calculate daily valuations by working backwards from current stock
+    daily_valuations = []
+    
+    # Generate list of dates
+    dates = []
+    current = now
+    while current >= start_date:
+        dates.append(current.strftime("%Y-%m-%d"))
+        current -= timedelta(days=1)
+    dates.reverse()
+    
+    # Start with current values and work backwards
+    running_stock = dict(stock_map)  # Copy current stock
+    
+    # Calculate current total value
+    def calc_total_value(stock_snapshot):
+        total = 0
+        by_cat = defaultdict(float)
+        for ing_id, qty in stock_snapshot.items():
+            if ing_id in ing_map:
+                ing = ing_map[ing_id]
+                cost = ing.get("dispatch_unit_cost", ing.get("avg_cost", 0))
+                value = qty * cost
+                total += value
+                cat = ing.get("category", "general")
+                by_cat[cat] += value
+        return total, dict(by_cat)
+    
+    # Build daily snapshots from most recent to oldest
+    snapshots = {}
+    for date in reversed(dates):
+        total, by_cat = calc_total_value(running_stock)
+        snapshots[date] = {
+            "date": date,
+            "total_value": round(total, 2),
+            "by_category": {k: round(v, 2) for k, v in by_cat.items()}
+        }
+        
+        # Reverse movements for this day (add back what was removed, remove what was added)
+        for mov in movements_by_date.get(date, []):
+            ing_id = mov.get("ingredient_id", "")
+            qty = mov.get("quantity", 0)
+            # Reverse the movement to get previous day's stock
+            if ing_id in running_stock:
+                running_stock[ing_id] = max(0, running_stock[ing_id] - qty)
+    
+    # Convert to list in chronological order
+    for date in dates:
+        if date in snapshots:
+            daily_valuations.append(snapshots[date])
+    
+    # Calculate category distribution for pie chart (current)
+    current_total, current_by_cat = calc_total_value(stock_map)
+    category_distribution = []
+    for cat, value in sorted(current_by_cat.items(), key=lambda x: -x[1]):
+        cat_label = {
+            'general': 'General', 'carnes': 'Carnes', 'lacteos': 'Lácteos',
+            'vegetales': 'Vegetales', 'frutas': 'Frutas', 'bebidas': 'Bebidas',
+            'licores': 'Licores', 'condimentos': 'Condimentos', 'empaque': 'Empaque',
+            'limpieza': 'Limpieza'
+        }.get(cat, cat.capitalize())
+        pct = round((value / current_total * 100) if current_total > 0 else 0, 1)
+        category_distribution.append({
+            "category": cat,
+            "label": cat_label,
+            "value": round(value, 2),
+            "percentage": pct
+        })
+    
+    # Calculate trend statistics
+    if len(daily_valuations) >= 2:
+        first_value = daily_valuations[0]["total_value"]
+        last_value = daily_valuations[-1]["total_value"]
+        change = last_value - first_value
+        change_pct = round((change / first_value * 100) if first_value > 0 else 0, 1)
+        trend = "up" if change > 0 else "down" if change < 0 else "stable"
+    else:
+        change = 0
+        change_pct = 0
+        trend = "stable"
+    
+    return {
+        "period": period,
+        "start_date": start_date.strftime("%Y-%m-%d"),
+        "end_date": now.strftime("%Y-%m-%d"),
+        "current_value": round(current_total, 2),
+        "trend": {
+            "direction": trend,
+            "change": round(change, 2),
+            "change_pct": change_pct
+        },
+        "daily_valuations": daily_valuations,
+        "category_distribution": category_distribution
+    }
+
+
 @api.get("/reports/profit")
 async def profit_report(date: Optional[str] = Query(None)):
     if not date:
