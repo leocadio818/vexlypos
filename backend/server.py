@@ -17,6 +17,10 @@ from datetime import datetime, timezone, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
+# Import routers
+from routers.auth import router as auth_router, get_current_user, get_permissions, hash_pin, can_access_table_orders, get_table_owner_name, DEFAULT_PERMISSIONS, ALL_PERMISSIONS
+from routers.purchasing import router as purchasing_router
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -29,6 +33,10 @@ SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 
 app = FastAPI()
 api = APIRouter(prefix="/api")
+
+# Include routers
+api.include_router(auth_router)
+api.include_router(purchasing_router)
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()
