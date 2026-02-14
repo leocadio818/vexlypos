@@ -276,6 +276,86 @@ export default function InventoryManager() {
     }
   };
 
+  // ─── AUDIT HANDLERS ───
+  const fetchAuditLogs = async (filters = auditFilters) => {
+    setLoadingAudit(true);
+    try {
+      const params = {};
+      if (filters.ingredient_name) params.ingredient_name = filters.ingredient_name;
+      if (filters.start_date) params.start_date = filters.start_date;
+      if (filters.end_date) params.end_date = filters.end_date;
+      if (filters.field_changed) params.field_changed = filters.field_changed;
+      
+      const res = await ingredientsAPI.getAllAuditLogs(params);
+      setAllAuditLogs(res.data.logs || []);
+      setAuditStats(res.data.stats || { total_changes: 0, unique_ingredients: 0, changes_by_field: {} });
+    } catch (e) {
+      toast.error('Error al cargar historial de auditoría');
+    }
+    setLoadingAudit(false);
+  };
+
+  const exportAuditToExcel = () => {
+    if (allAuditLogs.length === 0) {
+      toast.error('No hay datos para exportar');
+      return;
+    }
+    
+    // Dynamic import xlsx
+    import('xlsx').then(XLSX => {
+      const exportData = allAuditLogs.map(log => ({
+        'Fecha y Hora': new Date(log.timestamp).toLocaleString('es-DO'),
+        'Usuario': log.changed_by_name || 'Sistema',
+        'ID Usuario': log.changed_by_id || '-',
+        'Insumo': log.ingredient_name,
+        'Campo Editado': getFieldLabel(log.field_changed),
+        'Valor Anterior': log.old_value,
+        'Valor Nuevo': log.new_value,
+      }));
+      
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Historial de Auditoría');
+      
+      // Add stats sheet
+      const statsData = [
+        { 'Métrica': 'Total de Cambios', 'Valor': auditStats.total_changes },
+        { 'Métrica': 'Insumos Únicos Afectados', 'Valor': auditStats.unique_ingredients },
+        ...Object.entries(auditStats.changes_by_field || {}).map(([field, count]) => ({
+          'Métrica': `Cambios en ${getFieldLabel(field)}`,
+          'Valor': count
+        }))
+      ];
+      const wsStats = XLSX.utils.json_to_sheet(statsData);
+      XLSX.utils.book_append_sheet(wb, wsStats, 'Resumen');
+      
+      XLSX.writeFile(wb, `auditoria_insumos_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Historial exportado a Excel');
+    });
+  };
+
+  const getFieldLabel = (field) => {
+    const labels = {
+      'unit': 'Unidad de Medida',
+      'purchase_unit': 'Unidad de Compra',
+      'conversion_factor': 'Factor de Conversión',
+      'purchase_quantity': 'Cantidad de Compra',
+      'dispatch_quantity': 'Equivalencia en Despacho',
+      'avg_cost': 'Costo Promedio',
+      'name': 'Nombre',
+      'category': 'Categoría',
+      'min_stock': 'Stock Mínimo',
+    };
+    return labels[field] || field;
+  };
+
+  // Load audit logs when tab changes to audit
+  useEffect(() => {
+    if (activeTab === 'audit') {
+      fetchAuditLogs();
+    }
+  }, [activeTab]);
+
   // ─── SUPPLIER HANDLERS ───
   const handleSaveSupplier = async () => {
     const d = supplierDialog.data;
