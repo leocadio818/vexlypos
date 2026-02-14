@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { FileText, Plus, Pencil, Trash2, Save, X } from 'lucide-react';
+import { FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, AlertTriangle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { recipesAPI, formatMoney } from '@/lib/api';
+import { Badge } from '@/components/ui/badge';
 
 export default function RecipesTab({ 
   recipes, 
