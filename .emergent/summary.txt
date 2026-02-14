@@ -1,185 +1,169 @@
 <analysis>**original_problem_statement:**
-The user is building a comprehensive Point of Sale (POS) system for a restaurant. The project has evolved to include a highly advanced inventory management module.
+The user is building a comprehensive Point of Sale (POS) system for a restaurant. The initial goal was to add a Cost Control System and an Intelligent Shopping Assistant to the advanced inventory module. After successfully implementing and testing these features, the user requested a verification of the Lógica de Insumo Único (Universal Ingredient Logic), which was also completed successfully.
 
-The most recent requests focus on adding business intelligence and automation features to the inventory system:
-1.  **Cost Control System:** The system should track historical purchase prices, alert users to price increases, and dynamically recalculate recipe costs and suggest new selling prices if profit margins are impacted.
-2.  **Intelligent Shopping Assistant:** The system should suggest items to reorder based on consumption, filtered by a default supplier, and allow for one-click generation of purchase orders.
-
-These features build upon a series of recently completed advanced inventory functionalities, including universal conversion logic, multi-level stock visualization, inventory valuation reports, and detailed audit trails.
+Following these feature completions, the user was advised on the critical need to refactor the monolithic backend () and frontend (). The user approved the refactoring plan and instructed the agent to begin with the backend first. The agent has completed Phase 1 of the backend refactoring. The current primary objective is to continue with Phase 2 of this refactoring.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-A sophisticated Restaurant POS system with a FastAPI backend and a React frontend. The application features a comprehensive Inventario Maestro (Inventory Master) module which includes:
--   **Core Inventory Management:** Full CRUD for ingredients, suppliers, warehouses, and recipes.
--   **Advanced Unit & Conversion Management:** A system to define custom units of measure (e.g., Box, Bottle) and calculate conversion factors (e.g., 1 Box = 24 Units). Includes an in-modal calculator for ease of use.
--   **Universal Conversion Logic:** A feature that allows a single ingredient to be linked to multiple saleable products with different consumption units, all while tracking back to a single inventory stock. A dedicated Analysis view shows this relationship and calculates costs dynamically.
--   **Multi-Level Stock Visualization:** The main stock view displays inventory in a hierarchical format (e.g., ) for intuitive, at-a-glance counting.
--   **Stock Difference Management:** A streamlined process for adjusting inventory for Differences (formerly Waste), such as physical count discrepancies or damaged goods, with full audit logging.
--   **Financial Reporting & Auditing:**
-    -   **Inventory Valuation Report:** A dedicated report showing the total financial value of stock, broken down by category and warehouse, and highlighting dead stock (high-value, low-rotation items).
-    -   **Ingredient Audit History:** A detailed, filterable, and exportable log of every change made to an ingredient (cost, conversion factor, etc.).
--   **Order & Sales Flow:** A complete order screen, advanced item cancellation/void system with manager PIN authorization, and reporting.
+A full-stack Restaurant POS system (FastAPI + React) with an advanced inventory module.
+-   **Completed Features:** Full CRUD for inventory items, advanced unit/conversion management, multi-level stock visualization, stock difference auditing, inventory valuation reports, ingredient audit trails, and a complete order/sales flow.
+-   **Cost Control & Shopping Assistant:** A new Asistente tab in the inventory manager provides intelligent purchase suggestions, price increase alerts, and margin analysis. The backend logic is complete and functional.
+-   **Backend Refactoring (Phase 1):** The backend is in a transitional state. A new modular structure (, , ) has been created. The  and  logic has been successfully migrated from the main  file into dedicated router files (, ). All Pydantic models have been centralized in .
 
 **Last working item**:
--   **Last item agent was working:** The agent began implementing the backend for the Cost Control System and Intelligent Shopping Assistant features. It updated the ingredient data model to include a default supplier and started scaffolding the new API endpoints in .
+-   **Last item agent was working:** The agent just completed Phase 1 of the backend refactoring by creating the new directory structure and moving the authentication and purchasing modules out of the monolithic . The user has instructed the agent to proceed with Phase 2.
 -   **Status**: IN PROGRESS
--   **Agent Testing Done**: N
--   **Which testing method agent to use?**: both
+-   **Agent Testing Done**: Y (Agent confirmed the new routers were working via  tests after the migration.)
+-   **Which testing method agent to use?**: backend testing agent (To run regression tests on all endpoints after each module is migrated from  to its new router file).
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1 (P0):** Implement the Cost Control System & Intelligent Shopping Assistant.
--   **Issue 2 (P1):** Auto-send to kitchen does not work on the first try.
--   **Issue 3 (P2):** Verify and Fix Payment Screen Mobile Scroll.
+-   **Issue 1 (P0):** Backend Refactoring - Phase 2.
+-   **Issue 2 (P1):** Frontend Refactoring of .
+-   **Issue 3 (P2):** Auto-send to kitchen does not work on the first try.
+-   **Issue 4 (P3):** Verify and Fix Payment Screen Mobile Scroll.
 
 **Issues Detail:**
--   **Issue 1: Implement the Cost Control System & Intelligent Shopping Assistant**
-    -   **Attempted fixes:** The agent started backend implementation by updating the  model in  to include  and began adding new, incomplete endpoints for the features.
+-   **Issue 1: Backend Refactoring - Phase 2**
+    -   **Attempted fixes:** Phase 1 is complete.  and  modules have been successfully extracted.
     -   **Next debug checklist:**
-        1.  **Backend ():**
-            -   Complete the endpoints for the shopping assistant, including logic to get purchase suggestions filtered by supplier and rounded to the nearest purchase unit.
-            -   Complete the endpoint for the cost control system, including logic to get an ingredient's price history.
-            -   Update the purchase order logic to check for price increases against the last purchase and trigger an alert.
-            -   Implement a mechanism to automatically recalculate the costs of all linked recipes when an ingredient's base cost changes.
-        2.  **Frontend ():**
-            -   Create a new Purchase Suggestions or Shopping Assistant tab/view.
-            -   Implement UI to display suggestions, allow filtering by supplier, and generate a purchase order.
-            -   Add a UI element (e.g., modal, graph) to display the price history of an ingredient.
-            -   Implement the frontend alert for price increases during purchase order creation.
-            -   Add the Default Supplier selector to the ingredient creation/edit dialog.
-    -   **Why fix this issue and what will be achieved with the fix?** To provide critical business intelligence, automate and streamline the purchasing workflow, control costs, and protect profit margins.
+        1.  Create .
+        2.  Migrate all inventory-related endpoints (ingredients, stock, warehouses, units) from  to .
+        3.  Create  and migrate recipe and production endpoints.
+        4.  Create  and migrate valuation and audit endpoints.
+        5.  After each migration, update  to use the new router and run tests to ensure no functionality is broken.
+        6.  Once all modules are migrated, remove the duplicated and now-unused code from .
+    -   **Why fix this issue and what will be achieved with the fix?** To resolve the critical technical debt of the  monolith, making the backend modular, easier to maintain, faster to debug, and safer for future development.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** both
+    -   **Should Test frontend/backend/both after fix?** backend
     -   **Blocked on other issue:** None
 
--   **Issue 2: Auto-send to kitchen does not work on the first try.**
-    -   **Attempted fixes:** A previous fix was implemented, but its success has not been verified by the user in this session.
-    -   **Next debug checklist:** Thoroughly test the workflow of adding items to an order, navigating away from the order screen, and returning to see if the Comanda enviada (Order Sent) toast appears on the very first attempt without fail.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures a reliable workflow for kitchen staff and prevents potential loss of order information.
+-   **Issue 2: Frontend Refactoring of **
+    -   **Attempted fixes:** None. This is planned after the backend refactoring is complete.
+    -   **Next debug checklist:** Break down the monolithic  file by extracting each tab's content into its own component (e.g., , , ) inside a new  directory.
+    -   **Why fix this issue and what will be achieved with the fix?**  is over 4500 lines long and is unmaintainable. Refactoring will drastically improve maintainability and performance.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** frontend
+    -   **Blocked on other issue:** Backend Refactoring - Phase 2
+
+-   **Issue 3: Auto-send to kitchen does not work on the first try.**
+    -   **Attempted fixes:** A previous fix was implemented, but user verification is still pending.
+    -   **Next debug checklist:** Test the order workflow to confirm if the Comanda enviada toast appears reliably on the first attempt after adding items.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures reliable communication with the kitchen.
     -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** frontend
     -   **Blocked on other issue:** None
 
--   **Issue 3: Verify and Fix Payment Screen Mobile Scroll**
-    -   **Attempted fixes:** None in this session.
-    -   **Next debug checklist:** Use the screenshot tool with a mobile viewport on the payment screen. Add a large number of items to an order to ensure the cart overflows, then confirm the payment method panel on the right is fully scrollable and all methods are accessible.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures the app is fully usable on mobile/tablet devices, which is critical for a modern POS system.
+-   **Issue 4: Verify and Fix Payment Screen Mobile Scroll**
+    -   **Attempted fixes:** None.
+    -   **Next debug checklist:** Use the screenshot tool with a mobile viewport on the payment screen, add enough items to make the cart overflow, and verify the payment methods panel is fully scrollable.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures usability on mobile/tablet POS devices.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** frontend
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   **Task 1: Implement the Cost Control System & Intelligent Shopping Assistant**
-    -   **Where to resume:** Continue building out the backend endpoints in  as outlined in the Next debug checklist for Issue 1. After the backend is complete and tested, move to the frontend implementation in .
-    -   **What will be achieved with this?** A fully functional purchasing assistant and cost control module.
+-   **Task 1: Backend Refactoring**
+    -   **Where to resume:** Continue with Phase 2 of the backend refactoring. The next step is to create  and start moving all inventory-related endpoints from  into it.
+    -   **What will be achieved with this?** A more modular and maintainable backend.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** both
+    -   **Should Test frontend/backend/both after fix?** backend
     -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P1: Create Downloadable Local Server Package:** Create a script to package the app for local installation.
-    *   **P2: Physical ESC/POS Printer Integration:** Implement client-side logic to connect to physical receipt printers.
-    *   **P2: Employee Time Clock:** Implement a feature to track employee check-in/out.
-    *   **P2: DGII Report Generation:** Build functionality to generate Dominican tax reports (607, 608).
+    *   **P0: Frontend Refactoring:** Break down the  monolith into smaller, manageable components for each tab.
+    *   **P1: Create Downloadable Local Server Package:** Script to package the app for local installation.
+    *   **P2: Physical ESC/POS Printer Integration.**
+    *   **P2: Employee Time Clock.**
+    *   **P2: DGII Report Generation:** (Dominican tax reports 607, 608).
 *   **Future Tasks:**
     *   **P2: Image/Icon Support for Product Buttons.**
     *   **P2: Cache Product Images Offline.**
     *   **P3: Drag-and-Drop Reordering of payment methods.**
-    *   **P3: Export Audit Trail:** Add a button to export the table movement history to Excel/CSV.
+    *   **P3: Export Audit Trail:** to Excel/CSV.
     *   **P3: Duplicate Product Feature.**
 
 **Completed work in this session**
--   **Inventory UI Consolidation (DONE):** Removed the redundant legacy inventory page (), ensuring all navigation points to the unified Inventario Maestro ().
--   **Unit of Measure Management (DONE):** Implemented a full CRUD system for custom units of measure and a UI to manage them within the Inventory Manager.
--   **Factor Calculator & Cost Preview (DONE):** Added an in-modal calculator to auto-compute conversion factors and show real-time unit cost previews.
--   **Ingredient Audit History (DONE):** Created a new Auditoría tab with a detailed, filterable, and exportable log of all ingredient changes, styled with a gold-and-dark theme.
--   **Inventory Valuation Report (DONE):** Created a Valorización tab that provides a financial analysis of stock, including total value, breakdowns, and a dead stock detector, styled with an emerald-and-dark theme.
--   **Universal Conversion Analysis (DONE):** Implemented a view to show how a single ingredient is used across multiple recipes, with dynamically calculated costs for each.
--   **Multi-Level Stock View & Difference Adjustment (DONE):** Revamped the Stock tab to display inventory hierarchically (e.g., Cajas > Botellas > Oz) and implemented an audited Difference adjustment feature.
+-   **Cost Control & Shopping Assistant (DONE):** Fully implemented and tested the new Asistente feature, including backend endpoints and frontend UI in the  component.
+-   **Universal Ingredient Logic Verification (DONE):** Successfully demonstrated the multiplexed data model by creating a full test case, proving that a single ingredient stock serves multiple saleable products with varying consumption amounts.
+-   **Backend Refactoring - Phase 1 (DONE):** Created a new modular backend structure (, , ) and successfully migrated the  and  modules out of the  monolith.
 
 **Earlier issues found/mentioned but not fixed**
--   **CRITICAL**:  is a massive monolith. With each new feature, its size and complexity grow, making it harder to maintain and debug.
--   **CRITICAL**:  is also a monolith component that is now extremely large and complex. It handles the state and UI for over 8 different tabs and numerous modals.
+-   **CRITICAL**:  is a massive monolith. This is slated for refactoring (Issue #2) after the backend work is complete.
 
 **Known issue recurrence from previous fork**
--   None.
+-   Auto-send to kitchen does not work on the first try and Payment Screen Mobile Scroll are known recurring issues from previous sessions.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Hierarchical Data Representation:** Displaying stock in a multi-level format (e.g., Cases > Bottles > Oz) derived from a single base unit quantity and conversion factors.
--   **Dynamic Cost Calculation:** Real-time cost updates based on changing conversion factors and purchase prices, propagated through recipes.
--   **Complex UI State Management:**  now manages state for multiple tabs, complex modals, filters, and data fetching for all aspects of inventory.
--   **Backend Data Aggregation:** The backend performs complex aggregations for financial reports (valuation) and historical logs (auditing).
+-   **FastAPI Routers:** The core concept being used to decompose the monolithic  into logical, domain-specific modules.
+-   **Monolith Decomposition:** The overarching strategy for both backend and frontend to manage technical debt and improve maintainability.
+-   **Hierarchical Data Representation:** Displaying stock in multi-level formats (e.g., Cases > Bottles > Oz).
+-   **Dynamic Cost Calculation:** Real-time cost updates based on changing conversion factors and purchase prices.
 
 **key DB schema**
--   **ingredients:** Heavily modified to include , , and references to units.
--   **unit_definitions:** (New Collection)  - Stores custom units of measure.
--   **ingredient_audit_logs:** (New Collection)  - Tracks all changes to ingredients.
--   **stock_differences:** (New Collection)  - Logs all inventory adjustments.
+-   No new collections were created. The refactoring effort is focused on code structure, not database schema changes. The key collections remain: , , , , , etc.
 
 **changes in tech stack**
 -   None.
 
 **All files of reference**
--   : The monolithic FastAPI application containing all backend logic.
--   : The monolithic React component for the entire inventory module.
--   : Defines all frontend functions for calling backend APIs.
+-   : The primary file being refactored.
+-   : The directory where new, modular backend logic resides.
+-   : The new centralized location for all Pydantic models.
+-   : The monolithic frontend component that is next in line for refactoring.
+-   : Contains all frontend API call definitions, which may need minor updates as backend routes are finalized.
 
 **Areas that need refactoring**:
--   **CRITICAL: :** The monolith issue is severe. It urgently needs to be broken down into separate FastAPI routers (e.g., , , ).
--   **CRITICAL: :** This component is unmaintainable at its current size. It must be decomposed. Each tab's content should become a separate component, and complex modals/logic should be extracted into their own files or custom hooks.
+-   **CRITICAL: :** Phase 2 of the refactoring is the current highest priority task. The goal is to move all remaining business logic into the  directory.
+-   **CRITICAL: :** This component is the next major refactoring target once the backend is stabilized.
 
 **key api endpoints**
--   : (CRUD) For custom units of measure.
--   : (GET) For the global, filterable audit history report.
--   : (GET) For the inventory valuation report.
--   : (GET) For the universal conversion analysis view.
--   : (GET) For the multi-level stock view.
--   : (POST) For recording inventory adjustments.
+-   The application is transitioning from monolithic routes (e.g., ) to router-prefixed routes (e.g., ). The agent must ensure  correctly includes the new routers with their respective prefixes.
 
 **Critical Info for New Agent**
--   The user is focused on incrementally adding high-value business intelligence features to the inventory module.
--   The agent has successfully used the  after each major feature completion, which is a pattern that should be continued.
--   The codebase, particularly  and , is accumulating significant technical debt. While the user has postponed refactoring, the next agent should be prepared to address this, perhaps after completing the current high-priority feature request. Proposing a refactoring step after the next delivery would be a wise move.
+-   The absolute top priority is to continue the backend refactoring as approved by the user. Do not start any other feature or bug fix unless it is a direct blocker.
+-   The strategy is to migrate logic module by module (inventory, then recipes, then reports) from  into the respective router files.
+-   Test thoroughly after each module migration to ensure no regressions are introduced. Use the .
+-   After the backend refactoring is complete, the next task is to propose and begin the frontend refactoring of .
 
 **documents and test reports created in this job**
--   Multiple  files were generated and reviewed.
--    was updated after each major feature completion.
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requests ability to edit Units of Measure & Conversion Factors with impact analysis and audit history. **Status: COMPLETED**
-2.  **User:** Adds request for an in-modal Factor Calculator. **Status: COMPLETED**
-3.  **User:** Re-iterates request, leading agent to implement the missing UI for managing custom units. **Status: COMPLETED**
-4.  **User:** Requests a detailed Ingredient Audit History view. **Status: COMPLETED**
-5.  **User:** Requests an Inventory Valuation Report for financial analysis. **Status: COMPLETED**
-6.  **User:** Requests a Universal Conversion Logic feature to visualize ingredient usage across products. **Status: COMPLETED**
-7.  **User:** Requests Multi-Level Stock Visualization and an integrated Difference Adjustment feature. **Status: COMPLETED**
-8.  **User:** Requests a Cost Control System with price memory, alerts, and recipe cost updates. **Status: IN PROGRESS**
-9.  **User:** Requests an Intelligent Shopping Assistant with supplier-based suggestions and PO generation. **Status: IN PROGRESS** (Part of the same task as above).
+1.  **User:** Asks how the recommended refactoring would work.
+2.  **Agent:** Provides a detailed plan to refactor both the backend () and frontend () monoliths.
+3.  **User:** procede con backend primero (Proceed with backend first).
+4.  **Agent:** Acknowledges and starts Phase 1 of the backend refactoring.
+5.  **Agent:** Completes Phase 1 and summarizes the new structure. Asks if it should proceed to Phase 2.
+6.  **User:** procede fase 2 (Proceed phase 2).
+7.  **Agent:** Acknowledges the user's confirmation to continue with the next phase of the backend refactoring.
 
 **Project Health Check:**
 -   **Broken:** None
 -   **Mocked:**
-    *   **Emailing:** Resend integration is used for alerts but is dependent on a user-provided key.
+    *   **Emailing:** Resend integration is dependent on a user-provided key.
     *   **Printing:** All printing is mocked with on-screen previews.
 
 **3rd Party Integrations**
--   **Resend:** Used for sending low-stock email alerts. Requires a User API Key.
+-   **Resend:** Used for sending email alerts. Requires a User API Key.
 -   **APScheduler:** A backend library used for scheduling tasks.
 -   **xlsx:** A frontend library used for exporting data to Excel files.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES. The testing agent was used successfully to validate every major feature implemented in this session.
+-   **Testing agent used after significant changes**: YES. Used to validate the Shopping Assistant feature.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
--   **Known regressions**: None.
+-   **Known regressions**: None identified in this session.
 
 **Credentials to test flow:**
 -   **Admin:** PIN 
@@ -188,4 +172,4 @@ A sophisticated Restaurant POS system with a FastAPI backend and a React fronten
 -   **Chef Pedro:** PIN 
 
 **What agent forgot to execute**
--   The agent correctly prioritized the user's explicit feature requests over the long-standing Upcoming/Future Tasks and the critical-but-postponed refactoring tasks. Nothing was forgotten; work was intentionally deferred based on user priority.</analysis>
+-   The agent has followed the user's instructions precisely, prioritizing the approved refactoring task over all other pending items. Nothing was forgotten.</analysis>
