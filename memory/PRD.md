@@ -327,6 +327,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - `InventoryManager.js` reducido de 2096 a **1040 líneas** (-50%)
   - **TOTAL REDUCCIÓN**: de 4503 a 1040 líneas (**-77%**)
   - **10 componentes extraídos** en `/frontend/src/pages/inventory/components/`
+- [x] **Bug Crítico: Generación de OC Multi-Proveedor** (Corregido 14 Feb 2026) ✅
+  - **Problema**: El botón "Generar OC" en Asistente de Compras fallaba al seleccionar items de diferentes proveedores
+  - **Causa raíz**: La función `get_purchase_suggestions` usaba parámetros `Query()` de FastAPI que no funcionaban cuando se llamaba internamente
+  - **Solución**: 
+    1. Creada función interna `_get_purchase_suggestions_internal()` sin decoradores Query
+    2. El endpoint REST ahora llama a la función interna
+    3. La función `generate_po_from_suggestions` también usa la función interna
+  - **Nuevo comportamiento**: Al seleccionar items de múltiples proveedores, el sistema automáticamente:
+    - Agrupa los items por proveedor
+    - Genera una Orden de Compra separada para cada proveedor
+    - Muestra toast de éxito con resumen de OCs creadas
+    - Redirige al tab "Compras" para ver las nuevas órdenes
 
 ### P1 - Alta Prioridad
 - [x] **Sistema de Control de Costos y Asistente de Compras** (Febrero 2026) ✅
