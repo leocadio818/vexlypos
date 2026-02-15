@@ -103,7 +103,7 @@ async def get_suppliers_analytics():
     inactive_suppliers = [
         {"id": s["id"], "name": s["name"], "category": s.get("category", "general")}
         for s in suppliers
-        if s.get("active") != False and s["id"] not in recent_supplier_ids
+        if s.get("active") is not False and s["id"] not in recent_supplier_ids
     ]
     
     # Format monthly data for charts (sorted by month)
