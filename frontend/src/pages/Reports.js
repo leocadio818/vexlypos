@@ -22,7 +22,7 @@ const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_toke
 
 const COLORS = ['#FF6600', '#E53935', '#1E88E5', '#43A047', '#FFB300', '#E91E63', '#8E24AA', '#00BCD4', '#FF5722', '#607D8B'];
 
-// Report categories configuration
+// Report categories configuration - Reorganized for better navigation
 const REPORT_CATEGORIES = [
   {
     id: 'sales',
@@ -33,16 +33,16 @@ const REPORT_CATEGORIES = [
     reports: [
       { id: 'daily-close', name: 'Cierre del Día', description: 'Resumen completo de ventas diarias' },
       { id: 'cash-close', name: 'Cierre de Caja', description: 'Desglose por formas de pago' },
-      { id: 'by-category', name: 'Ventas por Categoría', description: 'Distribución de ventas por categoría' },
       { id: 'top-products', name: 'Top 10/20/30 Más Vendidos', description: 'Productos más vendidos con selector' },
-      { id: 'by-type', name: 'Tipos de Ventas', description: 'Ventas por tipo (local, delivery, etc.)' },
+      { id: 'by-waiter', name: 'Ventas por Mesero', description: 'Rendimiento del personal de servicio' },
+      { id: 'by-category', name: 'Ventas por Categoría', description: 'Distribución de ventas por categoría' },
       { id: 'payment-methods', name: 'Formas de Pago', description: 'Desglose detallado por método de pago' },
-      { id: 'void-audit', name: 'Auditoría de Anulaciones', description: 'Anulaciones con autorizador' },
+      { id: 'void-audit', name: 'Auditoría de Anulaciones', description: 'Anulaciones con nombre del autorizador' },
     ]
   },
   {
     id: 'inventory',
-    name: 'Inventario y Almacén',
+    name: 'Inventario, Almacén y Compras',
     icon: Package,
     color: 'from-blue-500 to-indigo-600',
     bgColor: 'bg-blue-500/10',
@@ -52,18 +52,18 @@ const REPORT_CATEGORIES = [
       { id: 'differences', name: 'Diferencias de Inventario', description: 'Faltantes y sobrantes' },
       { id: 'waste', name: 'Mermas', description: 'Pérdidas y desperdicios' },
       { id: 'recipes', name: 'Recetas', description: 'Análisis de costos de recetas' },
+      { id: 'purchase-orders', name: 'Órdenes de Compras', description: 'Historial y estado de compras' },
     ]
   },
   {
-    id: 'purchasing',
-    name: 'Compras y Fiscal',
-    icon: ShoppingCart,
-    color: 'from-purple-500 to-violet-600',
-    bgColor: 'bg-purple-500/10',
+    id: 'fiscal',
+    name: 'Fiscal',
+    icon: Receipt,
+    color: 'from-red-500 to-rose-600',
+    bgColor: 'bg-red-500/10',
     reports: [
-      { id: 'purchase-orders', name: 'Órdenes de Compras', description: 'Historial de compras' },
-      { id: 'by-supplier', name: 'Reporte por Proveedores', description: 'Gastos por proveedor' },
-      { id: 'taxes', name: 'Impuestos (ITBIS y Propina)', description: 'Recaudación fiscal' },
+      { id: 'taxes', name: 'Impuestos (ITBIS y Propina)', description: 'Recaudación fiscal para declaraciones' },
+      { id: 'by-supplier', name: 'Gastos por Proveedor', description: 'Desglose para reportes 606/607' },
     ]
   },
   {
@@ -75,7 +75,7 @@ const REPORT_CATEGORIES = [
     reports: [
       { id: 'profit-loss', name: 'Ganancias y Pérdidas', description: 'Estado de resultados' },
       { id: 'table-movements', name: 'Movimientos de Mesas', description: 'Trazabilidad de usuario' },
-      { id: 'by-waiter', name: 'Ventas por Mesero', description: 'Rendimiento del personal' },
+      { id: 'system-audit', name: 'Auditoría General del Sistema', description: 'Historial de actividades' },
     ]
   },
 ];
