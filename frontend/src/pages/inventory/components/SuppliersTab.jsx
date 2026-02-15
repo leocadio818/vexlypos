@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Truck, Plus, Pencil, Trash2, Save, Search, X, Package, Wine, Cigarette, UtensilsCrossed, Box, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { suppliersAPI } from '@/lib/api';
 import axios from 'axios';
