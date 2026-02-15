@@ -312,12 +312,14 @@ export default function OrderScreen() {
     if (selectedItems.length > 0) {
       // Transition to 'editing' when items are selected (interrupts any state)
       setMobileButtonState('editing');
-    } else {
-      // When no items selected, return to 'initial' (not 'closing')
+    } else if (mobileButtonState === 'editing') {
+      // When no items selected and was in editing mode, return to 'initial'
       // This handles the "interruption rule" - after anular, go back to pre-cuenta
       setMobileButtonState('initial');
     }
-  }, [selectedItems]);
+    // Note: Don't reset 'closing' state when items are deselected - it should stay there
+    // until user selects items (which goes to 'editing') or closes the order
+  }, [selectedItems, mobileButtonState]);
 
   // Load grid settings from localStorage
   useEffect(() => {
