@@ -237,8 +237,13 @@ export default function Billing() {
                           <Check size={16} /> COBRAR
                         </button>
                         <button onClick={async () => {
-                          try { const r = await fetch(`${API_BASE}/api/print/receipt/${bill.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
-                            const d = await r.json(); setPrintHtml(d.html); setPrintOpen(true); } catch { toast.error('Error'); }
+                          try { 
+                            const r = await fetch(`${API_BASE}/api/print/receipt/${bill.id}?send_to_queue=true`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+                            const d = await r.json(); 
+                            setPrintHtml(d.html); 
+                            setPrintOpen(true); 
+                            if (d.queued) toast.success('Enviado a impresora');
+                          } catch { toast.error('Error'); }
                         }} data-testid={`print-bill-${bill.id}`}
                           className="h-11 px-3 rounded-lg bg-muted text-foreground font-bold text-xs border border-border active:scale-95 flex items-center gap-1">
                           <Printer size={14} /> Imprimir
@@ -256,8 +261,13 @@ export default function Billing() {
                           Pagado: {new Date(bill.paid_at).toLocaleString('es-DO')} | {bill.payment_method === 'cash' ? 'Efectivo' : 'Tarjeta'}
                         </span>
                         <button onClick={async () => {
-                          try { const r = await fetch(`${API_BASE}/api/print/receipt/${bill.id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
-                            const d = await r.json(); setPrintHtml(d.html); setPrintOpen(true); } catch { toast.error('Error'); }
+                          try { 
+                            const r = await fetch(`${API_BASE}/api/print/receipt/${bill.id}?send_to_queue=true`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+                            const d = await r.json(); 
+                            setPrintHtml(d.html); 
+                            setPrintOpen(true); 
+                            if (d.queued) toast.success('Enviado a impresora');
+                          } catch { toast.error('Error'); }
                         }} className="text-gray-500 hover:text-gray-800 transition-colors">
                           <Printer size={14} />
                         </button>
