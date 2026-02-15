@@ -540,15 +540,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **MongoDB**: Base de datos
 - **Endpoints**: `/api/*` con autenticación JWT
 - **Arquitectura Modular (Actualizado - 15 Feb 2026)**:
-  - `/routers/auth.py`: Autenticación, usuarios, roles
-  - `/routers/inventory.py`: Ingredientes, stock, almacenes, unidades
+  - `/routers/auth.py`: Autenticación, usuarios, roles, permisos
+  - `/routers/inventory.py`: Ingredientes, stock, almacenes, unidades, alertas
   - `/routers/recipes.py`: Recetas por producto
   - `/routers/purchasing.py`: Proveedores, OCs, asistente de compras
-  - `/routers/reports.py`: Reportes y estadísticas
-  - `/routers/orders.py`: **NUEVO** - Órdenes, items, anulaciones, void logs
-  - `/routers/tables.py`: **NUEVO** - Mesas, áreas, movimientos
-  - `/routers/billing.py`: **NUEVO** - Facturas, pagos, métodos de pago
-  - `/routers/kitchen.py`: **NUEVO** - KDS, estados de cocina
+  - `/routers/reports.py`: Reportes y estadísticas (19 endpoints)
+  - `/routers/orders.py`: Órdenes, items, anulaciones, void audit logs, split/merge
+  - `/routers/tables.py`: Mesas, áreas, movimientos de mesa
+  - `/routers/billing.py`: Facturas, pagos, métodos de pago, impuestos, tipos de venta
+  - `/routers/kitchen.py`: KDS (Kitchen Display System), estados de cocina
+  - `/routers/customers.py`: Clientes, puntos de fidelidad, redención
+  - `/routers/config.py`: Configuración del sistema, tema
+  - `server.py`: Solo endpoints únicos (989 líneas) - categorías, productos, modificadores, reservaciones, DGII, email, print, seed
   - `/routers/customers.py`: **NUEVO** - Clientes, fidelidad, puntos
   - `/routers/config.py`: **NUEVO** - Categorías, productos, modificadores, turnos, reservaciones
   - `/models/schemas.py`: Modelos Pydantic centralizados
