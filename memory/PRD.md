@@ -531,7 +531,13 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Requisitos usuario final**: Docker Desktop, 4GB RAM, 20GB disco
   - **Puertos**: 80 (frontend), 8001 (backend), 27017 (MongoDB interno)
   - **Uso**: Copiar carpeta `local-server/` y ejecutar script de instalación
-- [ ] **Integración de impresora ESC/POS** física
+- [x] **Integración de impresora ESC/POS** física (Completado 15 Feb 2026) ✅
+  - **Backend**: Endpoints de cola de impresión (`/api/print-queue/*`, `/api/print/*/send`)
+  - **Agente USB**: Script Python `print_agent.py` para impresoras conectadas por USB
+  - **Configuración**: Página `/settings/printer` para configurar modo USB/Red
+  - **Auto-print**: Opción para imprimir automáticamente comandas y recibos
+  - **Impresoras soportadas**: Epson TM, Star TSP, XPrinter, Generic 80mm
+  - **Documentación**: `GUIA_IMPRESORA.md` con instrucciones completas
 
 ### P2 - Media Prioridad
 - [ ] **Reloj de empleados**: Check-in/out con reportes
