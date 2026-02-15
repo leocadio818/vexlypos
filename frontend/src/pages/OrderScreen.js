@@ -497,7 +497,7 @@ export default function OrderScreen() {
   };
 
   // Open cancel dialog for multiple items
-  const openBulkCancelDialog = (itemIds) => {
+  const openBulkCancelDialog = (itemIds, forceManagerAuth = false) => {
     const anyWasSent = itemIds.some(id => {
       const item = order?.items?.find(i => i.id === id);
       return item?.status === 'sent' || item?.sent_to_kitchen;
@@ -510,11 +510,12 @@ export default function OrderScreen() {
       selectedReasonId: null,
       returnToInventory: anyWasSent,
       comments: '',
-      requiresManagerAuth: false,
-      showManagerPin: false,
+      requiresManagerAuth: forceManagerAuth || anyWasSent, // Force auth if param or if items were sent
+      showManagerPin: forceManagerAuth || anyWasSent, // Auto-show PIN if forced or items sent
       managerPin: '',
       managerAuthError: '',
-      authorizedBy: null
+      authorizedBy: null,
+      forceAuth: forceManagerAuth // Flag to always require auth regardless of reason
     });
   };
 
