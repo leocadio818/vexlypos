@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, BarChart3, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud } from 'lucide-react';
+import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import '@/App.css';
 
@@ -11,7 +11,6 @@ const navItems = [
   { to: '/kitchen', icon: ChefHat, label: 'Cocina' },
   { to: '/cash-register', icon: CircleDollarSign, label: 'Caja' },
   { to: '/reservations', icon: CalendarDays, label: 'Reservas' },
-  { to: '/reports', icon: BarChart3, label: 'Reportes' },
   { to: '/settings', icon: Settings, label: 'Config' },
 ];
 
