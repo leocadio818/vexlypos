@@ -1140,6 +1140,78 @@ async def delete_print_job(job_id: str):
     return {"ok": True}
 
 
+@api.post("/print/jobs/{job_id}/error")
+async def report_print_error(job_id: str, input: dict):
+    """Report a print error from the agent"""
+    error_message = input.get("error", "Error desconocido")
+    
+    # Update job with error
+    await db.print_queue.update_one(
+        {"id": job_id},
+        {"$set": {
+            "status": "failed",
+            "error": error_message,
+            "failed_at": now_iso()
+        }}
+    )
+    
+    # Store error in print_errors collection for notifications
+    await db.print_errors.insert_one({
+        "id": gen_id(),
+        "job_id": job_id,
+        "error": error_message,
+        "created_at": now_iso(),
+        "acknowledged": False
+    })
+    
+    return {"ok": True}
+
+
+@api.get("/print/errors")
+async def get_print_errors():
+    """Get recent unacknowledged print errors"""
+    errors = await db.print_errors.find(
+        {"acknowledged": False},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    return errors
+
+
+@api.post("/print/errors/{error_id}/acknowledge")
+async def acknowledge_print_error(error_id: str):
+    """Mark a print error as acknowledged"""
+    await db.print_errors.update_one(
+        {"id": error_id},
+        {"$set": {"acknowledged": True}}
+    )
+    return {"ok": True}
+
+
+@api.get("/print/status")
+async def get_print_status():
+    """Get overall print system status"""
+    pending = await db.print_queue.count_documents({"status": "pending"})
+    failed = await db.print_queue.count_documents({"status": "failed"})
+    errors = await db.print_errors.count_documents({"acknowledged": False})
+    
+    channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(10)
+    
+    return {
+        "pending_jobs": pending,
+        "failed_jobs": failed,
+        "unacknowledged_errors": errors,
+        "channels": [
+            {
+                "code": ch.get("code"),
+                "name": ch.get("name"),
+                "printer_name": ch.get("printer_name", ""),
+                "configured": bool(ch.get("printer_name"))
+            }
+            for ch in channels
+        ]
+    }
+
+
 # ─── SEND RECEIPT TO PRINT QUEUE (80mm Format) ───
 @api.post("/print/send-receipt/{bill_id}")
 async def send_receipt_to_queue(bill_id: str):
