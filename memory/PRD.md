@@ -450,6 +450,29 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - [x] **Verificar scroll en pantalla de pago móvil** (Verificado 15 Feb 2026) ✅
   - Scroll funciona correctamente en viewport móvil (375x812)
   - Todos los métodos de pago y botones son accesibles
+- [x] **Diseño Responsive Optimizado de Pantalla de Mesas** (Completado 15 Feb 2026) ✅
+  - **Panel de Cuenta Redimensionado**:
+    - Desktop XL (≥1280px): 35% del ancho (`xl:w-[35%]`)
+    - Tablets/LG (≥1024px): 45% del ancho (`lg:w-[45%]`)
+  - **Grid de Categorías Dinámico**:
+    - Automáticamente se limita a máximo 3 columnas (`Math.min(gridSettings.categoryColumns, 3)`)
+    - Evita encimamiento cuando el panel de cuenta es más ancho
+  - **Lógica Táctil Móvil**:
+    - Botón flotante con carrito, cantidad e importe total (bottom-20 right-4)
+    - Click expande la cuenta a pantalla completa (`fixed inset-0 z-40`)
+    - Botón de retroceso cierra la vista expandida
+  - **Botones de Acción Más Grandes**:
+    - FACTURAR/ENVIAR: altura 56px (`h-14`)
+    - Anular/Pre-Cuenta: altura 48px (`h-12`)
+    - Iconos escalados proporcionalmente (18px y 16px)
+  - **Tipografía Mejorada**:
+    - Fuente de productos aumentada 15% (de `text-xs` a `text-sm`, 14px)
+    - Nombres de productos en negrita (`font-bold`)
+    - Precios más visibles con tipografía `text-sm`
+  - **Espaciado Táctil**:
+    - Mayor padding entre productos (`p-3` = 12px vs `p-1.5` anterior)
+    - Espacio de lista mejorado (`space-y-2.5` vs `space-y-1`)
+    - Checkboxes de selección más grandes (20px vs 16px)
 - [ ] **Crear paquete ZIP descargable** del servidor local
 - [ ] **Integración de impresora ESC/POS** física
 
