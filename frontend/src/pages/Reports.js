@@ -434,6 +434,7 @@ export default function Reports() {
   const [sending, setSending] = useState(false);
   const [topLimit, setTopLimit] = useState(10);
   const [sparklineData, setSparklineData] = useState([]);
+  const [businessConfig, setBusinessConfig] = useState({ name: 'Mesa POS RD', rnc: '000-000000-0' });
   
   // Quick date presets
   const datePresets = [
@@ -459,18 +460,33 @@ export default function Reports() {
     }},
   ];
 
-  // Fetch sparkline data on load
+  // Fetch business config and sparkline data on load
   useEffect(() => {
-    const fetchSparklines = async () => {
+    const fetchInitialData = async () => {
       try {
-        const res = await axios.get(`${API}/reports/daily-sparklines`, { 
+        // Fetch sparklines
+        const sparkRes = await axios.get(`${API}/reports/daily-sparklines`, { 
           params: { days: 7 }, 
           headers: headers() 
         });
-        setSparklineData(res.data);
-      } catch {}
+        setSparklineData(sparkRes.data);
+        
+        // Fetch business config
+        const configRes = await axios.get(`${API}/settings`, { headers: headers() });
+        if (configRes.data) {
+          setBusinessConfig({
+            name: configRes.data.business_name || 'Mesa POS RD',
+            rnc: configRes.data.rnc || '000-000000-0'
+          });
+          // Update the global BUSINESS_INFO
+          BUSINESS_INFO.name = configRes.data.business_name || 'Mesa POS RD';
+          BUSINESS_INFO.rnc = configRes.data.rnc || '000-000000-0';
+        }
+      } catch (err) {
+        console.log('Error fetching initial data');
+      }
     };
-    fetchSparklines();
+    fetchInitialData();
   }, []);
 
   // Load report data
