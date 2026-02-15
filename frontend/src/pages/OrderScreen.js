@@ -928,10 +928,11 @@ export default function OrderScreen() {
       {/* Left (visually): Order Summary - Now rendered second but appears on left due to flex-row-reverse */}
       {/* Responsive: 35% on large screens, 45% on tablets, fullscreen on mobile when expanded */}
       <div className={`
-        ${mobileAccountExpanded ? 'fixed inset-0 z-40' : 'hidden lg:flex'} 
+        ${mobileAccountExpanded ? 'fixed inset-0 z-40 pb-16' : 'hidden lg:flex'} 
         w-full lg:w-[45%] xl:w-[35%] 
         border-b lg:border-b-0 lg:border-l border-white/10 
         flex flex-col backdrop-blur-xl bg-background/95 lg:bg-white/5 shrink-0
+        lg:pb-0
       `}>
         <div className="px-3 py-3 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2">
