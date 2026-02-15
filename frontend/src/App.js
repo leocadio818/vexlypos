@@ -52,6 +52,7 @@ function AppRoutes() {
         <Route path="customers" element={<Customers />} />
         <Route path="reservations" element={<Reservations />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="settings/printer" element={<PrinterSettings />} />
         <Route path="product/:productId" element={<ProductConfig />} />
         <Route path="user/:userId" element={<UserConfig />} />
       </Route>
