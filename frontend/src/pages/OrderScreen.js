@@ -646,6 +646,7 @@ export default function OrderScreen() {
         setPreCheckCount(d.print_number);
         // Mobile: Transition to 'closing' state after printing pre-check
         setMobileButtonState('closing');
+        triggerHaptic('success'); // Success vibration pattern for pre-check
       }
       // First print: change table status to billed (yellow glow)
       if (d.print_number === 1 && table) {
