@@ -863,6 +863,7 @@ export default function PurchasesTab({
           </div>
         )}
       </div>
+      )}
 
       {/* Purchase Order Dialog */}
       <Dialog open={poDialog.open} onOpenChange={(o) => !o && setPODialog({ open: false, data: null })}>
