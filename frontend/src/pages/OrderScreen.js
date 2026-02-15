@@ -890,14 +890,45 @@ export default function OrderScreen() {
 
   return (
     <div className="h-full flex flex-col lg:flex-row-reverse" data-testid="order-screen">
+      {/* Mobile: Floating button to show account when collapsed */}
+      {!mobileAccountExpanded && !splitMode && !accessDenied && activeItems.length > 0 && (
+        <button
+          onClick={() => setMobileAccountExpanded(true)}
+          className="lg:hidden fixed bottom-4 right-4 z-50 h-14 px-4 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center gap-2 font-oswald font-bold active:scale-95 transition-transform"
+          data-testid="mobile-show-account-btn"
+        >
+          <ShoppingCart size={20} />
+          <span className="text-sm">{activeItems.length}</span>
+          <span className="text-sm font-bold">{formatMoney(grandTotal)}</span>
+        </button>
+      )}
+
       {/* Left (visually): Order Summary - Now rendered second but appears on left due to flex-row-reverse */}
-      <div className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-l border-white/10 flex flex-col backdrop-blur-xl bg-white/5 shrink-0">
-        <div className="px-2 py-2 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <button onClick={splitMode ? exitSplitMode : handleBack} data-testid="back-to-tables" className="h-9 w-9 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all">
-              {splitMode ? <X size={16} /> : <ArrowLeft size={16} />}
+      {/* Responsive: 35% on large screens, 45% on tablets, fullscreen on mobile when expanded */}
+      <div className={`
+        ${mobileAccountExpanded ? 'fixed inset-0 z-40' : 'hidden lg:flex'} 
+        w-full lg:w-[45%] xl:w-[35%] 
+        border-b lg:border-b-0 lg:border-l border-white/10 
+        flex flex-col backdrop-blur-xl bg-background/95 lg:bg-white/5 shrink-0
+      `}>
+        <div className="px-3 py-3 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                if (mobileAccountExpanded) {
+                  setMobileAccountExpanded(false);
+                } else if (splitMode) {
+                  exitSplitMode();
+                } else {
+                  handleBack();
+                }
+              }} 
+              data-testid="back-to-tables" 
+              className="h-10 w-10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all"
+            >
+              {splitMode ? <X size={18} /> : <ArrowLeft size={18} />}
             </button>
-            <h2 className="font-oswald text-base font-bold text-white">
+            <h2 className="font-oswald text-lg lg:text-base font-bold text-white">
               {accessDenied ? `Mesa ${table?.number || '?'}` : splitMode ? 'EDITAR CUENTA' : tableOrders.length > 1 ? `Mesa ${table?.number || '?'} - Cuenta #${order?.account_number || 1}` : `Mesa ${table?.number || '?'}`}
             </h2>
           </div>
