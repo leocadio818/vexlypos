@@ -1254,7 +1254,8 @@ export default function OrderScreen() {
                     return (
                     <div key={item.id} data-testid={`order-item-${item.id}`}
                       onClick={() => {
-                        // Toggle selection for void
+                        // Toggle selection for void with haptic feedback
+                        triggerHaptic('light');
                         if (isSelected) {
                           setSelectedItems(prev => prev.filter(id => id !== item.id));
                         } else {
