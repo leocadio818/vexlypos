@@ -1248,10 +1248,10 @@ export default function OrderScreen() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-oswald text-[11px]">{formatMoney(itemTotal)}</span>
+                        <span className="font-oswald text-sm">{formatMoney(itemTotal)}</span>
                         {(item.status === 'pending' || item.status === 'sent') && (
-                          <button onClick={(e) => { e.stopPropagation(); openCancelDialog(item.id); }} className="block ml-auto text-destructive/50 hover:text-destructive" data-testid={`cancel-item-${item.id}`}>
-                            <Trash2 size={10} />
+                          <button onClick={(e) => { e.stopPropagation(); openCancelDialog(item.id); }} className="block ml-auto text-destructive/50 hover:text-destructive mt-1" data-testid={`cancel-item-${item.id}`}>
+                            <Trash2 size={14} />
                           </button>
                         )}
                       </div>
@@ -1261,21 +1261,21 @@ export default function OrderScreen() {
               </div>
             </ScrollArea>
 
-            <div className="px-2 py-1.5 border-t border-border space-y-0.5">
-              <div className="flex justify-between items-center text-xs text-muted-foreground">
+            <div className="px-3 py-2.5 border-t border-border space-y-1">
+              <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <span>Subtotal</span>
                 <span className="font-oswald">{formatMoney(subtotal)}</span>
               </div>
               {subtotal > 0 && taxBreakdown.map((tax, i) => (
-                <div key={i} className="flex justify-between items-center text-[10px] text-muted-foreground/70">
+                <div key={i} className="flex justify-between items-center text-xs text-muted-foreground/70">
                   <span>{tax.description} ({tax.rate}%)</span>
                   <span className="font-oswald">{formatMoney(tax.amount)}</span>
                 </div>
               ))}
               {subtotal > 0 && (
-                <div className="flex justify-between items-center font-oswald border-t border-border/50 pt-0.5">
-                  <span className="text-xs text-muted-foreground">Total</span>
-                  <span className="text-base font-bold text-primary">{formatMoney(grandTotal)}</span>
+                <div className="flex justify-between items-center font-oswald border-t border-border/50 pt-1.5 mt-1">
+                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="text-xl font-bold text-primary">{formatMoney(grandTotal)}</span>
                 </div>
               )}
             </div>
