@@ -74,6 +74,17 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Endpoint `/api/suppliers/analytics` para datos del dashboard
     - Botón "Actualizar" para refrescar datos
 - **Recetas**: Vinculación de productos de venta con ingredientes, incluyendo % de merma
+  - **Búsqueda Inteligente (NUEVO - Febrero 2026)**:
+    - Barra de búsqueda que filtra por Nombre del Plato O por Ingrediente Clave
+    - Ejemplo: buscar "Camarones" muestra todas las recetas que usan camarones
+    - Ingredientes coincidentes se destacan visualmente en naranja
+    - Filtros de salud financiera: Todos, Críticos (<15%), Advertencia (<30%), Saludables (≥30%)
+    - Cada filtro muestra el conteo de recetas en badge
+    - Filtros por categoría de menú: Entradas, Platos Fuertes, Bebidas, Licores, Cigarros
+    - Icono de categoría visible en cada receta
+    - Contador dinámico "X de Y recetas" según filtros activos
+    - Botón "Limpiar filtros" cuando hay filtros activos
+    - Layout: buscador izquierda, filtros de salud derecha, botón "+ Nueva Receta" extrema derecha
   - **Módulo de Margen de Ganancia Dinámico (NUEVO - Febrero 2026)**:
     - Calculadora de Margen integrada en el diálogo de Editar/Nueva Receta
     - Indicador de margen en vivo junto al precio de venta
