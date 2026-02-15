@@ -1376,25 +1376,12 @@ export default function OrderScreen() {
                 </div>
 
                 {/* Mobile view: State-based button flow */}
+                {/* State logic: initial (preCheckCount=0, no selection) -> editing (items selected) -> closing (preCheckCount>0) */}
                 <div className="lg:hidden">
                   {activeItems.length > 0 && (
                     <>
-                      {/* State: Initial - Show PRE-CUENTA only */}
-                      {mobileButtonState === 'initial' && (
-                        <Button 
-                          onClick={handlePrintPreCheck} 
-                          variant="outline" 
-                          size="lg" 
-                          data-testid="pre-check-btn-mobile"
-                          className="h-14 w-full text-base border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 font-oswald font-bold"
-                        >
-                          <FileText size={18} className="mr-2" /> PRE-CUENTA
-                          {preCheckCount > 0 && <Lock size={12} className="ml-2 text-yellow-500" />}
-                        </Button>
-                      )}
-
-                      {/* State: Editing - Show ANULAR (when items selected) */}
-                      {mobileButtonState === 'editing' && selectedItems.length > 0 && (
+                      {/* State: Editing - Show ANULAR (when items selected) - takes priority */}
+                      {selectedItems.length > 0 ? (
                         <Button 
                           onClick={() => {
                             const anyWasSent = selectedItems.some(id => {
@@ -1409,10 +1396,8 @@ export default function OrderScreen() {
                         >
                           <Ban size={18} className="mr-2" /> ANULAR ({selectedItems.length})
                         </Button>
-                      )}
-
-                      {/* State: Closing - Show FACTURAR (after pre-cuenta printed) */}
-                      {mobileButtonState === 'closing' && (
+                      ) : preCheckCount > 0 ? (
+                        /* State: Closing - Show FACTURAR (after pre-cuenta was printed at least once) */
                         <Button 
                           onClick={handleDirectBilling} 
                           size="lg" 
@@ -1420,6 +1405,17 @@ export default function OrderScreen() {
                           className="h-14 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-base font-bold"
                         >
                           <Receipt size={18} className="mr-2" /> FACTURAR
+                        </Button>
+                      ) : (
+                        /* State: Initial - Show PRE-CUENTA only */
+                        <Button 
+                          onClick={handlePrintPreCheck} 
+                          variant="outline" 
+                          size="lg" 
+                          data-testid="pre-check-btn-mobile"
+                          className="h-14 w-full text-base border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 font-oswald font-bold"
+                        >
+                          <FileText size={18} className="mr-2" /> PRE-CUENTA
                         </Button>
                       )}
                     </>
