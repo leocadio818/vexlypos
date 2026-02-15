@@ -473,6 +473,24 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Mayor padding entre productos (`p-3` = 12px vs `p-1.5` anterior)
     - Espacio de lista mejorado (`space-y-2.5` vs `space-y-1`)
     - Checkboxes de selección más grandes (20px vs 16px)
+- [x] **Flujo de Estados de Botones Móviles** (Completado 15 Feb 2026) ✅
+  - **Estado Inicial (Reposo)**:
+    - Sin items seleccionados: Solo botón PRE-CUENTA visible (azul)
+    - ANULAR y FACTURAR ocultos
+  - **Estado Edición (Selección de Ítems)**:
+    - Al seleccionar producto(s): Se esconde PRE-CUENTA, aparece ANULAR (rojo)
+    - Contador de items: "ANULAR (n)"
+    - Al deseleccionar todo: Vuelve a Estado Inicial
+  - **Estado Cierre (Post Pre-cuenta)**:
+    - Después de imprimir Pre-cuenta: Se esconde PRE-CUENTA, aparece FACTURAR (naranja)
+    - Indica que la cuenta está lista para cobro final
+  - **Regla de Interrupción**:
+    - Desde FACTURAR, si se selecciona item: Muestra ANULAR (prioriza edición)
+    - Al terminar anulación/deseleccionar: Vuelve a PRE-CUENTA (no FACTURAR)
+  - **Implementación Técnica**:
+    - Máquina de estados `mobileButtonState`: 'initial' | 'editing' | 'closing'
+    - `useEffect` para transiciones automáticas basadas en `selectedItems.length`
+    - ENVIAR siempre visible cuando `pendingCount > 0`
 - [ ] **Crear paquete ZIP descargable** del servidor local
 - [ ] **Integración de impresora ESC/POS** física
 
