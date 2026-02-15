@@ -2377,7 +2377,7 @@ TIMEZONE_OPTIONS = [
 @api.get("/system/config")
 async def get_system_config():
     config = await db.system_config.find_one({}, {"_id": 0})
-    return config or {"timezone_offset": -4, "restaurant_name": "Mi Restaurante", "currency": "RD$"}
+    return config or {"timezone_offset": -4, "restaurant_name": "Mi Restaurante", "currency": "RD$", "rnc": "000-000000-0"}
 
 @api.put("/system/config")
 async def update_system_config(input: dict):
