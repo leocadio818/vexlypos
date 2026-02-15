@@ -325,19 +325,22 @@ export default function OrderScreen() {
   }, [order]);
 
   // Mobile button state machine: Only handle editing state transitions
-  // 'initial' is the default, 'closing' is set by doPrintPreCheck, 'editing' is set here
+  // Track previous selection count to detect actual changes
+  const prevSelectedCount = useRef(0);
   useEffect(() => {
-    if (selectedItems.length > 0) {
-      // Items selected - always go to editing mode
-      setMobileButtonState('editing');
-    } else {
-      // When items deselected, go back to initial ONLY if was editing
-      // Use functional update to check previous state without adding it as dependency
-      setMobileButtonState(prev => {
-        if (prev === 'editing') return 'initial';
-        // Keep 'closing' state - don't reset it when items are deselected
-        return prev;
-      });
+    const current = selectedItems.length;
+    const previous = prevSelectedCount.current;
+    
+    // Only act on actual changes in selection
+    if (current !== previous) {
+      if (current > 0) {
+        // Items selected - go to editing mode
+        setMobileButtonState('editing');
+      } else if (previous > 0) {
+        // Items were deselected - return to initial
+        setMobileButtonState('initial');
+      }
+      prevSelectedCount.current = current;
     }
   }, [selectedItems.length]);
 
