@@ -90,7 +90,24 @@ export default function OrderScreen() {
   // initial: Show PRE-CUENTA only
   // editing: Show ANULAR (when items selected)
   // closing: Show FACTURAR (after pre-cuenta printed)
-  const [mobileButtonState, setMobileButtonState] = useState('initial');
+  // Persist 'closing' state in sessionStorage to survive re-renders
+  const getInitialMobileState = () => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem(`mobile_btn_state_${tableId}`);
+      if (saved === 'closing') return 'closing';
+    }
+    return 'initial';
+  };
+  const [mobileButtonState, setMobileButtonState] = useState(getInitialMobileState);
+  
+  // Sync closing state to sessionStorage
+  useEffect(() => {
+    if (mobileButtonState === 'closing') {
+      sessionStorage.setItem(`mobile_btn_state_${tableId}`, 'closing');
+    } else if (mobileButtonState === 'initial') {
+      sessionStorage.removeItem(`mobile_btn_state_${tableId}`);
+    }
+  }, [mobileButtonState, tableId]);
   
   // Multiple orders per table support
   const [tableOrders, setTableOrders] = useState([]); // All orders for this table
