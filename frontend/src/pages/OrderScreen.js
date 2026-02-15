@@ -263,6 +263,16 @@ export default function OrderScreen() {
     return () => document.removeEventListener('click', handleNavClick, true);
   }, [navigate]);
 
+  // Listen for sidebar functions menu events
+  useEffect(() => {
+    const handleOpenMoveDialog = () => {
+      openMoveDialog();
+    };
+    
+    window.addEventListener('openMoveTableDialog', handleOpenMoveDialog);
+    return () => window.removeEventListener('openMoveTableDialog', handleOpenMoveDialog);
+  }, []);
+
   // Load grid settings from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('pos_grid_settings');
