@@ -440,16 +440,24 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 
 ### P1 - Alta Prioridad
 - [x] **Sistema de Control de Costos y Asistente de Compras** (Febrero 2026) ✅
+- [x] **Menú "Funciones" en Pantalla de Pedidos** (Completado 15 Feb 2026) ✅
+  - Nuevo botón "Funciones" en el panel de orden (OrderScreen.js líneas 1225-1289)
+  - Popover con opciones: "Mover Mesa" (funcional), "Dividir Cuenta", "Reimprimir Comanda", "Descuento Especial" (placeholders)
+  - Optimización de espacio liberando la fila de botones secundarios
+- [x] **Verificar bug "Auto-envío a cocina"** (Verificado 15 Feb 2026) ✅
+  - El auto-envío funciona correctamente en el primer intento
+  - Toast "Comanda enviada automáticamente" se muestra al navegar fuera de la orden
+- [x] **Verificar scroll en pantalla de pago móvil** (Verificado 15 Feb 2026) ✅
+  - Scroll funciona correctamente en viewport móvil (375x812)
+  - Todos los métodos de pago y botones son accesibles
 - [ ] **Crear paquete ZIP descargable** del servidor local
 - [ ] **Integración de impresora ESC/POS** física
-- [ ] **Verificar bug "Auto-envío a cocina"** (no funciona al primer intento)
 
 ### P2 - Media Prioridad
 - [ ] **Reloj de empleados**: Check-in/out con reportes
 - [ ] **Reportes DGII**: Generación de formatos 607, 608
 - [ ] **Imágenes de productos**: Soporte para fotos/iconos en botones
 - [ ] **Cache de imágenes offline**: Para menú sin conexión
-- [ ] **Verificar scroll en pantalla de pago móvil**
 
 ### P3 - Baja Prioridad
 - [ ] **Drag-and-drop**: Reordenar métodos de pago
