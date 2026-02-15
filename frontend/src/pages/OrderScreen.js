@@ -307,19 +307,20 @@ export default function OrderScreen() {
     };
   }, [order]);
 
-  // Mobile button state machine: Handle transitions based on selectedItems
-  // Only trigger when selectedItems changes - closing state is set by doPrintPreCheck
+  // Mobile button state machine: Only handle editing state transitions
+  // 'initial' is the default, 'closing' is set by doPrintPreCheck, 'editing' is set here
   useEffect(() => {
     if (selectedItems.length > 0) {
-      // Items selected - always go to editing mode (interrupts any state including closing)
+      // Items selected - always go to editing mode
       setMobileButtonState('editing');
-    }
-  }, [selectedItems.length]);
-
-  // Handle transition back to initial when items are cleared after editing
-  useEffect(() => {
-    if (selectedItems.length === 0) {
-      setMobileButtonState(prev => prev === 'editing' ? 'initial' : prev);
+    } else {
+      // When items deselected, go back to initial ONLY if was editing
+      // Use functional update to check previous state without adding it as dependency
+      setMobileButtonState(prev => {
+        if (prev === 'editing') return 'initial';
+        // Keep 'closing' state - don't reset it when items are deselected
+        return prev;
+      });
     }
   }, [selectedItems.length]);
 
