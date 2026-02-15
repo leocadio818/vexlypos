@@ -25,6 +25,7 @@ export default function Layout() {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/login'); };
   
