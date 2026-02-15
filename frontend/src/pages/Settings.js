@@ -1402,8 +1402,26 @@ export default function Settings() {
 
           {/* PRINT CHANNELS */}
           <TabsContent value="channels">
+            {/* Link to new Printer Settings */}
+            <a 
+              href="/settings/printer" 
+              className="mb-6 flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-orange-500/20 to-orange-600/10 border-2 border-orange-500/30 hover:border-orange-500/50 transition-all group"
+              data-testid="printer-settings-link"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center">
+                  <Printer size={24} className="text-white" />
+                </div>
+                <div>
+                  <span className="font-oswald font-bold text-lg">Configurar Impresora USB/Red</span>
+                  <p className="text-xs text-muted-foreground">Cola de impresión, agente USB, impresoras térmicas</p>
+                </div>
+              </div>
+              <ChevronRight className="text-orange-500 group-hover:translate-x-1 transition-transform" />
+            </a>
+
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-oswald text-base font-bold">Canales de Impresion</h2>
+              <h2 className="font-oswald text-base font-bold">Canales de Impresion (Pantalla)</h2>
               <Button onClick={() => setChannelDialog({ open: true, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null })} size="sm"
                 className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-channel-btn">
                 <Plus size={14} className="mr-1" /> Agregar
