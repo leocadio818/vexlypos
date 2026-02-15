@@ -27,6 +27,7 @@ from routers.inventory import (
 )
 from routers.recipes import router as recipes_router
 from routers.reports import router as reports_router
+from routers.orders import router as orders_router, set_db as orders_set_db
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -38,6 +39,9 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'fallback_secret')
 resend.api_key = os.environ.get('RESEND_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 
+# Initialize routers with db
+orders_set_db(db)
+
 app = FastAPI()
 api = APIRouter(prefix="/api")
 
@@ -47,6 +51,7 @@ api.include_router(purchasing_router)
 api.include_router(inventory_router)
 api.include_router(recipes_router)
 api.include_router(reports_router)
+api.include_router(orders_router)
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()
