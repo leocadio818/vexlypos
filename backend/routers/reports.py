@@ -63,7 +63,7 @@ async def shift_close_report(
                 closed = datetime.fromisoformat(shift["closed_at"].replace("Z", "+00:00"))
                 duration = (closed - opened).total_seconds() / 3600
                 shift_data["duration_hours"] = round(duration, 2)
-            except:
+            except (ValueError, TypeError):
                 pass
         
         # Calculate average ticket
