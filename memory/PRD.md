@@ -558,6 +558,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 ## Changelog Reciente
 
 ### Febrero 2026
+- ✅ **MENÚ "FUNCIONES" EN PANTALLA DE PEDIDOS** (15 Feb 2026):
+  - Nuevo botón "Funciones" con icono MoreVertical en el panel de orden
+  - Popover con opciones operacionales:
+    - **Mover Mesa**: Funcional - permite mover la cuenta actual a otra mesa
+    - **Dividir Cuenta**: Placeholder (Pronto)
+    - **Reimprimir Comanda**: Placeholder (Pronto)
+    - **Descuento Especial**: Placeholder (Pronto)
+  - Implementación: `OrderScreen.js` líneas 1225-1289
+  - UI optimizada: espacio de botones secundarios reorganizado
+- ✅ **VERIFICACIONES COMPLETADAS** (15 Feb 2026):
+  - Auto-envío a cocina: VERIFICADO funciona en el primer intento
+  - Scroll pantalla de pago móvil: VERIFICADO funciona en viewport 375x812
 - ✅ **MÓDULO DE REPORTES COMPLETO** (15 Feb 2026):
   - **19 endpoints** en `/backend/routers/reports.py`
   - **4 categorías colapsables** de reportes:
