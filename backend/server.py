@@ -1010,6 +1010,45 @@ async def clear_print_queue():
     result = await db.print_queue.delete_many({"status": {"$in": ["completed", "failed"]}})
     return {"deleted": result.deleted_count}
 
+
+# ─── PRINT QUEUE ENDPOINTS FOR AGENT ───
+@api.get("/print/queue")
+async def get_print_queue():
+    """Get pending print jobs for the local agent"""
+    jobs = await db.print_queue.find(
+        {"status": "pending"},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(20)
+    return jobs
+
+@api.post("/print/queue")
+async def add_to_print_queue(input: dict):
+    """Add a job to the print queue"""
+    job = {
+        "id": gen_id(),
+        "type": input.get("type", "receipt"),
+        "data": input.get("data", {}),
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    await db.print_queue.insert_one(job)
+    return {k: v for k, v in job.items() if k != "_id"}
+
+@api.get("/print/jobs/{job_id}")
+async def get_print_job(job_id: str):
+    """Get a specific print job"""
+    job = await db.print_queue.find_one({"id": job_id}, {"_id": 0})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+@api.delete("/print/jobs/{job_id}")
+async def delete_print_job(job_id: str):
+    """Delete a print job (called by agent after printing)"""
+    await db.print_queue.delete_one({"id": job_id})
+    return {"ok": True}
+
+
 # ─── PRINT TO QUEUE HELPERS ───
 @api.post("/print/receipt/{bill_id}/send")
 async def send_receipt_to_printer(bill_id: str):
