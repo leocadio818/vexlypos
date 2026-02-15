@@ -307,6 +307,20 @@ export default function OrderScreen() {
     };
   }, [order]);
 
+  // Haptic feedback utility - vibrates on mobile devices
+  const triggerHaptic = useCallback((pattern = 'light') => {
+    if (!navigator.vibrate) return;
+    // Vibration patterns: 'light' = 10ms, 'medium' = 25ms, 'strong' = 50ms, 'double' = [25, 50, 25]
+    const patterns = {
+      light: 10,
+      medium: 25,
+      strong: 50,
+      double: [25, 50, 25],
+      success: [10, 30, 10, 30, 50]
+    };
+    navigator.vibrate(patterns[pattern] || patterns.light);
+  }, []);
+
   // Mobile button state machine: Only handle editing state transitions
   // Track previous selection count to detect actual changes
   const prevSelectedCount = useRef(0);
@@ -319,13 +333,15 @@ export default function OrderScreen() {
       if (current > 0) {
         // Items selected - go to editing mode
         setMobileButtonState('editing');
+        triggerHaptic('medium'); // Haptic feedback on state change
       } else if (previous > 0) {
         // Items were deselected - return to initial
         setMobileButtonState('initial');
+        triggerHaptic('light'); // Light feedback on deselection
       }
       prevSelectedCount.current = current;
     }
-  }, [selectedItems.length]);
+  }, [selectedItems.length, triggerHaptic]);
 
   // Load grid settings from localStorage
   useEffect(() => {
