@@ -205,6 +205,8 @@ async def update_kitchen_item(order_id: str, item_id: str, input: dict):
         active_items = [i for i in order["items"] if i["status"] not in ["served", "cancelled"]]
         if not active_items:
             await db.orders.update_one({"id": order_id}, {"$set": {"status": "completed"}})
+    # Notify all KDS clients
+    notify_kds()
     return {"ok": True}
 
 @router.post("/kitchen/items/{order_id}/{item_id}/bump")
@@ -219,7 +221,8 @@ async def bump_kitchen_item(order_id: str, item_id: str, user: dict = Depends(ge
             "updated_at": now_iso()
         }}
     )
-    return {"ok": True}
+    notify_kds()
+    return {"ok": True}"
 
 @router.post("/kitchen/items/{order_id}/{item_id}/serve")
 async def serve_kitchen_item(order_id: str, item_id: str, user: dict = Depends(get_current_user)):
