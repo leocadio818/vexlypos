@@ -1,0 +1,354 @@
+# Config Router - System Configuration, Shifts, Categories, Products, Modifiers
+from fastapi import APIRouter, HTTPException, Depends, Query
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime, timezone
+import uuid
+
+router = APIRouter(tags=["config"])
+
+# Database reference
+db = None
+
+def set_db(database):
+    global db
+    db = database
+
+def gen_id() -> str:
+    return str(uuid.uuid4())
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+# Import auth dependency
+from routers.auth import get_current_user
+
+# ─── PYDANTIC MODELS ───
+class CategoryInput(BaseModel):
+    name: str
+    color: str = "#f97316"
+    icon: str = ""
+
+class ProductInput(BaseModel):
+    name: str
+    category_id: str
+    price: float
+    active: bool = True
+    icon: str = ""
+    description: str = ""
+
+class ModifierGroupInput(BaseModel):
+    name: str
+    min_selection: int = 0
+    max_selection: int = 1
+
+class ModifierInput(BaseModel):
+    name: str
+    price: float = 0
+
+class CancellationReasonInput(BaseModel):
+    name: str
+    requires_manager_auth: bool = False
+    description: str = ""
+
+class ShiftOpenInput(BaseModel):
+    station: str = "main"
+    opening_amount: float = 0
+
+class ShiftCloseInput(BaseModel):
+    closing_amount: float = 0
+
+class ReservationInput(BaseModel):
+    customer_name: str
+    phone: str = ""
+    party_size: int = 2
+    reservation_date: str
+    reservation_time: str
+    table_id: str = ""
+    notes: str = ""
+
+# ─── TIMEZONE OPTIONS ───
+TIMEZONE_OPTIONS = [
+    {"value": -5, "label": "UTC-5 (USA Este, Colombia, Perú, Ecuador, Panamá)"},
+    {"value": -4, "label": "UTC-4 (República Dominicana, Puerto Rico, Venezuela, Bolivia)"},
+    {"value": -3, "label": "UTC-3 (Argentina, Chile, Uruguay, Brasil)"},
+    {"value": -6, "label": "UTC-6 (USA Central, México CDMX, Costa Rica, Guatemala)"},
+    {"value": -7, "label": "UTC-7 (USA Mountain, Arizona)"},
+    {"value": -8, "label": "UTC-8 (USA Pacífico, Los Angeles, Tijuana)"},
+    {"value": 0, "label": "UTC+0 (Reino Unido, Portugal)"},
+    {"value": 1, "label": "UTC+1 (España, Francia, Alemania, Italia)"},
+    {"value": 2, "label": "UTC+2 (Grecia, Israel, Sudáfrica)"},
+]
+
+# ─── SYSTEM CONFIG ───
+@router.get("/system/config")
+async def get_system_config():
+    config = await db.system_config.find_one({}, {"_id": 0})
+    return config or {"timezone_offset": -4, "restaurant_name": "Mi Restaurante", "currency": "RD$", "rnc": "000-000000-0"}
+
+@router.put("/system/config")
+async def update_system_config(input: dict):
+    if "_id" in input: del input["_id"]
+    await db.system_config.update_one({}, {"$set": input}, upsert=True)
+    return {"ok": True}
+
+@router.get("/system/timezones")
+async def get_timezone_options():
+    return TIMEZONE_OPTIONS
+
+# ─── INVENTORY SETTINGS ───
+@router.get("/inventory/settings")
+async def get_inventory_settings():
+    config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+    return config or {
+        "id": "inventory_settings",
+        "allow_sale_without_stock": False,
+        "auto_deduct_on_payment": True,
+        "default_warehouse_id": "",
+        "show_stock_alerts": True
+    }
+
+@router.put("/inventory/settings")
+async def update_inventory_settings(input: dict):
+    if "_id" in input: del input["_id"]
+    input["id"] = "inventory_settings"
+    input["updated_at"] = now_iso()
+    await db.system_config.update_one(
+        {"id": "inventory_settings"}, 
+        {"$set": input}, 
+        upsert=True
+    )
+    return {"ok": True}
+
+# ─── CATEGORIES ───
+@router.get("/categories")
+async def list_categories():
+    return await db.categories.find({}, {"_id": 0}).sort("order", 1).to_list(50)
+
+@router.post("/categories")
+async def create_category(input: CategoryInput):
+    count = await db.categories.count_documents({})
+    doc = {"id": gen_id(), "name": input.name, "color": input.color, "icon": input.icon, "order": count}
+    await db.categories.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@router.put("/categories/{cat_id}")
+async def update_category(cat_id: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.categories.update_one({"id": cat_id}, {"$set": input})
+    return {"ok": True}
+
+@router.delete("/categories/{cat_id}")
+async def delete_category(cat_id: str):
+    await db.categories.delete_one({"id": cat_id})
+    return {"ok": True}
+
+# ─── PRODUCTS ───
+@router.get("/products")
+async def list_products(category_id: Optional[str] = Query(None)):
+    query = {"category_id": category_id} if category_id else {}
+    return await db.products.find(query, {"_id": 0}).to_list(500)
+
+@router.get("/products/{product_id}")
+async def get_product(product_id: str):
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return product
+
+@router.post("/products")
+async def create_product(input: ProductInput):
+    doc = {
+        "id": gen_id(), "name": input.name, "category_id": input.category_id,
+        "price": input.price, "active": input.active, "icon": input.icon,
+        "description": input.description, "created_at": now_iso()
+    }
+    await db.products.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@router.put("/products/{product_id}")
+async def update_product(product_id: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.products.update_one({"id": product_id}, {"$set": input})
+    return {"ok": True}
+
+@router.delete("/products/{product_id}")
+async def delete_product(product_id: str):
+    await db.products.delete_one({"id": product_id})
+    return {"ok": True}
+
+# ─── MODIFIER GROUPS ───
+@router.get("/modifier-groups")
+async def list_modifier_groups():
+    return await db.modifier_groups.find({}, {"_id": 0}).to_list(100)
+
+@router.post("/modifier-groups")
+async def create_modifier_group(input: ModifierGroupInput):
+    doc = {"id": gen_id(), "name": input.name, "min_selection": input.min_selection, "max_selection": input.max_selection}
+    await db.modifier_groups.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@router.put("/modifier-groups/{gid}")
+async def update_modifier_group(gid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.modifier_groups.update_one({"id": gid}, {"$set": input})
+    return {"ok": True}
+
+@router.delete("/modifier-groups/{gid}")
+async def delete_modifier_group(gid: str):
+    await db.modifier_groups.delete_one({"id": gid})
+    await db.modifiers.delete_many({"group_id": gid})
+    return {"ok": True}
+
+# ─── MODIFIERS ───
+@router.get("/modifiers")
+async def list_modifiers(group_id: Optional[str] = Query(None)):
+    query = {"group_id": group_id} if group_id else {}
+    return await db.modifiers.find(query, {"_id": 0}).to_list(200)
+
+@router.post("/modifiers")
+async def create_modifier(input: dict):
+    doc = {"id": gen_id(), "group_id": input.get("group_id", ""), "name": input.get("name", ""), "price": input.get("price", 0)}
+    await db.modifiers.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@router.put("/modifiers/{mid}")
+async def update_modifier(mid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.modifiers.update_one({"id": mid}, {"$set": input})
+    return {"ok": True}
+
+@router.delete("/modifiers/{mid}")
+async def delete_modifier(mid: str):
+    await db.modifiers.delete_one({"id": mid})
+    return {"ok": True}
+
+# ─── CANCELLATION REASONS ───
+@router.get("/cancellation-reasons")
+async def list_cancellation_reasons():
+    return await db.cancellation_reasons.find({"active": True}, {"_id": 0}).to_list(50)
+
+@router.post("/cancellation-reasons")
+async def create_cancellation_reason(input: CancellationReasonInput):
+    doc = {
+        "id": gen_id(), 
+        "name": input.name, 
+        "requires_manager_auth": input.requires_manager_auth,
+        "description": input.description,
+        "active": True
+    }
+    await db.cancellation_reasons.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@router.put("/cancellation-reasons/{rid}")
+async def update_cancellation_reason(rid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.cancellation_reasons.update_one({"id": rid}, {"$set": input})
+    return {"ok": True}
+
+@router.delete("/cancellation-reasons/{rid}")
+async def delete_cancellation_reason(rid: str):
+    await db.cancellation_reasons.update_one({"id": rid}, {"$set": {"active": False}})
+    return {"ok": True}
+
+# ─── SHIFTS ───
+@router.get("/shifts")
+async def list_shifts(status: Optional[str] = Query(None), user_id: Optional[str] = Query(None)):
+    query = {}
+    if status:
+        query["status"] = status
+    if user_id:
+        query["user_id"] = user_id
+    return await db.shifts.find(query, {"_id": 0}).sort("opened_at", -1).to_list(100)
+
+@router.get("/shifts/current")
+async def get_current_shift(user=Depends(get_current_user)):
+    shift = await db.shifts.find_one({"user_id": user["user_id"], "status": "open"}, {"_id": 0})
+    return shift or {}
+
+@router.post("/shifts/open")
+async def open_shift(input: ShiftOpenInput, user=Depends(get_current_user)):
+    existing = await db.shifts.find_one({"user_id": user["user_id"], "status": "open"}, {"_id": 0})
+    if existing:
+        return existing
+    doc = {
+        "id": gen_id(), "user_id": user["user_id"], "user_name": user["name"],
+        "station": input.station, "opening_amount": input.opening_amount,
+        "closing_amount": None, "cash_sales": 0, "card_sales": 0,
+        "total_sales": 0, "total_tips": 0, "cancelled_count": 0,
+        "opened_at": now_iso(), "closed_at": None, "status": "open"
+    }
+    await db.shifts.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@router.put("/shifts/{shift_id}/close")
+async def close_shift(shift_id: str, input: ShiftCloseInput):
+    await db.shifts.update_one({"id": shift_id}, {"$set": {
+        "closing_amount": input.closing_amount, "closed_at": now_iso(), "status": "closed"
+    }})
+    return await db.shifts.find_one({"id": shift_id}, {"_id": 0})
+
+# ─── RESERVATIONS ───
+@router.get("/reservations")
+async def list_reservations(date: Optional[str] = Query(None), status: Optional[str] = Query(None)):
+    query = {}
+    if date:
+        query["reservation_date"] = date
+    if status:
+        query["status"] = status
+    return await db.reservations.find(query, {"_id": 0}).sort("reservation_date", 1).to_list(200)
+
+@router.post("/reservations")
+async def create_reservation(input: ReservationInput):
+    doc = {
+        "id": gen_id(),
+        "customer_name": input.customer_name,
+        "phone": input.phone,
+        "party_size": input.party_size,
+        "reservation_date": input.reservation_date,
+        "reservation_time": input.reservation_time,
+        "table_id": input.table_id,
+        "notes": input.notes,
+        "status": "confirmed",
+        "created_at": now_iso()
+    }
+    await db.reservations.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@router.put("/reservations/{rid}")
+async def update_reservation(rid: str, input: dict):
+    if "_id" in input: del input["_id"]
+    await db.reservations.update_one({"id": rid}, {"$set": input})
+    return {"ok": True}
+
+@router.delete("/reservations/{rid}")
+async def delete_reservation(rid: str):
+    await db.reservations.delete_one({"id": rid})
+    return {"ok": True}
+
+@router.post("/reservations/{rid}/cancel")
+async def cancel_reservation(rid: str):
+    await db.reservations.update_one({"id": rid}, {"$set": {"status": "cancelled"}})
+    return {"ok": True}
+
+@router.post("/reservations/{rid}/complete")
+async def complete_reservation(rid: str):
+    await db.reservations.update_one({"id": rid}, {"$set": {"status": "completed"}})
+    return {"ok": True}
+
+# ─── THEME CONFIG ───
+@router.get("/theme")
+async def get_theme():
+    theme = await db.theme_config.find_one({}, {"_id": 0})
+    return theme or {
+        "primary_color": "#f97316",
+        "background_color": "#0f172a",
+        "card_color": "#1e293b",
+        "text_color": "#f8fafc"
+    }
+
+@router.put("/theme")
+async def update_theme(input: dict):
+    if "_id" in input: del input["_id"]
+    await db.theme_config.update_one({}, {"$set": input}, upsert=True)
+    return {"ok": True}
