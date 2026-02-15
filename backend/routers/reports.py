@@ -22,6 +22,106 @@ def gen_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+# ─── DASHBOARD ───
+@router.get("/dashboard")
+async def dashboard():
+    """Main dashboard data for KPIs and real-time stats"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Get today's paid bills
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
+    today_bills = [b for b in bills if b.get("paid_at", "").startswith(today)]
+    
+    # Payment methods for cash/card breakdown
+    payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
+    pm_map = {pm["id"]: pm for pm in payment_methods}
+    
+    # Calculate today's stats
+    total_sales = sum(b.get("total", 0) for b in today_bills)
+    total_itbis = sum(b.get("itbis", 0) for b in today_bills)
+    total_tips = sum(b.get("propina_legal", 0) for b in today_bills)
+    bills_count = len(today_bills)
+    avg_ticket = round(total_sales / bills_count, 2) if bills_count > 0 else 0
+    
+    # Cash vs Card breakdown
+    cash_total = 0
+    card_total = 0
+    for bill in today_bills:
+        pm_id = bill.get("payment_method_id", bill.get("payment_method", "cash"))
+        pm = pm_map.get(pm_id, {})
+        is_cash = pm.get("is_cash", pm_id == "cash")
+        if is_cash:
+            cash_total += bill.get("total", 0)
+        else:
+            card_total += bill.get("total", 0)
+    
+    # Operations data
+    tables = await db.tables.find({}, {"_id": 0}).to_list(200)
+    total_tables = len(tables)
+    occupied_tables = len([t for t in tables if t.get("status") == "occupied"])
+    occupancy_pct = round((occupied_tables / total_tables * 100) if total_tables > 0 else 0)
+    
+    orders = await db.orders.find({"status": {"$nin": ["delivered", "cancelled", "paid"]}}, {"_id": 0}).to_list(500)
+    active_orders = len(orders)
+    
+    shifts = await db.shifts.find({"closed_at": None}, {"_id": 0}).to_list(50)
+    open_shifts = len(shifts)
+    
+    # Inventory alerts (low stock)
+    stock_docs = await db.stock.find({}, {"_id": 0}).to_list(1000)
+    ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
+    ing_map = {i["id"]: i for i in ingredients}
+    inventory_alerts = 0
+    for stock in stock_docs:
+        ing = ing_map.get(stock.get("ingredient_id"), {})
+        min_stock = ing.get("min_stock", 0)
+        current = stock.get("current_stock", 0)
+        if current <= min_stock and min_stock > 0:
+            inventory_alerts += 1
+    
+    # Loyalty customers
+    customers = await db.loyalty_customers.find({}, {"_id": 0}).to_list(10000)
+    total_customers = len(customers)
+    
+    # Hourly sales for today
+    hourly_data = {}
+    for h in range(24):
+        hourly_data[f"{h:02d}"] = {"hour": f"{h:02d}:00", "total": 0}
+    
+    for bill in today_bills:
+        paid_at = bill.get("paid_at", "")
+        if "T" in paid_at:
+            hour = paid_at.split("T")[1][:2]
+            if hour in hourly_data:
+                hourly_data[hour]["total"] += bill.get("total", 0)
+    
+    hourly_sales = [{"hour": v["hour"], "total": round(v["total"], 2)} for v in hourly_data.values()]
+    
+    return {
+        "today": {
+            "total_sales": round(total_sales, 2),
+            "bills_count": bills_count,
+            "avg_ticket": avg_ticket,
+            "cash": round(cash_total, 2),
+            "card": round(card_total, 2),
+            "itbis": round(total_itbis, 2),
+            "tips": round(total_tips, 2)
+        },
+        "operations": {
+            "occupancy_pct": occupancy_pct,
+            "occupied_tables": occupied_tables,
+            "total_tables": total_tables,
+            "active_orders": active_orders,
+            "open_shifts": open_shifts,
+            "inventory_alerts": inventory_alerts
+        },
+        "loyalty": {
+            "total_customers": total_customers
+        },
+        "hourly_sales": hourly_sales
+    }
+
+
 # ─── SHIFT CLOSE REPORT ───
 @router.get("/shift-close")
 async def shift_close_report(
