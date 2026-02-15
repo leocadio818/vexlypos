@@ -1,151 +1,106 @@
 #!/bin/bash
-# =============================================
-# INSTALADOR MESA POS RD - SERVIDOR LOCAL
-# Para Ubuntu/Debian Linux
-# =============================================
+# ===============================================
+# MESA POS RD - Instalador para Linux/Mac
+# Sistema POS para Restaurantes
+# ===============================================
 
 set -e
 
 echo ""
-echo "============================================"
-echo "  MESA POS RD - Instalador de Servidor Local"
-echo "============================================"
+echo "========================================"
+echo "   MESA POS RD - Instalador Linux/Mac"
+echo "========================================"
 echo ""
-
-# Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Verificar si se ejecuta como root
-if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}[ERROR] Este script debe ejecutarse como root (sudo)${NC}"
-    echo "Ejecuta: sudo ./instalar-linux.sh"
-    exit 1
-fi
 
 # Verificar si Docker está instalado
 if ! command -v docker &> /dev/null; then
-    echo -e "${YELLOW}[INFO] Docker no encontrado. Instalando...${NC}"
-    
-    # Instalar Docker
-    apt-get update
-    apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
-    
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    
-    apt-get update
-    apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-    
-    systemctl enable docker
-    systemctl start docker
-    
-    echo -e "${GREEN}[OK] Docker instalado correctamente${NC}"
+    echo "❌ Docker no está instalado."
+    echo ""
+    echo "Para instalar Docker:"
+    echo ""
+    echo "Ubuntu/Debian:"
+    echo "  curl -fsSL https://get.docker.com -o get-docker.sh"
+    echo "  sudo sh get-docker.sh"
+    echo ""
+    echo "Mac:"
+    echo "  Descarga Docker Desktop desde https://docker.com"
+    echo ""
+    exit 1
+fi
+
+# Verificar si Docker Compose está disponible
+if ! docker compose version &> /dev/null && ! command -v docker-compose &> /dev/null; then
+    echo "❌ Docker Compose no está disponible."
+    echo "Instala Docker Compose o actualiza Docker a una versión reciente."
+    exit 1
+fi
+
+# Determinar comando de compose
+if docker compose version &> /dev/null; then
+    COMPOSE_CMD="docker compose"
 else
-    echo -e "${GREEN}[OK] Docker detectado${NC}"
+    COMPOSE_CMD="docker-compose"
 fi
 
-# Verificar Docker Compose
-if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-    echo -e "${YELLOW}[INFO] Instalando Docker Compose...${NC}"
-    apt-get install -y docker-compose-plugin
-fi
-echo -e "${GREEN}[OK] Docker Compose disponible${NC}"
+echo "✅ Docker encontrado"
+echo "✅ Docker Compose encontrado"
+echo ""
 
-# Crear archivo .env si no existe
-if [ ! -f .env ]; then
-    echo -e "${YELLOW}[INFO] Creando archivo de configuración...${NC}"
-    cp .env.example .env
-    
-    # Detectar IP automáticamente
-    LOCAL_IP=$(hostname -I | awk '{print $1}')
-    sed -i "s/SERVER_IP=.*/SERVER_IP=$LOCAL_IP/" .env
-    
-    echo ""
-    echo -e "${YELLOW}[IMPORTANTE] Se detectó tu IP: $LOCAL_IP${NC}"
-    echo "Si necesitas cambiarla, edita el archivo .env"
-    echo ""
+# Obtener IP local
+LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || ipconfig getifaddr en0 2>/dev/null || echo "localhost")
+echo "📍 IP Local detectada: $LOCAL_IP"
+echo ""
+
+# Preguntar si quiere usar IP específica
+read -p "¿Usar esta IP? (Enter para sí, o escribe otra): " CUSTOM_IP
+if [ -n "$CUSTOM_IP" ]; then
+    LOCAL_IP=$CUSTOM_IP
 fi
 
-# Leer IP del archivo .env
-SERVER_IP=$(grep "SERVER_IP" .env | cut -d '=' -f2)
+# Crear directorio de backups
+mkdir -p backups
 
 echo ""
-echo -e "${YELLOW}[INFO] IP del servidor: $SERVER_IP${NC}"
+echo "🔨 Construyendo contenedores..."
+echo "   (Esto puede tomar 5-15 minutos la primera vez)"
 echo ""
 
-# Construir e iniciar
-echo -e "${YELLOW}[INFO] Descargando e instalando componentes...${NC}"
-echo "Esto puede tardar varios minutos la primera vez..."
-echo ""
+# Construir y levantar servicios
+$COMPOSE_CMD build --no-cache
+$COMPOSE_CMD up -d
 
-docker-compose pull || docker compose pull
-docker-compose build --no-cache || docker compose build --no-cache
-docker-compose up -d || docker compose up -d
-
-# Esperar a que los servicios estén listos
 echo ""
-echo -e "${YELLOW}[INFO] Esperando a que los servicios inicien...${NC}"
+echo "⏳ Esperando a que los servicios inicien..."
 sleep 10
 
-# Verificar que todo esté corriendo
-if docker-compose ps | grep -q "Up" || docker compose ps | grep -q "Up"; then
+# Verificar que los servicios estén corriendo
+if $COMPOSE_CMD ps | grep -q "Up"; then
     echo ""
-    echo -e "${GREEN}============================================${NC}"
-    echo -e "${GREEN}  INSTALACIÓN COMPLETADA!${NC}"
-    echo -e "${GREEN}============================================${NC}"
+    echo "========================================"
+    echo "   ✅ INSTALACIÓN COMPLETADA"
+    echo "========================================"
     echo ""
-    echo "Tu sistema POS está listo en:"
+    echo "🌐 Accede al sistema desde cualquier dispositivo:"
     echo ""
-    echo -e "  ${GREEN}http://$SERVER_IP${NC}"
+    echo "   http://$LOCAL_IP"
     echo ""
-    echo "Desde cualquier dispositivo en tu red WiFi,"
-    echo "abre un navegador y ve a esa dirección."
+    echo "📱 PINs de acceso:"
+    echo "   Admin:      0000"
+    echo "   Cajero:     4321"
+    echo "   Mesero:     1234"
+    echo "   Cocina:     9999"
     echo ""
-    echo "PINs de acceso por defecto:"
-    echo "  - Admin: 0000"
-    echo "  - Cajero: 4321"
-    echo "  - Mesero 1: 1234"
-    echo "  - Mesero 2: 5678"
-    echo "  - Cocina: 9999"
+    echo "📂 Comandos útiles:"
+    echo "   Ver estado:    $COMPOSE_CMD ps"
+    echo "   Ver logs:      $COMPOSE_CMD logs -f"
+    echo "   Reiniciar:     $COMPOSE_CMD restart"
+    echo "   Detener:       $COMPOSE_CMD down"
     echo ""
-    echo "============================================"
-    echo ""
-    echo "Comandos útiles:"
-    echo "  - Detener: docker-compose down"
-    echo "  - Reiniciar: docker-compose restart"
-    echo "  - Ver logs: docker-compose logs -f"
-    echo "  - Backup: ./backup.sh"
-    echo ""
-    
-    # Crear servicio systemd para auto-inicio
-    cat > /etc/systemd/system/pos-server.service << EOF
-[Unit]
-Description=Mesa POS RD Server
-Requires=docker.service
-After=docker.service
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=$(pwd)
-ExecStart=/usr/bin/docker-compose up -d
-ExecStop=/usr/bin/docker-compose down
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl daemon-reload
-    systemctl enable pos-server.service
-    
-    echo -e "${GREEN}[OK] Configurado para iniciar automáticamente al encender${NC}"
+    echo "💾 Backup manual: ./backup.sh"
     echo ""
 else
-    echo -e "${RED}[ERROR] Hubo un problema al iniciar los servicios${NC}"
-    echo "Revisa los logs con: docker-compose logs"
+    echo ""
+    echo "❌ Error: Los servicios no iniciaron correctamente"
+    echo "Ejecuta '$COMPOSE_CMD logs' para ver los errores"
     exit 1
 fi
