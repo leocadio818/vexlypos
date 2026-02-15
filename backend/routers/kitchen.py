@@ -1,12 +1,18 @@
 # Kitchen Router - KDS (Kitchen Display System) endpoints
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.responses import StreamingResponse
 from datetime import datetime, timezone
 import uuid
+import asyncio
+import json
 
 router = APIRouter(tags=["kitchen"])
 
 # Database reference
 db = None
+
+# SSE: Track connected KDS clients for real-time updates
+kds_event = asyncio.Event()
 
 def set_db(database):
     global db
@@ -14,6 +20,10 @@ def set_db(database):
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+def notify_kds():
+    """Trigger all connected KDS clients to refresh"""
+    kds_event.set()
 
 # Import auth dependency
 from routers.auth import get_current_user
@@ -23,11 +33,85 @@ from routers.auth import get_current_user
 async def kitchen_orders():
     """Get orders with items sent to kitchen that are not yet served"""
     orders = await db.orders.find(
-        {"status": {"$in": ["sent", "active"]},
+        {"status": {"$in": ["sent", "active", "pending"]},
          "items": {"$elemMatch": {"sent_to_kitchen": True, "status": {"$nin": ["served", "cancelled"]}}}},
         {"_id": 0}
-    ).sort("created_at", 1).to_list(50)
+    ).sort("created_at", 1).to_list(100)
     return orders
+
+
+# ─── SSE STREAM FOR KDS REAL-TIME ───
+@router.get("/kitchen/stream")
+async def kitchen_stream(request: Request):
+    """Server-Sent Events stream for real-time KDS updates"""
+    async def event_generator():
+        global kds_event
+        while True:
+            # Check if client disconnected
+            if await request.is_disconnected():
+                break
+            
+            # Get current orders
+            orders = await db.orders.find(
+                {"status": {"$in": ["sent", "active", "pending"]},
+                 "items": {"$elemMatch": {"sent_to_kitchen": True, "status": {"$nin": ["served", "cancelled"]}}}},
+                {"_id": 0}
+            ).sort("created_at", 1).to_list(100)
+            
+            # Send orders as SSE event
+            data = json.dumps(orders, default=str)
+            yield f"data: {data}\n\n"
+            
+            # Wait for notification or timeout (poll every 3 seconds as fallback)
+            try:
+                await asyncio.wait_for(kds_event.wait(), timeout=3.0)
+                kds_event.clear()
+            except asyncio.TimeoutError:
+                pass
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+# ─── DEBUG/STATUS ENDPOINT ───
+@router.get("/kitchen/status")
+async def kitchen_status():
+    """Debug endpoint to check KDS connectivity and order status"""
+    orders = await db.orders.find(
+        {"status": {"$in": ["sent", "active", "pending"]},
+         "items": {"$elemMatch": {"sent_to_kitchen": True}}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    pending = [o for o in orders if any(i.get("status") in ["sent", "pending"] for i in o.get("items", []) if i.get("sent_to_kitchen"))]
+    preparing = [o for o in orders if any(i.get("status") == "preparing" for i in o.get("items", []) if i.get("sent_to_kitchen"))]
+    ready = [o for o in orders if any(i.get("status") == "ready" for i in o.get("items", []) if i.get("sent_to_kitchen"))]
+    
+    return {
+        "status": "connected",
+        "timestamp": now_iso(),
+        "total_orders": len(orders),
+        "pending_count": len(pending),
+        "preparing_count": len(preparing),
+        "ready_count": len(ready),
+        "orders_summary": [
+            {
+                "id": o["id"],
+                "table": o.get("table_number"),
+                "waiter": o.get("waiter_name"),
+                "items_count": len([i for i in o.get("items", []) if i.get("sent_to_kitchen") and i.get("status") not in ["served", "cancelled"]]),
+                "created_at": o.get("created_at")
+            }
+            for o in orders[:10]
+        ]
+    }
 
 @router.put("/kitchen/items/{order_id}/{item_id}")
 async def update_kitchen_item(order_id: str, item_id: str, input: dict):
