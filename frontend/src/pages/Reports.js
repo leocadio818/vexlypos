@@ -101,9 +101,120 @@ const Sparkline = ({ data, color = '#FF6600', height = 24 }) => {
   );
 };
 
+// Business info for letterhead
+const BUSINESS_INFO = {
+  name: 'Mesa POS RD',
+  rnc: '000-000000-0', // RNC placeholder - can be configured
+  address: '',
+  phone: ''
+};
+
+// Columns to hide in exports (technical IDs)
+const HIDDEN_COLUMNS = [
+  'warehouse_id', 'supplier_id', 'ingredient_id', 'id', 'reference_id',
+  '_id', 'user_id', 'product_id', 'category_id', 'sparkline'
+];
+
+// Column name translations for cleaner display
+const COLUMN_TRANSLATIONS = {
+  'warehouse_name': 'Almacén',
+  'name': 'Nombre',
+  'current_stock': 'Stock Actual',
+  'min_stock': 'Stock Mínimo',
+  'total_value': 'Valor Total',
+  'value': 'Valor',
+  'unit': 'Unidad',
+  'is_low': 'Bajo Stock',
+  'avg_cost': 'Costo Promedio',
+  'items': 'Productos',
+  'quantity': 'Cantidad',
+  'total': 'Total',
+  'count': 'Cantidad',
+  'percentage': 'Porcentaje',
+  'reason': 'Razón',
+  'from_warehouse': 'Origen',
+  'to_warehouse': 'Destino',
+  'created_at': 'Fecha',
+  'user_name': 'Usuario',
+  'orders': 'Órdenes',
+  'rnc': 'RNC',
+  'contact': 'Contacto',
+  'date': 'Fecha',
+  'subtotal': 'Subtotal',
+  'itbis': 'ITBIS',
+  'tips': 'Propinas'
+};
+
+// Format value for export (handles objects, arrays, currency, booleans)
+const formatExportValue = (value, key) => {
+  if (value === null || value === undefined) return '-';
+  
+  // Handle arrays (like items list)
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '-';
+    // If array contains objects with ingredient_name or name
+    if (typeof value[0] === 'object') {
+      return value.map(item => {
+        if (item.ingredient_name) return `${item.ingredient_name} (${item.quantity || 1})`;
+        if (item.name) return item.name;
+        if (item.product_name) return item.product_name;
+        return JSON.stringify(item);
+      }).join(', ');
+    }
+    return value.join(', ');
+  }
+  
+  // Handle objects
+  if (typeof value === 'object') {
+    if (value.name) return value.name;
+    if (value.ingredient_name) return value.ingredient_name;
+    return '-';
+  }
+  
+  // Handle booleans
+  if (typeof value === 'boolean') {
+    return value ? 'Sí' : 'No';
+  }
+  
+  // Handle currency values
+  if (typeof value === 'number') {
+    const currencyKeys = ['total', 'value', 'price', 'cost', 'subtotal', 'itbis', 'tips', 'total_value', 'avg_cost'];
+    if (currencyKeys.some(k => key.toLowerCase().includes(k))) {
+      return `RD$ ${value.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    // Format percentages
+    if (key.toLowerCase().includes('percent') || key.toLowerCase().includes('margin')) {
+      return `${value.toFixed(1)}%`;
+    }
+    return value.toLocaleString('es-DO');
+  }
+  
+  return value;
+};
+
+// Filter out hidden columns and translate headers
+const processDataForExport = (data) => {
+  if (!Array.isArray(data) || data.length === 0) return { headers: [], rows: [] };
+  
+  // Get visible headers (exclude hidden columns)
+  const allHeaders = Object.keys(data[0]);
+  const visibleHeaders = allHeaders.filter(h => !HIDDEN_COLUMNS.includes(h.toLowerCase()));
+  
+  // Translate headers
+  const translatedHeaders = visibleHeaders.map(h => 
+    COLUMN_TRANSLATIONS[h.toLowerCase()] || h.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  );
+  
+  // Process rows
+  const rows = data.map(row => 
+    visibleHeaders.map(h => formatExportValue(row[h], h))
+  );
+  
+  return { headers: translatedHeaders, rows, originalHeaders: visibleHeaders };
+};
+
 // Export utility functions
-const exportToPDF = async (reportId, data, dateRange, businessName = 'Mesa POS RD') => {
-  // Create printable HTML
+const exportToPDF = async (reportId, data, dateRange, businessName = BUSINESS_INFO.name) => {
   const printWindow = window.open('', '_blank');
   const htmlContent = generatePDFHTML(reportId, data, dateRange, businessName);
   printWindow.document.write(htmlContent);
@@ -117,6 +228,7 @@ const exportToPDF = async (reportId, data, dateRange, businessName = 'Mesa POS R
 const generatePDFHTML = (reportId, data, dateRange, businessName) => {
   const reportName = REPORT_CATEGORIES.flatMap(c => c.reports).find(r => r.id === reportId)?.name || 'Reporte';
   const dateStr = dateRange.from === dateRange.to ? dateRange.from : `${dateRange.from} al ${dateRange.to}`;
+  const generatedDate = new Date().toLocaleString('es-DO');
   
   return `
     <!DOCTYPE html>
@@ -124,19 +236,28 @@ const generatePDFHTML = (reportId, data, dateRange, businessName) => {
     <head>
       <title>${reportName} - ${businessName}</title>
       <style>
-        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-        .header { border-bottom: 3px solid #FF6600; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { color: #FF6600; margin: 0; font-size: 24px; }
-        .header .subtitle { color: #666; font-size: 14px; margin-top: 5px; }
-        .header .date { color: #999; font-size: 12px; margin-top: 3px; }
+        body { font-family: Arial, sans-serif; margin: 20px; color: #333; font-size: 11px; }
+        .letterhead { border-bottom: 3px solid #FF6600; padding-bottom: 15px; margin-bottom: 20px; }
+        .letterhead-main { display: flex; justify-content: space-between; align-items: flex-start; }
+        .letterhead h1 { color: #FF6600; margin: 0; font-size: 28px; font-weight: bold; }
+        .letterhead .rnc { color: #333; font-size: 12px; margin-top: 4px; font-weight: 600; }
+        .letterhead .report-info { text-align: right; }
+        .letterhead .report-title { color: #333; font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .letterhead .report-date { color: #666; font-size: 11px; }
+        .letterhead .generated { color: #999; font-size: 10px; margin-top: 3px; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        th { background: #f5f5f5; padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-size: 12px; }
-        td { padding: 10px; border-bottom: 1px solid #eee; font-size: 12px; }
-        .total-row { background: #fff8f0; font-weight: bold; }
-        .summary-box { background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0; }
-        .summary-item { display: inline-block; margin-right: 30px; }
-        .summary-label { color: #666; font-size: 11px; }
+        th { background: #FF6600; color: white; padding: 8px 10px; text-align: left; font-size: 10px; font-weight: bold; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 10px; }
+        tr:nth-child(even) { background: #fafafa; }
+        tr:hover { background: #fff8f0; }
+        .total-row { background: #fff8f0 !important; font-weight: bold; }
+        .summary-box { background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #eee; }
+        .summary-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+        .summary-item { min-width: 120px; }
+        .summary-label { color: #666; font-size: 10px; text-transform: uppercase; }
         .summary-value { font-size: 18px; font-weight: bold; color: #FF6600; }
+        .currency { font-family: 'Courier New', monospace; }
+        .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 9px; color: #999; text-align: center; }
         @media print {
           body { margin: 0; }
           .no-print { display: none; }
@@ -144,12 +265,23 @@ const generatePDFHTML = (reportId, data, dateRange, businessName) => {
       </style>
     </head>
     <body>
-      <div class="header">
-        <h1>${businessName}</h1>
-        <div class="subtitle">${reportName}</div>
-        <div class="date">Fecha: ${dateStr} | Generado: ${new Date().toLocaleString('es-DO')}</div>
+      <div class="letterhead">
+        <div class="letterhead-main">
+          <div>
+            <h1>${businessName}</h1>
+            <div class="rnc">RNC: ${BUSINESS_INFO.rnc}</div>
+          </div>
+          <div class="report-info">
+            <div class="report-title">${reportName}</div>
+            <div class="report-date">Período: ${dateStr}</div>
+            <div class="generated">Generado: ${generatedDate}</div>
+          </div>
+        </div>
       </div>
       ${generateReportContent(reportId, data)}
+      <div class="footer">
+        Documento generado automáticamente por ${businessName} | ${generatedDate} | Válido para auditoría interna
+      </div>
     </body>
     </html>
   `;
@@ -158,75 +290,132 @@ const generatePDFHTML = (reportId, data, dateRange, businessName) => {
 const generateReportContent = (reportId, data) => {
   if (!data) return '<p>No hay datos disponibles</p>';
   
-  // Generate appropriate content based on report type
+  let html = '';
+  
+  // Generate summary section if present
   if (data.summary) {
-    let summaryHTML = '<div class="summary-box">';
+    html += '<div class="summary-box"><div class="summary-grid">';
     Object.entries(data.summary).forEach(([key, value]) => {
-      const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      const formattedValue = typeof value === 'number' && key.includes('total') ? `RD$ ${value.toLocaleString('es-DO', {minimumFractionDigits: 2})}` : value;
-      summaryHTML += `<div class="summary-item"><div class="summary-label">${label}</div><div class="summary-value">${formattedValue}</div></div>`;
+      // Skip technical fields
+      if (HIDDEN_COLUMNS.includes(key.toLowerCase())) return;
+      
+      const label = COLUMN_TRANSLATIONS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const formattedValue = formatExportValue(value, key);
+      html += `<div class="summary-item"><div class="summary-label">${label}</div><div class="summary-value">${formattedValue}</div></div>`;
     });
-    summaryHTML += '</div>';
-    return summaryHTML;
+    html += '</div></div>';
   }
   
-  if (Array.isArray(data)) {
-    if (data.length === 0) return '<p>No hay datos para el período seleccionado</p>';
-    const headers = Object.keys(data[0]);
-    let tableHTML = '<table><thead><tr>';
-    headers.forEach(h => {
-      tableHTML += `<th>${h.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</th>`;
-    });
-    tableHTML += '</tr></thead><tbody>';
-    data.forEach(row => {
-      tableHTML += '<tr>';
-      headers.forEach(h => {
-        let val = row[h];
-        if (typeof val === 'number' && (h.includes('total') || h.includes('price') || h.includes('cost'))) {
-          val = `RD$ ${val.toLocaleString('es-DO', {minimumFractionDigits: 2})}`;
-        }
-        tableHTML += `<td>${val}</td>`;
+  // Find the main data array
+  const dataArrays = ['products', 'suppliers', 'methods', 'by_reason', 'by_user', 'by_authorizer', 
+                      'daily', 'logs', 'items', 'transfers', 'by_ingredient', 'by_supplier', 'by_status'];
+  
+  for (const arrayName of dataArrays) {
+    if (data[arrayName] && Array.isArray(data[arrayName]) && data[arrayName].length > 0) {
+      const { headers, rows } = processDataForExport(data[arrayName]);
+      if (headers.length > 0) {
+        const sectionTitle = COLUMN_TRANSLATIONS[arrayName] || arrayName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        html += `<h3 style="color: #333; margin-top: 20px; font-size: 13px;">${sectionTitle}</h3>`;
+        html += '<table><thead><tr>';
+        headers.forEach(h => { html += `<th>${h}</th>`; });
+        html += '</tr></thead><tbody>';
+        rows.forEach(row => {
+          html += '<tr>';
+          row.forEach(val => { html += `<td>${val}</td>`; });
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+      }
+    }
+  }
+  
+  // Handle direct array data
+  if (Array.isArray(data) && data.length > 0) {
+    const { headers, rows } = processDataForExport(data);
+    if (headers.length > 0) {
+      html += '<table><thead><tr>';
+      headers.forEach(h => { html += `<th>${h}</th>`; });
+      html += '</tr></thead><tbody>';
+      rows.forEach(row => {
+        html += '<tr>';
+        row.forEach(val => { html += `<td>${val}</td>`; });
+        html += '</tr>';
       });
-      tableHTML += '</tr>';
-    });
-    tableHTML += '</tbody></table>';
-    return tableHTML;
+      html += '</tbody></table>';
+    }
   }
   
-  return '<p>Datos del reporte procesados</p>';
+  return html || '<p>No hay datos para el período seleccionado</p>';
 };
 
 const exportToExcel = async (reportId, data, dateRange) => {
   try {
     const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
+    const reportName = REPORT_CATEGORIES.flatMap(c => c.reports).find(r => r.id === reportId)?.name || 'Reporte';
+    const dateStr = dateRange.from === dateRange.to ? dateRange.from : `${dateRange.from} al ${dateRange.to}`;
     
-    // Prepare data for Excel
+    // Prepare data for Excel with letterhead
     let sheetData = [];
+    
+    // Add letterhead
+    sheetData.push([BUSINESS_INFO.name]);
+    sheetData.push([`RNC: ${BUSINESS_INFO.rnc}`]);
+    sheetData.push([]);
+    sheetData.push([reportName]);
+    sheetData.push([`Período: ${dateStr}`]);
+    sheetData.push([`Generado: ${new Date().toLocaleString('es-DO')}`]);
+    sheetData.push([]);
+    
+    // Add summary if present
     if (data.summary) {
-      sheetData.push(['Resumen']);
+      sheetData.push(['RESUMEN']);
       Object.entries(data.summary).forEach(([key, value]) => {
-        sheetData.push([key.replace(/_/g, ' '), value]);
+        if (HIDDEN_COLUMNS.includes(key.toLowerCase())) return;
+        const label = COLUMN_TRANSLATIONS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        sheetData.push([label, formatExportValue(value, key)]);
       });
       sheetData.push([]);
     }
     
-    // Add main data
-    const mainData = data.products || data.suppliers || data.methods || data.by_reason || data.daily || data.logs || [];
-    if (mainData.length > 0) {
-      sheetData.push(Object.keys(mainData[0]));
-      mainData.forEach(row => {
-        sheetData.push(Object.values(row).map(v => Array.isArray(v) ? v.join(', ') : v));
-      });
+    // Find and add main data arrays
+    const dataArrays = ['products', 'suppliers', 'methods', 'by_reason', 'by_user', 'by_authorizer', 
+                        'daily', 'logs', 'items', 'transfers', 'by_ingredient', 'by_supplier', 'by_status'];
+    
+    for (const arrayName of dataArrays) {
+      if (data[arrayName] && Array.isArray(data[arrayName]) && data[arrayName].length > 0) {
+        const { headers, rows } = processDataForExport(data[arrayName]);
+        if (headers.length > 0) {
+          const sectionTitle = COLUMN_TRANSLATIONS[arrayName] || arrayName.replace(/_/g, ' ').toUpperCase();
+          sheetData.push([sectionTitle]);
+          sheetData.push(headers);
+          rows.forEach(row => sheetData.push(row));
+          sheetData.push([]);
+        }
+      }
+    }
+    
+    // Handle direct array data
+    if (Array.isArray(data) && data.length > 0) {
+      const { headers, rows } = processDataForExport(data);
+      if (headers.length > 0) {
+        sheetData.push(headers);
+        rows.forEach(row => sheetData.push(row));
+      }
     }
     
     const ws = XLSX.utils.aoa_to_sheet(sheetData);
+    
+    // Set column widths
+    ws['!cols'] = Array(10).fill({ wch: 18 });
+    
     XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
     
-    const fileName = `reporte_${reportId}_${dateRange.from}_${dateRange.to}.xlsx`;
+    const fileName = `${reportName.replace(/\s+/g, '_')}_${dateRange.from}_${dateRange.to}.xlsx`;
     XLSX.writeFile(wb, fileName);
     toast.success('Excel exportado correctamente');
   } catch (error) {
+    console.error('Export error:', error);
     toast.error('Error al exportar Excel');
   }
 };
