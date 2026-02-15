@@ -656,6 +656,8 @@ export default function Reports() {
         return renderTableMovementsReport();
       case 'by-waiter':
         return renderByWaiterReport();
+      case 'system-audit':
+        return renderSystemAuditReport();
       default:
         return <pre className="text-xs overflow-auto">{JSON.stringify(reportData, null, 2)}</pre>;
     }
