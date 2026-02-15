@@ -1303,50 +1303,102 @@ export default function OrderScreen() {
             </div>
 
             {/* Action Buttons - Fixed at bottom, larger for touch */}
+            {/* Mobile: State machine for buttons (initial -> editing -> closing) */}
+            {/* Desktop: Always show ENVIAR + FACTURAR row, then secondary buttons */}
             {!splitMode && order && (
               <div className="p-3 border-t border-border bg-card/80 space-y-2">
-                {/* Primary actions row */}
-                <div className="grid grid-cols-2 gap-2">
-                  {pendingCount > 0 && (
-                    <Button onClick={handleSendToKitchen} size="lg" data-testid="send-to-kitchen-btn"
-                      className="h-14 bg-green-600 hover:bg-green-700 text-white font-oswald text-base font-bold active:scale-95 col-span-2">
-                      <Send size={18} className="mr-2" /> ENVIAR ({pendingCount})
-                    </Button>
-                  )}
-                  <Button onClick={handleDirectBilling} size="lg" data-testid="go-to-billing" 
-                    className={`h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-base font-bold ${pendingCount > 0 ? '' : 'col-span-2'}`}>
+                {/* ENVIAR button - always visible when there are pending items (both mobile and desktop) */}
+                {pendingCount > 0 && (
+                  <Button onClick={handleSendToKitchen} size="lg" data-testid="send-to-kitchen-btn"
+                    className="h-14 w-full bg-green-600 hover:bg-green-700 text-white font-oswald text-base font-bold active:scale-95">
+                    <Send size={18} className="mr-2" /> ENVIAR ({pendingCount})
+                  </Button>
+                )}
+
+                {/* Desktop view: Always show FACTURAR and secondary buttons */}
+                <div className="hidden lg:block space-y-2">
+                  <Button onClick={handleDirectBilling} size="lg" data-testid="go-to-billing-desktop" 
+                    className="h-14 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-base font-bold">
                     <Receipt size={18} className="mr-2" /> FACTURAR
                   </Button>
-                </div>
-                {/* Secondary actions row */}
-                {activeItems.length > 0 && (
-                  <div className="flex gap-2">
-                    {table?.status !== 'billed' && selectedItems.length > 0 && (
-                      <Button 
-                        onClick={() => {
-                          // Check if any selected item was sent to kitchen
-                          const anyWasSent = selectedItems.some(id => {
-                            const item = order?.items?.find(i => i.id === id);
-                            return item?.status === 'sent' || item?.sent_to_kitchen;
-                          });
-                          // Open cancel dialog - will require PIN only if items were sent
-                          openBulkCancelDialog(selectedItems, anyWasSent);
-                        }}
-                        variant="outline" 
-                        size="lg" 
-                        data-testid="void-selected-btn"
-                        className="h-12 text-sm border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 flex-1"
-                      >
-                        <Ban size={16} className="mr-1.5" /> Anular ({selectedItems.length})
+                  {activeItems.length > 0 && (
+                    <div className="flex gap-2">
+                      {selectedItems.length > 0 && (
+                        <Button 
+                          onClick={() => {
+                            const anyWasSent = selectedItems.some(id => {
+                              const item = order?.items?.find(i => i.id === id);
+                              return item?.status === 'sent' || item?.sent_to_kitchen;
+                            });
+                            openBulkCancelDialog(selectedItems, anyWasSent);
+                          }}
+                          variant="outline" 
+                          size="lg" 
+                          data-testid="void-selected-btn-desktop"
+                          className="h-12 text-sm border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 flex-1"
+                        >
+                          <Ban size={16} className="mr-1.5" /> Anular ({selectedItems.length})
+                        </Button>
+                      )}
+                      <Button onClick={handlePrintPreCheck} variant="outline" size="lg" data-testid="pre-check-btn-desktop"
+                        className={`h-12 text-sm border-muted-foreground/30 relative flex-1 ${selectedItems.length === 0 ? 'flex-[2]' : ''}`}>
+                        <FileText size={16} className="mr-1.5" /> Pre-Cuenta
+                        {preCheckCount > 0 && <Lock size={10} className="ml-1 text-yellow-500" />}
                       </Button>
-                    )}
-                    <Button onClick={handlePrintPreCheck} variant="outline" size="lg" data-testid="pre-check-btn"
-                      className={`h-12 text-sm border-muted-foreground/30 relative flex-1 ${table?.status === 'billed' ? 'flex-[2]' : ''}`}>
-                      <FileText size={16} className="mr-1.5" /> Pre-Cuenta
-                      {preCheckCount > 0 && <Lock size={10} className="ml-1 text-yellow-500" />}
-                    </Button>
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile view: State-based button flow */}
+                <div className="lg:hidden">
+                  {activeItems.length > 0 && (
+                    <>
+                      {/* State: Initial - Show PRE-CUENTA only */}
+                      {mobileButtonState === 'initial' && (
+                        <Button 
+                          onClick={handlePrintPreCheck} 
+                          variant="outline" 
+                          size="lg" 
+                          data-testid="pre-check-btn-mobile"
+                          className="h-14 w-full text-base border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 font-oswald font-bold"
+                        >
+                          <FileText size={18} className="mr-2" /> PRE-CUENTA
+                          {preCheckCount > 0 && <Lock size={12} className="ml-2 text-yellow-500" />}
+                        </Button>
+                      )}
+
+                      {/* State: Editing - Show ANULAR (when items selected) */}
+                      {mobileButtonState === 'editing' && selectedItems.length > 0 && (
+                        <Button 
+                          onClick={() => {
+                            const anyWasSent = selectedItems.some(id => {
+                              const item = order?.items?.find(i => i.id === id);
+                              return item?.status === 'sent' || item?.sent_to_kitchen;
+                            });
+                            openBulkCancelDialog(selectedItems, anyWasSent);
+                          }}
+                          size="lg" 
+                          data-testid="void-selected-btn-mobile"
+                          className="h-14 w-full bg-red-600 hover:bg-red-700 text-white font-oswald text-base font-bold"
+                        >
+                          <Ban size={18} className="mr-2" /> ANULAR ({selectedItems.length})
+                        </Button>
+                      )}
+
+                      {/* State: Closing - Show FACTURAR (after pre-cuenta printed) */}
+                      {mobileButtonState === 'closing' && (
+                        <Button 
+                          onClick={handleDirectBilling} 
+                          size="lg" 
+                          data-testid="go-to-billing-mobile"
+                          className="h-14 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-base font-bold"
+                        >
+                          <Receipt size={18} className="mr-2" /> FACTURAR
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </>
