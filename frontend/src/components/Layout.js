@@ -194,6 +194,84 @@ export default function Layout() {
                 <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[9px]'}`}>{label}</span>
               </NavLink>
             ))}
+            
+            {/* Functions Menu Button - Solo visible en pantalla de pedidos */}
+            {location.pathname.startsWith('/order/') && (
+              <Popover open={functionsMenuOpen} onOpenChange={setFunctionsMenuOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    data-testid="sidebar-functions-btn"
+                    className={`${isTablet ? 'w-12 h-12' : largeMode ? 'w-14 h-14 lg:w-16 lg:h-16' : 'w-12 h-12 lg:w-14 lg:h-14'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all btn-press ${
+                      isGlassPage
+                        ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30'
+                        : 'bg-blue-500/20 text-blue-500 hover:bg-blue-500/30'
+                    }`}
+                  >
+                    <Wrench size={isTablet ? 18 : largeMode ? 24 : 20} />
+                    <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[9px]'}`}>Funciones</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-56 p-2 bg-card border border-border shadow-xl" 
+                  side="right" 
+                  align="start"
+                  data-testid="sidebar-functions-menu"
+                >
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold px-2 pb-1 border-b border-border/50">
+                      Funciones de Mesa
+                    </p>
+                    {/* Mover Mesa */}
+                    <Button 
+                      onClick={() => { 
+                        setFunctionsMenuOpen(false); 
+                        // Disparar evento para que OrderScreen abra el diálogo de mover mesa
+                        window.dispatchEvent(new CustomEvent('openMoveTableDialog'));
+                      }}
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start h-9 text-xs"
+                      data-testid="sidebar-fn-move-table"
+                    >
+                      <MoveRight size={14} className="mr-2 text-blue-400" /> Mover Mesa
+                    </Button>
+                    {/* Dividir Cuenta - Placeholder */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start h-9 text-xs text-muted-foreground"
+                      disabled
+                      data-testid="sidebar-fn-split-bill"
+                    >
+                      <SplitSquareHorizontal size={14} className="mr-2" /> Dividir Cuenta
+                      <Badge variant="outline" className="ml-auto text-[8px]">Pronto</Badge>
+                    </Button>
+                    {/* Reimprimir Comanda - Placeholder */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start h-9 text-xs text-muted-foreground"
+                      disabled
+                      data-testid="sidebar-fn-reprint-order"
+                    >
+                      <RefreshCw size={14} className="mr-2" /> Reimprimir Comanda
+                      <Badge variant="outline" className="ml-auto text-[8px]">Pronto</Badge>
+                    </Button>
+                    {/* Aplicar Descuento - Placeholder */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start h-9 text-xs text-muted-foreground"
+                      disabled
+                      data-testid="sidebar-fn-apply-discount"
+                    >
+                      <Percent size={14} className="mr-2" /> Descuento Especial
+                      <Badge variant="outline" className="ml-auto text-[8px]">Pronto</Badge>
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </nav>
 
           {/* Bottom section */}
