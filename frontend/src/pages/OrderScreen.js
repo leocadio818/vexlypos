@@ -452,6 +452,8 @@ export default function OrderScreen() {
         toast.success('Item anulado');
       }
       setOrder(res.data);
+      // Clear selected items after successful cancellation
+      setSelectedItems([]);
       resetCancelDialog();
     } catch (e) { 
       const msg = e.response?.data?.detail || 'Error anulando item(s)';
