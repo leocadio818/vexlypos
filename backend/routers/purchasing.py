@@ -44,6 +44,102 @@ async def list_suppliers_with_active_orders():
     return suppliers
 
 
+@router.get("/suppliers/analytics")
+async def get_suppliers_analytics():
+    """Get comprehensive analytics for suppliers dashboard."""
+    suppliers = await db.suppliers.find({}, {"_id": 0}).to_list(100)
+    supplier_map = {s["id"]: s["name"] for s in suppliers}
+    
+    # Get all received/partial POs for spending analysis
+    all_pos = await db.purchase_orders.find(
+        {"status": {"$in": ["received", "partial"]}},
+        {"_id": 0}
+    ).to_list(500)
+    
+    # Calculate spending by supplier
+    supplier_spending = {}
+    supplier_order_count = {}
+    monthly_spending = {}
+    
+    for po in all_pos:
+        supplier_id = po.get("supplier_id")
+        supplier_name = po.get("supplier_name", supplier_map.get(supplier_id, "Desconocido"))
+        total = po.get("actual_total", po.get("total", 0))
+        created_at = po.get("created_at", "")
+        
+        # Total spending per supplier
+        if supplier_id not in supplier_spending:
+            supplier_spending[supplier_id] = {"name": supplier_name, "total": 0}
+        supplier_spending[supplier_id]["total"] += total
+        
+        # Order count per supplier
+        if supplier_id not in supplier_order_count:
+            supplier_order_count[supplier_id] = {"name": supplier_name, "count": 0}
+        supplier_order_count[supplier_id]["count"] += 1
+        
+        # Monthly spending (last 6 months)
+        if created_at:
+            month_key = created_at[:7]  # YYYY-MM
+            if month_key not in monthly_spending:
+                monthly_spending[month_key] = {}
+            if supplier_name not in monthly_spending[month_key]:
+                monthly_spending[month_key][supplier_name] = 0
+            monthly_spending[month_key][supplier_name] += total
+    
+    # Top 5 suppliers by spending
+    top_suppliers = sorted(
+        [{"supplier_id": k, **v} for k, v in supplier_spending.items()],
+        key=lambda x: x["total"],
+        reverse=True
+    )[:5]
+    
+    # Find inactive suppliers (no orders in last 30 days)
+    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    recent_supplier_ids = set()
+    for po in all_pos:
+        if po.get("created_at", "") >= thirty_days_ago:
+            recent_supplier_ids.add(po.get("supplier_id"))
+    
+    inactive_suppliers = [
+        {"id": s["id"], "name": s["name"], "category": s.get("category", "general")}
+        for s in suppliers
+        if s.get("active") != False and s["id"] not in recent_supplier_ids
+    ]
+    
+    # Format monthly data for charts (sorted by month)
+    monthly_data = []
+    for month in sorted(monthly_spending.keys())[-6:]:  # Last 6 months
+        entry = {"month": month}
+        entry.update(monthly_spending[month])
+        monthly_data.append(entry)
+    
+    # Summary stats
+    total_spent = sum(s["total"] for s in supplier_spending.values())
+    total_orders = sum(s["count"] for s in supplier_order_count.values())
+    avg_per_order = total_spent / total_orders if total_orders > 0 else 0
+    most_used = max(supplier_order_count.items(), key=lambda x: x[1]["count"])[1] if supplier_order_count else None
+    
+    return {
+        "summary": {
+            "total_spent": round(total_spent, 2),
+            "total_orders": total_orders,
+            "avg_per_order": round(avg_per_order, 2),
+            "total_suppliers": len(suppliers),
+            "active_suppliers": len(recent_supplier_ids),
+            "inactive_suppliers": len(inactive_suppliers),
+            "most_used_supplier": most_used["name"] if most_used else None,
+            "most_used_count": most_used["count"] if most_used else 0
+        },
+        "top_suppliers": top_suppliers,
+        "inactive_suppliers": inactive_suppliers,
+        "monthly_spending": monthly_data,
+        "spending_by_supplier": [
+            {"name": v["name"], "total": round(v["total"], 2), "supplier_id": k}
+            for k, v in sorted(supplier_spending.items(), key=lambda x: x[1]["total"], reverse=True)
+        ]
+    }
+
+
 @router.post("/suppliers")
 async def create_supplier(input: SupplierInput):
     doc = {"id": gen_id(), **input.model_dump()}
