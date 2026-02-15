@@ -1159,7 +1159,7 @@ export default function OrderScreen() {
         ) : (
           /* Normal Order View */
           <>
-            <ScrollArea className="flex-1 max-h-[28vh] lg:max-h-none">
+            <ScrollArea className="flex-1 max-h-[32vh] lg:max-h-none">
               <div className="p-2 space-y-1">
                 {activeItems.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-4">Selecciona productos</p>
@@ -1167,9 +1167,28 @@ export default function OrderScreen() {
                   activeItems.map(item => {
                     const modTotal = (item.modifiers || []).reduce((s, m) => s + (m.price || 0), 0);
                     const itemTotal = (item.unit_price + modTotal) * item.quantity;
+                    const isSelected = selectedItems.includes(item.id);
                     return (
                     <div key={item.id} data-testid={`order-item-${item.id}`}
-                      className="flex items-start gap-1.5 p-1.5 rounded-lg bg-background/50 border border-border/50">
+                      onClick={() => {
+                        // Toggle selection for void
+                        if (isSelected) {
+                          setSelectedItems(prev => prev.filter(id => id !== item.id));
+                        } else {
+                          setSelectedItems(prev => [...prev, item.id]);
+                        }
+                      }}
+                      className={`flex items-start gap-1.5 p-1.5 rounded-lg border cursor-pointer transition-all ${
+                        isSelected 
+                          ? 'bg-red-500/10 border-red-500/50 ring-1 ring-red-500/30' 
+                          : 'bg-background/50 border-border/50 hover:border-primary/30'
+                      }`}>
+                      {/* Selection indicator */}
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 ${
+                        isSelected ? 'bg-red-500 border-red-500' : 'border-muted-foreground/30'
+                      }`}>
+                        {isSelected && <Check size={10} className="text-white" />}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1">
                           <span className="font-oswald text-xs font-bold text-primary">{item.quantity}x</span>
@@ -1196,7 +1215,7 @@ export default function OrderScreen() {
                       <div className="text-right shrink-0">
                         <span className="font-oswald text-[11px]">{formatMoney(itemTotal)}</span>
                         {(item.status === 'pending' || item.status === 'sent') && (
-                          <button onClick={() => openCancelDialog(item.id)} className="block ml-auto text-destructive/50 hover:text-destructive" data-testid={`cancel-item-${item.id}`}>
+                          <button onClick={(e) => { e.stopPropagation(); openCancelDialog(item.id); }} className="block ml-auto text-destructive/50 hover:text-destructive" data-testid={`cancel-item-${item.id}`}>
                             <Trash2 size={10} />
                           </button>
                         )}
