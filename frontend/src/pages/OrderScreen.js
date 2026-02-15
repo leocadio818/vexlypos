@@ -1376,11 +1376,14 @@ export default function OrderScreen() {
                 </div>
 
                 {/* Mobile view: State-based button flow */}
-                {/* State logic: initial (preCheckCount=0, no selection) -> editing (items selected) -> closing (preCheckCount>0) */}
+                {/* State logic based on mobileButtonState: */}
+                {/* - 'initial': Show PRE-CUENTA (default, or after interruption rule) */}
+                {/* - 'editing': Show ANULAR (when items selected - always interrupts) */}
+                {/* - 'closing': Show FACTURAR (after PRE-CUENTA printed, until interrupted) */}
                 <div className="lg:hidden">
                   {activeItems.length > 0 && (
                     <>
-                      {/* State: Editing - Show ANULAR (when items selected) - takes priority */}
+                      {/* State: Editing - Show ANULAR (when items selected) - highest priority */}
                       {selectedItems.length > 0 ? (
                         <Button 
                           onClick={() => {
@@ -1396,8 +1399,8 @@ export default function OrderScreen() {
                         >
                           <Ban size={18} className="mr-2" /> ANULAR ({selectedItems.length})
                         </Button>
-                      ) : preCheckCount > 0 ? (
-                        /* State: Closing - Show FACTURAR (after pre-cuenta was printed at least once) */
+                      ) : mobileButtonState === 'closing' ? (
+                        /* State: Closing - Show FACTURAR */
                         <Button 
                           onClick={handleDirectBilling} 
                           size="lg" 
@@ -1407,7 +1410,7 @@ export default function OrderScreen() {
                           <Receipt size={18} className="mr-2" /> FACTURAR
                         </Button>
                       ) : (
-                        /* State: Initial - Show PRE-CUENTA only */
+                        /* State: Initial - Show PRE-CUENTA */
                         <Button 
                           onClick={handlePrintPreCheck} 
                           variant="outline" 
@@ -1416,6 +1419,7 @@ export default function OrderScreen() {
                           className="h-14 w-full text-base border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 font-oswald font-bold"
                         >
                           <FileText size={18} className="mr-2" /> PRE-CUENTA
+                          {preCheckCount > 0 && <Lock size={12} className="ml-2 text-yellow-500" />}
                         </Button>
                       )}
                     </>
