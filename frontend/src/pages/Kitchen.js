@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { kitchenAPI } from '@/lib/api';
-import { Clock, ChefHat, CheckCircle2, ArrowRight, Printer, Monitor } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, ArrowRight, Printer, Monitor, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -19,8 +19,58 @@ export default function Kitchen() {
   const [orders, setOrders] = useState([]);
   const [printHtml, setPrintHtml] = useState('');
   const [printOpen, setPrintOpen] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const eventSourceRef = useRef(null);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
+  // SSE Connection for real-time updates
+  useEffect(() => {
+    const token = localStorage.getItem('pos_token');
+    if (!token) return;
+
+    const connectSSE = () => {
+      // Close existing connection
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+
+      const url = `${API_BASE}/api/kitchen/stream`;
+      eventSourceRef.current = new EventSource(url);
+
+      eventSourceRef.current.onopen = () => {
+        setConnected(true);
+        console.log('KDS: Connected to real-time stream');
+      };
+
+      eventSourceRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setOrders(data);
+          setConnected(true);
+        } catch (e) {
+          console.error('KDS: Error parsing SSE data', e);
+        }
+      };
+
+      eventSourceRef.current.onerror = (err) => {
+        console.error('KDS: SSE connection error', err);
+        setConnected(false);
+        // Reconnect after 3 seconds
+        setTimeout(connectSSE, 3000);
+      };
+    };
+
+    connectSSE();
+
+    // Cleanup on unmount
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, [API_BASE]);
+
+  // Fallback polling if SSE fails
   const fetchOrders = useCallback(async () => {
     try {
       const res = await kitchenAPI.orders();
@@ -29,10 +79,16 @@ export default function Kitchen() {
   }, []);
 
   useEffect(() => {
+    // Initial fetch
     fetchOrders();
-    const interval = setInterval(fetchOrders, 5000);
+    // Fallback polling every 10 seconds (SSE should handle most updates)
+    const interval = setInterval(() => {
+      if (!connected) {
+        fetchOrders();
+      }
+    }, 10000);
     return () => clearInterval(interval);
-  }, [fetchOrders]);
+  }, [fetchOrders, connected]);
 
   const advanceItem = async (orderId, itemId, currentStatus) => {
     const next = statusFlow[currentStatus];
@@ -40,6 +96,7 @@ export default function Kitchen() {
     try {
       await kitchenAPI.updateItem(orderId, itemId, { status: next });
       toast.success(`Item: ${statusLabels[next]}`);
+      // Refresh immediately after action
       fetchOrders();
     } catch {
       toast.error('Error actualizando');
