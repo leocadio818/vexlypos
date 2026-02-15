@@ -1,278 +1,320 @@
 #!/usr/bin/env python3
 """
-MESA POS RD - Agente de Impresión USB
-=====================================
-Este script corre en la computadora donde está conectada la impresora USB.
-Recibe trabajos de impresión del servidor POS y los envía a la impresora.
-
-Requisitos:
-  pip install python-escpos requests
-
-Uso:
-  python print_agent.py --server http://192.168.1.100:8001 --printer USB
+MESA POS - Agente de Impresion para Windows
+Soporta multiples impresoras por canal (Cocina, Bar, Recibo)
+Compatible con impresoras termicas 80mm ESC/POS
 """
 
-import argparse
+import requests
 import time
 import sys
-import json
-import requests
+import argparse
 from datetime import datetime
 
-try:
-    from escpos.printer import Usb, Network, Dummy
-    ESCPOS_AVAILABLE = True
-except ImportError:
-    ESCPOS_AVAILABLE = False
-    print("⚠️  python-escpos no instalado. Ejecuta: pip install python-escpos")
+# Configuracion por defecto
+DEFAULT_API_URL = "https://print-agent-verify.preview.emergentagent.com/api"
+POLL_INTERVAL = 3  # segundos
 
-# Configuración de impresoras USB comunes (Vendor ID, Product ID)
-KNOWN_PRINTERS = {
-    "epson": (0x04b8, 0x0202),      # Epson TM-T20
-    "epson_t88": (0x04b8, 0x0e15),  # Epson TM-T88
-    "star": (0x0519, 0x0003),       # Star TSP100
-    "generic": (0x0416, 0x5011),    # Generic 80mm
-    "xprinter": (0x0483, 0x5743),   # XPrinter
-    "pos58": (0x0416, 0x5011),      # POS-58
+# Mapeo de canales a impresoras Windows
+# El usuario debe configurar esto segun su setup
+CHANNEL_PRINTERS = {
+    "kitchen": "",   # Nombre de impresora Windows para Cocina
+    "bar": "",       # Nombre de impresora Windows para Bar
+    "receipt": "Caja",  # Nombre de impresora Windows para Recibos
 }
 
-class PrintAgent:
-    def __init__(self, server_url, printer_type="USB", printer_ip=None):
-        self.server_url = server_url.rstrip('/')
-        self.printer_type = printer_type
-        self.printer_ip = printer_ip
-        self.printer = None
-        self.last_job_id = None
+# Intentar cargar win32print
+try:
+    from escpos.printer import Win32Raw
+    PRINTER_AVAILABLE = True
+except ImportError:
+    print("[!] Libreria win32print no instalada. Ejecuta: pip install pywin32")
+    PRINTER_AVAILABLE = False
+
+
+def get_printer(printer_name):
+    """Obtiene una instancia de impresora por nombre"""
+    if not PRINTER_AVAILABLE or not printer_name:
+        return None
+    try:
+        return Win32Raw(printer_name)
+    except Exception as e:
+        print(f"[ERROR] No se pudo conectar a '{printer_name}': {e}")
+        return None
+
+
+def format_receipt_80mm(printer, data):
+    """Formatea e imprime un recibo para papel 80mm"""
+    try:
+        # Encabezado del negocio - GRANDE
+        printer.set(align='center', bold=True, double_width=True, double_height=True)
+        printer.text(f"{data.get('business_name', 'RESTAURANTE')}\n")
         
-    def connect_printer(self):
-        """Intenta conectar a la impresora"""
-        if not ESCPOS_AVAILABLE:
-            print("❌ python-escpos no disponible")
-            return False
+        printer.set(double_width=False, double_height=False, bold=False)
+        if data.get('business_address'):
+            printer.text(f"{data.get('business_address')}\n")
+        if data.get('rnc'):
+            printer.text(f"RNC: {data.get('rnc')}\n")
+        if data.get('phone'):
+            printer.text(f"Tel: {data.get('phone')}\n")
+        
+        printer.text("=" * 42 + "\n")
+        
+        # Info de la factura
+        printer.set(align='left')
+        printer.text(f"Factura: {data.get('bill_number', '')}\n")
+        printer.text(f"Fecha: {data.get('date', '')}\n")
+        if data.get('table_number'):
+            printer.text(f"Mesa: {data.get('table_number')}\n")
+        if data.get('waiter_name'):
+            printer.text(f"Mesero: {data.get('waiter_name')}\n")
+        if data.get('cashier_name'):
+            printer.text(f"Cajero: {data.get('cashier_name')}\n")
+        
+        printer.text("-" * 42 + "\n")
+        
+        # Items - formato de tabla
+        printer.set(bold=True)
+        printer.text(f"{'CANT':<5}{'PRODUCTO':<25}{'TOTAL':>10}\n")
+        printer.set(bold=False)
+        printer.text("-" * 42 + "\n")
+        
+        for item in data.get("items", []):
+            qty = item.get('quantity', 1)
+            name = item.get('name', '')[:24]
+            total = item.get('total', 0)
+            printer.text(f"{qty:<5}{name:<25}{total:>10.2f}\n")
+        
+        printer.text("-" * 42 + "\n")
+        
+        # Totales
+        printer.set(align='right')
+        subtotal = data.get('subtotal', 0)
+        itbis = data.get('itbis', 0)
+        tip = data.get('tip', 0)
+        discount = data.get('discount', 0)
+        total = data.get('total', 0)
+        
+        printer.text(f"{'Subtotal:':<20}{subtotal:>20.2f}\n")
+        if itbis > 0:
+            printer.text(f"{'ITBIS 18%:':<20}{itbis:>20.2f}\n")
+        if tip > 0:
+            printer.text(f"{'Propina 10%:':<20}{tip:>20.2f}\n")
+        if discount > 0:
+            printer.text(f"{'Descuento:':<20}{-discount:>20.2f}\n")
+        
+        printer.text("=" * 42 + "\n")
+        printer.set(bold=True, double_width=True, double_height=True)
+        printer.text(f"TOTAL: RD$ {total:.2f}\n")
+        
+        printer.set(double_width=False, double_height=False, bold=False, align='center')
+        if data.get('payment_method'):
+            printer.text(f"\nPago: {data.get('payment_method')}\n")
+        
+        # Pie de pagina
+        printer.text("\n")
+        printer.text(data.get('footer_text', 'Gracias por su visita!') + "\n")
+        printer.text("\n\n\n")
+        printer.cut()
+        
+        return True
+    except Exception as e:
+        print(f"[ERROR] Error formateando recibo: {e}")
+        return False
+
+
+def format_comanda_80mm(printer, data):
+    """Formatea e imprime una comanda para papel 80mm"""
+    try:
+        # Encabezado - GRANDE y visible
+        printer.set(align='center', bold=True, double_width=True, double_height=True)
+        printer.text(f"*** {data.get('channel_name', 'COCINA')} ***\n")
+        
+        printer.set(double_width=False, double_height=False)
+        printer.text(f"MESA {data.get('table_number', '?')}\n")
+        
+        printer.set(bold=False)
+        printer.text("=" * 42 + "\n")
+        
+        # Info
+        printer.set(align='left')
+        printer.text(f"Mesero: {data.get('waiter_name', '')}\n")
+        printer.text(f"Hora: {data.get('date', '')[-8:]}\n")
+        printer.text("-" * 42 + "\n")
+        
+        # Items - MUY GRANDE para cocina
+        for item in data.get("items", []):
+            qty = item.get('quantity', 1)
+            name = item.get('name', '')
             
-        if self.printer_type == "NETWORK" and self.printer_ip:
-            try:
-                self.printer = Network(self.printer_ip)
-                print(f"✅ Conectado a impresora de red: {self.printer_ip}")
-                return True
-            except Exception as e:
-                print(f"❌ Error conectando a {self.printer_ip}: {e}")
-                return False
-                
-        elif self.printer_type == "USB":
-            # Intentar con diferentes IDs de impresoras conocidas
-            for name, (vid, pid) in KNOWN_PRINTERS.items():
-                try:
-                    self.printer = Usb(vid, pid)
-                    print(f"✅ Conectado a impresora USB: {name} ({hex(vid)}:{hex(pid)})")
-                    return True
-                except Exception:
-                    continue
+            # Cantidad y nombre GRANDE
+            printer.set(bold=True, double_width=True, double_height=True)
+            printer.text(f"{qty}x {name}\n")
             
-            print("❌ No se encontró impresora USB compatible")
-            print("   Impresoras soportadas:", list(KNOWN_PRINTERS.keys()))
-            return False
+            # Modificadores
+            printer.set(double_width=False, double_height=False, bold=False)
+            for mod in item.get('modifiers', []):
+                if mod:
+                    printer.text(f"   + {mod}\n")
             
+            # Notas
+            if item.get('notes'):
+                printer.set(bold=True)
+                printer.text(f"   NOTA: {item.get('notes')}\n")
+                printer.set(bold=False)
+            
+            printer.text("\n")
+        
+        printer.text("-" * 42 + "\n")
+        printer.set(align='center')
+        printer.text(f"Orden: {data.get('order_number', '')[:8]}\n")
+        printer.text("\n\n\n")
+        printer.cut()
+        
+        return True
+    except Exception as e:
+        print(f"[ERROR] Error formateando comanda: {e}")
+        return False
+
+
+def format_test_80mm(printer, data):
+    """Imprime una pagina de prueba"""
+    try:
+        printer.set(align='center', bold=True, double_width=True, double_height=True)
+        printer.text(f"{data.get('business_name', 'MESA POS')}\n")
+        
+        printer.set(double_width=False, double_height=False, bold=False)
+        printer.text("=" * 42 + "\n")
+        printer.text("PRUEBA DE IMPRESION\n")
+        printer.text("=" * 42 + "\n\n")
+        
+        printer.set(align='left')
+        printer.text(f"Canal: {data.get('channel_name', '?')}\n")
+        printer.text(f"Impresora: {data.get('printer_name', '?')}\n")
+        printer.text(f"Fecha: {data.get('date', '')}\n\n")
+        
+        printer.set(align='center')
+        printer.text("Si puedes leer esto,\n")
+        printer.text("la impresora funciona!\n\n")
+        
+        # Test de tamanos
+        printer.set(bold=True)
+        printer.text("Texto en negrita\n")
+        printer.set(bold=False, double_width=True)
+        printer.text("Texto ancho\n")
+        printer.set(double_width=False, double_height=True)
+        printer.text("Texto alto\n")
+        printer.set(double_height=False)
+        
+        printer.text("\n\n\n")
+        printer.cut()
+        
+        return True
+    except Exception as e:
+        print(f"[ERROR] Error en prueba: {e}")
+        return False
+
+
+def print_job(job):
+    """Procesa e imprime un trabajo de la cola"""
+    job_type = job.get("type", "receipt")
+    channel = job.get("channel", "receipt")
+    data = job.get("data", {})
+    
+    # Determinar impresora: primero del job, luego del mapeo de canales
+    printer_name = job.get("printer_name") or CHANNEL_PRINTERS.get(channel, "")
+    
+    if not printer_name:
+        print(f"[!] No hay impresora configurada para canal '{channel}'")
         return False
     
-    def print_escpos(self, commands):
-        """Ejecuta comandos ESC/POS"""
-        if not self.printer:
-            if not self.connect_printer():
-                return False
-        
-        try:
-            for cmd in commands:
-                cmd_type = cmd.get("type", "")
-                
-                if cmd_type == "center":
-                    self.printer.set(align='center')
-                    if cmd.get("bold"):
-                        self.printer.set(bold=True)
-                    if cmd.get("size") == "large":
-                        self.printer.set(double_height=True, double_width=True)
-                    self.printer.text(cmd.get("text", "") + "\n")
-                    self.printer.set(bold=False, double_height=False, double_width=False)
-                    
-                elif cmd_type == "left":
-                    self.printer.set(align='left')
-                    if cmd.get("bold"):
-                        self.printer.set(bold=True)
-                    if cmd.get("size") == "large":
-                        self.printer.set(double_height=True, double_width=True)
-                    self.printer.text(cmd.get("text", "") + "\n")
-                    self.printer.set(bold=False, double_height=False, double_width=False)
-                    
-                elif cmd_type == "right":
-                    self.printer.set(align='right')
-                    self.printer.text(cmd.get("text", "") + "\n")
-                    
-                elif cmd_type == "columns":
-                    left_text = cmd.get("left", "")
-                    right_text = cmd.get("right", "")
-                    # Para 80mm, aproximadamente 48 caracteres
-                    width = 48
-                    spaces = width - len(left_text) - len(right_text)
-                    if spaces < 1:
-                        spaces = 1
-                    if cmd.get("bold"):
-                        self.printer.set(bold=True)
-                    self.printer.text(left_text + " " * spaces + right_text + "\n")
-                    self.printer.set(bold=False)
-                    
-                elif cmd_type == "divider":
-                    self.printer.text("-" * 48 + "\n")
-                    
-                elif cmd_type == "cut":
-                    self.printer.cut()
-                    
-                elif cmd_type == "feed":
-                    lines = cmd.get("lines", 1)
-                    self.printer.text("\n" * lines)
-                    
-            return True
-            
-        except Exception as e:
-            print(f"❌ Error imprimiendo: {e}")
-            self.printer = None  # Reset connection
+    printer = get_printer(printer_name)
+    if not printer:
+        return False
+    
+    print(f"[->] Imprimiendo {job_type} en '{printer_name}'...")
+    
+    try:
+        if job_type == "receipt":
+            return format_receipt_80mm(printer, data)
+        elif job_type == "comanda":
+            return format_comanda_80mm(printer, data)
+        elif job_type == "test":
+            return format_test_80mm(printer, data)
+        else:
+            print(f"[!] Tipo de trabajo desconocido: {job_type}")
             return False
+    except Exception as e:
+        print(f"[ERROR] Error imprimiendo: {e}")
+        return False
+
+
+def main(api_url):
+    """Loop principal del agente"""
+    print("=" * 50)
+    print("  MESA POS - AGENTE DE IMPRESION")
+    print("=" * 50)
+    print(f"  Servidor: {api_url}")
+    print(f"  Intervalo: {POLL_INTERVAL}s")
+    print("-" * 50)
+    print("  Impresoras configuradas:")
+    for channel, printer in CHANNEL_PRINTERS.items():
+        status = f"'{printer}'" if printer else "(sin configurar)"
+        print(f"    {channel.title()}: {status}")
+    print("=" * 50)
+    print("  Presiona Ctrl+C para detener")
+    print("=" * 50 + "\n")
     
-    def check_print_queue(self):
-        """Verifica si hay trabajos pendientes en el servidor"""
+    while True:
         try:
-            response = requests.get(
-                f"{self.server_url}/api/print-queue/pending",
-                timeout=5
-            )
-            if response.status_code == 200:
-                return response.json()
-            return []
-        except Exception as e:
-            return []
-    
-    def mark_job_completed(self, job_id, success=True):
-        """Marca un trabajo como completado"""
-        try:
-            requests.post(
-                f"{self.server_url}/api/print-queue/{job_id}/complete",
-                json={"success": success},
-                timeout=5
-            )
-        except Exception:
-            pass
-    
-    def run_polling_mode(self, interval=2):
-        """Modo polling: revisa periódicamente la cola de impresión"""
-        print(f"\n🖨️  Agente de Impresión Mesa POS RD")
-        print(f"   Servidor: {self.server_url}")
-        print(f"   Tipo: {self.printer_type}")
-        print(f"   Polling cada {interval} segundos")
-        print(f"\n   Presiona Ctrl+C para salir\n")
-        
-        if not self.connect_printer():
-            print("\n⚠️  Continuando sin impresora conectada...")
-            print("   Los trabajos se procesarán cuando se conecte una impresora.\n")
-        
-        while True:
-            try:
-                jobs = self.check_print_queue()
-                for job in jobs:
-                    job_id = job.get("id")
-                    if job_id == self.last_job_id:
-                        continue
-                        
-                    print(f"📄 Trabajo recibido: {job.get('type', 'unknown')} - {job_id[:8]}...")
-                    
-                    commands = job.get("commands", [])
-                    if commands:
-                        success = self.print_escpos(commands)
-                        self.mark_job_completed(job_id, success)
-                        self.last_job_id = job_id
-                        
-                        if success:
-                            print(f"   ✅ Impreso correctamente")
-                        else:
-                            print(f"   ❌ Error al imprimir")
-                    
-                time.sleep(interval)
+            # Obtener trabajos pendientes
+            response = requests.get(f"{api_url}/print/queue", timeout=10)
+            jobs = response.json()
+            
+            for job in jobs:
+                job_id = job.get("id", "?")
                 
-            except KeyboardInterrupt:
-                print("\n\n👋 Agente detenido")
-                break
-            except Exception as e:
-                print(f"⚠️  Error: {e}")
-                time.sleep(interval)
-
-
-def test_printer():
-    """Imprime un ticket de prueba"""
-    if not ESCPOS_AVAILABLE:
-        print("❌ python-escpos no instalado")
-        return
-        
-    print("🔍 Buscando impresora USB...")
-    
-    for name, (vid, pid) in KNOWN_PRINTERS.items():
-        try:
-            p = Usb(vid, pid)
-            print(f"✅ Encontrada: {name}")
-            
-            # Imprimir prueba
-            p.set(align='center')
-            p.text("================================\n")
-            p.set(bold=True, double_height=True, double_width=True)
-            p.text("MESA POS RD\n")
-            p.set(bold=False, double_height=False, double_width=False)
-            p.text("================================\n")
-            p.text("\n")
-            p.text("Prueba de Impresion\n")
-            p.text(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
-            p.text("\n")
-            p.text("Si puedes leer esto,\n")
-            p.text("la impresora esta configurada\n")
-            p.text("correctamente!\n")
-            p.text("\n")
-            p.text("================================\n")
-            p.cut()
-            
-            print("✅ Ticket de prueba impreso!")
-            return
-            
+                if print_job(job):
+                    # Eliminar trabajo completado
+                    try:
+                        requests.delete(f"{api_url}/print/jobs/{job_id}", timeout=5)
+                        print(f"[OK] Trabajo {job_id[:8]} completado")
+                    except:
+                        print(f"[!] No se pudo eliminar trabajo {job_id[:8]}")
+                else:
+                    print(f"[!] Error en trabajo {job_id[:8]}")
+                    
+        except requests.exceptions.RequestException as e:
+            print(f"[!] Error de conexion: {e}")
         except Exception as e:
-            continue
-    
-    print("❌ No se encontró ninguna impresora USB compatible")
-    print("\nImpresoras soportadas:")
-    for name, (vid, pid) in KNOWN_PRINTERS.items():
-        print(f"  - {name}: {hex(vid)}:{hex(pid)}")
-    print("\nPara encontrar tu impresora, ejecuta: lsusb (Linux) o revisa Administrador de dispositivos (Windows)")
-
-
-def main():
-    parser = argparse.ArgumentParser(description='Agente de Impresión Mesa POS RD')
-    parser.add_argument('--server', '-s', default='http://localhost:8001',
-                        help='URL del servidor POS (default: http://localhost:8001)')
-    parser.add_argument('--printer', '-p', choices=['USB', 'NETWORK'], default='USB',
-                        help='Tipo de conexión (default: USB)')
-    parser.add_argument('--ip', help='IP de la impresora (solo para NETWORK)')
-    parser.add_argument('--interval', '-i', type=int, default=2,
-                        help='Intervalo de polling en segundos (default: 2)')
-    parser.add_argument('--test', '-t', action='store_true',
-                        help='Imprimir ticket de prueba')
-    
-    args = parser.parse_args()
-    
-    if args.test:
-        test_printer()
-        return
-    
-    agent = PrintAgent(
-        server_url=args.server,
-        printer_type=args.printer,
-        printer_ip=args.ip
-    )
-    agent.run_polling_mode(interval=args.interval)
+            print(f"[!] Error: {e}")
+        
+        time.sleep(POLL_INTERVAL)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Agente de impresion MESA POS')
+    parser.add_argument('--server', '-s', default=DEFAULT_API_URL, 
+                        help=f'URL del servidor API (default: {DEFAULT_API_URL})')
+    parser.add_argument('--kitchen', '-k', default='',
+                        help='Nombre de impresora Windows para Cocina')
+    parser.add_argument('--bar', '-b', default='',
+                        help='Nombre de impresora Windows para Bar')
+    parser.add_argument('--receipt', '-r', default='Caja',
+                        help='Nombre de impresora Windows para Recibos (default: Caja)')
+    
+    args = parser.parse_args()
+    
+    # Actualizar mapeo de impresoras
+    if args.kitchen:
+        CHANNEL_PRINTERS['kitchen'] = args.kitchen
+    if args.bar:
+        CHANNEL_PRINTERS['bar'] = args.bar
+    if args.receipt:
+        CHANNEL_PRINTERS['receipt'] = args.receipt
+    
+    try:
+        main(args.server)
+    except KeyboardInterrupt:
+        print("\n[!] Agente detenido")
+        sys.exit(0)
