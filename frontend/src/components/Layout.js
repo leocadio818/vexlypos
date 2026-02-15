@@ -11,6 +11,7 @@ const navItems = [
   { to: '/kitchen', icon: ChefHat, label: 'Cocina' },
   { to: '/cash-register', icon: CircleDollarSign, label: 'Caja' },
   { to: '/reservations', icon: CalendarDays, label: 'Reservas' },
+  { to: '/reports', icon: BarChart3, label: 'Reportes' },
   { to: '/settings', icon: Settings, label: 'Config' },
 ];
 
