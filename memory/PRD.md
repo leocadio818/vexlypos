@@ -53,6 +53,17 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **Insumos/Ingredientes**: CRUD completo con unidad de medida, categoría, stock mínimo y costo promedio
 - **Almacenes**: Múltiples ubicaciones para gestionar stock separadamente
 - **Proveedores**: Gestión de proveedores con contacto, teléfono, email, RNC
+  - **Búsqueda Inteligente (NUEVO - Febrero 2026)**:
+    - Barra de búsqueda multicriterio: filtra por Nombre, Contacto o RNC en tiempo real
+    - Filtros rápidos por categoría: Todos, Licores, Tabaco, Alimentos, Generales
+    - Cada proveedor tiene una categoría asignable (licores, tabaco, alimentos, general)
+    - Indicador de órdenes de compra activas por proveedor (badge azul "X OC")
+    - Click en nombre del proveedor abre directamente el diálogo de edición
+    - Badge de categoría con color distintivo en cada proveedor
+    - Contador dinámico "X de Y proveedores" según filtros activos
+    - Botón "Limpiar filtros" cuando no hay resultados
+    - Layout: buscador a la izquierda, botón "+ Nuevo Proveedor" a la derecha
+    - Endpoint `/api/suppliers/with-active-orders` para obtener conteo de OC activas
 - **Recetas**: Vinculación de productos de venta con ingredientes, incluyendo % de merma
   - **Módulo de Margen de Ganancia Dinámico (NUEVO - Febrero 2026)**:
     - Calculadora de Margen integrada en el diálogo de Editar/Nueva Receta
