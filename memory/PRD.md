@@ -513,10 +513,11 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - `billing.py`: Facturas, pagos, métodos de pago, impuestos
     - `kitchen.py`: KDS (Kitchen Display System), estados de cocina
     - `customers.py`: Clientes, puntos de fidelidad, redención
-    - `config.py`: Categorías, productos, modificadores, turnos, reservaciones, tema
-  - **Reducción de `server.py`**: De ~4200 a ~2500 líneas (-40%)
+    - `config.py`: Configuración del sistema, tema
+  - **Reducción de `server.py`**: De 4356 a 989 líneas (**-77%**)
   - **Total de Routers**: 11 módulos independientes
   - **Funcionalidad Preservada**: Todas las APIs funcionan sin cambios en el frontend
+  - **Testing**: 42/42 tests de regresión pasados (ver `/app/test_reports/iteration_41.json`)
 - [ ] **Crear paquete ZIP descargable** del servidor local
 - [ ] **Integración de impresora ESC/POS** física
 
