@@ -74,6 +74,9 @@ export default function OrderScreen() {
   const [moveItemsMode, setMoveItemsMode] = useState(false);
   const [selectedItemsToMove, setSelectedItemsToMove] = useState([]);
   
+  // Functions Menu Popover
+  const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
+  
   // Merge Accounts Dialog
   const [mergeAccountsDialog, setMergeAccountsDialog] = useState({ open: false, sourceOrderId: null });
   
