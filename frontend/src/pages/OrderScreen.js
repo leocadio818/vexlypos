@@ -1413,17 +1413,19 @@ export default function OrderScreen() {
 
         <ScrollArea className="flex-1">
           {/* Category Grid (when no category selected) */}
+          {/* Dynamic columns: max 3 on wider panel to avoid cramping */}
           {!activeCat && (
             <div 
-              className={`p-2 grid ${largeMode ? 'gap-3' : 'gap-2'}`}
-              style={{ gridTemplateColumns: `repeat(${gridSettings.categoryColumns}, minmax(0, 1fr))` }}
+              className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'}`}
+              style={{ gridTemplateColumns: `repeat(${Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}
               data-testid="category-grid"
             >
               {categories.map(cat => {
                 const catProductCount = products.filter(p => p.category_id === cat.id).length;
+                const effectiveCols = Math.min(gridSettings.categoryColumns, 3);
                 const heightClass = largeMode 
-                  ? (gridSettings.categoryColumns > 3 ? 'h-28' : 'h-32')
-                  : (gridSettings.categoryColumns > 4 ? 'h-24' : 'h-28');
+                  ? (effectiveCols > 2 ? 'h-28' : 'h-32')
+                  : (effectiveCols > 2 ? 'h-24' : 'h-28');
                 return (
                   <button key={cat.id} onClick={() => setActiveCat(cat.id)} data-testid={`cat-card-${cat.id}`}
                     className={`relative overflow-hidden rounded-xl border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] p-3 ${heightClass} text-left flex flex-col justify-between`}
@@ -1440,16 +1442,18 @@ export default function OrderScreen() {
           )}
 
           {/* Product Grid (when category selected) */}
+          {/* Dynamic columns: max 3 on wider panel to avoid cramping */}
           {activeCat && (
             <div 
-              className={`p-2 grid ${largeMode ? 'gap-3' : 'gap-2'}`}
-              style={{ gridTemplateColumns: `repeat(${gridSettings.productColumns}, minmax(0, 1fr))` }}
+              className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'}`}
+              style={{ gridTemplateColumns: `repeat(${Math.min(gridSettings.productColumns, 3)}, minmax(0, 1fr))` }}
               data-testid="product-grid"
             >
               {filteredProducts.map(product => {
+                const effectiveCols = Math.min(gridSettings.productColumns, 3);
                 const heightClass = largeMode 
-                  ? (gridSettings.productColumns > 3 ? 'h-28' : 'h-32')
-                  : (gridSettings.productColumns > 4 ? 'h-24' : 'h-28');
+                  ? (effectiveCols > 2 ? 'h-28' : 'h-32')
+                  : (effectiveCols > 2 ? 'h-24' : 'h-28');
                 // Check modifiers from both old and new systems
                 const assignmentIds = (product.modifier_assignments || []).map(a => a.group_id);
                 const legacyIds = product.modifier_group_ids || [];
