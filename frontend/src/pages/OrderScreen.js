@@ -1280,25 +1280,25 @@ export default function OrderScreen() {
               )}
             </div>
 
-            {/* Action Buttons - Fixed at bottom */}
+            {/* Action Buttons - Fixed at bottom, larger for touch */}
             {!splitMode && order && (
-              <div className="p-2 border-t border-border bg-card/80 space-y-1.5">
+              <div className="p-3 border-t border-border bg-card/80 space-y-2">
                 {/* Primary actions row */}
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-2 gap-2">
                   {pendingCount > 0 && (
-                    <Button onClick={handleSendToKitchen} size="sm" data-testid="send-to-kitchen-btn"
-                      className="h-10 bg-green-600 hover:bg-green-700 text-white font-oswald text-xs font-bold active:scale-95 col-span-2">
-                      <Send size={14} className="mr-1.5" /> ENVIAR ({pendingCount})
+                    <Button onClick={handleSendToKitchen} size="lg" data-testid="send-to-kitchen-btn"
+                      className="h-14 bg-green-600 hover:bg-green-700 text-white font-oswald text-base font-bold active:scale-95 col-span-2">
+                      <Send size={18} className="mr-2" /> ENVIAR ({pendingCount})
                     </Button>
                   )}
-                  <Button onClick={handleDirectBilling} size="sm" data-testid="go-to-billing" 
-                    className={`h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-xs font-bold ${pendingCount > 0 ? '' : 'col-span-2'}`}>
-                    <Receipt size={14} className="mr-1.5" /> FACTURAR
+                  <Button onClick={handleDirectBilling} size="lg" data-testid="go-to-billing" 
+                    className={`h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-base font-bold ${pendingCount > 0 ? '' : 'col-span-2'}`}>
+                    <Receipt size={18} className="mr-2" /> FACTURAR
                   </Button>
                 </div>
                 {/* Secondary actions row */}
                 {activeItems.length > 0 && (
-                  <div className="flex gap-1">
+                  <div className="flex gap-2">
                     {table?.status !== 'billed' && selectedItems.length > 0 && (
                       <Button 
                         onClick={() => {
@@ -1311,17 +1311,17 @@ export default function OrderScreen() {
                           openBulkCancelDialog(selectedItems, anyWasSent);
                         }}
                         variant="outline" 
-                        size="sm" 
+                        size="lg" 
                         data-testid="void-selected-btn"
-                        className="h-8 text-[10px] border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 flex-1"
+                        className="h-12 text-sm border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 flex-1"
                       >
-                        <Ban size={12} className="mr-1" /> Anular ({selectedItems.length})
+                        <Ban size={16} className="mr-1.5" /> Anular ({selectedItems.length})
                       </Button>
                     )}
-                    <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
-                      className={`h-8 text-[10px] border-muted-foreground/30 relative flex-1 ${table?.status === 'billed' ? 'flex-[2]' : ''}`}>
-                      <FileText size={12} className="mr-1" /> Pre-Cuenta
-                      {preCheckCount > 0 && <Lock size={8} className="ml-0.5 text-yellow-500" />}
+                    <Button onClick={handlePrintPreCheck} variant="outline" size="lg" data-testid="pre-check-btn"
+                      className={`h-12 text-sm border-muted-foreground/30 relative flex-1 ${table?.status === 'billed' ? 'flex-[2]' : ''}`}>
+                      <FileText size={16} className="mr-1.5" /> Pre-Cuenta
+                      {preCheckCount > 0 && <Lock size={10} className="ml-1 text-yellow-500" />}
                     </Button>
                   </div>
                 )}
@@ -1332,7 +1332,8 @@ export default function OrderScreen() {
       </div>
 
       {/* Right (visually): Categories & Products - Now rendered first but appears on right */}
-      {!splitMode && !accessDenied && (
+      {/* Hide on mobile when account is expanded */}
+      {!splitMode && !accessDenied && !mobileAccountExpanded && (
         <div className="flex-1 flex flex-col overflow-hidden">
         {/* Grid Settings Bar - Glassmorphism */}
         <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-white/10 backdrop-blur-xl bg-white/5`}>
