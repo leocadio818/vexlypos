@@ -308,18 +308,24 @@ export default function OrderScreen() {
   }, [order]);
 
   // Mobile button state machine: Handle transitions based on selectedItems
+  // Using a ref to track previous state and avoid dependency cycle
+  const prevMobileStateRef = useRef(mobileButtonState);
   useEffect(() => {
+    const prevState = prevMobileStateRef.current;
+    
     if (selectedItems.length > 0) {
-      // Transition to 'editing' when items are selected (interrupts any state)
+      // Items were selected - go to editing mode (from any state)
       setMobileButtonState('editing');
-    } else if (mobileButtonState === 'editing') {
-      // When no items selected and was in editing mode, return to 'initial'
+    } else if (prevState === 'editing') {
+      // Items were deselected from editing mode - go back to initial
       // This handles the "interruption rule" - after anular, go back to pre-cuenta
       setMobileButtonState('initial');
     }
-    // Note: Don't reset 'closing' state when items are deselected - it should stay there
-    // until user selects items (which goes to 'editing') or closes the order
-  }, [selectedItems, mobileButtonState]);
+    // Note: 'closing' state is only set when pre-cuenta is printed (in doPrintPreCheck)
+    // It stays until items are selected (which goes to 'editing')
+    
+    prevMobileStateRef.current = mobileButtonState;
+  }, [selectedItems.length, mobileButtonState]);
 
   // Load grid settings from localStorage
   useEffect(() => {
