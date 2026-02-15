@@ -101,10 +101,10 @@ const Sparkline = ({ data, color = '#FF6600', height = 24 }) => {
   );
 };
 
-// Business info for letterhead
-const BUSINESS_INFO = {
+// Business info for letterhead (updated dynamically from settings)
+let BUSINESS_INFO = {
   name: 'Mesa POS RD',
-  rnc: '000-000000-0', // RNC placeholder - can be configured
+  rnc: '000-000000-0',
   address: '',
   phone: ''
 };
