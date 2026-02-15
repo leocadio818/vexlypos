@@ -222,7 +222,7 @@ async def bump_kitchen_item(order_id: str, item_id: str, user: dict = Depends(ge
         }}
     )
     notify_kds()
-    return {"ok": True}"
+    return {"ok": True}
 
 @router.post("/kitchen/items/{order_id}/{item_id}/serve")
 async def serve_kitchen_item(order_id: str, item_id: str, user: dict = Depends(get_current_user)):
@@ -242,6 +242,7 @@ async def serve_kitchen_item(order_id: str, item_id: str, user: dict = Depends(g
         active_items = [i for i in order["items"] if i["status"] not in ["served", "cancelled"]]
         if not active_items:
             await db.orders.update_one({"id": order_id}, {"$set": {"status": "completed"}})
+    notify_kds()
     return {"ok": True}
 
 @router.post("/kitchen/orders/{order_id}/bump-all")
@@ -263,6 +264,7 @@ async def bump_all_items(order_id: str, user: dict = Depends(get_current_user)):
             )
     
     await db.orders.update_one({"id": order_id}, {"$set": {"updated_at": now_iso()}})
+    notify_kds()
     return {"ok": True}
 
 # ─── PRINT CHANNELS ───
