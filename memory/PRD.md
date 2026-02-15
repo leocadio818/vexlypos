@@ -491,6 +491,21 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Máquina de estados `mobileButtonState`: 'initial' | 'editing' | 'closing'
     - `useEffect` para transiciones automáticas basadas en `selectedItems.length`
     - ENVIAR siempre visible cuando `pendingCount > 0`
+- [x] **Haptic Feedback para Botones Móviles** (Completado 15 Feb 2026) ✅
+  - **Función de Vibración**: Utiliza Web Vibration API (`navigator.vibrate`)
+  - **Patrones de Vibración**:
+    - `light` (10ms): Selección/deselección de items
+    - `medium` (25ms): Transición de estado, botón PRE-CUENTA
+    - `strong` (50ms): Botón ANULAR (acción destructiva)
+    - `double` ([25, 50, 25]ms): Botón FACTURAR
+    - `success` ([10, 30, 10, 30, 50]ms): Pre-cuenta impresa exitosamente
+  - **Puntos de Activación**:
+    - Al seleccionar/deseleccionar un item en la lista
+    - Al cambiar de estado 'initial' → 'editing'
+    - Al imprimir pre-cuenta (estado → 'closing')
+    - Al presionar cualquier botón de acción móvil
+  - **Compatibilidad**: Funciona en dispositivos Android y algunos iOS (Safari limitado)
+  - **Degradación Elegante**: Sin efecto si API no está disponible
 - [ ] **Crear paquete ZIP descargable** del servidor local
 - [ ] **Integración de impresora ESC/POS** física
 
