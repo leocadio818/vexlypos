@@ -83,6 +83,9 @@ export default function OrderScreen() {
   // Merge Accounts Dialog
   const [mergeAccountsDialog, setMergeAccountsDialog] = useState({ open: false, sourceOrderId: null });
   
+  // Mobile fullscreen account view
+  const [mobileAccountExpanded, setMobileAccountExpanded] = useState(false);
+  
   // Multiple orders per table support
   const [tableOrders, setTableOrders] = useState([]); // All orders for this table
   const [activeOrderId, setActiveOrderId] = useState(null); // Currently selected order
