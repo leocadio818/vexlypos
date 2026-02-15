@@ -26,6 +26,7 @@ from routers.inventory import (
     get_recipe_for_ingredient, check_recipe_availability, get_ingredient_stock
 )
 from routers.recipes import router as recipes_router
+from routers.reports import router as reports_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
