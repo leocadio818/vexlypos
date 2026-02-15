@@ -1,10 +1,32 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, AlertTriangle, Check, BarChart3, List, ArrowUpDown, Filter } from 'lucide-react';
+import { 
+  FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, 
+  AlertTriangle, Check, BarChart3, List, ArrowUpDown, Filter, Search,
+  UtensilsCrossed, Coffee, Beer, Cigarette, Soup, Package
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { recipesAPI, formatMoney } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+
+// Menu category configuration
+const MENU_CATEGORIES = [
+  { id: 'all', label: 'Todas', icon: Package, color: 'bg-muted' },
+  { id: 'entradas', label: 'Entradas', icon: Soup, color: 'bg-amber-600' },
+  { id: 'platos_fuertes', label: 'Platos Fuertes', icon: UtensilsCrossed, color: 'bg-red-600' },
+  { id: 'bebidas', label: 'Bebidas', icon: Coffee, color: 'bg-blue-600' },
+  { id: 'licores', label: 'Licores', icon: Beer, color: 'bg-purple-600' },
+  { id: 'cigarros', label: 'Cigarros', icon: Cigarette, color: 'bg-gray-600' },
+];
+
+// Health filter configuration
+const HEALTH_FILTERS = [
+  { id: 'all', label: 'Todos', color: 'bg-muted', textColor: '' },
+  { id: 'critical', label: 'Críticos', color: 'bg-red-600', textColor: 'text-red-500' },
+  { id: 'warning', label: 'Advertencia', color: 'bg-amber-600', textColor: 'text-amber-500' },
+  { id: 'ok', label: 'Saludables', color: 'bg-green-600', textColor: 'text-green-500' },
+];
 
 export default function RecipesTab({ 
   recipes, 
@@ -14,20 +36,40 @@ export default function RecipesTab({
   onRefreshAll 
 }) {
   const [recipeDialog, setRecipeDialog] = useState({ open: false, data: null });
-  const [marginMode, setMarginMode] = useState('price'); // 'price' or 'margin'
+  const [marginMode, setMarginMode] = useState('price');
   const [targetMargin, setTargetMargin] = useState(30);
   const [customPrice, setCustomPrice] = useState(0);
   
-  // View state: 'list' or 'report'
+  // View state
   const [viewMode, setViewMode] = useState('list');
-  const [marginFilter, setMarginFilter] = useState('all'); // 'all', 'critical', 'warning', 'ok'
-  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' = lowest margin first
+  const [marginFilter, setMarginFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('asc');
+  
+  // NEW: Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [healthFilter, setHealthFilter] = useState('all');
 
   // Margin threshold configuration
   const MARGIN_CRITICAL = 15;
   const MARGIN_WARNING = 30;
 
-  // Calculate margin data for all recipes (for report)
+  // Get product category mapping (based on product's category)
+  const getRecipeCategory = (recipe) => {
+    const product = products.find(p => p.id === recipe.product_id);
+    if (!product) return 'otros';
+    
+    // Map product category names to our filter categories
+    const categoryName = product.category_name?.toLowerCase() || '';
+    if (categoryName.includes('entrada') || categoryName.includes('aperitivo')) return 'entradas';
+    if (categoryName.includes('plato') || categoryName.includes('principal') || categoryName.includes('carne') || categoryName.includes('pollo') || categoryName.includes('pescado') || categoryName.includes('marisco')) return 'platos_fuertes';
+    if (categoryName.includes('bebida') || categoryName.includes('refresco') || categoryName.includes('jugo') || categoryName.includes('café') || categoryName.includes('te')) return 'bebidas';
+    if (categoryName.includes('licor') || categoryName.includes('cerveza') || categoryName.includes('vino') || categoryName.includes('whisky') || categoryName.includes('ron') || categoryName.includes('trago') || categoryName.includes('cocktail') || categoryName.includes('coctel')) return 'licores';
+    if (categoryName.includes('cigarro') || categoryName.includes('tabaco')) return 'cigarros';
+    return 'otros';
+  };
+
+  // Enhanced margin report with search and filters
   const marginReport = useMemo(() => {
     const data = recipes.map(rec => {
       const cost = calculateRecipeCost(rec);
@@ -40,6 +82,11 @@ export default function RecipesTab({
       if (margin < MARGIN_CRITICAL) status = 'critical';
       else if (margin < MARGIN_WARNING) status = 'warning';
       
+      // Get ingredient names for search
+      const ingredientNames = rec.ingredients?.map(ing => 
+        ing.ingredient_name || ingredients.find(i => i.id === ing.ingredient_id)?.name || ''
+      ).join(' ').toLowerCase() || '';
+      
       return {
         ...rec,
         cost,
@@ -47,20 +94,43 @@ export default function RecipesTab({
         margin: Math.round(margin * 10) / 10,
         profit,
         status,
-        product
+        product,
+        category: getRecipeCategory(rec),
+        ingredientNames
       };
     });
     
-    // Filter
+    // Apply filters
     let filtered = data;
-    if (marginFilter !== 'all') {
-      filtered = data.filter(r => r.status === marginFilter);
+    
+    // Search filter (name or ingredient)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(r => 
+        r.product_name?.toLowerCase().includes(query) ||
+        r.ingredientNames.includes(query)
+      );
+    }
+    
+    // Category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(r => r.category === categoryFilter);
+    }
+    
+    // Health filter (margin status)
+    if (healthFilter !== 'all') {
+      filtered = filtered.filter(r => r.status === healthFilter);
+    }
+    
+    // Legacy margin filter (for report view compatibility)
+    if (marginFilter !== 'all' && healthFilter === 'all') {
+      filtered = filtered.filter(r => r.status === marginFilter);
     }
     
     // Sort by margin
     filtered.sort((a, b) => sortOrder === 'asc' ? a.margin - b.margin : b.margin - a.margin);
     
-    // Summary stats
+    // Summary stats (from full data, not filtered)
     const critical = data.filter(r => r.status === 'critical').length;
     const warning = data.filter(r => r.status === 'warning').length;
     const ok = data.filter(r => r.status === 'ok').length;
@@ -69,8 +139,10 @@ export default function RecipesTab({
     
     return {
       items: filtered,
+      allItems: data,
       summary: {
         total: data.length,
+        filtered: filtered.length,
         critical,
         warning,
         ok,
@@ -78,7 +150,7 @@ export default function RecipesTab({
         totalProfit
       }
     };
-  }, [recipes, products, calculateRecipeCost, marginFilter, sortOrder]);
+  }, [recipes, products, ingredients, calculateRecipeCost, searchQuery, categoryFilter, healthFilter, marginFilter, sortOrder]);
 
   // Calculate dynamic margin data for current recipe
   const marginData = useMemo(() => {
@@ -89,19 +161,9 @@ export default function RecipesTab({
 
     const cost = calculateRecipeCost(recipeDialog.data);
     const currentPrice = customPrice || product.price_a || product.price || 0;
-    
-    // Calculate current margin percentage
     const currentMargin = currentPrice > 0 ? ((currentPrice - cost) / currentPrice) * 100 : 0;
-    
-    // Calculate suggested price based on target margin
-    // margin = (price - cost) / price
-    // margin * price = price - cost
-    // cost = price - margin * price
-    // cost = price * (1 - margin)
-    // price = cost / (1 - margin)
     const suggestedPrice = targetMargin < 100 ? cost / (1 - targetMargin / 100) : cost;
     
-    // Determine color status
     let status = 'ok';
     let statusColor = 'text-green-500';
     let bgColor = 'bg-green-500/10 border-green-500/30';
@@ -135,7 +197,6 @@ export default function RecipesTab({
       const product = products.find(p => p.id === recipeDialog.data.product_id);
       if (!product) return;
 
-      // Update product price via API
       const API_URL = process.env.REACT_APP_BACKEND_URL || '';
       await fetch(`${API_URL}/api/products/${product.id}`, {
         method: 'PUT',
@@ -157,6 +218,16 @@ export default function RecipesTab({
     setCustomPrice(product?.price_a || product?.price || 0);
     setRecipeDialog({ open: true, data });
   };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery('');
+    setCategoryFilter('all');
+    setHealthFilter('all');
+  };
+
+  // Check if any filter is active
+  const hasActiveFilters = searchQuery.trim() || categoryFilter !== 'all' || healthFilter !== 'all';
 
   // ─── RECIPE HANDLERS ───
   const handleSaveRecipe = async () => {
@@ -235,6 +306,100 @@ export default function RecipesTab({
         </div>
       </div>
 
+      {/* ─── SEARCH AND FILTERS BAR ─── */}
+      <div className="space-y-3 mb-4">
+        {/* Search Bar */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar por plato o ingrediente (ej: Churrasco, Camarones)..."
+              className="w-full pl-9 pr-9 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              data-testid="recipe-search-input"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                data-testid="clear-search-btn"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Health Filter Buttons */}
+          <div className="flex items-center gap-1">
+            {HEALTH_FILTERS.map(filter => {
+              const isActive = healthFilter === filter.id;
+              const count = filter.id === 'all' 
+                ? marginReport.summary.total 
+                : marginReport.summary[filter.id] || 0;
+              
+              return (
+                <Button
+                  key={filter.id}
+                  variant={isActive ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setHealthFilter(healthFilter === filter.id ? 'all' : filter.id)}
+                  className={`font-oswald text-xs ${isActive ? filter.color + ' text-white border-transparent' : ''}`}
+                  data-testid={`health-filter-${filter.id}`}
+                >
+                  {filter.id === 'critical' && <AlertTriangle size={12} className="mr-1" />}
+                  {filter.id === 'ok' && <Check size={12} className="mr-1" />}
+                  {filter.label}
+                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                    {count}
+                  </Badge>
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Category Filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {MENU_CATEGORIES.map(cat => {
+            const Icon = cat.icon;
+            const isActive = categoryFilter === cat.id;
+            return (
+              <Button
+                key={cat.id}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCategoryFilter(categoryFilter === cat.id ? 'all' : cat.id)}
+                className={`font-oswald text-xs ${isActive ? cat.color + ' text-white border-transparent' : ''}`}
+                data-testid={`category-filter-${cat.id}`}
+              >
+                <Icon size={14} className="mr-1.5" />
+                {cat.label}
+              </Button>
+            );
+          })}
+
+          {/* Results counter and clear button */}
+          <div className="ml-auto flex items-center gap-2">
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-xs text-muted-foreground hover:text-foreground"
+                data-testid="clear-all-filters-btn"
+              >
+                <X size={12} className="mr-1" /> Limpiar filtros
+              </Button>
+            )}
+            <Badge variant="outline" className="font-oswald text-xs">
+              {marginReport.summary.filtered} de {marginReport.summary.total} recetas
+            </Badge>
+          </div>
+        </div>
+      </div>
+
       {/* ─── MARGIN REPORT VIEW ─── */}
       {viewMode === 'report' && (
         <div className="space-y-4" data-testid="margin-report">
@@ -305,7 +470,7 @@ export default function RecipesTab({
                 </tr>
               </thead>
               <tbody>
-                {marginReport.items.map((item, idx) => (
+                {marginReport.items.map((item) => (
                   <tr 
                     key={item.id} 
                     className={`border-t border-border hover:bg-muted/30 transition-colors ${
@@ -362,7 +527,17 @@ export default function RecipesTab({
                 {marginReport.items.length === 0 && (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                      No hay recetas {marginFilter !== 'all' ? 'con este filtro' : 'creadas'}
+                      {hasActiveFilters ? (
+                        <div>
+                          <Search size={32} className="mx-auto mb-2 opacity-30" />
+                          <p>No hay recetas con estos filtros</p>
+                          <Button variant="outline" size="sm" onClick={clearFilters} className="mt-2">
+                            Limpiar filtros
+                          </Button>
+                        </div>
+                      ) : (
+                        'No hay recetas creadas'
+                      )}
                     </td>
                   </tr>
                 )}
@@ -391,101 +566,127 @@ export default function RecipesTab({
       {/* ─── LIST VIEW ─── */}
       {viewMode === 'list' && (
         <>
-      {/* Recipes List */}
-      <div className="space-y-3">
-        {recipes.map(rec => {
-          const cost = calculateRecipeCost(rec);
-          const product = products.find(p => p.id === rec.product_id);
-          const price = product?.price_a || product?.price || 0;
-          const margin = price > 0 ? ((price - cost) / price) * 100 : 0;
-          
-          // Determine margin status
-          let marginStatus = 'ok';
-          let marginBadgeClass = 'bg-green-500/20 text-green-400 border-green-500/30';
-          if (margin < MARGIN_CRITICAL) {
-            marginStatus = 'critical';
-            marginBadgeClass = 'bg-red-500/20 text-red-400 border-red-500/30';
-          } else if (margin < MARGIN_WARNING) {
-            marginStatus = 'warning';
-            marginBadgeClass = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-          }
-          
-          return (
-            <div 
-              key={rec.id} 
-              className={`p-4 rounded-xl border bg-card ${marginStatus === 'critical' ? 'border-red-500/50' : marginStatus === 'warning' ? 'border-amber-500/50' : 'border-border'}`}
-              data-testid={`recipe-${rec.id}`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-oswald font-bold text-lg flex items-center gap-2">
-                    {rec.product_name}
-                    <Badge className={`text-xs ${marginBadgeClass}`}>
-                      {margin.toFixed(1)}% margen
-                    </Badge>
-                  </h3>
-                  <div className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span>Rinde: {rec.yield_quantity} porción(es)</span>
-                    <span>•</span>
-                    <span>Costo: {formatMoney(cost)}</span>
-                    {product && (
-                      <>
-                        <span>•</span>
-                        <span>PVP: {formatMoney(price)}</span>
-                        <span>•</span>
-                        <span className={margin < MARGIN_CRITICAL ? 'text-red-400' : margin < MARGIN_WARNING ? 'text-amber-400' : 'text-green-400'}>
-                          Ganancia: {formatMoney(price - cost)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={() => openRecipeDialog({ ...rec })}
-                    data-testid={`edit-recipe-${rec.id}`}
-                  >
-                    <Pencil size={14} />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-destructive"
-                    onClick={() => handleDeleteRecipe(rec.id)}
-                    data-testid={`delete-recipe-${rec.id}`}
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {rec.ingredients?.map((ing, idx) => {
-                  const ingredient = ingredients.find(i => i.id === ing.ingredient_id);
-                  return (
-                    <div key={idx} className="px-3 py-2 rounded-lg bg-background border border-border/50 text-sm">
-                      <span className="font-medium">{ing.ingredient_name || ingredient?.name || '?'}</span>
-                      <div className="text-xs text-muted-foreground">
-                        {ing.quantity} {ing.unit}
-                        {ing.waste_percentage > 0 && <span className="text-red-400"> +{ing.waste_percentage}% merma</span>}
+          {/* Recipes List */}
+          <div className="space-y-3">
+            {marginReport.items.map(rec => {
+              const catConfig = MENU_CATEGORIES.find(c => c.id === rec.category) || MENU_CATEGORIES[0];
+              const CatIcon = catConfig.icon;
+              
+              // Determine margin status
+              let marginBadgeClass = 'bg-green-500/20 text-green-400 border-green-500/30';
+              if (rec.status === 'critical') {
+                marginBadgeClass = 'bg-red-500/20 text-red-400 border-red-500/30';
+              } else if (rec.status === 'warning') {
+                marginBadgeClass = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+              }
+              
+              return (
+                <div 
+                  key={rec.id} 
+                  className={`p-4 rounded-xl border bg-card ${
+                    rec.status === 'critical' ? 'border-red-500/50' : 
+                    rec.status === 'warning' ? 'border-amber-500/50' : 'border-border'
+                  }`}
+                  data-testid={`recipe-${rec.id}`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start gap-3">
+                      {/* Category Icon */}
+                      <div className={`w-10 h-10 rounded-lg ${catConfig.color} flex items-center justify-center shrink-0`}>
+                        <CatIcon size={18} className="text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-oswald font-bold text-lg flex items-center gap-2 flex-wrap">
+                          {rec.product_name}
+                          <Badge className={`text-xs ${marginBadgeClass}`}>
+                            {rec.margin}% margen
+                          </Badge>
+                        </h3>
+                        <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                          <span>Rinde: {rec.yield_quantity} porción(es)</span>
+                          <span>•</span>
+                          <span>Costo: {formatMoney(rec.cost)}</span>
+                          <span>•</span>
+                          <span>PVP: {formatMoney(rec.price)}</span>
+                          <span>•</span>
+                          <span className={rec.status === 'critical' ? 'text-red-400' : rec.status === 'warning' ? 'text-amber-400' : 'text-green-400'}>
+                            Ganancia: {formatMoney(rec.profit)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => openRecipeDialog({ ...rec })}
+                        data-testid={`edit-recipe-${rec.id}`}
+                      >
+                        <Pencil size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-destructive"
+                        onClick={() => handleDeleteRecipe(rec.id)}
+                        data-testid={`delete-recipe-${rec.id}`}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {rec.ingredients?.map((ing, idx) => {
+                      const ingredient = ingredients.find(i => i.id === ing.ingredient_id);
+                      // Highlight if matches search
+                      const isHighlighted = searchQuery.trim() && 
+                        (ing.ingredient_name || ingredient?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+                      
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`px-3 py-2 rounded-lg border text-sm ${
+                            isHighlighted 
+                              ? 'bg-primary/10 border-primary/50' 
+                              : 'bg-background border-border/50'
+                          }`}
+                        >
+                          <span className={`font-medium ${isHighlighted ? 'text-primary' : ''}`}>
+                            {ing.ingredient_name || ingredient?.name || '?'}
+                          </span>
+                          <div className="text-xs text-muted-foreground">
+                            {ing.quantity} {ing.unit}
+                            {ing.waste_percentage > 0 && <span className="text-red-400"> +{ing.waste_percentage}% merma</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            {marginReport.items.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground" data-testid="no-recipes">
+                {hasActiveFilters ? (
+                  <>
+                    <Search size={40} className="mx-auto mb-3 opacity-30" />
+                    <p>No se encontraron recetas</p>
+                    <p className="text-sm mt-1">Intenta con otro término de búsqueda o filtro</p>
+                    <Button variant="outline" size="sm" onClick={clearFilters} className="mt-3">
+                      Limpiar filtros
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <FileText size={40} className="mx-auto mb-3 opacity-30" />
+                    <p>No hay recetas</p>
+                    <p className="text-sm">Vincula productos de venta con sus ingredientes</p>
+                  </>
+                )}
               </div>
-            </div>
-          );
-        })}
-        {recipes.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground" data-testid="no-recipes">
-            <FileText size={40} className="mx-auto mb-3 opacity-30" />
-            <p>No hay recetas</p>
-            <p className="text-sm">Vincula productos de venta con sus ingredientes</p>
+            )}
           </div>
-        )}
-      </div>
         </>
       )}
 
@@ -494,6 +695,9 @@ export default function RecipesTab({
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-oswald">{recipeDialog.data?.id ? 'Editar' : 'Nueva'} Receta</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm">
+              {recipeDialog.data?.id ? 'Modifica los ingredientes y controla el margen' : 'Vincula un producto con sus ingredientes'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
