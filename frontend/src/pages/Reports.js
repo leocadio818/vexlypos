@@ -1535,6 +1535,102 @@ export default function Reports() {
     );
   };
 
+  const renderSystemAuditReport = () => {
+    const data = reportData;
+    if (!data?.summary) return null;
+    
+    const typeIcons = {
+      'Anulación': '🚫',
+      'Ajuste de Stock': '📦',
+      'Merma': '📉',
+      'Entrada por Transferencia': '📥',
+      'Salida por Transferencia': '📤',
+      'Orden de Compra': '🛒',
+      'Diferencia Inventario': '⚠️',
+      'Apertura de Turno': '🔓',
+      'Cierre de Turno': '🔒'
+    };
+    
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gradient-to-br from-amber-500/20 to-orange-600/10 border border-amber-500/30 rounded-xl p-4 text-center">
+            <p className="text-[10px] text-amber-400 uppercase">Total Actividades</p>
+            <p className="font-oswald text-3xl font-bold text-amber-400">{data.summary.total_activities}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 text-center">
+            <p className="text-[10px] text-muted-foreground uppercase">Valor Total Involucrado</p>
+            <p className="font-oswald text-xl font-bold">{formatMoney(data.summary.total_value)}</p>
+          </div>
+        </div>
+        
+        {/* Activity breakdown by type */}
+        {data.by_type?.length > 0 && (
+          <div className="bg-card border border-border rounded-xl p-4">
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Resumen por Tipo de Actividad</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {data.by_type.map((t, i) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-background border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <span>{typeIcons[t.type] || '📋'}</span>
+                    <span className="text-sm font-medium truncate">{t.type}</span>
+                  </div>
+                  <Badge variant="secondary">{t.count}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Activity log */}
+        <div className="bg-card border border-border rounded-xl p-4">
+          <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Historial de Actividades</h4>
+          {data.activities?.length > 0 ? (
+            <div className="overflow-x-auto max-h-[400px]">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-card">
+                  <tr className="border-b border-border text-muted-foreground">
+                    <th className="text-left py-2 px-1">Hora</th>
+                    <th className="text-left py-2">Tipo</th>
+                    <th className="text-left py-2">Descripción</th>
+                    <th className="text-left py-2">Usuario</th>
+                    <th className="text-left py-2">Autorizado por</th>
+                    <th className="text-right py-2">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.activities.map((act, i) => (
+                    <tr key={i} className="border-b border-border/30 hover:bg-background/50">
+                      <td className="py-2 px-1 font-mono text-muted-foreground whitespace-nowrap">
+                        <Clock size={10} className="inline mr-1" />
+                        {act.timestamp?.split('T')[0]} {act.timestamp?.split('T')[1]?.slice(0, 5) || ''}
+                      </td>
+                      <td className="py-2">
+                        <Badge variant="outline" className="text-[9px] whitespace-nowrap">
+                          {typeIcons[act.type] || ''} {act.type}
+                        </Badge>
+                      </td>
+                      <td className="py-2 max-w-[200px] truncate" title={act.description}>
+                        {act.description}
+                      </td>
+                      <td className="py-2 font-medium">{act.user}</td>
+                      <td className="py-2 text-muted-foreground">{act.authorizer}</td>
+                      <td className="py-2 text-right font-oswald">
+                        {act.value > 0 ? formatMoney(act.value) : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">Sin actividades en el período</p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="h-full flex flex-col" data-testid="reports-page">
       {/* Header */}
