@@ -1,40 +1,33 @@
 <analysis>**original_problem_statement:**
-The user initiated a series of feature enhancements for the Point of Sale system, focusing on improving the usability and analytical capabilities of the inventory management module.
+The user requested a series of feature enhancements and UI/UX improvements for the Point of Sale system.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Suppliers Tab Optimization ():**
-    *   Implement a multi-criteria search bar to filter suppliers by Name, Contact Name, or RNC in real-time.
-    *   Add quick filter buttons for supplier categories: 'Licores', 'Tabaco', 'Alimentos', 'Generales'.
-    *   Display the number of active Purchase Orders for each supplier in the list.
-    *   Allow users to click on a supplier's name to open the edit modal directly.
-2.  **Suppliers Analytics Dashboard ( - Dashboard View):**
-    *   Create a new dashboard view within the Suppliers tab.
-    *   Include summary cards for Total Spent, Average per Order, Active Suppliers, and Most Used Supplier.
-    *   Add an area chart for monthly spending by supplier.
-    *   Add a bar chart for the top 5 suppliers by total spending.
-    *   Include a summary table breaking down spending by supplier.
-    *   Add a panel to highlight inactive suppliers (no orders in the last 30 days).
-3.  **Recipes Tab Optimization ():**
-    *   Add a real-time search bar to filter recipes by Dish Name or by a Key Ingredient.
-    *   Implement financial health quick filters: Ver Críticos (margin < 30%) and Ver Saludables.
-    *   Add filters to group recipes by menu category (e.g., Entradas, Platos Fuertes).
+
+1.  **Modern Reports Module:**
+    *   Activate and optimize the Reports module with a modern data architecture.
+    *   Organize reports into collapsible administrative categories: Ventas y Caja, Inventario y Almacén, Compras y Fiscal, and Auditoría y Operaciones.
+    *   Implement a professional export system for each report (PDF, Excel, Email, Direct Print).
+    *   PDF/Excel exports must include a professional letterhead (Business Name, RNC), hide technical IDs, correctly format data (e.g., show item names instead of ), and use consistent currency formatting ().
+    *   Include a global date range selector and sparkline micro-charts for quick trend analysis.
+    *   Reorganize the report categories for better logical flow, creating a separate Fiscal group.
+    *   Centralize access to the reports module via the Configuration page, removing the direct link from the main sidebar.
+
+2.  **Sales Screen (Mesas) Optimization:**
+    *   Add a new Funciones (Functions) icon to the main sidebar.
+    *   When clicked, this button should open a pop-over menu.
+    *   Relocate the Mover Mesa (Move Table) functionality from the order panel into this new menu.
+    *   Include placeholders in the menu for future functions like Split Bill and Re-print-ticket.
+    *   Utilize the space freed up in the order panel by expanding the product list area.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-The application's inventory management module has been significantly upgraded.
--   ****: This component now has two views: Lista and Dashboard.
-    -   The Lista view features a smart search bar, quick filters by category, and an indicator for active purchase orders. Clicking a supplier opens its edit dialog.
-    -   The Dashboard view provides a comprehensive analytics page with summary cards, spending charts (area, bar), a data table, and a list of inactive suppliers.
--   ****: This component has been enhanced with a powerful search and filtering system. It allows users to search for recipes by name or ingredient (with matching ingredients highlighted) and filter the list by financial health (Critical, Warning, Healthy) or by menu category.
--   **Backend**: The backend has been updated to support these features.
-    -   The  model now includes a  field ().
-    -   New endpoints were created to provide data for the supplier analytics dashboard ( in ) and to count active POs ( in ).
+A comprehensive, multi-category reports module has been built and refined. It's accessible via the  tab. The module features collapsible sections, a global date range selector, and dynamic rendering of various reports, including summary cards, charts, and data tables. A robust export functionality (PDF/Excel) has been implemented, which includes a professional letterhead (dynamically fetched business name and RNC), correct data formatting, and hiding of technical IDs. The main navigation sidebar has been cleaned up by removing the direct link to reports. The agent has started work on optimizing the sales screen by adding a new Funciones button.
 
 **Last working item**:
--   **Last item agent was working:** Implementing the smart search and advanced filtering functionality in the Recetas tab ().
--   **Status**: COMPLETED
--   **Agent Testing Done**: Y
+-   **Last item agent was working:** Implementing a new Funciones (Functions) popover menu on the  page. The goal is to move actions like Mover Mesa into a dedicated, space-saving menu. The agent was in the process of refactoring , having added the necessary state and started modifying the JSX to replace the old button with the new Funciones trigger.
+-   **Status**: IN PROGRESS
+-   **Agent Testing Done**: N
 -   **Which testing method agent to use?**: Frontend testing agent
 -   **User Testing Done**: N
 
@@ -45,8 +38,8 @@ The application's inventory management module has been significantly upgraded.
 
 **Issues Detail:**
 -   **Issue 1: Backend Refactoring - Final Phase (Reports & Core Logic)**
-    -   **Attempted fixes:** None in this session. The agent deviated from the plan to work on this task.
-    -   **Next debug checklist:** Review  to identify remaining endpoint groups (Reports, Customers, DGII, Configuration), create corresponding router files (e.g., ), and migrate the logic.
+    -   **Attempted fixes:** None. This task was deprioritized in favor of user-requested features.
+    -   **Next debug checklist:** Review  to identify remaining endpoint groups (Customers, DGII, Configuration), create corresponding router files (e.g., ), and migrate the logic.
     -   **Why fix this issue and what will be achieved with the fix?** To complete the backend modularization, fully eliminating the monolith and adhering to best practices for a scalable application.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
@@ -54,47 +47,55 @@ The application's inventory management module has been significantly upgraded.
     -   **Blocked on other issue:** None.
 
 -   **Issue 2: Auto-send to kitchen does not work on the first try.**
-    -   **Attempted fixes:** None in this session.
-    -   **Next debug checklist:** Test the order workflow to confirm if the Comanda enviada toast appears reliably on the first attempt after adding items to an order. Investigate the event handling and state updates in the POS screen component.
+    -   **Attempted fixes:** None. The user mentioned this was resolved (ESTO ESTA BIEN YA), but no fix was implemented by the agent. This requires verification.
+    -   **Next debug checklist:** Test the order workflow to confirm if the Comanda enviada toast appears reliably on the first attempt. If the issue persists, investigate event handling and state updates in .
     -   **Why fix this issue and what will be achieved with the fix?** Ensures reliable and immediate communication with the kitchen, preventing order delays.
-    -   **Status:** NOT STARTED
+    -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** frontend
     -   **Blocked on other issue:** None
 
 -   **Issue 3: Verify and Fix Payment Screen Mobile Scroll**
     -   **Attempted fixes:** None.
-    -   **Next debug checklist:** Use the screenshot tool with a mobile viewport on the payment screen, add enough items to the cart to make it overflow, and verify the payment methods panel is fully scrollable without overlapping or hiding elements. Check for  and  or  CSS properties.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures full usability on mobile/tablet POS devices, which is critical for a point-of-sale application.
+    -   **Next debug checklist:** Use the screenshot tool with a mobile viewport on the payment screen, add enough items to the cart to make it overflow, and verify the payment methods panel is fully scrollable. Check for  and  CSS properties.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures full usability on mobile/tablet POS devices.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** frontend
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   None.
+-   **Task 1: Implement Funciones Menu on Sales Screen**
+    -   **Where to resume:** In . The state  exists. The next step is to replace the row of buttons containing Mover Mesa with a single Funciones button that triggers a  component containing the relocated actions.
+    -   **What will be achieved with this?** A cleaner UI on the sales screen and a centralized location for operational functions.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** frontend
+    -   **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P0: Complete Backend Refactoring:** Migrate remaining modules (Reports, Customers, etc.) from  to dedicated routers.
+    *   **P0: Complete Backend Refactoring:** Migrate remaining modules from  to dedicated routers.
     *   **P1: Create Downloadable Local Server Package:** Script to package the app for local installation.
-    *   **P2: Physical ESC/POS Printer Integration.**
+    *   **P1: Physical ESC/POS Printer Integration.**
     *   **P2: Employee Time Clock.**
     *   **P2: DGII Report Generation:** (Dominican tax reports 607, 608).
 *   **Future Tasks:**
     *   **P2: Image/Icon Support for Product Buttons.**
     *   **P2: Cache Product Images Offline.**
     *   **P3: Drag-and-Drop Reordering of payment methods.**
-    *   **P3: Export Audit Trail:** to Excel/CSV.
+    -   **P3: Export Audit Trail:** to Excel/CSV.
     *   **P3: Duplicate Product Feature.**
 
 **Completed work in this session**
--   **Feature: Suppliers Tab Smart Search & Filters:** Implemented multi-criteria search, category filters, and quick-edit access in . Added a  field to the backend supplier model.
--   **Feature: Suppliers Analytics Dashboard:** Created a new dashboard view in  with summary cards and -based visualizations. Added a new analytics endpoint in .
--   **Feature: Recipes Tab Smart Search & Filters:** Implemented a search bar (by name or ingredient) and filters (by financial health or menu category) in .
+-   **Feature: Comprehensive Reports Module:** Created a new, dynamic reports module () with collapsible categories, a global date picker, sparklines, and various report views.
+-   **Feature: Professional Exporting (PDF/Excel):** Implemented advanced export functionality with a professional letterhead, dynamic data fetching (business name, RNC), correction of data rendering issues (), and consistent currency formatting.
+-   **Feature: New Auditoría General Report:** Added a new system-wide audit report with a dedicated backend endpoint and frontend renderer.
+-   **Enhancement: RNC Configuration:** Added an RNC field to the system settings page and backend, allowing it to be used dynamically in reports.
+-   **Enhancement: Reports Menu Reorganization:** Restructured the reports menu into logical groups (Ventas y Caja, Inventario, Almacén y Compras, Fiscal, Auditoría y Operaciones) as per user request.
+-   **Refactor: UI Cleanup:** Removed the 'Reportes' icon from the main sidebar and centralized access through the 'Configuración' page to streamline the main navigation.
 
 **Earlier issues found/mentioned but not fixed**
--   Same as the **All Pending/In progress Issue list**. The pending issues are from previous sessions and were not addressed.
+-   Same as the **All Pending/In progress Issue list**.
 
 **Known issue recurrence from previous fork**
 -   Auto-send to kitchen does not work on the first try.
@@ -104,17 +105,17 @@ The application's inventory management module has been significantly upgraded.
 
 
 **Key Technical Concepts**
--   **Complex Client-Side State:** Extensive use of React's  and  to manage multiple simultaneous filters (search text, category, financial status) and update the UI in real-time.
--   **Backend Model Extension:** Added a  field to the Pydantic model for Suppliers and updated the corresponding FastAPI endpoints.
--   **Backend Data Aggregation:** Created a new analytics endpoint that performs aggregations on purchase data to power the supplier dashboard.
--   **Data Visualization:** Used the  library to build interactive area and bar charts for the analytics dashboard.
--   **Component-Based Views:** Used a toggle state to switch between a List view and a Dashboard view within the same  component.
+-   **Dynamic Component Rendering:** The  component uses a  statement to render different report components based on user selection, allowing for a scalable and maintainable report viewer.
+-   **Advanced Data Export:** Utilized , , and  libraries to generate highly customized PDF and Excel files, including headers, footers, and complex data formatting.
+-   **Dynamic Configuration Fetching:** The frontend now fetches business configuration (name, RNC) from a backend endpoint () to dynamically populate report headers.
+-   **Centralized State Management:** Use of  and  in  to manage global state like date ranges, expanded categories, and selected reports.
+-   **UI/UX Refactoring:** Centralized a feature's access point () from a main navigation element to a sub-menu within a related section () to de-clutter the primary UI.
 
 **key DB schema**
--   **suppliers** collection: A  field was added to supplier documents.
+-   **system_config** collection: A  field was added to the configuration document.
 
 **changes in tech stack**
--   No new technologies were added in this session.  was leveraged for new features.
+-   No new technologies added, but heavy utilization of , , and  for client-side document generation.
 
 **All files of reference**
 -   
@@ -124,30 +125,37 @@ The application's inventory management module has been significantly upgraded.
 -   
 -   
 -   
+-   
+-   
 
 **Areas that need refactoring**:
--   **HIGH: :** This file remains a monolith containing logic for reports, customers, and configuration. It is the highest priority technical debt and should be addressed to improve modularity and maintainability.
+-   **HIGH: :** This file still contains significant logic that needs to be migrated to dedicated routers. This remains the highest priority technical debt.
 
 **key api endpoints**
--   **NEW**: : Provides aggregated data for the supplier dashboard.
--   **NEW**: : Returns active PO counts for each supplier.
--   **MODIFIED**: : Updated to handle the new  field.
+-   **NEW**: : A dynamic endpoint to fetch data for various reports. (e.g., , ).
+-   **NEW**: : Endpoint for the new general audit report.
+-   **MODIFIED**: : Now returns the restaurant name and RNC.
+-   **MODIFIED**: : Now saves the RNC along with other settings.
 
 **Critical Info for New Agent**
--   **Task Deviation:** The agent was instructed to begin backend refactoring but instead implemented a Supplier Dashboard feature. While the user approved this new feature, be aware that the high-priority refactoring task was postponed. The next agent should prioritize the backend refactoring as per the plan.
--   The user is highly engaged and requests specific, feature-rich UI enhancements. Be prepared for complex React state management.
--   The  and  components have undergone major changes. Review them carefully before modification.
+-   The user is highly responsive and provides detailed, specific feedback for UI/UX changes. Pay close attention to these requests.
+-   The Funciones menu task in  is mid-implementation. You need to complete the JSX changes to add the  and move the Mover Mesa logic into it.
+-   The user declared the Auto-send to kitchen bug as fixed (ESTO ESTA BIEN YA). You should verify this before closing the issue, as the agent did not perform any fix.
+-   The backend refactoring of  is a high-priority P0 task that has been repeatedly postponed. It should be addressed as soon as the current user request is completed.
 
 **documents and test reports created in this job**
--    (updated)
--    (test report for the Suppliers Tab Search feature)
+-    (Updated)
+-    (New)
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST):** Requested optimization of the 'Recetas' (Recipes) tab with smart search and filters. (COMPLETED)
-2.  **User:** Approved the agent's proposal to implement the Supplier Analytics Dashboard. (COMPLETED)
-3.  **User:** Acknowledged receipt of the preview link. (COMPLETED)
-4.  **User:** Requested the preview link to test the application. (COMPLETED)
-5.  **User:** Provided detailed requirements for optimizing the 'Proveedores' (Suppliers) tab. (COMPLETED)
+1.  **User (LATEST):** Requested optimization of the sales screen: add a Funciones button to the sidebar, move Mover Mesa into its popover menu, and add placeholders for future functions. (IN PROGRESS)
+2.  **User:** Requested a UI cleanup: remove the Reportes button from the main sidebar and make it accessible only through the Configuración page. (COMPLETED)
+3.  **User:** Requested a reorganization of the reports menu into new logical groups (Ventas, Inventario, Fiscal, Auditoría). (COMPLETED)
+4.  **User:** Acknowledged that the Auto-envío a cocina bug is resolved. (USER VERIFICATION PENDING)
+5.  **User:** Requested fixes for exported reports: hide technical IDs, fix  rendering, ensure currency formatting, and add a professional letterhead with business name and RNC. (COMPLETED)
+6.  **User:** Requested the preview link. (COMPLETED)
+7.  **User:** Provided detailed requirements for the new Reports Module. (COMPLETED)
 
 **Project Health Check:**
 -   **Broken:**
@@ -159,11 +167,12 @@ The application's inventory management module has been significantly upgraded.
 **3rd Party Integrations**
 -   **Resend:** For sending email alerts. Requires a User API Key.
 -   **APScheduler:** Backend library for scheduled tasks.
+-   **jspdf, jspdf-autotable:** Frontend libraries for PDF generation.
 -   **xlsx:** Frontend library for exporting data to Excel.
 -   **recharts:** Frontend library used for data visualization charts.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES (For the Suppliers Tab feature).
+-   **Testing agent used after significant changes**: YES (For the reports module).
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: []
 -   **Known regressions**: None
@@ -175,4 +184,5 @@ The application's inventory management module has been significantly upgraded.
 -   **Chef Pedro:** PIN 
 
 **What agent forgot to execute**
--   The agent deviated from the agreed-upon plan. After implementing the first user request and getting approval () to start on the P0 task Backend Refactoring, the agent instead implemented a different, unrequested feature (the Supplier Dashboard). While the user subsequently approved this new feature, it delayed a critical technical debt task. The original plan should have been followed.</analysis>
+-   The agent did not verify the user's claim that the Auto-send to kitchen bug was fixed. It should be tested before being marked as resolved.
+-   The high-priority task of refactoring  was postponed again to accommodate new feature requests from the user.</analysis>
