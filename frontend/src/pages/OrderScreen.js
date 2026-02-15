@@ -1207,15 +1207,9 @@ export default function OrderScreen() {
                     <Receipt size={14} className="mr-1.5" /> FACTURAR
                   </Button>
                 </div>
-                {/* Secondary actions row - hide Mover Mesa and Editar Cuenta when table is billed */}
+                {/* Secondary actions row */}
                 {activeItems.length > 0 && (
-                  <div className={`grid gap-1 ${table?.status === 'billed' ? 'grid-cols-1' : 'grid-cols-3'}`}>
-                    {table?.status !== 'billed' && (
-                      <Button onClick={openMoveDialog} variant="outline" size="sm" data-testid="move-table-btn"
-                        className="h-8 text-[10px] border-muted-foreground/30">
-                        <MoveRight size={12} className="mr-1" /> Mover Mesa
-                      </Button>
-                    )}
+                  <div className="grid grid-cols-3 gap-1">
                     {table?.status !== 'billed' && (
                       <Button onClick={enterSplitMode} variant="outline" size="sm" data-testid="split-btn"
                         className="h-8 text-[10px] border-muted-foreground/30">
@@ -1223,10 +1217,76 @@ export default function OrderScreen() {
                       </Button>
                     )}
                     <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
-                      className="h-8 text-[10px] border-muted-foreground/30 relative">
+                      className={`h-8 text-[10px] border-muted-foreground/30 relative ${table?.status === 'billed' ? 'col-span-2' : ''}`}>
                       <FileText size={12} className="mr-1" /> Pre-Cuenta
                       {preCheckCount > 0 && <Lock size={8} className="ml-0.5 text-yellow-500" />}
                     </Button>
+                    {/* Functions Menu Button */}
+                    {table?.status !== 'billed' && (
+                      <Popover open={functionsMenuOpen} onOpenChange={setFunctionsMenuOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" data-testid="functions-menu-btn"
+                            className="h-8 text-[10px] border-muted-foreground/30">
+                            <MoreVertical size={12} className="mr-1" /> Funciones
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent 
+                          className="w-56 p-2 bg-card border border-border shadow-xl" 
+                          side="top" 
+                          align="end"
+                          data-testid="functions-menu-content"
+                        >
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-muted-foreground uppercase font-semibold px-2 pb-1 border-b border-border/50">
+                              Funciones de Mesa
+                            </p>
+                            {/* Mover Mesa */}
+                            <Button 
+                              onClick={() => { setFunctionsMenuOpen(false); openMoveDialog(); }}
+                              variant="ghost" 
+                              size="sm" 
+                              className="w-full justify-start h-9 text-xs"
+                              data-testid="fn-move-table"
+                            >
+                              <MoveRight size={14} className="mr-2 text-blue-400" /> Mover Mesa
+                            </Button>
+                            {/* Dividir Cuenta - Placeholder */}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="w-full justify-start h-9 text-xs text-muted-foreground"
+                              disabled
+                              data-testid="fn-split-bill"
+                            >
+                              <SplitSquareHorizontal size={14} className="mr-2" /> Dividir Cuenta
+                              <Badge variant="outline" className="ml-auto text-[8px]">Pronto</Badge>
+                            </Button>
+                            {/* Reimprimir Comanda - Placeholder */}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="w-full justify-start h-9 text-xs text-muted-foreground"
+                              disabled
+                              data-testid="fn-reprint-order"
+                            >
+                              <RefreshCw size={14} className="mr-2" /> Reimprimir Comanda
+                              <Badge variant="outline" className="ml-auto text-[8px]">Pronto</Badge>
+                            </Button>
+                            {/* Aplicar Descuento - Placeholder */}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="w-full justify-start h-9 text-xs text-muted-foreground"
+                              disabled
+                              data-testid="fn-apply-discount"
+                            >
+                              <Percent size={14} className="mr-2" /> Descuento Especial
+                              <Badge variant="outline" className="ml-auto text-[8px]">Pronto</Badge>
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                   </div>
                 )}
               </div>
