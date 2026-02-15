@@ -30,6 +30,9 @@ from routers.reports import router as reports_router
 from routers.orders import router as orders_router, set_db as orders_set_db
 from routers.tables import router as tables_router, set_db as tables_set_db
 from routers.billing import router as billing_router, set_db as billing_set_db
+from routers.kitchen import router as kitchen_router, set_db as kitchen_set_db
+from routers.customers import router as customers_router, set_db as customers_set_db
+from routers.config import router as config_router, set_db as config_set_db
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -45,6 +48,9 @@ SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 orders_set_db(db)
 tables_set_db(db)
 billing_set_db(db)
+kitchen_set_db(db)
+customers_set_db(db)
+config_set_db(db)
 
 app = FastAPI()
 api = APIRouter(prefix="/api")
@@ -58,6 +64,9 @@ api.include_router(reports_router)
 api.include_router(orders_router)
 api.include_router(tables_router)
 api.include_router(billing_router)
+api.include_router(kitchen_router)
+api.include_router(customers_router)
+api.include_router(config_router)
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()
