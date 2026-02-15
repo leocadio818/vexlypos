@@ -964,6 +964,229 @@ async def get_scheduler_status():
         }
     return {"active": False, "job_id": None, "next_run": None}
 
+# ─── PRINT QUEUE (Cola de Impresión para Agente USB) ───
+@api.get("/print-queue/pending")
+async def get_pending_print_jobs():
+    """Obtiene trabajos de impresión pendientes para el agente USB"""
+    jobs = await db.print_queue.find(
+        {"status": "pending"},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(10)
+    return jobs
+
+@api.post("/print-queue")
+async def add_print_job(input: dict):
+    """Agrega un trabajo a la cola de impresión"""
+    job = {
+        "id": gen_id(),
+        "type": input.get("type", "receipt"),  # receipt, comanda, pre-check
+        "reference_id": input.get("reference_id", ""),
+        "channel_id": input.get("channel_id", ""),
+        "commands": input.get("commands", []),
+        "status": "pending",
+        "created_at": now_iso(),
+        "printed_at": None
+    }
+    await db.print_queue.insert_one(job)
+    return {k: v for k, v in job.items() if k != "_id"}
+
+@api.post("/print-queue/{job_id}/complete")
+async def complete_print_job(job_id: str, input: dict):
+    """Marca un trabajo como completado"""
+    success = input.get("success", True)
+    status = "completed" if success else "failed"
+    await db.print_queue.update_one(
+        {"id": job_id},
+        {"$set": {"status": status, "printed_at": now_iso()}}
+    )
+    return {"ok": True}
+
+@api.delete("/print-queue/clear")
+async def clear_print_queue():
+    """Limpia trabajos completados de la cola"""
+    result = await db.print_queue.delete_many({"status": {"$in": ["completed", "failed"]}})
+    return {"deleted": result.deleted_count}
+
+# ─── PRINT TO QUEUE HELPERS ───
+@api.post("/print/receipt/{bill_id}/send")
+async def send_receipt_to_printer(bill_id: str):
+    """Envía un recibo a la cola de impresión"""
+    # Obtener comandos ESC/POS
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    
+    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    
+    # Construir comandos ESC/POS
+    commands = []
+    commands.append({"type": "center", "bold": True, "size": "large", "text": config.get('business_name', 'MESA POS RD')})
+    if config.get('business_address'):
+        commands.append({"type": "center", "text": config.get('business_address', '')})
+    if config.get('rnc'):
+        commands.append({"type": "center", "text": f"RNC: {config.get('rnc', '')}"})
+    commands.append({"type": "divider"})
+    commands.append({"type": "left", "text": f"NCF: {bill.get('ncf', '')}"})
+    commands.append({"type": "left", "text": f"Mesa: {bill['table_number']}"})
+    commands.append({"type": "left", "text": f"Fecha: {bill.get('paid_at', bill['created_at'])[:19]}"})
+    commands.append({"type": "divider"})
+    
+    for item in bill.get("items", []):
+        commands.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name']}", "right": f"RD$ {item['total']:,.2f}"})
+    
+    commands.append({"type": "divider"})
+    commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
+    commands.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {bill['itbis']:,.2f}"})
+    commands.append({"type": "columns", "left": f"Propina {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
+    commands.append({"type": "columns", "bold": True, "size": "large", "left": "TOTAL", "right": f"RD$ {bill['total']:,.2f}"})
+    commands.append({"type": "divider"})
+    commands.append({"type": "center", "text": "Gracias por su visita"})
+    commands.append({"type": "feed", "lines": 2})
+    commands.append({"type": "cut"})
+    
+    # Agregar a cola
+    job = {
+        "id": gen_id(),
+        "type": "receipt",
+        "reference_id": bill_id,
+        "commands": commands,
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    await db.print_queue.insert_one(job)
+    
+    return {"ok": True, "job_id": job["id"], "message": "Recibo enviado a impresora"}
+
+@api.post("/print/comanda/{order_id}/send")
+async def send_comanda_to_printer(order_id: str):
+    """Envía una comanda a la cola de impresión"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    # Solo items enviados a cocina
+    items = [i for i in order.get("items", []) if i.get("status") == "sent"]
+    if not items:
+        return {"ok": False, "message": "No hay items para imprimir"}
+    
+    commands = []
+    commands.append({"type": "center", "bold": True, "size": "large", "text": "COMANDA"})
+    commands.append({"type": "divider"})
+    commands.append({"type": "left", "bold": True, "size": "large", "text": f"Mesa: {order['table_number']}"})
+    commands.append({"type": "left", "text": f"Mesero: {order['waiter_name']}"})
+    commands.append({"type": "left", "text": f"Hora: {now_iso()[11:16]}"})
+    commands.append({"type": "divider"})
+    
+    for item in items:
+        commands.append({"type": "left", "bold": True, "text": f"{item['quantity']}x {item['product_name']}"})
+        for mod in item.get("modifiers", []):
+            commands.append({"type": "left", "text": f"  + {mod['name']}"})
+        if item.get("notes"):
+            commands.append({"type": "left", "text": f"  NOTA: {item['notes']}"})
+    
+    commands.append({"type": "divider"})
+    commands.append({"type": "feed", "lines": 2})
+    commands.append({"type": "cut"})
+    
+    job = {
+        "id": gen_id(),
+        "type": "comanda",
+        "reference_id": order_id,
+        "commands": commands,
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    await db.print_queue.insert_one(job)
+    
+    return {"ok": True, "job_id": job["id"], "message": "Comanda enviada a impresora"}
+
+@api.post("/print/pre-check/{order_id}/send")
+async def send_precheck_to_printer(order_id: str):
+    """Envía una pre-cuenta a la cola de impresión"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    items = [i for i in order.get("items", []) if i["status"] != "cancelled"]
+    subtotal = sum((i["unit_price"] + sum(m.get("price",0) for m in i.get("modifiers",[]))) * i["quantity"] for i in items)
+    itbis = round(subtotal * 0.18, 2)
+    propina = round(subtotal * 0.10, 2)
+    total = round(subtotal + itbis + propina, 2)
+    
+    # Registrar impresión
+    print_count = await db.pre_check_prints.count_documents({"order_id": order_id})
+    await db.pre_check_prints.insert_one({"order_id": order_id, "print_number": print_count + 1, "printed_at": now_iso()})
+    
+    commands = []
+    
+    if print_count > 0:
+        commands.append({"type": "center", "bold": True, "text": f"*** RE-IMPRESION #{print_count} ***"})
+    
+    commands.append({"type": "center", "bold": True, "size": "large", "text": "MESA POS RD"})
+    commands.append({"type": "center", "bold": True, "text": "PRE-CUENTA"})
+    commands.append({"type": "divider"})
+    commands.append({"type": "left", "text": f"Mesa: {order['table_number']}"})
+    commands.append({"type": "left", "text": f"Mesero: {order['waiter_name']}"})
+    commands.append({"type": "left", "text": f"Fecha: {order['created_at'][:19]}"})
+    commands.append({"type": "divider"})
+    
+    for item in items:
+        item_total = (item["unit_price"] + sum(m.get("price",0) for m in item.get("modifiers",[]))) * item["quantity"]
+        commands.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name']}", "right": f"RD$ {item_total:,.2f}"})
+        if item.get("modifiers"):
+            mods = ", ".join(m["name"] for m in item["modifiers"])
+            commands.append({"type": "left", "text": f"  ({mods})"})
+    
+    commands.append({"type": "divider"})
+    commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {subtotal:,.2f}"})
+    commands.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {itbis:,.2f}"})
+    commands.append({"type": "columns", "left": "Propina Sugerida 10%", "right": f"RD$ {propina:,.2f}"})
+    commands.append({"type": "columns", "bold": True, "left": "TOTAL ESTIMADO", "right": f"RD$ {total:,.2f}"})
+    commands.append({"type": "divider"})
+    commands.append({"type": "center", "text": "La propina es voluntaria"})
+    commands.append({"type": "center", "text": "Este NO es un comprobante fiscal"})
+    commands.append({"type": "feed", "lines": 2})
+    commands.append({"type": "cut"})
+    
+    job = {
+        "id": gen_id(),
+        "type": "pre-check",
+        "reference_id": order_id,
+        "commands": commands,
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    await db.print_queue.insert_one(job)
+    
+    return {"ok": True, "job_id": job["id"], "print_number": print_count + 1, "message": "Pre-cuenta enviada a impresora"}
+
+# ─── PRINTER CONFIG ───
+@api.get("/printer-config")
+async def get_printer_config():
+    """Obtiene configuración de impresoras"""
+    config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0})
+    return config or {
+        "id": "printer_config",
+        "enabled": True,
+        "mode": "queue",  # queue (para agente USB) o direct (para red)
+        "auto_print_comanda": True,
+        "auto_print_receipt": False,
+        "receipt_printer": {"type": "usb", "ip": ""},
+        "kitchen_printer": {"type": "usb", "ip": ""}
+    }
+
+@api.put("/printer-config")
+async def update_printer_config(input: dict):
+    """Actualiza configuración de impresoras"""
+    if "_id" in input: del input["_id"]
+    input["id"] = "printer_config"
+    await db.system_config.update_one(
+        {"id": "printer_config"},
+        {"$set": input},
+        upsert=True
+    )
+    return {"ok": True}
+
 # ─── APP CONFIG ───
 app.include_router(api)
 app.add_middleware(
