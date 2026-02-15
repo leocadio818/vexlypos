@@ -151,6 +151,7 @@ class SupplierInput(BaseModel):
     email: str = ""
     address: str = ""
     rnc: str = ""
+    category: str = "general"  # licores, tabaco, alimentos, general
 
 
 # ─── INGREDIENTS ───
