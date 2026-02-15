@@ -308,24 +308,20 @@ export default function OrderScreen() {
   }, [order]);
 
   // Mobile button state machine: Handle transitions based on selectedItems
-  // Using a ref to track previous state and avoid dependency cycle
-  const prevMobileStateRef = useRef(mobileButtonState);
+  // Only trigger when selectedItems changes - closing state is set by doPrintPreCheck
   useEffect(() => {
-    const prevState = prevMobileStateRef.current;
-    
     if (selectedItems.length > 0) {
-      // Items were selected - go to editing mode (from any state)
+      // Items selected - always go to editing mode (interrupts any state including closing)
       setMobileButtonState('editing');
-    } else if (prevState === 'editing') {
-      // Items were deselected from editing mode - go back to initial
-      // This handles the "interruption rule" - after anular, go back to pre-cuenta
-      setMobileButtonState('initial');
     }
-    // Note: 'closing' state is only set when pre-cuenta is printed (in doPrintPreCheck)
-    // It stays until items are selected (which goes to 'editing')
-    
-    prevMobileStateRef.current = mobileButtonState;
-  }, [selectedItems.length, mobileButtonState]);
+  }, [selectedItems.length]);
+
+  // Handle transition back to initial when items are cleared after editing
+  useEffect(() => {
+    if (selectedItems.length === 0) {
+      setMobileButtonState(prev => prev === 'editing' ? 'initial' : prev);
+    }
+  }, [selectedItems.length]);
 
   // Load grid settings from localStorage
   useEffect(() => {
