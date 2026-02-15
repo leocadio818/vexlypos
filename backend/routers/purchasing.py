@@ -24,6 +24,26 @@ async def list_suppliers():
     return await db.suppliers.find({}, {"_id": 0}).to_list(100)
 
 
+@router.get("/suppliers/with-active-orders")
+async def list_suppliers_with_active_orders():
+    """Get all suppliers with count of active purchase orders."""
+    suppliers = await db.suppliers.find({}, {"_id": 0}).to_list(100)
+    
+    # Get active PO counts (draft, sent, partial statuses)
+    pipeline = [
+        {"$match": {"status": {"$in": ["draft", "sent", "partial"]}}},
+        {"$group": {"_id": "$supplier_id", "active_orders": {"$sum": 1}}}
+    ]
+    active_counts = await db.purchase_orders.aggregate(pipeline).to_list(100)
+    active_map = {item["_id"]: item["active_orders"] for item in active_counts}
+    
+    # Add active_orders count to each supplier
+    for supplier in suppliers:
+        supplier["active_orders"] = active_map.get(supplier.get("id"), 0)
+    
+    return suppliers
+
+
 @router.post("/suppliers")
 async def create_supplier(input: SupplierInput):
     doc = {"id": gen_id(), **input.model_dump()}
