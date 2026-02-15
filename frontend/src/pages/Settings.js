@@ -1505,6 +1505,20 @@ export default function Settings() {
                   />
                 </div>
 
+                {/* RNC */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-4">
+                  <h3 className="text-sm font-semibold mb-2">RNC (Registro Nacional de Contribuyentes)</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Este número aparecerá en los reportes exportados para validez fiscal.
+                  </p>
+                  <input 
+                    value={systemConfig.rnc || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, rnc: e.target.value }))}
+                    placeholder="000-000000-0"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
+                  />
+                </div>
+
                 {/* Timezone */}
                 <div className="bg-card border border-border rounded-xl p-4 mb-4">
                   <h3 className="text-sm font-semibold mb-2">Zona Horaria</h3>
