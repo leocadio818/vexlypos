@@ -207,7 +207,8 @@ async def create_purchase_order(input: PurchaseOrderInput, user=Depends(get_curr
 
 @router.put("/purchase-orders/{po_id}")
 async def update_purchase_order(po_id: str, input: dict):
-    if "_id" in input: del input["_id"]
+    if "_id" in input:
+        del input["_id"]
     if "items" in input:
         total = sum(i["quantity"] * i["unit_price"] for i in input["items"])
         input["total"] = round(total, 2)
