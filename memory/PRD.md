@@ -506,6 +506,17 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Al presionar cualquier botón de acción móvil
   - **Compatibilidad**: Funciona en dispositivos Android y algunos iOS (Safari limitado)
   - **Degradación Elegante**: Sin efecto si API no está disponible
+- [x] **Refactorización Backend Fase 3 - Final** (Completado 15 Feb 2026) ✅
+  - **Nuevos Routers Creados**:
+    - `orders.py`: Órdenes, items, anulaciones, void audit logs, split/merge
+    - `tables.py`: Mesas, áreas, movimientos de mesa
+    - `billing.py`: Facturas, pagos, métodos de pago, impuestos
+    - `kitchen.py`: KDS (Kitchen Display System), estados de cocina
+    - `customers.py`: Clientes, puntos de fidelidad, redención
+    - `config.py`: Categorías, productos, modificadores, turnos, reservaciones, tema
+  - **Reducción de `server.py`**: De ~4200 a ~2500 líneas (-40%)
+  - **Total de Routers**: 11 módulos independientes
+  - **Funcionalidad Preservada**: Todas las APIs funcionan sin cambios en el frontend
 - [ ] **Crear paquete ZIP descargable** del servidor local
 - [ ] **Integración de impresora ESC/POS** física
 
