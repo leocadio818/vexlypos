@@ -894,7 +894,7 @@ export default function OrderScreen() {
       {!mobileAccountExpanded && !splitMode && !accessDenied && activeItems.length > 0 && (
         <button
           onClick={() => setMobileAccountExpanded(true)}
-          className="lg:hidden fixed bottom-4 right-4 z-50 h-14 px-4 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center gap-2 font-oswald font-bold active:scale-95 transition-transform"
+          className="lg:hidden fixed bottom-20 right-4 z-50 h-14 px-4 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center gap-2 font-oswald font-bold active:scale-95 transition-transform"
           data-testid="mobile-show-account-btn"
         >
           <ShoppingCart size={20} />
