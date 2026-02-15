@@ -89,6 +89,7 @@ export default function Settings() {
   const [systemConfig, setSystemConfig] = useState({ 
     timezone_offset: -4, 
     restaurant_name: 'Mi Restaurante', 
+    rnc: '000-000000-0',
     currency: 'RD$',
     quick_amounts: [100, 200, 500, 1000, 2000, 5000]
   });
