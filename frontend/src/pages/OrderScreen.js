@@ -1194,10 +1194,10 @@ export default function OrderScreen() {
         ) : (
           /* Normal Order View */
           <>
-            <ScrollArea className="flex-1 max-h-[32vh] lg:max-h-none">
-              <div className="p-2 space-y-1">
+            <ScrollArea className="flex-1">
+              <div className="p-3 space-y-2.5">
                 {activeItems.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Selecciona productos</p>
+                  <p className="text-sm text-muted-foreground text-center py-6">Selecciona productos</p>
                 ) : (
                   activeItems.map(item => {
                     const modTotal = (item.modifiers || []).reduce((s, m) => s + (m.price || 0), 0);
@@ -1213,38 +1213,38 @@ export default function OrderScreen() {
                           setSelectedItems(prev => [...prev, item.id]);
                         }
                       }}
-                      className={`flex items-start gap-1.5 p-1.5 rounded-lg border cursor-pointer transition-all ${
+                      className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
                         isSelected 
                           ? 'bg-red-500/10 border-red-500/50 ring-1 ring-red-500/30' 
                           : 'bg-background/50 border-border/50 hover:border-primary/30'
                       }`}>
                       {/* Selection indicator */}
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 ${
-                        isSelected ? 'bg-red-500 border-red-500' : 'border-muted-foreground/30'
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                        isSelected ? 'bg-red-500 border-red-500' : 'border-muted-foreground/40'
                       }`}>
-                        {isSelected && <Check size={10} className="text-white" />}
+                        {isSelected && <Check size={12} className="text-white" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="font-oswald text-xs font-bold text-primary">{item.quantity}x</span>
-                          <span className="text-xs font-medium truncate">{item.product_name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-oswald text-sm font-bold text-primary">{item.quantity}x</span>
+                          <span className="text-sm font-bold truncate">{item.product_name}</span>
                         </div>
                         {item.modifiers?.length > 0 && (
-                          <div className="mt-0.5 space-y-0.5">
+                          <div className="mt-1 space-y-0.5">
                             {item.modifiers.map((m, i) => (
-                              <div key={i} className="flex items-center justify-between text-[9px]">
+                              <div key={i} className="flex items-center justify-between text-xs">
                                 <span className="text-muted-foreground">+ {m.name}</span>
                                 {m.price > 0 && <span className="font-oswald text-primary/70">+{formatMoney(m.price)}</span>}
                               </div>
                             ))}
                           </div>
                         )}
-                        {item.notes && <p className="text-[8px] text-yellow-500 mt-0.5 italic">📝 {item.notes}</p>}
-                        <div className="mt-0.5">
-                          {item.status === 'pending' && <Badge variant="outline" className="text-[7px] h-3 border-yellow-600 text-yellow-500">Pendiente</Badge>}
-                          {item.status === 'sent' && <Badge variant="outline" className="text-[7px] h-3 border-blue-500 text-blue-400">Enviado</Badge>}
-                          {item.status === 'preparing' && <Badge variant="outline" className="text-[7px] h-3 border-orange-500 text-orange-400">Preparando</Badge>}
-                          {item.status === 'ready' && <Badge variant="outline" className="text-[7px] h-3 border-green-500 text-green-400">Listo</Badge>}
+                        {item.notes && <p className="text-[10px] text-yellow-500 mt-1 italic">📝 {item.notes}</p>}
+                        <div className="mt-1">
+                          {item.status === 'pending' && <Badge variant="outline" className="text-[8px] h-4 border-yellow-600 text-yellow-500">Pendiente</Badge>}
+                          {item.status === 'sent' && <Badge variant="outline" className="text-[8px] h-4 border-blue-500 text-blue-400">Enviado</Badge>}
+                          {item.status === 'preparing' && <Badge variant="outline" className="text-[8px] h-4 border-orange-500 text-orange-400">Preparando</Badge>}
+                          {item.status === 'ready' && <Badge variant="outline" className="text-[8px] h-4 border-green-500 text-green-400">Listo</Badge>}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
