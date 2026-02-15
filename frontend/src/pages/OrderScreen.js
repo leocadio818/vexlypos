@@ -269,9 +269,30 @@ export default function OrderScreen() {
       openMoveDialog();
     };
     
+    const handleEnterSplitMode = () => {
+      enterSplitMode();
+    };
+    
+    const handleVoidEntireOrder = () => {
+      // Anular cuenta entera - SIEMPRE requiere PIN
+      if (!order || activeItems.length === 0) {
+        toast.info('No hay items para anular');
+        return;
+      }
+      const allItemIds = activeItems.map(i => i.id);
+      openBulkCancelDialog(allItemIds, true); // true = force manager auth
+    };
+    
     window.addEventListener('openMoveTableDialog', handleOpenMoveDialog);
-    return () => window.removeEventListener('openMoveTableDialog', handleOpenMoveDialog);
-  }, []);
+    window.addEventListener('enterSplitMode', handleEnterSplitMode);
+    window.addEventListener('voidEntireOrder', handleVoidEntireOrder);
+    
+    return () => {
+      window.removeEventListener('openMoveTableDialog', handleOpenMoveDialog);
+      window.removeEventListener('enterSplitMode', handleEnterSplitMode);
+      window.removeEventListener('voidEntireOrder', handleVoidEntireOrder);
+    };
+  }, [order, activeItems]);
 
   // Load grid settings from localStorage
   useEffect(() => {
