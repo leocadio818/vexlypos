@@ -1387,6 +1387,7 @@ export default function OrderScreen() {
                       {selectedItems.length > 0 ? (
                         <Button 
                           onClick={() => {
+                            triggerHaptic('strong'); // Strong feedback for void action
                             const anyWasSent = selectedItems.some(id => {
                               const item = order?.items?.find(i => i.id === id);
                               return item?.status === 'sent' || item?.sent_to_kitchen;
@@ -1402,7 +1403,10 @@ export default function OrderScreen() {
                       ) : mobileButtonState === 'closing' ? (
                         /* State: Closing - Show FACTURAR */
                         <Button 
-                          onClick={handleDirectBilling} 
+                          onClick={() => {
+                            triggerHaptic('double'); // Double tap feedback for billing
+                            handleDirectBilling();
+                          }} 
                           size="lg" 
                           data-testid="go-to-billing-mobile"
                           className="h-14 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-base font-bold"
@@ -1412,7 +1416,10 @@ export default function OrderScreen() {
                       ) : (
                         /* State: Initial - Show PRE-CUENTA */
                         <Button 
-                          onClick={handlePrintPreCheck} 
+                          onClick={() => {
+                            triggerHaptic('medium'); // Medium feedback for pre-check
+                            handlePrintPreCheck();
+                          }} 
                           variant="outline" 
                           size="lg" 
                           data-testid="pre-check-btn-mobile"
