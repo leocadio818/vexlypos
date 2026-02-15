@@ -1,0 +1,69 @@
+{
+  "summary": "Tested mobile button state machine flow in OrderScreen.js - all 5 test cases passed. Verified Estado Inicial (PRE-CUENTA blue), Estado Edición (ANULAR red with counter), Estado Cierre (FACTURAR primary), Regla de Interrupción (returns to PRE-CUENTA not FACTURAR), and ENVIAR visibility.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_40.json"
+  ],
+  "passed_tests": [
+    "Estado Inicial: PRE-CUENTA button visible (blue styling) when no items selected and no pre-cuenta printed - PASS",
+    "Estado Edición: ANULAR button visible (red styling) with counter '(1)' when item(s) selected - PASS",
+    "Estado Cierre: FACTURAR button visible (primary/orange styling) after printing pre-cuenta - PASS",
+    "Regla de Interrupción: From FACTURAR state, selecting item shows ANULAR, deselecting returns to PRE-CUENTA (not FACTURAR) - PASS",
+    "ENVIAR button always visible when pending items exist, independent of button state - PASS",
+    "Mobile viewport 375x750: All button transitions work correctly - PASS",
+    "Session storage persists 'closing' state for table - PASS"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend-only testing)",
+    "frontend": "100%"
+  },
+  "test_credentials_used": {
+    "user": "Admin",
+    "pin": "0000"
+  },
+  "seed_data_creation": "Used existing Mesa 3 (ID: 4090f1c3-8336-4f78-8265-53aff2e3cd04) and Mesa 5 (ID: 23324777-88bb-45cb-aa35-833da2225d7f)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Mobile button state machine implemented in OrderScreen.js lines 89-112 (state definition), 327-345 (useEffect for editing transitions), 647-650 (closing state on pre-check print), 1378-1427 (mobile buttons rendering). States: 'initial' (PRE-CUENTA), 'editing' (ANULAR), 'closing' (FACTURAR). Regla de Interrupción returns to 'initial' after deselecting items from closing state. Session storage key: mobile_btn_state_{tableId}. Test tables: Mesa 3 and Mesa 5. Login: Admin PIN 0000.",
+  "verification_details": {
+    "mobile_viewport": "375x750",
+    "estado_inicial": {
+      "button": "PRE-CUENTA",
+      "data_testid": "pre-check-btn-mobile",
+      "styling": "border-blue-500/50 text-blue-400",
+      "condition": "No items selected, mobileButtonState === 'initial'"
+    },
+    "estado_edicion": {
+      "button": "ANULAR (n)",
+      "data_testid": "void-selected-btn-mobile",
+      "styling": "bg-red-600 text-white",
+      "condition": "selectedItems.length > 0"
+    },
+    "estado_cierre": {
+      "button": "FACTURAR",
+      "data_testid": "go-to-billing-mobile",
+      "styling": "bg-primary text-primary-foreground",
+      "condition": "mobileButtonState === 'closing' && selectedItems.length === 0"
+    },
+    "regla_interrupcion": {
+      "description": "After selecting/deselecting from closing state, returns to initial (PRE-CUENTA) not closing (FACTURAR)",
+      "implementation": "useEffect at lines 327-345 sets state to 'initial' when selectedItems goes from >0 to 0"
+    },
+    "enviar_button": {
+      "button": "ENVIAR (n)",
+      "data_testid": "send-to-kitchen-btn",
+      "condition": "pendingCount > 0, always visible regardless of mobileButtonState"
+    }
+  }
+}
