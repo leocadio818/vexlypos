@@ -74,6 +74,9 @@ export default function OrderScreen() {
   const [moveItemsMode, setMoveItemsMode] = useState(false);
   const [selectedItemsToMove, setSelectedItemsToMove] = useState([]);
   
+  // Selected Items for Void/Cancel
+  const [selectedItems, setSelectedItems] = useState([]);
+  
   // Functions Menu Popover
   const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
   
