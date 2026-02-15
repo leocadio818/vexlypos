@@ -72,7 +72,7 @@ class TestAuth:
     
     def test_login_invalid_pin(self, api_client):
         """Test login with invalid PIN"""
-        response = api_client.post(f"{BASE_URL}/api/auth/login", json={"pin": "9999"})
+        response = api_client.post(f"{BASE_URL}/api/auth/login", json={"pin": "0001"})
         assert response.status_code == 401
         print("✓ Invalid PIN rejected correctly")
     
