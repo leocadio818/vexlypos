@@ -278,11 +278,12 @@ export default function OrderScreen() {
     
     const handleVoidEntireOrder = () => {
       // Anular cuenta entera - SIEMPRE requiere PIN
-      if (!order || activeItems.length === 0) {
+      const currentActiveItems = order?.items?.filter(i => i.status !== 'cancelled') || [];
+      if (!order || currentActiveItems.length === 0) {
         toast.info('No hay items para anular');
         return;
       }
-      const allItemIds = activeItems.map(i => i.id);
+      const allItemIds = currentActiveItems.map(i => i.id);
       openBulkCancelDialog(allItemIds, true); // true = force manager auth
     };
     
@@ -295,7 +296,7 @@ export default function OrderScreen() {
       window.removeEventListener('enterSplitMode', handleEnterSplitMode);
       window.removeEventListener('voidEntireOrder', handleVoidEntireOrder);
     };
-  }, [order, activeItems]);
+  }, [order]);
 
   // Load grid settings from localStorage
   useEffect(() => {
