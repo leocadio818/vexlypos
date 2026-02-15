@@ -86,6 +86,12 @@ export default function OrderScreen() {
   // Mobile fullscreen account view
   const [mobileAccountExpanded, setMobileAccountExpanded] = useState(false);
   
+  // Mobile button state machine: 'initial' | 'editing' | 'closing'
+  // initial: Show PRE-CUENTA only
+  // editing: Show ANULAR (when items selected)
+  // closing: Show FACTURAR (after pre-cuenta printed)
+  const [mobileButtonState, setMobileButtonState] = useState('initial');
+  
   // Multiple orders per table support
   const [tableOrders, setTableOrders] = useState([]); // All orders for this table
   const [activeOrderId, setActiveOrderId] = useState(null); // Currently selected order
