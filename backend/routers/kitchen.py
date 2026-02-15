@@ -113,6 +113,85 @@ async def kitchen_status():
         ]
     }
 
+
+# ─── KITCHEN TV ENDPOINT ───
+@router.get("/kitchen/tv")
+async def kitchen_tv():
+    """Get orders formatted for Kitchen TV display"""
+    # Get config
+    config = await db.system_config.find_one({"id": "kitchen_config"}, {"_id": 0})
+    if not config:
+        config = {"warning_minutes": 15, "urgent_minutes": 25, "critical_minutes": 35}
+    
+    orders = await db.orders.find(
+        {"status": {"$in": ["sent", "active", "pending"]},
+         "items": {"$elemMatch": {"sent_to_kitchen": True, "status": {"$nin": ["served", "cancelled"]}}}},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(100)
+    
+    result = []
+    for order in orders:
+        kitchen_items = [i for i in order.get("items", []) if i.get("sent_to_kitchen") and i.get("status") not in ["served", "cancelled"]]
+        if not kitchen_items:
+            continue
+        
+        # Calculate elapsed time
+        created_at = order.get("created_at", "")
+        elapsed_minutes = 0
+        if created_at:
+            try:
+                created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                elapsed_minutes = (datetime.now(timezone.utc) - created).total_seconds() / 60
+            except:
+                pass
+        
+        result.append({
+            "order_id": order["id"],
+            "table_number": f"Mesa {order.get('table_number', '?')}",
+            "waiter_name": order.get("waiter_name", "?"),
+            "elapsed_minutes": round(elapsed_minutes, 1),
+            "is_warning": elapsed_minutes >= config.get("warning_minutes", 15),
+            "is_urgent": elapsed_minutes >= config.get("urgent_minutes", 25),
+            "is_critical": elapsed_minutes >= config.get("critical_minutes", 35),
+            "items": [
+                {
+                    "id": item["id"],
+                    "product_name": item.get("product_name", "?"),
+                    "quantity": item.get("quantity", 1),
+                    "status": item.get("status", "sent"),
+                    "modifiers": [m.get("name", "") for m in item.get("modifiers", [])],
+                    "notes": item.get("notes", "")
+                }
+                for item in kitchen_items
+            ]
+        })
+    
+    return {"orders": result, "config": config}
+
+
+# ─── KITCHEN CONFIG ───
+@router.get("/kitchen/config")
+async def get_kitchen_config():
+    """Get kitchen timing configuration"""
+    config = await db.system_config.find_one({"id": "kitchen_config"}, {"_id": 0})
+    if not config:
+        config = {"id": "kitchen_config", "warning_minutes": 15, "urgent_minutes": 25, "critical_minutes": 35}
+    return config
+
+@router.put("/kitchen/config")
+async def update_kitchen_config(input: dict):
+    """Update kitchen timing configuration"""
+    await db.system_config.update_one(
+        {"id": "kitchen_config"},
+        {"$set": {
+            "warning_minutes": input.get("warning_minutes", 15),
+            "urgent_minutes": input.get("urgent_minutes", 25),
+            "critical_minutes": input.get("critical_minutes", 35)
+        }},
+        upsert=True
+    )
+    return {"ok": True}
+
 @router.put("/kitchen/items/{order_id}/{item_id}")
 async def update_kitchen_item(order_id: str, item_id: str, input: dict):
     """Update status of a kitchen item (preparing, ready, served)"""
