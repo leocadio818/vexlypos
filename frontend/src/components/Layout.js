@@ -42,6 +42,7 @@ export default function Layout() {
   const filteredNav = navItems.filter(item => {
     if (item.to === '/dashboard') return hasPermission('view_dashboard');
     if (item.to === '/reservations') return hasPermission('manage_reservations');
+    if (item.to === '/reports') return hasPermission('view_reports');
     // Only show Config for admins
     if (item.to === '/settings') return isAdmin;
     return true;
