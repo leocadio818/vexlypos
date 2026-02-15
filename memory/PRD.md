@@ -426,10 +426,20 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Genera una Orden de Compra separada para cada proveedor
     - Muestra toast de éxito con resumen de OCs creadas
     - Redirige al tab "Compras" para ver las nuevas órdenes
+- [x] **Módulo de Reportes Completo** (Completado 15 Feb 2026) ✅
+  - **Nueva arquitectura modular**: `/app/backend/routers/reports.py` con 19 endpoints
+  - **4 categorías colapsables** de reportes:
+    - **Ventas y Caja**: Cierre del día, Cierre de caja, Ventas por categoría, Top productos, Tipos de venta, Formas de pago, Auditoría de anulaciones
+    - **Inventario y Almacén**: Niveles por almacén, Transferencias, Diferencias, Mermas, Recetas
+    - **Compras y Fiscal**: Órdenes de compras, Por proveedores, Impuestos (ITBIS y Propina)
+    - **Auditoría y Operaciones**: Ganancias y pérdidas, Movimientos de mesas, Ventas por mesero
+  - **Selector de rango de fechas global** con presets (Hoy, Ayer, Esta Semana, Este Mes)
+  - **Sistema de exportación profesional**: Excel, PDF, Impresión directa, Envío por correo
+  - **Micro-gráficos sparklines** para tendencias de 7 días en ventas y productos
+  - **Enlace directo en menú lateral** (requiere permiso `view_reports`)
 
 ### P1 - Alta Prioridad
 - [x] **Sistema de Control de Costos y Asistente de Compras** (Febrero 2026) ✅
-- [ ] **Completar Refactorización Backend**: Migrar módulos restantes (Reports, Customers, Config) de `server.py` a routers dedicados
 - [ ] **Crear paquete ZIP descargable** del servidor local
 - [ ] **Integración de impresora ESC/POS** física
 - [ ] **Verificar bug "Auto-envío a cocina"** (no funciona al primer intento)
@@ -443,7 +453,6 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 
 ### P3 - Baja Prioridad
 - [ ] **Drag-and-drop**: Reordenar métodos de pago
-- [ ] **Exportar auditoría**: Historial de movimientos de mesas a Excel/CSV
 - [ ] **Duplicar productos**: Botón de duplicación rápida
 
 ---
