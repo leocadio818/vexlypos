@@ -527,11 +527,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **FastAPI**: Framework Python
 - **MongoDB**: Base de datos
 - **Endpoints**: `/api/*` con autenticación JWT
-- **Arquitectura Modular (NUEVO - Febrero 2026)**:
+- **Arquitectura Modular (Actualizado - 15 Feb 2026)**:
   - `/routers/auth.py`: Autenticación, usuarios, roles
   - `/routers/inventory.py`: Ingredientes, stock, almacenes, unidades
   - `/routers/recipes.py`: Recetas por producto
   - `/routers/purchasing.py`: Proveedores, OCs, asistente de compras
+  - `/routers/reports.py`: Reportes y estadísticas
+  - `/routers/orders.py`: **NUEVO** - Órdenes, items, anulaciones, void logs
+  - `/routers/tables.py`: **NUEVO** - Mesas, áreas, movimientos
+  - `/routers/billing.py`: **NUEVO** - Facturas, pagos, métodos de pago
+  - `/routers/kitchen.py`: **NUEVO** - KDS, estados de cocina
+  - `/routers/customers.py`: **NUEVO** - Clientes, fidelidad, puntos
+  - `/routers/config.py`: **NUEVO** - Categorías, productos, modificadores, turnos, reservaciones
   - `/models/schemas.py`: Modelos Pydantic centralizados
   - `/models/database.py`: Conexión MongoDB centralizada
 
@@ -545,13 +552,19 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 ```
 /app
 ├── backend/
-│   ├── server.py              # API principal (~4200 líneas)
+│   ├── server.py              # API principal (~2500 líneas, reducido -40%)
 │   ├── routers/
 │   │   ├── auth.py            # Autenticación y usuarios
 │   │   ├── inventory.py       # Inventario completo (~1400 líneas)
 │   │   ├── recipes.py         # Recetas (~70 líneas)
 │   │   ├── purchasing.py      # Compras (~600 líneas)
-│   │   └── reports.py         # Reportes (pendiente)
+│   │   ├── reports.py         # Reportes (~1000 líneas)
+│   │   ├── orders.py          # **NUEVO** Órdenes (~700 líneas)
+│   │   ├── tables.py          # **NUEVO** Mesas y áreas (~200 líneas)
+│   │   ├── billing.py         # **NUEVO** Facturación (~300 líneas)
+│   │   ├── kitchen.py         # **NUEVO** KDS (~120 líneas)
+│   │   ├── customers.py       # **NUEVO** Clientes (~100 líneas)
+│   │   └── config.py          # **NUEVO** Configuración (~350 líneas)
 │   ├── models/
 │   │   ├── database.py        # Conexión MongoDB
 │   │   └── schemas.py         # Modelos Pydantic
