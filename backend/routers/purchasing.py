@@ -149,7 +149,8 @@ async def create_supplier(input: SupplierInput):
 
 @router.put("/suppliers/{supplier_id}")
 async def update_supplier(supplier_id: str, input: dict):
-    if "_id" in input: del input["_id"]
+    if "_id" in input:
+        del input["_id"]
     await db.suppliers.update_one({"id": supplier_id}, {"$set": input})
     return {"ok": True}
 
