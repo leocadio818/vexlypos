@@ -634,6 +634,9 @@ async def send_to_kitchen(order_id: str, user: dict = Depends(get_current_user))
                     "inventory_deducted_at": now_iso()
                 }})
     
+    # Notify KDS clients of new order
+    notify_kds_update()
+    
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
 # ─── TABLE ORDERS (Multiple accounts per table) ───
