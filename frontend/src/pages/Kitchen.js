@@ -116,6 +116,11 @@ export default function Kitchen() {
         <div className="flex items-center gap-2">
           <ChefHat size={22} className="text-primary" />
           <h1 className="font-oswald text-xl font-bold tracking-wide">COCINA</h1>
+          {/* Connection indicator */}
+          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono ${connected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+            {connected ? <Wifi size={10} /> : <WifiOff size={10} />}
+            {connected ? 'EN VIVO' : 'RECONECTANDO...'}
+          </div>
         </div>
         <Badge variant="outline" className="font-mono text-xs">{orders.length} ordenes activas</Badge>
         <a href="/kitchen-tv" target="_blank" rel="noreferrer"
