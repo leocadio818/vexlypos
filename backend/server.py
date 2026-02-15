@@ -825,19 +825,50 @@ async def get_pre_check_count(order_id: str):
     return {"count": count}
 
 @api.get("/print/receipt/{bill_id}")
-async def print_receipt(bill_id: str):
+async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)):
+    """Get receipt HTML. If send_to_queue=true, also adds to print queue."""
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
         raise HTTPException(status_code=404)
     config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    printer_config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or config
+    
+    # If send_to_queue, add to print queue
+    if send_to_queue:
+        receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+        printer_name = receipt_channel.get("printer_name", "") if receipt_channel else ""
+        
+        receipt_data = {
+            "type": "receipt",
+            "paper_width": 80,
+            "business_name": printer_config.get("business_name", "MESA POS RD"),
+            "business_address": printer_config.get("business_address", ""),
+            "rnc": printer_config.get("rnc", ""),
+            "phone": printer_config.get("phone", ""),
+            "bill_number": bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8],
+            "table_number": bill.get("table_number", ""),
+            "waiter_name": bill.get("waiter_name", ""),
+            "cashier_name": bill.get("paid_by_name", ""),
+            "date": bill.get("paid_at", "")[:19].replace("T", " ") if bill.get("paid_at") else "",
+            "items": [{"name": item.get("product_name", ""), "quantity": item.get("quantity", 1), "total": item.get("total", 0)} for item in bill.get("items", [])],
+            "subtotal": bill.get("subtotal", 0),
+            "itbis": bill.get("itbis", 0),
+            "tip": bill.get("propina_legal", 0),
+            "total": bill.get("total", 0),
+            "payment_method": bill.get("payment_method_name", "Efectivo"),
+            "footer_text": printer_config.get("footer_text", "Gracias por su visita!")
+        }
+        job = {"id": gen_id(), "type": "receipt", "channel": "receipt", "printer_name": printer_name, "data": receipt_data, "status": "pending", "created_at": now_iso()}
+        await db.print_queue.insert_one(job)
+    
     items_html = ""
     for item in bill.get("items", []):
         items_html += f"<tr><td>{item['quantity']}x {item['product_name']}</td><td style='text-align:right'>RD$ {item['total']:,.2f}</td></tr>"
     return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
-    <b style='font-size:16px;'>{config.get('business_name', 'MESA POS RD')}</b><br>
-    <span style='font-size:10px;'>{config.get('business_address', '')}<br>
-    RNC: {config.get('rnc', '')} Tel: {config.get('phone', '')}</span>
+    <b style='font-size:16px;'>{printer_config.get('business_name', 'MESA POS RD')}</b><br>
+    <span style='font-size:10px;'>{printer_config.get('business_address', '')}<br>
+    RNC: {printer_config.get('rnc', '')} Tel: {printer_config.get('phone', '')}</span>
     </div>
     <div>NCF: {bill.get('ncf', '')}<br>Mesa: {bill['table_number']}<br>Fecha: {bill.get('paid_at', bill['created_at'])[:19]}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;'>
@@ -849,7 +880,7 @@ async def print_receipt(bill_id: str):
     <tr><td><b style='font-size:14px;'>TOTAL</b></td><td style='text-align:right;font-size:14px;'><b>RD$ {bill['total']:,.2f}</b></td></tr>
     </table>
     <div style='text-align:center;margin-top:8px;font-size:10px;border-top:1px dashed #000;padding-top:8px;'>
-    Gracias por su visita</div></div>"""}
+    {printer_config.get('footer_text', 'Gracias por su visita')}</div></div>""", "queued": send_to_queue}
 
 @api.get("/print/receipt-escpos/{bill_id}")
 async def print_receipt_escpos(bill_id: str):
