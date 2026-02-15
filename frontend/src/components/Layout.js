@@ -225,7 +225,6 @@ export default function Layout() {
                     <Button 
                       onClick={() => { 
                         setFunctionsMenuOpen(false); 
-                        // Disparar evento para que OrderScreen abra el diálogo de mover mesa
                         window.dispatchEvent(new CustomEvent('openMoveTableDialog'));
                       }}
                       variant="ghost" 
@@ -235,16 +234,31 @@ export default function Layout() {
                     >
                       <MoveRight size={14} className="mr-2 text-blue-400" /> Mover Mesa
                     </Button>
-                    {/* Dividir Cuenta - Placeholder */}
+                    {/* Dividir Cuenta - ACTIVO */}
                     <Button 
+                      onClick={() => { 
+                        setFunctionsMenuOpen(false); 
+                        window.dispatchEvent(new CustomEvent('enterSplitMode'));
+                      }}
                       variant="ghost" 
                       size="sm" 
-                      className="w-full justify-start h-9 text-xs text-muted-foreground"
-                      disabled
+                      className="w-full justify-start h-9 text-xs"
                       data-testid="sidebar-fn-split-bill"
                     >
-                      <SplitSquareHorizontal size={14} className="mr-2" /> Dividir Cuenta
-                      <Badge variant="outline" className="ml-auto text-[8px]">Pronto</Badge>
+                      <SplitSquareHorizontal size={14} className="mr-2 text-green-400" /> Dividir Cuenta
+                    </Button>
+                    {/* Anular Cuenta Entera */}
+                    <Button 
+                      onClick={() => { 
+                        setFunctionsMenuOpen(false); 
+                        window.dispatchEvent(new CustomEvent('voidEntireOrder'));
+                      }}
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start h-9 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      data-testid="sidebar-fn-void-order"
+                    >
+                      <Ban size={14} className="mr-2" /> Anular Cuenta Entera
                     </Button>
                     {/* Reimprimir Comanda - Placeholder */}
                     <Button 
