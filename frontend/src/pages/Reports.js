@@ -471,16 +471,15 @@ export default function Reports() {
         });
         setSparklineData(sparkRes.data);
         
-        // Fetch business config
-        const configRes = await axios.get(`${API}/settings`, { headers: headers() });
+        // Fetch business config from system/config
+        const configRes = await axios.get(`${API}/system/config`, { headers: headers() });
         if (configRes.data) {
-          setBusinessConfig({
-            name: configRes.data.business_name || 'Mesa POS RD',
-            rnc: configRes.data.rnc || '000-000000-0'
-          });
-          // Update the global BUSINESS_INFO
-          BUSINESS_INFO.name = configRes.data.business_name || 'Mesa POS RD';
-          BUSINESS_INFO.rnc = configRes.data.rnc || '000-000000-0';
+          const businessName = configRes.data.restaurant_name || 'Mesa POS RD';
+          const rnc = configRes.data.rnc || '000-000000-0';
+          setBusinessConfig({ name: businessName, rnc: rnc });
+          // Update the global BUSINESS_INFO for export functions
+          BUSINESS_INFO.name = businessName;
+          BUSINESS_INFO.rnc = rnc;
         }
       } catch (err) {
         console.log('Error fetching initial data');
