@@ -307,6 +307,18 @@ export default function OrderScreen() {
     };
   }, [order]);
 
+  // Mobile button state machine: Handle transitions based on selectedItems
+  useEffect(() => {
+    if (selectedItems.length > 0) {
+      // Transition to 'editing' when items are selected (interrupts any state)
+      setMobileButtonState('editing');
+    } else {
+      // When no items selected, return to 'initial' (not 'closing')
+      // This handles the "interruption rule" - after anular, go back to pre-cuenta
+      setMobileButtonState('initial');
+    }
+  }, [selectedItems]);
+
   // Load grid settings from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('pos_grid_settings');
