@@ -324,6 +324,9 @@ export default function SuppliersTab({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-oswald">{supplierDialog.data?.id ? 'Editar' : 'Nuevo'} Proveedor</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm">
+              {supplierDialog.data?.id ? 'Modifica los datos del proveedor' : 'Ingresa los datos del nuevo proveedor'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
