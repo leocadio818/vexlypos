@@ -1085,6 +1085,8 @@ async def add_to_print_queue(input: dict):
     job = {
         "id": gen_id(),
         "type": input.get("type", "receipt"),
+        "channel": input.get("channel", "receipt"),
+        "printer_name": input.get("printer_name", ""),
         "data": input.get("data", {}),
         "status": "pending",
         "created_at": now_iso()
@@ -1105,6 +1107,171 @@ async def delete_print_job(job_id: str):
     """Delete a print job (called by agent after printing)"""
     await db.print_queue.delete_one({"id": job_id})
     return {"ok": True}
+
+
+# ─── SEND RECEIPT TO PRINT QUEUE (80mm Format) ───
+@api.post("/print/send-receipt/{bill_id}")
+async def send_receipt_to_queue(bill_id: str):
+    """Send a formatted receipt to the print queue"""
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    
+    # Get printer config
+    config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or {}
+    
+    # Get receipt channel printer
+    receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+    printer_name = receipt_channel.get("printer_name", "") if receipt_channel else ""
+    
+    # Build receipt data for 80mm thermal printer
+    receipt_data = {
+        "type": "receipt",
+        "paper_width": 80,
+        "business_name": config.get("business_name", "MESA POS RD"),
+        "business_address": config.get("business_address", ""),
+        "rnc": config.get("rnc", ""),
+        "phone": config.get("phone", ""),
+        "bill_number": bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8],
+        "table_number": bill.get("table_number", ""),
+        "waiter_name": bill.get("waiter_name", ""),
+        "cashier_name": bill.get("paid_by_name", ""),
+        "date": bill.get("paid_at", "")[:19].replace("T", " ") if bill.get("paid_at") else "",
+        "items": [
+            {
+                "name": item.get("product_name", ""),
+                "quantity": item.get("quantity", 1),
+                "unit_price": item.get("unit_price", 0),
+                "total": item.get("total", 0)
+            }
+            for item in bill.get("items", [])
+        ],
+        "subtotal": bill.get("subtotal", 0),
+        "itbis": bill.get("itbis", 0),
+        "tip": bill.get("propina_legal", 0),
+        "discount": bill.get("discount_amount", 0),
+        "total": bill.get("total", 0),
+        "payment_method": bill.get("payment_method_name", "Efectivo"),
+        "footer_text": config.get("footer_text", "Gracias por su visita!")
+    }
+    
+    job = {
+        "id": gen_id(),
+        "type": "receipt",
+        "channel": "receipt",
+        "printer_name": printer_name,
+        "data": receipt_data,
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    await db.print_queue.insert_one(job)
+    return {k: v for k, v in job.items() if k != "_id"}
+
+
+# ─── SEND COMANDA TO PRINT QUEUE ───
+@api.post("/print/send-comanda/{order_id}")
+async def send_comanda_to_queue(order_id: str):
+    """Send kitchen order (comanda) to print queue, split by channel"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    # Get channels and category mappings
+    channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
+    category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
+    cat_to_channel = {m["category_id"]: m["channel_code"] for m in category_mappings}
+    
+    # Get products to determine categories
+    products = await db.products.find({}, {"_id": 0, "id": 1, "category_id": 1}).to_list(500)
+    prod_to_cat = {p["id"]: p.get("category_id", "") for p in products}
+    
+    # Group items by channel
+    items_by_channel = {}
+    pending_items = [i for i in order.get("items", []) if i.get("status") == "pending" or i.get("sent_to_kitchen")]
+    
+    for item in pending_items:
+        prod_id = item.get("product_id", "")
+        cat_id = prod_to_cat.get(prod_id, "")
+        channel_code = cat_to_channel.get(cat_id, "kitchen")  # Default to kitchen
+        
+        if channel_code not in items_by_channel:
+            items_by_channel[channel_code] = []
+        items_by_channel[channel_code].append(item)
+    
+    # Create print job for each channel with items
+    jobs_created = []
+    for channel_code, items in items_by_channel.items():
+        if not items:
+            continue
+            
+        channel = next((c for c in channels if c.get("code") == channel_code), None)
+        printer_name = channel.get("printer_name", "") if channel else ""
+        
+        comanda_data = {
+            "type": "comanda",
+            "paper_width": 80,
+            "channel_name": channel.get("name", channel_code.title()) if channel else channel_code.title(),
+            "table_number": order.get("table_number", "?"),
+            "waiter_name": order.get("waiter_name", ""),
+            "order_number": order.get("id", "")[:8],
+            "date": now_iso()[:19].replace("T", " "),
+            "items": [
+                {
+                    "name": item.get("product_name", ""),
+                    "quantity": item.get("quantity", 1),
+                    "modifiers": [m.get("name", "") for m in item.get("modifiers", [])],
+                    "notes": item.get("notes", "")
+                }
+                for item in items
+            ]
+        }
+        
+        job = {
+            "id": gen_id(),
+            "type": "comanda",
+            "channel": channel_code,
+            "printer_name": printer_name,
+            "data": comanda_data,
+            "status": "pending",
+            "created_at": now_iso()
+        }
+        await db.print_queue.insert_one(job)
+        jobs_created.append({k: v for k, v in job.items() if k != "_id"})
+    
+    return {"jobs": jobs_created, "count": len(jobs_created)}
+
+
+# ─── TEST PRINT ───
+@api.post("/print/test/{channel_code}")
+async def send_test_print(channel_code: str):
+    """Send a test print to a specific channel"""
+    channel = await db.print_channels.find_one({"code": channel_code}, {"_id": 0})
+    if not channel:
+        raise HTTPException(status_code=404, detail="Canal no encontrado")
+    
+    config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or {}
+    
+    test_data = {
+        "type": "test",
+        "paper_width": 80,
+        "business_name": config.get("business_name", "MESA POS RD"),
+        "channel_name": channel.get("name", channel_code.title()),
+        "date": now_iso()[:19].replace("T", " "),
+        "message": "PRUEBA DE IMPRESION",
+        "printer_name": channel.get("printer_name", "Sin configurar")
+    }
+    
+    job = {
+        "id": gen_id(),
+        "type": "test",
+        "channel": channel_code,
+        "printer_name": channel.get("printer_name", ""),
+        "data": test_data,
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    await db.print_queue.insert_one(job)
+    return {k: v for k, v in job.items() if k != "_id"}
 
 
 # ─── PRINT TO QUEUE HELPERS ───
