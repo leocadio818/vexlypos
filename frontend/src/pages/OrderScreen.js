@@ -1242,10 +1242,23 @@ export default function OrderScreen() {
                 {/* Secondary actions row */}
                 {activeItems.length > 0 && (
                   <div className="flex gap-1">
-                    {table?.status !== 'billed' && (
-                      <Button onClick={enterSplitMode} variant="outline" size="sm" data-testid="split-btn"
-                        className="h-8 text-[10px] border-muted-foreground/30 flex-1">
-                        <SplitSquareHorizontal size={12} className="mr-1" /> Editar Cuenta
+                    {table?.status !== 'billed' && selectedItems.length > 0 && (
+                      <Button 
+                        onClick={() => {
+                          // Check if any selected item was sent to kitchen
+                          const anyWasSent = selectedItems.some(id => {
+                            const item = order?.items?.find(i => i.id === id);
+                            return item?.status === 'sent' || item?.sent_to_kitchen;
+                          });
+                          // Open cancel dialog - will require PIN only if items were sent
+                          openBulkCancelDialog(selectedItems, anyWasSent);
+                        }}
+                        variant="outline" 
+                        size="sm" 
+                        data-testid="void-selected-btn"
+                        className="h-8 text-[10px] border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 flex-1"
+                      >
+                        <Ban size={12} className="mr-1" /> Anular ({selectedItems.length})
                       </Button>
                     )}
                     <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
