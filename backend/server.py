@@ -334,14 +334,15 @@ async def update_station_config(input: dict):
     return {"ok": True}
 
 # ─── PRINT CHANNELS ───
+# ─── PRINT CHANNELS (Canales de Impresión) ───
 @api.get("/print-channels")
 async def list_print_channels():
     channels = await db.print_channels.find({}, {"_id": 0}).to_list(50)
     if not channels:
         defaults = [
-            {"id": gen_id(), "name": "Cocina Principal", "type": "kitchen", "target": "screen", "ip": "", "active": True},
-            {"id": gen_id(), "name": "Barra", "type": "bar", "target": "screen", "ip": "", "active": True},
-            {"id": gen_id(), "name": "Caja", "type": "receipt", "target": "screen", "ip": "", "active": True},
+            {"id": gen_id(), "name": "Cocina", "code": "kitchen", "printer_name": "", "active": True, "category_ids": []},
+            {"id": gen_id(), "name": "Bar", "code": "bar", "printer_name": "", "active": True, "category_ids": []},
+            {"id": gen_id(), "name": "Recibo", "code": "receipt", "printer_name": "", "active": True, "category_ids": []},
         ]
         await db.print_channels.insert_many(defaults)
         return defaults
@@ -349,8 +350,14 @@ async def list_print_channels():
 
 @api.post("/print-channels")
 async def create_print_channel(input: dict):
-    doc = {"id": gen_id(), "name": input.get("name",""), "type": input.get("type","kitchen"),
-           "target": input.get("target","screen"), "ip": input.get("ip",""), "active": True}
+    doc = {
+        "id": gen_id(), 
+        "name": input.get("name", ""), 
+        "code": input.get("code", "kitchen"),
+        "printer_name": input.get("printer_name", ""),
+        "active": input.get("active", True),
+        "category_ids": input.get("category_ids", [])
+    }
     await db.print_channels.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
@@ -363,6 +370,57 @@ async def update_print_channel(cid: str, input: dict):
 @api.delete("/print-channels/{cid}")
 async def delete_print_channel(cid: str):
     await db.print_channels.delete_one({"id": cid})
+    return {"ok": True}
+
+
+# ─── PRINTER CONFIG (Configuración Global de Impresión) ───
+@api.get("/printer-config")
+async def get_printer_config():
+    config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0})
+    if not config:
+        config = {
+            "id": "printer_config",
+            "enabled": True,
+            "paper_width": 80,
+            "auto_print_comanda": False,
+            "auto_print_receipt": False,
+            "business_name": "MESA POS RD",
+            "business_address": "",
+            "rnc": "",
+            "phone": "",
+            "footer_text": "Gracias por su visita!"
+        }
+    return config
+
+@api.put("/printer-config")
+async def update_printer_config(input: dict):
+    if "_id" in input: del input["_id"]
+    input["id"] = "printer_config"
+    await db.system_config.update_one(
+        {"id": "printer_config"},
+        {"$set": input},
+        upsert=True
+    )
+    return {"ok": True}
+
+
+# ─── CATEGORY CHANNEL MAPPING ───
+@api.get("/category-channels")
+async def get_category_channels():
+    """Get mapping of categories to print channels"""
+    mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
+    return mappings
+
+@api.put("/category-channels")
+async def update_category_channels(input: dict):
+    """Update category to channel mappings"""
+    # Input format: { "category_id": "channel_code" }
+    for cat_id, channel_code in input.items():
+        await db.category_channels.update_one(
+            {"category_id": cat_id},
+            {"$set": {"category_id": cat_id, "channel_code": channel_code}},
+            upsert=True
+        )
     return {"ok": True}
 
 # ─── RESERVATIONS ───
