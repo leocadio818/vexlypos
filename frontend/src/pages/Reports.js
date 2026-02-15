@@ -512,6 +512,7 @@ export default function Reports() {
       'profit-loss': '/reports/profit-loss',
       'table-movements': '/reports/table-movements',
       'by-waiter': '/reports/sales-by-waiter',
+      'system-audit': '/reports/system-audit',
     };
     
     const endpoint = endpoints[reportId];
