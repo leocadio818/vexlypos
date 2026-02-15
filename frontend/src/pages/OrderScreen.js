@@ -1209,15 +1209,15 @@ export default function OrderScreen() {
                 </div>
                 {/* Secondary actions row */}
                 {activeItems.length > 0 && (
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="flex gap-1">
                     {table?.status !== 'billed' && (
                       <Button onClick={enterSplitMode} variant="outline" size="sm" data-testid="split-btn"
-                        className="h-8 text-[10px] border-muted-foreground/30">
-                        <SplitSquareHorizontal size={12} className="mr-1" /> Editar Cuenta
+                        className="h-8 text-[10px] border-muted-foreground/30 flex-1 px-2">
+                        <SplitSquareHorizontal size={12} className="mr-1" /> Editar
                       </Button>
                     )}
                     <Button onClick={handlePrintPreCheck} variant="outline" size="sm" data-testid="pre-check-btn"
-                      className={`h-8 text-[10px] border-muted-foreground/30 relative ${table?.status === 'billed' ? 'col-span-2' : ''}`}>
+                      className={`h-8 text-[10px] border-muted-foreground/30 relative flex-1 px-2 ${table?.status === 'billed' ? 'flex-[2]' : ''}`}>
                       <FileText size={12} className="mr-1" /> Pre-Cuenta
                       {preCheckCount > 0 && <Lock size={8} className="ml-0.5 text-yellow-500" />}
                     </Button>
@@ -1226,8 +1226,8 @@ export default function OrderScreen() {
                       <Popover open={functionsMenuOpen} onOpenChange={setFunctionsMenuOpen}>
                         <PopoverTrigger asChild>
                           <Button variant="outline" size="sm" data-testid="functions-menu-btn"
-                            className="h-8 text-[10px] border-muted-foreground/30">
-                            <MoreVertical size={12} className="mr-1" /> Funciones
+                            className="h-8 text-[10px] border-muted-foreground/30 flex-1 px-2">
+                            <MoreVertical size={12} className="mr-1" /> Más
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent 
