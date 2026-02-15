@@ -10,9 +10,22 @@ router = APIRouter(tags=["orders"])
 # Database reference - will be set from main app
 db = None
 
+# KDS notification function (will be imported)
+_notify_kds = None
+
 def set_db(database):
     global db
     db = database
+
+def set_kds_notifier(notifier_func):
+    """Set the KDS notification function"""
+    global _notify_kds
+    _notify_kds = notifier_func
+
+def notify_kds_update():
+    """Notify KDS clients of order updates"""
+    if _notify_kds:
+        _notify_kds()
 
 def gen_id() -> str:
     return str(uuid.uuid4())
