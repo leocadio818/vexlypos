@@ -558,15 +558,26 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 ## Changelog Reciente
 
 ### Febrero 2026
+- ✅ **SISTEMA DE ANULACIONES INTELIGENTE** (15 Feb 2026):
+  - Items seleccionables con checkbox en la lista de pedidos
+  - Botón "Anular" aparece cuando hay items seleccionados
+  - Lógica de PIN: items "Pendiente" se anulan sin PIN, items "Enviado" requieren PIN
+  - "Anular Cuenta Entera" en menú Funciones - SIEMPRE requiere PIN
+  - Registro automático en auditoría de anulaciones
+- ✅ **REORGANIZACIÓN MENÚ FUNCIONES** (15 Feb 2026):
+  - Botón "Funciones" en sidebar lateral izquierdo
+  - Menú incluye: Mover Mesa, Dividir Cuenta (activo), Anular Cuenta Entera
+  - "Dividir Cuenta" movido del panel de orden al menú Funciones
+  - Área de lista de productos expandida (32vh)
 - ✅ **MENÚ "FUNCIONES" EN PANTALLA DE PEDIDOS** (15 Feb 2026):
-  - Nuevo botón "Funciones" con icono MoreVertical en el panel de orden
+  - Nuevo botón "Funciones" con icono Wrench en el sidebar
   - Popover con opciones operacionales:
     - **Mover Mesa**: Funcional - permite mover la cuenta actual a otra mesa
-    - **Dividir Cuenta**: Placeholder (Pronto)
+    - **Dividir Cuenta**: Activo - permite reorganizar items entre cuentas
+    - **Anular Cuenta Entera**: Activo - anula toda la orden con PIN
     - **Reimprimir Comanda**: Placeholder (Pronto)
     - **Descuento Especial**: Placeholder (Pronto)
-  - Implementación: `OrderScreen.js` líneas 1225-1289
-  - UI optimizada: espacio de botones secundarios reorganizado
+  - Implementación: `Layout.js` (sidebar) + `OrderScreen.js` (eventos)
 - ✅ **VERIFICACIONES COMPLETADAS** (15 Feb 2026):
   - Auto-envío a cocina: VERIFICADO funciona en el primer intento
   - Scroll pantalla de pago móvil: VERIFICADO funciona en viewport 375x812
