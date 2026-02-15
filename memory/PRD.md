@@ -64,6 +64,15 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Botón "Limpiar filtros" cuando no hay resultados
     - Layout: buscador a la izquierda, botón "+ Nuevo Proveedor" a la derecha
     - Endpoint `/api/suppliers/with-active-orders` para obtener conteo de OC activas
+  - **Dashboard de Proveedores (NUEVO - Febrero 2026)**:
+    - Toggle "Lista | Dashboard" para cambiar vista
+    - **Tarjetas de resumen**: Total Gastado, Promedio por Orden, Proveedores Activos, Más Usado
+    - **Gráfico de Área**: Evolución mensual de gastos por proveedor (últimos 6 meses)
+    - **Gráfico de Barras Horizontal**: Top 5 proveedores por volumen de gasto
+    - **Tabla detallada**: Gasto por proveedor con porcentaje del total
+    - **Panel de Alertas**: Proveedores inactivos (sin órdenes en últimos 30 días)
+    - Endpoint `/api/suppliers/analytics` para datos del dashboard
+    - Botón "Actualizar" para refrescar datos
 - **Recetas**: Vinculación de productos de venta con ingredientes, incluyendo % de merma
   - **Módulo de Margen de Ganancia Dinámico (NUEVO - Febrero 2026)**:
     - Calculadora de Margen integrada en el diálogo de Editar/Nueva Receta
