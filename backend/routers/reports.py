@@ -933,3 +933,135 @@ async def hourly_sales_report(
                 hourly[hour]["bills"] += 1
     
     return list(hourly.values())
+
+
+
+# ─── SYSTEM AUDIT LOG ───
+@router.get("/system-audit")
+async def system_audit_report(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None)
+):
+    """General system audit log - all significant activities"""
+    if not date_from:
+        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if not date_to:
+        date_to = date_from
+    
+    # Collect activities from various sources
+    activities = []
+    
+    # 1. Void/Cancellation audit logs
+    void_logs = await db.void_audit_logs.find({}, {"_id": 0}).to_list(1000)
+    for log in void_logs:
+        created = log.get("created_at", "")
+        if created[:10] >= date_from and created[:10] <= date_to:
+            activities.append({
+                "timestamp": created,
+                "type": "Anulación",
+                "description": f"Anulación: {log.get('product_name', 'Item')} - {log.get('reason', 'Sin razón')}",
+                "user": log.get("requested_by_name", log.get("user_name", "?")),
+                "authorizer": log.get("authorized_by_name", "-"),
+                "value": log.get("total_value", 0)
+            })
+    
+    # 2. Stock movements (adjustments, waste, transfers)
+    movements = await db.stock_movements.find({
+        "type": {"$in": ["adjustment", "waste", "transfer_in", "transfer_out"]}
+    }, {"_id": 0}).to_list(1000)
+    for mov in movements:
+        created = mov.get("created_at", "")
+        if created[:10] >= date_from and created[:10] <= date_to:
+            type_names = {
+                "adjustment": "Ajuste de Stock",
+                "waste": "Merma",
+                "transfer_in": "Entrada por Transferencia",
+                "transfer_out": "Salida por Transferencia"
+            }
+            activities.append({
+                "timestamp": created,
+                "type": type_names.get(mov.get("type"), mov.get("type")),
+                "description": f"{mov.get('ingredient_name', '?')}: {mov.get('quantity', 0)} {mov.get('reason', '')}",
+                "user": mov.get("user_name", "Sistema"),
+                "authorizer": "-",
+                "value": 0
+            })
+    
+    # 3. Purchase order status changes
+    pos = await db.purchase_orders.find({}, {"_id": 0}).to_list(1000)
+    for po in pos:
+        created = po.get("created_at", "")
+        if created[:10] >= date_from and created[:10] <= date_to:
+            activities.append({
+                "timestamp": created,
+                "type": "Orden de Compra",
+                "description": f"OC #{po.get('number', '?')} - {po.get('supplier_name', '?')} ({po.get('status', '?')})",
+                "user": po.get("created_by_name", "?"),
+                "authorizer": "-",
+                "value": po.get("total", 0)
+            })
+    
+    # 4. Inventory difference logs
+    diff_logs = await db.stock_difference_logs.find({}, {"_id": 0}).to_list(500)
+    for diff in diff_logs:
+        created = diff.get("created_at", "")
+        if created[:10] >= date_from and created[:10] <= date_to:
+            activities.append({
+                "timestamp": created,
+                "type": "Diferencia Inventario",
+                "description": f"{diff.get('ingredient_name', '?')}: {diff.get('difference_type', '?')} - {diff.get('reason', '')}",
+                "user": diff.get("user_name", "Sistema"),
+                "authorizer": "-",
+                "value": diff.get("value", 0)
+            })
+    
+    # 5. Shift opens/closes
+    shifts = await db.shifts.find({}, {"_id": 0}).to_list(100)
+    for shift in shifts:
+        opened = shift.get("opened_at", "")
+        closed = shift.get("closed_at", "")
+        
+        if opened[:10] >= date_from and opened[:10] <= date_to:
+            activities.append({
+                "timestamp": opened,
+                "type": "Apertura de Turno",
+                "description": f"Turno abierto con {shift.get('opening_cash', 0)} RD$ en caja",
+                "user": shift.get("opened_by_name", "?"),
+                "authorizer": "-",
+                "value": shift.get("opening_cash", 0)
+            })
+        
+        if closed and closed[:10] >= date_from and closed[:10] <= date_to:
+            activities.append({
+                "timestamp": closed,
+                "type": "Cierre de Turno",
+                "description": f"Turno cerrado con {shift.get('total_sales', 0)} RD$ en ventas",
+                "user": shift.get("closed_by_name", shift.get("opened_by_name", "?")),
+                "authorizer": "-",
+                "value": shift.get("total_sales", 0)
+            })
+    
+    # Sort by timestamp descending
+    activities.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    
+    # Group by type for summary
+    by_type = {}
+    total_value = 0
+    for act in activities:
+        t = act["type"]
+        if t not in by_type:
+            by_type[t] = {"type": t, "count": 0, "value": 0}
+        by_type[t]["count"] += 1
+        by_type[t]["value"] += act.get("value", 0)
+        total_value += act.get("value", 0)
+    
+    return {
+        "date_from": date_from,
+        "date_to": date_to,
+        "summary": {
+            "total_activities": len(activities),
+            "total_value": round(total_value, 2)
+        },
+        "by_type": sorted(by_type.values(), key=lambda x: -x["count"]),
+        "activities": activities[:100]  # Limit to last 100 for performance
+    }
