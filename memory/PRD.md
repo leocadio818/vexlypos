@@ -550,6 +550,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 ## Changelog Reciente
 
 ### Febrero 2026
+- ✅ **MÓDULO DE REPORTES COMPLETO** (15 Feb 2026):
+  - **19 endpoints** en `/backend/routers/reports.py`
+  - **4 categorías colapsables** de reportes:
+    - **Ventas y Caja**: Cierre del día, Cierre de caja, Ventas por categoría, Top 10/20/30 productos, Tipos de venta, Formas de pago, Auditoría de anulaciones (con autorizador)
+    - **Inventario y Almacén**: Niveles por almacén, Transferencias, Diferencias, Mermas, Recetas
+    - **Compras y Fiscal**: Órdenes de compras, Por proveedores, Impuestos (ITBIS 18% y Propina 10%)
+    - **Auditoría y Operaciones**: Ganancias y pérdidas (P&L), Movimientos de mesas, Ventas por mesero
+  - **Selector de fechas global** con presets (Hoy, Ayer, Esta Semana, Este Mes)
+  - **Sistema de exportación**: Excel, PDF, Impresión directa (diálogo nativo), Envío por correo
+  - **Sparklines** (micro-gráficos de tendencia de 7 días) en productos y métodos de pago
+  - **Enlace directo en menú lateral** para usuarios con permiso `view_reports`
+  - **19/19 tests backend + UI verificación** pasados
 - ✅ **Búsqueda inteligente de productos**: Barra de búsqueda en Configuración > Inventario > Productos
 - ✅ **Módulo de Inventario Maestro**: Sistema completo de gestión de inventario:
   - CRUD de Insumos/Ingredientes con categorías y unidades
