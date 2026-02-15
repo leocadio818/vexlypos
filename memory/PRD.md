@@ -95,6 +95,22 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
     - Botón "Exportar" genera archivo .xlsx
     - Solo exporta órdenes visibles según filtros activos
     - Nombre del archivo incluye el periodo seleccionado
+  - **Vista de Gráficos (NUEVO - Febrero 2026)**:
+    - Toggle "Lista | Gráficos" para cambiar de vista
+    - **Gráfico de Área**: Evolución de gastos por proveedor a lo largo del tiempo
+      - Áreas apiladas por proveedor con colores distintivos
+      - Tooltip interactivo al pasar el mouse
+      - Leyenda con nombres de proveedores
+    - **Pie Chart Donut**: Distribución de órdenes por proveedor
+      - Muestra proporción visual de cada proveedor
+      - Leyenda con conteo de órdenes
+    - **Bar Chart Horizontal**: Órdenes por estado
+      - Muestra cantidad de órdenes por cada estado (Borrador, Pendiente, Recibida, etc.)
+      - Colores correspondientes a cada estado
+    - **Tabla Resumen por Proveedor**:
+      - Columnas: Proveedor, Órdenes, Total, % del Total
+      - Fila de totales al final
+      - Útil para análisis rápido de gastos
 - **Conciliación de Precios**: Al recibir OC, comparar cantidad pedida vs recibida y actualizar costo promedio automáticamente
 - **Historial de Movimientos**: Registro de todos los movimientos de stock (compras, transferencias, ajustes, mermas)
 - **Lógica de Conversión Universal (NUEVO - Febrero 2026)**:
