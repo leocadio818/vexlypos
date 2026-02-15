@@ -518,7 +518,19 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Total de Routers**: 11 módulos independientes
   - **Funcionalidad Preservada**: Todas las APIs funcionan sin cambios en el frontend
   - **Testing**: 42/42 tests de regresión pasados (ver `/app/test_reports/iteration_41.json`)
-- [ ] **Crear paquete ZIP descargable** del servidor local
+- [x] **Paquete de Servidor Local** (Completado 15 Feb 2026) ✅
+  - Ubicación: `/app/local-server/`
+  - **Contenido**:
+    - `docker-compose.yml` - Orquestación de servicios (MongoDB + Backend + Frontend)
+    - `backend/` - Código Python con todos los routers modulares
+    - `frontend/` - Código React compilable
+    - `instalar-windows.bat` / `instalar-linux.sh` - Scripts de instalación automática
+    - `backup.bat` / `backup.sh` - Scripts de respaldo
+    - `GUIA_INSTALACION.md` - Guía paso a paso en español
+    - `README.md` - Referencia rápida
+  - **Requisitos usuario final**: Docker Desktop, 4GB RAM, 20GB disco
+  - **Puertos**: 80 (frontend), 8001 (backend), 27017 (MongoDB interno)
+  - **Uso**: Copiar carpeta `local-server/` y ejecutar script de instalación
 - [ ] **Integración de impresora ESC/POS** física
 
 ### P2 - Media Prioridad
