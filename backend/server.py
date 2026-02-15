@@ -27,10 +27,10 @@ from routers.inventory import (
 )
 from routers.recipes import router as recipes_router
 from routers.reports import router as reports_router
-from routers.orders import router as orders_router, set_db as orders_set_db
+from routers.orders import router as orders_router, set_db as orders_set_db, set_kds_notifier
 from routers.tables import router as tables_router, set_db as tables_set_db
 from routers.billing import router as billing_router, set_db as billing_set_db
-from routers.kitchen import router as kitchen_router, set_db as kitchen_set_db
+from routers.kitchen import router as kitchen_router, set_db as kitchen_set_db, notify_kds
 from routers.customers import router as customers_router, set_db as customers_set_db
 from routers.config import router as config_router, set_db as config_set_db
 
@@ -51,6 +51,9 @@ billing_set_db(db)
 kitchen_set_db(db)
 customers_set_db(db)
 config_set_db(db)
+
+# Connect KDS notifier to orders
+set_kds_notifier(notify_kds)
 
 app = FastAPI()
 api = APIRouter(prefix="/api")
