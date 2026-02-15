@@ -70,6 +70,14 @@ class TestAuth:
         assert data["user"]["role"] == "cashier"
         print(f"✓ Cashier login successful - User: {data['user']['name']}")
     
+    def test_login_kitchen_pin(self, api_client):
+        """Test login with kitchen PIN 9999 (Chef Pedro)"""
+        response = api_client.post(f"{BASE_URL}/api/auth/login", json={"pin": "9999"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["user"]["role"] == "kitchen"
+        print(f"✓ Kitchen login successful - User: {data['user']['name']}")
+    
     def test_login_invalid_pin(self, api_client):
         """Test login with invalid PIN"""
         response = api_client.post(f"{BASE_URL}/api/auth/login", json={"pin": "0001"})
