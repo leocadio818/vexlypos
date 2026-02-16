@@ -58,6 +58,7 @@ export default function ProductConfig() {
     button_text_color: '#FFFFFF',
     track_inventory: false,
     print_channels: [],  // Array of channel codes for multi-channel printing
+    tax_exemptions: [],  // Array of tax IDs this product is exempt from
     modifier_assignments: [],
     // Recipe fields (for display)
     recipe_ingredients: []
@@ -65,6 +66,8 @@ export default function ProductConfig() {
 
   // Print channels state
   const [printChannels, setPrintChannels] = useState([]);
+  // Tax config state
+  const [taxConfig, setTaxConfig] = useState([]);
 
   // Dialog for adding modifier assignment
   const [modAssignDialog, setModAssignDialog] = useState({
