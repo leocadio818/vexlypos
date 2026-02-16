@@ -19,7 +19,7 @@ export default function Login() {
   useEffect(() => { ensureSeed(); }, [ensureSeed]);
 
   const handleDigit = (d) => {
-    if (pin.length < 6) setPin(prev => prev + d);
+    if (pin.length < 8) setPin(prev => prev + d);
   };
 
   const handleDelete = () => setPin(prev => prev.slice(0, -1));
