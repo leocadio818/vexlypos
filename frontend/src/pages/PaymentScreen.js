@@ -130,6 +130,9 @@ export default function PaymentScreen() {
   const [selectedServiceType, setSelectedServiceType] = useState(null);
   const [adjustedBill, setAdjustedBill] = useState(null); // Bill with recalculated taxes
 
+  // Dialog states
+  const [ncfDialogOpen, setNcfDialogOpen] = useState(false);
+
   // NCF Fiscal Types (Dominican Republic)
   const fiscalTypes = [
     { code: 'B01', name: 'Consumidor Final', short: 'CF' },
