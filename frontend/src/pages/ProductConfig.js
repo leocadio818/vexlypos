@@ -77,14 +77,16 @@ export default function ProductConfig() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [catRes, reportCatRes, modRes] = await Promise.all([
+      const [catRes, reportCatRes, modRes, channelsRes] = await Promise.all([
         categoriesAPI.list(),
         reportCategoriesAPI.list(),
-        modifiersAPI.list()
+        modifiersAPI.list(),
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/print-channels`).then(r => r.json())
       ]);
       setCategories(catRes.data);
       setReportCategories(reportCatRes.data);
       setModifierGroups(modRes.data);
+      setPrintChannels(channelsRes || []);
 
       if (!isNew) {
         const prodRes = await productsAPI.get(productId);
@@ -103,6 +105,7 @@ export default function ProductConfig() {
           button_bg_color: p.button_bg_color || '',
           button_text_color: p.button_text_color || '#FFFFFF',
           track_inventory: p.track_inventory || false,
+          print_channels: p.print_channels || [],
           modifier_assignments: p.modifier_assignments || [],
           recipe_ingredients: p.recipe_ingredients || []
         });
