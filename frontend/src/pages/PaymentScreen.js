@@ -453,99 +453,28 @@ export default function PaymentScreen() {
           {isMobile && (
             <button 
               onClick={() => setShowDetails(!showDetails)}
-              className={`mx-4 mb-2 px-4 py-2 rounded-xl ${glassStyles.button} flex items-center justify-between`}
+              className={`mx-3 mb-2 px-3 py-1.5 rounded-xl ${glassStyles.button} flex items-center justify-between`}
             >
-              <span className="text-white/60 text-sm flex items-center gap-2">
-                <Receipt size={14} />
-                Ver detalle ({bill.items?.length || 0} artículos)
+              <span className="text-white/60 text-xs flex items-center gap-2">
+                <Receipt size={12} />
+                {bill.items?.length || 0} artículos
               </span>
-              {showDetails ? <ChevronUp size={16} className="text-white/60" /> : <ChevronDown size={16} className="text-white/60" />}
+              {showDetails ? <ChevronUp size={14} className="text-white/60" /> : <ChevronDown size={14} className="text-white/60" />}
             </button>
           )}
 
           {(!isMobile || showDetails) && (
-            <ScrollArea className={`flex-1 px-4 ${isMobile ? 'max-h-32' : ''}`}>
-              <div className={`${glassStyles.card} rounded-2xl p-3 mb-3`}>
+            <ScrollArea className={`flex-1 px-3 ${isMobile ? 'max-h-24' : ''}`}>
+              <div className={`${glassStyles.card} rounded-xl p-2.5 mb-2`}>
                 
-                {/* Selector de Tipo Fiscal (NCF) */}
-                <div className="mb-3">
-                  <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <FileText size={10} /> Tipo Fiscal
-                  </h4>
-                  <div className="flex gap-1 flex-wrap">
-                    {fiscalTypes.map(ft => (
-                      <button
-                        key={ft.code}
-                        onClick={() => setSelectedFiscalType(ft.code)}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                          selectedFiscalType === ft.code
-                            ? 'bg-cyan-500/30 border border-cyan-400/50 text-cyan-300'
-                            : 'bg-white/5 border border-white/10 text-white/50 hover:bg-white/10'
-                        }`}
-                        data-testid={`fiscal-type-${ft.code}`}
-                      >
-                        {ft.code}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[9px] text-white/30 mt-1">
-                    {fiscalTypes.find(f => f.code === selectedFiscalType)?.name}
-                  </p>
-                </div>
-
-                {/* Selector de Tipo de Servicio */}
-                <div className="mb-3">
-                  <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <Store size={10} /> Tipo de Servicio
-                  </h4>
-                  <div className="flex gap-1 flex-wrap">
-                    {saleTypes.map(st => {
-                      const isSelected = selectedServiceType?.id === st.id;
-                      const hasExemptions = (st.tax_exemptions || []).length > 0;
-                      const IconComponent = st.code === 'delivery' ? Truck : st.code === 'take_out' ? Store : UtensilsCrossed;
-                      return (
-                        <button
-                          key={st.id}
-                          onClick={() => setSelectedServiceType(st)}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                            isSelected
-                              ? 'bg-orange-500/30 border border-orange-400/50 text-orange-300'
-                              : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
-                          }`}
-                          data-testid={`service-type-${st.code}`}
-                        >
-                          <IconComponent size={12} />
-                          {st.name}
-                          {hasExemptions && !isSelected && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400" title="Sin propina"></span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedServiceType && (selectedServiceType.tax_exemptions || []).length > 0 && (
-                    <p className="text-[9px] text-red-400/70 mt-1 flex items-center gap-1">
-                      <X size={8} /> Propina de Ley no aplica
-                    </p>
-                  )}
-                </div>
-
-                {/* Separador */}
-                <div className="border-t border-white/10 pt-2 mb-2"></div>
-
-                {/* Header del detalle */}
-                <h3 className={`font-oswald font-bold text-white/60 mb-2 ${isMobile ? 'text-xs' : 'text-xs'}`}>
-                  DETALLE DE FACTURA
-                </h3>
-                
-                {/* Lista de productos (reducida) */}
-                <div className="space-y-1 max-h-20 overflow-y-auto">
+                {/* Lista de productos compacta */}
+                <div className="space-y-0.5 max-h-16 overflow-y-auto mb-2">
                   {bill.items?.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center text-[11px]">
-                      <span className="text-white/70 flex-1 truncate">
+                    <div key={i} className="flex justify-between items-center text-[10px]">
+                      <span className="text-white/60 flex-1 truncate">
                         <span className="font-oswald font-bold text-cyan-400">{item.quantity}x</span> {item.product_name}
                       </span>
-                      <span className="font-oswald font-bold text-white/90 ml-2">{formatMoney(item.total)}</span>
+                      <span className="font-oswald font-bold text-white/80 ml-2">{formatMoney(item.total)}</span>
                     </div>
                   ))}
                 </div>
