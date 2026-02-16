@@ -1286,22 +1286,35 @@ async def send_comanda_to_queue(order_id: str):
     category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
     cat_to_channel = {m["category_id"]: m["channel_code"] for m in category_mappings}
     
-    # Get products to determine categories
-    products = await db.products.find({}, {"_id": 0, "id": 1, "category_id": 1}).to_list(500)
-    prod_to_cat = {p["id"]: p.get("category_id", "") for p in products}
+    # Get products to determine categories AND product-level print_channels
+    products = await db.products.find({}, {"_id": 0, "id": 1, "category_id": 1, "print_channels": 1}).to_list(500)
+    prod_map = {p["id"]: p for p in products}
     
-    # Group items by channel
+    # Group items by channel (support multi-channel per product)
     items_by_channel = {}
     pending_items = [i for i in order.get("items", []) if i.get("status") == "pending" or i.get("sent_to_kitchen")]
     
     for item in pending_items:
         prod_id = item.get("product_id", "")
-        cat_id = prod_to_cat.get(prod_id, "")
-        channel_code = cat_to_channel.get(cat_id, "kitchen")  # Default to kitchen
+        product = prod_map.get(prod_id, {})
         
-        if channel_code not in items_by_channel:
-            items_by_channel[channel_code] = []
-        items_by_channel[channel_code].append(item)
+        # Priority: product's print_channels > category's channel > default 'kitchen'
+        product_channels = product.get("print_channels", [])
+        
+        if product_channels and len(product_channels) > 0:
+            # Product has specific channels (can be multiple for combos)
+            target_channels = product_channels
+        else:
+            # Fall back to category channel
+            cat_id = product.get("category_id", "")
+            channel_code = cat_to_channel.get(cat_id, "kitchen")
+            target_channels = [channel_code]
+        
+        # Add item to each target channel
+        for channel_code in target_channels:
+            if channel_code not in items_by_channel:
+                items_by_channel[channel_code] = []
+            items_by_channel[channel_code].append(item)
     
     # Create print job for each channel with items
     jobs_created = []
