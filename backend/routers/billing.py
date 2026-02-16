@@ -320,9 +320,9 @@ async def list_sale_types():
     types = await db.sale_types.find({}, {"_id": 0}).to_list(20)
     if not types:
         defaults = [
-            {"id": gen_id(), "code": "dine_in", "name": "Para comer aquí", "active": True},
-            {"id": gen_id(), "code": "takeout", "name": "Para llevar", "active": True},
-            {"id": gen_id(), "code": "delivery", "name": "Delivery", "active": True}
+            {"id": gen_id(), "code": "dine_in", "name": "Para comer aquí", "active": True, "tax_exemptions": []},
+            {"id": gen_id(), "code": "takeout", "name": "Para llevar", "active": True, "tax_exemptions": []},
+            {"id": gen_id(), "code": "delivery", "name": "Delivery", "active": True, "tax_exemptions": []}
         ]
         await db.sale_types.insert_many(defaults)
         return defaults
@@ -330,7 +330,13 @@ async def list_sale_types():
 
 @router.post("/sale-types")
 async def create_sale_type(input: dict):
-    doc = {"id": gen_id(), "code": input.get("code", ""), "name": input.get("name", ""), "active": True}
+    doc = {
+        "id": gen_id(), 
+        "code": input.get("code", ""), 
+        "name": input.get("name", ""), 
+        "active": True,
+        "tax_exemptions": input.get("tax_exemptions", [])  # Array of tax IDs this sale type is exempt from
+    }
     await db.sale_types.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
