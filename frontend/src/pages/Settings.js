@@ -442,6 +442,60 @@ export default function Settings() {
     catch { toast.error('Error'); }
   };
 
+  // Factory Reset handler (Admin Only)
+  const handleFactoryReset = async () => {
+    if (!resetDialog.confirmPin) {
+      toast.error('Ingresa tu PIN de administrador');
+      return;
+    }
+    
+    if (!resetDialog.resetSales && !resetDialog.resetInventory && !resetDialog.resetUsers) {
+      toast.error('Selecciona al menos una opción para resetear');
+      return;
+    }
+
+    setResetDialog(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const response = await axios.post(`${API}/system/factory-reset`, {
+        reset_sales: resetDialog.resetSales,
+        reset_inventory: resetDialog.resetInventory,
+        reset_users: resetDialog.resetUsers,
+        admin_pin: resetDialog.confirmPin
+      }, { headers: hdrs() });
+      
+      toast.success('Reset completado exitosamente', {
+        description: response.data.details?.join(', ')
+      });
+      
+      // If users were reset, show the new Admin PIN
+      if (resetDialog.resetUsers) {
+        toast.warning('El PIN del Admin ha sido cambiado a: 11331744', {
+          duration: 10000
+        });
+      }
+      
+      // Close dialog and reset state
+      setResetDialog({
+        open: false,
+        resetSales: false,
+        resetInventory: false,
+        resetUsers: false,
+        confirmPin: '',
+        showWarning: false,
+        loading: false
+      });
+      
+      // Refresh data
+      fetchAll();
+      
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'Error durante el reset';
+      toast.error(errorMsg);
+      setResetDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
   // Role handlers
   const handleSaveRole = async () => {
     if (!roleDialog.name) return;
