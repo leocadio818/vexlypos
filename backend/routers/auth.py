@@ -135,6 +135,36 @@ async def list_all_permissions():
     return ALL_PERMISSIONS
 
 
+@router.post("/users/check-pin")
+async def check_pin_duplicate(input: dict):
+    """Check if a PIN already exists for another active user"""
+    pin = input.get("pin", "")
+    exclude_user_id = input.get("exclude_user_id")
+    
+    if not pin:
+        return {"exists": False}
+    
+    # Validate PIN format
+    if not pin.isdigit():
+        raise HTTPException(status_code=400, detail="El PIN debe ser numérico")
+    
+    if len(pin) < 1 or len(pin) > 8:
+        raise HTTPException(status_code=400, detail="El PIN debe tener entre 1 y 8 dígitos")
+    
+    if pin.startswith("0"):
+        raise HTTPException(status_code=400, detail="El PIN no puede iniciar con 0")
+    
+    hashed = hash_pin(pin)
+    query = {"pin_hash": hashed, "active": True}
+    
+    # Exclude current user if editing
+    if exclude_user_id:
+        query["id"] = {"$ne": exclude_user_id}
+    
+    existing = await db.users.find_one(query, {"_id": 0, "id": 1})
+    return {"exists": existing is not None}
+
+
 @router.post("/auth/login")
 async def login(input: LoginInput):
     hashed = hash_pin(input.pin)
