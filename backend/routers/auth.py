@@ -206,9 +206,19 @@ async def get_user(user_id: str):
 
 @router.post("/users")
 async def create_user(input: dict):
-    if "pin" not in input or len(input.get("pin", "")) < 4:
-        raise HTTPException(status_code=400, detail="PIN debe tener mínimo 4 dígitos")
-    hashed = hash_pin(input["pin"])
+    pin = input.get("pin", "")
+    
+    # Validate PIN
+    if not pin:
+        raise HTTPException(status_code=400, detail="PIN es requerido")
+    if not pin.isdigit():
+        raise HTTPException(status_code=400, detail="El PIN debe ser numérico")
+    if len(pin) < 1 or len(pin) > 8:
+        raise HTTPException(status_code=400, detail="El PIN debe tener entre 1 y 8 dígitos")
+    if pin.startswith("0"):
+        raise HTTPException(status_code=400, detail="El PIN no puede iniciar con 0")
+    
+    hashed = hash_pin(pin)
     existing = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Ya existe un usuario con ese PIN")
