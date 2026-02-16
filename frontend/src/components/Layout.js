@@ -87,7 +87,7 @@ export default function Layout() {
       )}
 
       {/* Sidebar - Bottom on mobile, Side on tablet/desktop */}
-      {isMobile ? (
+      {isMobile && !shouldHideNav ? (
         // Mobile Bottom Navigation - Glassmorphism
         <aside 
           className={`fixed bottom-0 left-0 right-0 z-50 safe-area-bottom ${isGlassPage ? 'backdrop-blur-xl bg-white/10 border-t border-white/20' : 'bg-card border-t border-border'}`}
