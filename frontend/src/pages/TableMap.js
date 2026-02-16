@@ -21,10 +21,10 @@ const statusColors = {
 // More visible pattern for divided tables - diagonal stripes with higher contrast
 const stripedPattern = (isOther) => `repeating-linear-gradient(
   -45deg,
-  rgba(${isOther ? '2,136,209' : '255,102,0'},0.5),
-  rgba(${isOther ? '2,136,209' : '255,102,0'},0.5) 6px,
-  rgba(${isOther ? '2,136,209' : '255,102,0'},0.15) 6px,
-  rgba(${isOther ? '2,136,209' : '255,102,0'},0.15) 12px
+  rgba(${isOther ? '249,168,37' : '255,102,0'},0.5),
+  rgba(${isOther ? '249,168,37' : '255,102,0'},0.5) 6px,
+  rgba(${isOther ? '249,168,37' : '255,102,0'},0.15) 6px,
+  rgba(${isOther ? '249,168,37' : '255,102,0'},0.15) 12px
 )`;
 
 function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, onResize, currentUserId, largeMode, device }) {
