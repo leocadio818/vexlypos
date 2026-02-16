@@ -960,7 +960,7 @@ async def seed_data():
         return {"message": "Datos ya sembrados", "seeded": False}
 
     users = [
-        {"id": gen_id(), "name": "Admin", "pin_hash": hash_pin("1000"), "role": "admin", "active": True, "permissions": {}},
+        {"id": gen_id(), "name": "Admin", "pin_hash": hash_pin("10000"), "role": "admin", "active": True, "permissions": {}},
         {"id": gen_id(), "name": "Carlos", "pin_hash": hash_pin("1234"), "role": "waiter", "active": True, "permissions": {}},
         {"id": gen_id(), "name": "Maria", "pin_hash": hash_pin("5678"), "role": "waiter", "active": True, "permissions": {}},
         {"id": gen_id(), "name": "Luis", "pin_hash": hash_pin("4321"), "role": "cashier", "active": True, "permissions": {}},
