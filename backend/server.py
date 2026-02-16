@@ -1007,6 +1007,138 @@ async def seed_data():
 
     return {"message": "Datos sembrados exitosamente", "seeded": True}
 
+# ─── FACTORY RESET (Admin Only) ───
+class FactoryResetRequest(BaseModel):
+    reset_sales: bool = False
+    reset_inventory: bool = False
+    reset_users: bool = False
+    admin_pin: str  # For confirmation
+
+@api.post("/system/factory-reset")
+async def factory_reset(request: FactoryResetRequest):
+    """
+    Reset system data to factory defaults. Admin only.
+    - reset_sales: Clears orders, bills, shifts, audit logs
+    - reset_inventory: Clears stock movements, purchase orders, inventory transactions
+    - reset_users: Removes all users except Admin, sets Admin PIN to 11331744
+    """
+    # Verify admin PIN
+    admin_user = await db.users.find_one({"role": "admin", "name": "Admin"}, {"_id": 0})
+    if not admin_user:
+        raise HTTPException(status_code=403, detail="Usuario Admin no encontrado")
+    
+    if admin_user.get("pin_hash") != hash_pin(request.admin_pin):
+        raise HTTPException(status_code=403, detail="PIN de administrador incorrecto")
+    
+    reset_details = []
+    collections_cleared = []
+    
+    try:
+        # Reset Sales History
+        if request.reset_sales:
+            # Clear orders
+            orders_count = await db.orders.count_documents({})
+            await db.orders.delete_many({})
+            collections_cleared.append(f"orders ({orders_count})")
+            
+            # Clear bills
+            bills_count = await db.bills.count_documents({})
+            await db.bills.delete_many({})
+            collections_cleared.append(f"bills ({bills_count})")
+            
+            # Clear shifts
+            shifts_count = await db.shifts.count_documents({})
+            await db.shifts.delete_many({})
+            collections_cleared.append(f"shifts ({shifts_count})")
+            
+            # Clear print queue
+            print_count = await db.print_queue.count_documents({})
+            await db.print_queue.delete_many({})
+            collections_cleared.append(f"print_queue ({print_count})")
+            
+            # Update all tables to 'free' status
+            await db.tables.update_many({}, {"$set": {"status": "free", "active_order_id": None}})
+            
+            reset_details.append("Historial de Ventas eliminado")
+        
+        # Reset Inventory Data
+        if request.reset_inventory:
+            # Clear stock movements
+            movements_count = await db.stock_movements.count_documents({})
+            await db.stock_movements.delete_many({})
+            collections_cleared.append(f"stock_movements ({movements_count})")
+            
+            # Clear purchase orders
+            po_count = await db.purchase_orders.count_documents({})
+            await db.purchase_orders.delete_many({})
+            collections_cleared.append(f"purchase_orders ({po_count})")
+            
+            # Clear inventory transactions
+            inv_count = await db.inventory_transactions.count_documents({})
+            await db.inventory_transactions.delete_many({})
+            collections_cleared.append(f"inventory_transactions ({inv_count})")
+            
+            # Reset all ingredient stock to 0
+            await db.ingredients.update_many({}, {"$set": {"current_stock": 0, "last_cost": 0}})
+            
+            reset_details.append("Datos de Inventario eliminados")
+        
+        # Reset Users
+        if request.reset_users:
+            # Get current user count
+            users_count = await db.users.count_documents({})
+            
+            # Delete all users except Admin
+            await db.users.delete_many({"name": {"$ne": "Admin"}})
+            
+            # Reset Admin PIN to factory default: 11331744
+            await db.users.update_one(
+                {"name": "Admin"},
+                {"$set": {
+                    "pin_hash": hash_pin("11331744"),
+                    "role": "admin",
+                    "active": True,
+                    "permissions": {}
+                }}
+            )
+            
+            deleted_count = users_count - 1  # All except Admin
+            collections_cleared.append(f"users ({deleted_count} eliminados, Admin conservado)")
+            reset_details.append("Usuarios eliminados (Admin reiniciado con PIN: 11331744)")
+        
+        # Log to Audit Trail
+        audit_log = {
+            "id": gen_id(),
+            "type": "factory_reset",
+            "action": "RESET DE FÁBRICA",
+            "details": {
+                "reset_sales": request.reset_sales,
+                "reset_inventory": request.reset_inventory,
+                "reset_users": request.reset_users,
+                "collections_cleared": collections_cleared,
+                "reset_summary": reset_details
+            },
+            "performed_by": "Admin",
+            "performed_at": now_iso(),
+            "ip_address": "system"
+        }
+        await db.audit_logs.insert_one(audit_log)
+        
+        logging.warning(f"FACTORY RESET EXECUTED: {reset_details}")
+        
+        return {
+            "success": True,
+            "message": "Reset de fábrica completado exitosamente",
+            "details": reset_details,
+            "collections_cleared": collections_cleared,
+            "timestamp": now_iso(),
+            "admin_pin_reset": "11331744" if request.reset_users else None
+        }
+        
+    except Exception as e:
+        logging.error(f"Factory reset failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Error durante el reset: {str(e)}")
+
 # ─── SCHEDULER ───
 async def scheduled_stock_alert_job():
     logging.info("Running scheduled stock alert check...")
