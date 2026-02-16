@@ -44,7 +44,7 @@ export default function Login() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key >= '0' && e.key <= '9') {
-        setPin(prev => prev.length < 6 ? prev + e.key : prev);
+        setPin(prev => prev.length < 8 ? prev + e.key : prev);
       } else if (e.key === 'Backspace') {
         setPin(prev => prev.slice(0, -1));
       } else if (e.key === 'Enter') {
