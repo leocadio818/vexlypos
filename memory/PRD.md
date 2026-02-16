@@ -572,6 +572,13 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Confirmación de seguridad**: Advertencia roja + confirmación de PIN de Admin
   - **Log de Auditoría**: Registra en audit_logs con fecha/hora exacta y detalles
   - **Endpoint**: POST /api/system/factory-reset
+- [x] **Asignación de Canal en Origen (Categorías)** (Completado 16 Feb 2026) ✅
+  - **Integración en Modal**: Dropdown "Canal de Impresión Predeterminado" en modal de Editar Categoría
+  - **Opciones dinámicas**: Carga canales (Cocina, Bar, Recibo) con nombre de impresora
+  - **Sincronización automática**: Al guardar categoría actualiza category_channels sin ir a Impresión
+  - **Redundancia eliminada**: Quitada sub-pestaña "Categorías" de Impresión
+  - **UX mejorada**: De 7 pasos a 1 paso para asignar canal a categoría
+  - **Vista previa**: Badge en preview del botón muestra canal asignado
 
 ### P2 - Media Prioridad
 - [ ] **Seguridad Audit Trail**: Solo Admins pueden ver PINs en reportes de auditoría
