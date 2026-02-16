@@ -413,6 +413,27 @@ async def get_category_channels():
     mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
     return mappings
 
+@api.post("/category-channels")
+async def create_category_channel(input: dict):
+    """Create/update a single category-channel mapping"""
+    category_id = input.get("category_id")
+    channel_code = input.get("channel_code")
+    if not category_id or not channel_code:
+        raise HTTPException(status_code=400, detail="category_id and channel_code required")
+    
+    await db.category_channels.update_one(
+        {"category_id": category_id},
+        {"$set": {"category_id": category_id, "channel_code": channel_code}},
+        upsert=True
+    )
+    return {"ok": True, "category_id": category_id, "channel_code": channel_code}
+
+@api.delete("/category-channels/{category_id}")
+async def delete_category_channel(category_id: str):
+    """Remove a category-channel mapping"""
+    await db.category_channels.delete_one({"category_id": category_id})
+    return {"ok": True}
+
 @api.put("/category-channels")
 async def update_category_channels(input: dict):
     """Update category to channel mappings"""
