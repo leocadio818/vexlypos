@@ -2866,20 +2866,8 @@ export default function Settings() {
               placeholder="Nombre (ej: Consumidor Final)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             <input value={saleDialog.code} onChange={e => setSaleDialog(p => ({ ...p, code: e.target.value }))}
               placeholder="Codigo (ej: dine_in, take_out)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono" />
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">ITBIS %</label>
-                <input value={saleDialog.tax_rate} onChange={e => setSaleDialog(p => ({ ...p, tax_rate: e.target.value }))}
-                  type="number" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Propina Default %</label>
-                <input value={saleDialog.tip_default} onChange={e => setSaleDialog(p => ({ ...p, tip_default: e.target.value }))}
-                  type="number" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
-              </div>
-            </div>
             
-            {/* Impuestos Aplicables - NEW */}
+            {/* Impuestos Aplicables */}
             <div className="p-3 rounded-lg bg-background border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign size={14} className="text-green-500" />
@@ -2893,39 +2881,34 @@ export default function Settings() {
                 {taxConfig.filter(tax => tax.active).map(tax => {
                   const isExempt = (saleDialog.tax_exemptions || []).includes(tax.id);
                   const isApplied = !isExempt;
+                  
+                  const toggleTax = (e) => {
+                    e.stopPropagation();
+                    setSaleDialog(p => {
+                      const current = p.tax_exemptions || [];
+                      if (current.includes(tax.id)) {
+                        return { ...p, tax_exemptions: current.filter(id => id !== tax.id) };
+                      } else {
+                        return { ...p, tax_exemptions: [...current, tax.id] };
+                      }
+                    });
+                  };
+                  
                   return (
                     <div 
                       key={tax.id}
-                      className={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${
+                      className={`flex items-center justify-between p-2 rounded-lg border transition-all ${
                         isApplied 
                           ? 'bg-green-500/10 border-green-500/50' 
                           : 'bg-red-500/5 border-red-500/30'
                       }`}
-                      onClick={() => {
-                        setSaleDialog(p => {
-                          const current = p.tax_exemptions || [];
-                          if (current.includes(tax.id)) {
-                            return { ...p, tax_exemptions: current.filter(id => id !== tax.id) };
-                          } else {
-                            return { ...p, tax_exemptions: [...current, tax.id] };
-                          }
-                        });
-                      }}
                       data-testid={`saletype-tax-${tax.id}`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Switch 
                           checked={isApplied}
-                          onCheckedChange={() => {
-                            setSaleDialog(p => {
-                              const current = p.tax_exemptions || [];
-                              if (current.includes(tax.id)) {
-                                return { ...p, tax_exemptions: current.filter(id => id !== tax.id) };
-                              } else {
-                                return { ...p, tax_exemptions: [...current, tax.id] };
-                              }
-                            });
-                          }}
+                          onCheckedChange={toggleTax}
+                          data-testid={`saletype-tax-switch-${tax.id}`}
                         />
                         <div>
                           <span className="text-sm font-medium">{tax.description}</span>
