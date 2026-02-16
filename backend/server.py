@@ -153,7 +153,8 @@ async def create_product(input: dict):
         "button_text_color": input.get("button_text_color", ""),
         "modifier_group_ids": input.get("modifier_group_ids", []),
         "modifier_assignments": modifier_assignments,
-        "track_inventory": input.get("track_inventory", False), 
+        "track_inventory": input.get("track_inventory", False),
+        "print_channels": input.get("print_channels", []),  # Array of channel codes for multi-channel printing
         "active": True
     }
     await db.products.insert_one(doc)
