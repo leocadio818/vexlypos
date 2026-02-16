@@ -137,13 +137,13 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
     >
       {/* Divided badge */}
       {isDivided && !editMode && (
-        <div className={`absolute -top-2 -right-2 ${device?.isMobile ? 'w-5 h-5 text-[10px]' : largeMode ? 'w-6 h-6 text-xs' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-background ${isOtherUser ? 'bg-blue-500' : 'bg-orange-500'}`}>
+        <div className={`absolute -top-2 -right-2 ${device?.isMobile ? 'w-5 h-5 text-[10px]' : largeMode ? 'w-6 h-6 text-xs' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-background ${isOtherUser ? 'bg-yellow-500' : 'bg-orange-500'}`}>
           ÷
         </div>
       )}
       {/* Other user indicator */}
       {isOtherUser && !isDivided && !editMode && (
-        <div className={`absolute -top-1.5 -right-1.5 ${device?.isMobile ? 'w-4 h-4' : largeMode ? 'w-5 h-5' : 'w-4 h-4'} rounded-full bg-blue-500 flex items-center justify-center shadow-lg border-2 border-background`}>
+        <div className={`absolute -top-1.5 -right-1.5 ${device?.isMobile ? 'w-4 h-4' : largeMode ? 'w-5 h-5' : 'w-4 h-4'} rounded-full bg-yellow-500 flex items-center justify-center shadow-lg border-2 border-background`}>
           <Users size={device?.isMobile ? 8 : largeMode ? 10 : 8} className="text-white" />
         </div>
       )}
