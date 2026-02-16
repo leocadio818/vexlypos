@@ -474,18 +474,104 @@ export default function PrinterSettings() {
               </div>
             )}
 
-            {/* Instrucciones del Agente */}
-            <div className="mt-6 p-4 bg-slate-900 rounded-lg border border-slate-700">
-              <h4 className="font-medium mb-2 flex items-center gap-2">
-                <Printer className="w-4 h-4 text-orange-500" />
-                Agente de Impresión
+            {/* Instrucciones del Agente - MEJORADO */}
+            <div className="mt-6 p-4 bg-gradient-to-br from-orange-500/10 to-slate-900 rounded-lg border border-orange-500/30">
+              <h4 className="font-oswald font-bold text-lg mb-3 flex items-center gap-2">
+                <Monitor className="w-5 h-5 text-orange-500" />
+                Agente de Impresión para Windows
               </h4>
-              <p className="text-sm text-slate-400 mb-3">
-                El agente debe estar corriendo en la PC donde están conectadas las impresoras.
-                Ejecuta el siguiente comando en PowerShell:
+              
+              <p className="text-sm text-slate-300 mb-4">
+                El agente corre en tu computadora Windows y procesa los trabajos de impresión automáticamente.
+                Aparece como un icono en la bandeja del sistema (junto al reloj).
               </p>
-              <div className="bg-black rounded-lg p-3 font-mono text-xs text-green-400">
-                python print_agent.py
+
+              {/* Download Button */}
+              <div className="mb-4">
+                <Button 
+                  onClick={() => {
+                    // Get the receipt printer name as default
+                    const receiptChannel = channels.find(c => c.code === 'receipt');
+                    const printerName = receiptChannel?.printer_name || 'Caja';
+                    const downloadUrl = `${API}/api/download/print-agent?printer_name=${encodeURIComponent(printerName)}`;
+                    
+                    // Create download link
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = 'MesaPOS_PrintAgent.py';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    toast.success('Descargando agente...', {
+                      description: `Configurado para impresora: ${printerName}`
+                    });
+                  }}
+                  className="w-full bg-orange-600 hover:bg-orange-700 h-12 text-base"
+                  data-testid="download-agent-btn"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Descargar Agente de Impresión
+                </Button>
+              </div>
+
+              {/* Steps */}
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg">
+                  <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">1</div>
+                  <div>
+                    <p className="font-medium text-white">Instala Python</p>
+                    <p className="text-slate-400">Descarga desde <a href="https://www.python.org/downloads/" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">python.org</a> (marca "Add Python to PATH")</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg">
+                  <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">2</div>
+                  <div>
+                    <p className="font-medium text-white">Instala las dependencias</p>
+                    <p className="text-slate-400 mb-2">Abre CMD como Administrador y ejecuta:</p>
+                    <code className="block bg-black px-3 py-2 rounded text-green-400 text-xs select-all">
+                      pip install requests pystray Pillow plyer pywin32
+                    </code>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg">
+                  <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">3</div>
+                  <div>
+                    <p className="font-medium text-white">Ejecuta el agente</p>
+                    <p className="text-slate-400">Doble click en el archivo descargado (MesaPOS_PrintAgent.py)</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg border border-green-500/20">
+                  <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                    <PlayCircle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-green-400">Inicio automático con Windows</p>
+                    <p className="text-slate-400">Presiona Win+R, escribe <code className="bg-black px-1 rounded text-green-400">shell:startup</code> y crea un acceso directo al archivo.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status indicators */}
+              <div className="mt-4 p-3 bg-slate-800 rounded-lg">
+                <p className="text-xs text-slate-400 mb-2">El icono en la bandeja del sistema indica:</p>
+                <div className="flex gap-4 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <span>Conectado</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <span>Imprimiendo</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <span>Error</span>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
