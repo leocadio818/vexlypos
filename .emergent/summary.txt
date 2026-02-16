@@ -1,247 +1,154 @@
 <analysis>**original_problem_statement:**
-The user requested a series of feature enhancements and UI/UX improvements for the Point of Sale system. The initial work involved a full responsive redesign and a major backend refactoring. The current set of tasks includes creating a downloadable local server package and implementing physical ESC/POS printer integration.
+The user's overall goal is to enhance their Point of Sale (POS) system. The project started with refactoring the backend and creating a downloadable server package.
 
-**PRODUCT REQUIREMENTS (Latest):**
-
-1.  **Physical ESC/POS Printer Integration:** Implement a system to allow the POS to print receipts and kitchen orders to a physical thermal printer connected via USB. The system should be designed to support multiple cashiers and network printers in the future. The user's current setup is a single Windows PC with one 80mm USB thermal printer.
-2.  **Create Downloadable Local Server Package:** (Completed) Script and package the entire application (frontend, backend, database) using Docker for easy one-click installation on a local machine.
-3.  **Backend Refactoring:** (Completed) Decompose the monolithic  file into modular routers.
-4.  **Haptic Feedback:** (Completed) Implement haptic feedback for key interactions in the mobile view.
+The most recent user requests from this session include:
+1.  **Fix Critical Bugs:**
+    *   The main dashboard was stuck in an infinite loading state.
+    *   The Kitchen Display System (KDS) was not receiving new orders from the cashier station in real-time.
+2.  **ESC/POS Printer Integration (Enterprise Grade):**
+    *   The initial request was for basic USB printing. This evolved into a request for a robust, user-friendly solution.
+    *   The Python script needs to be converted into a silent, background executable ().
+    *   The executable should have a system tray icon with a status semaphore (Green, Yellow, Red).
+    *   It must show native Windows notifications for errors (e.g., printer offline, out of paper).
+    *   It needs to start automatically with Windows.
+    *   The system must be transparent to the device sending the print job (iPhone, Android, PC all work the same).
+3.  **UI/UX Improvements:**
+    *   Update the colors and labels on the restaurant's table map for better status clarity.
+    *   Add a smart search bar (by name/username) and role filters (Admin, Waiter, etc.) to the user management screen.
+4.  **Advanced Role-Based Permissions:**
+    *   Redesign the Edit Employee screen to include a detailed, role-based permission system.
+    *   Permissions should be grouped into categories (Ventas, Administración).
+    *   Allow an Admin to grant special permissions to a user outside their standard role, with a clear visual indicator for these exceptions.
+    *   Include a Reset to Role button to revert any special permissions.
+5.  **Technical & Security Adjustments:**
+    *   The user PIN must be between 1 and 8 digits and cannot start with '0'.
+    *   The system must prevent duplicate PINs across active users.
+    *   The magnetic stripe card assignment should validate that the input starts with prefix '11' and is no more than 8 digits.
+    *   Clean up the UI by removing the Centro de Ingresos and # Referencia fields.
+    *   Ensure only Admins can see the list of all user PINs in any audit report.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-The backend has been successfully refactored from a single  file into modular FastAPI routers, significantly improving maintainability. The old, monolithic  has been replaced with a clean, minimal version that only handles app configuration and includes the new routers. This change was verified by a full regression test suite (42/42 tests passed).
-
-A downloadable local server package has been created in the  directory, containing Docker configurations and an installation guide.
-
-A new print queue system has been implemented on the backend with endpoints (, ) to manage print jobs. A corresponding Python script, , has been created. This script is intended to be run on the user's local machine to poll the backend queue and send jobs to the connected USB printer. On the frontend, a new settings page () has been created for future printer configuration.
+The application is a full-stack POS system. The backend is a FastAPI application, and the frontend is built with React.
+In this session, several major bugs were fixed and features were added:
+-   **Dashboard Fixed:** The infinite loading bug on the dashboard was resolved by recreating a missing backend endpoint ().
+-   **KDS Real-Time Sync:** The Kitchen Display System was upgraded from slow HTTP polling to using Server-Sent Events (SSE), providing instant synchronization of orders.
+-   **UI Enhancements:** The table map colors/labels, user search/filter, and advanced permissions system were all successfully implemented on the frontend, with supporting backend changes.
+-   **Print System Backend:** A sophisticated backend for printing exists. It includes a print queue, endpoints to configure printer channels (e.g., , ), and the ability to map product categories to specific printers. The frontend UI for this configuration is complete.
+-   **Print Agent Script:** A Python script () was created. It's designed to run on the user's local machine, poll the cloud backend for print jobs, and send them to the correct local printer. It includes logic for a system tray icon and native notifications, but the user has been unable to run it successfully.
 
 **Last working item**:
--   **Last item agent was working:** The agent was actively guiding the user through the process of testing their USB thermal printer for the first time. Since the user wanted to run the POS system locally on their Windows machine but hadn't installed it yet, the agent pivoted to a faster solution: having the user run the local  script on their machine and connect it to the *cloud-hosted* backend to perform an end-to-end test of the printing system. The agent provided the user with the exact PowerShell commands to install dependencies () and create the agent script file.
+-   **Last item agent was working:** The agent finished implementing a series of technical and security enhancements on the Edit Employee screen () and the corresponding backend logic ().
+    -   This included:
+        1.  Validating that PINs are 1-8 digits and don't start with '0'.
+        2.  Creating a backend endpoint () to prevent duplicate PINs.
+        3.  Validating magnetic stripe card input.
+        4.  Removing unused fields (Centro de Ingresos, # Referencia) from the UI.
 -   **Status**: USER VERIFICATION PENDING
--   **Agent Testing Done**: N (for the end-to-end printing flow)
--   **Which testing method agent to use?**: Manual testing by user. The agent must guide the user to run the  script and then send a test print job from the application to see if it prints on their physical printer.
+-   **Agent Testing Done**: Y (Agent verified the backend endpoint with  and the frontend UI changes with screenshots.)
+-   **Which testing method agent to use?**: Manual testing by user. The next agent should guide the user to test the new validation rules:
+    1.  Try to save a user with a PIN starting with '0'.
+    2.  Try to save a user with a PIN that already exists.
+    3.  Use the Asignar Tarjeta feature with invalid input.
+    4.  Confirm the specified fields have been removed from the UI.
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1 (P0):** Complete and Verify End-to-End Printer Integration.
+-   **Issue 1: (P0) Finalize and Deliver the Print Agent Executable.** The user has repeatedly failed to run the Python script due to environment and dependency issues. The agent's attempts to guide the user through command-line fixes have not worked. The core task of converting the script into a simple  that the user can download and run has not been completed.
 
 **Issues Detail:**
--   **Issue 1: Complete and Verify End-to-End Printer Integration**
-    -   **Attempted fixes:** The backend queue and local agent script have been created. The agent is currently walking the user through the first test run.
+-   **Issue 1: Finalize and Deliver the Print Agent Executable**
+    -   **Attempted fixes:** The agent created a complex Python script () using libraries like , , and . It then provided the user with a series of  and  commands. These failed due to various errors (PowerShell character escaping, missing dependencies). The user explicitly asked for an executable file () but never received one.
     -   **Next debug checklist:**
-        1.  Confirm with the user that they have successfully run the PowerShell commands to install dependencies and create the  file on their Windows machine.
-        2.  Guide the user on how to run the agent: .
-        3.  Modify the relevant frontend components (e.g., the billing/receipt screen) to replace the existing print logic (likely  or PDF generation) with an API call to the new  endpoint.
-        4.  Have the user trigger a print action and verify if the receipt prints correctly on their physical USB printer.
-        5.  Check the backend logs (==> /var/log/supervisor/backend.err.log <==
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'tests/test_pos_regression.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-02-15 20:32:41,650 - apscheduler.scheduler - INFO - Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [1237]
-INFO:     Started server process [1350]
-INFO:     Waiting for application startup.
-2026-02-15 20:32:42,530 - apscheduler.scheduler - INFO - Scheduler started
-2026-02-15 20:32:42,534 - apscheduler.scheduler - INFO - Added job "scheduled_stock_alert_job" to job store "default"
-2026-02-15 20:32:42,534 - root - INFO - Stock alert scheduled for 10:30
-2026-02-15 20:32:42,534 - server - INFO - Scheduler started and configured
-INFO:     Application startup complete.
-/root/.venv/lib/python3.11/site-packages/jwt/api_jwt.py:153: InsecureKeyLengthWarning: The HMAC key is 29 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
-  return self._jws.encode(
-/root/.venv/lib/python3.11/site-packages/jwt/api_jwt.py:371: InsecureKeyLengthWarning: The HMAC key is 29 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
-  decoded = self.decode_complete(
-WARNING:  WatchFiles detected changes in 'tests/test_pos_regression.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-02-15 20:33:06,195 - apscheduler.scheduler - INFO - Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [1350]
-INFO:     Started server process [1488]
-INFO:     Waiting for application startup.
-2026-02-15 20:33:07,358 - apscheduler.scheduler - INFO - Scheduler started
-2026-02-15 20:33:07,361 - apscheduler.scheduler - INFO - Added job "scheduled_stock_alert_job" to job store "default"
-2026-02-15 20:33:07,362 - root - INFO - Stock alert scheduled for 10:30
-2026-02-15 20:33:07,362 - server - INFO - Scheduler started and configured
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'tests/test_pos_regression.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-02-15 20:33:13,375 - apscheduler.scheduler - INFO - Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [1488]
-INFO:     Started server process [1536]
-INFO:     Waiting for application startup.
-2026-02-15 20:33:14,532 - apscheduler.scheduler - INFO - Scheduler started
-2026-02-15 20:33:14,536 - apscheduler.scheduler - INFO - Added job "scheduled_stock_alert_job" to job store "default"
-2026-02-15 20:33:14,536 - root - INFO - Stock alert scheduled for 10:30
-2026-02-15 20:33:14,536 - server - INFO - Scheduler started and configured
-INFO:     Application startup complete.
-/root/.venv/lib/python3.11/site-packages/jwt/api_jwt.py:153: InsecureKeyLengthWarning: The HMAC key is 29 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
-  return self._jws.encode(
-/root/.venv/lib/python3.11/site-packages/jwt/api_jwt.py:371: InsecureKeyLengthWarning: The HMAC key is 29 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
-  decoded = self.decode_complete(
-WARNING:  WatchFiles detected changes in 'server.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-02-15 20:53:44,171 - apscheduler.scheduler - INFO - Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [1536]
-INFO:     Started server process [2591]
-INFO:     Waiting for application startup.
-2026-02-15 20:53:45,211 - apscheduler.scheduler - INFO - Scheduler started
-2026-02-15 20:53:45,216 - apscheduler.scheduler - INFO - Added job "scheduled_stock_alert_job" to job store "default"
-2026-02-15 20:53:45,216 - root - INFO - Stock alert scheduled for 10:30
-2026-02-15 20:53:45,216 - server - INFO - Scheduler started and configured
-INFO:     Application startup complete.
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-02-15 20:53:49,625 - apscheduler.scheduler - INFO - Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [2591]
-INFO:     Stopping reloader process [991]
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [2603] using WatchFiles
-INFO:     Started server process [2605]
-INFO:     Waiting for application startup.
-2026-02-15 20:53:50,496 - apscheduler.scheduler - INFO - Scheduler started
-2026-02-15 20:53:50,499 - apscheduler.scheduler - INFO - Added job "scheduled_stock_alert_job" to job store "default"
-2026-02-15 20:53:50,500 - root - INFO - Stock alert scheduled for 10:30
-2026-02-15 20:53:50,500 - server - INFO - Scheduler started and configured
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'print_agent.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-02-15 20:57:19,742 - apscheduler.scheduler - INFO - Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [2605]
-INFO:     Started server process [3376]
-INFO:     Waiting for application startup.
-2026-02-15 20:57:20,851 - apscheduler.scheduler - INFO - Scheduler started
-2026-02-15 20:57:20,855 - apscheduler.scheduler - INFO - Added job "scheduled_stock_alert_job" to job store "default"
-2026-02-15 20:57:20,855 - root - INFO - Stock alert scheduled for 10:30
-2026-02-15 20:57:20,855 - server - INFO - Scheduler started and configured
-INFO:     Application startup complete.
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [47] using WatchFiles
-INFO:     Started server process [92]
-INFO:     Waiting for application startup.
-2026-02-15 21:18:31,306 - apscheduler.scheduler - INFO - Scheduler started
-2026-02-15 21:18:31,314 - apscheduler.scheduler - INFO - Added job "scheduled_stock_alert_job" to job store "default"
-2026-02-15 21:18:31,314 - root - INFO - Stock alert scheduled for 10:30
-2026-02-15 21:18:31,314 - server - INFO - Scheduler started and configured
-INFO:     Application startup complete.
+        1.  The agent MUST NOT ask the user to run any more 
+Usage:   
+  pip <command> [options]
 
-==> /var/log/supervisor/backend.out.log <==
-INFO:     10.64.132.9:47794 - "GET /api/auth/me HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/users HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/areas HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/tables HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/tables?area_id=print-agent-verify HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "POST /api/orders HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/orders HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/orders/8f551478-fd44-4965-9e33-791d8bb239f2 HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/products HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "POST /api/orders/8f551478-fd44-4965-9e33-791d8bb239f2/items HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "POST /api/orders/8f551478-fd44-4965-9e33-791d8bb239f2/send-kitchen HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/kitchen/orders HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/payment-methods HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/sale-types HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/tax-config HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/tax-config/calculate?subtotal=100 HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "POST /api/bills HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "POST /api/bills/fc557637-fec4-43a2-af62-8c3015f76a23/pay HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/bills HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/categories HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/products HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/products/2298613b-acb3-41f7-85fe-7d31a3cff3cb HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/modifiers HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/customers HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "POST /api/customers HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/loyalty/config HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/shifts HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/shifts/current HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/reservations HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/system/config HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/cancellation-reasons HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/void-audit-logs HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/void-audit-logs/report?period=day HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/report-categories HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/print-channels HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "GET /api/day-close/check HTTP/1.1" 200 OK
-INFO:     10.64.128.12:48944 - "GET /api/station-config HTTP/1.1" 200 OK
-INFO:     10.64.132.9:47794 - "DELETE /api/customers/3370b225-bf5b-43eb-ac53-a1819bc3746f HTTP/1.1" 200 OK
-INFO:     10.64.132.100:35464 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
-INFO:     10.64.132.9:37820 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/auth/me HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/users HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/areas HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/tables HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/tables?area_id=print-agent-verify HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "POST /api/orders HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/orders HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/orders/82fb9b88-3866-4804-a1a0-c8b9c28569f3 HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/products HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "POST /api/orders/82fb9b88-3866-4804-a1a0-c8b9c28569f3/items HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "POST /api/orders/82fb9b88-3866-4804-a1a0-c8b9c28569f3/send-kitchen HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/kitchen/orders HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/payment-methods HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/sale-types HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/tax-config HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/tax-config/calculate?subtotal=100 HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "POST /api/bills HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "POST /api/bills/30cf6bf1-33f5-4ed6-b52c-c64a46f3cf84/pay HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/bills HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/categories HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/products HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/products/2298613b-acb3-41f7-85fe-7d31a3cff3cb HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/modifiers HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/customers HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "POST /api/customers HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/loyalty/config HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/shifts HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/shifts/current HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/reservations HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/system/config HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/cancellation-reasons HTTP/1.1" 200 OK
-INFO:     10.64.132.9:37820 - "GET /api/void-audit-logs HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/void-audit-logs/report?period=day HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/report-categories HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/print-channels HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/day-close/check HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "GET /api/station-config HTTP/1.1" 200 OK
-INFO:     10.64.129.72:42156 - "DELETE /api/customers/3e8cd05d-fae1-48e5-8ae7-99062d513112 HTTP/1.1" 200 OK
-INFO:     10.64.131.6:43142 - "GET /api/print-queue/pending HTTP/1.1" 200 OK
-INFO:     10.64.132.9:51960 - "GET /api/printer-config HTTP/1.1" 200 OK
-INFO:     10.64.132.100:47830 - "GET /api/orders HTTP/1.1" 200 OK
-INFO:     10.64.131.6:43142 - "POST /api/print/pre-check/82fb9b88-3866-4804-a1a0-c8b9c28569f3/send HTTP/1.1" 200 OK
-INFO:     10.64.132.100:47830 - "GET /api/print-queue/pending HTTP/1.1" 200 OK
-INFO:     10.64.136.137:53970 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.131.6:47972 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.132.100:39302 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.136.137:56430 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.136.137:56430 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.132.100:39302 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.131.6:59760 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.132.9:39866 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.132.100:58164 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.132.9:39866 - "POST /api/seed HTTP/1.1" 200 OK
-INFO:     10.64.131.6:46904 - "GET /api/printer-config HTTP/1.1" 200 OK
-INFO:     10.64.132.9:60584 - "GET /api/print-queue/pending HTTP/1.1" 200 OK) and the output of the user's local  script for errors if the test fails.
-    -   **Why fix this issue and what will be achieved with the fix?** This will complete the core functionality for physical receipt printing, a critical feature for a Point of Sale system.
+Commands:
+  install                     Install packages.
+  lock                        Generate a lock file.
+  download                    Download packages.
+  uninstall                   Uninstall packages.
+  freeze                      Output installed packages in requirements format.
+  inspect                     Inspect the python environment.
+  list                        List installed packages.
+  show                        Show information about installed packages.
+  check                       Verify installed packages have compatible 
+dependencies.
+  config                      Manage local and global configuration.
+  search                      Search PyPI for packages.
+  cache                       Inspect and manage pip's wheel cache.
+  index                       Inspect information available from package 
+indexes.
+  wheel                       Build wheels from your requirements.
+  hash                        Compute hashes of package archives.
+  completion                  A helper command used for command completion.
+  debug                       Show information useful for debugging.
+  help                        Show help for commands.
+
+General Options:
+  -h, --help                  Show help.
+  --debug                     Let unhandled exceptions propagate outside the
+                              main subroutine, instead of logging them to
+                              stderr.
+  --isolated                  Run pip in an isolated mode, ignoring
+                              environment variables and user configuration.
+  --require-virtualenv        Allow pip to only run in a virtual environment;
+                              exit with an error otherwise.
+  --python <python>           Run pip with the specified Python interpreter.
+  -v, --verbose               Give more output. Option is additive, and can be
+                              used up to 3 times.
+  -V, --version               Show version and exit.
+  -q, --quiet                 Give less output. Option is additive, and can be
+                              used up to 3 times (corresponding to WARNING,
+                              ERROR, and CRITICAL logging levels).
+  --log <path>                Path to a verbose appending log.
+  --no-input                  Disable prompting for input.
+  --keyring-provider <keyring_provider>
+                              Enable the credential lookup via the keyring
+                              library if user input is allowed. Specify which
+                              mechanism to use [auto, disabled, import,
+                              subprocess]. (default: auto)
+  --proxy <proxy>             Specify a proxy in the form
+                              scheme://[user:passwd@]proxy.server:port.
+  --retries <retries>         Maximum attempts to establish a new HTTP
+                              connection. (default: 5)
+  --timeout <sec>             Set the socket timeout (default 15 seconds).
+  --exists-action <action>    Default action when a path already exists:
+                              (s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.
+  --trusted-host <hostname>   Mark this host or host:port pair as trusted,
+                              even though it does not have valid or any HTTPS.
+  --cert <path>               Path to PEM-encoded CA certificate bundle. If
+                              provided, overrides the default. See 'SSL
+                              Certificate Verification' in pip documentation
+                              for more information.
+  --client-cert <path>        Path to SSL client certificate, a single file
+                              containing the private key and the certificate
+                              in PEM format.
+  --cache-dir <dir>           Store the cache data in <dir>.
+  --no-cache-dir              Disable the cache.
+  --disable-pip-version-check
+                              Don't periodically check PyPI to determine
+                              whether a new version of pip is available for
+                              download. Implied with --no-
+                              index.
+  --no-color                  Suppress colored output.
+  --use-feature <feature>     Enable new functionality, that may be backward
+                              incompatible.
+  --use-deprecated <feature>  Enable deprecated functionality, that will be
+                              removed in the future.
+  --resume-retries <resume_retries>
+                              Maximum attempts to resume or restart an
+                              incomplete download. (default: 5) or  commands.
+        2.  Use the  library (which is already installed in the environment) to compile  into a single executable file.
+        3.  The command should be something like: . The agent needs to first create an icon file.
+        4.  Create a new backend endpoint (e.g., ) that allows the user to download the generated  file.
+        5.  Provide the user with a simple download link and instructions on how to place the  in their Windows Startup folder for automatic launch.
+    -   **Why fix this issue and what will be achieved with the fix?** This is the final and most critical step for the entire printer integration feature. It will provide the user-friendly, hands-free solution they requested, allowing seamless printing from any device to their local Windows printer.
     -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** both
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** both (backend for the download endpoint, frontend to ensure print commands are queued correctly).
     -   **Blocked on other issue:** None.
 
 **In progress Task List**:
@@ -249,8 +156,9 @@ INFO:     10.64.132.9:60584 - "GET /api/print-queue/pending HTTP/1.1" 200 OK) an
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P1: Employee Time Clock.**
-    *   **P1: DGII Report Generation:** (Dominican tax reports 607, 608).
+    *   **P1: Implement Audit Trail Security:** Ensure only users with the 'Admin' role can view the list of all user PINs in any audit report.
+    *   **P1: Employee Time Clock:** Implement a feature for employees to clock in and out.
+    *   **P1: DGII Report Generation:** Create functionality to generate Dominican tax reports (607, 608).
 *   **Future Tasks:**
     *   **P2: Image/Icon Support for Product Buttons.**
     *   **P2: Cache Product Images Offline.**
@@ -259,15 +167,24 @@ INFO:     10.64.132.9:60584 - "GET /api/print-queue/pending HTTP/1.1" 200 OK) an
     *   **P3: Duplicate Product Feature.**
 
 **Completed work in this session**
--   **Task: Backend Refactoring Finalization:** Successfully replaced the monolithic  (4356 lines) with a clean, minimal version (989 lines) that loads modular routers. The refactoring was validated with a full regression test run by the testing agent (42/42 tests passed).
--   **Task: Create Downloadable Local Server Package:** Created and populated the  directory with the application code, Docker files (, ), and installation guides (, ).
--   **Feature: Printer Integration (Phase 1 - Backend & Agent):**
-    -   Added print queue endpoints (, ) to .
-    -   Created  to poll the queue and send data to a physical printer.
-    -   Created a placeholder UI page at .
+-   **Bug Fix: Dashboard Loading:** Resolved the infinite loading issue by recreating the  endpoint in .
+-   **Feature: KDS Real-Time Sync:** Replaced HTTP polling with Server-Sent Events (SSE) in  and updated  for instant order updates.
+-   **Feature: Advanced Printer Configuration:**
+    -   Created a new UI at  to manage printer channels, assign printers by name, and map categories.
+    -   Added supporting backend endpoints (, , etc.) in .
+-   **UI/UX: Table Map Update:** Modified colors and labels for table statuses in .
+-   **UI/UX: User Management Search:** Implemented a real-time search and role-filter feature in .
+-   **Feature: Advanced Role-Based Permissions:** Overhauled  to include a detailed, categorized permission system with visual indicators for special exceptions.
+-   **Feature: Technical/Security Hardening:**
+    -   Implemented PIN validation (1-8 digits, no leading '0') and duplicate checking in  and .
+    -   Removed superfluous UI fields from the user editor.
 
 **Earlier issues found/mentioned but not fixed**
--   None.
+-   **Issue 1: Invalid Demo User PINs**
+    -   **Debug checklist:** The new validation rule prevents PINs from starting with '0'. The primary 'Admin' user has a PIN of , which is now invalid. The agent must update the default/demo user data to use valid PINs (e.g., change  to ) and inform the user of the new Admin PIN.
+    -   **Why to solve this issue and what will be achieved with this?** The user will be unable to log in as an Admin after the next deployment if this is not fixed.
+    -   **Should Test frontend/backend/both after fix:** backend (data seeding/update), frontend (login).
+    -   **Is recurring issue?** N
 
 **Known issue recurrence from previous fork**
 -   None.
@@ -276,81 +193,98 @@ INFO:     10.64.132.9:60584 - "GET /api/print-queue/pending HTTP/1.1" 200 OK) an
 
 
 **Key Technical Concepts**
--   **Backend Refactoring:** Successfully completed the modularization of a monolithic FastAPI application into multiple  instances.
--   **Print Agent Model:** Implemented a decoupled printing system where the backend adds jobs to a queue via a REST API, and a separate, local Python script polls this queue to communicate with hardware (the printer). This avoids direct hardware communication from the web server.
--   **Docker Packaging:** Used Docker and Docker Compose to create a distributable, self-contained package for local deployment.
+-   **Server-Sent Events (SSE):** Used to provide real-time updates to the Kitchen Display System (KDS), replacing inefficient HTTP polling.
+-   **Decoupled Print Agent:** An architecture where the cloud backend queues print jobs, and a local agent script polls this queue to communicate with physical hardware. This is essential for web apps to interact with local devices.
+-   **System Tray Application:** The use of  to create a Python application that runs in the Windows system tray with a status icon and menu.
+-   **Native OS Notifications:** Use of  to send native Windows notifications from the Python script.
+-   **Role-Based Access Control (RBAC):** A detailed permission system was built into the frontend, allowing for default permissions based on a user's role, with the ability for an Admin to grant specific overrides (special permissions).
+-   **Dynamic Frontend State:** Extensive use of React's state management (, ) to create dynamic and interactive UIs for search, filtering, and permissions.
 
 **key DB schema**
--   No changes were made to the database schema.
+-   **print_queue:**  - Stores pending print jobs.
+-   **print_channels:**  - Defines print destinations (e.g., Kitchen, Bar, Receipt) and maps them to Windows printer names.
+-   **users:** The  field within the user document was expanded from a simple list to a complex object, categorizing permissions (e.g., ).
 
 **changes in tech stack**
--   : A new Python dependency added for the local print agent to communicate with ESC/POS printers.
+-   **pystray:** For creating the system tray icon for the print agent.
+-   **Pillow:** Image library, dependency for .
+-   **plyer:** For triggering native Windows notifications.
+-   **pywin32:** For interacting with the Windows API, specifically for finding printers by name ().
+-   **pyinstaller:** Intended to be used for packaging the Python script into a .
 
 **All files of reference**
--    (Modified to be minimal and include print queue endpoints)
--    (New script for local printing)
--    (New frontend component)
--    (Modified to add the new route)
--    (Modified to link to the new component)
--    (Updated)
--    (Directory containing the packaged application)
+-   : Contains the new PIN validation logic.
+-   : Contains the new SSE implementation.
+-   : The completely redesigned user/permission editor.
+-   : Contains the new user search/filter implementation.
+-   : Contains the updated table status colors.
+-   : The script for the advanced print agent, located on the user's machine.
 
 **Areas that need refactoring**:
--   The frontend print buttons across the application (e.g., receipt screen, order screen) need to be refactored to use the new  endpoint instead of their current implementation.
+-   The demo/default user PINs need to be updated to comply with the new cannot start with 0 validation rule. The 'Admin' PIN  is now invalid.
+-   The process of delivering the print agent needs a complete overhaul. Instead of guiding the user through script creation, the agent must compile the  and provide a direct download link.
 
 **key api endpoints**
--   ****: Adds a new print job to the queue.
--   ****: Fetches the list of pending print jobs.
--   ****: Retrieves a specific print job.
--   ****: Deletes a print job after it has been processed.
+-   ****: Provides statistics for the main dashboard.
+-   ****: SSE endpoint for real-time KDS order updates.
+-   ****: Checks if a PIN is already in use by another active user.
+-   ****: Retrieves all printer-related settings.
+-   ****: Updates the printer channel configurations.
+-   ****: Polled by the local agent to fetch pending print jobs.
+-   ****: Called by the local agent to remove a completed job from the queue.
 
 **Critical Info for New Agent**
--   Your immediate priority is to guide the user to test the printer integration. They are on Windows and have been given PowerShell commands to set up the  script.
--   The end-to-end flow is NOT yet complete. A critical missing piece is updating the frontend buttons to actually send data to the  endpoint. This must be done after the initial agent-to-printer connection is verified.
--   The user is non-technical, so provide clear, step-by-step instructions.
+-   **User is non-technical:** Avoid complex command-line instructions. The highest priority is to provide a one-click  for the print agent. The user has confirmed their receipt printer is named **Caja** in Windows.
+-   **Fix the Print Agent First:** Do not proceed with other tasks until the user confirms they can successfully download, run, and print with the new agent executable. This is a major blocker.
+-   **Admin PIN is Invalid:** The default Admin PIN  will no longer work due to the new validation rules. You must update the seed data to use a valid PIN (e.g., ) and clearly communicate this new PIN to the user.
+-   **Focus on Simplicity:** The user has shown frustration with the complex Python setup. The solution must be simple: download, (optionally) add to startup, and it works.
 
 **documents and test reports created in this job**
--    (From backend refactoring regression test)
--    (Updated with progress)
--   
--   
+-    (on user's machine, multiple versions, likely broken)
+-    (on user's machine, script for advanced agent, user could not run)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** si esta instalado / envialo a mi coreeo leocadio818@gmail.com - Confirmed Docker is installed and asked for the package to be emailed.
-2.  **Agent:** Explained it can't email files and proposed a better plan: test the printer now using the cloud server. Provided PowerShell commands to setup the print agent locally. (PENDING USER ACTION)
-3.  **User:** es winodes / si tengo python instalado / si es la misma computadora, pero aun no he instalado el servidor, como lo hago? - Provided OS info and asked for server installation instructions.
-4.  **Agent:** Asked for OS, Python status, and computer details to proceed with printer testing.
-5.  **User:** si ya la tengo conectada - Confirmed the printer is physically connected.
-6.  **Agent:** Finished the print queue implementation and asked the user if their printer was connected and ready for a test.
-7.  **User:** si - Approved continuing with printer integration.
-8.  **User:** el ancho de papel es 80mm and other printer details.
-9.  **Agent:** Asked for printer details (connection, cashier stations, paper width).
-10. **User:** si - Approved starting the printer integration task.
+1.  **User:** Asks for redesign of the Edit Employee page with a role-based permission system. (COMPLETED)
+2.  **Agent:** Confirms understanding and starts work on the new permission system.
+3.  ... (Agent implements the permission system) ...
+4.  **Agent:** Shows a screenshot of the completed permission system and asks for feedback. (COMPLETED)
+5.  **User:** Requests further technical adjustments: variable PIN length, duplicate PIN check, magnetic card validation, and UI cleanup. (COMPLETED)
+6.  **Agent:** Confirms understanding and starts implementing the technical adjustments.
+7.  ... (Agent implements the adjustments) ...
+8.  **Agent:** Shows a screenshot of the completed UI changes and confirms backend logic is in place.
+9.  **Agent:** Shows a screenshot of the No Results state for the user search.
+10. **Agent:** Shows a screenshot of the filtered user list.
 
 **Project Health Check:**
 -   **Broken:**
-    -   None. The application is stable.
+    -   The user-facing print agent setup is completely broken. The user cannot run the required Python script.
+    -   Admin login is broken due to the new PIN validation ( is invalid).
 -   **Mocked:**
-    -   **Emailing:** Resend integration depends on a user-provided key.
-    -   **Printing:** The frontend print buttons still use browser-based printing or PDF generation. They have not been wired to the new backend print queue yet.
+    -   The entire concept of an agent executable is mocked. Only a Python script exists, which the user cannot execute.
 
 **3rd Party Integrations**
--   **Resend:** For sending email alerts. Requires a User API Key.
--   **APScheduler:** Backend library for scheduled tasks.
--   **python-escpos:** For the local print agent to communicate with ESC/POS printers.
--   **jspdf, jspdf-autotable, xlsx, recharts, mitt:** Various frontend libraries.
+-   **pystray:** (New) For creating the Windows system tray icon.
+-   **plyer:** (New) For showing native Windows notifications.
+-   **pywin32:** (New) For interacting with Windows printers directly.
+-   **pyinstaller:** (Installed but not used) For packaging Python scripts into  files.
+-   Resend: For sending email alerts.
+-   APScheduler: Backend library for scheduled tasks.
+-   python-escpos: For communicating with ESC/POS printers.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES. A full regression test was run after the backend refactoring.
+-   **Testing agent used after significant changes**: NO
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
--   **Known regressions**: None.
+-   **Known regressions**:
+    -   Admin login using PIN  will fail.
 
 **Credentials to test flow:**
--   **Admin:** PIN 
+-   **Admin:** PIN  (**WARNING: This PIN is now invalid due to new validation rules.** It must be changed in the database/seed data.)
 -   **Cajero (Cashier):** PIN 
 -   **Mesero (Waiter):** PIN 
 -   **Chef Pedro:** PIN 
 
 **What agent forgot to execute**
--   The agent has correctly built the backend and the local agent for printing but has not yet updated the frontend UI (e.g., the Print Receipt button) to use this new system. This is the next logical step after the initial hardware test is successful.</analysis>
+-   **Package the Print Agent:** The agent installed  but never actually used it to create the  file the user explicitly requested, leaving the entire feature unusable for the user.
+-   **Fix Invalid Demo PINs:** The agent implemented a validation rule that broke the existing Admin PIN () but never fixed the demo data to align with the new rule.
+-   **Implement Audit Trail Security:** The user requested that only Admins be able to see PINs in an audit report. This task was acknowledged but not implemented.</analysis>
