@@ -415,11 +415,17 @@ export default function Settings() {
   const handleSaveSaleType = async () => {
     if (!saleDialog.name) return;
     try {
-      const data = { name: saleDialog.name, code: saleDialog.code, tax_rate: parseFloat(saleDialog.tax_rate) || 18, tip_default: parseFloat(saleDialog.tip_default) || 0 };
+      const data = { 
+        name: saleDialog.name, 
+        code: saleDialog.code, 
+        tax_rate: parseFloat(saleDialog.tax_rate) || 18, 
+        tip_default: parseFloat(saleDialog.tip_default) || 0,
+        tax_exemptions: saleDialog.tax_exemptions || []
+      };
       if (saleDialog.editId) await axios.put(`${API}/sale-types/${saleDialog.editId}`, data, { headers: hdrs() });
       else await axios.post(`${API}/sale-types`, data, { headers: hdrs() });
       toast.success(saleDialog.editId ? 'Actualizado' : 'Creado');
-      setSaleDialog({ open: false, name: '', code: '', tax_rate: 18, tip_default: 0, editId: null }); fetchAll();
+      setSaleDialog({ open: false, name: '', code: '', tax_rate: 18, tip_default: 0, tax_exemptions: [], editId: null }); fetchAll();
     } catch { toast.error('Error'); }
   };
 
