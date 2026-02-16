@@ -147,35 +147,92 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
     else:
         bill_items = [i for i in order["items"] if i["status"] != "cancelled"]
 
+    # Get all product IDs to fetch their tax exemptions
+    product_ids = list(set(item.get("product_id") for item in bill_items if item.get("product_id")))
+    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
+    product_exemptions_map = {p["id"]: p.get("tax_exemptions", []) for p in products}
+
+    # Get sale type exemptions
+    sale_type_exemptions = []
+    sale_type_code = order.get("sale_type", "dine_in")
+    sale_type = await db.sale_types.find_one({"code": sale_type_code}, {"_id": 0})
+    if sale_type:
+        sale_type_exemptions = sale_type.get("tax_exemptions", [])
+
     subtotal = 0
     items_data = []
+    # Track per-item subtotals and their exemptions for granular tax calculation
+    item_tax_data = []
+    
     for item in bill_items:
         mod_total = sum(m.get("price", 0) for m in item.get("modifiers", []))
         item_total = (item["unit_price"] + mod_total) * item["quantity"]
         subtotal += item_total
+        
+        # Get product-level exemptions
+        product_id = item.get("product_id", "")
+        product_exemptions = product_exemptions_map.get(product_id, [])
+        
         items_data.append({
             "item_id": item["id"], "product_name": item["product_name"],
+            "product_id": product_id,
             "quantity": item["quantity"], "unit_price": item["unit_price"],
             "modifiers": item.get("modifiers", []), "modifiers_total": mod_total,
             "total": round(item_total, 2)
         })
+        
+        item_tax_data.append({
+            "subtotal": item_total,
+            "product_exemptions": product_exemptions
+        })
 
+    # Get all active taxes
     taxes = await db.tax_config.find({"active": True}, {"_id": 0}).sort("order", 1).to_list(10)
     if not taxes:
-        taxes = [{"description": "ITBIS", "rate": 18, "is_tip": False}, {"description": "Propina Legal", "rate": 10, "is_tip": True}]
+        taxes = [
+            {"id": "itbis_default", "description": "ITBIS", "rate": 18, "is_tip": False}, 
+            {"id": "propina_default", "description": "Propina Legal", "rate": 10, "is_tip": True}
+        ]
     
     tax_breakdown = []
     total_taxes = 0
     itbis_amount = 0
     propina_amount = 0
+    
     for tax in taxes:
+        tax_id = tax.get("id", "")
         rate = tax.get("rate", 0)
         if rate <= 0:
             continue
+        
+        # Check if this tax is exempt at the sale type level
+        if tax_id in sale_type_exemptions:
+            continue
+        
         is_tip = tax.get("is_tip", False)
-        base = subtotal if not tax.get("apply_to_tip") else (subtotal + total_taxes)
+        
+        # Calculate taxable base (excluding items that are exempt from this tax)
+        taxable_base = 0
+        for item_data in item_tax_data:
+            # If product is exempt from this tax, skip it
+            if tax_id in item_data["product_exemptions"]:
+                continue
+            taxable_base += item_data["subtotal"]
+        
+        if taxable_base <= 0:
+            continue
+        
+        base = taxable_base if not tax.get("apply_to_tip") else (taxable_base + total_taxes)
         amount = round(base * (rate / 100), 2)
-        tax_breakdown.append({"description": tax["description"], "rate": rate, "amount": amount, "is_tip": is_tip})
+        
+        tax_breakdown.append({
+            "tax_id": tax_id,
+            "description": tax["description"], 
+            "rate": rate, 
+            "amount": amount, 
+            "is_tip": is_tip,
+            "taxable_base": round(taxable_base, 2)
+        })
         total_taxes += amount
         if is_tip:
             propina_amount += amount
@@ -201,6 +258,8 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
         "itbis": itbis_amount, "itbis_rate": 18,
         "propina_legal": propina_amount, "propina_percentage": 10,
         "tax_breakdown": tax_breakdown,
+        "sale_type": sale_type_code,
+        "sale_type_name": sale_type.get("name", "") if sale_type else "",
         "total": total, "ncf": ncf,
         "payment_method": input.payment_method,
         "cashier_id": user["user_id"], "cashier_name": user["name"],
