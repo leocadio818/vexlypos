@@ -166,7 +166,6 @@ export default function PrinterSettings() {
       <div className="flex gap-2 border-b border-slate-700 pb-2">
         {[
           { id: 'channels', label: 'Impresoras', icon: Printer },
-          { id: 'categories', label: 'Categorías', icon: Tag },
           { id: 'business', label: 'Datos Negocio', icon: Settings2 },
           { id: 'queue', label: `Cola (${queue.length})`, icon: Clock }
         ].map(tab => {
@@ -187,6 +186,8 @@ export default function PrinterSettings() {
           );
         })}
       </div>
+
+      {/* Note: Category-Channel mapping is now done in Config > Inventory > Categories */}
 
       {/* Tab: Canales de Impresión */}
       {activeTab === 'channels' && (
