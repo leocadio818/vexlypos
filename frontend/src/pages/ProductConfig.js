@@ -112,6 +112,7 @@ export default function ProductConfig() {
           button_text_color: p.button_text_color || '#FFFFFF',
           track_inventory: p.track_inventory || false,
           print_channels: p.print_channels || [],
+          tax_exemptions: p.tax_exemptions || [],
           modifier_assignments: p.modifier_assignments || [],
           recipe_ingredients: p.recipe_ingredients || []
         });
