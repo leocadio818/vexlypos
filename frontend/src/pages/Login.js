@@ -103,12 +103,12 @@ export default function Login() {
           <p className="text-sm text-white/60 mt-1">Sistema de Punto de Venta</p>
         </div>
 
-        {/* PIN Display - Glass effect */}
-        <div className="flex justify-center gap-3 mb-8" data-testid="pin-display">
-          {[0,1,2,3].map(i => (
+        {/* PIN Display - Glass effect (supports 1-8 digits) */}
+        <div className="flex justify-center gap-2 mb-8" data-testid="pin-display">
+          {[0,1,2,3,4,5,6,7].map(i => (
             <div
               key={i}
-              className={`w-4 h-4 rounded-full border-2 transition-all ${
+              className={`w-3 h-3 rounded-full border-2 transition-all ${
                 i < pin.length
                   ? 'scale-110'
                   : 'border-white/40'
