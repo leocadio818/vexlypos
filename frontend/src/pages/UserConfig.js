@@ -822,44 +822,26 @@ export default function UserConfig() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Centro de Ingresos</label>
-                      <select 
-                        value={user.revenue_center_id}
-                        onChange={e => setUser(p => ({ ...p, revenue_center_id: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                      >
-                        <option value="">Default Revenue Center</option>
-                        {revenueCenters.map(rc => (
-                          <option key={rc.id} value={rc.id}>{rc.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-xs text-muted-foreground mb-1 block">Tarjeta #</label>
                         <input 
                           value={user.card_number}
-                          onChange={e => setUser(p => ({ ...p, card_number: e.target.value }))}
-                          placeholder="***"
-                          className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
+                          readOnly
+                          placeholder="Sin asignar"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono cursor-not-allowed opacity-70"
                         />
                       </div>
                       <div className="flex items-end">
-                        <Button variant="outline" className="w-full" size="sm">
+                        <Button 
+                          variant="outline" 
+                          className="w-full" 
+                          size="sm"
+                          onClick={() => setCardModal({ open: true, cardInput: '', error: '' })}
+                        >
                           Asignar Tarjeta
                         </Button>
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block"># Referencia</label>
-                      <input 
-                        value={user.reference_number}
-                        onChange={e => setUser(p => ({ ...p, reference_number: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                      />
                     </div>
 
                     <div>
@@ -867,12 +849,25 @@ export default function UserConfig() {
                       <input 
                         type="password"
                         value={user.pin}
-                        onChange={e => setUser(p => ({ ...p, pin: e.target.value }))}
-                        placeholder={isNew ? 'Mínimo 4 dígitos' : 'Vacío = no cambiar'}
-                        maxLength={6}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono tracking-widest"
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, ''); // Solo números
+                          setUser(p => ({ ...p, pin: val }));
+                        }}
+                        placeholder={isNew ? '1-8 dígitos (no inicia con 0)' : 'Vacío = no cambiar'}
+                        maxLength={8}
+                        className={`w-full bg-background border rounded-lg px-3 py-2 text-sm font-mono tracking-widest ${
+                          user.pin && !validatePin(user.pin).valid 
+                            ? 'border-red-500 focus:border-red-500' 
+                            : 'border-border'
+                        }`}
                         data-testid="user-pin-input"
                       />
+                      {user.pin && !validatePin(user.pin).valid && (
+                        <p className="text-[10px] text-red-500 mt-1">{validatePin(user.pin).error}</p>
+                      )}
+                      {user.pin && validatePin(user.pin).valid && (
+                        <p className="text-[10px] text-green-500 mt-1">✓ PIN válido ({user.pin.length} dígitos)</p>
+                      )}
                     </div>
                   </div>
 
