@@ -815,27 +815,157 @@ export default function UserConfig() {
                     </div>
                   </div>
 
-                  {/* Permissions */}
-                  <div className="bg-card border border-border rounded-xl p-4">
-                    <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Shield size={14} /> Permisos ({Object.values(user.permissions).filter(Boolean).length} activos)
-                    </h3>
-                    <ScrollArea className="max-h-48">
-                      <div className="space-y-1">
-                        {Object.entries(PERM_LABELS).map(([key, label]) => {
-                          const val = user.permissions[key] !== undefined ? user.permissions[key] : false;
-                          return (
-                            <div key={key} className="flex items-center justify-between py-0.5">
-                              <span className="text-[11px]">{label}</span>
-                              <Switch 
-                                checked={val} 
-                                onCheckedChange={(v) => setUser(p => ({ ...p, permissions: { ...p.permissions, [key]: v } }))} 
-                              />
-                            </div>
+                  {/* Permissions - New Advanced Panel */}
+                  <div className="bg-card border border-border rounded-xl p-4 col-span-full">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                        <Shield size={14} /> Sistema de Permisos
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        {/* Count special permissions */}
+                        {(() => {
+                          const rolePerms = ROLE_PERMISSIONS[user.role] || {};
+                          const specialCount = Object.keys(user.permissions).filter(p => {
+                            const userHas = user.permissions[p];
+                            const roleHas = rolePerms[p] || false;
+                            return userHas !== roleHas && userHas !== undefined;
+                          }).length;
+                          return specialCount > 0 && (
+                            <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/30 text-[10px]">
+                              <AlertTriangle size={10} className="mr-1" />
+                              {specialCount} permiso(s) especial(es)
+                            </Badge>
                           );
-                        })}
+                        })()}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const rolePerms = ROLE_PERMISSIONS[user.role] || {};
+                            setUser(p => ({ ...p, permissions: { ...rolePerms } }));
+                            toast.success('Permisos restablecidos al rol base');
+                          }}
+                          className="text-xs h-7"
+                        >
+                          <RotateCcw size={12} className="mr-1" /> Restablecer a Rol
+                        </Button>
                       </div>
-                    </ScrollArea>
+                    </div>
+                    
+                    {/* Role info banner */}
+                    <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-muted-foreground">Rol actual:</span>
+                          <Badge className={`ml-2 ${
+                            user.role === 'admin' ? 'bg-red-500' :
+                            user.role === 'waiter' ? 'bg-blue-500' :
+                            user.role === 'cashier' ? 'bg-green-500' :
+                            user.role === 'kitchen' ? 'bg-orange-500' :
+                            user.role === 'captain' ? 'bg-purple-500' :
+                            'bg-gray-500'
+                          }`}>
+                            {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {Object.values(user.permissions).filter(Boolean).length} permisos activos
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Permission Categories */}
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                      {Object.entries(PERMISSION_CATEGORIES).map(([catKey, category]) => {
+                        const isExpanded = expandedCategories[catKey];
+                        const rolePerms = ROLE_PERMISSIONS[user.role] || {};
+                        const catPermissions = Object.keys(category.permissions);
+                        const activeInCat = catPermissions.filter(p => user.permissions[p]).length;
+                        const specialInCat = catPermissions.filter(p => {
+                          const userHas = user.permissions[p];
+                          const roleHas = rolePerms[p] || false;
+                          return userHas !== roleHas && userHas !== undefined;
+                        }).length;
+                        
+                        return (
+                          <div key={catKey} className="border border-border rounded-lg overflow-hidden">
+                            {/* Category Header */}
+                            <button
+                              onClick={() => setExpandedCategories(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
+                              className="w-full flex items-center justify-between p-3 bg-background hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{category.icon}</span>
+                                <span className="font-oswald font-bold text-sm">{category.label}</span>
+                                <Badge variant="secondary" className="text-[10px] ml-1">
+                                  {activeInCat}/{catPermissions.length}
+                                </Badge>
+                                {specialInCat > 0 && (
+                                  <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px]">
+                                    {specialInCat} especial
+                                  </Badge>
+                                )}
+                              </div>
+                              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            </button>
+                            
+                            {/* Category Permissions */}
+                            {isExpanded && (
+                              <div className="p-3 bg-card/50 border-t border-border space-y-1">
+                                {Object.entries(category.permissions).map(([permKey, permLabel]) => {
+                                  const userHas = user.permissions[permKey] || false;
+                                  const roleHas = rolePerms[permKey] || false;
+                                  const isSpecial = userHas !== roleHas;
+                                  
+                                  return (
+                                    <div 
+                                      key={permKey} 
+                                      className={`flex items-center justify-between p-2 rounded-lg transition-all ${
+                                        isSpecial 
+                                          ? 'bg-orange-500/5 border-2 border-orange-500/40' 
+                                          : 'bg-background border border-border'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm">{permLabel}</span>
+                                        {isSpecial && (
+                                          <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[9px] py-0">
+                                            Especial
+                                          </Badge>
+                                        )}
+                                        {!isSpecial && roleHas && (
+                                          <span className="text-[9px] text-muted-foreground">(por rol)</span>
+                                        )}
+                                      </div>
+                                      <Switch 
+                                        checked={userHas} 
+                                        onCheckedChange={(v) => setUser(p => ({ 
+                                          ...p, 
+                                          permissions: { ...p.permissions, [permKey]: v } 
+                                        }))}
+                                        className={isSpecial ? 'data-[state=checked]:bg-orange-500' : ''}
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Legend */}
+                    <div className="mt-4 pt-3 border-t border-border flex items-center gap-4 text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded border-2 border-orange-500/40 bg-orange-500/10"></div>
+                        <span>Permiso Especial (fuera del rol)</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded border border-border bg-background"></div>
+                        <span>Permiso del Rol</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
