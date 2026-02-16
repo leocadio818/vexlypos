@@ -479,26 +479,27 @@ export default function PaymentScreen() {
                   ))}
                 </div>
                 
-                <div className={`mt-3 pt-3 border-t border-white/10 space-y-1 text-[11px]`}>
-                  <div className="flex justify-between text-white/50">
+                {/* Totales con fuente 20% más grande para móvil */}
+                <div className={`mt-2 pt-2 border-t border-white/10 space-y-1.5 ${isMobile ? 'text-sm' : 'text-xs'}`}>
+                  <div className="flex justify-between text-white/60">
                     <span>Subtotal</span>
-                    <span className="font-oswald">{formatMoney(adjustedBill?.subtotal ?? bill.subtotal)}</span>
+                    <span className="font-oswald font-semibold">{formatMoney(adjustedBill?.subtotal ?? bill.subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-white/50">
+                  <div className="flex justify-between text-white/60">
                     <span>ITBIS (18%)</span>
-                    <span className="font-oswald">{formatMoney(adjustedBill?.itbis ?? bill.itbis)}</span>
+                    <span className="font-oswald font-semibold">{formatMoney(adjustedBill?.itbis ?? bill.itbis)}</span>
                   </div>
                   {(() => {
                     const propinaValue = adjustedBill?.propina_legal ?? bill.propina_legal ?? 0;
                     const isExempt = propinaValue === 0;
                     return (
-                      <div className={`flex justify-between ${isExempt ? 'text-red-400/50 line-through' : 'text-white/50'}`}>
+                      <div className={`flex justify-between ${isExempt ? 'text-red-400/60 line-through' : 'text-white/60'}`}>
                         <span>Propina (10%)</span>
-                        <span className="font-oswald">{formatMoney(propinaValue)}</span>
+                        <span className="font-oswald font-semibold">{formatMoney(propinaValue)}</span>
                       </div>
                     );
                   })()}
-                  <div className="flex justify-between text-white font-bold pt-1 border-t border-white/10">
+                  <div className={`flex justify-between text-white font-bold pt-2 border-t border-white/10 ${isMobile ? 'text-base' : 'text-sm'}`}>
                     <span>TOTAL</span>
                     <span className="font-oswald text-cyan-400">{formatMoney(adjustedBill?.total ?? bill.total)}</span>
                   </div>
