@@ -122,6 +122,21 @@ export default function PaymentScreen() {
   const [pendingAmount, setPendingAmount] = useState(null); // Amount waiting for method selection
   const [methodSelectorOpen, setMethodSelectorOpen] = useState(false);
 
+  // NEW: Tax type selection state
+  const [saleTypes, setSaleTypes] = useState([]);
+  const [taxConfig, setTaxConfig] = useState([]);
+  const [selectedFiscalType, setSelectedFiscalType] = useState('B01'); // NCF types
+  const [selectedServiceType, setSelectedServiceType] = useState(null);
+  const [adjustedBill, setAdjustedBill] = useState(null); // Bill with recalculated taxes
+
+  // NCF Fiscal Types (Dominican Republic)
+  const fiscalTypes = [
+    { code: 'B01', name: 'Consumidor Final', short: 'CF' },
+    { code: 'B02', name: 'Crédito Fiscal', short: 'CF' },
+    { code: 'B14', name: 'Gubernamental', short: 'GOB' },
+    { code: 'B15', name: 'Régimen Especial', short: 'RE' }
+  ];
+
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
   const isMobile = device?.isMobile;
   const isTablet = device?.isTablet;
