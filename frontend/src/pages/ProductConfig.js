@@ -155,7 +155,8 @@ export default function ProductConfig() {
         price_d: parseFloat(product.price_d) || 0,
         price_e: parseFloat(product.price_e) || 0,
         printed_name: product.printed_name || product.name,
-        print_channels: product.print_channels || []
+        print_channels: product.print_channels || [],
+        tax_exemptions: product.tax_exemptions || []
       };
 
       if (isNew) {
@@ -179,7 +180,8 @@ export default function ProductConfig() {
           button_text_color: '#ffffff', 
           printed_name: '',
           track_inventory: false,
-          print_channels: []
+          print_channels: [],
+          tax_exemptions: []
         });
         // Show option to go back to list
         toast.info('Puedes crear otro producto o volver a la lista', { duration: 3000 });
