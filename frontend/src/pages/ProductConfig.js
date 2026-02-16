@@ -401,6 +401,112 @@ export default function ProductConfig() {
                     data-testid="track-inventory-switch"
                   />
                 </div>
+
+                {/* Canal de Impresión */}
+                <div className="p-3 rounded-lg bg-background border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Printer size={14} className="text-orange-500" />
+                    <span className="text-sm font-semibold">Canal de Impresión</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mb-3">
+                    Selecciona dónde se imprime la comanda. Si no seleccionas ninguno, usará el canal de la categoría.
+                    Puedes seleccionar varios para combos (ej: comida a Cocina + bebida a Bar).
+                  </p>
+                  
+                  <div className="space-y-2">
+                    {/* Opción por defecto - Usar Categoría */}
+                    <div 
+                      className={`flex items-center gap-3 p-2.5 rounded-lg border transition-all cursor-pointer ${
+                        product.print_channels.length === 0 
+                          ? 'bg-orange-500/10 border-orange-500/50' 
+                          : 'bg-background border-border hover:border-muted-foreground'
+                      }`}
+                      onClick={() => setProduct(p => ({ ...p, print_channels: [] }))}
+                      data-testid="print-channel-default"
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                        product.print_channels.length === 0 
+                          ? 'border-orange-500 bg-orange-500' 
+                          : 'border-muted-foreground'
+                      }`}>
+                        {product.print_channels.length === 0 && <Check size={12} className="text-white" />}
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">Usar el de la Categoría</span>
+                        <p className="text-[10px] text-muted-foreground">Hereda el canal configurado para la categoría del producto</p>
+                      </div>
+                      <Badge variant="secondary" className="text-[9px]">Por defecto</Badge>
+                    </div>
+
+                    {/* Lista de canales disponibles */}
+                    {printChannels.filter(ch => ch.active).map(channel => {
+                      const isSelected = product.print_channels.includes(channel.code);
+                      return (
+                        <div 
+                          key={channel.id}
+                          className={`flex items-center gap-3 p-2.5 rounded-lg border transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'bg-orange-500/10 border-orange-500/50' 
+                              : 'bg-background border-border hover:border-muted-foreground'
+                          }`}
+                          onClick={() => {
+                            setProduct(p => {
+                              const current = p.print_channels || [];
+                              if (current.includes(channel.code)) {
+                                // Remove channel
+                                return { ...p, print_channels: current.filter(c => c !== channel.code) };
+                              } else {
+                                // Add channel
+                                return { ...p, print_channels: [...current, channel.code] };
+                              }
+                            });
+                          }}
+                          data-testid={`print-channel-${channel.code}`}
+                        >
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                            isSelected 
+                              ? 'border-orange-500 bg-orange-500' 
+                              : 'border-muted-foreground'
+                          }`}>
+                            {isSelected && <Check size={12} className="text-white" />}
+                          </div>
+                          <div className="flex-1">
+                            <span className="text-sm font-medium">{channel.name}</span>
+                            {channel.printer_name && (
+                              <p className="text-[10px] text-muted-foreground">Impresora: {channel.printer_name}</p>
+                            )}
+                          </div>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-[9px] ${
+                              channel.code === 'kitchen' ? 'border-orange-500/50 text-orange-500' :
+                              channel.code === 'bar' ? 'border-purple-500/50 text-purple-500' :
+                              channel.code === 'receipt' ? 'border-green-500/50 text-green-500' :
+                              'border-blue-500/50 text-blue-500'
+                            }`}
+                          >
+                            {channel.code}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Indicador de canales seleccionados */}
+                  {product.print_channels.length > 0 && (
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground">Imprimirá en:</span>
+                      {product.print_channels.map(code => {
+                        const ch = printChannels.find(c => c.code === code);
+                        return (
+                          <Badge key={code} className="bg-orange-500/20 text-orange-400 text-[10px]">
+                            {ch?.name || code}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Button Style */}
