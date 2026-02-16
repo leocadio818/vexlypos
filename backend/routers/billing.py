@@ -106,7 +106,8 @@ async def create_payment_method(input: dict):
 
 @router.put("/payment-methods/{mid}")
 async def update_payment_method(mid: str, input: dict):
-    if "_id" in input: del input["_id"]
+    if "_id" in input:
+        del input["_id"]
     await db.payment_methods.update_one({"id": mid}, {"$set": input})
     return {"ok": True}
 
