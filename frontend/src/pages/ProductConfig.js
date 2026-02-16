@@ -56,10 +56,14 @@ export default function ProductConfig() {
     button_bg_color: '',
     button_text_color: '#FFFFFF',
     track_inventory: false,
+    print_channels: [],  // Array of channel codes for multi-channel printing
     modifier_assignments: [],
     // Recipe fields (for display)
     recipe_ingredients: []
   });
+
+  // Print channels state
+  const [printChannels, setPrintChannels] = useState([]);
 
   // Dialog for adding modifier assignment
   const [modAssignDialog, setModAssignDialog] = useState({
