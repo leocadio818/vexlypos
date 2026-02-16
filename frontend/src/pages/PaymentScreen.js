@@ -842,6 +842,96 @@ export default function PaymentScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Venta/NCF */}
+      <Dialog open={ncfDialogOpen} onOpenChange={setNcfDialogOpen}>
+        <DialogContent className="max-w-sm bg-slate-900/95 backdrop-blur-xl border-white/20">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-white flex items-center gap-2">
+              <FileText size={18} className="text-cyan-400" />
+              Tipo de Venta
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Tipo Fiscal (NCF) */}
+            <div>
+              <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2">
+                Comprobante Fiscal
+              </h4>
+              <div className="grid grid-cols-4 gap-2">
+                {fiscalTypes.map(ft => (
+                  <button
+                    key={ft.code}
+                    onClick={() => setSelectedFiscalType(ft.code)}
+                    className={`p-3 rounded-xl text-center transition-all ${
+                      selectedFiscalType === ft.code
+                        ? 'bg-cyan-500/30 border-2 border-cyan-400 text-cyan-300'
+                        : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+                    }`}
+                    data-testid={`ncf-dialog-${ft.code}`}
+                  >
+                    <span className="font-oswald font-bold text-sm">{ft.code}</span>
+                    <p className="text-[9px] mt-0.5 opacity-70">{ft.short}</p>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-white/40 mt-2 text-center">
+                {fiscalTypes.find(f => f.code === selectedFiscalType)?.name}
+              </p>
+            </div>
+
+            {/* Tipo de Servicio */}
+            <div>
+              <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2">
+                Tipo de Servicio
+              </h4>
+              <div className="space-y-2">
+                {saleTypes.map(st => {
+                  const isSelected = selectedServiceType?.id === st.id;
+                  const hasExemptions = (st.tax_exemptions || []).length > 0;
+                  const IconComponent = st.code === 'delivery' ? Truck : st.code === 'take_out' ? Store : UtensilsCrossed;
+                  return (
+                    <button
+                      key={st.id}
+                      onClick={() => setSelectedServiceType(st)}
+                      className={`w-full p-3 rounded-xl transition-all flex items-center gap-3 ${
+                        isSelected
+                          ? 'bg-orange-500/30 border-2 border-orange-400 text-orange-300'
+                          : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+                      }`}
+                      data-testid={`ncf-dialog-service-${st.code}`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        isSelected ? 'bg-orange-500/30' : 'bg-white/10'
+                      }`}>
+                        <IconComponent size={20} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <span className="font-semibold">{st.name}</span>
+                        {hasExemptions && (
+                          <p className="text-[10px] text-red-400/80">Sin propina de ley</p>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <Check size={18} className="text-orange-400" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Resumen y confirmar */}
+            <button
+              onClick={() => setNcfDialogOpen(false)}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-oswald font-bold text-sm active:scale-95 transition-transform"
+            >
+              CONFIRMAR
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
