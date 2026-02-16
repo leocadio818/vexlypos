@@ -517,6 +517,92 @@ export default function ProductConfig() {
                     </div>
                   )}
                 </div>
+
+                {/* Impuestos Aplicables */}
+                <div className="p-3 rounded-lg bg-background border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <DollarSign size={14} className="text-green-500" />
+                    <span className="text-sm font-semibold">Impuestos Aplicables</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mb-3">
+                    Todos los impuestos están activos por defecto. Desmarca los impuestos de los que este producto esté exento.
+                  </p>
+                  
+                  <div className="space-y-2">
+                    {taxConfig.filter(tax => tax.active).map(tax => {
+                      const isExempt = (product.tax_exemptions || []).includes(tax.id);
+                      const isApplied = !isExempt;
+                      return (
+                        <div 
+                          key={tax.id}
+                          className={`flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer ${
+                            isApplied 
+                              ? 'bg-green-500/10 border-green-500/50' 
+                              : 'bg-red-500/5 border-red-500/30'
+                          }`}
+                          onClick={() => {
+                            setProduct(p => {
+                              const current = p.tax_exemptions || [];
+                              if (current.includes(tax.id)) {
+                                // Remove from exemptions (re-apply tax)
+                                return { ...p, tax_exemptions: current.filter(id => id !== tax.id) };
+                              } else {
+                                // Add to exemptions (exempt from tax)
+                                return { ...p, tax_exemptions: [...current, tax.id] };
+                              }
+                            });
+                          }}
+                          data-testid={`tax-toggle-${tax.id}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                              isApplied 
+                                ? 'border-green-500 bg-green-500' 
+                                : 'border-muted-foreground'
+                            }`}>
+                              {isApplied && <Check size={12} className="text-white" />}
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium">{tax.description}</span>
+                              <p className="text-[10px] text-muted-foreground">{tax.rate}%</p>
+                            </div>
+                          </div>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-[9px] ${
+                              isApplied 
+                                ? 'border-green-500/50 text-green-500' 
+                                : 'border-red-500/50 text-red-500'
+                            }`}
+                          >
+                            {isApplied ? 'Aplica' : 'Exento'}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                    
+                    {taxConfig.filter(tax => tax.active).length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No hay impuestos configurados. Ve a Configuración → Ventas → Impuestos.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Resumen de impuestos exentos */}
+                  {(product.tax_exemptions || []).length > 0 && (
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground">Exento de:</span>
+                      {(product.tax_exemptions || []).map(taxId => {
+                        const tax = taxConfig.find(t => t.id === taxId);
+                        return (
+                          <Badge key={taxId} className="bg-red-500/20 text-red-400 text-[10px]">
+                            {tax?.description || taxId}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Button Style */}
