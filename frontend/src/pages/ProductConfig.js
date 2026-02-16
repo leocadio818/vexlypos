@@ -81,16 +81,18 @@ export default function ProductConfig() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [catRes, reportCatRes, modRes, channelsRes] = await Promise.all([
+      const [catRes, reportCatRes, modRes, channelsRes, taxRes] = await Promise.all([
         categoriesAPI.list(),
         reportCategoriesAPI.list(),
         modifiersAPI.list(),
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/print-channels`).then(r => r.json())
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/print-channels`).then(r => r.json()),
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/tax-config`).then(r => r.json())
       ]);
       setCategories(catRes.data);
       setReportCategories(reportCatRes.data);
       setModifierGroups(modRes.data);
       setPrintChannels(channelsRes || []);
+      setTaxConfig(taxRes || []);
 
       if (!isNew) {
         const prodRes = await productsAPI.get(productId);
