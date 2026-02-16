@@ -565,6 +565,13 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Consolidación en recibo**: Canal "Recibo" muestra cuenta completa para cobro
   - **Optimización de papel**: No se generan tickets vacíos (solo bebidas = no ticket cocina)
   - **Logging**: Se registra cantidad de tickets y canales usados por orden
+- [x] **Mantenimiento de Base de Datos - Reset de Fábrica** (Completado 16 Feb 2026) ✅
+  - **Ubicación**: Config > Sistema (solo visible para Admin)
+  - **Modal con switches**: Historial de Ventas, Datos de Inventario, Lista de Usuarios
+  - **Regla de Admin**: Si resetea usuarios, elimina todos excepto Admin, PIN forzado a 11331744
+  - **Confirmación de seguridad**: Advertencia roja + confirmación de PIN de Admin
+  - **Log de Auditoría**: Registra en audit_logs con fecha/hora exacta y detalles
+  - **Endpoint**: POST /api/system/factory-reset
 
 ### P2 - Media Prioridad
 - [ ] **Seguridad Audit Trail**: Solo Admins pueden ver PINs en reportes de auditoría
