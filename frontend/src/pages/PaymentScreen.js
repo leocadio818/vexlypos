@@ -173,7 +173,6 @@ export default function PaymentScreen() {
         const config = await configRes.json();
         if (config.quick_amounts) setQuickAmounts(config.quick_amounts);
       } catch {}
-      } catch {}
     } catch {
       toast.error('Error cargando datos');
     }
@@ -181,11 +180,50 @@ export default function PaymentScreen() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Recalculate taxes when service type changes
+  useEffect(() => {
+    if (!bill || !selectedServiceType || !taxConfig.length) return;
+
+    const exemptions = selectedServiceType.tax_exemptions || [];
+    let newItbis = 0;
+    let newPropina = 0;
+    const subtotal = bill.subtotal || 0;
+
+    // Calculate taxes that are NOT exempt
+    taxConfig.forEach(tax => {
+      if (!tax.active || exemptions.includes(tax.id)) return;
+      const amount = subtotal * (tax.rate / 100);
+      if (tax.is_tip) {
+        newPropina += amount;
+      } else {
+        newItbis += amount;
+      }
+    });
+
+    const newTotal = Math.round((subtotal + newItbis + newPropina) * 100) / 100;
+
+    setAdjustedBill({
+      ...bill,
+      itbis: Math.round(newItbis * 100) / 100,
+      propina_legal: Math.round(newPropina * 100) / 100,
+      total: newTotal,
+      sale_type: selectedServiceType.code,
+      sale_type_name: selectedServiceType.name
+    });
+
+    // Update quick amounts based on new total
+    const baseAmounts = [100, 200, 500, 1000, 2000, 5000];
+    const nearestHigher = baseAmounts.find(a => a >= newTotal) || Math.ceil(newTotal / 100) * 100;
+    if (!baseAmounts.includes(nearestHigher) && nearestHigher > 0) {
+      setQuickAmounts([...baseAmounts, nearestHigher].sort((a, b) => a - b));
+    }
+  }, [bill, selectedServiceType, taxConfig]);
+
   const totalPaidDOP = paymentMethods.reduce((sum, m) => {
     const amt = parseFloat(payAmounts[m.name]) || 0;
     return sum + amt * (m.exchange_rate || 1);
   }, 0);
-  const billTotal = bill?.total || 0;
+  const billTotal = adjustedBill?.total || bill?.total || 0;
   const overpaid = totalPaidDOP - billTotal;
   const isEnough = totalPaidDOP >= billTotal;
 
