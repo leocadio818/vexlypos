@@ -32,6 +32,10 @@ export default function Layout() {
   // Check if current page should use glass design
   const isGlassPage = !noGlassPages.some(p => location.pathname.startsWith(p));
   
+  // Hide mobile nav on payment screen for more space
+  const hideNavPages = ['/payment'];
+  const shouldHideNav = hideNavPages.some(p => location.pathname.startsWith(p));
+  
   // Responsive helpers
   const isMobile = device?.isMobile;
   const isTablet = device?.isTablet;
