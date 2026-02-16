@@ -158,6 +158,25 @@ export default function Settings() {
 
   useEffect(() => { fetchAll(); }, []);
 
+  // Filter users based on search and role
+  const filteredUsers = users.filter(u => {
+    if (u.active === false) return false;
+    
+    // Search filter
+    if (userSearch) {
+      const searchLower = userSearch.toLowerCase();
+      const nameMatch = (u.name || '').toLowerCase().includes(searchLower);
+      const lastNameMatch = (u.last_name || '').toLowerCase().includes(searchLower);
+      const posNameMatch = (u.pos_name || '').toLowerCase().includes(searchLower);
+      if (!nameMatch && !lastNameMatch && !posNameMatch) return false;
+    }
+    
+    // Role filter
+    if (userRoleFilter && u.role !== userRoleFilter) return false;
+    
+    return true;
+  });
+
   // Area handlers
   const handleSaveArea = async () => {
     if (!areaDialog.name.trim()) return;
