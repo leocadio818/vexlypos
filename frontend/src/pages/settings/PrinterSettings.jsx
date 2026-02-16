@@ -300,59 +300,6 @@ export default function PrinterSettings() {
         </div>
       )}
 
-      {/* Tab: Asignación de Categorías */}
-      {activeTab === 'categories' && (
-        <div className="space-y-4">
-          <p className="text-sm text-slate-400">
-            Asigna cada categoría de productos al canal de impresión correspondiente.
-            Por ejemplo, "Mariscos" y "Carnes" van a Cocina, "Bebidas" y "Cocteles" van a Bar.
-          </p>
-          
-          <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {categories.map(cat => (
-                  <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="w-4 h-4 rounded-full" 
-                        style={{ backgroundColor: cat.color || '#666' }}
-                      />
-                      <span className="font-medium">{cat.name}</span>
-                    </div>
-                    <Select
-                      value={categoryMappings[cat.id] || 'kitchen'}
-                      onValueChange={(value) => setCategoryMappings({ ...categoryMappings, [cat.id]: value })}
-                    >
-                      <SelectTrigger className="w-40 bg-slate-800 border-slate-600">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {channels.map(ch => {
-                          const Icon = channelIcons[ch.code] || Printer;
-                          return (
-                            <SelectItem key={ch.code} value={ch.code}>
-                              <div className="flex items-center gap-2">
-                                <Icon className="w-4 h-4" />
-                                {ch.name}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </div>
-              
-              <Button onClick={saveCategoryMappings} className="w-full mt-4 bg-orange-600 hover:bg-orange-700">
-                Guardar Asignaciones
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Tab: Datos del Negocio */}
       {activeTab === 'business' && (
         <Card className="bg-slate-800 border-slate-700">
