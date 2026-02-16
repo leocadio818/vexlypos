@@ -464,22 +464,24 @@ export default function PaymentScreen() {
           )}
 
           {(!isMobile || showDetails) && (
-            <ScrollArea className={`flex-1 px-3 ${isMobile ? 'max-h-24' : ''}`}>
+            <div className={`px-3 ${isMobile ? '' : 'flex-1'}`}>
               <div className={`${glassStyles.card} rounded-xl p-2.5 mb-2`}>
                 
-                {/* Lista de productos compacta */}
-                <div className="space-y-0.5 max-h-16 overflow-y-auto mb-2">
-                  {bill.items?.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center text-[10px]">
-                      <span className="text-white/60 flex-1 truncate">
-                        <span className="font-oswald font-bold text-cyan-400">{item.quantity}x</span> {item.product_name}
-                      </span>
-                      <span className="font-oswald font-bold text-white/80 ml-2">{formatMoney(item.total)}</span>
-                    </div>
-                  ))}
-                </div>
+                {/* Lista de productos compacta - scrollable */}
+                <ScrollArea className={isMobile ? 'max-h-20' : 'max-h-32'}>
+                  <div className="space-y-0.5 pr-2">
+                    {bill.items?.map((item, i) => (
+                      <div key={i} className="flex justify-between items-center text-[10px]">
+                        <span className="text-white/60 flex-1 truncate">
+                          <span className="font-oswald font-bold text-cyan-400">{item.quantity}x</span> {item.product_name}
+                        </span>
+                        <span className="font-oswald font-bold text-white/80 ml-2">{formatMoney(item.total)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
                 
-                {/* Totales con fuente 20% más grande para móvil */}
+                {/* Totales con fuente 20% más grande para móvil - siempre visible */}
                 <div className={`mt-2 pt-2 border-t border-white/10 space-y-1.5 ${isMobile ? 'text-sm' : 'text-xs'}`}>
                   <div className="flex justify-between text-white/60">
                     <span>Subtotal</span>
@@ -505,7 +507,7 @@ export default function PaymentScreen() {
                   </div>
                 </div>
               </div>
-            </ScrollArea>
+            </div>
           )}
         </div>
 
