@@ -350,18 +350,93 @@ export default function UserConfig() {
     fetchData();
   }, [fetchData]);
 
+  // State for duplicate PIN warning modal
+  const [pinDuplicateModal, setPinDuplicateModal] = useState({ open: false, message: '' });
+  
+  // State for card assignment modal
+  const [cardModal, setCardModal] = useState({ open: false, cardInput: '', error: '' });
+
+  // Validate PIN format (1-8 digits, cannot start with 0)
+  const validatePin = (pin) => {
+    if (!pin) return { valid: true, error: '' }; // Empty is OK for editing
+    
+    // Must be numeric
+    if (!/^\d+$/.test(pin)) {
+      return { valid: false, error: 'El PIN debe contener solo números' };
+    }
+    
+    // Length 1-8
+    if (pin.length < 1 || pin.length > 8) {
+      return { valid: false, error: 'El PIN debe tener entre 1 y 8 dígitos' };
+    }
+    
+    // Cannot start with 0
+    if (pin.startsWith('0')) {
+      return { valid: false, error: 'El PIN no puede iniciar con 0' };
+    }
+    
+    return { valid: true, error: '' };
+  };
+
+  // Validate card number (must start with '11', max 8 digits)
+  const validateCardNumber = (card) => {
+    if (!card) return { valid: false, error: 'Ingrese el número de tarjeta' };
+    
+    // Must be numeric
+    if (!/^\d+$/.test(card)) {
+      return { valid: false, error: 'El número de tarjeta debe ser numérico' };
+    }
+    
+    // Must start with '11'
+    if (!card.startsWith('11')) {
+      return { valid: false, error: 'El número de tarjeta debe iniciar con el prefijo "11"' };
+    }
+    
+    // Max 8 digits
+    if (card.length > 8) {
+      return { valid: false, error: 'El número de tarjeta no puede exceder 8 dígitos' };
+    }
+    
+    return { valid: true, error: '' };
+  };
+
   const handleSave = async () => {
     if (!user.name.trim()) {
       toast.error('El nombre es requerido');
       return;
     }
-    if (isNew && (!user.pin || user.pin.length < 4)) {
-      toast.error('PIN debe tener mínimo 4 dígitos');
+    
+    // Validate PIN if provided
+    if (user.pin) {
+      const pinValidation = validatePin(user.pin);
+      if (!pinValidation.valid) {
+        toast.error(pinValidation.error);
+        return;
+      }
+    } else if (isNew) {
+      toast.error('El PIN es requerido para nuevos usuarios');
       return;
     }
 
     setSaving(true);
     try {
+      // Check for duplicate PIN before saving
+      if (user.pin) {
+        const checkRes = await axios.post(`${API}/users/check-pin`, { 
+          pin: user.pin, 
+          exclude_user_id: isNew ? null : userId 
+        }, { headers: hdrs() });
+        
+        if (checkRes.data.exists) {
+          setSaving(false);
+          setPinDuplicateModal({ 
+            open: true, 
+            message: 'Este PIN ya está asignado a otro usuario activo. Por favor, elija un PIN diferente.' 
+          });
+          return;
+        }
+      }
+
       const data = {
         ...user,
         pos_name: user.pos_name || `${user.name} ${user.last_name}`.trim(),
@@ -385,6 +460,18 @@ export default function UserConfig() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAssignCard = () => {
+    const validation = validateCardNumber(cardModal.cardInput);
+    if (!validation.valid) {
+      setCardModal(prev => ({ ...prev, error: validation.error }));
+      return;
+    }
+    
+    setUser(prev => ({ ...prev, card_number: cardModal.cardInput }));
+    setCardModal({ open: false, cardInput: '', error: '' });
+    toast.success('Tarjeta asignada correctamente');
   };
 
   const handleAddPosition = () => {
