@@ -202,6 +202,16 @@ export default function UserConfig() {
   const [activeTab, setActiveTab] = useState('info');
   const [roles, setRoles] = useState([]);
   const [revenueCenters, setRevenueCenters] = useState([]);
+  
+  // Permission categories collapse state
+  const [expandedCategories, setExpandedCategories] = useState({
+    ventas: true,
+    mesas: false,
+    administracion: false,
+    inventario: false,
+    clientes: false,
+    configuracion: false,
+  });
 
   // Position assignment dialog
   const [posDialog, setPosDialog] = useState({
