@@ -1113,34 +1113,42 @@ export default function Settings() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-oswald text-base font-bold">Tipos de Venta</h2>
-                  <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_rate: 18, tip_default: 0, tax_exemptions: [], editId: null })} size="sm"
+                  <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_exemptions: [], editId: null })} size="sm"
                     className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-saletype-btn">
                     <Plus size={14} className="mr-1" /> Agregar
                   </Button>
                 </div>
                 <div className="space-y-2">
-                  {saleTypes.map(st => (
-                    <div key={st.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`saletype-${st.id}`}>
-                      <div>
-                        <span className="font-semibold">{st.name}</span>
-                        <Badge variant="secondary" className="ml-2 text-[9px]">{st.code}</Badge>
-                        <span className="text-xs text-muted-foreground ml-2">ITBIS {st.tax_rate}% | Propina {st.tip_default}%</span>
-                        {(st.tax_exemptions || []).length > 0 && (
-                          <Badge variant="outline" className="ml-2 text-[9px] border-red-500/50 text-red-500">
-                            {(st.tax_exemptions || []).length} exención(es)
-                          </Badge>
-                        )}
+                  {saleTypes.map(st => {
+                    const exemptCount = (st.tax_exemptions || []).length;
+                    const appliedTaxes = taxConfig.filter(t => t.active && !(st.tax_exemptions || []).includes(t.id));
+                    return (
+                      <div key={st.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`saletype-${st.id}`}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold">{st.name}</span>
+                          <Badge variant="secondary" className="text-[9px]">{st.code}</Badge>
+                          {appliedTaxes.length > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              {appliedTaxes.map(t => `${t.description} ${t.rate}%`).join(' + ')}
+                            </span>
+                          )}
+                          {exemptCount > 0 && (
+                            <Badge variant="outline" className="text-[9px] border-red-500/50 text-red-500">
+                              {exemptCount} exento(s)
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_exemptions: st.tax_exemptions || [], editId: st.id })}>
+                            <Pencil size={14} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
+                            onClick={() => handleDeleteSaleType(st.id)}><Trash2 size={14} /></Button>
+                        </div>
                       </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                          onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_rate: st.tax_rate, tip_default: st.tip_default, tax_exemptions: st.tax_exemptions || [], editId: st.id })}>
-                          <Pencil size={14} />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
-                          onClick={() => handleDeleteSaleType(st.id)}><Trash2 size={14} /></Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}
