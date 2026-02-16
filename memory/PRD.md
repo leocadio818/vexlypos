@@ -538,8 +538,21 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Auto-print**: Opción para imprimir automáticamente comandas y recibos
   - **Impresoras soportadas**: Epson TM, Star TSP, XPrinter, Generic 80mm
   - **Documentación**: `GUIA_IMPRESORA.md` con instrucciones completas
+- [x] **Agente de Impresión Profesional para Windows** (Completado 16 Feb 2026) ✅
+  - **Script avanzado**: `print_agent_pro.py` con icono en bandeja del sistema (system tray)
+  - **Sistema de semáforo visual**: Verde=Conectado, Amarillo=Imprimiendo, Rojo=Error
+  - **Notificaciones nativas**: Alertas de Windows para errores de impresión
+  - **Endpoint de descarga**: `/api/download/print-agent?printer_name=X` genera script personalizado
+  - **UI de descarga**: Botón en `/settings/printer` pestaña "Cola" con instrucciones paso a paso
+  - **Inicio automático**: Instrucciones para agregar al Startup de Windows
+  - **Dependencias**: requests, pystray, Pillow, plyer, pywin32
+- [x] **Corrección de PIN de Admin** (Completado 16 Feb 2026) ✅
+  - PIN del Admin cambiado de `0000` a `1000` para cumplir con validación de no empezar con '0'
+  - Actualizado en seed data (`server.py`) y en la base de datos existente
+  - Login de demo en `Login.js` actualizado para mostrar el nuevo PIN
 
 ### P2 - Media Prioridad
+- [ ] **Seguridad Audit Trail**: Solo Admins pueden ver PINs en reportes de auditoría
 - [ ] **Reloj de empleados**: Check-in/out con reportes
 - [ ] **Reportes DGII**: Generación de formatos 607, 608
 - [ ] **Imágenes de productos**: Soporte para fotos/iconos en botones
