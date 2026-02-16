@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Briefcase, Plus, Trash2, Camera, Settings } from 'lucide-react';
+import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Briefcase, Plus, Trash2, Camera, Settings, ChevronDown, ChevronRight, RotateCcw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -29,23 +29,168 @@ const SYSTEM_INTERFACES = [
   { code: 'clock_only', label: 'Solo Marca Entrada/Salida' },
 ];
 
-const PERM_LABELS = {
-  view_dashboard: 'Ver Dashboard',
-  move_tables: 'Mover Mesas', resize_tables: 'Redimensionar Mesas',
-  open_table: 'Abrir Mesa', add_products: 'Agregar Productos',
-  void_items: 'Anular Items', send_kitchen: 'Enviar a Cocina',
-  create_bill: 'Crear Factura', collect_payment: 'Cobrar', split_bill: 'Dividir Cuenta',
-  manage_users: 'Config: Usuarios', manage_areas: 'Config: Areas',
-  manage_tables: 'Config: Mesas', manage_payment_methods: 'Config: Pagos',
-  manage_cancellation_reasons: 'Config: Anulaciones', manage_products: 'Config: Productos',
-  manage_sale_types: 'Config: Ventas', manage_print_channels: 'Config: Impresion',
-  manage_station_config: 'Config: Estacion',
-  manage_inventory: 'Inventario', manage_suppliers: 'Proveedores',
-  manage_customers: 'Clientes', manage_reservations: 'Reservaciones',
-  view_reports: 'Reportes', export_dgii: 'Exportar DGII',
-  open_shift: 'Abrir Turno', close_shift: 'Cerrar Turno', close_day: 'Cierre de Dia',
-  release_reserved_table: 'Desbloquear Mesa Reservada',
+// Permission categories with their permissions
+const PERMISSION_CATEGORIES = {
+  ventas: {
+    label: 'Ventas',
+    icon: '💰',
+    permissions: {
+      open_table: 'Abrir Mesa',
+      add_products: 'Agregar Productos',
+      void_items: 'Anular Items',
+      send_kitchen: 'Enviar a Cocina',
+      create_bill: 'Crear Factura',
+      collect_payment: 'Cobrar',
+      split_bill: 'Dividir Cuenta',
+      apply_discount: 'Aplicar Descuentos',
+      modify_price: 'Modificar Precios',
+      reprint_receipt: 'Reimprimir Recibo',
+    }
+  },
+  mesas: {
+    label: 'Mesas',
+    icon: '🪑',
+    permissions: {
+      move_tables: 'Mover Mesas',
+      resize_tables: 'Redimensionar Mesas',
+      transfer_table: 'Transferir Mesa',
+      merge_tables: 'Unir Mesas',
+      release_reserved_table: 'Desbloquear Mesa Reservada',
+    }
+  },
+  administracion: {
+    label: 'Administración',
+    icon: '📋',
+    permissions: {
+      view_dashboard: 'Ver Dashboard',
+      open_shift: 'Abrir Turno',
+      close_shift: 'Cerrar Turno',
+      close_day: 'Cierre de Día',
+      view_reports: 'Ver Reportes',
+      export_dgii: 'Exportar DGII',
+      manage_reservations: 'Gestionar Reservaciones',
+      manager_on_duty: 'Gerente en Turno',
+    }
+  },
+  inventario: {
+    label: 'Inventario',
+    icon: '📦',
+    permissions: {
+      manage_inventory: 'Gestionar Inventario',
+      manage_suppliers: 'Gestionar Proveedores',
+      stock_adjustment: 'Ajustes de Stock',
+      receive_orders: 'Recibir Pedidos',
+    }
+  },
+  clientes: {
+    label: 'Clientes',
+    icon: '👥',
+    permissions: {
+      manage_customers: 'Gestionar Clientes',
+      view_customer_history: 'Ver Historial Cliente',
+      apply_loyalty: 'Aplicar Puntos Lealtad',
+    }
+  },
+  configuracion: {
+    label: 'Configuración',
+    icon: '⚙️',
+    permissions: {
+      manage_users: 'Gestionar Usuarios',
+      manage_areas: 'Gestionar Áreas',
+      manage_tables: 'Gestionar Mesas',
+      manage_payment_methods: 'Gestionar Métodos de Pago',
+      manage_cancellation_reasons: 'Gestionar Razones Anulación',
+      manage_products: 'Gestionar Productos',
+      manage_sale_types: 'Gestionar Tipos de Venta',
+      manage_print_channels: 'Gestionar Impresión',
+      manage_station_config: 'Configurar Estación',
+    }
+  },
 };
+
+// Default permissions by role
+const ROLE_PERMISSIONS = {
+  admin: {
+    // Admin has ALL permissions
+    ...Object.values(PERMISSION_CATEGORIES).reduce((acc, cat) => {
+      Object.keys(cat.permissions).forEach(p => acc[p] = true);
+      return acc;
+    }, {})
+  },
+  waiter: {
+    open_table: true,
+    add_products: true,
+    send_kitchen: true,
+    create_bill: true,
+    split_bill: true,
+    view_dashboard: true,
+    manage_reservations: true,
+    view_customer_history: true,
+  },
+  cashier: {
+    open_table: true,
+    add_products: true,
+    void_items: true,
+    send_kitchen: true,
+    create_bill: true,
+    collect_payment: true,
+    split_bill: true,
+    apply_discount: true,
+    reprint_receipt: true,
+    view_dashboard: true,
+    open_shift: true,
+    close_shift: true,
+    view_reports: true,
+    manage_customers: true,
+    view_customer_history: true,
+    apply_loyalty: true,
+  },
+  kitchen: {
+    view_dashboard: true,
+    send_kitchen: true,
+  },
+  captain: {
+    open_table: true,
+    add_products: true,
+    void_items: true,
+    send_kitchen: true,
+    create_bill: true,
+    collect_payment: true,
+    split_bill: true,
+    apply_discount: true,
+    move_tables: true,
+    transfer_table: true,
+    merge_tables: true,
+    release_reserved_table: true,
+    view_dashboard: true,
+    open_shift: true,
+    close_shift: true,
+    view_reports: true,
+    manage_reservations: true,
+    manage_customers: true,
+    view_customer_history: true,
+    apply_loyalty: true,
+  },
+  host: {
+    view_dashboard: true,
+    manage_reservations: true,
+    release_reserved_table: true,
+  },
+};
+
+// Get all permission keys
+const ALL_PERMISSIONS = Object.values(PERMISSION_CATEGORIES).reduce((acc, cat) => {
+  Object.keys(cat.permissions).forEach(p => acc.push(p));
+  return acc;
+}, []);
+
+// Legacy permission labels for backward compatibility
+const PERM_LABELS = Object.values(PERMISSION_CATEGORIES).reduce((acc, cat) => {
+  Object.entries(cat.permissions).forEach(([key, label]) => {
+    acc[key] = label;
+  });
+  return acc;
+}, {});
 
 export default function UserConfig() {
   const { userId } = useParams();
