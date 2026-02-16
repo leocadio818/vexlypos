@@ -1186,12 +1186,16 @@ export default function Settings() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 hover:bg-white/50"
-                          onClick={() => setCategoryDialog({ 
-                            open: true, 
-                            name: cat.name, 
-                            color: cat.color || '#FF6600', 
-                            editId: cat.id 
-                          })}
+                          onClick={() => {
+                            const currentChannel = categoryChannels.find(cc => cc.category_id === cat.id);
+                            setCategoryDialog({ 
+                              open: true, 
+                              name: cat.name, 
+                              color: cat.color || '#FF6600', 
+                              editId: cat.id,
+                              print_channel: currentChannel?.channel_code || ''
+                            });
+                          }}
                         >
                           <Pencil size={14} />
                         </Button>
