@@ -2670,8 +2670,8 @@ export default function Settings() {
                 data-testid="category-print-channel"
               >
                 <option value="">Sin asignar (usa Cocina por defecto)</option>
-                {printChannels.filter(ch => ch.active).map(ch => (
-                  <option key={ch.id || ch.code} value={ch.code}>
+                {printChannels.filter(ch => ch.active && ch.code).map(ch => (
+                  <option key={ch.id} value={ch.code}>
                     {ch.name} {ch.printer_name ? `→ ${ch.printer_name}` : ''}
                   </option>
                 ))}
