@@ -1374,6 +1374,84 @@ export default function UserConfig() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* PIN Duplicate Warning Modal */}
+      <Dialog open={pinDuplicateModal.open} onOpenChange={(open) => setPinDuplicateModal({ open, message: '' })}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-yellow-500">
+              <AlertTriangle size={20} />
+              PIN Duplicado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {pinDuplicateModal.message}
+            </p>
+            <Button 
+              className="w-full" 
+              onClick={() => setPinDuplicateModal({ open: false, message: '' })}
+            >
+              Entendido
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Card Assignment Modal */}
+      <Dialog open={cardModal.open} onOpenChange={(open) => setCardModal({ open, cardInput: '', error: '' })}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings size={20} className="text-primary" />
+              Asignar Tarjeta Magnética
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Pase la tarjeta por el lector o ingrese el número manualmente.
+            </p>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Número de Tarjeta</label>
+              <input 
+                type="text"
+                value={cardModal.cardInput}
+                onChange={e => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 8);
+                  setCardModal(prev => ({ ...prev, cardInput: val, error: '' }));
+                }}
+                placeholder="11XXXXXX (prefijo 11 obligatorio)"
+                maxLength={8}
+                autoFocus
+                className={`w-full bg-background border rounded-lg px-3 py-2 text-sm font-mono ${
+                  cardModal.error ? 'border-red-500' : 'border-border'
+                }`}
+              />
+              {cardModal.error && (
+                <p className="text-[10px] text-red-500 mt-1">{cardModal.error}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Formato: Debe iniciar con "11" y tener máximo 8 dígitos
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setCardModal({ open: false, cardInput: '', error: '' })}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={handleAssignCard}
+              >
+                Asignar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
