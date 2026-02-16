@@ -1276,7 +1276,20 @@ async def send_receipt_to_queue(bill_id: str):
 # ─── SEND COMANDA TO PRINT QUEUE ───
 @api.post("/print/send-comanda/{order_id}")
 async def send_comanda_to_queue(order_id: str):
-    """Send kitchen order (comanda) to print queue, split by channel"""
+    """
+    Send kitchen order (comanda) to print queue, with CONTENT FILTERING by channel.
+    
+    Content Filtering Logic:
+    - Each channel (Cocina, Bar, etc.) only receives items assigned to it
+    - Products can be assigned to multiple channels (combos)
+    - If no items for a channel, no ticket is generated (paper optimization)
+    - Receipt channel is NOT used here - it shows full bill via /print/send-receipt
+    
+    Priority for channel assignment:
+    1. Product's print_channels array (if defined)
+    2. Category's channel mapping (fallback)
+    3. Default 'kitchen' channel (last resort)
+    """
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
@@ -1287,10 +1300,13 @@ async def send_comanda_to_queue(order_id: str):
     cat_to_channel = {m["category_id"]: m["channel_code"] for m in category_mappings}
     
     # Get products to determine categories AND product-level print_channels
-    products = await db.products.find({}, {"_id": 0, "id": 1, "category_id": 1, "print_channels": 1}).to_list(500)
+    products = await db.products.find({}, {"_id": 0, "id": 1, "name": 1, "category_id": 1, "print_channels": 1}).to_list(500)
     prod_map = {p["id"]: p for p in products}
     
-    # Group items by channel (support multi-channel per product)
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # CONTENT FILTERING: Group items by their assigned channel(s)
+    # Each item goes ONLY to its designated channel(s), not to all channels
+    # ═══════════════════════════════════════════════════════════════════════════════
     items_by_channel = {}
     pending_items = [i for i in order.get("items", []) if i.get("status") == "pending" or i.get("sent_to_kitchen")]
     
@@ -1298,33 +1314,45 @@ async def send_comanda_to_queue(order_id: str):
         prod_id = item.get("product_id", "")
         product = prod_map.get(prod_id, {})
         
-        # Priority: product's print_channels > category's channel > default 'kitchen'
+        # Determine target channels for THIS specific product
         product_channels = product.get("print_channels", [])
         
         if product_channels and len(product_channels) > 0:
-            # Product has specific channels (can be multiple for combos)
+            # Product has specific channels assigned (supports multi-channel for combos)
             target_channels = product_channels
         else:
-            # Fall back to category channel
+            # Fall back to category's channel mapping
             cat_id = product.get("category_id", "")
             channel_code = cat_to_channel.get(cat_id, "kitchen")
             target_channels = [channel_code]
         
-        # Add item to each target channel
+        # Add item ONLY to its target channel(s)
+        # This ensures Cocina only gets Cocina items, Bar only gets Bar items
         for channel_code in target_channels:
+            # Skip 'receipt' channel - receipts are handled separately with full bill
+            if channel_code == "receipt":
+                continue
             if channel_code not in items_by_channel:
                 items_by_channel[channel_code] = []
-            items_by_channel[channel_code].append(item)
+            items_by_channel[channel_code].append({
+                **item,
+                "product_name": item.get("product_name") or product.get("name", "?")
+            })
     
-    # Create print job for each channel with items
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # PAPER OPTIMIZATION: Only create tickets for channels with items
+    # If order only has drinks, no Cocina ticket is generated (and vice versa)
+    # ═══════════════════════════════════════════════════════════════════════════════
     jobs_created = []
     for channel_code, items in items_by_channel.items():
+        # Skip empty channels - no blank tickets
         if not items:
             continue
             
         channel = next((c for c in channels if c.get("code") == channel_code), None)
         printer_name = channel.get("printer_name", "") if channel else ""
         
+        # Build comanda data with ONLY the filtered items for this channel
         comanda_data = {
             "type": "comanda",
             "paper_width": 80,
@@ -1333,6 +1361,7 @@ async def send_comanda_to_queue(order_id: str):
             "waiter_name": order.get("waiter_name", ""),
             "order_number": order.get("id", "")[:8],
             "date": now_iso()[:19].replace("T", " "),
+            "items_count": len(items),  # For reference
             "items": [
                 {
                     "name": item.get("product_name", ""),
@@ -1356,7 +1385,17 @@ async def send_comanda_to_queue(order_id: str):
         await db.print_queue.insert_one(job)
         jobs_created.append({k: v for k, v in job.items() if k != "_id"})
     
-    return {"jobs": jobs_created, "count": len(jobs_created)}
+    # Log for debugging
+    channels_used = [j["channel"] for j in jobs_created]
+    items_per_channel = {j["channel"]: j["data"]["items_count"] for j in jobs_created}
+    logging.info(f"Comanda {order_id[:8]}: {len(jobs_created)} tickets created for channels {channels_used}, items: {items_per_channel}")
+    
+    return {
+        "jobs": jobs_created, 
+        "count": len(jobs_created),
+        "channels_used": channels_used,
+        "items_per_channel": items_per_channel
+    }
 
 
 # ─── TEST PRINT ───
