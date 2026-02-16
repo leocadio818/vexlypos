@@ -181,7 +181,7 @@ export default function Login() {
         <div className="mt-8 text-center">
           <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-3 max-w-[280px] mx-auto">
             <p className="text-[10px] text-white/40 mb-1">PINs de Demo:</p>
-            <p className="text-[11px] text-white/60">Admin: 1000 | Carlos: 1234 | Maria: 5678</p>
+            <p className="text-[11px] text-white/60">Admin: 10000 | Carlos: 1234 | Maria: 5678</p>
             <p className="text-[11px] text-white/60">Luis (Cajero): 4321 | Chef Pedro: 9999</p>
           </div>
         </div>
