@@ -547,9 +547,18 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Inicio automático**: Instrucciones para agregar al Startup de Windows
   - **Dependencias**: requests, pystray, Pillow, plyer, pywin32
 - [x] **Corrección de PIN de Admin** (Completado 16 Feb 2026) ✅
-  - PIN del Admin cambiado de `0000` a `1000` para cumplir con validación de no empezar con '0'
+  - PIN del Admin cambiado de `0000` a `10000` para cumplir con validación de no empezar con '0'
+  - Display de PIN actualizado para soportar hasta 8 dígitos
   - Actualizado en seed data (`server.py`) y en la base de datos existente
   - Login de demo en `Login.js` actualizado para mostrar el nuevo PIN
+- [x] **Asignación de Canal de Impresión por Producto** (Completado 16 Feb 2026) ✅
+  - **Campo en producto**: `print_channels` - array de códigos de canal
+  - **UI en ProductConfig.js**: Selector multi-canal debajo de "Controlar Inventario"
+  - **Opciones dinámicas**: Carga canales existentes (Cocina, Bar, Recibo) + "Usar el de la Categoría"
+  - **Multi-canal**: Permite seleccionar múltiples destinos (ej: Combo → Cocina + Bar)
+  - **Indicador visual**: Badges muestran "Imprimirá en: [canales seleccionados]"
+  - **Lógica de despacho**: Prioridad: producto > categoría > default 'kitchen'
+  - **Backend**: Crea trabajos de impresión separados por cada canal del producto
 
 ### P2 - Media Prioridad
 - [ ] **Seguridad Audit Trail**: Solo Admins pueden ver PINs en reportes de auditoría
