@@ -242,11 +242,11 @@ export default function Settings() {
     try {
       if (userDialog.editId) {
         const data = { name: userDialog.name, role: userDialog.role, permissions: userDialog.permissions };
-        if (userDialog.pin && userDialog.pin.length >= 4) data.pin = userDialog.pin;
+        if (userDialog.pin && userDialog.pin.length >= 1) data.pin = userDialog.pin; // Allow PIN from 1-8 digits
         await axios.put(`${API}/users/${userDialog.editId}`, data, { headers: hdrs() });
         toast.success('Usuario actualizado');
       } else {
-        if (!userDialog.pin || userDialog.pin.length < 4) { toast.error('PIN debe tener minimo 4 digitos'); return; }
+        if (!userDialog.pin || userDialog.pin.length < 1) { toast.error('PIN es requerido (1-8 dígitos)'); return; }
         await axios.post(`${API}/users`, { name: userDialog.name, pin: userDialog.pin, role: userDialog.role }, { headers: hdrs() });
         toast.success('Usuario creado');
       }
