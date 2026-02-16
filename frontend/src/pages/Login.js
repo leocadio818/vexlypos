@@ -26,7 +26,7 @@ export default function Login() {
   const handleClear = () => setPin('');
 
   const handleSubmit = async () => {
-    if (pin.length < 4) return;
+    if (pin.length < 1) return; // Allow any PIN length from 1-8 digits
     setLoading(true);
     try {
       const u = await login(pin);
