@@ -2653,6 +2653,30 @@ export default function Settings() {
               </div>
             </div>
 
+            {/* Print Channel Dropdown - NEW */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 flex items-center gap-2">
+                <Printer size={12} className="text-orange-500" />
+                Canal de Impresión Predeterminado
+              </label>
+              <select
+                value={categoryDialog.print_channel}
+                onChange={(e) => setCategoryDialog(p => ({ ...p, print_channel: e.target.value }))}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
+                data-testid="category-print-channel"
+              >
+                <option value="">Sin asignar (usa Cocina por defecto)</option>
+                {printChannels.filter(ch => ch.active).map(ch => (
+                  <option key={ch.id || ch.code} value={ch.code}>
+                    {ch.name} {ch.printer_name ? `→ ${ch.printer_name}` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Los productos de esta categoría se imprimirán en este canal automáticamente
+              </p>
+            </div>
+
             {/* Preview */}
             <div className="p-4 rounded-xl border-2" style={{ borderColor: categoryDialog.color + '50', backgroundColor: categoryDialog.color + '15' }}>
               <div className="flex items-center gap-3">
@@ -2662,6 +2686,12 @@ export default function Settings() {
                 <div>
                   <span className="font-oswald font-bold text-lg">{categoryDialog.name || 'Nombre de Categoría'}</span>
                   <p className="text-[10px] text-muted-foreground">Vista previa del botón</p>
+                  {categoryDialog.print_channel && (
+                    <Badge variant="outline" className="text-[9px] mt-1 border-orange-500/50 text-orange-500">
+                      <Printer size={10} className="mr-1" />
+                      {printChannels.find(ch => ch.code === categoryDialog.print_channel)?.name || categoryDialog.print_channel}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
