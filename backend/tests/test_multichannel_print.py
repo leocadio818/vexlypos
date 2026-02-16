@@ -155,7 +155,7 @@ class TestMultiChannelPrintJob:
         
         # 5. Send order to kitchen (should trigger print job creation)
         send_response = requests.post(
-            f"{BASE_URL}/api/orders/{order_id}/send",
+            f"{BASE_URL}/api/orders/{order_id}/send-kitchen",
             headers=headers
         )
         assert send_response.status_code == 200, f"Failed to send order: {send_response.text}"
