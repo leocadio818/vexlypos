@@ -35,6 +35,26 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **Propinas**: Cálculo automático con porcentajes predefinidos
 - **ITBIS**: Impuesto dominicano calculado automáticamente
 
+#### Gestión Fiscal Avanzada (NUEVO - Febrero 2026)
+- **Exenciones de Impuestos por Producto**:
+  - Nueva sección "Impuestos Aplicables" en editor de productos
+  - Todos los impuestos activos por defecto (ITBIS, Propina/LEY)
+  - Checkboxes para desmarcar impuestos de los que el producto está exento
+  - Visualización: Verde (Aplica) / Rojo (Exento)
+  - Campo `tax_exemptions[]` almacena IDs de impuestos exentos
+  
+- **Exenciones de Impuestos por Tipo de Venta**:
+  - Switches de impuestos en el modal de editar Tipo de Venta
+  - Ejemplo: "Delivery" puede no aplicar Propina de Ley automáticamente
+  - Badge de exenciones visible en lista de tipos de venta
+  - Campo `tax_exemptions[]` en sale_types
+
+- **Lógica de Cálculo Inteligente**:
+  - Motor de facturación calcula base gravable por impuesto
+  - Impuesto aplica solo si: activo globalmente + no exento en producto + no exento en tipo de venta
+  - Cálculo por item: permite exención granular (ej: bebidas exentas de propina)
+  - `tax_breakdown[]` incluye `taxable_base` para cada impuesto
+
 #### Cocina (KDS)
 - **Pantalla de Cocina**: Vista de órdenes pendientes por canal
 - **Pantalla TV**: Vista expandida para monitores de cocina
