@@ -134,11 +134,13 @@ class TestMultiChannelPrintJob:
         
         # 3. Add the multi-channel product (Tostones con Queso)
         item_data = {
-            "product_id": "2298613b-acb3-41f7-85fe-7d31a3cff3cb",
-            "product_name": "Tostones con Queso",
-            "quantity": 1,
-            "unit_price": 250,
-            "modifiers": []
+            "items": [{
+                "product_id": "2298613b-acb3-41f7-85fe-7d31a3cff3cb",
+                "product_name": "Tostones con Queso",
+                "quantity": 1,
+                "unit_price": 250,
+                "modifiers": []
+            }]
         }
         add_item_response = requests.post(
             f"{BASE_URL}/api/orders/{order_id}/items",
