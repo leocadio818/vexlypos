@@ -533,18 +533,22 @@ export default function PaymentScreen() {
                   ))}
                 </div>
                 
-                <div className={`mt-4 pt-4 border-t border-white/10 space-y-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                <div className={`mt-3 pt-3 border-t border-white/10 space-y-1 text-[11px]`}>
                   <div className="flex justify-between text-white/50">
                     <span>Subtotal</span>
-                    <span className="font-oswald">{formatMoney(bill.subtotal)}</span>
+                    <span className="font-oswald">{formatMoney(adjustedBill?.subtotal || bill.subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-white/50">
-                    <span>ITBIS ({bill.itbis_rate}%)</span>
-                    <span className="font-oswald">{formatMoney(bill.itbis)}</span>
+                    <span>ITBIS (18%)</span>
+                    <span className="font-oswald">{formatMoney(adjustedBill?.itbis || bill.itbis)}</span>
                   </div>
-                  <div className="flex justify-between text-white/50">
-                    <span>Propina ({bill.propina_percentage}%)</span>
-                    <span className="font-oswald">{formatMoney(bill.propina_legal)}</span>
+                  <div className={`flex justify-between ${(adjustedBill?.propina_legal || bill.propina_legal) > 0 ? 'text-white/50' : 'text-red-400/50 line-through'}`}>
+                    <span>Propina (10%)</span>
+                    <span className="font-oswald">{formatMoney(adjustedBill?.propina_legal || bill.propina_legal)}</span>
+                  </div>
+                  <div className="flex justify-between text-white font-bold pt-1 border-t border-white/10">
+                    <span>TOTAL</span>
+                    <span className="font-oswald text-cyan-400">{formatMoney(adjustedBill?.total || bill.total)}</span>
                   </div>
                 </div>
               </div>
