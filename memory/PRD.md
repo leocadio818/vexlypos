@@ -559,6 +559,12 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Indicador visual**: Badges muestran "Imprimirá en: [canales seleccionados]"
   - **Lógica de despacho**: Prioridad: producto > categoría > default 'kitchen'
   - **Backend**: Crea trabajos de impresión separados por cada canal del producto
+- [x] **Filtro de Contenido por Canal de Impresión** (Completado 16 Feb 2026) ✅
+  - **Validación de destino**: Órdenes mixtas generan tickets independientes por canal
+  - **Filtro por canal**: Cocina solo ve items de cocina, Bar solo ve bebidas
+  - **Consolidación en recibo**: Canal "Recibo" muestra cuenta completa para cobro
+  - **Optimización de papel**: No se generan tickets vacíos (solo bebidas = no ticket cocina)
+  - **Logging**: Se registra cantidad de tickets y canales usados por orden
 
 ### P2 - Media Prioridad
 - [ ] **Seguridad Audit Trail**: Solo Admins pueden ver PINs en reportes de auditoría
