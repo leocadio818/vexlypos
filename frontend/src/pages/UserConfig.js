@@ -1107,12 +1107,24 @@ export default function UserConfig() {
                   <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider">
                     Selecc. Puesto Labores
                   </h3>
+                  <p className="text-[10px] text-muted-foreground">
+                    Al cambiar el puesto, los permisos se cargarán automáticamente según el rol.
+                  </p>
                   
                   <div className="space-y-1">
                     {roles.map(role => (
                       <button
                         key={role.id}
-                        onClick={() => setUser(p => ({ ...p, role: role.code }))}
+                        onClick={() => {
+                          const newRole = role.code;
+                          const defaultPerms = ROLE_PERMISSIONS[newRole] || {};
+                          setUser(p => ({ 
+                            ...p, 
+                            role: newRole,
+                            permissions: { ...defaultPerms }
+                          }));
+                          toast.info(`Permisos cargados para ${role.name}`);
+                        }}
                         className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
                           user.role === role.code 
                             ? 'bg-primary text-primary-foreground font-semibold' 
@@ -1121,6 +1133,9 @@ export default function UserConfig() {
                       >
                         <span className="font-oswald mr-2 text-xs opacity-60">{role.level || '00'}</span>
                         {role.name}
+                        <span className="float-right text-[9px] opacity-60">
+                          {Object.values(ROLE_PERMISSIONS[role.code] || {}).filter(Boolean).length} permisos
+                        </span>
                       </button>
                     ))}
                   </div>
