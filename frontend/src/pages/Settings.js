@@ -1151,7 +1151,7 @@ export default function Settings() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-oswald text-base font-bold">Categorías de Productos</h2>
-                  <Button onClick={() => setCategoryDialog({ open: true, name: '', color: '#FF6600', editId: null })} size="sm"
+                  <Button onClick={() => setCategoryDialog({ open: true, name: '', color: '#FF6600', editId: null, print_channel: '' })} size="sm"
                     className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-category-btn">
                     <Plus size={14} className="mr-1" /> Nueva Categoría
                   </Button>
