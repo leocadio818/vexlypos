@@ -157,7 +157,7 @@ export default function Layout() {
             </button>
           </nav>
         </aside>
-      ) : (
+      ) : !shouldHideNav ? (
         // Tablet/Desktop Side Navigation - Glassmorphism
         <aside 
           className={`${isTablet ? 'w-16' : largeMode ? 'w-20 lg:w-24' : 'w-16 lg:w-20'} flex flex-col items-center py-3 lg:py-4 shrink-0 relative z-20 ${
