@@ -2888,8 +2888,7 @@ export default function Settings() {
                   const isExempt = (saleDialog.tax_exemptions || []).includes(tax.id);
                   const isApplied = !isExempt;
                   
-                  const toggleTax = (e) => {
-                    e.stopPropagation();
+                  const toggleTax = () => {
                     setSaleDialog(p => {
                       const current = p.tax_exemptions || [];
                       if (current.includes(tax.id)) {
