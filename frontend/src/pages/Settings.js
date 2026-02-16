@@ -2336,8 +2336,8 @@ export default function Settings() {
             <input value={userDialog.name} onChange={e => setUserDialog(p => ({ ...p, name: e.target.value }))}
               placeholder="Nombre completo" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-name-input" />
             <input value={userDialog.pin} onChange={e => setUserDialog(p => ({ ...p, pin: e.target.value }))}
-              placeholder={userDialog.editId ? "Nuevo PIN (vacio = no cambiar)" : "PIN (min 4 digitos)"}
-              type="password" maxLength={6} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-pin-input" />
+              placeholder={userDialog.editId ? "Nuevo PIN (vacío = no cambiar)" : "PIN (1-8 dígitos)"}
+              type="password" maxLength={8} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="user-pin-input" />
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Rol</label>
               <div className="flex gap-1 flex-wrap">
