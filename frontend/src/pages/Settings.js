@@ -49,6 +49,7 @@ export default function Settings() {
   const [payMethods, setPayMethods] = useState([]);
   const [saleTypes, setSaleTypes] = useState([]);
   const [printChannels, setPrintChannels] = useState([]);
+  const [categoryChannels, setCategoryChannels] = useState([]); // Category to channel mappings
   const [stationConfig, setStationConfig] = useState({ require_shift_to_sell: true, require_cash_count: false, auto_send_on_logout: true });
   const [roles, setRoles] = useState([]);
   const [roleDialog, setRoleDialog] = useState({ open: false, name: '', code: '', editId: null });
