@@ -1558,6 +1558,343 @@ async def update_printer_config(input: dict):
     )
     return {"ok": True}
 
+# ─── DOWNLOAD PRINT AGENT ───
+@api.get("/download/print-agent", response_class=PlainTextResponse)
+async def download_print_agent(printer_name: str = Query("Caja", description="Nombre de la impresora en Windows")):
+    """
+    Descarga el agente de impresión configurado para tu servidor y impresora.
+    Guárdalo como 'MesaPOS_PrintAgent.py' y ejecútalo con Python.
+    """
+    # Obtener la URL del servidor desde la configuración
+    server_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://pos-print-agent.preview.emergentagent.com')
+    
+    agent_code = f'''#!/usr/bin/env python3
+"""
+MESA POS RD - Agente de Impresion
+==================================
+Agente con icono en bandeja del sistema para Windows.
+
+INSTALACION RAPIDA:
+1. Instala Python desde https://www.python.org/downloads/
+2. Abre CMD como Administrador y ejecuta:
+   pip install requests pystray Pillow plyer pywin32
+
+3. Guarda este archivo como: MesaPOS_PrintAgent.py
+4. Doble click para ejecutar
+
+Para que inicie con Windows:
+- Presiona Win+R, escribe: shell:startup
+- Crea un acceso directo a este archivo ahi
+
+"""
+
+import os
+import sys
+import time
+import threading
+import requests
+from datetime import datetime
+
+# ============ CONFIGURACION ============
+SERVER_URL = "{server_url}"
+PRINTER_NAME = "{printer_name}"
+POLL_INTERVAL = 3
+
+# Windows printer support
+try:
+    import win32print
+    from PIL import Image, ImageDraw
+    import pystray
+    from pystray import MenuItem as item
+    WIN32_AVAILABLE = True
+except ImportError:
+    WIN32_AVAILABLE = False
+    print("ERROR: Faltan dependencias. Ejecuta:")
+    print("  pip install requests pystray Pillow plyer pywin32")
+    input("Presiona Enter para salir...")
+    sys.exit(1)
+
+try:
+    from plyer import notification
+    PLYER_AVAILABLE = True
+except ImportError:
+    PLYER_AVAILABLE = False
+
+class AgentState:
+    def __init__(self):
+        self.running = True
+        self.status = "starting"
+        self.printer_name = PRINTER_NAME
+        self.server_url = SERVER_URL
+        self.last_error = ""
+        self.jobs_printed = 0
+        self.icon = None
+        
+state = AgentState()
+
+def create_icon_image(color):
+    size = 64
+    image = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([4, 4, size-4, size-4], fill=color, outline='white')
+    draw.rectangle([16, 24, 48, 44], fill='white', outline='black')
+    draw.rectangle([20, 12, 44, 26], fill='white', outline='black')
+    draw.rectangle([18, 42, 46, 52], fill='white', outline='black')
+    return image
+
+ICON_GREEN = None
+ICON_YELLOW = None  
+ICON_RED = None
+
+def init_icons():
+    global ICON_GREEN, ICON_YELLOW, ICON_RED
+    ICON_GREEN = create_icon_image('#22C55E')
+    ICON_YELLOW = create_icon_image('#EAB308')
+    ICON_RED = create_icon_image('#EF4444')
+
+def show_notification(title, message, timeout=5):
+    if PLYER_AVAILABLE:
+        try:
+            notification.notify(title=title, message=message, app_name="Mesa POS", timeout=timeout)
+        except:
+            pass
+
+def get_windows_printers():
+    try:
+        return [p[2] for p in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
+    except:
+        return []
+
+def check_printer_exists(printer_name):
+    return printer_name in get_windows_printers()
+
+def print_raw_to_windows(printer_name, data):
+    hprinter = win32print.OpenPrinter(printer_name)
+    try:
+        win32print.StartDocPrinter(hprinter, 1, ("Mesa POS Job", None, "RAW"))
+        try:
+            win32print.StartPagePrinter(hprinter)
+            if isinstance(data, str):
+                data = data.encode('cp437', errors='replace')
+            win32print.WritePrinter(hprinter, data)
+            win32print.EndPagePrinter(hprinter)
+        finally:
+            win32print.EndDocPrinter(hprinter)
+    finally:
+        win32print.ClosePrinter(hprinter)
+
+def build_escpos_data(commands):
+    ESC, GS = b'\\x1b', b'\\x1d'
+    data = bytearray(ESC + b'@')
+    
+    for cmd in commands:
+        cmd_type = cmd.get("type", "")
+        text = cmd.get("text", "")
+        
+        if cmd_type == "center":
+            data.extend(ESC + b'a\\x01')
+            if cmd.get("bold"): data.extend(ESC + b'E\\x01')
+            if cmd.get("size") == "large": data.extend(GS + b'!\\x11')
+            data.extend(text.encode('cp437', errors='replace') + b'\\n')
+            data.extend(ESC + b'E\\x00' + GS + b'!\\x00')
+        elif cmd_type == "left":
+            data.extend(ESC + b'a\\x00')
+            if cmd.get("bold"): data.extend(ESC + b'E\\x01')
+            if cmd.get("size") == "large": data.extend(GS + b'!\\x11')
+            data.extend(text.encode('cp437', errors='replace') + b'\\n')
+            data.extend(ESC + b'E\\x00' + GS + b'!\\x00')
+        elif cmd_type == "right":
+            data.extend(ESC + b'a\\x02')
+            data.extend(text.encode('cp437', errors='replace') + b'\\n')
+        elif cmd_type == "columns":
+            data.extend(ESC + b'a\\x00')
+            left, right = cmd.get("left", ""), cmd.get("right", "")
+            spaces = max(1, 48 - len(left) - len(right))
+            if cmd.get("bold"): data.extend(ESC + b'E\\x01')
+            data.extend((left + " " * spaces + right).encode('cp437', errors='replace') + b'\\n')
+            data.extend(ESC + b'E\\x00')
+        elif cmd_type == "divider":
+            data.extend(b'-' * 48 + b'\\n')
+        elif cmd_type == "feed":
+            data.extend(b'\\n' * cmd.get("lines", 1))
+        elif cmd_type == "cut":
+            data.extend(GS + b'V\\x00')
+    
+    return bytes(data)
+
+def check_server():
+    try:
+        r = requests.get(f"{{state.server_url}}/api", timeout=5)
+        return r.status_code == 200
+    except:
+        return False
+
+def get_pending_jobs():
+    try:
+        r = requests.get(f"{{state.server_url}}/api/print-queue/pending", params={{"printer": state.printer_name}}, timeout=10)
+        return r.json() if r.status_code == 200 else []
+    except Exception as e:
+        state.last_error = str(e)
+        return []
+
+def mark_job_complete(job_id, success=True):
+    try:
+        requests.post(f"{{state.server_url}}/api/print-queue/{{job_id}}/complete", json={{"success": success}}, timeout=5)
+    except:
+        pass
+
+def update_icon_status():
+    if state.icon:
+        state.icon.icon = ICON_RED if state.status == "error" else (ICON_YELLOW if state.status == "printing" else ICON_GREEN)
+
+def print_worker():
+    processed = set()
+    
+    if not check_printer_exists(state.printer_name):
+        state.status = "error"
+        state.last_error = f"Impresora '{{state.printer_name}}' no encontrada"
+        show_notification("Error", f"No se encontro '{{state.printer_name}}'\\nDisponibles: {{', '.join(get_windows_printers())}}")
+        update_icon_status()
+    else:
+        state.status = "connected"
+        show_notification("Mesa POS Activo", f"Conectado a: {{state.printer_name}}")
+        update_icon_status()
+    
+    while state.running:
+        try:
+            if not check_server():
+                if state.status != "error":
+                    state.status = "error"
+                    state.last_error = "Sin conexion al servidor"
+                    update_icon_status()
+                time.sleep(POLL_INTERVAL)
+                continue
+            
+            jobs = get_pending_jobs()
+            
+            if state.status == "error" and state.last_error == "Sin conexion al servidor":
+                state.status = "connected"
+                update_icon_status()
+            
+            for job in jobs:
+                job_id = job.get("id", "")
+                if job_id in processed:
+                    continue
+                
+                job_printer = job.get("printer_name", PRINTER_NAME)
+                if job_printer != state.printer_name:
+                    continue
+                
+                state.status = "printing"
+                update_icon_status()
+                
+                try:
+                    commands = job.get("commands", [])
+                    if commands:
+                        raw_data = build_escpos_data(commands)
+                        print_raw_to_windows(state.printer_name, raw_data)
+                        state.jobs_printed += 1
+                        mark_job_complete(job_id, True)
+                    processed.add(job_id)
+                except Exception as e:
+                    state.last_error = str(e)
+                    state.status = "error"
+                    update_icon_status()
+                    show_notification("Error de Impresion", str(e)[:100])
+                    mark_job_complete(job_id, False)
+                    processed.add(job_id)
+                finally:
+                    if state.status == "printing":
+                        state.status = "connected"
+                        update_icon_status()
+            
+            if len(processed) > 100:
+                processed = set(list(processed)[-50:])
+            
+            time.sleep(POLL_INTERVAL)
+        except Exception as e:
+            time.sleep(POLL_INTERVAL)
+
+def on_quit(icon, item):
+    state.running = False
+    icon.stop()
+
+def on_test_print(icon, item):
+    try:
+        cmds = [
+            {{"type": "center", "text": "=" * 32}},
+            {{"type": "center", "text": "MESA POS RD", "bold": True, "size": "large"}},
+            {{"type": "center", "text": "=" * 32}},
+            {{"type": "feed", "lines": 1}},
+            {{"type": "center", "text": "PRUEBA DE IMPRESION", "bold": True}},
+            {{"type": "left", "text": f"Fecha: {{datetime.now().strftime('%Y-%m-%d %H:%M')}}"}},
+            {{"type": "left", "text": f"Impresora: {{state.printer_name}}"}},
+            {{"type": "feed", "lines": 1}},
+            {{"type": "center", "text": "Todo funciona correctamente!"}},
+            {{"type": "feed", "lines": 2}},
+            {{"type": "cut"}}
+        ]
+        print_raw_to_windows(state.printer_name, build_escpos_data(cmds))
+        show_notification("Exito", "Prueba impresa correctamente")
+    except Exception as e:
+        show_notification("Error", str(e)[:100])
+
+def on_show_status(icon, item):
+    msg = f"Estado: {{state.status}}\\nImpresora: {{state.printer_name}}\\nTrabajos: {{state.jobs_printed}}"
+    if state.last_error:
+        msg += f"\\nError: {{state.last_error[:50]}}"
+    show_notification("Estado", msg, timeout=10)
+
+def on_show_printers(icon, item):
+    printers = get_windows_printers()
+    msg = "Impresoras:\\n" + "\\n".join(f"- {{p}}" for p in printers[:5]) if printers else "No hay impresoras"
+    show_notification("Impresoras", msg, timeout=10)
+
+def create_menu():
+    return pystray.Menu(
+        item('Estado', on_show_status),
+        item('Imprimir Prueba', on_test_print),
+        item('Ver Impresoras', on_show_printers),
+        pystray.Menu.SEPARATOR,
+        item('Salir', on_quit)
+    )
+
+def main():
+    print("Mesa POS RD - Agente de Impresion")
+    print("=" * 40)
+    print(f"Servidor: {{state.server_url}}")
+    print(f"Impresora: {{state.printer_name}}")
+    print(f"Disponibles: {{get_windows_printers()}}")
+    print("=" * 40)
+    
+    init_icons()
+    threading.Thread(target=print_worker, daemon=True).start()
+    
+    state.icon = pystray.Icon("mesa_pos", ICON_GREEN, "Mesa POS - Impresion", menu=create_menu())
+    state.icon.run()
+
+if __name__ == "__main__":
+    main()
+'''
+    
+    return agent_code
+
+@api.get("/download/print-agent-info")
+async def get_print_agent_info():
+    """Información sobre el agente de impresión"""
+    return {
+        "download_url": "/api/download/print-agent",
+        "instructions": [
+            "1. Instala Python desde https://www.python.org/downloads/",
+            "2. Abre CMD como Administrador y ejecuta: pip install requests pystray Pillow plyer pywin32",
+            "3. Descarga el agente desde /api/download/print-agent?printer_name=TuImpresora",
+            "4. Guárdalo como MesaPOS_PrintAgent.py",
+            "5. Doble click para ejecutar",
+            "6. Para inicio automático: Win+R → shell:startup → crear acceso directo"
+        ],
+        "requirements": ["Python 3.8+", "requests", "pystray", "Pillow", "plyer", "pywin32"]
+    }
+
 # ─── APP CONFIG ───
 app.include_router(api)
 app.add_middleware(
