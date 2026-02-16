@@ -536,19 +536,25 @@ export default function PaymentScreen() {
                 <div className={`mt-3 pt-3 border-t border-white/10 space-y-1 text-[11px]`}>
                   <div className="flex justify-between text-white/50">
                     <span>Subtotal</span>
-                    <span className="font-oswald">{formatMoney(adjustedBill?.subtotal || bill.subtotal)}</span>
+                    <span className="font-oswald">{formatMoney(adjustedBill?.subtotal ?? bill.subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-white/50">
                     <span>ITBIS (18%)</span>
-                    <span className="font-oswald">{formatMoney(adjustedBill?.itbis || bill.itbis)}</span>
+                    <span className="font-oswald">{formatMoney(adjustedBill?.itbis ?? bill.itbis)}</span>
                   </div>
-                  <div className={`flex justify-between ${(adjustedBill?.propina_legal || bill.propina_legal) > 0 ? 'text-white/50' : 'text-red-400/50 line-through'}`}>
-                    <span>Propina (10%)</span>
-                    <span className="font-oswald">{formatMoney(adjustedBill?.propina_legal || bill.propina_legal)}</span>
-                  </div>
+                  {(() => {
+                    const propinaValue = adjustedBill?.propina_legal ?? bill.propina_legal ?? 0;
+                    const isExempt = propinaValue === 0;
+                    return (
+                      <div className={`flex justify-between ${isExempt ? 'text-red-400/50 line-through' : 'text-white/50'}`}>
+                        <span>Propina (10%)</span>
+                        <span className="font-oswald">{formatMoney(propinaValue)}</span>
+                      </div>
+                    );
+                  })()}
                   <div className="flex justify-between text-white font-bold pt-1 border-t border-white/10">
                     <span>TOTAL</span>
-                    <span className="font-oswald text-cyan-400">{formatMoney(adjustedBill?.total || bill.total)}</span>
+                    <span className="font-oswald text-cyan-400">{formatMoney(adjustedBill?.total ?? bill.total)}</span>
                   </div>
                 </div>
               </div>
