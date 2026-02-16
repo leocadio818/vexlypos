@@ -2851,6 +2851,196 @@ export default function Settings() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Factory Reset Dialog - Admin Only */}
+      <Dialog open={resetDialog.open} onOpenChange={(open) => setResetDialog(prev => ({ ...prev, open, showWarning: false, confirmPin: '' }))}>
+        <DialogContent className="sm:max-w-[500px] bg-card border-destructive/30">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive font-oswald">
+              <ShieldAlert size={24} />
+              Resetear Sistema a Fábrica
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Selecciona los datos que deseas eliminar permanentemente del sistema.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {!resetDialog.showWarning ? (
+            <>
+              {/* Selection Panel */}
+              <div className="space-y-4 py-4">
+                {/* Reset Sales */}
+                <div 
+                  className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                    resetDialog.resetSales 
+                      ? 'bg-red-500/10 border-red-500/50' 
+                      : 'bg-background border-border hover:border-muted-foreground'
+                  }`}
+                  onClick={() => setResetDialog(prev => ({ ...prev, resetSales: !prev.resetSales }))}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      resetDialog.resetSales ? 'bg-red-500' : 'bg-muted'
+                    }`}>
+                      <BarChart3 size={16} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">Historial de Ventas</p>
+                      <p className="text-[10px] text-muted-foreground">Órdenes, facturas, turnos, cola de impresión</p>
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={resetDialog.resetSales} 
+                    onCheckedChange={(v) => setResetDialog(prev => ({ ...prev, resetSales: v }))}
+                    data-testid="reset-sales-switch"
+                  />
+                </div>
+
+                {/* Reset Inventory */}
+                <div 
+                  className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                    resetDialog.resetInventory 
+                      ? 'bg-red-500/10 border-red-500/50' 
+                      : 'bg-background border-border hover:border-muted-foreground'
+                  }`}
+                  onClick={() => setResetDialog(prev => ({ ...prev, resetInventory: !prev.resetInventory }))}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      resetDialog.resetInventory ? 'bg-red-500' : 'bg-muted'
+                    }`}>
+                      <Package size={16} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">Datos de Inventario</p>
+                      <p className="text-[10px] text-muted-foreground">Movimientos de stock, compras, transacciones</p>
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={resetDialog.resetInventory} 
+                    onCheckedChange={(v) => setResetDialog(prev => ({ ...prev, resetInventory: v }))}
+                    data-testid="reset-inventory-switch"
+                  />
+                </div>
+
+                {/* Reset Users */}
+                <div 
+                  className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                    resetDialog.resetUsers 
+                      ? 'bg-red-500/10 border-red-500/50' 
+                      : 'bg-background border-border hover:border-muted-foreground'
+                  }`}
+                  onClick={() => setResetDialog(prev => ({ ...prev, resetUsers: !prev.resetUsers }))}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      resetDialog.resetUsers ? 'bg-red-500' : 'bg-muted'
+                    }`}>
+                      <Users size={16} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">Lista de Usuarios</p>
+                      <p className="text-[10px] text-muted-foreground">Elimina todos excepto Admin (PIN: 11331744)</p>
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={resetDialog.resetUsers} 
+                    onCheckedChange={(v) => setResetDialog(prev => ({ ...prev, resetUsers: v }))}
+                    data-testid="reset-users-switch"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setResetDialog(prev => ({ ...prev, open: false }))}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => setResetDialog(prev => ({ ...prev, showWarning: true }))}
+                  disabled={!resetDialog.resetSales && !resetDialog.resetInventory && !resetDialog.resetUsers}
+                  data-testid="continue-reset-btn"
+                >
+                  Continuar
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              {/* Warning Confirmation */}
+              <div className="py-4 space-y-4">
+                <Alert variant="destructive" className="border-2 border-red-500 bg-red-500/10">
+                  <ShieldAlert className="h-5 w-5" />
+                  <AlertTitle className="font-oswald text-lg">¡ADVERTENCIA!</AlertTitle>
+                  <AlertDescription className="mt-2">
+                    <p className="font-bold mb-2">Esta acción es IRREVERSIBLE.</p>
+                    <p className="text-sm mb-3">Se eliminarán permanentemente los siguientes datos:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      {resetDialog.resetSales && <li>Todas las órdenes, facturas y turnos</li>}
+                      {resetDialog.resetInventory && <li>Todos los movimientos y transacciones de inventario</li>}
+                      {resetDialog.resetUsers && (
+                        <li>
+                          Todos los usuarios <span className="font-bold">(excepto Admin)</span>
+                          <br/>
+                          <span className="text-yellow-400 text-xs">El PIN del Admin será cambiado a: 11331744</span>
+                        </li>
+                      )}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+
+                {/* PIN Confirmation */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">
+                    Ingresa tu PIN de Administrador para confirmar:
+                  </label>
+                  <input
+                    type="password"
+                    value={resetDialog.confirmPin}
+                    onChange={(e) => setResetDialog(prev => ({ ...prev, confirmPin: e.target.value }))}
+                    placeholder="PIN de Admin"
+                    className="w-full bg-background border-2 border-destructive/50 rounded-lg px-4 py-3 text-center text-lg font-mono tracking-widest focus:border-destructive focus:outline-none"
+                    maxLength={8}
+                    data-testid="confirm-pin-input"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setResetDialog(prev => ({ ...prev, showWarning: false, confirmPin: '' }))}
+                  disabled={resetDialog.loading}
+                >
+                  Volver
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={handleFactoryReset}
+                  disabled={!resetDialog.confirmPin || resetDialog.loading}
+                  className="min-w-[150px]"
+                  data-testid="confirm-reset-btn"
+                >
+                  {resetDialog.loading ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} className="mr-2" />
+                      EJECUTAR RESET
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
