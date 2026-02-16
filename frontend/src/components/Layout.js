@@ -376,10 +376,10 @@ export default function Layout() {
             </Button>
           </div>
         </aside>
-      )}
+      ) : null}
 
       {/* Main content */}
-      <main className={`flex-1 overflow-auto relative z-10 ${isMobile ? 'pb-20' : ''}`}>
+      <main className={`flex-1 overflow-auto relative z-10 ${isMobile && !shouldHideNav ? 'pb-20' : ''}`}>
         <Outlet />
       </main>
     </div>
