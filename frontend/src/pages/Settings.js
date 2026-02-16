@@ -2859,7 +2859,7 @@ export default function Settings() {
 
       {/* Sale Type Dialog */}
       <Dialog open={saleDialog.open} onOpenChange={(o) => !o && setSaleDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="saletype-dialog">
+        <DialogContent className="max-w-md bg-card border-border" data-testid="saletype-dialog">
           <DialogHeader><DialogTitle className="font-oswald">{saleDialog.editId ? 'Editar' : 'Nuevo'} Tipo de Venta</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={saleDialog.name} onChange={e => setSaleDialog(p => ({ ...p, name: e.target.value }))}
@@ -2878,6 +2878,72 @@ export default function Settings() {
                   type="number" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
               </div>
             </div>
+            
+            {/* Impuestos Aplicables - NEW */}
+            <div className="p-3 rounded-lg bg-background border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign size={14} className="text-green-500" />
+                <span className="text-sm font-semibold">Impuestos Aplicables</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-3">
+                Desmarca los impuestos que NO aplican a este tipo de venta (ej: Delivery sin propina).
+              </p>
+              
+              <div className="space-y-2">
+                {taxConfig.filter(tax => tax.active).map(tax => {
+                  const isExempt = (saleDialog.tax_exemptions || []).includes(tax.id);
+                  const isApplied = !isExempt;
+                  return (
+                    <div 
+                      key={tax.id}
+                      className={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${
+                        isApplied 
+                          ? 'bg-green-500/10 border-green-500/50' 
+                          : 'bg-red-500/5 border-red-500/30'
+                      }`}
+                      onClick={() => {
+                        setSaleDialog(p => {
+                          const current = p.tax_exemptions || [];
+                          if (current.includes(tax.id)) {
+                            return { ...p, tax_exemptions: current.filter(id => id !== tax.id) };
+                          } else {
+                            return { ...p, tax_exemptions: [...current, tax.id] };
+                          }
+                        });
+                      }}
+                      data-testid={`saletype-tax-${tax.id}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Switch 
+                          checked={isApplied}
+                          onCheckedChange={() => {
+                            setSaleDialog(p => {
+                              const current = p.tax_exemptions || [];
+                              if (current.includes(tax.id)) {
+                                return { ...p, tax_exemptions: current.filter(id => id !== tax.id) };
+                              } else {
+                                return { ...p, tax_exemptions: [...current, tax.id] };
+                              }
+                            });
+                          }}
+                        />
+                        <div>
+                          <span className="text-sm font-medium">{tax.description}</span>
+                          <span className="text-[10px] text-muted-foreground ml-2">{tax.rate}%</span>
+                        </div>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-[9px] ${isApplied ? 'border-green-500/50 text-green-500' : 'border-red-500/50 text-red-500'}`}
+                      >
+                        {isApplied ? 'Aplica' : 'Exento'}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
             <Button onClick={handleSaveSaleType} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
               {saleDialog.editId ? 'GUARDAR' : 'CREAR'}
             </Button>
