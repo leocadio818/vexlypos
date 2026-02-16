@@ -142,16 +142,18 @@ export default function Settings() {
       setUsers(uRes.data); setPayMethods(pmRes.data);
       setModifiers(modRes.data);
       try {
-        const [stRes, pcRes, scRes, sysRes, tzRes] = await Promise.all([
+        const [stRes, pcRes, scRes, sysRes, tzRes, ccRes] = await Promise.all([
           axios.get(`${API}/sale-types`, { headers: hdrs() }),
           axios.get(`${API}/print-channels`, { headers: hdrs() }),
           axios.get(`${API}/station-config`, { headers: hdrs() }),
           axios.get(`${API}/system/config`, { headers: hdrs() }),
           axios.get(`${API}/system/timezones`, { headers: hdrs() }),
+          axios.get(`${API}/category-channels`, { headers: hdrs() }),
         ]);
         setSaleTypes(stRes.data); setPrintChannels(pcRes.data); setStationConfig(scRes.data);
         setSystemConfig(sysRes.data);
         setTimezones(tzRes.data);
+        setCategoryChannels(ccRes.data || []);
         const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
         setRoles(rolesRes.data);
         const taxRes = await axios.get(`${API}/tax-config`, { headers: hdrs() });
