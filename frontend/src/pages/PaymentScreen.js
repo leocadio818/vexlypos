@@ -144,19 +144,35 @@ export default function PaymentScreen() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [billRes, pmRes, custRes] = await Promise.all([
+      const [billRes, pmRes, custRes, stRes, taxRes] = await Promise.all([
         billsAPI.get(billId),
         fetch(`${API_BASE}/api/payment-methods`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
-        fetch(`${API_BASE}/api/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json())
+        fetch(`${API_BASE}/api/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
+        fetch(`${API_BASE}/api/sale-types`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
+        fetch(`${API_BASE}/api/tax-config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json())
       ]);
-      setBill(billRes.data);
+      const billData = billRes.data;
+      setBill(billData);
+      setAdjustedBill(billData); // Initially same as bill
       const sortedMethods = pmRes.filter(m => m.active).sort((a, b) => (a.order || 0) - (b.order || 0));
       setPaymentMethods(sortedMethods);
       setCustomers(custRes);
+      setSaleTypes(stRes.filter(st => st.active));
+      setTaxConfig(taxRes.filter(t => t.active));
+      
+      // Set default service type based on bill's sale_type or first available
+      if (billData.sale_type && stRes.length > 0) {
+        const matchingST = stRes.find(st => st.code === billData.sale_type);
+        setSelectedServiceType(matchingST || stRes[0]);
+      } else if (stRes.length > 0) {
+        setSelectedServiceType(stRes[0]);
+      }
+      
       try {
         const configRes = await fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
         const config = await configRes.json();
         if (config.quick_amounts) setQuickAmounts(config.quick_amounts);
+      } catch {}
       } catch {}
     } catch {
       toast.error('Error cargando datos');
