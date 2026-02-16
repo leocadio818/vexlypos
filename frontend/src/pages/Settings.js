@@ -117,6 +117,17 @@ export default function Settings() {
   const [warehouses, setWarehouses] = useState([]);
   const [savingInventorySettings, setSavingInventorySettings] = useState(false);
 
+  // Factory Reset State (Admin Only)
+  const [resetDialog, setResetDialog] = useState({
+    open: false,
+    resetSales: false,
+    resetInventory: false,
+    resetUsers: false,
+    confirmPin: '',
+    showWarning: false,
+    loading: false
+  });
+
   const fetchAll = async () => {
     try {
       const [aRes, tRes, rRes, cRes, pRes, uRes, pmRes, modRes] = await Promise.all([
