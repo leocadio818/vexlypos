@@ -155,6 +155,7 @@ async def create_product(input: dict):
         "modifier_assignments": modifier_assignments,
         "track_inventory": input.get("track_inventory", False),
         "print_channels": input.get("print_channels", []),  # Array of channel codes for multi-channel printing
+        "tax_exemptions": input.get("tax_exemptions", []),  # Array of tax IDs this product is exempt from
         "active": True
     }
     await db.products.insert_one(doc)
