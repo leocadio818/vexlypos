@@ -297,13 +297,28 @@ export default function Settings() {
     if (!categoryDialog.name) return;
     try {
       const data = { name: categoryDialog.name, color: categoryDialog.color };
+      let categoryId = categoryDialog.editId;
+      
       if (categoryDialog.editId) {
         await categoriesAPI.update(categoryDialog.editId, data);
       } else {
-        await categoriesAPI.create(data);
+        const result = await categoriesAPI.create(data);
+        categoryId = result.data?.id;
       }
+      
+      // Sync print channel assignment automatically
+      if (categoryId && categoryDialog.print_channel) {
+        await axios.post(`${API}/category-channels`, {
+          category_id: categoryId,
+          channel_code: categoryDialog.print_channel
+        }, { headers: hdrs() });
+      } else if (categoryId && !categoryDialog.print_channel) {
+        // Remove channel assignment if cleared
+        await axios.delete(`${API}/category-channels/${categoryId}`, { headers: hdrs() }).catch(() => {});
+      }
+      
       toast.success(categoryDialog.editId ? 'Categoría actualizada' : 'Categoría creada');
-      setCategoryDialog({ open: false, name: '', color: '#FF6600', editId: null }); 
+      setCategoryDialog({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '' }); 
       fetchAll();
     } catch { toast.error('Error al guardar categoría'); }
   };
