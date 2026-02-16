@@ -579,6 +579,7 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - **Redundancia eliminada**: Quitada sub-pestaña "Categorías" de Impresión
   - **UX mejorada**: De 7 pasos a 1 paso para asignar canal a categoría
   - **Vista previa**: Badge en preview del botón muestra canal asignado
+  - **Bug fix (16 Feb 2026)**: Filtro de canales con código vacío en dropdown para evitar fallos de persistencia
 
 ### P2 - Media Prioridad
 - [ ] **Seguridad Audit Trail**: Solo Admins pueden ver PINs en reportes de auditoría
