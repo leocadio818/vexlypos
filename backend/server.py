@@ -352,10 +352,20 @@ async def list_print_channels():
 
 @api.post("/print-channels")
 async def create_print_channel(input: dict):
+    name = input.get("name", "Canal")
+    # Auto-generate code from name if not provided
+    code = input.get("code", "").strip()
+    if not code:
+        # Generate code: lowercase, replace spaces with underscores, remove special chars
+        import re
+        code = re.sub(r'[^a-z0-9_]', '', name.lower().replace(' ', '_').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n'))
+        if not code:
+            code = f"channel_{gen_id()[:8]}"
+    
     doc = {
         "id": gen_id(), 
-        "name": input.get("name", ""), 
-        "code": input.get("code", "kitchen"),
+        "name": name, 
+        "code": code,
         "printer_name": input.get("printer_name", ""),
         "active": input.get("active", True),
         "category_ids": input.get("category_ids", [])
