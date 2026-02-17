@@ -2100,22 +2100,75 @@ export default function OrderScreen() {
         </DialogContent>
       </Dialog>
 
-      {/* Manager PIN Authorization Dialog */}
-      <Dialog open={managerPinDialog.open} onOpenChange={(o) => !o && setManagerPinDialog({ open: false, pin: '' })}>
-        <DialogContent className="max-w-xs bg-card border-border" data-testid="manager-pin-dialog">
+      {/* Manager PIN Authorization Dialog - Updated for 8-digit PIN */}
+      <Dialog open={managerPinDialog.open} onOpenChange={(o) => !o && setManagerPinDialog({ open: false, pin: '', error: '' })}>
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="manager-pin-dialog">
           <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2">
             <Lock size={18} className="text-yellow-500" /> Autorizacion de Gerente
           </DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">Esta pre-cuenta ya fue impresa. Se requiere PIN de gerente para reimprimir.</p>
-            <input value={managerPinDialog.pin} onChange={e => setManagerPinDialog(p => ({ ...p, pin: e.target.value }))}
-              type="password" maxLength={6} placeholder="PIN de gerente"
-              autoFocus
-              onKeyDown={e => { if (e.key === 'Enter') handleManagerAuth(); }}
-              className="w-full bg-background border border-border rounded-lg px-3 py-3 text-center text-2xl font-oswald tracking-widest"
-              data-testid="manager-pin-input" />
-            <Button onClick={handleManagerAuth} disabled={!managerPinDialog.pin || managerPinDialog.pin.length < 1}
-              className="w-full h-11 bg-yellow-600 text-black font-oswald font-bold active:scale-95" data-testid="confirm-manager-pin">
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground text-center">
+              Esta pre-cuenta ya fue impresa. Se requiere PIN de gerente para reimprimir (1-8 dígitos).
+            </p>
+            
+            {/* PIN Display - 8 circles */}
+            <div className="flex justify-center gap-2 py-2">
+              {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
+                <div 
+                  key={i} 
+                  className={`w-3.5 h-3.5 rounded-full border-2 transition-all ${
+                    managerPinDialog.pin.length > i 
+                      ? 'bg-yellow-500 border-yellow-500 scale-110 shadow-lg shadow-yellow-500/30' 
+                      : 'bg-transparent border-muted-foreground/40'
+                  }`}
+                />
+              ))}
+            </div>
+            
+            {/* Error Message */}
+            {managerPinDialog.error && (
+              <p className="text-center text-xs text-destructive font-medium">
+                {managerPinDialog.error}
+              </p>
+            )}
+            
+            {/* Numeric Keypad */}
+            <div className="grid grid-cols-3 gap-2 max-w-[260px] mx-auto">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'CLR', '0', '⌫'].map(key => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    if (key === 'CLR') {
+                      setManagerPinDialog(p => ({ ...p, pin: '', error: '' }));
+                    } else if (key === '⌫') {
+                      setManagerPinDialog(p => ({ ...p, pin: p.pin.slice(0, -1), error: '' }));
+                    } else if (managerPinDialog.pin.length < 8) {
+                      // Prevent leading zero
+                      if (key === '0' && managerPinDialog.pin.length === 0) {
+                        setManagerPinDialog(p => ({ ...p, error: 'PIN no puede iniciar con 0' }));
+                        return;
+                      }
+                      setManagerPinDialog(p => ({ ...p, pin: p.pin + key, error: '' }));
+                    }
+                  }}
+                  className={`h-14 rounded-xl font-oswald text-xl font-bold transition-all active:scale-95 ${
+                    key === 'CLR' ? 'bg-muted text-muted-foreground text-sm' :
+                    key === '⌫' ? 'bg-muted text-muted-foreground' :
+                    'bg-background border-2 border-border hover:border-yellow-500/50'
+                  }`}
+                  data-testid={`manager-pin-key-${key === '⌫' ? 'del' : key.toLowerCase()}`}
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+            
+            <Button 
+              onClick={handleManagerAuth} 
+              disabled={!managerPinDialog.pin || managerPinDialog.pin.length < 1}
+              className="w-full h-12 bg-yellow-600 hover:bg-yellow-500 text-black font-oswald font-bold active:scale-95" 
+              data-testid="confirm-manager-pin"
+            >
               AUTORIZAR RE-IMPRESION
             </Button>
           </div>
