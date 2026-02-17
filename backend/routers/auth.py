@@ -338,3 +338,48 @@ async def update_role(rid: str, input: dict):
 async def delete_role(rid: str):
     await db.custom_roles.delete_one({"id": rid})
     return {"ok": True}
+
+
+# ─── MANAGER VERIFICATION ───
+
+@router.post("/auth/verify-manager")
+async def verify_manager(input: dict, user=Depends(get_current_user)):
+    """
+    Verify a manager PIN for authorization.
+    Only admin, supervisor, or users with manager_on_duty flag can authorize.
+    """
+    pin = input.get("pin", "")
+    
+    if not pin:
+        raise HTTPException(status_code=400, detail="PIN es requerido")
+    
+    # Validate PIN format
+    if not pin.isdigit():
+        raise HTTPException(status_code=400, detail="El PIN debe ser numérico")
+    
+    if len(pin) < 1 or len(pin) > 8:
+        raise HTTPException(status_code=400, detail="El PIN debe tener entre 1 y 8 dígitos")
+    
+    if pin.startswith("0"):
+        raise HTTPException(status_code=400, detail="El PIN no puede iniciar con 0")
+    
+    # Find user by PIN
+    hashed = hash_pin(pin)
+    manager = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
+    
+    if not manager:
+        raise HTTPException(status_code=401, detail="PIN incorrecto")
+    
+    # Check if user has manager authorization (admin, supervisor, or manager_on_duty)
+    role = manager.get("role", "")
+    is_manager = role in ["admin", "supervisor"] or manager.get("manager_on_duty", False)
+    
+    if not is_manager:
+        raise HTTPException(status_code=403, detail="Este usuario no tiene permisos de gerente")
+    
+    return {
+        "authorized": True,
+        "user_id": manager["id"],
+        "user_name": manager.get("name", ""),
+        "role": role
+    }
