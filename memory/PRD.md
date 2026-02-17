@@ -31,6 +31,16 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Verificación de permisos específicos (`void_items`, `reprint_receipt`)
   - Errores específicos: "PIN incorrecto" vs "Usuario sin permiso" vs "Este usuario no tiene permisos de gerente"
   - Test suite: `/app/backend/tests/test_superuser_void_permission.py`
+- **Anulación Condicional (Express Void vs Audit Protocol):**
+  - **Express Void (Items Pendientes):** Eliminación directa sin diálogo, sin razón, sin PIN, sin impacto en inventario
+  - **Audit Protocol (Items Enviados):** Requiere selección de razón, puede requerir PIN de gerente, afecta inventario (merma o devolución)
+  - Frontend: `handleSmartVoid` detecta estado del item y aplica flujo correcto
+  - Backend: `cancel_multiple_items` con flag `express_void=true` validado solo para items pendientes
+  - Test suite: `/app/backend/tests/test_express_void.py`
+- **Simplificación de UI (Sin iconos de papelera):**
+  - Eliminado icono de papelera (Trash2) de las filas de productos
+  - Anulación unificada mediante checkbox + botón "Anular" en barra inferior
+  - Más espacio para nombres de productos y modificadores
 
 #### Gestión de Mesas
 - **Mapa Interactivo**: Mesas arrastrables con estados visuales (libre, ocupada, facturada, reservada)
