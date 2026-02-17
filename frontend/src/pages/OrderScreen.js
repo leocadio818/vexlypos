@@ -2082,14 +2082,38 @@ export default function OrderScreen() {
 
               {/* Manager Auth Required Notice */}
               {cancelDialog.requiresManagerAuth && (
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-                  <Lock size={14} className="text-yellow-500" />
-                  <span className="text-xs text-yellow-500">
-                    {cancelDialog.authorizedBy 
-                      ? `Autorizado por: ${cancelDialog.authorizedBy.name}` 
-                      : 'Esta razón requiere autorización de gerente'}
-                  </span>
-                  {cancelDialog.authorizedBy && <Check size={14} className="text-green-500 ml-auto" />}
+                <div className={`flex items-center gap-2 p-3 rounded-lg border ${
+                  cancelDialog.authorizedBy 
+                    ? 'bg-green-500/10 border-green-500/30' 
+                    : 'bg-yellow-500/10 border-yellow-500/30'
+                }`}>
+                  {cancelDialog.authorizedBy ? (
+                    <>
+                      <Check size={16} className="text-green-500" />
+                      <span className="text-sm text-green-500 font-semibold flex-1">
+                        Autorizado por: {cancelDialog.authorizedBy.name}
+                        {cancelDialog.authorizedBy.is_superuser && <span className="text-xs ml-1">(Superusuario)</span>}
+                      </span>
+                      <Badge variant="outline" className="text-[9px] bg-green-500/20 text-green-400 border-green-500/40">
+                        ✓ Verificado
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={16} className="text-yellow-500" />
+                      <span className="text-sm text-yellow-500 flex-1">
+                        Esta razón requiere autorización de gerente
+                      </span>
+                      <Button 
+                        size="sm"
+                        onClick={() => setCancelDialog(prev => ({ ...prev, showManagerPin: true }))}
+                        className="h-8 bg-yellow-600 hover:bg-yellow-500 text-black font-oswald font-bold text-xs"
+                        data-testid="open-pin-keypad-btn"
+                      >
+                        <Lock size={12} className="mr-1" /> Ingresar PIN
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
 
