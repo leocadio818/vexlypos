@@ -34,6 +34,11 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 - **Anulación Condicional (Express Void vs Audit Protocol):**
   - **Express Void (Items Pendientes):** Eliminación directa sin diálogo, sin razón, sin PIN, sin impacto en inventario
   - **Audit Protocol (Items Enviados):** Requiere selección de razón, puede requerir PIN de gerente, afecta inventario (merma o devolución)
+  - **Flujo Optimizado de Seguridad (Diciembre 2025):**
+    - Diálogo abre directamente en lista de razones (no en PIN)
+    - Solo muestra teclado PIN después de seleccionar razón con `requires_auth: true`
+    - Después de autorizar, aviso cambia a verde con "✓ Verificado" y nombre del autorizador
+    - Botón cambia de rojo "Anular" a verde "Confirmar Anulación"
   - Frontend: `handleSmartVoid` detecta estado del item y aplica flujo correcto
   - Backend: `cancel_multiple_items` con flag `express_void=true` validado solo para items pendientes
   - Test suite: `/app/backend/tests/test_express_void.py`
