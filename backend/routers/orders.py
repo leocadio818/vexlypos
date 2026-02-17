@@ -350,12 +350,47 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput,
 
 @router.post("/orders/{order_id}/cancel-items")
 async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dict = Depends(get_current_user)):
-    """Cancel multiple order items at once"""
+    """Cancel multiple order items at once.
+    
+    EXPRESS VOID: For pending items (not sent to kitchen) - no reason, no auth, no inventory impact.
+    AUDIT PROTOCOL: For sent items - requires reason, may require manager auth, affects inventory.
+    """
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
-    reason = await db.cancellation_reasons.find_one({"id": input.reason_id}, {"_id": 0})
+    # Check if this is an express void (pending items only)
+    if input.express_void:
+        # Verify ALL items are pending (not sent to kitchen)
+        for item_id in input.item_ids:
+            item = next((i for i in order["items"] if i["id"] == item_id), None)
+            if item and (item.get("status") == "sent" or item.get("sent_to_kitchen", False)):
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Anulación Express solo permitida para items pendientes. Use protocolo de auditoría."
+                )
+        
+        # Express void: Direct deletion without audit log or inventory impact
+        for item_id in input.item_ids:
+            await db.orders.update_one(
+                {"id": order_id, "items.id": item_id},
+                {"$set": {
+                    "items.$.status": "cancelled",
+                    "items.$.cancelled_reason_id": None,
+                    "items.$.return_to_inventory": False,
+                    "items.$.cancelled_comments": input.comments or "Anulación Express",
+                    "items.$.cancelled_at": now_iso(),
+                    "items.$.cancelled_by_id": user["user_id"],
+                    "items.$.cancelled_by_name": user["name"],
+                    "items.$.express_void": True
+                }}
+            )
+        
+        # Return updated order (no audit log for express void)
+        return await db.orders.find_one({"id": order_id}, {"_id": 0})
+    
+    # AUDIT PROTOCOL: Standard cancellation with reason and possible auth
+    reason = await db.cancellation_reasons.find_one({"id": input.reason_id}, {"_id": 0}) if input.reason_id else None
     reason_name = reason.get("name", "Sin razón") if reason else "Sin razón"
     requires_manager = reason.get("requires_manager_auth", False) if reason else False
     
