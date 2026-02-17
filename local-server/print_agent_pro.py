@@ -57,7 +57,7 @@ CONFIG_FILE = Path.home() / "MesaPOS" / "config.json"
 LOG_FILE = Path.home() / "MesaPOS" / "agent.log"
 
 DEFAULT_CONFIG = {
-    "api_url": "https://print-dispatch-hub.preview.emergentagent.com/api",
+    "api_url": "https://payment-redesign-3.preview.emergentagent.com/api",
     "poll_interval": 3,
     "printers": {
         "kitchen": "",
