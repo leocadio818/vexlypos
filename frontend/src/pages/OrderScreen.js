@@ -41,7 +41,7 @@ export default function OrderScreen() {
   const [preCheckHtml, setPreCheckHtml] = useState('');
   const [preCheckOpen, setPreCheckOpen] = useState(false);
   const [preCheckCount, setPreCheckCount] = useState(0);
-  const [managerPinDialog, setManagerPinDialog] = useState({ open: false, pin: '' });
+  const [managerPinDialog, setManagerPinDialog] = useState({ open: false, pin: '', error: '' });
   const [taxConfig, setTaxConfig] = useState([]);
   
   // Grid display settings
