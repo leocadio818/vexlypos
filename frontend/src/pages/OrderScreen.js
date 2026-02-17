@@ -1443,11 +1443,7 @@ export default function OrderScreen() {
                         <Button 
                           onClick={() => {
                             triggerHaptic('strong'); // Strong feedback for void action
-                            const anyWasSent = selectedItems.some(id => {
-                              const item = order?.items?.find(i => i.id === id);
-                              return item?.status === 'sent' || item?.sent_to_kitchen;
-                            });
-                            openBulkCancelDialog(selectedItems, anyWasSent);
+                            handleSmartVoid(selectedItems);
                           }}
                           size="lg" 
                           data-testid="void-selected-btn-mobile"
