@@ -346,9 +346,11 @@ async def delete_role(rid: str):
 async def verify_manager(input: dict, user=Depends(get_current_user)):
     """
     Verify a manager PIN for authorization.
-    Only admin, supervisor, or users with manager_on_duty flag can authorize.
+    Admin role has SUPERUSER override - all permissions enabled by default.
+    Supervisor and manager_on_duty can also authorize.
     """
     pin = input.get("pin", "")
+    required_permission = input.get("permission", "void_items")  # Default permission to check
     
     if not pin:
         raise HTTPException(status_code=400, detail="PIN es requerido")
@@ -370,16 +372,45 @@ async def verify_manager(input: dict, user=Depends(get_current_user)):
     if not manager:
         raise HTTPException(status_code=401, detail="PIN incorrecto")
     
-    # Check if user has manager authorization (admin, supervisor, or manager_on_duty)
+    # Get user role and permissions
     role = manager.get("role", "")
-    is_manager = role in ["admin", "supervisor"] or manager.get("manager_on_duty", False)
+    custom_permissions = manager.get("permissions", {})
+    
+    # SUPERUSER RULE: Admin role has ALL permissions by default (override)
+    if role == "admin":
+        # Admin is superuser - always authorized for any action
+        return {
+            "authorized": True,
+            "user_id": manager["id"],
+            "user_name": manager.get("name", ""),
+            "role": role,
+            "is_superuser": True,
+            "permission_granted": required_permission
+        }
+    
+    # For non-admin roles, check if they can authorize
+    is_manager = role == "supervisor" or manager.get("manager_on_duty", False)
     
     if not is_manager:
         raise HTTPException(status_code=403, detail="Este usuario no tiene permisos de gerente")
+    
+    # Get full permissions for this user (role defaults + custom overrides)
+    full_permissions = get_permissions(role, custom_permissions)
+    
+    # Check if user has the required permission
+    has_permission = full_permissions.get(required_permission, False)
+    
+    if not has_permission:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Usuario sin permiso: {ALL_PERMISSIONS.get(required_permission, required_permission)}"
+        )
     
     return {
         "authorized": True,
         "user_id": manager["id"],
         "user_name": manager.get("name", ""),
-        "role": role
+        "role": role,
+        "is_superuser": False,
+        "permission_granted": required_permission
     }
