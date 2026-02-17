@@ -35,17 +35,20 @@ DEFAULT_PERMISSIONS = {
         "open_shift": True, "close_shift": True, "close_day": True,
         "release_reserved_table": True,
         "access_all_tables": True,
+        "reprint_receipt": True,  # Admin can always reprint
     },
     "waiter": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
         "split_bill": True, "manage_reservations": True, "manage_customers": True,
         "access_all_tables": False,
+        "reprint_receipt": False,
     },
     "cashier": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
         "create_bill": True, "collect_payment": True, "split_bill": True,
         "open_shift": True, "close_shift": True, "manage_customers": True,
         "access_all_tables": True,
+        "reprint_receipt": True,
     },
     "supervisor": {
         "view_dashboard": True, "move_tables": True,
@@ -55,6 +58,7 @@ DEFAULT_PERMISSIONS = {
         "view_reports": True,
         "open_shift": True, "close_shift": True,
         "access_all_tables": True,
+        "reprint_receipt": True,
     },
     "kitchen": {},
 }
@@ -67,6 +71,7 @@ ALL_PERMISSIONS = {
     "create_bill": "Crear Factura", "collect_payment": "Cobrar",
     "split_bill": "Dividir Cuenta",
     "access_all_tables": "Acceder a Todas las Mesas",
+    "reprint_receipt": "Reimprimir Pre-cuenta/Recibos",
     "manage_users": "Config: Usuarios", "manage_areas": "Config: Areas",
     "manage_tables": "Config: Mesas", "manage_payment_methods": "Config: Formas de Pago",
     "manage_cancellation_reasons": "Config: Anulaciones", "manage_products": "Config: Productos",
