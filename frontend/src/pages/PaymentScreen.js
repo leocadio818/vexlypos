@@ -470,45 +470,49 @@ export default function PaymentScreen() {
 
           {(!isMobile || showDetails) && (
             <div className={`px-3 ${isMobile ? '' : 'flex-1'}`}>
-              <div className={`${glassStyles.card} rounded-xl p-2.5 mb-2`}>
+              <div className={`${glassStyles.card} rounded-xl ${isMobile ? 'p-2.5' : 'p-4'} mb-2`}>
                 
                 {/* Lista de productos compacta - scrollable */}
-                <ScrollArea className={isMobile ? 'max-h-20' : 'max-h-32'}>
-                  <div className="space-y-0.5 pr-2">
+                <ScrollArea className={isMobile ? 'max-h-20' : 'max-h-36'}>
+                  <div className="space-y-1 pr-2">
                     {bill.items?.map((item, i) => (
-                      <div key={i} className="flex justify-between items-center text-[10px]">
-                        <span className="text-white/60 flex-1 truncate">
-                          <span className="font-oswald font-bold text-cyan-400">{item.quantity}x</span> {item.product_name}
+                      <div key={i} className={`flex justify-between items-center ${isMobile ? 'text-[10px]' : 'text-sm'}`}>
+                        <span className="text-white/70 flex-1 truncate">
+                          <span className={`font-oswald font-bold text-cyan-400 ${isMobile ? '' : 'text-base'}`}>{item.quantity}x</span> {item.product_name}
                         </span>
-                        <span className="font-oswald font-bold text-white/80 ml-2">{formatMoney(item.total)}</span>
+                        <span className={`font-oswald font-bold text-white/90 ml-2 ${isMobile ? '' : 'text-base'}`}>{formatMoney(item.total)}</span>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
                 
-                {/* Totales con fuente 20% más grande para móvil - siempre visible */}
-                <div className={`mt-2 pt-2 border-t border-white/10 space-y-1.5 ${isMobile ? 'text-sm' : 'text-xs'}`}>
-                  <div className="flex justify-between text-white/60">
-                    <span>Subtotal</span>
-                    <span className="font-oswald font-semibold">{formatMoney(adjustedBill?.subtotal ?? bill.subtotal)}</span>
+                {/* Totales - LEGIBILIDAD PRO para desktop */}
+                <div className={`mt-3 pt-3 border-t border-white/10 space-y-2 ${isMobile ? 'text-sm' : 'text-base'}`}>
+                  <div className="flex justify-between text-white/70">
+                    <span className={isMobile ? '' : 'text-lg'}>Subtotal</span>
+                    <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(adjustedBill?.subtotal ?? bill.subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-white/60">
-                    <span>ITBIS (18%)</span>
-                    <span className="font-oswald font-semibold">{formatMoney(adjustedBill?.itbis ?? bill.itbis)}</span>
+                  <div className="flex justify-between text-white/70">
+                    <span className={isMobile ? '' : 'text-lg'}>ITBIS (18%)</span>
+                    <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(adjustedBill?.itbis ?? bill.itbis)}</span>
                   </div>
                   {(() => {
                     const propinaValue = adjustedBill?.propina_legal ?? bill.propina_legal ?? 0;
                     const isExempt = propinaValue === 0;
                     return (
-                      <div className={`flex justify-between ${isExempt ? 'text-red-400/60 line-through' : 'text-white/60'}`}>
-                        <span>Propina (10%)</span>
-                        <span className="font-oswald font-semibold">{formatMoney(propinaValue)}</span>
+                      <div className={`flex justify-between ${isExempt ? 'text-red-400/60 line-through' : 'text-white/70'}`}>
+                        <span className={isMobile ? '' : 'text-lg'}>Propina (10%)</span>
+                        <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(propinaValue)}</span>
                       </div>
                     );
                   })()}
-                  <div className={`flex justify-between text-white font-bold pt-2 border-t border-white/10 ${isMobile ? 'text-base' : 'text-sm'}`}>
-                    <span>TOTAL</span>
-                    <span className="font-oswald text-cyan-400">{formatMoney(adjustedBill?.total ?? bill.total)}</span>
+                  
+                  {/* TOTAL GENERAL - Elemento más grande y visible */}
+                  <div className={`flex justify-between items-center text-white font-bold pt-3 mt-2 border-t-2 border-cyan-400/30 ${isMobile ? 'text-base' : ''}`}>
+                    <span className={`font-oswald tracking-wide ${isMobile ? '' : 'text-2xl'}`}>TOTAL</span>
+                    <span className={`font-oswald bg-gradient-to-r from-cyan-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent drop-shadow-lg ${isMobile ? 'text-xl' : 'text-4xl'}`}>
+                      {formatMoney(adjustedBill?.total ?? bill.total)}
+                    </span>
                   </div>
                 </div>
               </div>
