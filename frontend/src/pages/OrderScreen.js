@@ -560,20 +560,20 @@ export default function OrderScreen() {
       }
       
       const data = await res.json();
-      // Manager verified with correct permissions, proceed with cancellation
+      // Manager verified with correct permissions - mark as authorized but DON'T auto-submit
+      // User must click "Anular" button to confirm
       setCancelDialog(prev => ({ 
         ...prev, 
         showManagerPin: false, 
         managerPin: '',
         managerAuthError: '',
-        authorizedBy: { id: data.user_id, name: data.user_name }
+        authorizedBy: { id: data.user_id, name: data.user_name, is_superuser: data.is_superuser }
       }));
       
       const superuserBadge = data.is_superuser ? ' (Superusuario)' : '';
       toast.success(`Autorizado por ${data.user_name}${superuserBadge}`);
       
-      // Auto-submit after authorization
-      setTimeout(() => handleCancelItem(), 100);
+      // DON'T auto-submit - let user confirm with "Anular" button
     } catch (e) {
       const errorMsg = 'Error verificando PIN - intenta de nuevo';
       setCancelDialog(prev => ({ ...prev, managerAuthError: errorMsg, managerPin: '' }));
