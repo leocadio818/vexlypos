@@ -2143,12 +2143,16 @@ export default function OrderScreen() {
                 </Button>
                 <Button 
                   onClick={handleCancelItem}
-                  disabled={!cancelDialog.selectedReasonId}
-                  className="flex-1 bg-destructive hover:bg-destructive/90 text-white font-oswald font-bold"
+                  disabled={!cancelDialog.selectedReasonId || (cancelDialog.requiresManagerAuth && !cancelDialog.authorizedBy)}
+                  className={`flex-1 font-oswald font-bold ${
+                    cancelDialog.authorizedBy 
+                      ? 'bg-green-600 hover:bg-green-700 text-white' 
+                      : 'bg-destructive hover:bg-destructive/90 text-white'
+                  }`}
                   data-testid="confirm-cancel-btn"
                 >
-                  {cancelDialog.requiresManagerAuth && !cancelDialog.authorizedBy ? (
-                    <><Lock size={14} className="mr-1" /> Autorizar</>
+                  {cancelDialog.authorizedBy ? (
+                    <><Check size={14} className="mr-1" /> Confirmar Anulación</>
                   ) : (
                     <><Trash2 size={14} className="mr-1" /> Anular</>
                   )}
