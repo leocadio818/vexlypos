@@ -164,12 +164,12 @@ export default function PaymentScreen() {
       setSaleTypes(stRes.filter(st => st.active));
       setTaxConfig(taxRes.filter(t => t.active));
       
-      // Set default service type based on bill's sale_type or first available
-      if (billData.sale_type && stRes.length > 0) {
-        const matchingST = stRes.find(st => st.code === billData.sale_type);
-        setSelectedServiceType(matchingST || stRes[0]);
-      } else if (stRes.length > 0) {
-        setSelectedServiceType(stRes[0]);
+      // Set default service type: prioritize "Dine In" for Consumidor Final (B02)
+      if (stRes.length > 0) {
+        // Look for Dine In first, fallback to bill's sale_type, then first available
+        const dineIn = stRes.find(st => st.code === 'dine_in' || st.name.toLowerCase().includes('dine'));
+        const matchingBillST = billData.sale_type ? stRes.find(st => st.code === billData.sale_type) : null;
+        setSelectedServiceType(dineIn || matchingBillST || stRes[0]);
       }
       
       try {
