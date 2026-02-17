@@ -1890,17 +1890,19 @@ export default function OrderScreen() {
                 </div>
                 <h3 className="font-oswald text-base font-bold">Autorización de Gerente</h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Esta anulación requiere PIN de administrador
+                  Esta anulación requiere PIN de administrador (1-8 dígitos)
                 </p>
               </div>
               
-              {/* PIN Display */}
-              <div className="flex justify-center gap-2 py-2">
-                {[0, 1, 2, 3].map(i => (
+              {/* PIN Display - 8 circles like Login */}
+              <div className="flex justify-center gap-2 py-3">
+                {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
                   <div 
                     key={i} 
-                    className={`w-4 h-4 rounded-full transition-all ${
-                      cancelDialog.managerPin.length > i ? 'bg-primary scale-110' : 'bg-border'
+                    className={`w-3.5 h-3.5 rounded-full border-2 transition-all ${
+                      cancelDialog.managerPin.length > i 
+                        ? 'bg-primary border-primary scale-110 shadow-lg shadow-primary/30' 
+                        : 'bg-transparent border-muted-foreground/40'
                     }`}
                   />
                 ))}
@@ -1913,8 +1915,8 @@ export default function OrderScreen() {
                 </p>
               )}
               
-              {/* Numeric Keypad */}
-              <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
+              {/* Numeric Keypad - Updated for 1-8 digits, no leading zero */}
+              <div className="grid grid-cols-3 gap-2 max-w-[260px] mx-auto">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'CLR', '0', '⌫'].map(key => (
                   <button
                     key={key}
@@ -1923,16 +1925,17 @@ export default function OrderScreen() {
                         setCancelDialog(prev => ({ ...prev, managerPin: '', managerAuthError: '' }));
                       } else if (key === '⌫') {
                         setCancelDialog(prev => ({ ...prev, managerPin: prev.managerPin.slice(0, -1), managerAuthError: '' }));
-                      } else if (cancelDialog.managerPin.length < 6) {
+                      } else if (cancelDialog.managerPin.length < 8) {
+                        // Prevent leading zero
+                        if (key === '0' && cancelDialog.managerPin.length === 0) {
+                          setCancelDialog(prev => ({ ...prev, managerAuthError: 'PIN no puede iniciar con 0' }));
+                          return;
+                        }
                         const newPin = cancelDialog.managerPin + key;
                         setCancelDialog(prev => ({ ...prev, managerPin: newPin, managerAuthError: '' }));
-                        // Auto-verify when 4 digits entered
-                        if (newPin.length === 4) {
-                          setTimeout(() => verifyManagerPin(), 100);
-                        }
                       }
                     }}
-                    className={`h-12 rounded-xl font-oswald text-lg font-bold transition-all active:scale-95 ${
+                    className={`h-14 rounded-xl font-oswald text-xl font-bold transition-all active:scale-95 ${
                       key === 'CLR' ? 'bg-muted text-muted-foreground text-sm' :
                       key === '⌫' ? 'bg-muted text-muted-foreground' :
                       'bg-background border-2 border-border hover:border-primary/50'
@@ -1942,6 +1945,15 @@ export default function OrderScreen() {
                   </button>
                 ))}
               </div>
+              
+              {/* Verify Button - Enabled when 1+ digits */}
+              <Button 
+                onClick={verifyManagerPin}
+                disabled={cancelDialog.managerPin.length < 1}
+                className="w-full h-12 bg-primary text-primary-foreground font-oswald font-bold active:scale-95"
+              >
+                VERIFICAR PIN
+              </Button>
               
               {/* Back Button */}
               <Button 
