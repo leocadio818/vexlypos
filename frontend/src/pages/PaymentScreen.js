@@ -133,10 +133,10 @@ export default function PaymentScreen() {
   // Dialog states
   const [ncfDialogOpen, setNcfDialogOpen] = useState(false);
 
-  // NCF Fiscal Types (Dominican Republic)
+  // NCF Fiscal Types (Dominican Republic) - B02 = Consumidor Final es el default
   const fiscalTypes = [
-    { code: 'B01', name: 'Consumidor Final', short: 'CF' },
-    { code: 'B02', name: 'Crédito Fiscal', short: 'CF' },
+    { code: 'B02', name: 'Consumidor Final', short: 'CF' },
+    { code: 'B01', name: 'Crédito Fiscal', short: 'CF' },
     { code: 'B14', name: 'Gubernamental', short: 'GOB' },
     { code: 'B15', name: 'Régimen Especial', short: 'RE' }
   ];
