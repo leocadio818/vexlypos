@@ -400,52 +400,57 @@ export default function PaymentScreen() {
         {/* Left Panel - Bill Details */}
         <div className={`${isMobile ? 'w-full shrink-0' : isTablet && !isLandscape ? 'w-full' : 'w-80 lg:w-96'} ${!isMobile && (isTablet && isLandscape || !isTablet) ? 'border-r border-white/10' : 'border-b border-white/10'} flex flex-col`}>
           
-          {/* Header Actions - Two Pill Buttons */}
-          <div className="p-3 flex gap-2">
-            {/* Botón Cliente */}
+          {/* Header Actions - Two Large Pill Buttons (Redesigned for better readability) */}
+          <div className="p-3 flex gap-3">
+            {/* Botón Cliente - Enlarged */}
             <button
               onClick={() => setCustomerDialog(true)}
-              className={`flex-1 ${isMobile ? 'h-11' : 'h-12'} rounded-full ${glassStyles.card} ${glassStyles.cardHover} transition-all duration-300 flex items-center justify-center gap-2 group border ${selectedCustomer ? 'border-purple-400/50' : 'border-white/10'}`}
+              className={`flex-1 ${isMobile ? 'h-14' : 'h-16'} rounded-2xl ${glassStyles.card} ${glassStyles.cardHover} transition-all duration-300 flex items-center justify-center gap-3 group border-2 ${selectedCustomer ? 'border-purple-400/60 bg-purple-500/10' : 'border-white/20'}`}
               data-testid="customer-pill-btn"
             >
-              <div className={`${isMobile ? 'w-7 h-7' : 'w-8 h-8'} rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center`}>
+              <div className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-xl bg-gradient-to-br from-purple-500/40 to-pink-500/40 flex items-center justify-center shadow-lg`}>
                 {selectedCustomer ? (
-                  <Heart size={isMobile ? 14 : 16} className="text-purple-300 fill-purple-300" />
+                  <Heart size={isMobile ? 20 : 24} className="text-purple-300 fill-purple-300" />
                 ) : (
-                  <User size={isMobile ? 14 : 16} className="text-white/70" />
+                  <User size={isMobile ? 20 : 24} className="text-white/80" />
                 )}
               </div>
-              <span className={`font-semibold ${isMobile ? 'text-xs' : 'text-sm'} ${selectedCustomer ? 'text-purple-300' : 'text-white/70'}`}>
-                {selectedCustomer ? selectedCustomer.name.split(' ')[0] : 'Cliente'}
-              </span>
+              <div className="flex flex-col items-start">
+                <span className={`font-oswald font-bold ${isMobile ? 'text-sm' : 'text-lg'} ${selectedCustomer ? 'text-purple-300' : 'text-white/80'}`}>
+                  {selectedCustomer ? selectedCustomer.name.split(' ')[0] : 'CLIENTE'}
+                </span>
+                <span className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-white/50`}>
+                  {selectedCustomer ? `${selectedCustomer.points || 0} pts` : 'Sin seleccionar'}
+                </span>
+              </div>
               {selectedCustomer && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); setSelectedCustomer(null); }}
-                  className="p-1 rounded-full hover:bg-red-500/20 text-red-400 transition-colors"
+                  className="p-2 rounded-full hover:bg-red-500/30 text-red-400 transition-colors ml-auto"
                 >
-                  <X size={12} />
+                  <X size={16} />
                 </button>
               )}
             </button>
 
-            {/* Botón Venta/NCF */}
+            {/* Botón Venta/NCF - Enlarged */}
             <button
               onClick={() => setNcfDialogOpen(true)}
-              className={`flex-1 ${isMobile ? 'h-11' : 'h-12'} rounded-full ${glassStyles.card} ${glassStyles.cardHover} transition-all duration-300 flex items-center justify-center gap-2 group border border-cyan-400/30`}
+              className={`flex-1 ${isMobile ? 'h-14' : 'h-16'} rounded-2xl ${glassStyles.card} ${glassStyles.cardHover} transition-all duration-300 flex items-center justify-center gap-3 group border-2 border-cyan-400/40 bg-cyan-500/5`}
               data-testid="ncf-pill-btn"
             >
-              <div className={`${isMobile ? 'w-7 h-7' : 'w-8 h-8'} rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/30 flex items-center justify-center`}>
-                <FileText size={isMobile ? 14 : 16} className="text-cyan-300" />
+              <div className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-xl bg-gradient-to-br from-cyan-500/40 to-blue-500/40 flex items-center justify-center shadow-lg`}>
+                <FileText size={isMobile ? 20 : 24} className="text-cyan-300" />
               </div>
               <div className="flex flex-col items-start">
-                <span className={`font-bold text-cyan-300 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
+                <span className={`font-oswald font-bold text-cyan-300 ${isMobile ? 'text-sm' : 'text-lg'}`}>
                   {selectedFiscalType}
                 </span>
-                <span className={`text-white/50 ${isMobile ? 'text-[9px]' : 'text-[10px]'} -mt-0.5`}>
-                  {selectedServiceType?.name?.split(' ')[0] || 'Dine In'}
+                <span className={`text-white/60 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
+                  {selectedServiceType?.name || 'Dine In'}
                 </span>
               </div>
-              <ChevronDown size={12} className="text-white/40" />
+              <ChevronDown size={isMobile ? 16 : 20} className="text-cyan-400/70 ml-auto" />
             </button>
           </div>
 
