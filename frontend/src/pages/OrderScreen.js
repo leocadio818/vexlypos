@@ -500,17 +500,23 @@ export default function OrderScreen() {
       const res = await fetch(`${API_BASE}/api/auth/verify-manager`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
-        body: JSON.stringify({ pin: cancelDialog.managerPin })
+        body: JSON.stringify({ 
+          pin: cancelDialog.managerPin,
+          permission: 'void_items'  // Request specific permission for void/cancel
+        })
       });
       
       if (!res.ok) {
         const data = await res.json();
-        setCancelDialog(prev => ({ ...prev, managerAuthError: data.detail || 'PIN inválido', managerPin: '' }));
+        // Show specific error message for permission denied vs invalid PIN
+        const errorMsg = data.detail || 'Error de autenticación';
+        setCancelDialog(prev => ({ ...prev, managerAuthError: errorMsg, managerPin: '' }));
+        toast.error(errorMsg);
         return;
       }
       
       const data = await res.json();
-      // Manager verified, proceed with cancellation
+      // Manager verified with correct permissions, proceed with cancellation
       setCancelDialog(prev => ({ 
         ...prev, 
         showManagerPin: false, 
@@ -518,12 +524,16 @@ export default function OrderScreen() {
         managerAuthError: '',
         authorizedBy: { id: data.user_id, name: data.user_name }
       }));
-      toast.success(`Autorizado por ${data.user_name}`);
+      
+      const superuserBadge = data.is_superuser ? ' (Superusuario)' : '';
+      toast.success(`Autorizado por ${data.user_name}${superuserBadge}`);
       
       // Auto-submit after authorization
       setTimeout(() => handleCancelItem(), 100);
-    } catch {
-      setCancelDialog(prev => ({ ...prev, managerAuthError: 'Error verificando PIN', managerPin: '' }));
+    } catch (e) {
+      const errorMsg = 'Error verificando PIN - intenta de nuevo';
+      setCancelDialog(prev => ({ ...prev, managerAuthError: errorMsg, managerPin: '' }));
+      toast.error(errorMsg);
     }
   };
 
