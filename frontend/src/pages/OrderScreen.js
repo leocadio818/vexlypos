@@ -1319,11 +1319,6 @@ export default function OrderScreen() {
                       </div>
                       <div className="text-right shrink-0">
                         <span className="font-oswald text-sm">{formatMoney(itemTotal)}</span>
-                        {(item.status === 'pending' || item.status === 'sent') && (
-                          <button onClick={(e) => { e.stopPropagation(); openCancelDialog(item.id); }} className="block ml-auto text-destructive/50 hover:text-destructive mt-1" data-testid={`cancel-item-${item.id}`}>
-                            <Trash2 size={14} />
-                          </button>
-                        )}
                       </div>
                     </div>
                   )})
