@@ -126,7 +126,7 @@ export default function PaymentScreen() {
   // NEW: Tax type selection state
   const [saleTypes, setSaleTypes] = useState([]);
   const [taxConfig, setTaxConfig] = useState([]);
-  const [selectedFiscalType, setSelectedFiscalType] = useState('B01'); // NCF types
+  const [selectedFiscalType, setSelectedFiscalType] = useState('B02'); // Default: Consumidor Final
   const [selectedServiceType, setSelectedServiceType] = useState(null);
   const [adjustedBill, setAdjustedBill] = useState(null); // Bill with recalculated taxes
 
