@@ -676,18 +676,29 @@ export default function OrderScreen() {
   const handleManagerAuth = async () => {
     try {
       const r = await fetch(`${API_BASE}/api/auth/verify-manager`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
-        body: JSON.stringify({ pin: managerPinDialog.pin })
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+        body: JSON.stringify({ 
+          pin: managerPinDialog.pin,
+          permission: 'reprint_receipt'  // Permission to reprint
+        })
       });
       if (r.ok) {
-        setManagerPinDialog({ open: false, pin: '' });
-        toast.success('Autorizado por gerente');
+        const data = await r.json();
+        const superuserBadge = data.is_superuser ? ' (Superusuario)' : '';
+        setManagerPinDialog({ open: false, pin: '', error: '' });
+        toast.success(`Autorizado por ${data.user_name}${superuserBadge}`);
         await doPrintPreCheck();
       } else {
         const d = await r.json();
-        toast.error(d.detail || 'No autorizado');
+        const errorMsg = d.detail || 'No autorizado';
+        setManagerPinDialog(prev => ({ ...prev, error: errorMsg, pin: '' }));
+        toast.error(errorMsg);
       }
-    } catch { toast.error('Error de autorizacion'); }
+    } catch { 
+      setManagerPinDialog(prev => ({ ...prev, error: 'Error de conexión', pin: '' }));
+      toast.error('Error de autorizacion'); 
+    }
   };
 
   // Move Table Functions
