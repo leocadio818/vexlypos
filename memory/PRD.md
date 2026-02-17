@@ -58,13 +58,16 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Cálculo por item: permite exención granular (ej: bebidas exentas de propina)
   - `tax_breakdown[]` incluye `taxable_base` para cada impuesto
 
-- **Selector Dinámico en Procesar Pago** (NUEVO):
-  - **Selector Nivel 1 (Fiscal)**: Botones B01, B02, B14, B15 para tipo de NCF
-  - **Selector Nivel 2 (Servicio)**: Dine In, Take Out, Delivery con iconos
+- **Selector Dinámico en Procesar Pago** (ACTUALIZADO Diciembre 2025):
+  - **Default B02**: Consumidor Final (B02) seleccionado por defecto al abrir pantalla de pago
+  - **Selectores Rediseñados**: Píldoras de Cliente y Venta/NCF agrandadas (h-16 desktop) para mejor legibilidad
+  - **Legibilidad Pro (Panel Izquierdo)**: 
+    - Fuentes de Subtotal, ITBIS, Propina aumentadas a text-lg/text-xl
+    - TOTAL General en text-4xl con gradiente cyan - elemento más visible del panel
+    - Borde superior destacado con border-cyan-400
   - **Recálculo Automático**: Al cambiar tipo de servicio, la propina se activa/desactiva
   - **UI Visual**: Propina tachada en rojo cuando está exenta, totales actualizados
   - **Montos Rápidos**: Se actualizan automáticamente según el nuevo total
-  - Espacio optimizado con lista de productos más compacta
 
 #### Cocina (KDS)
 - **Pantalla de Cocina**: Vista de órdenes pendientes por canal
