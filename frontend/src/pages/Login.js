@@ -160,7 +160,7 @@ export default function Login() {
         {/* Submit - Gradient button */}
         <button
           onClick={handleSubmit}
-          disabled={pin.length < 4 || loading}
+          disabled={pin.length < 1 || loading}
           data-testid="pin-submit"
           className="w-full max-w-[280px] mx-auto mt-6 h-14 rounded-xl font-oswald font-bold text-lg tracking-widest uppercase flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all block text-white shadow-[0_4px_20px_rgba(255,100,0,0.4)]"
           style={{ 
