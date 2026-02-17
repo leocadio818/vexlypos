@@ -1412,13 +1412,7 @@ export default function OrderScreen() {
                     <div className="flex gap-2">
                       {selectedItems.length > 0 && (
                         <Button 
-                          onClick={() => {
-                            const anyWasSent = selectedItems.some(id => {
-                              const item = order?.items?.find(i => i.id === id);
-                              return item?.status === 'sent' || item?.sent_to_kitchen;
-                            });
-                            openBulkCancelDialog(selectedItems, anyWasSent);
-                          }}
+                          onClick={() => handleSmartVoid(selectedItems)}
                           variant="outline" 
                           size="lg" 
                           data-testid="void-selected-btn-desktop"
