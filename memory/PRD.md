@@ -25,6 +25,12 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
   - Validan que no inicien con 0
   - Tienen botón "VERIFICAR PIN" explícito
   - Backend endpoint `/api/auth/verify-manager` para autorización de gerente
+- **Sistema de Superusuario para Admin:**
+  - Admin tiene TODOS los permisos activados por defecto (override)
+  - Respuesta incluye `is_superuser: true` para Admin
+  - Verificación de permisos específicos (`void_items`, `reprint_receipt`)
+  - Errores específicos: "PIN incorrecto" vs "Usuario sin permiso" vs "Este usuario no tiene permisos de gerente"
+  - Test suite: `/app/backend/tests/test_superuser_void_permission.py`
 
 #### Gestión de Mesas
 - **Mapa Interactivo**: Mesas arrastrables con estados visuales (libre, ocupada, facturada, reservada)
