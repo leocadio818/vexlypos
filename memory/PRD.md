@@ -13,9 +13,12 @@ Sistema POS (Point of Sale) completo para restaurantes con características avan
 ### ✅ Funcionalidades Completadas
 
 #### Core del Sistema
-- **Autenticación PIN**: Sistema de login con PIN numérico de 4-6 dígitos
+- **Autenticación PIN**: Sistema de login con PIN numérico de 1-8 dígitos (no puede iniciar con 0)
 - **Roles y Permisos**: Admin, Gerente, Propietario, Cajero, Mesero, Chef con permisos granulares
 - **Diseño Responsivo**: Adaptación automática para móvil, tablet y escritorio
+
+#### Bug Fixes (Diciembre 2025)
+- **Fix: Login con PIN corto** - Corregido el botón "ENTRAR" que se deshabilitaba para PINs menores a 4 dígitos. Ahora permite PINs de 1-8 dígitos correctamente (Login.js línea 163, OrderScreen.js línea 2105)
 
 #### Gestión de Mesas
 - **Mapa Interactivo**: Mesas arrastrables con estados visuales (libre, ocupada, facturada, reservada)
