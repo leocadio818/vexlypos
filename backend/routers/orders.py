@@ -58,11 +58,12 @@ class CancelItemInput(BaseModel):
 
 class BulkCancelInput(BaseModel):
     item_ids: List[str]
-    reason_id: str
+    reason_id: Optional[str] = None  # Optional for express void
     return_to_inventory: bool = False
     comments: str = ""
     authorized_by_id: Optional[str] = None
     authorized_by_name: Optional[str] = None
+    express_void: bool = False  # Flag for express void (pending items only)
 
 # Import auth dependency
 from routers.auth import get_current_user, can_access_table_orders, get_table_owner_name
