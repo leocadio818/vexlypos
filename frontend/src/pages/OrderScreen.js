@@ -2102,7 +2102,7 @@ export default function OrderScreen() {
               onKeyDown={e => { if (e.key === 'Enter') handleManagerAuth(); }}
               className="w-full bg-background border border-border rounded-lg px-3 py-3 text-center text-2xl font-oswald tracking-widest"
               data-testid="manager-pin-input" />
-            <Button onClick={handleManagerAuth} disabled={!managerPinDialog.pin || managerPinDialog.pin.length < 4}
+            <Button onClick={handleManagerAuth} disabled={!managerPinDialog.pin || managerPinDialog.pin.length < 1}
               className="w-full h-11 bg-yellow-600 text-black font-oswald font-bold active:scale-95" data-testid="confirm-manager-pin">
               AUTORIZAR RE-IMPRESION
             </Button>
