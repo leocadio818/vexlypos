@@ -163,7 +163,10 @@ class TestAuditProtocolBackend:
         if not reasons:
             pytest.skip("No cancellation reasons configured")
         
-        reason = reasons[0]  # Use first reason
+        # Use a reason that doesn't require manager auth
+        reason = next((r for r in reasons if not r.get("requires_manager_auth", False)), None)
+        if not reason:
+            pytest.skip("No cancellation reason without manager auth requirement")
         sent_item = sent_items[0]
         
         # Cancel with audit protocol (express_void=false)
