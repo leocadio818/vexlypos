@@ -601,7 +601,7 @@ export default function OrderScreen() {
     });
   };
 
-  // Open cancel dialog for multiple items
+  // Open cancel dialog for multiple items - NOW OPENS DIRECTLY TO REASON SELECTION
   const openBulkCancelDialog = (itemIds, forceManagerAuth = false) => {
     const anyWasSent = itemIds.some(id => {
       const item = order?.items?.find(i => i.id === id);
@@ -615,8 +615,8 @@ export default function OrderScreen() {
       selectedReasonId: null,
       returnToInventory: anyWasSent,
       comments: '',
-      requiresManagerAuth: forceManagerAuth || anyWasSent, // Force auth if param or if items were sent
-      showManagerPin: forceManagerAuth || anyWasSent, // Auto-show PIN if forced or items sent
+      requiresManagerAuth: false, // Will be set based on selected reason
+      showManagerPin: false, // PIN only shows AFTER reason selection if required
       managerPin: '',
       managerAuthError: '',
       authorizedBy: null,
