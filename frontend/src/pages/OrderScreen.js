@@ -439,6 +439,50 @@ export default function OrderScreen() {
     } catch { toast.error('Error enviando a cocina'); }
   };
 
+  // EXPRESS VOID: Direct deletion for PENDING items (no reason, no PIN, no inventory impact)
+  const handleExpressVoid = async (itemIds) => {
+    try {
+      const res = await ordersAPI.cancelItems(order.id, {
+        item_ids: itemIds,
+        reason_id: null,  // No reason for express void
+        return_to_inventory: false,  // No inventory impact for pending items
+        comments: 'Anulación Express - Item no enviado',
+        authorized_by_id: null,
+        authorized_by_name: null,
+        express_void: true  // Flag for express void
+      });
+      toast.success(`${itemIds.length} item(s) eliminado(s)`);
+      setOrder(res.data);
+      setSelectedItems([]);
+    } catch (e) {
+      const msg = e.response?.data?.detail || 'Error eliminando item(s)';
+      toast.error(msg);
+    }
+  };
+
+  // Smart void handler: Determines if express void or audit protocol is needed
+  const handleSmartVoid = (itemIds) => {
+    // Check if ALL selected items are pending (not sent to kitchen)
+    const allPending = itemIds.every(id => {
+      const item = order?.items?.find(i => i.id === id);
+      return item?.status === 'pending' && !item?.sent_to_kitchen;
+    });
+    
+    // Check if ANY items were sent (requires audit protocol)
+    const anyWasSent = itemIds.some(id => {
+      const item = order?.items?.find(i => i.id === id);
+      return item?.status === 'sent' || item?.sent_to_kitchen;
+    });
+    
+    if (allPending) {
+      // EXPRESS VOID: All items are pending - direct deletion
+      handleExpressVoid(itemIds);
+    } else {
+      // AUDIT PROTOCOL: Some items were sent - require reason and possibly PIN
+      openBulkCancelDialog(itemIds, anyWasSent);
+    }
+  };
+
   const handleCancelItem = async () => {
     const { itemId, itemIds, mode, selectedReasonId, returnToInventory, comments, requiresManagerAuth, authorizedBy } = cancelDialog;
     
