@@ -1,175 +1,410 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { shiftsAPI } from '@/lib/api';
-import { formatMoney } from '@/lib/api';
-import { CircleDollarSign, Play, Square, Clock, Banknote, CreditCard, AlertTriangle, TrendingUp, Mail } from 'lucide-react';
+import { posSessionsAPI, formatMoney } from '@/lib/api';
+import { CircleDollarSign, Play, Square, Clock, Banknote, CreditCard, AlertTriangle, TrendingUp, Mail, ArrowDownCircle, ArrowUpCircle, History, Wallet, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 
 export default function CashRegister() {
   const { user } = useAuth();
-  const [currentShift, setCurrentShift] = useState(null);
-  const [shifts, setShifts] = useState([]);
+  const [currentSession, setCurrentSession] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [movements, setMovements] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [closeDialog, setCloseDialog] = useState(false);
-  const [station, setStation] = useState('Caja 1');
+  const [movementDialog, setMovementDialog] = useState(false);
+  const [terminals, setTerminals] = useState([]);
+  const [movementReasons, setMovementReasons] = useState([]);
+  
+  // Form states
+  const [selectedTerminal, setSelectedTerminal] = useState('');
+  const [terminalName, setTerminalName] = useState('Caja 1');
   const [openingAmount, setOpeningAmount] = useState('');
-  const [closingAmount, setClosingAmount] = useState('');
-  const [emailTo, setEmailTo] = useState('');
+  const [closingForm, setClosingForm] = useState({
+    cash_declared: '',
+    card_declared: '',
+    transfer_declared: '',
+    difference_notes: ''
+  });
+  const [movementForm, setMovementForm] = useState({
+    movement_type: 'cash_in',
+    amount: '',
+    description: '',
+    reason_code: '',
+    notes: ''
+  });
+  
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
+  
+  // Default terminals if none configured
+  const defaultTerminals = [
+    { id: null, code: 'POS1', name: 'Caja 1' },
+    { id: null, code: 'POS2', name: 'Caja 2' },
+    { id: null, code: 'BAR1', name: 'Barra' },
+    { id: null, code: 'TERR', name: 'Terraza' },
+    { id: null, code: 'VIP', name: 'VIP' }
+  ];
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      const [currentRes, shiftsRes] = await Promise.all([shiftsAPI.current(), shiftsAPI.list()]);
-      setCurrentShift(currentRes.data && currentRes.data.id ? currentRes.data : null);
-      setShifts(shiftsRes.data);
-    } catch {}
+      // Check current session
+      const checkRes = await posSessionsAPI.check();
+      if (checkRes.data.has_open_session && checkRes.data.session) {
+        // Get full session details
+        const currentRes = await posSessionsAPI.current();
+        setCurrentSession(currentRes.data);
+        
+        // Get movements for current session
+        if (currentRes.data?.id) {
+          const movRes = await posSessionsAPI.getMovements(currentRes.data.id);
+          setMovements(movRes.data || []);
+        }
+      } else {
+        setCurrentSession(null);
+        setMovements([]);
+      }
+      
+      // Get history
+      const historyRes = await posSessionsAPI.history({ limit: 20, status: 'closed' });
+      setSessions(historyRes.data || []);
+      
+      // Get terminals
+      try {
+        const termRes = await posSessionsAPI.terminals();
+        setTerminals(termRes.data?.length > 0 ? termRes.data : defaultTerminals);
+      } catch {
+        setTerminals(defaultTerminals);
+      }
+      
+      // Get movement reasons
+      try {
+        const reasonsRes = await posSessionsAPI.movementReasons();
+        setMovementReasons(reasonsRes.data || []);
+      } catch {
+        setMovementReasons([]);
+      }
+      
+    } catch (err) {
+      console.error('Error fetching session data:', err);
+      toast.error('Error cargando datos de caja');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleOpenShift = async () => {
+  const handleOpenSession = async () => {
     try {
-      const res = await shiftsAPI.open({ station, opening_amount: parseFloat(openingAmount) || 0 });
-      setCurrentShift(res.data);
-      toast.success('Turno abierto');
+      const res = await posSessionsAPI.open({
+        terminal_id: selectedTerminal || null,
+        terminal_name: terminalName,
+        opening_amount: parseFloat(openingAmount) || 0
+      });
+      
+      setCurrentSession(res.data);
+      toast.success('Turno abierto correctamente', {
+        description: `${res.data.ref} - ${res.data.terminal_name}`
+      });
       setOpenDialog(false);
+      setOpeningAmount('');
       fetchData();
-    } catch {
-      toast.error('Error abriendo turno');
+    } catch (err) {
+      toast.error('Error abriendo turno', {
+        description: err.response?.data?.detail || 'Intenta de nuevo'
+      });
     }
   };
 
-  const handleCloseShift = async () => {
-    if (!currentShift) return;
+  const handleCloseSession = async () => {
+    if (!currentSession) return;
+    
     try {
-      await shiftsAPI.close(currentShift.id, { closing_amount: parseFloat(closingAmount) || 0 });
-      // Send email if provided
-      if (emailTo) {
-        try {
-          await fetch(`${API_BASE}/api/email/shift-report/${currentShift.id}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
-            body: JSON.stringify({ to: emailTo })
-          });
-          toast.success('Reporte enviado por correo');
-        } catch {}
+      const res = await posSessionsAPI.close(currentSession.id, {
+        cash_declared: parseFloat(closingForm.cash_declared) || 0,
+        card_declared: parseFloat(closingForm.card_declared) || 0,
+        transfer_declared: parseFloat(closingForm.transfer_declared) || 0,
+        difference_notes: closingForm.difference_notes
+      });
+      
+      if (res.data.requires_approval) {
+        toast.warning('Turno cerrado - Pendiente de aprobacion', {
+          description: `Diferencia: ${formatMoney(res.data.difference)}`
+        });
+      } else {
+        toast.success('Turno cerrado correctamente');
       }
-      setCurrentShift(null);
-      toast.success('Turno cerrado');
+      
+      setCurrentSession(null);
       setCloseDialog(false);
-      setEmailTo('');
+      setClosingForm({ cash_declared: '', card_declared: '', transfer_declared: '', difference_notes: '' });
       fetchData();
-    } catch {
-      toast.error('Error cerrando turno');
+    } catch (err) {
+      toast.error('Error cerrando turno', {
+        description: err.response?.data?.detail || 'Intenta de nuevo'
+      });
     }
   };
 
-  const stations = ['Caja 1', 'Caja 2', 'Barra', 'Terraza', 'VIP'];
+  const handleAddMovement = async () => {
+    if (!currentSession || !movementForm.amount || !movementForm.description) {
+      toast.error('Completa los campos requeridos');
+      return;
+    }
+    
+    try {
+      await posSessionsAPI.addMovement(currentSession.id, {
+        movement_type: movementForm.movement_type,
+        amount: parseFloat(movementForm.amount),
+        description: movementForm.description,
+        reason_code: movementForm.reason_code || null,
+        notes: movementForm.notes || null,
+        payment_method: 'cash'
+      });
+      
+      toast.success('Movimiento registrado');
+      setMovementDialog(false);
+      setMovementForm({ movement_type: 'cash_in', amount: '', description: '', reason_code: '', notes: '' });
+      fetchData();
+    } catch (err) {
+      toast.error('Error registrando movimiento', {
+        description: err.response?.data?.detail
+      });
+    }
+  };
+
+  // Calculate expected cash
+  const expectedCash = currentSession ? (
+    (currentSession.opening_amount || 0) +
+    (currentSession.cash_sales || 0) +
+    (currentSession.cash_in || 0) -
+    (currentSession.cash_out || 0)
+  ) : 0;
+
+  const totalSales = currentSession ? (
+    (currentSession.cash_sales || 0) +
+    (currentSession.card_sales || 0) +
+    (currentSession.transfer_sales || 0) +
+    (currentSession.other_sales || 0)
+  ) : 0;
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col" data-testid="cash-register-page">
-      {/* Header - Glassmorphism */}
+      {/* Header */}
       <div className="px-4 py-3 backdrop-blur-xl bg-white/5 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CircleDollarSign size={22} className="text-orange-400" />
           <h1 className="font-oswald text-xl font-bold tracking-wide text-white">CAJA / TURNOS</h1>
+          <Badge variant="outline" className="ml-2 text-xs text-emerald-400 border-emerald-400/30">Supabase</Badge>
         </div>
-        {!currentShift ? (
-          <button onClick={() => setOpenDialog(true)} data-testid="open-shift-btn"
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all">
-            <Play size={16} /> ABRIR TURNO
-          </button>
-        ) : (
-          <button onClick={() => setCloseDialog(true)} data-testid="close-shift-btn"
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all">
-            <Square size={16} /> CERRAR TURNO
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {currentSession && (
+            <button onClick={() => setMovementDialog(true)} data-testid="add-movement-btn"
+              className="px-3 py-2 rounded-xl bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30 text-blue-400 font-medium text-sm flex items-center gap-2 transition-all">
+              <Wallet size={16} /> Movimiento
+            </button>
+          )}
+          {!currentSession ? (
+            <button onClick={() => setOpenDialog(true)} data-testid="open-shift-btn"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all">
+              <Play size={16} /> ABRIR TURNO
+            </button>
+          ) : (
+            <button onClick={() => setCloseDialog(true)} data-testid="close-shift-btn"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all">
+              <Square size={16} /> CERRAR TURNO
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 p-4 overflow-auto">
-        {/* Current Shift - Glassmorphism */}
-        {currentShift && (
-          <div className="max-w-2xl mx-auto mb-8" data-testid="current-shift">
+        {/* Current Session Card */}
+        {currentSession && (
+          <div className="max-w-3xl mx-auto mb-8" data-testid="current-session">
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl overflow-hidden">
               <div className="bg-green-500/20 border-b border-green-500/30 px-6 py-4 flex items-center justify-between">
                 <div>
                   <h2 className="font-oswald text-lg font-bold text-white">Turno Activo</h2>
-                  <p className="text-xs text-white/60">{currentShift.station} - {currentShift.user_name}</p>
+                  <p className="text-xs text-white/60">{currentSession.ref} - {currentSession.terminal_name}</p>
                 </div>
-                <Badge className="bg-green-500 animate-pulse text-white">En Curso</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-green-500 animate-pulse text-white">En Curso</Badge>
+                  <span className="text-xs text-white/50">{currentSession.opened_by_name}</span>
+                </div>
               </div>
-              <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+              
+              {/* Stats Grid */}
+              <div className="p-6 grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
                   <Banknote size={20} className="mx-auto mb-1 text-green-400" />
                   <p className="text-[10px] text-white/50 uppercase">Efectivo</p>
-                  <p className="font-oswald text-lg font-bold text-green-400">{formatMoney(currentShift.cash_sales)}</p>
+                  <p className="font-oswald text-lg font-bold text-green-400">{formatMoney(currentSession.cash_sales)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
                   <CreditCard size={20} className="mx-auto mb-1 text-blue-400" />
                   <p className="text-[10px] text-white/50 uppercase">Tarjeta</p>
-                  <p className="font-oswald text-lg font-bold text-blue-400">{formatMoney(currentShift.card_sales)}</p>
+                  <p className="font-oswald text-lg font-bold text-blue-400">{formatMoney(currentSession.card_sales)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
                   <TrendingUp size={20} className="mx-auto mb-1 text-orange-400" />
                   <p className="text-[10px] text-white/50 uppercase">Total Ventas</p>
-                  <p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(currentShift.total_sales)}</p>
+                  <p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(totalSales)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
-                  <CircleDollarSign size={20} className="mx-auto mb-1 text-yellow-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Propinas</p>
-                  <p className="font-oswald text-lg font-bold text-yellow-400">{formatMoney(currentShift.total_tips)}</p>
+                  <ArrowUpCircle size={20} className="mx-auto mb-1 text-emerald-400" />
+                  <p className="text-[10px] text-white/50 uppercase">Ingresos</p>
+                  <p className="font-oswald text-lg font-bold text-emerald-400">{formatMoney(currentSession.cash_in)}</p>
+                </div>
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
+                  <ArrowDownCircle size={20} className="mx-auto mb-1 text-red-400" />
+                  <p className="text-[10px] text-white/50 uppercase">Retiros</p>
+                  <p className="font-oswald text-lg font-bold text-red-400">{formatMoney(currentSession.cash_out)}</p>
                 </div>
               </div>
-              <div className="px-6 pb-4 flex items-center justify-between text-xs text-white/50">
-                <span className="flex items-center gap-1"><Clock size={12} /> Abierto: {new Date(currentShift.opened_at).toLocaleString('es-DO')}</span>
-                <span className="flex items-center gap-1"><AlertTriangle size={12} /> Anulaciones: {currentShift.cancelled_count}</span>
+              
+              {/* Expected Cash */}
+              <div className="px-6 pb-4">
+                <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-yellow-400 font-medium">Efectivo Esperado en Caja</p>
+                    <p className="text-[10px] text-white/50">Apertura + Ventas Efectivo + Ingresos - Retiros</p>
+                  </div>
+                  <p className="font-oswald text-2xl font-bold text-yellow-400">{formatMoney(expectedCash)}</p>
+                </div>
               </div>
+              
+              {/* Footer info */}
+              <div className="px-6 pb-4 flex items-center justify-between text-xs text-white/50">
+                <span className="flex items-center gap-1">
+                  <Clock size={12} /> Abierto: {new Date(currentSession.opened_at).toLocaleString('es-DO')}
+                </span>
+                <span className="flex items-center gap-1">
+                  <CircleDollarSign size={12} /> Apertura: {formatMoney(currentSession.opening_amount)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <History size={12} /> {currentSession.total_invoices} facturas
+                </span>
+              </div>
+            </div>
+            
+            {/* Recent Movements */}
+            {movements.length > 0 && (
+              <div className="mt-4">
+                <h3 className="font-oswald text-sm font-bold text-white/50 mb-3 uppercase tracking-wider flex items-center gap-2">
+                  <History size={14} /> Movimientos del Turno
+                </h3>
+                <div className="space-y-2 max-h-48 overflow-auto">
+                  {movements.slice(0, 5).map(mov => (
+                    <div key={mov.id} className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {mov.direction === 1 ? (
+                          <ArrowUpCircle size={18} className="text-green-400" />
+                        ) : (
+                          <ArrowDownCircle size={18} className="text-red-400" />
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-white">{mov.description}</p>
+                          <p className="text-[10px] text-white/50">{mov.ref} - {new Date(mov.created_at).toLocaleTimeString('es-DO')}</p>
+                        </div>
+                      </div>
+                      <p className={`font-oswald text-base font-bold ${mov.direction === 1 ? 'text-green-400' : 'text-red-400'}`}>
+                        {mov.direction === 1 ? '+' : '-'}{formatMoney(mov.amount)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* No Session - Show prompt */}
+        {!currentSession && (
+          <div className="max-w-md mx-auto mt-12 text-center">
+            <div className="backdrop-blur-xl bg-white/5 border border-white/20 rounded-xl p-8">
+              <CircleDollarSign size={48} className="mx-auto mb-4 text-orange-400/50" />
+              <h2 className="font-oswald text-xl font-bold text-white mb-2">Sin Turno Abierto</h2>
+              <p className="text-sm text-white/60 mb-6">
+                Abre un turno para comenzar a registrar ventas y movimientos de caja.
+              </p>
+              <button onClick={() => setOpenDialog(true)}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 mx-auto transition-all">
+                <Play size={18} /> ABRIR TURNO
+              </button>
             </div>
           </div>
         )}
 
-        {/* Shift History - Glassmorphism */}
-        <div className="max-w-2xl mx-auto">
+        {/* Session History */}
+        <div className="max-w-3xl mx-auto mt-8">
           <h3 className="font-oswald text-sm font-bold text-white/50 mb-3 uppercase tracking-wider">Historial de Turnos</h3>
           <div className="space-y-2">
-            {shifts.filter(s => s.status === 'closed').map(shift => (
-              <div key={shift.id} data-testid={`shift-${shift.id}`}
+            {sessions.map(session => (
+              <div key={session.id} data-testid={`session-${session.id}`}
                 className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">{shift.user_name} - {shift.station}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-white">{session.opened_by_name}</p>
+                    <span className="text-white/30">-</span>
+                    <p className="text-sm text-white/70">{session.terminal_name}</p>
+                    {session.status === 'closed' ? (
+                      <CheckCircle2 size={14} className="text-green-400" />
+                    ) : session.status === 'pending_approval' ? (
+                      <AlertTriangle size={14} className="text-yellow-400" />
+                    ) : null}
+                  </div>
                   <p className="text-[10px] text-white/50 font-mono">
-                    {new Date(shift.opened_at).toLocaleString('es-DO')} → {shift.closed_at ? new Date(shift.closed_at).toLocaleString('es-DO') : '-'}
+                    {session.ref} | {new Date(session.opened_at).toLocaleString('es-DO')} → {session.closed_at ? new Date(session.closed_at).toLocaleTimeString('es-DO') : '-'}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-oswald text-base font-bold text-orange-400">{formatMoney(shift.total_sales)}</p>
-                  <p className="text-[10px] text-white/50">Propinas: {formatMoney(shift.total_tips)}</p>
+                  <p className="font-oswald text-base font-bold text-orange-400">
+                    {formatMoney((session.cash_sales || 0) + (session.card_sales || 0) + (session.transfer_sales || 0))}
+                  </p>
+                  {session.total_difference && Math.abs(session.total_difference) > 0.01 && (
+                    <p className={`text-[10px] ${session.total_difference > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      Dif: {formatMoney(session.total_difference)}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
-            {shifts.filter(s => s.status === 'closed').length === 0 && (
+            {sessions.length === 0 && (
               <p className="text-sm text-white/40 text-center py-4">No hay turnos cerrados</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Open Shift Dialog - Glassmorphism */}
+      {/* Open Session Dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="open-shift-dialog">
-          <DialogHeader><DialogTitle className="font-oswald text-white">Abrir Turno</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="open-session-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-white">Abrir Turno</DialogTitle>
+            <DialogDescription className="text-white/60">Selecciona la estacion e ingresa el monto inicial</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-2 block">Estacion</label>
+              <label className="text-sm font-semibold text-white/60 mb-2 block">Estacion / Terminal</label>
               <div className="grid grid-cols-2 gap-2">
-                {stations.map(s => (
-                  <button key={s} onClick={() => setStation(s)}
+                {terminals.map(t => (
+                  <button key={t.code} onClick={() => { setSelectedTerminal(t.id); setTerminalName(t.name); }}
                     className={`p-2.5 rounded-lg text-sm font-medium transition-all border ${
-                      station === s ? 'border-orange-400 bg-orange-400/20 text-orange-400' : 'border-white/10 bg-white/5 text-white/70'
-                    }`}>{s}</button>
+                      terminalName === t.name ? 'border-orange-400 bg-orange-400/20 text-orange-400' : 'border-white/10 bg-white/5 text-white/70'
+                    }`}>{t.name}</button>
                 ))}
               </div>
             </div>
@@ -180,57 +415,190 @@ export default function CashRegister() {
                 value={openingAmount}
                 onChange={e => setOpeningAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-white/30 focus:bg-white/10 outline-none transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-orange-400/50 focus:bg-white/10 outline-none transition-all"
                 data-testid="opening-amount-input"
               />
+              <p className="text-[10px] text-white/40 mt-1">Cantidad de efectivo inicial en la caja</p>
             </div>
-            <button onClick={handleOpenShift} data-testid="confirm-open-shift"
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold active:scale-95 transition-all">
-              ABRIR TURNO
+            <button onClick={handleOpenSession} data-testid="confirm-open-session"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold active:scale-95 transition-all flex items-center justify-center gap-2">
+              <Play size={18} /> ABRIR TURNO
             </button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Close Shift Dialog - Glassmorphism */}
+      {/* Close Session Dialog */}
       <Dialog open={closeDialog} onOpenChange={setCloseDialog}>
-        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="close-shift-dialog">
-          <DialogHeader><DialogTitle className="font-oswald text-white">Cerrar Turno</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="close-session-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-white">Cerrar Turno</DialogTitle>
+            <DialogDescription className="text-white/60">Declara el conteo de cierre</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
-            {currentShift && (
+            {currentSession && (
               <div className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-white/60">Ventas Efectivo</span><span className="font-oswald text-white">{formatMoney(currentShift.cash_sales)}</span></div>
-                <div className="flex justify-between"><span className="text-white/60">Ventas Tarjeta</span><span className="font-oswald text-white">{formatMoney(currentShift.card_sales)}</span></div>
-                <div className="flex justify-between font-bold border-t border-white/10 pt-1"><span className="text-white">Total Ventas</span><span className="font-oswald text-orange-400">{formatMoney(currentShift.total_sales)}</span></div>
+                <div className="flex justify-between"><span className="text-white/60">Apertura</span><span className="font-oswald text-white">{formatMoney(currentSession.opening_amount)}</span></div>
+                <div className="flex justify-between"><span className="text-white/60">Ventas Efectivo</span><span className="font-oswald text-white">{formatMoney(currentSession.cash_sales)}</span></div>
+                <div className="flex justify-between"><span className="text-white/60">Ingresos</span><span className="font-oswald text-green-400">+{formatMoney(currentSession.cash_in)}</span></div>
+                <div className="flex justify-between"><span className="text-white/60">Retiros</span><span className="font-oswald text-red-400">-{formatMoney(currentSession.cash_out)}</span></div>
+                <div className="flex justify-between font-bold border-t border-white/10 pt-2 mt-2">
+                  <span className="text-yellow-400">Esperado</span>
+                  <span className="font-oswald text-yellow-400">{formatMoney(expectedCash)}</span>
+                </div>
+                <div className="flex justify-between text-white/60 pt-1">
+                  <span>Ventas Tarjeta</span>
+                  <span className="font-oswald">{formatMoney(currentSession.card_sales)}</span>
+                </div>
               </div>
             )}
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-semibold text-white/60 mb-1 block">Efectivo Contado (RD$)</label>
+                <input
+                  type="number"
+                  value={closingForm.cash_declared}
+                  onChange={e => setClosingForm({...closingForm, cash_declared: e.target.value})}
+                  placeholder="0.00"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-orange-400/50 outline-none transition-all"
+                  data-testid="closing-cash-input"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-white/60 mb-1 block">Tarjeta Declarado</label>
+                <input
+                  type="number"
+                  value={closingForm.card_declared}
+                  onChange={e => setClosingForm({...closingForm, card_declared: e.target.value})}
+                  placeholder="0.00"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-orange-400/50 outline-none transition-all"
+                  data-testid="closing-card-input"
+                />
+              </div>
+            </div>
+            
+            {/* Show difference preview */}
+            {closingForm.cash_declared && (
+              <div className={`p-3 rounded-lg border ${
+                parseFloat(closingForm.cash_declared) === expectedCash 
+                  ? 'bg-green-500/10 border-green-500/30' 
+                  : 'bg-yellow-500/10 border-yellow-500/30'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-white/70">Diferencia de Efectivo</span>
+                  <span className={`font-oswald font-bold ${
+                    parseFloat(closingForm.cash_declared) - expectedCash === 0 
+                      ? 'text-green-400' 
+                      : parseFloat(closingForm.cash_declared) - expectedCash > 0 
+                        ? 'text-emerald-400' 
+                        : 'text-red-400'
+                  }`}>
+                    {formatMoney((parseFloat(closingForm.cash_declared) || 0) - expectedCash)}
+                  </span>
+                </div>
+              </div>
+            )}
+            
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-1 block">Monto de Cierre (RD$)</label>
+              <label className="text-sm font-semibold text-white/60 mb-1 block">Notas (opcional)</label>
+              <textarea
+                value={closingForm.difference_notes}
+                onChange={e => setClosingForm({...closingForm, difference_notes: e.target.value})}
+                placeholder="Explicacion de diferencias..."
+                rows={2}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
+              />
+            </div>
+            
+            <button onClick={handleCloseSession} data-testid="confirm-close-session"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-oswald font-bold active:scale-95 transition-all flex items-center justify-center gap-2">
+              <Square size={18} /> CERRAR TURNO
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cash Movement Dialog */}
+      <Dialog open={movementDialog} onOpenChange={setMovementDialog}>
+        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="movement-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-white">Nuevo Movimiento de Caja</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-semibold text-white/60 mb-2 block">Tipo de Movimiento</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setMovementForm({...movementForm, movement_type: 'cash_in'})}
+                  className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
+                    movementForm.movement_type === 'cash_in' ? 'border-green-400 bg-green-400/20 text-green-400' : 'border-white/10 bg-white/5 text-white/70'
+                  }`}>
+                  <ArrowUpCircle size={16} /> Ingreso
+                </button>
+                <button onClick={() => setMovementForm({...movementForm, movement_type: 'cash_out'})}
+                  className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
+                    movementForm.movement_type === 'cash_out' ? 'border-red-400 bg-red-400/20 text-red-400' : 'border-white/10 bg-white/5 text-white/70'
+                  }`}>
+                  <ArrowDownCircle size={16} /> Retiro
+                </button>
+                <button onClick={() => setMovementForm({...movementForm, movement_type: 'deposit'})}
+                  className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
+                    movementForm.movement_type === 'deposit' ? 'border-blue-400 bg-blue-400/20 text-blue-400' : 'border-white/10 bg-white/5 text-white/70'
+                  }`}>
+                  <Banknote size={16} /> Deposito
+                </button>
+                <button onClick={() => setMovementForm({...movementForm, movement_type: 'petty_cash'})}
+                  className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
+                    movementForm.movement_type === 'petty_cash' ? 'border-yellow-400 bg-yellow-400/20 text-yellow-400' : 'border-white/10 bg-white/5 text-white/70'
+                  }`}>
+                  <Wallet size={16} /> Caja Chica
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-semibold text-white/60 mb-1 block">Monto (RD$)</label>
               <input
                 type="number"
-                value={closingAmount}
-                onChange={e => setClosingAmount(e.target.value)}
+                value={movementForm.amount}
+                onChange={e => setMovementForm({...movementForm, amount: e.target.value})}
                 placeholder="0.00"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-white/30 focus:bg-white/10 outline-none transition-all"
-                data-testid="closing-amount-input"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-orange-400/50 outline-none transition-all"
+                data-testid="movement-amount-input"
               />
             </div>
+            
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-1 block flex items-center gap-1">
-                <Mail size={12} /> Enviar reporte por correo (opcional)
-              </label>
+              <label className="text-sm font-semibold text-white/60 mb-1 block">Descripcion</label>
               <input
-                type="email"
-                value={emailTo}
-                onChange={e => setEmailTo(e.target.value)}
-                placeholder="correo@ejemplo.com"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-white/30 focus:bg-white/10 outline-none transition-all"
-                data-testid="shift-email-input"
+                type="text"
+                value={movementForm.description}
+                onChange={e => setMovementForm({...movementForm, description: e.target.value})}
+                placeholder="Ej: Reposicion de cambio, Pago a proveedor..."
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all"
+                data-testid="movement-description-input"
               />
             </div>
-            <button onClick={handleCloseShift} data-testid="confirm-close-shift"
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-oswald font-bold active:scale-95 transition-all">
-              CERRAR TURNO
+            
+            <div>
+              <label className="text-sm font-semibold text-white/60 mb-1 block">Notas (opcional)</label>
+              <textarea
+                value={movementForm.notes}
+                onChange={e => setMovementForm({...movementForm, notes: e.target.value})}
+                placeholder="Detalles adicionales..."
+                rows={2}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
+              />
+            </div>
+            
+            <button onClick={handleAddMovement} data-testid="confirm-movement"
+              className={`w-full h-12 rounded-xl text-white font-oswald font-bold active:scale-95 transition-all flex items-center justify-center gap-2 ${
+                movementForm.movement_type === 'cash_in' 
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+                  : 'bg-gradient-to-r from-red-500 to-rose-600'
+              }`}>
+              {movementForm.movement_type === 'cash_in' ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />}
+              REGISTRAR MOVIMIENTO
             </button>
           </div>
         </DialogContent>
