@@ -95,8 +95,9 @@ async def health_check():
     """Verifica conexion a Supabase"""
     try:
         sb = get_supabase()
-        result = sb.table("pos_terminals").select("id").limit(1).execute()
-        return {"status": "ok", "supabase": "connected", "terminals": len(result.data)}
+        # Try to access pos_sessions table
+        result = sb.table("pos_sessions").select("id").limit(1).execute()
+        return {"status": "ok", "supabase": "connected", "sessions_found": len(result.data) if result.data else 0}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
