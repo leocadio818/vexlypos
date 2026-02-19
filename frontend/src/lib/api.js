@@ -154,12 +154,28 @@ export const reasonsAPI = {
   update: (id, data) => api.put(`/cancellation-reasons/${id}`, data),
 };
 
-// Shifts
+// Shifts (Legacy MongoDB)
 export const shiftsAPI = {
   list: () => api.get('/shifts'),
   current: () => api.get('/shifts/current'),
   open: (data) => api.post('/shifts/open', data),
   close: (id, data) => api.put(`/shifts/${id}/close`, data),
+};
+
+// POS Sessions (Supabase)
+export const posSessionsAPI = {
+  health: () => api.get('/pos-sessions/health'),
+  check: () => api.get('/pos-sessions/check'),
+  current: () => api.get('/pos-sessions/current'),
+  open: (data) => api.post('/pos-sessions/open', data),
+  close: (id, data) => api.put(`/pos-sessions/${id}/close`, data),
+  history: (params) => api.get('/pos-sessions/history', { params }),
+  terminals: () => api.get('/pos-sessions/terminals'),
+  movementReasons: () => api.get('/pos-sessions/movement-reasons'),
+  // Movements
+  addMovement: (sessionId, data) => api.post(`/pos-sessions/${sessionId}/movements`, data),
+  getMovements: (sessionId) => api.get(`/pos-sessions/${sessionId}/movements`),
+  registerSale: (sessionId, amount, method) => api.put(`/pos-sessions/${sessionId}/register-sale`, null, { params: { amount, payment_method: method } }),
 };
 
 // Table Movements Audit
