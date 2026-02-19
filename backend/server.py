@@ -63,6 +63,7 @@ api = APIRouter(prefix="/api")
 # Include routers
 api.include_router(auth_router)
 api.include_router(purchasing_router)
+api.include_router(pos_sessions_router)
 api.include_router(inventory_router)
 api.include_router(recipes_router)
 api.include_router(reports_router)
