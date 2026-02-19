@@ -21,6 +21,7 @@ from apscheduler.triggers.cron import CronTrigger
 # Import routers
 from routers.auth import router as auth_router, get_current_user, get_permissions, hash_pin, DEFAULT_PERMISSIONS, ALL_PERMISSIONS
 from routers.purchasing import router as purchasing_router
+from routers.pos_sessions import router as pos_sessions_router
 from routers.inventory import router as inventory_router
 from routers.inventory import (
     explode_and_deduct_recipe, update_subrecipe_costs, calculate_recipe_cost,
