@@ -152,7 +152,7 @@ async def open_session(input: OpenSessionInput, user=Depends(get_current_user)):
         session_data = {
             "id": session_id,
             "ref": session_ref,
-            "terminal_id": input.terminal_id,
+            "terminal_id": input.terminal_id if input.terminal_id else None,
             "terminal_name": input.terminal_name,
             "opening_amount": input.opening_amount,
             "opened_at": now,
@@ -169,9 +169,7 @@ async def open_session(input: OpenSessionInput, user=Depends(get_current_user)):
             "cash_out": 0,
             "cash_movements_count": 0,
             "status": "open",
-            "notes": input.notes,
-            "created_at": now,
-            "updated_at": now
+            "notes": input.notes
         }
         
         result = sb.table("pos_sessions").insert(session_data).execute()
