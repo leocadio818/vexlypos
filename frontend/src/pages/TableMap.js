@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { areasAPI, tablesAPI } from '@/lib/api';
-import { Users, Plus, Lock, Unlock, Maximize2, Minus } from 'lucide-react';
+import { areasAPI, tablesAPI, ncfAPI } from '@/lib/api';
+import { Users, Plus, Lock, Unlock, Maximize2, Minus, AlertTriangle, FileText, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
 
 const statusColors = {
   free: { border: '#1E88E5', bg: 'rgba(30,136,229,0.15)', glow: 'rgba(30,136,229,0.4)' }, // Azul para libre
