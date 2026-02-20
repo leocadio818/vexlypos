@@ -94,6 +94,38 @@ export default function TicketDemo() {
   const [isVoid, setIsVoid] = useState(false);
   const [showBarcode, setShowBarcode] = useState(true);
   const [ncfType, setNcfType] = useState('B02');
+  const [usingServerConfig, setUsingServerConfig] = useState(false);
+
+  // Load business config from server
+  const { config: serverConfig, loading: configLoading } = useBusinessConfig();
+
+  // Use server config as initial values when loaded
+  useEffect(() => {
+    if (!configLoading && serverConfig) {
+      const isConfigured = serverConfig.name !== 'RESTAURANTE DEMO' || 
+                           serverConfig.rnc !== '1-31-12345-6' ||
+                           serverConfig.address !== 'Av. Winston Churchill #123';
+      if (isConfigured) {
+        setConfig(serverConfig);
+        setUsingServerConfig(true);
+        toast.success('Configuración cargada desde el servidor');
+      }
+    }
+  }, [configLoading, serverConfig]);
+
+  const loadServerConfig = () => {
+    if (serverConfig) {
+      setConfig(serverConfig);
+      setUsingServerConfig(true);
+      toast.success('Configuración del servidor aplicada');
+    }
+  };
+
+  const resetToDefaults = () => {
+    setConfig(DEFAULT_CONFIG);
+    setUsingServerConfig(false);
+    toast.info('Usando configuración de demostración');
+  };
 
   const handlePrint = () => {
     printTicket(ticketRef);
