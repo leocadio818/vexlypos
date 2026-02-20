@@ -199,6 +199,27 @@ export const taxesAPI = {
   getTaxSummary: (params) => api.get('/taxes/report/summary', { params }),
 };
 
+// NCF - Comprobantes Fiscales (Supabase)
+export const ncfAPI = {
+  // Types
+  getTypes: () => api.get('/ncf/types'),
+  getType: (code) => api.get(`/ncf/types/${code}`),
+  // Sequences CRUD
+  getSequences: (activeOnly = true, includeAlerts = true) => 
+    api.get('/ncf/sequences', { params: { active_only: activeOnly, include_alerts: includeAlerts } }),
+  getSequence: (id) => api.get(`/ncf/sequences/${id}`),
+  createSequence: (data) => api.post('/ncf/sequences', data),
+  updateSequence: (id, data) => api.put(`/ncf/sequences/${id}`, data),
+  deleteSequence: (id) => api.delete(`/ncf/sequences/${id}`),
+  // Generation
+  generate: (ncfTypeCode, billTotal) => 
+    api.post(`/ncf/generate/${ncfTypeCode}`, null, { params: { bill_total: billTotal } }),
+  // Return reasons
+  getReturnReasons: () => api.get('/ncf/return-reasons'),
+  // Alerts
+  getAlerts: () => api.get('/ncf/alerts'),
+};
+
 // Table Movements Audit
 export const tableMovementsAPI = {
   list: (params) => api.get('/reports/table-movements', { params }),
