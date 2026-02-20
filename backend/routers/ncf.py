@@ -350,10 +350,7 @@ async def get_return_reasons():
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        try:
-            response = supabase_client.table("return_reasons").select("*").eq("is_active", True).order("sort_order").execute()
-        except Exception:
-            response = supabase_client.table("return_reasons").select("*").eq("is_active", True).execute()
+        response = supabase_client.table("return_reasons").select("*").eq("is_active", True).execute()
         return response.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
