@@ -118,6 +118,10 @@ export default function PaymentScreen() {
   const [keypadDialog, setKeypadDialog] = useState({ open: false, method: null });
   const [keypadValue, setKeypadValue] = useState('');
   const [quickAmounts, setQuickAmounts] = useState([100, 200, 500, 1000, 2000, 5000]);
+
+  // Get service type from URL params
+  const searchParams = new URLSearchParams(window.location.search);
+  const urlServiceType = searchParams.get('serviceType') || 'dine_in';
   const [processing, setProcessing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   
