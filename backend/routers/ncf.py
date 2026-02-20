@@ -38,18 +38,18 @@ def now_iso() -> str:
 class NCFSequenceInput(BaseModel):
     ncf_type_code: str  # B01, B02, B04, etc.
     serie: str = "B"
-    prefix: str  # Ej: "B0100000001"
+    prefix: str = ""  # sequence_prefix - Ej: "B02"
     current_number: int = 1
     range_start: int = 1
     range_end: int
-    expiration_date: str  # YYYY-MM-DD
+    expiration_date: str  # YYYY-MM-DD (stored as valid_until)
     is_active: bool = True
     notes: Optional[str] = None
 
 class NCFSequenceUpdate(BaseModel):
     current_number: Optional[int] = None
     range_end: Optional[int] = None
-    expiration_date: Optional[str] = None
+    expiration_date: Optional[str] = None  # stored as valid_until
     is_active: Optional[bool] = None
     notes: Optional[str] = None
 
