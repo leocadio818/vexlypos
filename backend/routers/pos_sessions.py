@@ -356,7 +356,6 @@ async def add_cash_movement(session_id: str, input: CashMovementInput, user=Depe
             "requires_approval": input.requires_approval,
             "balance_before": round(current_balance, 2),
             "balance_after": round(new_balance, 2),
-            "created_at": now,
             "created_by": user["user_id"],
             "created_by_name": user["name"],
             "is_system": False
