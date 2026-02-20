@@ -56,6 +56,7 @@ function AppRoutes() {
         <Route path="settings/printer" element={<PrinterSettings />} />
         <Route path="product/:productId" element={<ProductConfig />} />
         <Route path="user/:userId" element={<UserConfig />} />
+        <Route path="ticket-demo" element={<TicketDemo />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
