@@ -1,12 +1,13 @@
 # PRD - POS Dominicana
 
 ## Original Problem Statement
-Sistema POS para República Dominicana con soporte completo para:
+Sistema POS de propósito general para República Dominicana con soporte completo para:
 - Facturación fiscal (NCF, DGII)
+- Sistema de impuestos dinámicos por producto
 - Gestión de inventario con trazabilidad
 - Clientes/Proveedores unificados
-- Control de caja y turnos
-- Reportes fiscales dominicanos
+- Control de caja y turnos con arqueo
+- Reportes fiscales dominicanos (Reporte Z)
 
 ## Current Branch
 `feature/analisis-dolibarr` - Rama de análisis e implementación Supabase
@@ -22,53 +23,63 @@ Sistema POS para República Dominicana con soporte completo para:
 ### 2025-02-20: Integración Supabase - Control de Caja
 - ✅ **Backend**: Router `/api/pos-sessions` conectado a Supabase
 - ✅ **Apertura de Caja**: Crear sesión con monto inicial
-- ✅ **Integración de Ventas**: Al pagar factura, actualiza `cash_sales`/`card_sales` en Supabase
-- ✅ **Movimientos de Caja**: Registro automático en `cash_movements` por cada venta
-- ✅ **Arqueo de Caja**: Modal con desglose de denominaciones (billetes y monedas RD)
-- ✅ **Cierre de Turno**: Cálculo de diferencia (esperado vs contado)
+- ✅ **Integración de Ventas**: Al pagar factura, actualiza sesión en Supabase
+- ✅ **Arqueo de Caja**: Modal con desglose de denominaciones RD
+- ✅ **cash_breakdown JSONB**: Guarda desglose completo al cerrar
+
+### 2025-02-20: Sistema de Impuestos Dinámicos
+- ✅ **tax_config**: Configuración de impuestos (ITBIS, Propina, ISC, Exento)
+- ✅ **product_taxes**: Asignación de impuestos por producto
+- ✅ **Motor de Cálculo**: `/api/taxes/calculate` con cascada de impuestos
+- ✅ **is_dine_in_only**: Propina solo para consumo en local
+- ✅ **is_delivery**: Omite propina automáticamente para Para Llevar
+- ✅ **Reporte Z Universal**: Desglose de impuestos recaudados
 
 ## Key Features
 
-### Apertura de Caja
-- Selección de terminal (Caja 1, Caja 2, Barra, Terraza, VIP)
-- Monto inicial de apertura
-- Movimiento automático tipo "opening" en cash_movements
-
-### Integración de Ventas con Sesión
-- Al pagar factura (`/bills/{id}/pay`), se actualiza automáticamente:
-  - `cash_sales` o `card_sales` según método de pago
-  - `total_invoices` incrementado
-  - Nuevo registro en `cash_movements` tipo "sale"
-
-### Arqueo de Caja (Cierre)
-- Desglose de denominaciones:
-  - Billetes: RD$ 2000, 1000, 500, 200, 100, 50
-  - Monedas: RD$ 25, 10, 5, 1
-- Cálculo automático de Total Contado
-- Comparación con Efectivo Esperado
-- Indicador visual de diferencia (verde/amarillo/rojo)
-- Campo de notas para explicar diferencias
-
-## Supabase Connection
+### Arqueo de Caja (cash_breakdown)
+```json
+{
+  "denominaciones": {
+    "2000": {"label": "RD$ 2,000", "tipo": "billete", "cantidad": 1, "subtotal": 2000},
+    "1000": {"label": "RD$ 1,000", "tipo": "billete", "cantidad": 1, "subtotal": 1000}
+  },
+  "total_declarado": 3000,
+  "total_esperado": 3000,
+  "diferencia": 0,
+  "fecha_arqueo": "2025-02-20T21:15:00Z"
+}
 ```
-URL: https://zxrziualssnmvltbzdcd.supabase.co
-Key: sb_publishable_hWJwHftCQhmE2PRmWLoEgQ_DIFucqHZ
-```
+
+### Sistema de Impuestos Dinámicos
+| Código | Nombre | Tasa | Solo Local |
+|--------|--------|------|------------|
+| ITBIS | ITBIS 18% | 18% | No |
+| ITBIS_REDUCIDO | ITBIS 16% | 16% | No |
+| PROPINA | Propina Legal 10% | 10% | ✅ Sí |
+| ISC | Impuesto Selectivo | Variable | No |
+| EXENTO | Exento de ITBIS | 0% | No |
+
+### Cálculo de Impuestos
+- **Consumo en local**: ITBIS + Propina (todos los impuestos)
+- **Para Llevar (Delivery)**: Solo ITBIS (propina omitida automáticamente)
 
 ## Key API Endpoints
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/pos-sessions/open` | POST | Abrir turno |
-| `/api/pos-sessions/current` | GET | Sesión actual |
-| `/api/pos-sessions/{id}/close` | PUT | Cerrar turno |
-| `/api/pos-sessions/{id}/movements` | POST | Agregar movimiento |
-| `/api/bills/{id}/pay` | POST | Pagar factura (actualiza sesión Supabase) |
+| `/api/pos-sessions/{id}/close` | PUT | Cerrar turno con cash_breakdown |
+| `/api/taxes/config` | GET | Listar configuraciones de impuestos |
+| `/api/taxes/products/assign` | POST | Asignar impuesto a producto |
+| `/api/taxes/calculate` | POST | Calcular impuestos (con is_delivery) |
+| `/api/taxes/report/summary` | GET | Reporte Z de impuestos |
 
-## Files Modified
+## Files Created/Modified
 - `/app/backend/routers/pos_sessions.py` - Router Supabase
+- `/app/backend/routers/taxes.py` - NEW: Sistema de impuestos dinámicos
 - `/app/backend/routers/billing.py` - Integración ventas con Supabase
-- `/app/backend/server.py` - Include routers + init_supabase
 - `/app/frontend/src/pages/CashRegister.js` - UI Arqueo de caja
+- `/app/frontend/src/lib/api.js` - taxesAPI, posSessionsAPI
 
 ## Prioritized Backlog
 
@@ -76,15 +87,20 @@ Key: sb_publishable_hWJwHftCQhmE2PRmWLoEgQ_DIFucqHZ
 - [x] Apertura de caja con monto inicial
 - [x] Integración ventas con sesión de caja
 - [x] Arqueo de caja con desglose de denominaciones
-- [x] Cierre de turno con cálculo de diferencia
+- [x] Sistema de impuestos dinámicos por producto
+- [x] Propina solo para consumo en local
+- [x] Reporte Z con desglose de impuestos
 
 ### P1 - Alta Prioridad
+- [ ] UI para configurar impuestos en Settings
+- [ ] UI para asignar impuestos a productos/categorías
+- [ ] Checkbox "Para Llevar" en el carrito de compras
 - [ ] Audit Trail Security (solo Admin ve PINs)
 - [ ] Employee Time Clock (entrada/salida)
-- [ ] Generación reportes DGII (607, 608)
 
 ### P2 - Media Prioridad
 - [ ] Reportes de caja por período
+- [ ] Generación reportes DGII (607, 608)
 - [ ] Imágenes/iconos para botones de productos
 - [ ] Print Agent como ejecutable .exe
 
