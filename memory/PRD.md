@@ -47,6 +47,14 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **Página Demo**: /ticket-demo para configurar y probar tickets
 - ✅ **Integración PaymentScreen**: Diálogo de impresión post-pago
 
+### 2025-02-20: Configuración de Datos del Negocio para Ticket
+- ✅ **Settings > Sistema**: Nueva sección "Datos del Negocio para Ticket"
+- ✅ **Campos configurables**: Nombre comercial, razón social, RNC, dirección, teléfono, email
+- ✅ **Campos fiscales**: Fecha vencimiento NCF, mensaje de agradecimiento, mensaje DGII
+- ✅ **useBusinessConfig Hook**: Carga configuración del servidor en ThermalTicket.js
+- ✅ **Persistencia MongoDB**: Datos guardados en /api/system/config
+- ✅ **TicketDemo**: Indicador "Servidor" cuando usa config del backend
+
 ## Key Features
 
 ### Ticket Térmico 80mm
