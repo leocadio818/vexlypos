@@ -1383,6 +1383,50 @@ export default function OrderScreen() {
             </ScrollArea>
 
             <div className="px-3 py-2.5 border-t border-border space-y-1">
+              {/* Service Type Toggle - Para Llevar / Comer Aquí */}
+              {subtotal > 0 && (
+                <div className="flex items-center justify-between py-2 mb-2 border-b border-border/50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Tipo de Servicio:</span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-background rounded-lg p-0.5 border border-border">
+                    <button
+                      onClick={() => setServiceType('dine_in')}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-oswald transition-all ${
+                        serviceType === 'dine_in' 
+                          ? 'bg-primary text-primary-foreground font-bold' 
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                      data-testid="service-type-dine-in"
+                    >
+                      <Utensils size={12} /> Local
+                    </button>
+                    <button
+                      onClick={() => setServiceType('takeaway')}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-oswald transition-all ${
+                        serviceType === 'takeaway' 
+                          ? 'bg-amber-600 text-white font-bold' 
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                      data-testid="service-type-takeaway"
+                    >
+                      <ShoppingBag size={12} /> Llevar
+                    </button>
+                    <button
+                      onClick={() => setServiceType('delivery')}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-oswald transition-all ${
+                        serviceType === 'delivery' 
+                          ? 'bg-blue-600 text-white font-bold' 
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                      data-testid="service-type-delivery"
+                    >
+                      <Truck size={12} /> Delivery
+                    </button>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <span>Subtotal</span>
                 <span className="font-oswald">{formatMoney(subtotal)}</span>
@@ -1393,6 +1437,12 @@ export default function OrderScreen() {
                   <span className="font-oswald">{formatMoney(tax.amount)}</span>
                 </div>
               ))}
+              {/* Show omitted taxes info when not dine_in */}
+              {subtotal > 0 && serviceType !== 'dine_in' && taxConfig.some(t => t.is_dine_in_only) && (
+                <div className="flex justify-between items-center text-[10px] text-amber-500/70 italic">
+                  <span>* Propina omitida (solo aplica en local)</span>
+                </div>
+              )}
               {subtotal > 0 && (
                 <div className="flex justify-between items-center font-oswald border-t border-border/50 pt-1.5 mt-1">
                   <span className="text-sm text-muted-foreground">Total</span>
