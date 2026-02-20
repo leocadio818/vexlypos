@@ -1997,32 +1997,31 @@ export default function Settings() {
                   <div className="bg-destructive/5 border border-destructive/30 rounded-xl p-4">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
-                        <Database size={20} className="text-destructive" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-destructive">Mantenimiento de Base de Datos</h3>
-                          <p className="text-[10px] text-muted-foreground">Acciones administrativas del sistema</p>
-                        </div>
+                      <Database size={20} className="text-destructive" />
                       </div>
-                      
-                      <p className="text-xs text-muted-foreground mb-4">
-                        Estas acciones son irreversibles y eliminan datos permanentemente del sistema.
-                        Solo el administrador del sistema puede ejecutarlas.
-                      </p>
-                      
-                      <Button 
-                        onClick={() => setResetDialog(prev => ({ ...prev, open: true }))}
-                        variant="destructive"
-                        className="w-full h-11 font-oswald font-bold"
-                        data-testid="factory-reset-btn"
-                      >
-                        <ServerCrash size={18} className="mr-2" />
-                        RESETEAR SISTEMA A FÁBRICA
-                      </Button>
+                      <div>
+                        <h3 className="text-sm font-bold text-destructive">Mantenimiento de Base de Datos</h3>
+                        <p className="text-[10px] text-muted-foreground">Acciones administrativas del sistema</p>
+                      </div>
                     </div>
+                    
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Estas acciones son irreversibles y eliminan datos permanentemente del sistema.
+                      Solo el administrador del sistema puede ejecutarlas.
+                    </p>
+                    
+                    <Button 
+                      onClick={() => setResetDialog(prev => ({ ...prev, open: true }))}
+                      variant="destructive"
+                      className="w-full h-11 font-oswald font-bold"
+                      data-testid="factory-reset-btn"
+                    >
+                      <ServerCrash size={18} className="mr-2" />
+                      RESETEAR SISTEMA A FÁBRICA
+                    </Button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </TabsContent>
 
