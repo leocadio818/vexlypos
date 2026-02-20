@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { areasAPI, tablesAPI, reasonsAPI, categoriesAPI, productsAPI, inventorySettingsAPI, warehousesAPI, taxesAPI, ncfAPI } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil, Printer, ShoppingBag, Cog, BarChart3, Truck, Heart, Percent, ChevronRight, Banknote, X, Check, Smartphone, Building2, DollarSign, Euro, Palette, GripVertical, RotateCcw, ListChecks, CirclePlus, Search, Sparkles, Database, ServerCrash, ShieldAlert, Calculator, FileText, Calendar, AlertCircle, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil, Printer, ShoppingBag, Cog, BarChart3, Truck, Heart, Percent, ChevronRight, Banknote, X, Check, Smartphone, Building2, DollarSign, Euro, Palette, GripVertical, RotateCcw, ListChecks, CirclePlus, Search, Sparkles, Database, ServerCrash, ShieldAlert, Calculator, FileText, Calendar, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import ThermalTicket from '@/components/ThermalTicket';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
