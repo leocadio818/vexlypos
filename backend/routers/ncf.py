@@ -104,7 +104,7 @@ async def get_ncf_sequences(
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        # Simple query without join - we'll add type info manually
+        # Simple query
         query = supabase_client.table("ncf_sequences").select("*")
         
         if active_only:
@@ -119,21 +119,30 @@ async def get_ncf_sequences(
         
         today = date.today()
         
-        # Add alerts and type info
+        # Add alerts and type info, map field names
         for seq in sequences:
+            # Map DB column names to API field names
+            seq["ncf_type_code"] = seq.get("ncf_type_id")
+            seq["prefix"] = seq.get("sequence_prefix")
+            seq["range_start"] = 1  # Not stored in DB
+            seq["range_end"] = seq.get("end_number")
+            seq["expiration_date"] = seq.get("valid_until")
+            
             # Add type info
-            type_info = types_map.get(seq.get("ncf_type_code"), {})
+            type_code = seq.get("ncf_type_code") or seq.get("ncf_type_id")
+            type_info = types_map.get(type_code, {})
             seq["ncf_types_config"] = {
-                "name": type_info.get("description", seq.get("ncf_type_code")),
+                "name": type_info.get("description", type_code or "N/A"),
                 "description": type_info.get("description", ""),
                 "requires_rnc": type_info.get("requires_rnc", False)
             }
             
-            remaining = seq["range_end"] - seq["current_number"] + 1
+            remaining = (seq.get("end_number") or 0) - (seq.get("current_number") or 0) + 1
             exp_date = None
-            if seq.get("expiration_date"):
+            exp_date_str = seq.get("valid_until") or seq.get("expiration_date")
+            if exp_date_str:
                 try:
-                    exp_date = datetime.strptime(str(seq["expiration_date"])[:10], "%Y-%m-%d").date()
+                    exp_date = datetime.strptime(str(exp_date_str)[:10], "%Y-%m-%d").date()
                 except:
                     pass
             
