@@ -192,26 +192,31 @@ async def create_ncf_sequence(input: NCFSequenceInput):
         # Check for existing active sequence (simplified - get all and filter)
         all_sequences = supabase_client.table("ncf_sequences").select("*").execute()
         existing = [s for s in (all_sequences.data or []) 
-                   if s.get("ncf_type_code") == input.ncf_type_code.upper() and s.get("is_active")]
+                   if s.get("ncf_type_id") == input.ncf_type_code.upper() and s.get("is_active")]
         
         if existing:
             raise HTTPException(status_code=400, detail=f"Ya existe una secuencia activa para {input.ncf_type_code}")
         
+        # Map our API fields to the actual DB column names
+        prefix = input.prefix if input.prefix else f"{input.serie}{input.ncf_type_code[1:]}"
         data = {
-            "ncf_type_code": input.ncf_type_code.upper(),
-            "serie": input.serie.upper(),
-            "prefix": input.prefix or f"{input.serie}{input.ncf_type_code[1:]}",
+            "ncf_type_id": input.ncf_type_code.upper(),
+            "sequence_prefix": prefix,
             "current_number": input.current_number,
-            "range_start": input.range_start,
-            "range_end": input.range_end,
-            "expiration_date": input.expiration_date,
-            "is_active": input.is_active if input.is_active is not None else True,
-            "notes": input.notes
+            "end_number": input.range_end,
+            "valid_until": input.expiration_date,
+            "is_active": input.is_active if input.is_active is not None else True
         }
         
         response = supabase_client.table("ncf_sequences").insert(data).execute()
         if response.data:
-            return response.data[0]
+            # Map back to our API format
+            result = response.data[0]
+            result["ncf_type_code"] = result.get("ncf_type_id")
+            result["prefix"] = result.get("sequence_prefix")
+            result["range_end"] = result.get("end_number")
+            result["expiration_date"] = result.get("valid_until")
+            return result
         else:
             raise HTTPException(status_code=500, detail="Error al insertar secuencia")
     except HTTPException:
