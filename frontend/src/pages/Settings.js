@@ -1839,6 +1839,157 @@ export default function Settings() {
                 <Button onClick={handleSaveSystemConfig} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
                   GUARDAR CONFIGURACIÓN
                 </Button>
+              </div>
+
+              {/* ─────────────────────────────────────────────────────────────
+                  CONFIGURACIÓN DEL TICKET / NEGOCIO PARA IMPRESIÓN
+              ───────────────────────────────────────────────────────────── */}
+              <div className="mt-8 pt-6 border-t border-border">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                    <Printer size={20} className="text-green-500" />
+                  </div>
+                  <div>
+                    <h2 className="font-oswald text-base font-bold">Datos del Negocio para Ticket</h2>
+                    <p className="text-xs text-muted-foreground">Esta información aparecerá en los tickets impresos</p>
+                  </div>
+                </div>
+
+                {/* Nombre Comercial */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <Building2 size={14} className="text-primary" />
+                    Nombre Comercial
+                  </h3>
+                  <input 
+                    value={systemConfig.ticket_business_name || systemConfig.restaurant_name || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_business_name: e.target.value }))}
+                    placeholder="RESTAURANTE DEMO"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald uppercase"
+                    data-testid="ticket-business-name"
+                  />
+                </div>
+
+                {/* Razón Social (Legal Name) */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                  <h3 className="text-sm font-semibold mb-2">Razón Social</h3>
+                  <p className="text-xs text-muted-foreground mb-2">Nombre legal de la empresa para documentos fiscales</p>
+                  <input 
+                    value={systemConfig.ticket_legal_name || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_legal_name: e.target.value }))}
+                    placeholder="RESTAURANTE DEMO SRL"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                    data-testid="ticket-legal-name"
+                  />
+                </div>
+
+                {/* RNC para Ticket (usa el general si no se especifica) */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <ShieldAlert size={14} className="text-yellow-500" />
+                    RNC (Ticket)
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-2">Si está vacío, usa el RNC del sistema</p>
+                  <input 
+                    value={systemConfig.ticket_rnc || systemConfig.rnc || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_rnc: e.target.value }))}
+                    placeholder="1-31-12345-6"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
+                    data-testid="ticket-rnc"
+                  />
+                </div>
+
+                {/* Dirección */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <MapPin size={14} className="text-blue-500" />
+                    Dirección
+                  </h3>
+                  <input 
+                    value={systemConfig.ticket_address || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_address: e.target.value }))}
+                    placeholder="Av. Winston Churchill #123"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2"
+                    data-testid="ticket-address"
+                  />
+                  <input 
+                    value={systemConfig.ticket_address2 || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_address2: e.target.value }))}
+                    placeholder="Ens. Piantini, Santo Domingo (opcional)"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                    data-testid="ticket-address2"
+                  />
+                </div>
+
+                {/* Teléfono */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                  <h3 className="text-sm font-semibold mb-2">Teléfono</h3>
+                  <input 
+                    value={systemConfig.ticket_phone || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_phone: e.target.value }))}
+                    placeholder="809-555-1234"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                    data-testid="ticket-phone"
+                  />
+                </div>
+
+                {/* Email (opcional) */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                  <h3 className="text-sm font-semibold mb-2">Email (opcional)</h3>
+                  <input 
+                    value={systemConfig.ticket_email || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_email: e.target.value }))}
+                    placeholder="info@mirestaurante.com"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                    data-testid="ticket-email"
+                  />
+                </div>
+
+                {/* NCF Expiry Date */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <AlertTriangle size={14} className="text-orange-500" />
+                    Fecha Vencimiento NCF
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-2">Fecha hasta la cual son válidos los comprobantes fiscales</p>
+                  <input 
+                    type="text"
+                    value={systemConfig.ticket_ncf_expiry || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_ncf_expiry: e.target.value }))}
+                    placeholder="31/12/2025"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                    data-testid="ticket-ncf-expiry"
+                  />
+                </div>
+
+                {/* Footer Message */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                  <h3 className="text-sm font-semibold mb-2">Mensaje de Agradecimiento</h3>
+                  <input 
+                    value={systemConfig.ticket_footer_message || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_footer_message: e.target.value }))}
+                    placeholder="¡Gracias por su visita!"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                    data-testid="ticket-footer-message"
+                  />
+                </div>
+
+                {/* DGII Message */}
+                <div className="bg-card border border-border rounded-xl p-4 mb-4">
+                  <h3 className="text-sm font-semibold mb-2">Mensaje DGII</h3>
+                  <input 
+                    value={systemConfig.ticket_dgii_message || ''} 
+                    onChange={e => setSystemConfig(p => ({ ...p, ticket_dgii_message: e.target.value }))}
+                    placeholder="Conserve este documento para fines de DGII"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                    data-testid="ticket-dgii-message"
+                  />
+                </div>
+
+                <Button onClick={handleSaveSystemConfig} className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold active:scale-95" data-testid="save-ticket-config">
+                  <Check size={18} className="mr-2" /> GUARDAR DATOS DEL TICKET
+                </Button>
+              </div>
 
                 {/* Database Maintenance - Admin Only */}
                 {user?.role === 'admin' && (
