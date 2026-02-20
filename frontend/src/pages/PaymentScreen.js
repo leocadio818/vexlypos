@@ -137,6 +137,9 @@ export default function PaymentScreen() {
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [paidBill, setPaidBill] = useState(null); // Bill after payment for printing
 
+  // Business config for thermal ticket (loaded from backend)
+  const { config: businessConfig } = useBusinessConfig();
+
   // NCF Fiscal Types (Dominican Republic) - B02 = Consumidor Final es el default
   const fiscalTypes = [
     { code: 'B02', name: 'Consumidor Final', short: 'CF' },
