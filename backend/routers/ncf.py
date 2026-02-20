@@ -63,12 +63,13 @@ async def get_ncf_types():
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        # Try with sort_order, fallback to code if column doesn't exist
-        try:
-            response = supabase_client.table("ncf_types_config").select("*").order("sort_order").execute()
-        except Exception:
-            response = supabase_client.table("ncf_types_config").select("*").order("code").execute()
-        return response.data
+        # Simple select without ordering to avoid column issues
+        response = supabase_client.table("ncf_types_config").select("*").execute()
+        # Sort in Python if needed
+        data = response.data
+        if data and len(data) > 0:
+            data = sorted(data, key=lambda x: x.get('code', ''))
+        return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
