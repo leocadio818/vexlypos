@@ -53,6 +53,7 @@ orders_set_db(db)
 tables_set_db(db)
 billing_set_db(db)
 billing_init_supabase()  # Initialize Supabase for pos_sessions integration
+ncf_init_supabase()  # Initialize Supabase for NCF management
 kitchen_set_db(db)
 taxes_set_db(db)
 customers_set_db(db)
