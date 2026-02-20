@@ -12,7 +12,7 @@ import argparse
 from datetime import datetime
 
 # Configuracion por defecto
-DEFAULT_API_URL = "https://erp-schema-study.preview.emergentagent.com/api"
+DEFAULT_API_URL = "https://printer-template-dev.preview.emergentagent.com/api"
 POLL_INTERVAL = 3  # segundos
 
 # Mapeo de canales a impresoras Windows
