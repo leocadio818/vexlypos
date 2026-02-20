@@ -169,32 +169,49 @@ export default function CashRegister() {
   const handleCloseSession = async () => {
     if (!currentSession) return;
     
-    // Build cash breakdown object
-    const cashBreakdown = {};
-    DENOMINATIONS.forEach(d => {
-      if (denominationCounts[d.value] > 0) {
-        cashBreakdown[d.value] = {
-          count: denominationCounts[d.value],
-          subtotal: d.value * denominationCounts[d.value]
-        };
-      }
+    // Build cash breakdown object con estructura detallada
+    const cashBreakdown = {
+      denominaciones: {},
+      total_declarado: totalDeclarado,
+      total_esperado: totalEsperado,
+      diferencia: diferenciaCaja,
+      fecha_arqueo: new Date().toISOString()
+    };
+    
+    DENOMINACIONES.forEach(d => {
+      const cantidad = denominationCounts[d.valor] || 0;
+      cashBreakdown.denominaciones[d.valor] = {
+        label: d.label,
+        tipo: d.tipo,
+        cantidad: cantidad,
+        subtotal: d.valor * cantidad
+      };
     });
     
     try {
       const res = await posSessionsAPI.close(currentSession.id, {
-        cash_declared: cashDeclaredFromDenominations,
+        cash_declared: totalDeclarado,
         card_declared: parseFloat(cardDeclared) || 0,
         transfer_declared: parseFloat(transferDeclared) || 0,
         cash_breakdown: cashBreakdown,
         difference_notes: differenceNotes
       });
       
-      if (res.data.requires_approval) {
-        toast.warning('Turno cerrado - Pendiente de aprobación', {
-          description: `Diferencia: ${formatMoney(res.data.difference)}`
+      const alertStatus = getAlertStatus();
+      if (alertStatus.type === 'major') {
+        toast.error('⚠️ ALERTA: Descuadre de caja', {
+          description: `Diferencia: ${formatMoney(diferenciaCaja)} - Requiere revisión`
+        });
+      } else if (alertStatus.type === 'minor') {
+        toast.warning('Turno cerrado con faltante menor', {
+          description: `Diferencia: ${formatMoney(diferenciaCaja)}`
+        });
+      } else if (alertStatus.type === 'surplus') {
+        toast.info('Turno cerrado con sobrante', {
+          description: `Diferencia: ${formatMoney(diferenciaCaja)}`
         });
       } else {
-        toast.success('Turno cerrado correctamente');
+        toast.success('Turno cerrado - Caja cuadrada');
       }
       
       setCurrentSession(null);
@@ -209,7 +226,7 @@ export default function CashRegister() {
   };
 
   const resetClosingForm = () => {
-    setDenominationCounts(DENOMINATIONS.reduce((acc, d) => ({ ...acc, [d.value]: 0 }), {}));
+    setDenominationCounts(DENOMINACIONES.reduce((acc, d) => ({ ...acc, [d.valor]: 0 }), {}));
     setCardDeclared('');
     setTransferDeclared('');
     setDifferenceNotes('');
