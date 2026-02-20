@@ -188,8 +188,29 @@ export default function Settings() {
         setCategoryChannels(ccRes.data || []);
         const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
         setRoles(rolesRes.data);
-        const taxRes = await axios.get(`${API}/tax-config`, { headers: hdrs() });
-        setTaxConfig(taxRes.data);
+        
+        // Load tax config
+        try {
+          const taxRes = await taxesAPI.getConfigs();
+          setTaxConfig(taxRes.data);
+        } catch (e) {
+          console.warn('Could not load tax config:', e);
+        }
+        
+        // Load NCF data (Supabase)
+        try {
+          const [ncfTypesRes, ncfSeqRes, ncfAlertsRes] = await Promise.all([
+            ncfAPI.getTypes(),
+            ncfAPI.getSequences(true, true),
+            ncfAPI.getAlerts()
+          ]);
+          setNcfTypes(ncfTypesRes.data);
+          setNcfSequences(ncfSeqRes.data);
+          setNcfAlerts(ncfAlertsRes.data.alerts || { critical: [], warning: [], ok: [] });
+        } catch (e) {
+          console.warn('Could not load NCF data:', e);
+        }
+        
         // Load inventory settings and warehouses
         try {
           const [invSettingsRes, whRes] = await Promise.all([
