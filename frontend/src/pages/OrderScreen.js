@@ -174,6 +174,15 @@ export default function OrderScreen() {
         const taxes = await taxRes.json();
         setTaxConfig(taxes.filter(t => t.active && t.rate > 0));
       } catch {}
+      // Fetch sale types (with NCF defaults and tax exemptions)
+      try {
+        const stRes = await fetch(`${API_BASE}/api/sale-types`);
+        const stData = await stRes.json();
+        setSaleTypes(stData);
+        // Set initial sale type based on serviceType
+        const initialSaleType = stData.find(st => st.code === 'dine_in') || stData[0];
+        setCurrentSaleType(initialSaleType);
+      } catch {}
     };
     fetchAll(); fetchOrder();
   }, [fetchOrder, API_BASE]);
