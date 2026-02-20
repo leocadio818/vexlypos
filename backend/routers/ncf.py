@@ -78,7 +78,7 @@ async def get_ncf_type(code: str):
     try:
         response = supabase_client.table("ncf_types_config").select("*").eq("code", code.upper()).single().execute()
         return response.data
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=404, detail=f"Tipo NCF {code} no encontrado")
 
 
@@ -149,7 +149,7 @@ async def get_ncf_sequence(seq_id: str):
     try:
         response = supabase_client.table("ncf_sequences").select("*, ncf_types_config(name, description)").eq("id", seq_id).single().execute()
         return response.data
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=404, detail="Secuencia no encontrada")
 
 
