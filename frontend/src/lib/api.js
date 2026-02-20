@@ -178,6 +178,27 @@ export const posSessionsAPI = {
   registerSale: (sessionId, amount, method) => api.put(`/pos-sessions/${sessionId}/register-sale`, null, { params: { amount, payment_method: method } }),
 };
 
+// Tax Configuration (Sistema de Impuestos Dinámico)
+export const taxesAPI = {
+  // Config
+  getConfigs: () => api.get('/taxes/config'),
+  createConfig: (data) => api.post('/taxes/config', data),
+  updateConfig: (code, data) => api.put(`/taxes/config/${code}`, data),
+  deleteConfig: (code) => api.delete(`/taxes/config/${code}`),
+  seedDefaults: () => api.post('/taxes/seed-defaults'),
+  // Product taxes
+  getProductTaxes: (productId) => api.get(`/taxes/products/${productId}`),
+  assignTax: (data) => api.post('/taxes/products/assign', data),
+  removeTax: (productId, taxCode) => api.delete(`/taxes/products/${productId}/${taxCode}`),
+  bulkAssign: (productIds, taxCode) => api.post('/taxes/products/bulk-assign', { product_ids: productIds, tax_code: taxCode }),
+  assignToCategory: (categoryId, taxCode) => api.post('/taxes/category/assign', null, { params: { category_id: categoryId, tax_code: taxCode } }),
+  // Calculation
+  calculate: (productId, quantity, unitPrice, isDelivery = false) => 
+    api.post('/taxes/calculate', null, { params: { product_id: productId, quantity, unit_price: unitPrice, is_delivery: isDelivery } }),
+  // Report
+  getTaxSummary: (params) => api.get('/taxes/report/summary', { params }),
+};
+
 // Table Movements Audit
 export const tableMovementsAPI = {
   list: (params) => api.get('/reports/table-movements', { params }),
