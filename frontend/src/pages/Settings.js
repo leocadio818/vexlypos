@@ -55,6 +55,38 @@ export default function Settings() {
   const [roleDialog, setRoleDialog] = useState({ open: false, name: '', code: '', editId: null });
   const [taxConfig, setTaxConfig] = useState([]);
   
+  // NCF State
+  const [ncfTypes, setNcfTypes] = useState([]);
+  const [ncfSequences, setNcfSequences] = useState([]);
+  const [ncfAlerts, setNcfAlerts] = useState({ critical: [], warning: [], ok: [] });
+  const [ncfDialog, setNcfDialog] = useState({ 
+    open: false, 
+    ncf_type_code: '', 
+    serie: 'B', 
+    prefix: '', 
+    current_number: 1, 
+    range_start: 1, 
+    range_end: 100,
+    expiration_date: '',
+    notes: '',
+    editId: null 
+  });
+  
+  // Tax Config Dialog
+  const [taxDialog, setTaxDialog] = useState({
+    open: false,
+    code: '',
+    name: '',
+    rate: 18,
+    tax_type: 'percentage',
+    applies_to: 'subtotal',
+    is_dine_in_only: false,
+    dgii_code: '',
+    description: '',
+    sort_order: 0,
+    editId: null
+  });
+  
   // Check if user can access theme settings (admin, manager, owner, gerente, propietario)
   const canAccessTheme = ['admin', 'manager', 'owner', 'propietario', 'gerente'].includes(user?.role);
 
