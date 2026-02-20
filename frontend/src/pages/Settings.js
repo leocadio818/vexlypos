@@ -2378,30 +2378,45 @@ export default function Settings() {
                   CONFIGURACIÓN DEL TICKET / NEGOCIO PARA IMPRESIÓN
               ───────────────────────────────────────────────────────────── */}
               <div className="mt-8 pt-6 border-t border-border">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
-                    <Printer size={20} className="text-green-500" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                      <Printer size={20} className="text-green-500" />
+                    </div>
+                    <div>
+                      <h2 className="font-oswald text-base font-bold">Datos del Negocio para Ticket</h2>
+                      <p className="text-xs text-muted-foreground">Esta información aparecerá en los tickets impresos</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="font-oswald text-base font-bold">Datos del Negocio para Ticket</h2>
-                    <p className="text-xs text-muted-foreground">Esta información aparecerá en los tickets impresos</p>
-                  </div>
+                  <Button
+                    variant={showTicketPreview ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowTicketPreview(!showTicketPreview)}
+                    className={showTicketPreview ? "bg-green-600 hover:bg-green-700" : ""}
+                    data-testid="toggle-ticket-preview"
+                  >
+                    {showTicketPreview ? <EyeOff size={14} className="mr-1" /> : <Eye size={14} className="mr-1" />}
+                    {showTicketPreview ? "Ocultar Vista Previa" : "Ver Vista Previa"}
+                  </Button>
                 </div>
 
-                {/* Nombre Comercial */}
-                <div className="bg-card border border-border rounded-xl p-4 mb-3">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <Building2 size={14} className="text-primary" />
-                    Nombre Comercial
-                  </h3>
-                  <input 
-                    value={systemConfig.ticket_business_name || systemConfig.restaurant_name || ''} 
-                    onChange={e => setSystemConfig(p => ({ ...p, ticket_business_name: e.target.value }))}
-                    placeholder="RESTAURANTE DEMO"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald uppercase"
-                    data-testid="ticket-business-name"
-                  />
-                </div>
+                <div className={`grid gap-6 ${showTicketPreview ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
+                  {/* Left Column - Form Fields */}
+                  <div className="space-y-3">
+                    {/* Nombre Comercial */}
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <Building2 size={14} className="text-primary" />
+                        Nombre Comercial
+                      </h3>
+                      <input 
+                        value={systemConfig.ticket_business_name || systemConfig.restaurant_name || ''} 
+                        onChange={e => setSystemConfig(p => ({ ...p, ticket_business_name: e.target.value }))}
+                        placeholder="RESTAURANTE DEMO"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald uppercase"
+                        data-testid="ticket-business-name"
+                      />
+                    </div>
 
                 {/* Razón Social (Legal Name) */}
                 <div className="bg-card border border-border rounded-xl p-4 mb-3">
