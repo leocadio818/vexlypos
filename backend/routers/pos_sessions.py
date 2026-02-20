@@ -185,7 +185,7 @@ async def open_session(input: OpenSessionInput, user=Depends(get_current_user)):
                 "id": gen_id(),
                 "ref": generate_movement_ref(),
                 "session_id": session_id,
-                "terminal_id": input.terminal_id,
+                "terminal_id": input.terminal_id if input.terminal_id else None,
                 "movement_type": "opening",
                 "direction": 1,
                 "amount": input.opening_amount,
@@ -193,7 +193,6 @@ async def open_session(input: OpenSessionInput, user=Depends(get_current_user)):
                 "description": f"Fondo de apertura - {session_ref}",
                 "balance_before": 0,
                 "balance_after": input.opening_amount,
-                "created_at": now,
                 "created_by": user["user_id"],
                 "created_by_name": user["name"],
                 "is_system": True
