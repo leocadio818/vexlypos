@@ -171,7 +171,7 @@ async def get_ncf_sequence(seq_id: str):
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        response = supabase_client.table("ncf_sequences").select("*, ncf_types_config(name, description)").eq("id", seq_id).single().execute()
+        response = supabase_client.table("ncf_sequences").select("*").eq("id", seq_id).single().execute()
         return response.data
     except Exception:
         raise HTTPException(status_code=404, detail="Secuencia no encontrada")
