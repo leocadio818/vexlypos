@@ -197,10 +197,33 @@ export default function TicketDemo() {
           </button>
           <div>
             <h1 className="font-oswald text-xl font-bold text-white">TICKET TÉRMICO 80MM</h1>
-            <p className="text-xs text-white/50">Vista previa y configuración</p>
+            <p className="text-xs text-white/50 flex items-center gap-2">
+              Vista previa y configuración
+              {usingServerConfig ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px]">
+                  <Cloud size={10} /> Servidor
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px]">
+                  <CloudOff size={10} /> Demo
+                </span>
+              )}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Toggle Server/Demo Config */}
+          <button
+            onClick={usingServerConfig ? resetToDefaults : loadServerConfig}
+            className={`p-2.5 rounded-xl border transition-all ${
+              usingServerConfig 
+                ? 'bg-green-500/20 border-green-500/30 text-green-400 hover:bg-green-500/30' 
+                : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/30'
+            }`}
+            title={usingServerConfig ? 'Usar config demo' : 'Cargar config del servidor'}
+          >
+            {usingServerConfig ? <CloudOff size={18} /> : <Cloud size={18} />}
+          </button>
           <button
             onClick={randomizeData}
             className="p-2.5 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500/30 transition-all"
