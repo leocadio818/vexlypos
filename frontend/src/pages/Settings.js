@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { areasAPI, tablesAPI, reasonsAPI, categoriesAPI, productsAPI, inventorySettingsAPI, warehousesAPI } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil, Printer, ShoppingBag, Cog, BarChart3, Truck, Heart, Percent, ChevronRight, Banknote, X, Check, Smartphone, Building2, DollarSign, Euro, Palette, GripVertical, RotateCcw, ListChecks, CirclePlus, Search, Sparkles, Database, ServerCrash, ShieldAlert } from 'lucide-react';
+import { Settings as SettingsIcon, MapPin, Table2, AlertTriangle, Plus, Trash2, Package, Tag, Users, CreditCard, Shield, Pencil, Printer, ShoppingBag, Cog, BarChart3, Truck, Heart, Percent, ChevronRight, Banknote, X, Check, Smartphone, Building2, DollarSign, Euro, Palette, GripVertical, RotateCcw, ListChecks, CirclePlus, Search, Sparkles, Database, ServerCrash, ShieldAlert, Calculator, FileText, Calendar, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
