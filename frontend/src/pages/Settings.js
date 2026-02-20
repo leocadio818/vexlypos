@@ -598,6 +598,137 @@ export default function Settings() {
     setTaxConfig(prev => prev.map((t, i) => i === idx ? { ...t, [field]: value } : t));
   };
 
+  // ─── TAX CONFIG HANDLERS ───
+  const handleSaveTax = async () => {
+    if (!taxDialog.code.trim() || !taxDialog.name.trim()) {
+      toast.error('Código y nombre son requeridos');
+      return;
+    }
+    try {
+      const data = {
+        code: taxDialog.code.toUpperCase(),
+        name: taxDialog.name,
+        rate: parseFloat(taxDialog.rate) || 0,
+        tax_type: taxDialog.tax_type,
+        applies_to: taxDialog.applies_to,
+        is_dine_in_only: taxDialog.is_dine_in_only,
+        dgii_code: taxDialog.dgii_code || null,
+        description: taxDialog.description || null,
+        sort_order: parseInt(taxDialog.sort_order) || 0
+      };
+      
+      if (taxDialog.editId) {
+        await taxesAPI.updateConfig(taxDialog.editId, data);
+        toast.success('Impuesto actualizado');
+      } else {
+        await taxesAPI.createConfig(data);
+        toast.success('Impuesto creado');
+      }
+      setTaxDialog({ open: false, code: '', name: '', rate: 18, tax_type: 'percentage', applies_to: 'subtotal', is_dine_in_only: false, dgii_code: '', description: '', sort_order: 0, editId: null });
+      // Refresh tax config
+      const taxRes = await taxesAPI.getConfigs();
+      setTaxConfig(taxRes.data);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al guardar impuesto');
+    }
+  };
+
+  const handleDeleteTax = async (code) => {
+    if (!confirm(`¿Desactivar impuesto ${code}?`)) return;
+    try {
+      await taxesAPI.deleteConfig(code);
+      toast.success('Impuesto desactivado');
+      const taxRes = await taxesAPI.getConfigs();
+      setTaxConfig(taxRes.data);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al desactivar');
+    }
+  };
+
+  const handleSeedDefaultTaxes = async () => {
+    try {
+      const res = await taxesAPI.seedDefaults();
+      toast.success(`Se crearon ${res.data.created} impuestos por defecto`);
+      const taxRes = await taxesAPI.getConfigs();
+      setTaxConfig(taxRes.data);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error');
+    }
+  };
+
+  // ─── NCF HANDLERS ───
+  const handleSaveNCFSequence = async () => {
+    if (!ncfDialog.ncf_type_code || !ncfDialog.expiration_date || !ncfDialog.range_end) {
+      toast.error('Tipo NCF, fecha vencimiento y rango final son requeridos');
+      return;
+    }
+    try {
+      const data = {
+        ncf_type_code: ncfDialog.ncf_type_code,
+        serie: ncfDialog.serie || 'B',
+        prefix: ncfDialog.prefix || `${ncfDialog.serie}${ncfDialog.ncf_type_code.slice(1)}`,
+        current_number: parseInt(ncfDialog.current_number) || 1,
+        range_start: parseInt(ncfDialog.range_start) || 1,
+        range_end: parseInt(ncfDialog.range_end),
+        expiration_date: ncfDialog.expiration_date,
+        notes: ncfDialog.notes || null
+      };
+      
+      if (ncfDialog.editId) {
+        await ncfAPI.updateSequence(ncfDialog.editId, {
+          current_number: data.current_number,
+          range_end: data.range_end,
+          expiration_date: data.expiration_date,
+          notes: data.notes
+        });
+        toast.success('Secuencia NCF actualizada');
+      } else {
+        await ncfAPI.createSequence(data);
+        toast.success('Secuencia NCF creada');
+      }
+      setNcfDialog({ open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null });
+      // Refresh
+      const [ncfSeqRes, ncfAlertsRes] = await Promise.all([
+        ncfAPI.getSequences(true, true),
+        ncfAPI.getAlerts()
+      ]);
+      setNcfSequences(ncfSeqRes.data);
+      setNcfAlerts(ncfAlertsRes.data.alerts || { critical: [], warning: [], ok: [] });
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al guardar secuencia');
+    }
+  };
+
+  const handleDeleteNCFSequence = async (id) => {
+    if (!confirm('¿Desactivar esta secuencia NCF?')) return;
+    try {
+      await ncfAPI.deleteSequence(id);
+      toast.success('Secuencia desactivada');
+      const [ncfSeqRes, ncfAlertsRes] = await Promise.all([
+        ncfAPI.getSequences(true, true),
+        ncfAPI.getAlerts()
+      ]);
+      setNcfSequences(ncfSeqRes.data);
+      setNcfAlerts(ncfAlertsRes.data.alerts || { critical: [], warning: [], ok: [] });
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error');
+    }
+  };
+
+  const refreshNCFData = async () => {
+    try {
+      const [ncfSeqRes, ncfAlertsRes] = await Promise.all([
+        ncfAPI.getSequences(true, true),
+        ncfAPI.getAlerts()
+      ]);
+      setNcfSequences(ncfSeqRes.data);
+      setNcfAlerts(ncfAlertsRes.data.alerts || { critical: [], warning: [], ok: [] });
+      toast.success('Datos NCF actualizados');
+    } catch (err) {
+      toast.error('Error al actualizar datos NCF');
+    }
+  };
+
   // Sub-tab button component
   const SubTabButton = ({ active, onClick, icon: Icon, label }) => (
     <button
