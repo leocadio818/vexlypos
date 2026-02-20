@@ -2508,35 +2508,94 @@ export default function Settings() {
                         className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
                         data-testid="ticket-ncf-expiry"
                       />
-                </div>
+                    </div>
 
-                {/* Footer Message */}
-                <div className="bg-card border border-border rounded-xl p-4 mb-3">
-                  <h3 className="text-sm font-semibold mb-2">Mensaje de Agradecimiento</h3>
-                  <input 
-                    value={systemConfig.ticket_footer_message || ''} 
-                    onChange={e => setSystemConfig(p => ({ ...p, ticket_footer_message: e.target.value }))}
-                    placeholder="¡Gracias por su visita!"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    data-testid="ticket-footer-message"
-                  />
-                </div>
+                    {/* Footer Message */}
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <h3 className="text-sm font-semibold mb-2">Mensaje de Agradecimiento</h3>
+                      <input 
+                        value={systemConfig.ticket_footer_message || ''} 
+                        onChange={e => setSystemConfig(p => ({ ...p, ticket_footer_message: e.target.value }))}
+                        placeholder="¡Gracias por su visita!"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                        data-testid="ticket-footer-message"
+                      />
+                    </div>
 
-                {/* DGII Message */}
-                <div className="bg-card border border-border rounded-xl p-4 mb-4">
-                  <h3 className="text-sm font-semibold mb-2">Mensaje DGII</h3>
-                  <input 
-                    value={systemConfig.ticket_dgii_message || ''} 
-                    onChange={e => setSystemConfig(p => ({ ...p, ticket_dgii_message: e.target.value }))}
-                    placeholder="Conserve este documento para fines de DGII"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    data-testid="ticket-dgii-message"
-                  />
-                </div>
+                    {/* DGII Message */}
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <h3 className="text-sm font-semibold mb-2">Mensaje DGII</h3>
+                      <input 
+                        value={systemConfig.ticket_dgii_message || ''} 
+                        onChange={e => setSystemConfig(p => ({ ...p, ticket_dgii_message: e.target.value }))}
+                        placeholder="Conserve este documento para fines de DGII"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                        data-testid="ticket-dgii-message"
+                      />
+                    </div>
 
-                <Button onClick={handleSaveSystemConfig} className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold active:scale-95" data-testid="save-ticket-config">
-                  <Check size={18} className="mr-2" /> GUARDAR DATOS DEL TICKET
-                </Button>
+                    <Button onClick={handleSaveSystemConfig} className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold active:scale-95" data-testid="save-ticket-config">
+                      <Check size={18} className="mr-2" /> GUARDAR DATOS DEL TICKET
+                    </Button>
+                  </div>
+
+                  {/* Right Column - Live Ticket Preview */}
+                  {showTicketPreview && (
+                    <div className="lg:sticky lg:top-4">
+                      <div className="bg-card border border-border rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-oswald text-sm font-bold flex items-center gap-2">
+                            <Eye size={16} className="text-green-500" />
+                            Vista Previa en Vivo
+                          </h3>
+                          <Badge variant="outline" className="text-[10px]">80mm</Badge>
+                        </div>
+                        <div className="bg-white rounded-lg p-2 overflow-auto max-h-[600px]" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+                          <ThermalTicket
+                            ref={ticketPreviewRef}
+                            bill={{
+                              bill_number: 'DEMO-001',
+                              ncf: 'B0200000001',
+                              ncf_type: 'B02',
+                              created_at: new Date().toISOString(),
+                              cashier_name: user?.name || 'Cajero Demo',
+                              table_name: 'Mesa Demo',
+                              sale_type: 'dine_in',
+                              customer: { name: 'Cliente Demo', rnc: '001-1234567-8' },
+                              items: [
+                                { name: 'Producto Demo 1', quantity: 2, unit_price: 350, total: 700, modifiers: [] },
+                                { name: 'Producto Demo 2', quantity: 1, unit_price: 450, total: 450, modifiers: [{ name: 'Extra queso', price: 50 }] }
+                              ],
+                              subtotal: 1200,
+                              taxes: [
+                                { name: 'ITBIS 18%', rate: 18, amount: 216 },
+                                { name: 'Propina Legal 10%', rate: 10, amount: 120 }
+                              ],
+                              total: 1536,
+                              payments: [{ method_name: 'Efectivo', amount: 2000 }],
+                              change: 464
+                            }}
+                            config={{
+                              name: systemConfig.ticket_business_name || systemConfig.restaurant_name || 'NOMBRE DEL NEGOCIO',
+                              legal_name: systemConfig.ticket_legal_name || 'RAZÓN SOCIAL SRL',
+                              rnc: systemConfig.ticket_rnc || systemConfig.rnc || '1-31-00000-0',
+                              address: systemConfig.ticket_address || 'Dirección del negocio',
+                              address2: systemConfig.ticket_address2 || 'Ciudad, País',
+                              phone: systemConfig.ticket_phone || '000-000-0000',
+                              email: systemConfig.ticket_email || '',
+                              ncf_expiry: systemConfig.ticket_ncf_expiry || '31/12/2025',
+                              footer_message: systemConfig.ticket_footer_message || '¡Gracias por su visita!',
+                              dgii_message: systemConfig.ticket_dgii_message || 'Conserve este documento para fines de DGII'
+                            }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground text-center mt-2">
+                          Los cambios se reflejan automáticamente
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Database Maintenance - Admin Only */}
