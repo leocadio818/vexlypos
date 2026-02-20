@@ -126,6 +126,7 @@ Componente `ThermalTicket.js` con:
 - [x] Propina solo para consumo en local
 - [x] Reporte Z con desglose de impuestos
 - [x] Ticket térmico 80mm compatible DGII
+- [x] Configuración de datos del negocio para ticket (personalización desde Settings)
 
 ### P1 - Alta Prioridad
 - [ ] UI para configurar impuestos en Settings
