@@ -79,6 +79,7 @@ api.include_router(billing_router)
 api.include_router(kitchen_router)
 api.include_router(customers_router)
 api.include_router(config_router)
+api.include_router(ncf_router)
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()
