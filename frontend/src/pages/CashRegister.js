@@ -528,7 +528,7 @@ export default function CashRegister() {
                   <div className="flex justify-between"><span className="text-white/60">Retiros Caja</span><span className="font-oswald text-red-400">-{formatMoney(currentSession.cash_out)}</span></div>
                   <div className="col-span-2 flex justify-between font-bold border-t border-white/10 pt-2 mt-2">
                     <span className="text-yellow-400">EFECTIVO ESPERADO</span>
-                    <span className="font-oswald text-xl text-yellow-400">{formatMoney(expectedCash)}</span>
+                    <span className="font-oswald text-xl text-yellow-400">{formatMoney(totalEsperado)}</span>
                   </div>
                 </div>
               </div>
@@ -544,29 +544,29 @@ export default function CashRegister() {
               <div className="mb-4">
                 <p className="text-[10px] text-white/40 uppercase mb-2 flex items-center gap-1"><Banknote size={12} /> Billetes</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {DENOMINATIONS.filter(d => d.type === 'bill').map(denom => (
-                    <div key={denom.value} className="bg-white/5 border border-white/10 rounded-lg p-2">
+                  {DENOMINACIONES.filter(d => d.tipo === 'billete').map(denom => (
+                    <div key={denom.valor} className="bg-white/5 border border-white/10 rounded-lg p-2">
                       <div className="flex items-center justify-between mb-1">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${denom.color} text-white`}>{denom.label}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${COLORES_DENOMINACION[denom.valor]} text-white`}>{denom.label}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <button 
-                          onClick={() => updateDenomination(denom.value, -1)}
+                          onClick={() => updateDenomination(denom.valor, -1)}
                           className="w-8 h-8 rounded bg-red-500/20 text-red-400 font-bold hover:bg-red-500/30 transition-all"
                         >-</button>
                         <input
                           type="number"
-                          value={denominationCounts[denom.value]}
-                          onChange={e => setDenominationCounts(prev => ({...prev, [denom.value]: Math.max(0, parseInt(e.target.value) || 0)}))}
+                          value={denominationCounts[denom.valor]}
+                          onChange={e => setDenominationCounts(prev => ({...prev, [denom.valor]: Math.max(0, parseInt(e.target.value) || 0)}))}
                           className="w-12 text-center bg-transparent text-white font-oswald text-lg border-none outline-none"
                         />
                         <button 
-                          onClick={() => updateDenomination(denom.value, 1)}
+                          onClick={() => updateDenomination(denom.valor, 1)}
                           className="w-8 h-8 rounded bg-green-500/20 text-green-400 font-bold hover:bg-green-500/30 transition-all"
                         >+</button>
                       </div>
                       <p className="text-[10px] text-white/50 text-center mt-1">
-                        = {formatMoney(denom.value * denominationCounts[denom.value])}
+                        = {formatMoney(denom.valor * denominationCounts[denom.valor])}
                       </p>
                     </div>
                   ))}
@@ -577,24 +577,24 @@ export default function CashRegister() {
               <div>
                 <p className="text-[10px] text-white/40 uppercase mb-2 flex items-center gap-1"><Coins size={12} /> Monedas</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {DENOMINATIONS.filter(d => d.type === 'coin').map(denom => (
-                    <div key={denom.value} className="bg-white/5 border border-white/10 rounded-lg p-2">
+                  {DENOMINACIONES.filter(d => d.tipo === 'moneda').map(denom => (
+                    <div key={denom.valor} className="bg-white/5 border border-white/10 rounded-lg p-2">
                       <div className="flex items-center justify-center mb-1">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${denom.color} text-white`}>{denom.label}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${COLORES_DENOMINACION[denom.valor]} text-white`}>{denom.label}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <button 
-                          onClick={() => updateDenomination(denom.value, -1)}
+                          onClick={() => updateDenomination(denom.valor, -1)}
                           className="w-6 h-6 rounded bg-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/30 transition-all"
                         >-</button>
                         <input
                           type="number"
-                          value={denominationCounts[denom.value]}
-                          onChange={e => setDenominationCounts(prev => ({...prev, [denom.value]: Math.max(0, parseInt(e.target.value) || 0)}))}
+                          value={denominationCounts[denom.valor]}
+                          onChange={e => setDenominationCounts(prev => ({...prev, [denom.valor]: Math.max(0, parseInt(e.target.value) || 0)}))}
                           className="w-10 text-center bg-transparent text-white font-oswald border-none outline-none"
                         />
                         <button 
-                          onClick={() => updateDenomination(denom.value, 1)}
+                          onClick={() => updateDenomination(denom.valor, 1)}
                           className="w-6 h-6 rounded bg-green-500/20 text-green-400 text-sm font-bold hover:bg-green-500/30 transition-all"
                         >+</button>
                       </div>
