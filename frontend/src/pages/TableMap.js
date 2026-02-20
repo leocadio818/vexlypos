@@ -324,11 +324,11 @@ export default function TableMap() {
                   </span>
                   <Badge className={`${isMobile ? 'text-[9px] px-1.5' : 'text-[10px] px-2'} ${ncfAlerts.has_critical ? 'bg-red-500/30 text-red-300' : 'bg-yellow-500/30 text-yellow-300'}`}>
                     <FileText size={10} className="mr-1" />
-                    {(ncfAlerts.critical?.length || 0) + (ncfAlerts.warning?.length || 0)} alerta{((ncfAlerts.critical?.length || 0) + (ncfAlerts.warning?.length || 0)) !== 1 ? 's' : ''}
+                    {(ncfAlerts.alerts?.critical?.length || 0) + (ncfAlerts.alerts?.warning?.length || 0)} alerta{((ncfAlerts.alerts?.critical?.length || 0) + (ncfAlerts.alerts?.warning?.length || 0)) !== 1 ? 's' : ''}
                   </Badge>
                 </div>
                 <p className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-white/60 mt-0.5`}>
-                  {ncfAlerts.critical?.[0]?.message || ncfAlerts.warning?.[0]?.message || 'Revisa las secuencias NCF'}
+                  {ncfAlerts.alerts?.critical?.[0]?.message || ncfAlerts.alerts?.warning?.[0]?.message || 'Revisa las secuencias NCF'}
                 </p>
               </div>
             </div>
