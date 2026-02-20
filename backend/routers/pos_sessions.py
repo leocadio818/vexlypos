@@ -282,7 +282,6 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
                 "notes": input.difference_notes,
                 "balance_before": expected_cash,
                 "balance_after": input.cash_declared,
-                "created_at": now,
                 "created_by": user["user_id"],
                 "created_by_name": user["name"],
                 "is_system": True,
