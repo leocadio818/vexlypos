@@ -8,6 +8,7 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - Clientes/Proveedores unificados
 - Control de caja y turnos con arqueo
 - Reportes fiscales dominicanos (Reporte Z)
+- Ticket térmico 80mm compatible DGII
 
 ## Current Branch
 `feature/analisis-dolibarr` - Rama de análisis e implementación Supabase
@@ -35,7 +36,29 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **is_delivery**: Omite propina automáticamente para Para Llevar
 - ✅ **Reporte Z Universal**: Desglose de impuestos recaudados
 
+### 2025-02-20: Ticket Térmico 80mm DGII
+- ✅ **ThermalTicket.js**: Componente React para ticket de impresora térmica
+- ✅ **Encabezado Fiscal**: Nombre negocio, RNC, dirección, teléfono
+- ✅ **Sección NCF**: Comprobante fiscal con tipo (B01, B02, B14, B15)
+- ✅ **Desglose de Impuestos DGII**: ITBIS 18%, Propina Legal 10%
+- ✅ **Lógica Para Llevar**: Propina se omite automáticamente
+- ✅ **Fuente Monoespaciada**: Alineación de columnas para 80mm
+- ✅ **Estados Especiales**: Marcadores COPIA y ANULADO
+- ✅ **Página Demo**: /ticket-demo para configurar y probar tickets
+- ✅ **Integración PaymentScreen**: Diálogo de impresión post-pago
+
 ## Key Features
+
+### Ticket Térmico 80mm
+Componente `ThermalTicket.js` con:
+- Encabezado fiscal DGII compliant
+- NCF con tipos (Crédito Fiscal, Consumidor Final, Gubernamental, Régimen Especial)
+- Detalle de productos con modificadores
+- Desglose de impuestos (ITBIS, Propina)
+- TOTAL destacado en negro invertido
+- Información de pago y cambio
+- Código de barras NCF opcional
+- Estilos CSS para impresión real a 80mm
 
 ### Arqueo de Caja (cash_breakdown)
 ```json
