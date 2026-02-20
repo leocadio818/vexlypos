@@ -124,7 +124,7 @@ export default function Settings() {
     open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
     bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true 
   });
-  const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_exemptions: [], editId: null });
+  const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null });
   const [channelDialog, setChannelDialog] = useState({ open: false, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null });
   const [categoryDialog, setCategoryDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '' });
   
