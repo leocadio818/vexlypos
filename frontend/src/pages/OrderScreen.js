@@ -679,24 +679,71 @@ export default function OrderScreen() {
     return sum + (i.unit_price + modTotal) * i.quantity;
   }, 0);
 
-  // Dynamic tax breakdown from config
-  // Filter taxes based on service type (dine_in includes all taxes, takeaway/delivery excludes is_dine_in_only taxes)
-  const taxBreakdown = [];
-  let runningTotal = subtotal;
-  const applicableTaxes = taxConfig.filter(tax => {
-    // If it's dine_in, include all taxes
-    if (serviceType === 'dine_in') return true;
-    // For takeaway/delivery, exclude taxes marked as dine_in_only (like Propina Legal)
-    return !tax.is_dine_in_only;
-  });
+  // ─── MOTOR DE CÁLCULO INTELIGENTE ───
+  // Calculate taxes per item, applying the intersection rule:
+  // A tax applies to an item only if:
+  // 1. The Sale Type allows it (not in saleType.tax_exemptions)
+  // 2. AND the Product allows it (not in product.tax_exemptions)
   
-  for (const tax of applicableTaxes) {
-    const base = tax.apply_to_tip ? runningTotal : subtotal;
-    const amount = Math.round(base * (tax.rate / 100) * 100) / 100;
-    taxBreakdown.push({ description: tax.description, rate: tax.rate, amount, is_tip: tax.is_tip || false });
-    runningTotal += amount;
-  }
-  const grandTotal = runningTotal;
+  const calculateItemTaxes = useCallback((item) => {
+    // Get product data to check its tax exemptions
+    const product = products.find(p => p.id === item.product_id);
+    const productTaxExemptions = product?.tax_exemptions || [];
+    const saleTypeTaxExemptions = currentSaleType?.tax_exemptions || [];
+    
+    const itemSubtotal = (item.unit_price + (item.modifiers || []).reduce((s, m) => s + (m.price || 0), 0)) * item.quantity;
+    const itemTaxes = [];
+    let itemRunningTotal = itemSubtotal;
+    
+    for (const tax of taxConfig) {
+      // Rule 1: Check if Sale Type allows this tax
+      const saleTypeAllows = !saleTypeTaxExemptions.includes(tax.id);
+      
+      // Rule 2: Check if Product allows this tax
+      const productAllows = !productTaxExemptions.includes(tax.id);
+      
+      // Rule 3: Check is_dine_in_only flag (for legacy compatibility)
+      const dineInOk = serviceType === 'dine_in' || !tax.is_dine_in_only;
+      
+      // Tax applies only if ALL conditions are met
+      if (saleTypeAllows && productAllows && dineInOk) {
+        const base = tax.apply_to_tip ? itemRunningTotal : itemSubtotal;
+        const amount = Math.round(base * (tax.rate / 100) * 100) / 100;
+        itemTaxes.push({ 
+          tax_id: tax.id, 
+          description: tax.description, 
+          rate: tax.rate, 
+          amount, 
+          is_tip: tax.is_tip || false 
+        });
+        itemRunningTotal += amount;
+      }
+    }
+    
+    return { subtotal: itemSubtotal, taxes: itemTaxes, total: itemRunningTotal };
+  }, [products, currentSaleType, taxConfig, serviceType]);
+
+  // Aggregate taxes across all items
+  const taxBreakdown = useMemo(() => {
+    const aggregatedTaxes = {};
+    
+    for (const item of activeItems) {
+      const itemCalc = calculateItemTaxes(item);
+      for (const tax of itemCalc.taxes) {
+        if (!aggregatedTaxes[tax.tax_id]) {
+          aggregatedTaxes[tax.tax_id] = { ...tax, amount: 0 };
+        }
+        aggregatedTaxes[tax.tax_id].amount += tax.amount;
+      }
+    }
+    
+    return Object.values(aggregatedTaxes).map(tax => ({
+      ...tax,
+      amount: Math.round(tax.amount * 100) / 100
+    }));
+  }, [activeItems, calculateItemTaxes]);
+  
+  const grandTotal = subtotal + taxBreakdown.reduce((sum, t) => sum + t.amount, 0);
 
   const handleQtyKey = (key) => {
     setModDialog(prev => {
