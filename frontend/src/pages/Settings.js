@@ -1307,7 +1307,7 @@ export default function Settings() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-oswald text-base font-bold">Tipos de Venta</h2>
-                  <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_exemptions: [], editId: null })} size="sm"
+                  <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null })} size="sm"
                     className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-saletype-btn">
                     <Plus size={14} className="mr-1" /> Agregar
                   </Button>
@@ -1316,11 +1316,20 @@ export default function Settings() {
                   {saleTypes.map(st => {
                     const exemptCount = (st.tax_exemptions || []).length;
                     const appliedTaxes = taxConfig.filter(t => t.active && !(st.tax_exemptions || []).includes(t.id));
+                    const ncfType = ncfTypes.find(n => n.id === st.default_ncf_type_id || n.code === st.default_ncf_type_id);
                     return (
                       <div key={st.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`saletype-${st.id}`}>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold">{st.name}</span>
                           <Badge variant="secondary" className="text-[9px]">{st.code}</Badge>
+                          {/* NCF Badge */}
+                          {st.default_ncf_type_id && (
+                            <Badge variant="outline" className="text-[9px] border-blue-500/50 text-blue-400 bg-blue-500/10">
+                              <FileText size={10} className="mr-1" />
+                              {st.default_ncf_type_id}
+                              {ncfType && <span className="ml-1 opacity-70">({ncfType.description?.split(' ')[0] || ''})</span>}
+                            </Badge>
+                          )}
                           {appliedTaxes.length > 0 && (
                             <span className="text-xs text-muted-foreground">
                               {appliedTaxes.map(t => `${t.description} ${t.rate}%`).join(' + ')}
@@ -1334,7 +1343,7 @@ export default function Settings() {
                         </div>
                         <div className="flex gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_exemptions: st.tax_exemptions || [], editId: st.id })}>
+                            onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_exemptions: st.tax_exemptions || [], default_ncf_type_id: st.default_ncf_type_id || 'B02', editId: st.id })}>
                             <Pencil size={14} />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
