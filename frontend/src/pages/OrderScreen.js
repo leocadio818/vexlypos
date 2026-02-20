@@ -913,8 +913,8 @@ export default function OrderScreen() {
       const existingBills = await billsAPI.list({ order_id: order.id, status: 'open' });
       
       if (existingBills.data?.length > 0) {
-        // If there's an open bill, go directly to payment
-        navigate(`/payment/${existingBills.data[0].id}`);
+        // If there's an open bill, go directly to payment with service type
+        navigate(`/payment/${existingBills.data[0].id}?serviceType=${serviceType}`);
         return;
       }
       
@@ -931,11 +931,12 @@ export default function OrderScreen() {
       const res = await billsAPI.create({
         order_id: order.id,
         table_id: tableId,
-        item_ids: itemIds
+        item_ids: itemIds,
+        sale_type: serviceType  // Pass service type to bill creation
       });
       
-      // Navigate directly to payment screen
-      navigate(`/payment/${res.data.id}`);
+      // Navigate directly to payment screen with service type
+      navigate(`/payment/${res.data.id}?serviceType=${serviceType}`);
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Error creando factura');
     }
