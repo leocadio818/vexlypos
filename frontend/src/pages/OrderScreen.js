@@ -1463,11 +1463,18 @@ export default function OrderScreen() {
             </ScrollArea>
 
             <div className="px-3 py-2.5 border-t border-border space-y-1">
-              {/* Service Type Toggle - Para Llevar / Comer Aquí */}
+              {/* Service Type Toggle - Para Llevar / Comer Aquí with NCF info */}
               {subtotal > 0 && (
-                <div className="flex items-center justify-between py-2 mb-2 border-b border-border/50">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2 py-2 mb-2 border-b border-border/50">
+                  <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Tipo de Servicio:</span>
+                    {/* NCF Badge */}
+                    {currentSaleType?.default_ncf_type_id && (
+                      <Badge variant="outline" className="text-[8px] border-blue-500/50 text-blue-400 bg-blue-500/10">
+                        <FileText size={10} className="mr-1" />
+                        NCF: {currentSaleType.default_ncf_type_id}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 bg-background rounded-lg p-0.5 border border-border">
                     <button
