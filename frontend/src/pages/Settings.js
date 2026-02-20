@@ -3699,6 +3699,52 @@ export default function Settings() {
               </div>
             </div>
             
+            {/* NCF por Defecto */}
+            <div className="p-3 rounded-lg bg-background border border-blue-500/30">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText size={14} className="text-blue-500" />
+                <span className="text-sm font-semibold">NCF por Defecto</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-3">
+                Tipo de comprobante fiscal que se asignará automáticamente a las ventas de este tipo.
+              </p>
+              
+              <select 
+                value={saleDialog.default_ncf_type_id || 'B02'}
+                onChange={e => setSaleDialog(p => ({ ...p, default_ncf_type_id: e.target.value }))}
+                className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm font-oswald"
+                data-testid="saletype-ncf-select"
+              >
+                {ncfTypes.length > 0 ? (
+                  ncfTypes.map(ncf => (
+                    <option key={ncf.id || ncf.code} value={ncf.id || ncf.code}>
+                      {ncf.id || ncf.code} - {ncf.description}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="B01">B01 - Factura de Crédito Fiscal</option>
+                    <option value="B02">B02 - Factura de Consumo</option>
+                    <option value="B14">B14 - Regímenes Especiales</option>
+                    <option value="B15">B15 - Comprobante Gubernamental</option>
+                  </>
+                )}
+              </select>
+              
+              {/* Preview del NCF seleccionado */}
+              {saleDialog.default_ncf_type_id && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Badge className="bg-blue-500/20 text-blue-400 text-xs">
+                    <FileText size={12} className="mr-1" />
+                    {saleDialog.default_ncf_type_id}
+                  </Badge>
+                  <span className="text-[10px] text-muted-foreground">
+                    {ncfTypes.find(n => (n.id || n.code) === saleDialog.default_ncf_type_id)?.description || 'Comprobante Fiscal'}
+                  </span>
+                </div>
+              )}
+            </div>
+            
             <Button onClick={handleSaveSaleType} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
               {saleDialog.editId ? 'GUARDAR' : 'CREAR'}
             </Button>
