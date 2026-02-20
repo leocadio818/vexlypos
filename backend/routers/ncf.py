@@ -81,7 +81,8 @@ async def get_ncf_type(code: str):
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        response = supabase_client.table("ncf_types_config").select("*").eq("code", code.upper()).single().execute()
+        # The table uses 'id' instead of 'code'
+        response = supabase_client.table("ncf_types_config").select("*").eq("id", code.upper()).single().execute()
         return response.data
     except Exception:
         raise HTTPException(status_code=404, detail=f"Tipo NCF {code} no encontrado")
