@@ -232,7 +232,7 @@ async def delete_ncf_sequence(seq_id: str):
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        response = supabase_client.table("ncf_sequences").update({
+        supabase_client.table("ncf_sequences").update({
             "is_active": False,
             "updated_at": now_iso()
         }).eq("id", seq_id).execute()
