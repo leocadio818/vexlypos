@@ -271,13 +271,29 @@ export default function PaymentScreen() {
       if (pts > 0) msg += ` | +${pts} pts fidelidad`;
       toast.success(msg);
       
-      // Navigate to table map after successful payment
-      navigate('/tables');
+      // Store the paid bill for printing and show print dialog
+      setPaidBill({
+        ...res.data,
+        amount_received: totalPaidDOP,
+        customer_name: selectedCustomer?.name || null,
+        customer_rnc: selectedCustomer?.rnc || null
+      });
+      setPrintDialogOpen(true);
     } catch {
       toast.error('Error procesando pago');
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handlePrintTicket = () => {
+    printTicket(ticketRef);
+    toast.success('Enviando ticket a impresora...');
+  };
+
+  const handleCloseAndNavigate = () => {
+    setPrintDialogOpen(false);
+    navigate('/tables');
   };
 
   const handleKeypadConfirm = () => {
