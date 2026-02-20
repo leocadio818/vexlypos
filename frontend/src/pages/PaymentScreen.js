@@ -993,7 +993,7 @@ export default function PaymentScreen() {
 
             {/* Ticket preview container (hidden, used for printing) */}
             <div className="hidden">
-              <ThermalTicket ref={ticketRef} bill={paidBill} />
+              <ThermalTicket ref={ticketRef} bill={paidBill} config={businessConfig} />
             </div>
 
             {/* Action buttons */}
