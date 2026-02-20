@@ -963,6 +963,56 @@ export default function PaymentScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Print Ticket Dialog */}
+      <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+        <DialogContent className="max-w-md bg-slate-900/95 backdrop-blur-xl border-white/20 p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b border-white/10">
+            <DialogTitle className="font-oswald text-white flex items-center gap-2">
+              <Check size={20} className="text-green-400" />
+              Pago Completado
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="p-4 space-y-4">
+            {/* Success summary */}
+            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
+              <div className="text-green-400 font-oswald text-3xl font-bold mb-1">
+                {formatMoney(paidBill?.total || 0)}
+              </div>
+              <p className="text-white/60 text-sm">Pago procesado exitosamente</p>
+              {change > 0 && (
+                <p className="text-yellow-400 font-bold mt-2">
+                  Cambio: {formatMoney(change)}
+                </p>
+              )}
+            </div>
+
+            {/* Ticket preview container (hidden, used for printing) */}
+            <div className="hidden">
+              <ThermalTicket ref={ticketRef} bill={paidBill} />
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleCloseAndNavigate}
+                className="flex-1 h-14 rounded-xl bg-white/5 border border-white/10 text-white/70 font-oswald font-bold hover:bg-white/10 transition-all"
+              >
+                CERRAR
+              </button>
+              <button
+                onClick={handlePrintTicket}
+                className="flex-[2] h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all active:scale-95"
+                data-testid="print-ticket-btn"
+              >
+                <Printer size={20} />
+                IMPRIMIR TICKET
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
