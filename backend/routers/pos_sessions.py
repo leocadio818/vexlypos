@@ -331,22 +331,13 @@ async def add_cash_movement(session_id: str, input: CashMovementInput, user=Depe
             "id": gen_id(),
             "ref": generate_movement_ref(),
             "session_id": session_id,
-            "terminal_id": session.get("terminal_id"),
             "movement_type": input.movement_type,
             "direction": direction,
             "amount": input.amount,
             "payment_method": input.payment_method,
             "description": input.description,
-            "notes": input.notes,
-            "reason_code": input.reason_code,
-            "third_party_id": input.third_party_id,
-            "third_party_name": input.third_party_name,
-            "requires_approval": input.requires_approval,
-            "balance_before": round(current_balance, 2),
-            "balance_after": round(new_balance, 2),
             "created_by": user["user_id"],
-            "created_by_name": user["name"],
-            "is_system": False
+            "created_by_name": user["name"]
         }
         
         result = sb.table("cash_movements").insert(movement_data).execute()
