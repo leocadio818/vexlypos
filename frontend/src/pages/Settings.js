@@ -476,12 +476,13 @@ export default function Settings() {
       const data = { 
         name: saleDialog.name, 
         code: saleDialog.code, 
-        tax_exemptions: saleDialog.tax_exemptions || []
+        tax_exemptions: saleDialog.tax_exemptions || [],
+        default_ncf_type_id: saleDialog.default_ncf_type_id || 'B02'
       };
       if (saleDialog.editId) await axios.put(`${API}/sale-types/${saleDialog.editId}`, data, { headers: hdrs() });
       else await axios.post(`${API}/sale-types`, data, { headers: hdrs() });
       toast.success(saleDialog.editId ? 'Actualizado' : 'Creado');
-      setSaleDialog({ open: false, name: '', code: '', tax_exemptions: [], editId: null }); fetchAll();
+      setSaleDialog({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null }); fetchAll();
     } catch { toast.error('Error'); }
   };
 
