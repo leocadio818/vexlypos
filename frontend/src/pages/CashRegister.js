@@ -259,10 +259,10 @@ export default function CashRegister() {
     }
   };
 
-  const updateDenomination = (value, delta) => {
+  const updateDenomination = (valor, delta) => {
     setDenominationCounts(prev => ({
       ...prev,
-      [value]: Math.max(0, (prev[value] || 0) + delta)
+      [valor]: Math.max(0, (prev[valor] || 0) + delta)
     }));
   };
 
