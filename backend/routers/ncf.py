@@ -241,18 +241,19 @@ async def update_ncf_sequence(seq_id: str, input: NCFSequenceUpdate):
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        update_data = {"updated_at": now_iso()}
+        update_data = {}
         
         if input.current_number is not None:
             update_data["current_number"] = input.current_number
         if input.range_end is not None:
-            update_data["range_end"] = input.range_end
+            update_data["end_number"] = input.range_end  # Map to DB column name
         if input.expiration_date is not None:
-            update_data["expiration_date"] = input.expiration_date
+            update_data["valid_until"] = input.expiration_date  # Map to DB column name
         if input.is_active is not None:
             update_data["is_active"] = input.is_active
-        if input.notes is not None:
-            update_data["notes"] = input.notes
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No hay campos para actualizar")
         
         response = supabase_client.table("ncf_sequences").update(update_data).eq("id", seq_id).execute()
         
