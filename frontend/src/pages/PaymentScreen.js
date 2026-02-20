@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import ThermalTicket, { printTicket } from '@/components/ThermalTicket';
+import ThermalTicket, { printTicket, useBusinessConfig } from '@/components/ThermalTicket';
 
 // Iconos de Lucide para métodos de pago
 const lucideIcons = {
