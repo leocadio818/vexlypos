@@ -359,7 +359,7 @@ export default function CashRegister() {
                     <p className="text-sm text-yellow-400 font-medium">Efectivo Esperado en Caja</p>
                     <p className="text-[10px] text-white/50">Apertura + Ventas Efectivo + Ingresos - Retiros</p>
                   </div>
-                  <p className="font-oswald text-2xl font-bold text-yellow-400">{formatMoney(expectedCash)}</p>
+                  <p className="font-oswald text-2xl font-bold text-yellow-400">{formatMoney(totalEsperado)}</p>
                 </div>
               </div>
               
