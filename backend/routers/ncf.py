@@ -104,26 +104,44 @@ async def get_ncf_sequences(
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        query = supabase_client.table("ncf_sequences").select("*, ncf_types_config(name, description, requires_rnc)")
+        # Simple query without join - we'll add type info manually
+        query = supabase_client.table("ncf_sequences").select("*")
         
         if active_only:
             query = query.eq("is_active", True)
         
-        response = query.order("ncf_type_code").execute()
-        sequences = response.data
+        response = query.execute()
+        sequences = response.data or []
+        
+        # Get types to add info
+        types_response = supabase_client.table("ncf_types_config").select("*").execute()
+        types_map = {t.get('id', t.get('code')): t for t in (types_response.data or [])}
         
         today = date.today()
         
-        # Agregar alertas
+        # Add alerts and type info
         for seq in sequences:
+            # Add type info
+            type_info = types_map.get(seq.get("ncf_type_code"), {})
+            seq["ncf_types_config"] = {
+                "name": type_info.get("description", seq.get("ncf_type_code")),
+                "description": type_info.get("description", ""),
+                "requires_rnc": type_info.get("requires_rnc", False)
+            }
+            
             remaining = seq["range_end"] - seq["current_number"] + 1
-            exp_date = datetime.strptime(seq["expiration_date"], "%Y-%m-%d").date() if seq["expiration_date"] else None
+            exp_date = None
+            if seq.get("expiration_date"):
+                try:
+                    exp_date = datetime.strptime(str(seq["expiration_date"])[:10], "%Y-%m-%d").date()
+                except:
+                    pass
             
             seq["remaining"] = remaining
             seq["is_expired"] = exp_date < today if exp_date else False
             seq["days_until_expiry"] = (exp_date - today).days if exp_date else None
             
-            # Alertas
+            # Alerts
             if include_alerts:
                 if seq["is_expired"]:
                     seq["alert_level"] = "critical"
