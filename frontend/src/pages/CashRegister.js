@@ -1,11 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { posSessionsAPI, formatMoney } from '@/lib/api';
-import { CircleDollarSign, Play, Square, Clock, Banknote, CreditCard, AlertTriangle, TrendingUp, Mail, ArrowDownCircle, ArrowUpCircle, History, Wallet, CheckCircle2, XCircle } from 'lucide-react';
+import { CircleDollarSign, Play, Square, Clock, Banknote, CreditCard, AlertTriangle, TrendingUp, ArrowDownCircle, ArrowUpCircle, History, Wallet, CheckCircle2, Calculator, Coins, Receipt, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+
+// Denominaciones de billetes y monedas RD
+const DENOMINATIONS = [
+  { value: 2000, label: 'RD$ 2,000', type: 'bill', color: 'bg-violet-500' },
+  { value: 1000, label: 'RD$ 1,000', type: 'bill', color: 'bg-blue-500' },
+  { value: 500, label: 'RD$ 500', type: 'bill', color: 'bg-emerald-500' },
+  { value: 200, label: 'RD$ 200', type: 'bill', color: 'bg-orange-500' },
+  { value: 100, label: 'RD$ 100', type: 'bill', color: 'bg-red-500' },
+  { value: 50, label: 'RD$ 50', type: 'bill', color: 'bg-cyan-500' },
+  { value: 25, label: 'RD$ 25', type: 'coin', color: 'bg-yellow-500' },
+  { value: 10, label: 'RD$ 10', type: 'coin', color: 'bg-amber-500' },
+  { value: 5, label: 'RD$ 5', type: 'coin', color: 'bg-zinc-400' },
+  { value: 1, label: 'RD$ 1', type: 'coin', color: 'bg-zinc-500' },
+];
 
 export default function CashRegister() {
   const { user } = useAuth();
@@ -17,18 +30,21 @@ export default function CashRegister() {
   const [closeDialog, setCloseDialog] = useState(false);
   const [movementDialog, setMovementDialog] = useState(false);
   const [terminals, setTerminals] = useState([]);
-  const [movementReasons, setMovementReasons] = useState([]);
   
   // Form states
   const [selectedTerminal, setSelectedTerminal] = useState('');
   const [terminalName, setTerminalName] = useState('Caja 1');
   const [openingAmount, setOpeningAmount] = useState('');
-  const [closingForm, setClosingForm] = useState({
-    cash_declared: '',
-    card_declared: '',
-    transfer_declared: '',
-    difference_notes: ''
-  });
+  
+  // Closing form with denomination breakdown
+  const [denominationCounts, setDenominationCounts] = useState(
+    DENOMINATIONS.reduce((acc, d) => ({ ...acc, [d.value]: 0 }), {})
+  );
+  const [cardDeclared, setCardDeclared] = useState('');
+  const [transferDeclared, setTransferDeclared] = useState('');
+  const [differenceNotes, setDifferenceNotes] = useState('');
+  
+  // Movement form
   const [movementForm, setMovementForm] = useState({
     movement_type: 'cash_in',
     amount: '',
@@ -36,8 +52,6 @@ export default function CashRegister() {
     reason_code: '',
     notes: ''
   });
-  
-  const API_BASE = process.env.REACT_APP_BACKEND_URL;
   
   // Default terminals if none configured
   const defaultTerminals = [
@@ -51,14 +65,11 @@ export default function CashRegister() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Check current session
       const checkRes = await posSessionsAPI.check();
       if (checkRes.data.has_open_session && checkRes.data.session) {
-        // Get full session details
         const currentRes = await posSessionsAPI.current();
         setCurrentSession(currentRes.data);
         
-        // Get movements for current session
         if (currentRes.data?.id) {
           const movRes = await posSessionsAPI.getMovements(currentRes.data.id);
           setMovements(movRes.data || []);
@@ -68,24 +79,14 @@ export default function CashRegister() {
         setMovements([]);
       }
       
-      // Get history
       const historyRes = await posSessionsAPI.history({ limit: 20, status: 'closed' });
       setSessions(historyRes.data || []);
       
-      // Get terminals
       try {
         const termRes = await posSessionsAPI.terminals();
         setTerminals(termRes.data?.length > 0 ? termRes.data : defaultTerminals);
       } catch {
         setTerminals(defaultTerminals);
-      }
-      
-      // Get movement reasons
-      try {
-        const reasonsRes = await posSessionsAPI.movementReasons();
-        setMovementReasons(reasonsRes.data || []);
-      } catch {
-        setMovementReasons([]);
       }
       
     } catch (err) {
@@ -97,6 +98,28 @@ export default function CashRegister() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Calculate total from denomination counts
+  const cashDeclaredFromDenominations = Object.entries(denominationCounts).reduce(
+    (total, [value, count]) => total + (parseInt(value) * count), 0
+  );
+
+  // Calculate expected cash
+  const expectedCash = currentSession ? (
+    (currentSession.opening_amount || 0) +
+    (currentSession.cash_sales || 0) +
+    (currentSession.cash_in || 0) -
+    (currentSession.cash_out || 0)
+  ) : 0;
+
+  const totalSales = currentSession ? (
+    (currentSession.cash_sales || 0) +
+    (currentSession.card_sales || 0) +
+    (currentSession.transfer_sales || 0) +
+    (currentSession.other_sales || 0)
+  ) : 0;
+
+  const cashDifference = cashDeclaredFromDenominations - expectedCash;
 
   const handleOpenSession = async () => {
     try {
@@ -123,16 +146,28 @@ export default function CashRegister() {
   const handleCloseSession = async () => {
     if (!currentSession) return;
     
+    // Build cash breakdown object
+    const cashBreakdown = {};
+    DENOMINATIONS.forEach(d => {
+      if (denominationCounts[d.value] > 0) {
+        cashBreakdown[d.value] = {
+          count: denominationCounts[d.value],
+          subtotal: d.value * denominationCounts[d.value]
+        };
+      }
+    });
+    
     try {
       const res = await posSessionsAPI.close(currentSession.id, {
-        cash_declared: parseFloat(closingForm.cash_declared) || 0,
-        card_declared: parseFloat(closingForm.card_declared) || 0,
-        transfer_declared: parseFloat(closingForm.transfer_declared) || 0,
-        difference_notes: closingForm.difference_notes
+        cash_declared: cashDeclaredFromDenominations,
+        card_declared: parseFloat(cardDeclared) || 0,
+        transfer_declared: parseFloat(transferDeclared) || 0,
+        cash_breakdown: cashBreakdown,
+        difference_notes: differenceNotes
       });
       
       if (res.data.requires_approval) {
-        toast.warning('Turno cerrado - Pendiente de aprobacion', {
+        toast.warning('Turno cerrado - Pendiente de aprobación', {
           description: `Diferencia: ${formatMoney(res.data.difference)}`
         });
       } else {
@@ -141,13 +176,20 @@ export default function CashRegister() {
       
       setCurrentSession(null);
       setCloseDialog(false);
-      setClosingForm({ cash_declared: '', card_declared: '', transfer_declared: '', difference_notes: '' });
+      resetClosingForm();
       fetchData();
     } catch (err) {
       toast.error('Error cerrando turno', {
         description: err.response?.data?.detail || 'Intenta de nuevo'
       });
     }
+  };
+
+  const resetClosingForm = () => {
+    setDenominationCounts(DENOMINATIONS.reduce((acc, d) => ({ ...acc, [d.value]: 0 }), {}));
+    setCardDeclared('');
+    setTransferDeclared('');
+    setDifferenceNotes('');
   };
 
   const handleAddMovement = async () => {
@@ -177,20 +219,12 @@ export default function CashRegister() {
     }
   };
 
-  // Calculate expected cash
-  const expectedCash = currentSession ? (
-    (currentSession.opening_amount || 0) +
-    (currentSession.cash_sales || 0) +
-    (currentSession.cash_in || 0) -
-    (currentSession.cash_out || 0)
-  ) : 0;
-
-  const totalSales = currentSession ? (
-    (currentSession.cash_sales || 0) +
-    (currentSession.card_sales || 0) +
-    (currentSession.transfer_sales || 0) +
-    (currentSession.other_sales || 0)
-  ) : 0;
+  const updateDenomination = (value, delta) => {
+    setDenominationCounts(prev => ({
+      ...prev,
+      [value]: Math.max(0, (prev[value] || 0) + delta)
+    }));
+  };
 
   if (loading) {
     return (
@@ -210,6 +244,9 @@ export default function CashRegister() {
           <Badge variant="outline" className="ml-2 text-xs text-emerald-400 border-emerald-400/30">Supabase</Badge>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={fetchData} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all">
+            <RefreshCw size={16} />
+          </button>
           {currentSession && (
             <button onClick={() => setMovementDialog(true)} data-testid="add-movement-btn"
               className="px-3 py-2 rounded-xl bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30 text-blue-400 font-medium text-sm flex items-center gap-2 transition-all">
@@ -295,7 +332,7 @@ export default function CashRegister() {
                   <CircleDollarSign size={12} /> Apertura: {formatMoney(currentSession.opening_amount)}
                 </span>
                 <span className="flex items-center gap-1">
-                  <History size={12} /> {currentSession.total_invoices} facturas
+                  <Receipt size={12} /> {currentSession.total_invoices} facturas
                 </span>
               </div>
             </div>
@@ -306,8 +343,8 @@ export default function CashRegister() {
                 <h3 className="font-oswald text-sm font-bold text-white/50 mb-3 uppercase tracking-wider flex items-center gap-2">
                   <History size={14} /> Movimientos del Turno
                 </h3>
-                <div className="space-y-2 max-h-48 overflow-auto">
-                  {movements.slice(0, 5).map(mov => (
+                <div className="space-y-2 max-h-64 overflow-auto">
+                  {movements.slice(0, 10).map(mov => (
                     <div key={mov.id} className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-3 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {mov.direction === 1 ? (
@@ -317,7 +354,7 @@ export default function CashRegister() {
                         )}
                         <div>
                           <p className="text-sm font-medium text-white">{mov.description}</p>
-                          <p className="text-[10px] text-white/50">{mov.ref} - {new Date(mov.created_at).toLocaleTimeString('es-DO')}</p>
+                          <p className="text-[10px] text-white/50">{mov.ref} - {mov.payment_method} - {new Date(mov.created_at).toLocaleTimeString('es-DO')}</p>
                         </div>
                       </div>
                       <p className={`font-oswald text-base font-bold ${mov.direction === 1 ? 'text-green-400' : 'text-red-400'}`}>
@@ -394,11 +431,11 @@ export default function CashRegister() {
         <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="open-session-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald text-white">Abrir Turno</DialogTitle>
-            <DialogDescription className="text-white/60">Selecciona la estacion e ingresa el monto inicial</DialogDescription>
+            <DialogDescription className="text-white/60">Selecciona la estación e ingresa el monto inicial</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-2 block">Estacion / Terminal</label>
+              <label className="text-sm font-semibold text-white/60 mb-2 block">Estación / Terminal</label>
               <div className="grid grid-cols-2 gap-2">
                 {terminals.map(t => (
                   <button key={t.code} onClick={() => { setSelectedTerminal(t.id); setTerminalName(t.name); }}
@@ -428,89 +465,173 @@ export default function CashRegister() {
         </DialogContent>
       </Dialog>
 
-      {/* Close Session Dialog */}
+      {/* Close Session Dialog - ARQUEO DE CAJA */}
       <Dialog open={closeDialog} onOpenChange={setCloseDialog}>
-        <DialogContent className="max-w-md backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="close-session-dialog">
+        <DialogContent className="max-w-2xl backdrop-blur-xl bg-slate-900/90 border-white/20 max-h-[90vh] overflow-y-auto" data-testid="close-session-dialog">
           <DialogHeader>
-            <DialogTitle className="font-oswald text-white">Cerrar Turno</DialogTitle>
-            <DialogDescription className="text-white/60">Declara el conteo de cierre</DialogDescription>
+            <DialogTitle className="font-oswald text-white flex items-center gap-2">
+              <Calculator size={20} className="text-orange-400" />
+              Arqueo de Caja
+            </DialogTitle>
+            <DialogDescription className="text-white/60">Cuenta los billetes y monedas para cerrar el turno</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          
+          <div className="space-y-6">
+            {/* Expected Summary */}
             {currentSession && (
-              <div className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-white/60">Apertura</span><span className="font-oswald text-white">{formatMoney(currentSession.opening_amount)}</span></div>
-                <div className="flex justify-between"><span className="text-white/60">Ventas Efectivo</span><span className="font-oswald text-white">{formatMoney(currentSession.cash_sales)}</span></div>
-                <div className="flex justify-between"><span className="text-white/60">Ingresos</span><span className="font-oswald text-green-400">+{formatMoney(currentSession.cash_in)}</span></div>
-                <div className="flex justify-between"><span className="text-white/60">Retiros</span><span className="font-oswald text-red-400">-{formatMoney(currentSession.cash_out)}</span></div>
-                <div className="flex justify-between font-bold border-t border-white/10 pt-2 mt-2">
-                  <span className="text-yellow-400">Esperado</span>
-                  <span className="font-oswald text-yellow-400">{formatMoney(expectedCash)}</span>
-                </div>
-                <div className="flex justify-between text-white/60 pt-1">
-                  <span>Ventas Tarjeta</span>
-                  <span className="font-oswald">{formatMoney(currentSession.card_sales)}</span>
-                </div>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-1 block">Efectivo Contado (RD$)</label>
-                <input
-                  type="number"
-                  value={closingForm.cash_declared}
-                  onChange={e => setClosingForm({...closingForm, cash_declared: e.target.value})}
-                  placeholder="0.00"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-orange-400/50 outline-none transition-all"
-                  data-testid="closing-cash-input"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-1 block">Tarjeta Declarado</label>
-                <input
-                  type="number"
-                  value={closingForm.card_declared}
-                  onChange={e => setClosingForm({...closingForm, card_declared: e.target.value})}
-                  placeholder="0.00"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-orange-400/50 outline-none transition-all"
-                  data-testid="closing-card-input"
-                />
-              </div>
-            </div>
-            
-            {/* Show difference preview */}
-            {closingForm.cash_declared && (
-              <div className={`p-3 rounded-lg border ${
-                parseFloat(closingForm.cash_declared) === expectedCash 
-                  ? 'bg-green-500/10 border-green-500/30' 
-                  : 'bg-yellow-500/10 border-yellow-500/30'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Diferencia de Efectivo</span>
-                  <span className={`font-oswald font-bold ${
-                    parseFloat(closingForm.cash_declared) - expectedCash === 0 
-                      ? 'text-green-400' 
-                      : parseFloat(closingForm.cash_declared) - expectedCash > 0 
-                        ? 'text-emerald-400' 
-                        : 'text-red-400'
-                  }`}>
-                    {formatMoney((parseFloat(closingForm.cash_declared) || 0) - expectedCash)}
-                  </span>
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-white/70 mb-3">Resumen del Sistema</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex justify-between"><span className="text-white/60">Apertura</span><span className="font-oswald text-white">{formatMoney(currentSession.opening_amount)}</span></div>
+                  <div className="flex justify-between"><span className="text-white/60">Ventas Efectivo</span><span className="font-oswald text-green-400">{formatMoney(currentSession.cash_sales)}</span></div>
+                  <div className="flex justify-between"><span className="text-white/60">Ingresos Caja</span><span className="font-oswald text-emerald-400">+{formatMoney(currentSession.cash_in)}</span></div>
+                  <div className="flex justify-between"><span className="text-white/60">Retiros Caja</span><span className="font-oswald text-red-400">-{formatMoney(currentSession.cash_out)}</span></div>
+                  <div className="col-span-2 flex justify-between font-bold border-t border-white/10 pt-2 mt-2">
+                    <span className="text-yellow-400">EFECTIVO ESPERADO</span>
+                    <span className="font-oswald text-xl text-yellow-400">{formatMoney(expectedCash)}</span>
+                  </div>
                 </div>
               </div>
             )}
-            
+
+            {/* Denomination Counter */}
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-1 block">Notas (opcional)</label>
-              <textarea
-                value={closingForm.difference_notes}
-                onChange={e => setClosingForm({...closingForm, difference_notes: e.target.value})}
-                placeholder="Explicacion de diferencias..."
-                rows={2}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
-              />
+              <h4 className="text-sm font-semibold text-white/70 mb-3 flex items-center gap-2">
+                <Coins size={16} /> Conteo de Efectivo
+              </h4>
+              
+              {/* Bills */}
+              <div className="mb-4">
+                <p className="text-[10px] text-white/40 uppercase mb-2 flex items-center gap-1"><Banknote size={12} /> Billetes</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {DENOMINATIONS.filter(d => d.type === 'bill').map(denom => (
+                    <div key={denom.value} className="bg-white/5 border border-white/10 rounded-lg p-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${denom.color} text-white`}>{denom.label}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <button 
+                          onClick={() => updateDenomination(denom.value, -1)}
+                          className="w-8 h-8 rounded bg-red-500/20 text-red-400 font-bold hover:bg-red-500/30 transition-all"
+                        >-</button>
+                        <input
+                          type="number"
+                          value={denominationCounts[denom.value]}
+                          onChange={e => setDenominationCounts(prev => ({...prev, [denom.value]: Math.max(0, parseInt(e.target.value) || 0)}))}
+                          className="w-12 text-center bg-transparent text-white font-oswald text-lg border-none outline-none"
+                        />
+                        <button 
+                          onClick={() => updateDenomination(denom.value, 1)}
+                          className="w-8 h-8 rounded bg-green-500/20 text-green-400 font-bold hover:bg-green-500/30 transition-all"
+                        >+</button>
+                      </div>
+                      <p className="text-[10px] text-white/50 text-center mt-1">
+                        = {formatMoney(denom.value * denominationCounts[denom.value])}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Coins */}
+              <div>
+                <p className="text-[10px] text-white/40 uppercase mb-2 flex items-center gap-1"><Coins size={12} /> Monedas</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {DENOMINATIONS.filter(d => d.type === 'coin').map(denom => (
+                    <div key={denom.value} className="bg-white/5 border border-white/10 rounded-lg p-2">
+                      <div className="flex items-center justify-center mb-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${denom.color} text-white`}>{denom.label}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <button 
+                          onClick={() => updateDenomination(denom.value, -1)}
+                          className="w-6 h-6 rounded bg-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/30 transition-all"
+                        >-</button>
+                        <input
+                          type="number"
+                          value={denominationCounts[denom.value]}
+                          onChange={e => setDenominationCounts(prev => ({...prev, [denom.value]: Math.max(0, parseInt(e.target.value) || 0)}))}
+                          className="w-10 text-center bg-transparent text-white font-oswald border-none outline-none"
+                        />
+                        <button 
+                          onClick={() => updateDenomination(denom.value, 1)}
+                          className="w-6 h-6 rounded bg-green-500/20 text-green-400 text-sm font-bold hover:bg-green-500/30 transition-all"
+                        >+</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            
+
+            {/* Total Counted */}
+            <div className={`p-4 rounded-lg border ${
+              Math.abs(cashDifference) < 1 
+                ? 'bg-green-500/10 border-green-500/30' 
+                : Math.abs(cashDifference) <= 50 
+                  ? 'bg-yellow-500/10 border-yellow-500/30'
+                  : 'bg-red-500/10 border-red-500/30'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white/70 font-medium">Total Contado</span>
+                <span className="font-oswald text-2xl font-bold text-white">{formatMoney(cashDeclaredFromDenominations)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 text-sm">Diferencia</span>
+                <span className={`font-oswald text-lg font-bold ${
+                  cashDifference === 0 ? 'text-green-400' : cashDifference > 0 ? 'text-emerald-400' : 'text-red-400'
+                }`}>
+                  {cashDifference > 0 ? '+' : ''}{formatMoney(cashDifference)}
+                  {cashDifference !== 0 && (
+                    <span className="text-xs ml-1">({cashDifference > 0 ? 'Sobrante' : 'Faltante'})</span>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Other payment methods */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-semibold text-white/60 mb-1 block flex items-center gap-1">
+                  <CreditCard size={14} /> Tarjeta Declarado
+                </label>
+                <input
+                  type="number"
+                  value={cardDeclared}
+                  onChange={e => setCardDeclared(e.target.value)}
+                  placeholder={formatMoney(currentSession?.card_sales || 0)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald focus:border-blue-400/50 outline-none transition-all"
+                />
+                <p className="text-[10px] text-white/40 mt-1">Sistema: {formatMoney(currentSession?.card_sales || 0)}</p>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-white/60 mb-1 block">Transferencias</label>
+                <input
+                  type="number"
+                  value={transferDeclared}
+                  onChange={e => setTransferDeclared(e.target.value)}
+                  placeholder={formatMoney(currentSession?.transfer_sales || 0)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald focus:border-cyan-400/50 outline-none transition-all"
+                />
+                <p className="text-[10px] text-white/40 mt-1">Sistema: {formatMoney(currentSession?.transfer_sales || 0)}</p>
+              </div>
+            </div>
+
+            {/* Notes */}
+            {Math.abs(cashDifference) > 0.01 && (
+              <div>
+                <label className="text-sm font-semibold text-white/60 mb-1 block">Notas sobre la diferencia</label>
+                <textarea
+                  value={differenceNotes}
+                  onChange={e => setDifferenceNotes(e.target.value)}
+                  placeholder="Explica la razón de la diferencia..."
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
+                />
+              </div>
+            )}
+
+            {/* Close Button */}
             <button onClick={handleCloseSession} data-testid="confirm-close-session"
               className="w-full h-12 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-oswald font-bold active:scale-95 transition-all flex items-center justify-center gap-2">
               <Square size={18} /> CERRAR TURNO
@@ -545,7 +666,7 @@ export default function CashRegister() {
                   className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
                     movementForm.movement_type === 'deposit' ? 'border-blue-400 bg-blue-400/20 text-blue-400' : 'border-white/10 bg-white/5 text-white/70'
                   }`}>
-                  <Banknote size={16} /> Deposito
+                  <Banknote size={16} /> Depósito
                 </button>
                 <button onClick={() => setMovementForm({...movementForm, movement_type: 'petty_cash'})}
                   className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
@@ -569,12 +690,12 @@ export default function CashRegister() {
             </div>
             
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-1 block">Descripcion</label>
+              <label className="text-sm font-semibold text-white/60 mb-1 block">Descripción</label>
               <input
                 type="text"
                 value={movementForm.description}
                 onChange={e => setMovementForm({...movementForm, description: e.target.value})}
-                placeholder="Ej: Reposicion de cambio, Pago a proveedor..."
+                placeholder="Ej: Reposición de cambio, Pago a proveedor..."
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all"
                 data-testid="movement-description-input"
               />
