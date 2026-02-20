@@ -95,6 +95,27 @@ Componente `ThermalTicket.js` con:
 - **Consumo en local**: ITBIS + Propina (todos los impuestos)
 - **Para Llevar (Delivery)**: Solo ITBIS (propina omitida automáticamente)
 
+### Módulo NCF - Comprobantes Fiscales DGII
+**Tipos de comprobantes (Serie B):**
+| Código | Descripción |
+|--------|-------------|
+| B01 | Factura de Crédito Fiscal |
+| B02 | Factura de Consumo (default) |
+| B03 | Nota de Débito |
+| B04 | Nota de Crédito |
+| B11 | Comprobante de Compras |
+| B12 | Registro Único de Ingresos |
+| B13 | Gastos Menores |
+| B14 | Regímenes Especiales |
+| B15 | Comprobante Gubernamental |
+| B16 | Exportaciones |
+| B17 | Pagos al Exterior |
+
+**Alertas de secuencias:**
+- 🟢 OK: > 50 comprobantes restantes
+- 🟡 Advertencia: < 50 restantes
+- 🔴 Crítico: < 10 restantes o secuencia vencida
+
 ## Key API Endpoints
 | Endpoint | Method | Description |
 |----------|--------|-------------|
