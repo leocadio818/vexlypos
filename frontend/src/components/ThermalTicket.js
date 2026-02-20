@@ -106,13 +106,13 @@ const getNCFType = (ncf) => {
 /**
  * Componente principal del ticket térmico
  * @param {Object} bill - Datos de la factura
- * @param {Object} config - Configuración del negocio (opcional)
+ * @param {Object} config - Configuración del negocio (opcional, si no se pasa se usa el default)
  * @param {boolean} isCopy - Si es una copia del ticket
  * @param {boolean} isVoid - Si la factura está anulada
  */
 const ThermalTicket = forwardRef(({ 
   bill, 
-  config = BUSINESS_CONFIG, 
+  config = DEFAULT_BUSINESS_CONFIG, 
   isCopy = false, 
   isVoid = false,
   showBarcode = false 
