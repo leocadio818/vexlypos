@@ -594,6 +594,12 @@ export default function Settings() {
             <TabsTrigger value="customers-cfg" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-customers-cfg">
               <Heart size={14} className="mr-1" /> Clientes
             </TabsTrigger>
+            <TabsTrigger value="taxes" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white font-oswald text-xs" data-testid="tab-taxes">
+              <Calculator size={14} className="mr-1" /> Impuestos
+            </TabsTrigger>
+            <TabsTrigger value="ncf" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white font-oswald text-xs" data-testid="tab-ncf">
+              <FileText size={14} className="mr-1" /> NCF
+            </TabsTrigger>
             {canAccessTheme && (
               <TabsTrigger value="theme" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white font-oswald text-xs" data-testid="tab-theme">
                 <Palette size={14} className="mr-1" /> Paleta
