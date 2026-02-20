@@ -2,12 +2,15 @@
  * ThermalTicket Component
  * Ticket térmico 80mm compatible con DGII (República Dominicana)
  * Incluye: Encabezado fiscal, RNC, NCF, desglose de impuestos
+ * 
+ * La configuración del negocio se carga desde /api/system/config
+ * y se puede editar en Settings > Sistema > Datos del Negocio para Ticket
  */
-import { forwardRef } from 'react';
+import { forwardRef, useState, useEffect } from 'react';
 import '../styles/ticket-print.css';
 
-// Configuración del negocio (en producción esto vendría de la BD)
-const BUSINESS_CONFIG = {
+// Configuración por defecto (fallback si no hay config en BD)
+const DEFAULT_BUSINESS_CONFIG = {
   name: 'RESTAURANTE DEMO',
   legal_name: 'RESTAURANTE DEMO SRL',
   rnc: '1-31-12345-6',
@@ -18,6 +21,49 @@ const BUSINESS_CONFIG = {
   ncf_expiry: '31/12/2025',
   footer_message: '¡Gracias por su visita!',
   dgii_message: 'Conserve este documento para fines de DGII'
+};
+
+/**
+ * Hook para cargar la configuración del negocio desde el backend
+ */
+export const useBusinessConfig = () => {
+  const [config, setConfig] = useState(DEFAULT_BUSINESS_CONFIG);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const API_BASE = process.env.REACT_APP_BACKEND_URL;
+        const token = localStorage.getItem('pos_token');
+        const response = await fetch(`${API_BASE}/api/system/config`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // Mapear campos del sistema a la estructura del ticket
+          setConfig({
+            name: data.ticket_business_name || data.restaurant_name || DEFAULT_BUSINESS_CONFIG.name,
+            legal_name: data.ticket_legal_name || DEFAULT_BUSINESS_CONFIG.legal_name,
+            rnc: data.ticket_rnc || data.rnc || DEFAULT_BUSINESS_CONFIG.rnc,
+            address: data.ticket_address || DEFAULT_BUSINESS_CONFIG.address,
+            address2: data.ticket_address2 || DEFAULT_BUSINESS_CONFIG.address2,
+            phone: data.ticket_phone || DEFAULT_BUSINESS_CONFIG.phone,
+            email: data.ticket_email || DEFAULT_BUSINESS_CONFIG.email,
+            ncf_expiry: data.ticket_ncf_expiry || DEFAULT_BUSINESS_CONFIG.ncf_expiry,
+            footer_message: data.ticket_footer_message || DEFAULT_BUSINESS_CONFIG.footer_message,
+            dgii_message: data.ticket_dgii_message || DEFAULT_BUSINESS_CONFIG.dgii_message
+          });
+        }
+      } catch (err) {
+        console.warn('Error loading business config, using defaults:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  return { config, loading };
 };
 
 // Helper para formatear moneda
