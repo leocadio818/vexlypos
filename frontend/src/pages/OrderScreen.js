@@ -232,6 +232,25 @@ export default function OrderScreen() {
     return () => clearInterval(interval);
   }, [API_BASE]);
 
+  // Sync serviceType with currentSaleType
+  useEffect(() => {
+    if (saleTypes.length > 0) {
+      const codeMap = {
+        'dine_in': ['dine_in', 'aqui', 'local'],
+        'takeaway': ['takeout', 'takeaway', 'llevar', 'take_out'],
+        'delivery': ['delivery', 'domicilio']
+      };
+      const matchedSaleType = saleTypes.find(st => {
+        const codes = codeMap[serviceType] || [];
+        return codes.some(c => st.code?.toLowerCase().includes(c));
+      }) || saleTypes.find(st => st.code === serviceType);
+      
+      if (matchedSaleType) {
+        setCurrentSaleType(matchedSaleType);
+      }
+    }
+  }, [serviceType, saleTypes]);
+
   // Keep orderRef in sync with order state
   useEffect(() => {
     if (order) {
