@@ -2419,45 +2419,45 @@ export default function Settings() {
                     </div>
 
                 {/* Razón Social (Legal Name) */}
-                <div className="bg-card border border-border rounded-xl p-4 mb-3">
-                  <h3 className="text-sm font-semibold mb-2">Razón Social</h3>
-                  <p className="text-xs text-muted-foreground mb-2">Nombre legal de la empresa para documentos fiscales</p>
-                  <input 
-                    value={systemConfig.ticket_legal_name || ''} 
-                    onChange={e => setSystemConfig(p => ({ ...p, ticket_legal_name: e.target.value }))}
-                    placeholder="RESTAURANTE DEMO SRL"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    data-testid="ticket-legal-name"
-                  />
-                </div>
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <h3 className="text-sm font-semibold mb-2">Razón Social</h3>
+                      <p className="text-xs text-muted-foreground mb-2">Nombre legal de la empresa para documentos fiscales</p>
+                      <input 
+                        value={systemConfig.ticket_legal_name || ''} 
+                        onChange={e => setSystemConfig(p => ({ ...p, ticket_legal_name: e.target.value }))}
+                        placeholder="RESTAURANTE DEMO SRL"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                        data-testid="ticket-legal-name"
+                      />
+                    </div>
 
-                {/* RNC para Ticket (usa el general si no se especifica) */}
-                <div className="bg-card border border-border rounded-xl p-4 mb-3">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <ShieldAlert size={14} className="text-yellow-500" />
-                    RNC (Ticket)
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-2">Si está vacío, usa el RNC del sistema</p>
-                  <input 
-                    value={systemConfig.ticket_rnc || systemConfig.rnc || ''} 
-                    onChange={e => setSystemConfig(p => ({ ...p, ticket_rnc: e.target.value }))}
-                    placeholder="1-31-12345-6"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
-                    data-testid="ticket-rnc"
-                  />
-                </div>
+                    {/* RNC para Ticket (usa el general si no se especifica) */}
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <ShieldAlert size={14} className="text-yellow-500" />
+                        RNC (Ticket)
+                      </h3>
+                      <p className="text-xs text-muted-foreground mb-2">Si está vacío, usa el RNC del sistema</p>
+                      <input 
+                        value={systemConfig.ticket_rnc || systemConfig.rnc || ''} 
+                        onChange={e => setSystemConfig(p => ({ ...p, ticket_rnc: e.target.value }))}
+                        placeholder="1-31-12345-6"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
+                        data-testid="ticket-rnc"
+                      />
+                    </div>
 
-                {/* Dirección */}
-                <div className="bg-card border border-border rounded-xl p-4 mb-3">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <MapPin size={14} className="text-blue-500" />
-                    Dirección
-                  </h3>
-                  <input 
-                    value={systemConfig.ticket_address || ''} 
-                    onChange={e => setSystemConfig(p => ({ ...p, ticket_address: e.target.value }))}
-                    placeholder="Av. Winston Churchill #123"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2"
+                    {/* Dirección */}
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <MapPin size={14} className="text-blue-500" />
+                        Dirección
+                      </h3>
+                      <input 
+                        value={systemConfig.ticket_address || ''} 
+                        onChange={e => setSystemConfig(p => ({ ...p, ticket_address: e.target.value }))}
+                        placeholder="Av. Winston Churchill #123"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2"
                     data-testid="ticket-address"
                   />
                   <input 
