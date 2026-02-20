@@ -103,6 +103,10 @@ Componente `ThermalTicket.js` con:
 - `/app/backend/routers/billing.py` - Integración ventas con Supabase
 - `/app/frontend/src/pages/CashRegister.js` - UI Arqueo de caja
 - `/app/frontend/src/lib/api.js` - taxesAPI, posSessionsAPI
+- `/app/frontend/src/components/ThermalTicket.js` - NEW: Componente ticket térmico
+- `/app/frontend/src/pages/TicketDemo.js` - NEW: Página demo ticket
+- `/app/frontend/src/styles/ticket-print.css` - Estilos impresión 80mm
+- `/app/frontend/src/pages/PaymentScreen.js` - Diálogo impresión post-pago
 
 ## Prioritized Backlog
 
@@ -113,6 +117,7 @@ Componente `ThermalTicket.js` con:
 - [x] Sistema de impuestos dinámicos por producto
 - [x] Propina solo para consumo en local
 - [x] Reporte Z con desglose de impuestos
+- [x] Ticket térmico 80mm compatible DGII
 
 ### P1 - Alta Prioridad
 - [ ] UI para configurar impuestos en Settings
@@ -120,16 +125,18 @@ Componente `ThermalTicket.js` con:
 - [ ] Checkbox "Para Llevar" en el carrito de compras
 - [ ] Audit Trail Security (solo Admin ve PINs)
 - [ ] Employee Time Clock (entrada/salida)
+- [ ] Generación reportes DGII (607, 608)
 
 ### P2 - Media Prioridad
 - [ ] Reportes de caja por período
-- [ ] Generación reportes DGII (607, 608)
 - [ ] Imágenes/iconos para botones de productos
 - [ ] Print Agent como ejecutable .exe
+- [ ] Cache de imágenes offline
 
 ### P3 - Baja Prioridad
 - [ ] Exportar Audit Trail a Excel/CSV
 - [ ] Duplicar producto feature
+- [ ] Drag-and-drop reordenar métodos de pago
 
 ## Test Credentials
 - Luis (Cajero): PIN 4321
