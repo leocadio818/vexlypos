@@ -1,0 +1,475 @@
+/* ============================================================================
+   TICKET TERMICO 80MM - ESTILOS DE IMPRESION
+   Compatible con impresoras térmicas POS
+   ============================================================================ */
+
+/* Reset y configuración base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+@page {
+  size: 80mm auto;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    width: 80mm;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Contenedor principal del ticket */
+.ticket-container {
+  width: 80mm;
+  max-width: 80mm;
+  font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #000;
+  background: #fff;
+  padding: 3mm;
+}
+
+/* ─── ENCABEZADO FISCAL ─── */
+.ticket-header {
+  text-align: center;
+  border-bottom: 1px dashed #000;
+  padding-bottom: 3mm;
+  margin-bottom: 3mm;
+}
+
+.ticket-logo {
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 2mm;
+}
+
+.ticket-business-name {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 1mm;
+}
+
+.ticket-rnc {
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 1mm;
+}
+
+.ticket-address {
+  font-size: 10px;
+  color: #333;
+  margin-bottom: 1mm;
+}
+
+.ticket-phone {
+  font-size: 10px;
+}
+
+/* ─── NCF / COMPROBANTE FISCAL ─── */
+.ticket-ncf-section {
+  background: #f5f5f5;
+  border: 1px solid #000;
+  padding: 2mm;
+  margin-bottom: 3mm;
+  text-align: center;
+}
+
+.ticket-ncf-label {
+  font-size: 10px;
+  font-weight: bold;
+  margin-bottom: 1mm;
+}
+
+.ticket-ncf-number {
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.ticket-ncf-type {
+  font-size: 10px;
+  margin-top: 1mm;
+}
+
+.ticket-ncf-expiry {
+  font-size: 9px;
+  color: #666;
+  margin-top: 1mm;
+}
+
+/* ─── INFORMACION DEL DOCUMENTO ─── */
+.ticket-info {
+  border-bottom: 1px dashed #000;
+  padding-bottom: 2mm;
+  margin-bottom: 3mm;
+}
+
+.ticket-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  margin-bottom: 1mm;
+}
+
+.ticket-info-label {
+  color: #666;
+}
+
+.ticket-info-value {
+  font-weight: bold;
+}
+
+/* ─── CLIENTE ─── */
+.ticket-customer {
+  border-bottom: 1px dashed #000;
+  padding-bottom: 2mm;
+  margin-bottom: 3mm;
+}
+
+.ticket-customer-label {
+  font-size: 9px;
+  color: #666;
+}
+
+.ticket-customer-name {
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.ticket-customer-rnc {
+  font-size: 10px;
+}
+
+/* ─── ITEMS / PRODUCTOS ─── */
+.ticket-items {
+  margin-bottom: 3mm;
+}
+
+.ticket-items-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: bold;
+  border-bottom: 1px solid #000;
+  padding-bottom: 1mm;
+  margin-bottom: 2mm;
+}
+
+.ticket-item {
+  margin-bottom: 2mm;
+  font-size: 11px;
+}
+
+.ticket-item-name {
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ticket-item-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #444;
+}
+
+.ticket-item-qty {
+  min-width: 8mm;
+}
+
+.ticket-item-price {
+  text-align: right;
+  min-width: 18mm;
+}
+
+.ticket-item-total {
+  text-align: right;
+  min-width: 20mm;
+  font-weight: bold;
+}
+
+/* Modificadores de item */
+.ticket-item-modifiers {
+  font-size: 9px;
+  color: #666;
+  padding-left: 3mm;
+}
+
+.ticket-item-modifier {
+  margin-bottom: 0.5mm;
+}
+
+/* ─── SEPARADOR ─── */
+.ticket-separator {
+  border-top: 1px dashed #000;
+  margin: 2mm 0;
+}
+
+.ticket-separator-double {
+  border-top: 2px solid #000;
+  margin: 2mm 0;
+}
+
+/* ─── SUBTOTALES ─── */
+.ticket-subtotals {
+  margin-bottom: 2mm;
+}
+
+.ticket-subtotal-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 1mm;
+}
+
+.ticket-subtotal-label {
+  color: #444;
+}
+
+.ticket-subtotal-value {
+  text-align: right;
+  min-width: 22mm;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+}
+
+/* ─── IMPUESTOS (DESGLOSE DGII) ─── */
+.ticket-taxes {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  padding: 2mm;
+  margin-bottom: 2mm;
+}
+
+.ticket-taxes-title {
+  font-size: 10px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 2mm;
+  text-transform: uppercase;
+}
+
+.ticket-tax-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  margin-bottom: 1mm;
+}
+
+.ticket-tax-label {
+  color: #333;
+}
+
+.ticket-tax-rate {
+  color: #666;
+  font-size: 9px;
+}
+
+.ticket-tax-value {
+  text-align: right;
+  min-width: 20mm;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  font-weight: bold;
+}
+
+.ticket-tax-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: bold;
+  border-top: 1px solid #ccc;
+  padding-top: 1mm;
+  margin-top: 1mm;
+}
+
+/* ─── TOTAL GENERAL ─── */
+.ticket-total {
+  background: #000;
+  color: #fff;
+  padding: 3mm;
+  margin-bottom: 3mm;
+  text-align: center;
+}
+
+.ticket-total-label {
+  font-size: 12px;
+  margin-bottom: 1mm;
+}
+
+.ticket-total-amount {
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.ticket-total-currency {
+  font-size: 12px;
+}
+
+/* ─── PAGO ─── */
+.ticket-payment {
+  border-bottom: 1px dashed #000;
+  padding-bottom: 2mm;
+  margin-bottom: 3mm;
+}
+
+.ticket-payment-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 1mm;
+}
+
+.ticket-payment-method {
+  font-weight: bold;
+}
+
+.ticket-payment-amount {
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+}
+
+.ticket-change {
+  font-size: 12px;
+  font-weight: bold;
+  background: #f0f0f0;
+  padding: 2mm;
+  text-align: center;
+  margin-top: 2mm;
+}
+
+/* ─── PIE DE PAGINA ─── */
+.ticket-footer {
+  text-align: center;
+  font-size: 10px;
+  padding-top: 2mm;
+  border-top: 1px dashed #000;
+}
+
+.ticket-footer-message {
+  margin-bottom: 2mm;
+}
+
+.ticket-footer-dgii {
+  font-size: 9px;
+  color: #666;
+  margin-top: 2mm;
+}
+
+.ticket-barcode {
+  text-align: center;
+  margin: 3mm 0;
+  font-family: 'Libre Barcode 39', monospace;
+  font-size: 28px;
+}
+
+.ticket-qr {
+  text-align: center;
+  margin: 2mm 0;
+}
+
+.ticket-qr img {
+  width: 25mm;
+  height: 25mm;
+}
+
+/* ─── TIPO DE SERVICIO ─── */
+.ticket-service-type {
+  background: #333;
+  color: #fff;
+  padding: 2mm;
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 2mm;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ticket-service-type.delivery {
+  background: #e65100;
+}
+
+.ticket-service-type.dine-in {
+  background: #2e7d32;
+}
+
+/* ─── MESA / ORDEN ─── */
+.ticket-table-info {
+  background: #f5f5f5;
+  padding: 2mm;
+  margin-bottom: 2mm;
+  text-align: center;
+}
+
+.ticket-table-number {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.ticket-order-number {
+  font-size: 10px;
+  color: #666;
+}
+
+/* ─── ESTADOS ESPECIALES ─── */
+.ticket-void {
+  border: 2px solid #f00;
+  background: #fff0f0;
+}
+
+.ticket-void::before {
+  content: '*** ANULADO ***';
+  display: block;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #f00;
+  padding: 2mm;
+}
+
+.ticket-copy {
+  border: 1px dashed #999;
+}
+
+.ticket-copy::before {
+  content: '--- COPIA ---';
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  color: #666;
+  padding: 2mm;
+}
+
+/* ─── ALINEACION DE MONTOS ─── */
+.amount-right {
+  text-align: right;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+}
+
+.amount-col {
+  min-width: 22mm;
+  text-align: right;
+}
+
+/* ─── UTILIDADES ─── */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-bold { font-weight: bold; }
+.text-small { font-size: 9px; }
+.text-large { font-size: 14px; }
+.mb-1 { margin-bottom: 1mm; }
+.mb-2 { margin-bottom: 2mm; }
+.mb-3 { margin-bottom: 3mm; }
+.mt-2 { margin-top: 2mm; }
+.pt-2 { padding-top: 2mm; }
