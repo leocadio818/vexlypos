@@ -54,6 +54,15 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **useBusinessConfig Hook**: Carga configuración del servidor en ThermalTicket.js
 - ✅ **Persistencia MongoDB**: Datos guardados en /api/system/config
 - ✅ **TicketDemo**: Indicador "Servidor" cuando usa config del backend
+- ✅ **Vista Previa en Vivo**: Preview del ticket actualizado en tiempo real al editar datos
+
+### 2025-02-20: UI Gestión de Impuestos y Módulo NCF
+- ✅ **Settings > Impuestos**: CRUD completo para configuración de impuestos DGII
+- ✅ **Settings > NCF**: Gestión de secuencias fiscales Serie B (B01-B17)
+- ✅ **Backend NCF Router**: `/app/backend/routers/ncf.py` conectado a Supabase
+- ✅ **Alertas NCF**: Barra de progreso visual (verde/amarillo/rojo por disponibilidad)
+- ✅ **Dashboard Alertas**: Banner de alertas NCF en pantalla principal (Mapa de Mesas)
+- ✅ **Validaciones**: < 50 = advertencia, < 10 = crítico, vencido = crítico
 
 ## Key Features
 
