@@ -48,6 +48,10 @@ export default function OrderScreen() {
   // 'dine_in' = Comer Aquí (incluye propina), 'takeaway' = Para Llevar, 'delivery' = Delivery
   const [serviceType, setServiceType] = useState('dine_in');
   
+  // Sale Types with NCF defaults and tax exemptions
+  const [saleTypes, setSaleTypes] = useState([]);
+  const [currentSaleType, setCurrentSaleType] = useState(null);
+  
   // Grid display settings
   const [gridSettings, setGridSettings] = useState({
     categoryColumns: 3,
