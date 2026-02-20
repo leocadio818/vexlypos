@@ -267,20 +267,13 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
                 "id": gen_id(),
                 "ref": generate_movement_ref(),
                 "session_id": session_id,
-                "terminal_id": session.get("terminal_id"),
                 "movement_type": "adjustment",
                 "direction": 1 if cash_difference > 0 else -1,
                 "amount": abs(cash_difference),
                 "payment_method": "cash",
                 "description": f"Ajuste de cierre: {'Sobrante' if cash_difference > 0 else 'Faltante'}",
-                "reason_code": "SURPLUS_CASH" if cash_difference > 0 else "SHORTAGE_CASH",
-                "notes": input.difference_notes,
-                "balance_before": expected_cash,
-                "balance_after": input.cash_declared,
                 "created_by": user["user_id"],
-                "created_by_name": user["name"],
-                "is_system": True,
-                "requires_approval": abs(cash_difference) > 50
+                "created_by_name": user["name"]
             }
             
             sb.table("cash_movements").insert(adjustment_data).execute()
