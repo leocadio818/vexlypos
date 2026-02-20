@@ -5,15 +5,31 @@ from typing import List, Optional
 from datetime import datetime, timezone
 from pymongo import ReturnDocument
 import uuid
+import os
 
 router = APIRouter(tags=["billing"])
 
 # Database reference
 db = None
 
+# Supabase client for pos_sessions
+supabase_client = None
+
 def set_db(database):
     global db
     db = database
+
+def init_supabase():
+    """Initialize Supabase client for pos_sessions integration"""
+    global supabase_client
+    try:
+        from supabase import create_client
+        url = os.environ.get("SUPABASE_URL", "")
+        key = os.environ.get("SUPABASE_ANON_KEY", "")
+        if url and key:
+            supabase_client = create_client(url, key)
+    except Exception as e:
+        print(f"Warning: Could not initialize Supabase for billing: {e}")
 
 def gen_id() -> str:
     return str(uuid.uuid4())
