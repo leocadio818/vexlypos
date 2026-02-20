@@ -107,6 +107,7 @@ export default function PaymentScreen() {
   const { billId } = useParams();
   const navigate = useNavigate();
   const { largeMode, device } = useAuth();
+  const ticketRef = useRef(null);
   const [bill, setBill] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [payAmounts, setPayAmounts] = useState({});
@@ -133,6 +134,8 @@ export default function PaymentScreen() {
 
   // Dialog states
   const [ncfDialogOpen, setNcfDialogOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [paidBill, setPaidBill] = useState(null); // Bill after payment for printing
 
   // NCF Fiscal Types (Dominican Republic) - B02 = Consumidor Final es el default
   const fiscalTypes = [
