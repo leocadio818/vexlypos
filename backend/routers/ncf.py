@@ -184,33 +184,36 @@ async def create_ncf_sequence(input: NCFSequenceInput):
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        # Verificar que no exista una secuencia activa para el mismo tipo
-        existing = supabase_client.table("ncf_sequences").select("id").eq("ncf_type_code", input.ncf_type_code.upper()).eq("is_active", True).execute()
-        
-        if existing.data:
-            raise HTTPException(status_code=400, detail=f"Ya existe una secuencia activa para {input.ncf_type_code}")
-        
         # Verificar que el tipo de NCF existe (table uses 'id' as the code column)
         ncf_type = supabase_client.table("ncf_types_config").select("id").eq("id", input.ncf_type_code.upper()).execute()
         if not ncf_type.data:
             raise HTTPException(status_code=400, detail=f"Tipo NCF {input.ncf_type_code} no existe")
         
+        # Check for existing active sequence (simplified - get all and filter)
+        all_sequences = supabase_client.table("ncf_sequences").select("*").execute()
+        existing = [s for s in (all_sequences.data or []) 
+                   if s.get("ncf_type_code") == input.ncf_type_code.upper() and s.get("is_active")]
+        
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Ya existe una secuencia activa para {input.ncf_type_code}")
+        
         data = {
             "ncf_type_code": input.ncf_type_code.upper(),
             "serie": input.serie.upper(),
-            "prefix": input.prefix,
+            "prefix": input.prefix or f"{input.serie}{input.ncf_type_code[1:]}",
             "current_number": input.current_number,
             "range_start": input.range_start,
             "range_end": input.range_end,
             "expiration_date": input.expiration_date,
-            "is_active": input.is_active,
-            "notes": input.notes,
-            "created_at": now_iso(),
-            "updated_at": now_iso()
+            "is_active": input.is_active if input.is_active is not None else True,
+            "notes": input.notes
         }
         
         response = supabase_client.table("ncf_sequences").insert(data).execute()
-        return response.data[0]
+        if response.data:
+            return response.data[0]
+        else:
+            raise HTTPException(status_code=500, detail="Error al insertar secuencia")
     except HTTPException:
         raise
     except Exception as e:
