@@ -604,29 +604,32 @@ export default function CashRegister() {
               </div>
             </div>
 
-            {/* Total Counted */}
+            {/* Total Counted - Con alerta de descuadre */}
             <div className={`p-4 rounded-lg border ${
-              Math.abs(cashDifference) < 1 
+              Math.abs(diferenciaCaja) < 1 
                 ? 'bg-green-500/10 border-green-500/30' 
-                : Math.abs(cashDifference) <= 50 
+                : Math.abs(diferenciaCaja) <= 50 
                   ? 'bg-yellow-500/10 border-yellow-500/30'
                   : 'bg-red-500/10 border-red-500/30'
             }`}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-white/70 font-medium">Total Contado</span>
-                <span className="font-oswald text-2xl font-bold text-white">{formatMoney(cashDeclaredFromDenominations)}</span>
+                <span className="text-white/70 font-medium">Total Declarado</span>
+                <span className="font-oswald text-2xl font-bold text-white">{formatMoney(totalDeclarado)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white/50 text-sm">Diferencia</span>
-                <span className={`font-oswald text-lg font-bold ${
-                  cashDifference === 0 ? 'text-green-400' : cashDifference > 0 ? 'text-emerald-400' : 'text-red-400'
-                }`}>
-                  {cashDifference > 0 ? '+' : ''}{formatMoney(cashDifference)}
-                  {cashDifference !== 0 && (
-                    <span className="text-xs ml-1">({cashDifference > 0 ? 'Sobrante' : 'Faltante'})</span>
-                  )}
+                <span className="text-white/50 text-sm">
+                  {getAlertStatus().text}
+                </span>
+                <span className={`font-oswald text-lg font-bold ${getAlertStatus().color}`}>
+                  {diferenciaCaja > 0 ? '+' : ''}{formatMoney(diferenciaCaja)}
                 </span>
               </div>
+              {Math.abs(diferenciaCaja) > 50 && (
+                <div className="mt-2 p-2 rounded bg-red-500/20 border border-red-500/30 flex items-center gap-2">
+                  <AlertTriangle size={16} className="text-red-400" />
+                  <span className="text-xs text-red-300">Descuadre significativo - Se requiere explicación</span>
+                </div>
+              )}
             </div>
 
             {/* Other payment methods */}
@@ -658,7 +661,7 @@ export default function CashRegister() {
             </div>
 
             {/* Notes */}
-            {Math.abs(cashDifference) > 0.01 && (
+            {Math.abs(diferenciaCaja) > 0.01 && (
               <div>
                 <label className="text-sm font-semibold text-white/60 mb-1 block">Notas sobre la diferencia</label>
                 <textarea
