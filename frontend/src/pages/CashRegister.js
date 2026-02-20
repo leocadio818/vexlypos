@@ -114,12 +114,12 @@ export default function CashRegister() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // Calculate total from denomination counts
-  const cashDeclaredFromDenominations = Object.entries(denominationCounts).reduce(
-    (total, [value, count]) => total + (parseInt(value) * count), 0
+  const totalDeclarado = Object.entries(denominationCounts).reduce(
+    (total, [valor, cantidad]) => total + (parseInt(valor) * cantidad), 0
   );
 
-  // Calculate expected cash
-  const expectedCash = currentSession ? (
+  // Calculate expected cash (total_esperado)
+  const totalEsperado = currentSession ? (
     (currentSession.opening_amount || 0) +
     (currentSession.cash_sales || 0) +
     (currentSession.cash_in || 0) -
@@ -133,7 +133,16 @@ export default function CashRegister() {
     (currentSession.other_sales || 0)
   ) : 0;
 
-  const cashDifference = cashDeclaredFromDenominations - expectedCash;
+  // Diferencia = Declarado - Esperado
+  const diferenciaCaja = totalDeclarado - totalEsperado;
+  
+  // Determinar estado de alerta
+  const getAlertStatus = () => {
+    if (Math.abs(diferenciaCaja) < 1) return { type: 'success', text: 'Cuadrado', color: 'text-green-400' };
+    if (diferenciaCaja > 0) return { type: 'surplus', text: 'Sobrante', color: 'text-emerald-400' };
+    if (diferenciaCaja < 0 && Math.abs(diferenciaCaja) <= 50) return { type: 'minor', text: 'Faltante menor', color: 'text-yellow-400' };
+    return { type: 'major', text: 'Descuadre', color: 'text-red-400' };
+  };
 
   const handleOpenSession = async () => {
     try {
