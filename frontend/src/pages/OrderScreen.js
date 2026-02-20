@@ -44,6 +44,10 @@ export default function OrderScreen() {
   const [managerPinDialog, setManagerPinDialog] = useState({ open: false, pin: '', error: '' });
   const [taxConfig, setTaxConfig] = useState([]);
   
+  // Service Type State - Para Llevar / Comer Aquí / Delivery
+  // 'dine_in' = Comer Aquí (incluye propina), 'takeaway' = Para Llevar, 'delivery' = Delivery
+  const [serviceType, setServiceType] = useState('dine_in');
+  
   // Grid display settings
   const [gridSettings, setGridSettings] = useState({
     categoryColumns: 3,
