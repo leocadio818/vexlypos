@@ -127,6 +127,14 @@ Componente `ThermalTicket.js` con:
 - [x] Reporte Z con desglose de impuestos
 - [x] Ticket térmico 80mm compatible DGII
 - [x] Configuración de datos del negocio para ticket (personalización desde Settings)
+- [x] **UI de Gestión de Impuestos** - CRUD completo en Settings > Impuestos
+- [x] **Módulo NCF** - Gestión de secuencias fiscales DGII (Serie B) en Settings > NCF
+
+### P0 - Pendiente
+- [ ] Toggle "Para Llevar / Comer Aquí" en pantalla de orden
+- [ ] Asignación de impuestos específicos a productos
+- [ ] Seguridad Fiscal: Bloquear NCF en facturas $0.00
+- [ ] Flujo de Nota de Crédito B04 (reversión de factura)
 
 ### P1 - Alta Prioridad
 - [ ] UI para configurar impuestos en Settings
