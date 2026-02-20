@@ -52,7 +52,7 @@ export default function CashRegister() {
   
   // Closing form with denomination breakdown
   const [denominationCounts, setDenominationCounts] = useState(
-    DENOMINATIONS.reduce((acc, d) => ({ ...acc, [d.value]: 0 }), {})
+    DENOMINACIONES.reduce((acc, d) => ({ ...acc, [d.valor]: 0 }), {})
   );
   const [cardDeclared, setCardDeclared] = useState('');
   const [transferDeclared, setTransferDeclared] = useState('');
