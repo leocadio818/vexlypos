@@ -260,8 +260,7 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
             "closed_at": now,
             "closed_by": user["user_id"],
             "closed_by_name": user["name"],
-            "status": final_status,
-            "updated_at": now
+            "status": final_status
         }
         
         result = sb.table("pos_sessions").update(update_data).eq("id", session_id).execute()
