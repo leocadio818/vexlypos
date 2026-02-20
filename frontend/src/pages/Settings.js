@@ -1991,7 +1991,7 @@ export default function Settings() {
                 </Button>
               </div>
 
-                {/* Database Maintenance - Admin Only */}
+              {/* Database Maintenance - Admin Only */}
                 {user?.role === 'admin' && (
                   <div className="mt-8 pt-6 border-t border-destructive/30">
                     <div className="bg-destructive/5 border border-destructive/30 rounded-xl p-4">
