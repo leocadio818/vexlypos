@@ -468,9 +468,9 @@ async def list_sale_types():
     types = await db.sale_types.find({}, {"_id": 0}).to_list(20)
     if not types:
         defaults = [
-            {"id": gen_id(), "code": "dine_in", "name": "Para comer aquí", "active": True, "tax_exemptions": []},
-            {"id": gen_id(), "code": "takeout", "name": "Para llevar", "active": True, "tax_exemptions": []},
-            {"id": gen_id(), "code": "delivery", "name": "Delivery", "active": True, "tax_exemptions": []}
+            {"id": gen_id(), "code": "dine_in", "name": "Para comer aquí", "active": True, "tax_exemptions": [], "default_ncf_type_id": "B02"},
+            {"id": gen_id(), "code": "takeout", "name": "Para llevar", "active": True, "tax_exemptions": [], "default_ncf_type_id": "B02"},
+            {"id": gen_id(), "code": "delivery", "name": "Delivery", "active": True, "tax_exemptions": [], "default_ncf_type_id": "B02"}
         ]
         await db.sale_types.insert_many(defaults)
         return defaults
@@ -483,14 +483,21 @@ async def create_sale_type(input: dict):
         "code": input.get("code", ""), 
         "name": input.get("name", ""), 
         "active": True,
-        "tax_exemptions": input.get("tax_exemptions", [])  # Array of tax IDs this sale type is exempt from
+        "tax_exemptions": input.get("tax_exemptions", []),  # Array of tax IDs this sale type is exempt from
+        "default_ncf_type_id": input.get("default_ncf_type_id", "B02")  # Default NCF type (B01, B02, B14, B15)
     }
     await db.sale_types.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @router.put("/sale-types/{sid}")
 async def update_sale_type(sid: str, input: dict):
-    await db.sale_types.update_one({"id": sid}, {"$set": input})
+    # Ensure we can update the default_ncf_type_id field
+    update_data = {}
+    allowed_fields = ["name", "code", "active", "tax_exemptions", "default_ncf_type_id"]
+    for field in allowed_fields:
+        if field in input:
+            update_data[field] = input[field]
+    await db.sale_types.update_one({"id": sid}, {"$set": update_data})
     return {"ok": True}
 
 @router.delete("/sale-types/{sid}")
