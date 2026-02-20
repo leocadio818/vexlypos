@@ -6,19 +6,33 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 
-// Denominaciones de billetes y monedas RD
-const DENOMINATIONS = [
-  { value: 2000, label: 'RD$ 2,000', type: 'bill', color: 'bg-violet-500' },
-  { value: 1000, label: 'RD$ 1,000', type: 'bill', color: 'bg-blue-500' },
-  { value: 500, label: 'RD$ 500', type: 'bill', color: 'bg-emerald-500' },
-  { value: 200, label: 'RD$ 200', type: 'bill', color: 'bg-orange-500' },
-  { value: 100, label: 'RD$ 100', type: 'bill', color: 'bg-red-500' },
-  { value: 50, label: 'RD$ 50', type: 'bill', color: 'bg-cyan-500' },
-  { value: 25, label: 'RD$ 25', type: 'coin', color: 'bg-yellow-500' },
-  { value: 10, label: 'RD$ 10', type: 'coin', color: 'bg-amber-500' },
-  { value: 5, label: 'RD$ 5', type: 'coin', color: 'bg-zinc-400' },
-  { value: 1, label: 'RD$ 1', type: 'coin', color: 'bg-zinc-500' },
+// Denominaciones de billetes y monedas RD (estructura del usuario)
+const DENOMINACIONES = [
+  {"label": "RD$ 2,000", "valor": 2000, "tipo": "billete"},
+  {"label": "RD$ 1,000", "valor": 1000, "tipo": "billete"},
+  {"label": "RD$ 500", "valor": 500, "tipo": "billete"},
+  {"label": "RD$ 200", "valor": 200, "tipo": "billete"},
+  {"label": "RD$ 100", "valor": 100, "tipo": "billete"},
+  {"label": "RD$ 50", "valor": 50, "tipo": "billete"},
+  {"label": "RD$ 25", "valor": 25, "tipo": "moneda"},
+  {"label": "RD$ 10", "valor": 10, "tipo": "moneda"},
+  {"label": "RD$ 5", "valor": 5, "tipo": "moneda"},
+  {"label": "RD$ 1", "valor": 1, "tipo": "moneda"}
 ];
+
+// Colores por denominación
+const COLORES_DENOMINACION = {
+  2000: 'bg-violet-500',
+  1000: 'bg-blue-500',
+  500: 'bg-emerald-500',
+  200: 'bg-orange-500',
+  100: 'bg-red-500',
+  50: 'bg-cyan-500',
+  25: 'bg-yellow-500',
+  10: 'bg-amber-500',
+  5: 'bg-zinc-400',
+  1: 'bg-zinc-500'
+};
 
 export default function CashRegister() {
   const { user } = useAuth();
