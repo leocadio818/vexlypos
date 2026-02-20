@@ -3973,7 +3973,7 @@ export default function Settings() {
               >
                 <option value="">-- Seleccionar Tipo --</option>
                 {ncfTypes.map(t => (
-                  <option key={t.code} value={t.code}>{t.code} - {t.name}</option>
+                  <option key={t.id || t.code} value={t.id || t.code}>{t.id || t.code} - {t.description || t.name}</option>
                 ))}
               </select>
             </div>
