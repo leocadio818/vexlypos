@@ -991,9 +991,13 @@ export default function OrderScreen() {
       // Check for existing open bills for this order
       const existingBills = await billsAPI.list({ order_id: order.id, status: 'open' });
       
+      // Build query params with NCF type from sale type
+      const ncfType = currentSaleType?.default_ncf_type_id || 'B02';
+      const queryParams = `serviceType=${serviceType}&ncfType=${ncfType}&saleTypeId=${currentSaleType?.id || ''}`;
+      
       if (existingBills.data?.length > 0) {
-        // If there's an open bill, go directly to payment with service type
-        navigate(`/payment/${existingBills.data[0].id}?serviceType=${serviceType}`);
+        // If there's an open bill, go directly to payment with service type and NCF
+        navigate(`/payment/${existingBills.data[0].id}?${queryParams}`);
         return;
       }
       
@@ -1011,11 +1015,13 @@ export default function OrderScreen() {
         order_id: order.id,
         table_id: tableId,
         item_ids: itemIds,
-        sale_type: serviceType  // Pass service type to bill creation
+        sale_type: serviceType,  // Pass service type to bill creation
+        sale_type_id: currentSaleType?.id,  // Pass sale type ID
+        default_ncf_type: ncfType  // Pass NCF type for fiscal sequence
       });
       
-      // Navigate directly to payment screen with service type
-      navigate(`/payment/${res.data.id}?serviceType=${serviceType}`);
+      // Navigate directly to payment screen with service type and NCF
+      navigate(`/payment/${res.data.id}?${queryParams}`);
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Error creando factura');
     }
