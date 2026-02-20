@@ -63,7 +63,11 @@ async def get_ncf_types():
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        response = supabase_client.table("ncf_types_config").select("*").order("sort_order").execute()
+        # Try with sort_order, fallback to code if column doesn't exist
+        try:
+            response = supabase_client.table("ncf_types_config").select("*").order("sort_order").execute()
+        except Exception:
+            response = supabase_client.table("ncf_types_config").select("*").order("code").execute()
         return response.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
