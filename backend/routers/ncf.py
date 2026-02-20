@@ -172,8 +172,8 @@ async def create_ncf_sequence(input: NCFSequenceInput):
         if existing.data:
             raise HTTPException(status_code=400, detail=f"Ya existe una secuencia activa para {input.ncf_type_code}")
         
-        # Verificar que el tipo de NCF existe
-        ncf_type = supabase_client.table("ncf_types_config").select("code").eq("code", input.ncf_type_code.upper()).execute()
+        # Verificar que el tipo de NCF existe (table uses 'id' as the code column)
+        ncf_type = supabase_client.table("ncf_types_config").select("id").eq("id", input.ncf_type_code.upper()).execute()
         if not ncf_type.data:
             raise HTTPException(status_code=400, detail=f"Tipo NCF {input.ncf_type_code} no existe")
         
