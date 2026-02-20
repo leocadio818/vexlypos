@@ -91,6 +91,10 @@ export default function Settings() {
   // Check if user can access theme settings (admin, manager, owner, gerente, propietario)
   const canAccessTheme = ['admin', 'manager', 'owner', 'propietario', 'gerente'].includes(user?.role);
 
+  // Ticket preview state
+  const [showTicketPreview, setShowTicketPreview] = useState(false);
+  const ticketPreviewRef = useRef(null);
+
   // Read URL params to determine initial tab state
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'users';
