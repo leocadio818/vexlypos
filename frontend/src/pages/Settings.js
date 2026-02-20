@@ -2467,47 +2467,47 @@ export default function Settings() {
                     className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
                     data-testid="ticket-address2"
                   />
-                </div>
+                    </div>
 
-                {/* Teléfono */}
-                <div className="bg-card border border-border rounded-xl p-4 mb-3">
-                  <h3 className="text-sm font-semibold mb-2">Teléfono</h3>
-                  <input 
-                    value={systemConfig.ticket_phone || ''} 
-                    onChange={e => setSystemConfig(p => ({ ...p, ticket_phone: e.target.value }))}
-                    placeholder="809-555-1234"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    data-testid="ticket-phone"
-                  />
-                </div>
+                    {/* Teléfono */}
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <h3 className="text-sm font-semibold mb-2">Teléfono</h3>
+                      <input 
+                        value={systemConfig.ticket_phone || ''} 
+                        onChange={e => setSystemConfig(p => ({ ...p, ticket_phone: e.target.value }))}
+                        placeholder="809-555-1234"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                        data-testid="ticket-phone"
+                      />
+                    </div>
 
-                {/* Email (opcional) */}
-                <div className="bg-card border border-border rounded-xl p-4 mb-3">
-                  <h3 className="text-sm font-semibold mb-2">Email (opcional)</h3>
-                  <input 
-                    value={systemConfig.ticket_email || ''} 
-                    onChange={e => setSystemConfig(p => ({ ...p, ticket_email: e.target.value }))}
-                    placeholder="info@mirestaurante.com"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    data-testid="ticket-email"
-                  />
-                </div>
+                    {/* Email (opcional) */}
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <h3 className="text-sm font-semibold mb-2">Email (opcional)</h3>
+                      <input 
+                        value={systemConfig.ticket_email || ''} 
+                        onChange={e => setSystemConfig(p => ({ ...p, ticket_email: e.target.value }))}
+                        placeholder="info@mirestaurante.com"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                        data-testid="ticket-email"
+                      />
+                    </div>
 
-                {/* NCF Expiry Date */}
-                <div className="bg-card border border-border rounded-xl p-4 mb-3">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <AlertTriangle size={14} className="text-orange-500" />
-                    Fecha Vencimiento NCF
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-2">Fecha hasta la cual son válidos los comprobantes fiscales</p>
-                  <input 
-                    type="text"
-                    value={systemConfig.ticket_ncf_expiry || ''} 
-                    onChange={e => setSystemConfig(p => ({ ...p, ticket_ncf_expiry: e.target.value }))}
-                    placeholder="31/12/2025"
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    data-testid="ticket-ncf-expiry"
-                  />
+                    {/* NCF Expiry Date */}
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <AlertTriangle size={14} className="text-orange-500" />
+                        Fecha Vencimiento NCF
+                      </h3>
+                      <p className="text-xs text-muted-foreground mb-2">Fecha hasta la cual son válidos los comprobantes fiscales</p>
+                      <input 
+                        type="text"
+                        value={systemConfig.ticket_ncf_expiry || ''} 
+                        onChange={e => setSystemConfig(p => ({ ...p, ticket_ncf_expiry: e.target.value }))}
+                        placeholder="31/12/2025"
+                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                        data-testid="ticket-ncf-expiry"
+                      />
                 </div>
 
                 {/* Footer Message */}
