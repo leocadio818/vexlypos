@@ -19,24 +19,35 @@ Sistema POS para República Dominicana con soporte completo para:
 - ✅ Generación de 4 esquemas JSON propuestos
 - ✅ Script SQL consolidado `01_migracion_logica_erp.sql`
 
-### 2025-02-20: Integración Supabase - Apertura de Caja
-- ✅ **Backend**: Nuevo router `/api/pos-sessions` con Supabase
-  - `GET /check` - Verificar sesión activa del usuario
-  - `GET /current` - Obtener sesión actual completa
-  - `POST /open` - Abrir nuevo turno con monto inicial
-  - `PUT /{id}/close` - Cerrar turno con declaración de efectivo
-  - `POST /{id}/movements` - Agregar movimientos de caja
-  - `GET /{id}/movements` - Listar movimientos del turno
-  - `GET /history` - Historial de turnos cerrados
-- ✅ **Frontend**: Página de Caja actualizada (`CashRegister.js`)
-  - UI para abrir/cerrar turnos
-  - Panel de estadísticas en tiempo real
-  - Registro de movimientos de caja
-  - Historial de turnos
-  - Badge "Supabase" indicando conexión
-- ✅ **Supabase**: Tablas conectadas
-  - `pos_sessions` - Sesiones/turnos de caja
-  - `cash_movements` - Movimientos de efectivo
+### 2025-02-20: Integración Supabase - Control de Caja
+- ✅ **Backend**: Router `/api/pos-sessions` conectado a Supabase
+- ✅ **Apertura de Caja**: Crear sesión con monto inicial
+- ✅ **Integración de Ventas**: Al pagar factura, actualiza `cash_sales`/`card_sales` en Supabase
+- ✅ **Movimientos de Caja**: Registro automático en `cash_movements` por cada venta
+- ✅ **Arqueo de Caja**: Modal con desglose de denominaciones (billetes y monedas RD)
+- ✅ **Cierre de Turno**: Cálculo de diferencia (esperado vs contado)
+
+## Key Features
+
+### Apertura de Caja
+- Selección de terminal (Caja 1, Caja 2, Barra, Terraza, VIP)
+- Monto inicial de apertura
+- Movimiento automático tipo "opening" en cash_movements
+
+### Integración de Ventas con Sesión
+- Al pagar factura (`/bills/{id}/pay`), se actualiza automáticamente:
+  - `cash_sales` o `card_sales` según método de pago
+  - `total_invoices` incrementado
+  - Nuevo registro en `cash_movements` tipo "sale"
+
+### Arqueo de Caja (Cierre)
+- Desglose de denominaciones:
+  - Billetes: RD$ 2000, 1000, 500, 200, 100, 50
+  - Monedas: RD$ 25, 10, 5, 1
+- Cálculo automático de Total Contado
+- Comparación con Efectivo Esperado
+- Indicador visual de diferencia (verde/amarillo/rojo)
+- Campo de notas para explicar diferencias
 
 ## Supabase Connection
 ```
@@ -44,41 +55,30 @@ URL: https://zxrziualssnmvltbzdcd.supabase.co
 Key: sb_publishable_hWJwHftCQhmE2PRmWLoEgQ_DIFucqHZ
 ```
 
-## Key API Endpoints (Supabase Integration)
+## Key API Endpoints
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/pos-sessions/health` | GET | Health check Supabase |
-| `/api/pos-sessions/check` | GET | Verificar sesión activa |
-| `/api/pos-sessions/current` | GET | Sesión actual completa |
 | `/api/pos-sessions/open` | POST | Abrir turno |
+| `/api/pos-sessions/current` | GET | Sesión actual |
 | `/api/pos-sessions/{id}/close` | PUT | Cerrar turno |
 | `/api/pos-sessions/{id}/movements` | POST | Agregar movimiento |
-| `/api/pos-sessions/{id}/movements` | GET | Listar movimientos |
-| `/api/pos-sessions/history` | GET | Historial de turnos |
+| `/api/bills/{id}/pay` | POST | Pagar factura (actualiza sesión Supabase) |
 
-## Files Modified/Created
-- `/app/backend/routers/pos_sessions.py` - NEW: Router Supabase
-- `/app/backend/server.py` - Updated: Include pos_sessions router
-- `/app/backend/.env` - Updated: SUPABASE_URL, SUPABASE_ANON_KEY
-- `/app/frontend/src/lib/api.js` - Updated: posSessionsAPI
-- `/app/frontend/src/pages/CashRegister.js` - REWRITTEN: UI Supabase
-
-## SQL Scripts Generated
-- `/app/_referencia_dolibarr/01_migracion_logica_erp.sql` - Migración completa
-- `/app/_referencia_dolibarr/02_politicas_rls.sql` - Políticas RLS
-- `/app/_referencia_dolibarr/03_alter_tables_completar.sql` - ALTER TABLE adicionales
+## Files Modified
+- `/app/backend/routers/pos_sessions.py` - Router Supabase
+- `/app/backend/routers/billing.py` - Integración ventas con Supabase
+- `/app/backend/server.py` - Include routers + init_supabase
+- `/app/frontend/src/pages/CashRegister.js` - UI Arqueo de caja
 
 ## Prioritized Backlog
 
-### P0 - Crítico (Completado)
-- [x] Conectar backend a Supabase
-- [x] Implementar apertura de caja
-- [x] Registrar movimiento de apertura
-- [x] UI de gestión de turnos
+### P0 - Completado ✅
+- [x] Apertura de caja con monto inicial
+- [x] Integración ventas con sesión de caja
+- [x] Arqueo de caja con desglose de denominaciones
+- [x] Cierre de turno con cálculo de diferencia
 
 ### P1 - Alta Prioridad
-- [ ] Integrar ventas con sesión de caja activa
-- [ ] Cierre de caja con desglose de denominaciones
 - [ ] Audit Trail Security (solo Admin ve PINs)
 - [ ] Employee Time Clock (entrada/salida)
 - [ ] Generación reportes DGII (607, 608)
@@ -86,20 +86,11 @@ Key: sb_publishable_hWJwHftCQhmE2PRmWLoEgQ_DIFucqHZ
 ### P2 - Media Prioridad
 - [ ] Reportes de caja por período
 - [ ] Imágenes/iconos para botones de productos
-- [ ] Cache de imágenes offline
 - [ ] Print Agent como ejecutable .exe
 
 ### P3 - Baja Prioridad
-- [ ] Drag-and-drop reordenamiento métodos de pago
 - [ ] Exportar Audit Trail a Excel/CSV
 - [ ] Duplicar producto feature
-
-## Technical Stack
-- Frontend: React + Shadcn UI
-- Backend: FastAPI + MongoDB (legacy) + Supabase (new)
-- Database: 
-  - MongoDB: Usuarios, productos, mesas, órdenes (legacy)
-  - Supabase: Sesiones de caja, movimientos (new)
 
 ## Test Credentials
 - Luis (Cajero): PIN 4321
