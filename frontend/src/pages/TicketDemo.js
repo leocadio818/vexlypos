@@ -2,10 +2,10 @@
  * TicketDemo - Página de demostración del ticket térmico
  * Permite visualizar y probar el formato del ticket
  */
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, Eye, RefreshCw, Settings } from 'lucide-react';
-import ThermalTicket, { printTicket } from '../components/ThermalTicket';
+import { ArrowLeft, Printer, Eye, RefreshCw, Settings, Cloud, CloudOff } from 'lucide-react';
+import ThermalTicket, { printTicket, useBusinessConfig } from '../components/ThermalTicket';
 import { toast } from 'sonner';
 
 // Datos de ejemplo para demostración
