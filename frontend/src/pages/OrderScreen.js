@@ -648,9 +648,17 @@ export default function OrderScreen() {
   }, 0);
 
   // Dynamic tax breakdown from config
+  // Filter taxes based on service type (dine_in includes all taxes, takeaway/delivery excludes is_dine_in_only taxes)
   const taxBreakdown = [];
   let runningTotal = subtotal;
-  for (const tax of taxConfig) {
+  const applicableTaxes = taxConfig.filter(tax => {
+    // If it's dine_in, include all taxes
+    if (serviceType === 'dine_in') return true;
+    // For takeaway/delivery, exclude taxes marked as dine_in_only (like Propina Legal)
+    return !tax.is_dine_in_only;
+  });
+  
+  for (const tax of applicableTaxes) {
     const base = tax.apply_to_tip ? runningTotal : subtotal;
     const amount = Math.round(base * (tax.rate / 100) * 100) / 100;
     taxBreakdown.push({ description: tax.description, rate: tax.rate, amount, is_tip: tax.is_tip || false });
