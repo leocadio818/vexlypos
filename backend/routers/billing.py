@@ -295,18 +295,90 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     itbis = bill.get("itbis", 0)
     total = round(bill["subtotal"] + itbis + propina, 2)
 
+    # Get payment method details
+    payment_method_doc = await db.payment_methods.find_one({"id": input.payment_method_id}, {"_id": 0})
+    is_cash_payment = True
+    payment_method_name = "Efectivo"
+    if payment_method_doc:
+        is_cash_payment = payment_method_doc.get("is_cash", input.payment_method == "cash")
+        payment_method_name = payment_method_doc.get("name", input.payment_method)
+    elif input.payment_method == "card":
+        is_cash_payment = False
+        payment_method_name = "Tarjeta"
+
     await db.bills.update_one({"id": bill_id}, {"$set": {
         "status": "paid", "payment_method": input.payment_method,
+        "payment_method_name": payment_method_name,
         "propina_legal": propina, "propina_percentage": input.tip_percentage,
         "total": total, "paid_at": now_iso()
     }})
 
+    # Update MongoDB shifts (legacy)
     shift = await db.shifts.find_one({"user_id": user["user_id"], "status": "open"}, {"_id": 0})
     if shift:
         field = "cash_sales" if input.payment_method == "cash" else "card_sales"
         await db.shifts.update_one({"id": shift["id"]}, {
             "$inc": {field: total, "total_sales": total, "total_tips": propina}
         })
+
+    # ─── SUPABASE: Update pos_sessions ───
+    if supabase_client:
+        try:
+            # Find active session for this user
+            session_result = supabase_client.table("pos_sessions").select("*").eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
+            
+            if session_result.data and len(session_result.data) > 0:
+                session = session_result.data[0]
+                session_id = session["id"]
+                
+                # Determine which field to update based on payment method
+                if is_cash_payment:
+                    update_data = {
+                        "cash_sales": (session.get("cash_sales") or 0) + total,
+                        "total_invoices": (session.get("total_invoices") or 0) + 1
+                    }
+                    movement_payment_method = "cash"
+                elif input.payment_method == "card":
+                    update_data = {
+                        "card_sales": (session.get("card_sales") or 0) + total,
+                        "total_invoices": (session.get("total_invoices") or 0) + 1
+                    }
+                    movement_payment_method = "card"
+                elif input.payment_method == "transfer":
+                    update_data = {
+                        "transfer_sales": (session.get("transfer_sales") or 0) + total,
+                        "total_invoices": (session.get("total_invoices") or 0) + 1
+                    }
+                    movement_payment_method = "transfer"
+                else:
+                    update_data = {
+                        "other_sales": (session.get("other_sales") or 0) + total,
+                        "total_invoices": (session.get("total_invoices") or 0) + 1
+                    }
+                    movement_payment_method = "other"
+                
+                # Update session totals
+                supabase_client.table("pos_sessions").update(update_data).eq("id", session_id).execute()
+                
+                # Create cash_movement record for this sale
+                movement_ref = f"MOV-{datetime.now().year}-{gen_id()[:5].upper()}"
+                movement_data = {
+                    "id": gen_id(),
+                    "ref": movement_ref,
+                    "session_id": session_id,
+                    "movement_type": "sale",
+                    "direction": 1,
+                    "amount": total,
+                    "payment_method": movement_payment_method,
+                    "description": f"Venta {bill.get('ncf', bill_id[:8])} - {payment_method_name}",
+                    "created_by": user["user_id"],
+                    "created_by_name": user["name"]
+                }
+                supabase_client.table("cash_movements").insert(movement_data).execute()
+                
+        except Exception as e:
+            # Log but don't fail the transaction
+            print(f"Warning: Could not update Supabase pos_session: {e}")
 
     order_id = bill["order_id"]
     
