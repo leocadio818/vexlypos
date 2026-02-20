@@ -172,12 +172,35 @@ export default function TableMap() {
   const navigate = useNavigate();
   const { hasPermission, user, largeMode, device } = useAuth();
 
+  // NCF Alerts state
+  const [ncfAlerts, setNcfAlerts] = useState({ critical: [], warning: [], has_critical: false, has_warnings: false });
+  const [showNcfAlert, setShowNcfAlert] = useState(true);
+
   const canMoveTable = hasPermission('move_tables');
   const currentUserId = user?.id;
   
   // Responsive helpers
   const isMobile = device?.isMobile;
   const isTablet = device?.isTablet;
+
+  // Fetch NCF alerts
+  const fetchNcfAlerts = useCallback(async () => {
+    try {
+      const res = await ncfAPI.getAlerts();
+      if (res.data) {
+        setNcfAlerts(res.data);
+      }
+    } catch (err) {
+      console.warn('Could not fetch NCF alerts:', err);
+    }
+  }, []);
+
+  // Load NCF alerts on mount and every 5 minutes
+  useEffect(() => {
+    fetchNcfAlerts();
+    const interval = setInterval(fetchNcfAlerts, 5 * 60 * 1000); // 5 minutes
+    return () => clearInterval(interval);
+  }, [fetchNcfAlerts]);
 
   const fetchData = useCallback(async () => {
     try {
