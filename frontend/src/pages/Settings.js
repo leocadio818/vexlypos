@@ -2287,9 +2287,9 @@ export default function Settings() {
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {ncfTypes.map((type) => (
-                    <div key={type.code} className="flex items-center gap-2 text-xs p-2 bg-background rounded-lg">
-                      <Badge variant="outline" className="font-mono text-[10px]">{type.code}</Badge>
-                      <span className="text-muted-foreground truncate">{type.name}</span>
+                    <div key={type.id || type.code} className="flex items-center gap-2 text-xs p-2 bg-background rounded-lg">
+                      <Badge variant="outline" className="font-mono text-[10px]">{type.id || type.code}</Badge>
+                      <span className="text-muted-foreground truncate">{type.description || type.name}</span>
                     </div>
                   ))}
                 </div>
