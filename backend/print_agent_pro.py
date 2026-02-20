@@ -42,7 +42,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://dolibarr-pos-build.preview.emergentagent.com"
+SERVER_URL = "https://tax-engine-pos.preview.emergentagent.com"
 
 # Nombre de la impresora en Windows (como aparece en "Dispositivos e impresoras")
 DEFAULT_PRINTER = "Caja"

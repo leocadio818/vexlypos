@@ -1,65 +1,61 @@
 <analysis>**original_problem_statement:**
-The user initiated a project to analyze the Dolibarr ERP system to extract architectural patterns for a new POS application. After completing the analysis, the user decided to implement the proposed features. The core of the implementation involves migrating new functionalities, specifically Point of Sale (POS) and Cash Management, to a Supabase (PostgreSQL) database, while keeping the rest of the application on its existing MongoDB stack.
+The user initiated a project to analyze the Dolibarr ERP system to extract architectural patterns for a new POS application. The project has since moved into the implementation phase. The core architecture is a hybrid database system: new features like Point of Sale (POS), Cash Management, and Fiscal Compliance are built on Supabase (PostgreSQL), while legacy features remain on MongoDB.
 
-**PRODUCT REQUIREMENTS (Initial):**
-1.  **Hybrid Database Implementation:** Connect the FastAPI backend to a new Supabase database instance.
-2.  **POS Session Management:** Implement Open Cash Register with initial cash amount and audit trail.
-3.  **Sales Integration:** Update active POS session and cash movements upon sale completion.
-4.  **Cash Count on Close (Arqueo de Caja):** Implement a UI modal for cash denomination counting and store the breakdown.
-5.  **Dynamic Tax Engine:** Implement a flexible tax system where taxes are looked up per product and can be conditionally omitted (e.g., for Take Away).
-6.  **Thermal Printer Ticket Design:** Create an 80mm thermal printer ticket compliant with Dominican Republic's DGII standards.
-
-**PRODUCT REQUIREMENTS (New, from user):**
-1.  **Tax Management UI:**
-    *   Create a UI in Settings to manage the  table.
-    *   Implement a UI in the product catalog for assigning specific taxes to products.
-    *   Add a Take Away / Dine-In toggle on the main order screen for instant tax recalculation.
-2.  **NCF (Fiscal Sequence) Management Module:**
-    *   Create a CRUD screen to manage DGII fiscal sequences ( table in Supabase).
-    *   Implement alerts for low sequence counts (yellow for < 50, red for < 10).
-    *   Block billing if the sequence's expiration date has passed.
-    *   Ensure atomic, concurrent-safe updates to the sequence counter when a bill is finalized.
-3.  **Fiscal Security & Reversal Flow:**
-    *   Implement a hard block to prevent assigning a fiscal number (NCF) to orders with a total of /bin/bash.00.
-    *   Create a flow to reverse a completed invoice:
-        *   Load the original invoice.
-        *   Automatically generate a credit note (Type B04) containing all original items.
-        *   Require the user to select a reason for the return.
-        *   Record the corresponding cash movement and link the credit note to the original invoice.
-4.  **Ticket Personalization:**
-    *   Allow business details (name, RNC, address) to be configured from the Settings panel to automatically personalize the printed ticket.
+**PRODUCT REQUIREMENTS (From PRD):**
+1.  **Hybrid Database:** Connect FastAPI to a new Supabase instance.
+2.  **POS Session Management:** Implement Open/Close Cash Register with audit trails.
+3.  **Sales Integration:** Update POS session and cash movements on sale completion.
+4.  **Cash Count (Arqueo de Caja):** UI for cash denomination counting.
+5.  **Dynamic Tax Engine:** Implement a flexible tax system based on product and service type (Dine-In vs. Take Away).
+6.  **Thermal Printer Ticket:** 80mm ticket compliant with Dominican Republic's DGII standards.
+7.  **Tax Management UI:** Create a UI in Settings to manage tax rules and assign them to products.
+8.  **NCF (Fiscal Sequence) Management:** CRUD module for DGII fiscal sequences with low-count alerts and expiration validation.
+9.  **Fiscal Security & Reversal Flow:**
+    *   Block billing for /bin/bash.00 orders.
+    *   Create a flow to reverse a completed invoice by generating a credit note (B04).
+10. **Ticket Personalization:** Allow business details (name, RNC, etc.) to be configured from the Settings panel.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-The application runs in a hybrid database mode (MongoDB + Supabase). POS session management, sales integration, cash-out (Arqueo de Caja), and a dynamic tax engine are fully implemented and functional. A complete, fiscally compliant 80mm thermal printer ticket component has been created, integrated into the payment flow, and successfully tested.
+The application is a functional POS system with a hybrid database (MongoDB/Supabase). It features POS session management, sales processing, and cash-out functionality. A fiscally compliant 80mm thermal printer ticket is integrated into the payment flow.
+
+Key features implemented in the last session include:
+-   A Settings section to dynamically configure the business details (name, RNC, address) that appear on the thermal ticket.
+-   A complete UI for managing tax rules () in a new Impuestos (Taxes) tab within Settings.
+-   A complete UI for managing NCF fiscal sequences () in a new NCF tab within Settings, including progress bars indicating usage.
+-   A live preview of the thermal ticket within the Settings page that updates in real-time as business details are edited.
+-   A persistent alert banner on the main dashboard (Tables Map) that warns users when NCF sequences are running low or nearing expiration.
 
 **Last working item**:
--   **Last item agent was working:** Implementing the user-approved enhancement to make business details (name, RNC, address) configurable from a Settings page UI. The agent was in the initial exploration phase, having just viewed the existing  and  components to plan the implementation.
--   **Status**: NOT STARTED
+-   **Last item agent was working:** Implementing the Para Llevar / Comer Aquí (Take Away / Dine-In) toggle on the . The goal is to allow taxes to be recalculated automatically based on the selected service type, as some taxes (like the 10% legal tip) only apply to dine-in orders.
+-   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
--   **Which testing method agent to use?**: both. Backend testing via  for the new API endpoint and frontend testing via  to verify the new UI in the Settings page.
+-   **Which testing method agent to use?**: frontend testing agent. The agent should verify that adding items to the cart, toggling the service type, and observing the tax and total recalculation works correctly before proceeding to payment.
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   None.
+-   **Issue 1: Finalize and Verify Service Type Toggle (P0)**
+    -   **Description:** The UI toggle and tax calculation logic have been implemented in , but the end-to-end flow was not verified. The agent added products to the cart but then navigated away before confirming the tax recalculation.
+    -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Frontend
 
 **In progress Task List**:
--   **Task 1: Implement Configurable Business Details (P0)**
-    -   **Where to resume:** Create a new backend endpoint to get/update business configuration data (likely stored in a new MongoDB collection). Then, create a new form/section in the frontend's  page to allow the user to edit these details. Finally, modify the  component to fetch and display this dynamic data.
-    -   **What will be achieved with this?** The thermal ticket will be automatically personalized with the user's own business information, managed directly from the application's settings.
+-   **Task 1: Implement Take Away / Dine-In Toggle (P0)**
+    -   **Where to resume:** In . The next step is to perform a manual test: add items to an order, confirm the toggle appears, switch between Comer Aquí and Para Llevar, and verify that the Propina Legal 10% tax appears/disappears accordingly, updating the total amount.
+    -   **What will be achieved with this?** This completes a core requirement of the dynamic tax engine.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Should Test frontend/backend/both after fix?** Frontend
     -   **Blocked on something:** Nothing.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P0: Tax Management UI:** Create UIs for managing tax types and assigning them to products. Add a Take Away toggle to the order screen.
-    *   **P0: NCF Management Module:** Build the CRUD screen for fiscal sequences with alerts and validation rules.
-    *   **P0: Fiscal Security & Reversal Flow:** Implement the zero-value order block and the full invoice reversal process (B04 generation).
+    *   **P0: Fiscal Security & Reversal Flow:** Implement the block for zero-value orders and the invoice reversal process (generating a B04 credit note).
+    *   **P0: Assign Taxes to Products:** The Tax Management UI is done, but the UI to link specific taxes to individual products in the catalog is still needed.
+    *   **P1: DGII Report Generation:** Create functionality for Dominican tax reports (607, 608).
     *   **P1: Implement Audit Trail Security:** Ensure only 'Admin' role can view user PINs in reports.
     *   **P1: Employee Time Clock:** Implement a feature for employees to clock in and out.
-    *   **P1: DGII Report Generation:** Create functionality for Dominican tax reports (607, 608).
 *   **Future Tasks:**
     *   **P2: Image/Icon Support for Product Buttons.**
     *   **P2: Cache Product Images Offline.**
@@ -68,17 +64,25 @@ The application runs in a hybrid database mode (MongoDB + Supabase). POS session
     *   **P3: Duplicate Product Feature.**
 
 **Completed work in this session**
--   **Thermal Printer Ticket Design (DONE)**
-    -   Created  as a reusable React component for the 80mm ticket layout.
-    -   Created  for isolated development and testing.
-    -   Integrated the ticket component and printing functionality into  to appear after successful payment.
-    -   The implementation was validated with screenshots and fully verified by the , which passed all 14 tests.
+-   **Configurable Business Details (DONE):**
+    -   Added a new form section to  to manage ticket details.
+    -   Modified  to fetch and display this dynamic data.
+-   **Tax Management UI (DONE):**
+    -   Created a new Impuestos tab in  with a full CRUD interface for the  Supabase table.
+-   **NCF Management Module (DONE):**
+    -   Created  with CRUD endpoints for .
+    -   Created  to communicate with the backend.
+    -   Built a full CRUD interface in a new NCF tab in .
+-   **Live Ticket Preview (DONE):**
+    -   Implemented a real-time preview of the thermal ticket within  that updates as the user types in the business details form.
+-   **NCF Alert Dashboard (DONE):**
+    -   Created a banner component in  that displays critical and warning alerts for NCF sequences.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Print Agent is a script, not an executable (.exe)**
-    -   **Debug checklist:** This is a known limitation requiring cross-compilation tools not present in the environment.
+    -   **Debug checklist:** This is a known limitation requiring cross-compilation tools not present in the environment. It's a low-priority enhancement.
     -   **Why to solve this issue and what will be achieved with this?** To improve user experience by providing a standalone executable instead of a Python script.
-    -   **Should Test frontend/backend/both after fix:** backend
+    -   **Should Test frontend/backend/both after fix:** Backend
     -   **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
@@ -88,68 +92,78 @@ The application runs in a hybrid database mode (MongoDB + Supabase). POS session
 
 
 **Key Technical Concepts**
--   **Hybrid Database Architecture:** Using MongoDB and Supabase (PostgreSQL).
--   **React-to-Print:** The  library was used to trigger the browser's print dialog for the  component.
--   **Component-Based Design:** The ticket was built as a modular React component for reusability and isolated testing.
+-   **Hybrid Database Architecture:** Using MongoDB for general app config and Supabase (PostgreSQL) for all POS, tax, and fiscal data.
+-   **Dynamic UI Components:** Extensive use of React state and effects to create interactive UIs, such as the live ticket preview and the NCF alert banner.
+-   **Component-Based Design:** New features like the NCF alert banner were built as separate components for reusability.
+-   **Supabase API Interaction:** The agent successfully implemented full CRUD functionality against Supabase tables from the FastAPI backend.
 
 **key DB schema**
--   No changes were made to the database schema in this session.
+The agent discovered the actual schema of user-created Supabase tables through iterative debugging. This is critical information as it differs from initial assumptions.
+-   ****: 
+-   ****: 
+-   ****: 
 
 **changes in tech stack**
 -   None.
 
 **All files of reference**
 -   **Created:**
-    -   : The core React component for the 80mm thermal ticket.
-    -   : A development/demo page to render the ticket with mock data.
+    -   : FastAPI router for NCF sequence management.
+    -   : Frontend API client for NCF endpoints.
 -   **Updated:**
-    -   : Integrated the ticket printing dialog into the post-payment flow.
-    -   : Added the route for the new demo page.
-    -   : Updated with the completion of the thermal ticket feature.
+    -   : Became a monolith containing UI for System, Taxes, and NCF. **(>3000 lines)**
+    -   : Added logic for service type toggle and tax recalculation.
+    -   : Added the NCF alert banner.
+    -   : Updated to consume dynamic business configuration.
+    -   : Registered the new NCF router.
 
 **Areas that need refactoring**:
--   The print agent remains a Python script. This could be improved by compiling it into a self-contained executable for easier distribution.
+-   **:** This file has grown to over 3000 lines and manages the state and UI for at least three distinct domains (System, Taxes, NCF). It urgently needs to be broken down into smaller, self-contained components for each tab to improve maintainability.
+-   The print agent remains a Python script. This could be compiled into a self-contained executable for easier distribution.
 
 **key api endpoints**
--   No new API endpoints were created. The existing payment flow was modified to trigger the print functionality on the frontend.
+-   ****: Get all NCF sequences.
+-   ****: Create a new NCF sequence.
+-   ****: Update an NCF sequence.
+-   ****: Delete an NCF sequence.
+-   ****: Get all NCF types.
+-   ****: Get NCF sequences that are low on stock or expiring soon.
 
 **Critical Info for New Agent**
--   **Follow the Plan:** The immediate task is the user-approved enhancement for configurable business details. After that, you must address the three large feature requests from the user: Tax Management UI, NCF Management, and the Fiscal Reversal Flow.
--   **Hybrid DB:** Remember that POS/Cash/Inventory features use Supabase (PostgreSQL), while older core features use MongoDB. The new business configuration data should likely go into a new MongoDB collection.
--   **User Language:** The user communicates in Spanish. All communication must be in Spanish.
+-   **Complete the Service Type Toggle:** Your first priority is to finish and verify the Take Away / Dine-In toggle on the . Add an item to the cart and confirm the taxes recalculate correctly when toggled.
+-   **Refactor :** Before adding more features, strongly consider refactoring the massive  file. Create separate components for each tab (, , ) and manage their state within the main  parent or a context.
+-   **User Language:** The user communicates exclusively in **Spanish**. All communication must be in Spanish.
+-   **Database Schema:** The correct column names for the Supabase tables (, ) were discovered through trial and error. Refer to the  section, not assumptions. For example,  is used instead of .
 
 **documents and test reports created in this job**
--   : Contains the successful test results from the testing agent for the thermal ticket feature.
--   : Updated to reflect the completed thermal ticket task.
+-   : Contains successful test results for the business details configuration feature.
+-   : Updated with the completion of the Tax UI and NCF module tasks.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** (Yes) Agreed to the agent's suggestion to implement a settings page for customizing the business details on the ticket. (IN PROGRESS)
-2.  **Agent:** Proposed a plan including the user's new requests and suggested the ticket customization enhancement. (COMPLETED)
-3.  **User:** Provided a detailed list of new, critical features: Tax Management UI, NCF (fiscal sequence) management, and a secure invoice reversal flow. (PENDING IMPLEMENTATION)
-4.  **Agent:** Finished the thermal ticket implementation and testing. (COMPLETED)
-5.  **Agent:** Successfully ran the testing agent, confirming the ticket functionality is robust. (COMPLETED)
-6.  **Agent:** Successfully captured a full screenshot of the rendered ticket and verified all requirements. (COMPLETED)
-7.  **Agent:** Logged into the application to take a screenshot of the protected ticket demo page. (COMPLETED)
-8.  **Agent:** Integrated the printing functionality into the payment screen. (COMPLETED)
-9.  **Agent:** Created a demo page for the thermal ticket. (COMPLETED)
-10. **User:** (Proceed with immediate action) Gave the go-ahead to start work. (COMPLETED)
+-   **User:** Approved starting work on the Take Away / Dine-In toggle. (IN PROGRESS)
+-   **Agent:** Provided a live preview link and test credentials. (COMPLETED)
+-   **User:** Asked for the link to test the application. (COMPLETED)
+-   **User:** Approved implementing the live ticket preview and NCF alert dashboard. (COMPLETED)
+-   **Agent:** Finished implementing the Tax and NCF management UIs. (COMPLETED)
+-   **User:** Confirmed that the database tables for Taxes and NCFs are ready and instructed the agent to proceed with UI implementation. (COMPLETED)
 
 **Project Health Check:**
 -   **Broken:** None.
 -   **Mocked:** None.
+-   **Technical Debt:** The  file is a major concern due to its size and complexity. It poses a risk to future development speed and stability.
 
 **3rd Party Integrations**
--   **Supabase:** Primary database for POS/Cash Management features.
+-   **Supabase:** Used as the primary database for all new POS, fiscal, and inventory features.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES (for the thermal ticket feature).
+-   **Testing agent used after significant changes**: YES, for the initial Configurable Business Details feature.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
 -   **Known regressions**: None.
 
 **Credentials to test flow:**
--   Supabase credentials are in .
--   Application user PINs are seeded in the MongoDB database and mentioned in previous logs.
+-   **PINs:** Admin (), Luis (), Carlos (), María ().
 
 **What agent forgot to execute**
--   Nothing. The agent successfully completed the planned task, sought user approval for the next steps, and started on the user-approved enhancement.</analysis>
+-   The agent did not complete the verification of the Take Away / Dine-In toggle feature after implementing the code.
+-   The agent did not proactively refactor the  file after adding two large new feature sets to it, leading to significant technical debt.</analysis>
