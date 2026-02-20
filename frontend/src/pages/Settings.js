@@ -3836,6 +3836,220 @@ export default function Settings() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          TAX CONFIG DIALOG
+      ═══════════════════════════════════════════════════════════════ */}
+      <Dialog open={taxDialog.open} onOpenChange={(open) => !open && setTaxDialog(prev => ({ ...prev, open: false }))}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <Calculator size={20} className="text-amber-500" />
+              {taxDialog.editId ? 'Editar Impuesto' : 'Nuevo Impuesto'}
+            </DialogTitle>
+            <DialogDescription>
+              Configura un tipo de impuesto para el sistema
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Código *</label>
+                <input
+                  value={taxDialog.code}
+                  onChange={(e) => setTaxDialog(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                  placeholder="ITBIS"
+                  disabled={!!taxDialog.editId}
+                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono uppercase disabled:opacity-50"
+                  data-testid="tax-code-input"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Tasa (%) *</label>
+                <input
+                  type="number"
+                  value={taxDialog.rate}
+                  onChange={(e) => setTaxDialog(prev => ({ ...prev, rate: e.target.value }))}
+                  placeholder="18"
+                  step="0.01"
+                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                  data-testid="tax-rate-input"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Nombre *</label>
+              <input
+                value={taxDialog.name}
+                onChange={(e) => setTaxDialog(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="ITBIS 18%"
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                data-testid="tax-name-input"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Tipo</label>
+                <select
+                  value={taxDialog.tax_type}
+                  onChange={(e) => setTaxDialog(prev => ({ ...prev, tax_type: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                >
+                  <option value="percentage">Porcentaje</option>
+                  <option value="fixed">Monto Fijo</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Código DGII</label>
+                <input
+                  value={taxDialog.dgii_code}
+                  onChange={(e) => setTaxDialog(prev => ({ ...prev, dgii_code: e.target.value }))}
+                  placeholder="01"
+                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Descripción</label>
+              <input
+                value={taxDialog.description}
+                onChange={(e) => setTaxDialog(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Descripción del impuesto..."
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+              />
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <div>
+                <p className="text-sm font-medium">Solo Consumo en Local</p>
+                <p className="text-xs text-muted-foreground">Se omite para "Para Llevar" o "Delivery"</p>
+              </div>
+              <Switch
+                checked={taxDialog.is_dine_in_only}
+                onCheckedChange={(checked) => setTaxDialog(prev => ({ ...prev, is_dine_in_only: checked }))}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTaxDialog(prev => ({ ...prev, open: false }))}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveTax} className="bg-amber-600 hover:bg-amber-700" data-testid="save-tax-btn">
+              {taxDialog.editId ? 'Actualizar' : 'Crear'} Impuesto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          NCF SEQUENCE DIALOG
+      ═══════════════════════════════════════════════════════════════ */}
+      <Dialog open={ncfDialog.open} onOpenChange={(open) => !open && setNcfDialog(prev => ({ ...prev, open: false }))}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <FileText size={20} className="text-blue-500" />
+              {ncfDialog.editId ? 'Editar Secuencia NCF' : 'Nueva Secuencia NCF'}
+            </DialogTitle>
+            <DialogDescription>
+              Configura una secuencia de comprobantes fiscales DGII
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Tipo de NCF *</label>
+              <select
+                value={ncfDialog.ncf_type_code}
+                onChange={(e) => setNcfDialog(prev => ({ ...prev, ncf_type_code: e.target.value }))}
+                disabled={!!ncfDialog.editId}
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm disabled:opacity-50"
+                data-testid="ncf-type-select"
+              >
+                <option value="">-- Seleccionar Tipo --</option>
+                {ncfTypes.map(t => (
+                  <option key={t.code} value={t.code}>{t.code} - {t.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Inicio</label>
+                <input
+                  type="number"
+                  value={ncfDialog.range_start}
+                  onChange={(e) => setNcfDialog(prev => ({ ...prev, range_start: parseInt(e.target.value) || 1 }))}
+                  disabled={!!ncfDialog.editId}
+                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Fin *</label>
+                <input
+                  type="number"
+                  value={ncfDialog.range_end}
+                  onChange={(e) => setNcfDialog(prev => ({ ...prev, range_end: parseInt(e.target.value) || 100 }))}
+                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono"
+                  data-testid="ncf-range-end"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Actual</label>
+                <input
+                  type="number"
+                  value={ncfDialog.current_number}
+                  onChange={(e) => setNcfDialog(prev => ({ ...prev, current_number: parseInt(e.target.value) || 1 }))}
+                  className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Fecha de Vencimiento *</label>
+              <input
+                type="date"
+                value={ncfDialog.expiration_date}
+                onChange={(e) => setNcfDialog(prev => ({ ...prev, expiration_date: e.target.value }))}
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                data-testid="ncf-expiry-date"
+              />
+            </div>
+            
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Notas</label>
+              <input
+                value={ncfDialog.notes}
+                onChange={(e) => setNcfDialog(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Notas adicionales..."
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+              />
+            </div>
+            
+            <Alert className="bg-yellow-500/10 border-yellow-500/30">
+              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              <AlertDescription className="text-xs text-muted-foreground">
+                Solo puede existir una secuencia activa por tipo de NCF. Al crear una nueva, 
+                asegúrese de desactivar la anterior si es necesario.
+              </AlertDescription>
+            </Alert>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNcfDialog(prev => ({ ...prev, open: false }))}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveNCFSequence} className="bg-blue-600 hover:bg-blue-700" data-testid="save-ncf-btn">
+              {ncfDialog.editId ? 'Actualizar' : 'Crear'} Secuencia
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
