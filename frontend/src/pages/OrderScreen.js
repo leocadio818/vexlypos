@@ -1469,11 +1469,11 @@ export default function OrderScreen() {
             </ScrollArea>
 
             <div className="px-3 py-2.5 border-t border-border space-y-1">
-              {/* Service Type Toggle - Para Llevar / Comer Aquí with NCF info */}
-              {subtotal > 0 && (
+              {/* Dynamic Sale Type Buttons - 100% from database */}
+              {subtotal > 0 && saleTypes.length > 0 && (
                 <div className="flex flex-col gap-2 py-2 mb-2 border-b border-border/50">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Tipo de Servicio:</span>
+                    <span className="text-xs text-muted-foreground">Tipo de Venta:</span>
                     {/* NCF Badge */}
                     {currentSaleType?.default_ncf_type_id && (
                       <Badge variant="outline" className="text-[8px] border-blue-500/50 text-blue-400 bg-blue-500/10">
@@ -1482,41 +1482,52 @@ export default function OrderScreen() {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 bg-background rounded-lg p-0.5 border border-border">
-                    <button
-                      onClick={() => setServiceType('dine_in')}
-                      className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-oswald transition-all ${
-                        serviceType === 'dine_in' 
-                          ? 'bg-primary text-primary-foreground font-bold' 
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                      data-testid="service-type-dine-in"
-                    >
-                      <Utensils size={12} /> Local
-                    </button>
-                    <button
-                      onClick={() => setServiceType('takeaway')}
-                      className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-oswald transition-all ${
-                        serviceType === 'takeaway' 
-                          ? 'bg-amber-600 text-white font-bold' 
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                      data-testid="service-type-takeaway"
-                    >
-                      <ShoppingBag size={12} /> Llevar
-                    </button>
-                    <button
-                      onClick={() => setServiceType('delivery')}
-                      className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-oswald transition-all ${
-                        serviceType === 'delivery' 
-                          ? 'bg-blue-600 text-white font-bold' 
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                      data-testid="service-type-delivery"
-                    >
-                      <Truck size={12} /> Delivery
-                    </button>
+                  {/* Quick Access Buttons - Dynamically loaded from sale_types */}
+                  <div className="flex flex-wrap gap-1">
+                    {saleTypes.filter(st => st.active !== false).sort((a, b) => (a.order || 0) - (b.order || 0)).map(saleType => {
+                      const isSelected = currentSaleType?.id === saleType.id;
+                      const iconMap = {
+                        'utensils': <Utensils size={11} />,
+                        'shopping-bag': <ShoppingBag size={11} />,
+                        'truck': <Truck size={11} />,
+                        'file-text': <FileText size={11} />,
+                        'globe': <Hash size={11} />,
+                        'briefcase': <Receipt size={11} />
+                      };
+                      return (
+                        <button
+                          key={saleType.id}
+                          onClick={() => {
+                            setCurrentSaleType(saleType);
+                            // Map to legacy serviceType for compatibility
+                            const typeMap = {
+                              'consumo_local': 'dine_in',
+                              'para_llevar': 'takeaway',
+                              'delivery': 'delivery',
+                              'credito_fiscal': 'dine_in',
+                              'exportacion': 'export',
+                              'servicios': 'service'
+                            };
+                            setServiceType(typeMap[saleType.code] || 'dine_in');
+                          }}
+                          className={`flex items-center gap-1 px-2 py-1.5 rounded text-[10px] font-oswald transition-all border ${
+                            isSelected 
+                              ? 'font-bold text-white border-transparent shadow-sm' 
+                              : 'bg-background text-muted-foreground hover:text-foreground border-border hover:border-primary/50'
+                          }`}
+                          style={isSelected ? { backgroundColor: saleType.color || '#f97316' } : {}}
+                          data-testid={`sale-type-${saleType.code}`}
+                        >
+                          {iconMap[saleType.icon] || <ShoppingCart size={11} />}
+                          <span className="truncate max-w-[60px]">{saleType.name}</span>
+                        </button>
+                      );
+                    })}
                   </div>
+                  {/* Sale type description */}
+                  {currentSaleType?.description && (
+                    <p className="text-[9px] text-muted-foreground/60 italic">{currentSaleType.description}</p>
+                  )}
                 </div>
               )}
               
