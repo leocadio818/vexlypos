@@ -921,16 +921,26 @@ export default function PaymentScreen() {
               </p>
             </div>
 
-            {/* Tipo de Servicio */}
+            {/* Tipo de Servicio - FILTRADO por NCF seleccionado */}
             <div>
               <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2">
                 Tipo de Servicio
               </h4>
-              <div className="space-y-2">
-                {saleTypes.map(st => {
+              <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                {saleTypes
+                  .filter(st => st.default_ncf_type_id === selectedFiscalType)
+                  .map(st => {
                   const isSelected = selectedServiceType?.id === st.id;
                   const hasExemptions = (st.tax_exemptions || []).length > 0;
-                  const IconComponent = st.code === 'delivery' ? Truck : st.code === 'take_out' ? Store : UtensilsCrossed;
+                  const iconMap = {
+                    'consumo_local': UtensilsCrossed,
+                    'para_llevar': Store,
+                    'delivery': Truck,
+                    'credito_fiscal': FileText,
+                    'exportacion': Globe,
+                    'servicios': Briefcase
+                  };
+                  const IconComponent = iconMap[st.code] || UtensilsCrossed;
                   return (
                     <button
                       key={st.id}
@@ -949,8 +959,11 @@ export default function PaymentScreen() {
                       </div>
                       <div className="flex-1 text-left">
                         <span className="font-semibold">{st.name}</span>
+                        {st.description && (
+                          <p className="text-[10px] text-white/40">{st.description}</p>
+                        )}
                         {hasExemptions && (
-                          <p className="text-[10px] text-red-400/80">Sin propina de ley</p>
+                          <p className="text-[10px] text-amber-400/80">Sin propina de ley</p>
                         )}
                       </div>
                       {isSelected && (
@@ -959,6 +972,12 @@ export default function PaymentScreen() {
                     </button>
                   );
                 })}
+                {saleTypes.filter(st => st.default_ncf_type_id === selectedFiscalType).length === 0 && (
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
+                    <p className="text-white/40 text-sm">No hay tipos de venta configurados para {selectedFiscalType}</p>
+                    <p className="text-[10px] text-white/30 mt-1">Configura en Settings → Ventas → Tipos de Venta</p>
+                  </div>
+                )}
               </div>
             </div>
 
