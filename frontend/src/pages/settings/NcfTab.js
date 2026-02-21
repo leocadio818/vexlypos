@@ -49,7 +49,8 @@ export default function NcfTab() {
         range_start: parseInt(ncfDialog.range_start) || 1,
         range_end: parseInt(ncfDialog.range_end),
         expiration_date: ncfDialog.expiration_date,
-        notes: ncfDialog.notes || null
+        notes: ncfDialog.notes || null,
+        authorized_sale_types: ncfDialog.authorized_sale_types || []
       };
       
       if (ncfDialog.editId) {
@@ -57,18 +58,28 @@ export default function NcfTab() {
           current_number: data.current_number,
           range_end: data.range_end,
           expiration_date: data.expiration_date,
-          notes: data.notes
+          notes: data.notes,
+          authorized_sale_types: data.authorized_sale_types
         });
         toast.success('Secuencia NCF actualizada');
       } else {
         await ncfAPI.createSequence(data);
         toast.success('Secuencia NCF creada');
       }
-      setNcfDialog({ open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null });
+      setNcfDialog({ open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [] });
       refreshNCFData();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error al guardar secuencia');
     }
+  };
+
+  const toggleSaleType = (saleTypeId) => {
+    setNcfDialog(prev => ({
+      ...prev,
+      authorized_sale_types: prev.authorized_sale_types?.includes(saleTypeId)
+        ? prev.authorized_sale_types.filter(id => id !== saleTypeId)
+        : [...(prev.authorized_sale_types || []), saleTypeId]
+    }));
   };
 
   const handleDeleteNCFSequence = async (id) => {
