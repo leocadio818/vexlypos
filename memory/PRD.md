@@ -219,11 +219,11 @@ El sistema aplica impuestos basándose en la intersección:
 - [ ] Generación reportes DGII (607, 608)
 
 ### P2 - Media Prioridad
+- [x] ~~**REFACTORIZAR Settings.js**~~ ✅ COMPLETADO 2025-02-21
 - [ ] Reportes de caja por período
 - [ ] Imágenes/iconos para botones de productos
 - [ ] Print Agent como ejecutable .exe (cross-compilation)
 - [ ] Cache de imágenes offline
-- [ ] **REFACTORIZAR Settings.js** (dividir en componentes: SystemSettings, TaxSettings, NcfSettings, SalesSettings)
 
 ### P3 - Baja Prioridad
 - [ ] Exportar Audit Trail a Excel/CSV
