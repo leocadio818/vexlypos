@@ -1542,9 +1542,10 @@ export default function OrderScreen() {
                 </div>
               ))}
               {/* Show omitted taxes info when not dine_in */}
-              {subtotal > 0 && serviceType !== 'dine_in' && taxConfig.some(t => t.is_dine_in_only) && (
+              {/* Dynamic message for exempted taxes based on sale type */}
+              {subtotal > 0 && currentSaleType?.tax_exemptions?.length > 0 && (
                 <div className="flex justify-between items-center text-[10px] text-amber-500/70 italic">
-                  <span>* Propina omitida (solo aplica en local)</span>
+                  <span>* Impuestos omitidos según tipo de venta</span>
                 </div>
               )}
               {subtotal > 0 && (
