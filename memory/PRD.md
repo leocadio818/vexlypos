@@ -321,6 +321,19 @@ CREATE TABLE ncf_sequences (
 
 ---
 
+### 2025-02-21: Motor de Inteligencia Fiscal y NCF Automático
+- ✅ **Motor de Inteligencia Fiscal**: Endpoint `/api/taxes/calculate-cart` con jerarquía Producto/Categoría
+- ✅ **Herencia de Impuestos**: Productos heredan de Categoría si no tienen config propia
+- ✅ **Exención Gubernamental**: Tipos "Gubernamental"/"Régimen Especial" anulan ITBIS automáticamente
+- ✅ **Propina Selectiva**: Propina Legal solo sobre productos que lo permiten
+- ✅ **Actualización en Tiempo Real**: PaymentScreen recalcula al cambiar Tipo de Venta
+- ✅ **Switches en Categorías**: Settings > Inventario > Categorías muestra impuestos aplicables
+- ✅ **NCF Vinculado a Tipos de Venta**: Campo `authorized_sale_types` en secuencias NCF
+- ✅ **Generación NCF Automática**: `POST /api/ncf/generate-for-sale` busca secuencia por tipo de venta
+- ✅ **Descuento Automático**: Contador de secuencia incrementa al confirmar pago
+- ✅ **Validación de Agotamiento**: Bloquea ventas si secuencia NCF está agotada
+- ✅ **Selector Múltiple NCF**: Settings > NCF muestra tipos de venta autorizados
+
 ### 2025-02-21: P0 Seguridad Fiscal y Flujo de Reversión B04
 - ✅ **Validación $0.00**: Backend bloquea pagos con valor cero en `/api/bills/{id}/pay`
 - ✅ **Mensaje DGII**: "No se puede procesar pago con valor $0.00. La DGII no permite asignar NCF"
