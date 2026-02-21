@@ -106,6 +106,16 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **Visualización**: Badge de configuración de alerta visible en tarjeta de secuencia NCF
 - ✅ **Almacenamiento híbrido**: Configuración en MongoDB (`ncf_sequence_config`)
 
+### 2025-02-21: Bug Fix Valorización + Feature Impuestos de Categoría
+- ✅ **Bug Fix - Pestaña Valorización**: Corregido error "Error al cargar tendencias" en Inventario Maestro
+  - Endpoint `/api/reports/valuation-trends` ahora devuelve formato correcto con `daily_valuations` y `category_distribution`
+  - Gráficos de evolución del capital y distribución por categoría cargan correctamente
+- ✅ **Feature - "Usar el de la Categoría" para Impuestos**: Productos pueden heredar configuración de impuestos de su categoría
+  - Checkbox `use_category_taxes` en ProductConfig.js
+  - Cuando está marcado, hereda impuestos de la categoría del producto
+  - Cuando está desmarcado, muestra toggles individuales para cada impuesto (ITBIS, Propina, etc.)
+  - Cada impuesto puede configurarse como "Aplica" o "Exento" a nivel de producto
+
 #### LÓGICA DE ALERTAS NCF (MEMORIZADA)
 ```
 FLUJO DE PAGO CON ALERTAS:
