@@ -312,6 +312,88 @@ async def delete_user(user_id: str):
     return {"ok": True}
 
 
+# ─── TAX OVERRIDE AUTHORIZATION ───
+
+class TaxOverrideAuthRequest(BaseModel):
+    pin: str
+    bill_id: str
+    taxes_removed: List[str]  # List of tax codes removed (e.g., ["ITBIS", "PROPINA"])
+    reference_document: str  # Required document reference
+
+@router.post("/tax-override/authorize")
+async def authorize_tax_override(input: TaxOverrideAuthRequest, user=Depends(get_current_user)):
+    """
+    Validates admin PIN for tax override and logs the action.
+    Returns authorization token if successful.
+    """
+    # Hash the PIN and find the authorizing user
+    hashed_pin = hash_pin(input.pin)
+    auth_user = await db.users.find_one({"pin_hash": hashed_pin, "active": True}, {"_id": 0})
+    
+    if not auth_user:
+        raise HTTPException(status_code=401, detail="PIN inválido")
+    
+    # Check if authorizing user has tax override permission
+    auth_role = auth_user.get("role", "waiter")
+    auth_permissions = ROLE_PERMISSIONS.get(auth_role, {})
+    
+    # Check custom role permissions
+    if auth_user.get("custom_role_id"):
+        custom_role = await db.custom_roles.find_one({"id": auth_user["custom_role_id"]}, {"_id": 0})
+        if custom_role:
+            auth_permissions = {**auth_permissions, **custom_role.get("permissions", {})}
+    
+    if not auth_permissions.get("can_manage_tax_override"):
+        raise HTTPException(status_code=403, detail="El usuario no tiene permiso para ajustar impuestos")
+    
+    # Validate reference document
+    if not input.reference_document or len(input.reference_document.strip()) < 3:
+        raise HTTPException(status_code=400, detail="Referencia/Documento es obligatorio (mínimo 3 caracteres)")
+    
+    # Create audit log entry
+    audit_entry = {
+        "id": str(uuid.uuid4()),
+        "action": "tax_override",
+        "bill_id": input.bill_id,
+        "taxes_removed": input.taxes_removed,
+        "reference_document": input.reference_document.strip(),
+        "authorized_by_id": auth_user["id"],
+        "authorized_by_name": auth_user["name"],
+        "authorized_by_role": auth_role,
+        "requested_by_id": user["user_id"],
+        "requested_by_name": user["name"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.tax_override_audit.insert_one(audit_entry)
+    
+    return {
+        "authorized": True,
+        "authorized_by": auth_user["name"],
+        "authorized_by_id": auth_user["id"],
+        "audit_id": audit_entry["id"],
+        "reference_document": input.reference_document.strip()
+    }
+
+@router.get("/tax-override/check-permission")
+async def check_tax_override_permission(user=Depends(get_current_user)):
+    """Check if current user has tax override permission"""
+    role = user.get("role", "waiter")
+    permissions = ROLE_PERMISSIONS.get(role, {})
+    
+    # Check custom role
+    user_doc = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
+    if user_doc and user_doc.get("custom_role_id"):
+        custom_role = await db.custom_roles.find_one({"id": user_doc["custom_role_id"]}, {"_id": 0})
+        if custom_role:
+            permissions = {**permissions, **custom_role.get("permissions", {})}
+    
+    return {
+        "has_permission": permissions.get("can_manage_tax_override", False),
+        "user_id": user["user_id"],
+        "role": role
+    }
+
+
 # ─── CUSTOM ROLES ───
 
 @router.get("/roles")
