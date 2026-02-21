@@ -306,15 +306,20 @@ El sistema aplica impuestos basándose en la intersección:
 | `/app/backend/routers/taxes.py` | Sistema de impuestos dinámicos |
 | `/app/backend/routers/billing.py` | Facturación |
 | `/app/backend/routers/ncf.py` | Gestión NCF |
+| `/app/backend/routers/reports.py` | Reportes (incluye `/api/reports/valuation-trends`) |
 
 ### Frontend
 | Archivo | Descripción |
 |---------|-------------|
-| `/app/frontend/src/pages/Settings.js` | Configuración (MONOLITO ~2000+ líneas) |
+| `/app/frontend/src/pages/settings/index.js` | Página de Configuración con tabs |
+| `/app/frontend/src/pages/settings/InventarioTab.js` | Tab "Configuración Productos" (Categorías, Productos, Modificadores) |
+| `/app/frontend/src/pages/InventoryManager.js` | Inventario Maestro |
+| `/app/frontend/src/pages/inventory/components/ConfigTab.jsx` | Config de inventario (en Inventario Maestro) |
+| `/app/frontend/src/pages/inventory/components/ValuationTab.jsx` | Valorización de inventario |
+| `/app/frontend/src/pages/ProductConfig.js` | Edición de producto (incluye "Usar el de la Categoría" para impuestos) |
 | `/app/frontend/src/pages/OrderScreen.js` | Pantalla de pedidos con cálculo de impuestos |
-| `/app/frontend/src/pages/PaymentScreen.js` | Pantalla de pago con selección de NCF y Tipo de Venta |
+| `/app/frontend/src/pages/PaymentScreen.js` | Pantalla de pago con modal de alerta NCF bloqueante |
 | `/app/frontend/src/components/ThermalTicket.js` | Ticket térmico 80mm |
-| `/app/frontend/src/pages/TicketDemo.js` | Demo de ticket |
 | `/app/frontend/src/lib/api.js` | APIs (taxesAPI, posSessionsAPI, etc.) |
 
 ---
