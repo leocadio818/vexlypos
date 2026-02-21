@@ -221,6 +221,47 @@ export default function PaymentScreen() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Handle adding new customer from payment screen
+  const handleAddNewCustomer = async () => {
+    if (!newCustomerDialog.name.trim()) {
+      toast.error('El nombre es requerido');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/customers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('pos_token')}`
+        },
+        body: JSON.stringify({
+          name: newCustomerDialog.name,
+          phone: newCustomerDialog.phone,
+          email: newCustomerDialog.email
+        })
+      });
+      if (res.ok) {
+        const newCustomer = await res.json();
+        toast.success('Cliente registrado');
+        // Refresh customers list
+        const custRes = await fetch(`${API_BASE}/api/customers`, { 
+          headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } 
+        }).then(r => r.json());
+        setCustomers(custRes);
+        // Auto-select the new customer
+        setSelectedCustomer(newCustomer);
+        setNewCustomerDialog({ open: false, name: '', phone: '', email: '' });
+        setCustomerDialog(false);
+        setCustomerSearch('');
+      } else {
+        toast.error('Error al crear cliente');
+      }
+    } catch (e) {
+      toast.error('Error al crear cliente');
+      console.error(e);
+    }
+  };
+
   // Handle tax override button click
   const handleTaxOverrideClick = () => {
     if (userHasTaxPermission) {
