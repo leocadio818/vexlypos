@@ -271,15 +271,49 @@ export default function PaymentScreen() {
       const entries = Object.entries(payAmounts).filter(([_, v]) => parseFloat(v) > 0);
       const mainMethod = entries.length > 0 ? entries.sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))[0][0] : 'Efectivo RD$';
       
+      // Generate NCF based on sale type
+      let generatedNcf = null;
+      if (selectedServiceType?.id) {
+        try {
+          const ncfRes = await fetch(`${API_BASE}/api/ncf/generate-for-sale?sale_type_id=${selectedServiceType.id}&bill_total=${billTotal}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+          });
+          
+          if (ncfRes.ok) {
+            generatedNcf = await ncfRes.json();
+            if (generatedNcf.alert_message) {
+              toast.warning(generatedNcf.alert_message);
+            }
+          } else {
+            const errData = await ncfRes.json();
+            if (errData.detail?.includes('agotada')) {
+              toast.error(errData.detail);
+              setProcessing(false);
+              return;
+            }
+          }
+        } catch (ncfErr) {
+          console.warn('NCF generation warning:', ncfErr);
+        }
+      }
+      
       const res = await billsAPI.pay(billId, { 
         payment_method: mainMethod, 
         tip_percentage: 0, 
         additional_tip: cardTip, // Add card tip as additional tip
-        customer_id: selectedCustomer?.id || '' 
+        customer_id: selectedCustomer?.id || '',
+        ncf: generatedNcf?.ncf || null,
+        sale_type_id: selectedServiceType?.id || null,
+        sale_type_name: selectedServiceType?.name || null,
+        itbis: adjustedBill?.itbis ?? bill?.itbis ?? 0,
+        propina_legal: adjustedBill?.propina_legal ?? bill?.propina_legal ?? 0,
+        total: billTotal
       });
       
       const pts = res.data?.points_earned;
       let msg = '✓ Pago procesado';
+      if (generatedNcf?.ncf) msg += ` | NCF: ${generatedNcf.ncf}`;
       if (change > 0) msg += ` | Cambio: ${formatMoney(change)}`;
       if (cardTip > 0) msg += ` | Propina: ${formatMoney(cardTip)}`;
       if (pts > 0) msg += ` | +${pts} pts fidelidad`;
@@ -288,6 +322,7 @@ export default function PaymentScreen() {
       // Store the paid bill for printing and show print dialog
       setPaidBill({
         ...res.data,
+        ncf: generatedNcf?.ncf || res.data?.ncf,
         amount_received: totalPaidDOP,
         customer_name: selectedCustomer?.name || null,
         customer_rnc: selectedCustomer?.rnc || null
