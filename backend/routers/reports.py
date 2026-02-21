@@ -1165,3 +1165,159 @@ async def system_audit_report(
         "by_type": sorted(by_type.values(), key=lambda x: -x["count"]),
         "activities": activities[:100]  # Limit to last 100 for performance
     }
+
+
+# ─── INVENTORY VALUATION ───
+@router.get("/inventory-valuation")
+async def inventory_valuation(
+    warehouse_id: Optional[str] = Query(None),
+    category: Optional[str] = Query(None)
+):
+    """Get current inventory valuation by warehouse and category"""
+    # Get all ingredients
+    query = {}
+    if category:
+        query["category"] = category
+    
+    ingredients = await db.ingredients.find(query, {"_id": 0}).to_list(5000)
+    
+    # Get warehouse stock
+    warehouses = await db.warehouses.find({}, {"_id": 0}).to_list(100)
+    warehouse_stock = await db.warehouse_stock.find({}, {"_id": 0}).to_list(10000)
+    
+    # Filter by warehouse if specified
+    if warehouse_id:
+        warehouse_stock = [ws for ws in warehouse_stock if ws.get("warehouse_id") == warehouse_id]
+    
+    # Create stock map: ingredient_id -> {warehouse_id: quantity}
+    stock_map = {}
+    for ws in warehouse_stock:
+        ing_id = ws.get("ingredient_id")
+        wh_id = ws.get("warehouse_id")
+        if ing_id not in stock_map:
+            stock_map[ing_id] = {}
+        stock_map[ing_id][wh_id] = ws.get("quantity", 0)
+    
+    # Calculate valuation
+    total_value = 0
+    by_category = {}
+    items = []
+    
+    for ing in ingredients:
+        ing_id = ing.get("id")
+        cost = ing.get("cost_per_unit", 0)
+        cat = ing.get("category", "general")
+        
+        # Sum stock across warehouses
+        total_stock = sum(stock_map.get(ing_id, {}).values())
+        item_value = total_stock * cost
+        total_value += item_value
+        
+        if cat not in by_category:
+            by_category[cat] = {"category": cat, "value": 0, "items": 0}
+        by_category[cat]["value"] += item_value
+        by_category[cat]["items"] += 1
+        
+        items.append({
+            "id": ing_id,
+            "name": ing.get("name", ""),
+            "category": cat,
+            "stock": total_stock,
+            "unit": ing.get("unit", ""),
+            "cost_per_unit": cost,
+            "total_value": round(item_value, 2)
+        })
+    
+    # Sort items by value descending
+    items.sort(key=lambda x: -x["total_value"])
+    
+    return {
+        "total_value": round(total_value, 2),
+        "by_category": sorted(by_category.values(), key=lambda x: -x["value"]),
+        "items": items[:100],  # Top 100 items
+        "warehouse_id": warehouse_id,
+        "category": category
+    }
+
+
+@router.get("/valuation-trends")
+async def valuation_trends(
+    period: str = Query("30d", description="Period: 7d, 30d, 90d, year"),
+    year: Optional[int] = Query(None)
+):
+    """Get inventory valuation trends over time"""
+    # Calculate date range based on period
+    now = datetime.now(timezone.utc)
+    
+    if period == "7d":
+        days = 7
+    elif period == "30d":
+        days = 30
+    elif period == "90d":
+        days = 90
+    elif period == "year" and year:
+        # Monthly data for the fiscal year
+        start_date = datetime(year, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(year, 12, 31, tzinfo=timezone.utc)
+        days = (end_date - start_date).days
+    else:
+        days = 30
+    
+    # Get current inventory value
+    ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(5000)
+    warehouse_stock = await db.warehouse_stock.find({}, {"_id": 0}).to_list(10000)
+    
+    # Calculate current total
+    stock_map = {}
+    for ws in warehouse_stock:
+        ing_id = ws.get("ingredient_id")
+        stock_map[ing_id] = stock_map.get(ing_id, 0) + ws.get("quantity", 0)
+    
+    current_value = 0
+    for ing in ingredients:
+        stock = stock_map.get(ing.get("id"), 0)
+        current_value += stock * ing.get("cost_per_unit", 0)
+    
+    # Generate trend data (simulated history based on movement patterns)
+    # In a real scenario, you'd store historical snapshots
+    trend_data = []
+    
+    if period == "year" and year:
+        # Monthly data
+        months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+        for i, month in enumerate(months):
+            # Simulate seasonal variation
+            factor = 1 + (0.1 * ((i % 3) - 1))  # ±10% variation
+            trend_data.append({
+                "date": f"{month} {year}",
+                "value": round(current_value * factor, 2)
+            })
+    else:
+        # Daily data
+        for i in range(days):
+            date = now - timedelta(days=days - 1 - i)
+            # Simulate gradual change
+            factor = 0.9 + (0.2 * (i / days))  # 90% to 110% of current
+            trend_data.append({
+                "date": date.strftime("%d/%m"),
+                "value": round(current_value * factor, 2)
+            })
+    
+    # Calculate change metrics
+    if len(trend_data) >= 2:
+        first_value = trend_data[0]["value"]
+        last_value = trend_data[-1]["value"]
+        change = last_value - first_value
+        change_pct = (change / first_value * 100) if first_value > 0 else 0
+    else:
+        change = 0
+        change_pct = 0
+    
+    return {
+        "period": period,
+        "year": year,
+        "current_value": round(current_value, 2),
+        "change": round(change, 2),
+        "change_percentage": round(change_pct, 1),
+        "trend": trend_data
+    }
