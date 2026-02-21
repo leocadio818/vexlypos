@@ -26,7 +26,7 @@ export default function NcfTab() {
   useEffect(() => {
     const loadSaleTypes = async () => {
       try {
-        const res = await axios.get(`${API}/pos/sale-types`, { headers: hdrs() });
+        const res = await axios.get(`${API}/sale-types`, { headers: hdrs() });
         setSaleTypes(res.data || []);
       } catch (e) {
         console.error('Error loading sale types:', e);
