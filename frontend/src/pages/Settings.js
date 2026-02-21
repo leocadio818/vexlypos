@@ -3564,9 +3564,7 @@ export default function Settings() {
           <DialogHeader><DialogTitle className="font-oswald">{saleDialog.editId ? 'Editar' : 'Nuevo'} Tipo de Venta</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={saleDialog.name} onChange={e => setSaleDialog(p => ({ ...p, name: e.target.value }))}
-              placeholder="Nombre (ej: Consumidor Final)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
-            <input value={saleDialog.code} onChange={e => setSaleDialog(p => ({ ...p, code: e.target.value }))}
-              placeholder="Codigo (ej: dine_in, take_out)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono" />
+              placeholder="Nombre (ej: Consumo Local, Para Llevar)" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
             
             {/* Impuestos Aplicables */}
             <div className="p-3 rounded-lg bg-background border border-border">
