@@ -114,6 +114,7 @@ export default function ProductConfig() {
           track_inventory: p.track_inventory || false,
           print_channels: p.print_channels || [],
           tax_exemptions: p.tax_exemptions || [],
+          use_category_taxes: p.use_category_taxes !== false,  // Default to true
           modifier_assignments: p.modifier_assignments || [],
           recipe_ingredients: p.recipe_ingredients || []
         });
