@@ -383,6 +383,130 @@ async def generate_ncf(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/generate-for-sale")
+async def generate_ncf_for_sale(
+    sale_type_id: str = Query(..., description="ID del tipo de venta"),
+    bill_total: float = Query(..., description="Total de la factura para validación")
+):
+    """
+    Genera el siguiente NCF basado en el tipo de venta
+    
+    1. Busca la secuencia NCF que tenga este sale_type_id en authorized_sale_types
+    2. Valida disponibilidad y vigencia
+    3. Incrementa el contador atómicamente
+    4. Retorna el NCF generado
+    """
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Supabase no disponible")
+    
+    # Validación: No permitir NCF para facturas de $0
+    if bill_total <= 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="No se puede asignar NCF a facturas con total $0.00"
+        )
+    
+    try:
+        # Obtener todas las secuencias activas
+        seq_response = supabase_client.table("ncf_sequences").select("*").eq("is_active", True).execute()
+        
+        if not seq_response.data:
+            raise HTTPException(status_code=404, detail="No hay secuencias NCF activas")
+        
+        # Buscar secuencia que tenga este sale_type_id autorizado
+        matching_seq = None
+        for seq in seq_response.data:
+            authorized = seq.get("authorized_sale_types") or []
+            if sale_type_id in authorized:
+                matching_seq = seq
+                break
+        
+        if not matching_seq:
+            # Fallback: buscar el default_ncf_type del sale_type
+            sale_type_result = supabase_client.table("sale_types").select("default_ncf_type_id").eq("id", sale_type_id).single().execute()
+            if sale_type_result.data and sale_type_result.data.get("default_ncf_type_id"):
+                default_ncf = sale_type_result.data["default_ncf_type_id"]
+                for seq in seq_response.data:
+                    if seq.get("ncf_type_id") == default_ncf:
+                        matching_seq = seq
+                        break
+        
+        if not matching_seq:
+            # Último fallback: usar B02 (Consumidor Final)
+            for seq in seq_response.data:
+                if seq.get("ncf_type_id") == "B02":
+                    matching_seq = seq
+                    break
+        
+        if not matching_seq:
+            raise HTTPException(status_code=404, detail=f"No se encontró secuencia NCF para el tipo de venta {sale_type_id}")
+        
+        seq = matching_seq
+        ncf_type = seq.get("ncf_type_id", "B02")
+        
+        # Validar fecha de vencimiento
+        exp_date_str = seq.get("valid_until") or seq.get("expiration_date")
+        if exp_date_str:
+            exp_date = datetime.strptime(str(exp_date_str)[:10], "%Y-%m-%d").date()
+            if exp_date < date.today():
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Secuencia NCF agotada: La secuencia {ncf_type} está vencida desde {exp_date_str}. Contacte a DGII para renovar."
+                )
+        
+        # Validar disponibilidad
+        current_num = seq.get("current_number", 1)
+        end_num = seq.get("end_number", 0)
+        if current_num > end_num:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Secuencia NCF agotada: No hay comprobantes {ncf_type} disponibles. Rango agotado."
+            )
+        
+        # Generar NCF
+        prefix = seq.get("sequence_prefix", f"B{ncf_type[1:]}")
+        ncf_full = f"{prefix}{str(current_num).zfill(8)}"
+        
+        # Actualización atómica del contador
+        update_response = supabase_client.table("ncf_sequences").update({
+            "current_number": current_num + 1,
+            "last_used_at": now_iso(),
+            "updated_at": now_iso()
+        }).eq("id", seq["id"]).eq("current_number", current_num).execute()
+        
+        # Si no se actualizó, significa que otro proceso tomó ese número
+        if not update_response.data:
+            # Reintentar una vez
+            retry_response = supabase_client.table("ncf_sequences").select("*").eq("id", seq["id"]).single().execute()
+            if retry_response.data:
+                new_number = retry_response.data["current_number"]
+                ncf_full = f"{prefix}{str(new_number).zfill(8)}"
+                supabase_client.table("ncf_sequences").update({
+                    "current_number": new_number + 1,
+                    "last_used_at": now_iso()
+                }).eq("id", seq["id"]).execute()
+                current_num = new_number
+        
+        remaining = end_num - current_num
+        
+        return {
+            "ncf": ncf_full,
+            "ncf_type": ncf_type,
+            "ncf_number": current_num,
+            "sequence_id": seq["id"],
+            "remaining": remaining,
+            "expiration_date": exp_date_str,
+            "sale_type_id": sale_type_id,
+            "alert": "critical" if remaining < 10 else ("warning" if remaining < 50 else None),
+            "alert_message": f"Solo quedan {remaining} comprobantes {ncf_type}" if remaining < 50 else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ─── RETURN REASONS ───
 
 @router.get("/return-reasons")
