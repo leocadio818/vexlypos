@@ -9,7 +9,7 @@ import Kitchen from "@/pages/Kitchen";
 import Billing from "@/pages/Billing";
 import PaymentScreen from "@/pages/PaymentScreen";
 import CashRegister from "@/pages/CashRegister";
-import Settings from "@/pages/Settings";
+import Settings from "@/pages/settings";
 import PrinterSettings from "@/pages/settings/PrinterSettings";
 import InventoryManager from "@/pages/InventoryManager";
 import Suppliers from "@/pages/Suppliers";
