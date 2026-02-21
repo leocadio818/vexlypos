@@ -199,7 +199,8 @@ export default function NcfTab() {
                       range_end: seq.range_end,
                       expiration_date: seq.expiration_date,
                       notes: seq.notes || '',
-                      editId: seq.id
+                      editId: seq.id,
+                      authorized_sale_types: seq.authorized_sale_types || []
                     })}
                   >
                     <Pencil size={14} />
