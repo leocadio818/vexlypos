@@ -546,8 +546,7 @@ async def generate_ncf_for_sale(
                 new_number = retry_response.data["current_number"]
                 ncf_full = f"{prefix}{str(new_number).zfill(8)}"
                 supabase_client.table("ncf_sequences").update({
-                    "current_number": new_number + 1,
-                    "last_used_at": now_iso()
+                    "current_number": new_number + 1
                 }).eq("id", seq["id"]).execute()
                 current_num = new_number
         
