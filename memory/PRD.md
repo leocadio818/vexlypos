@@ -295,5 +295,13 @@ CREATE TABLE ncf_sequences (
 
 ---
 
+### 2025-02-21: Corrección Etiquetas Propina en PaymentScreen
+- ✅ **Bug Fix**: Corregida lógica de visualización de propina en el diálogo de Tipo de Venta
+- ✅ **Antes**: Todas las opciones mostraban "Sin propina de ley" incorrectamente
+- ✅ **Después**: Ahora muestra correctamente:
+  - "Con propina de ley" (verde) para tipos que SÍ tienen propina (Consumo Local, Delivery, etc.)
+  - "Sin propina de ley" (ámbar) para tipos que NO tienen propina (Consumo Llevar, Régimen Especial)
+- ✅ **Root cause**: El filtro `t.active` no encontraba los impuestos porque el campo era `is_active`
+
 ## 📅 Last Updated
-2025-02-21 - Verificación de etiqueta "no aplica(n)" completada
+2025-02-21 - Corrección de etiquetas de propina en PaymentScreen
