@@ -174,14 +174,28 @@ export default function OrderScreen() {
         const taxes = await taxRes.json();
         setTaxConfig(taxes.filter(t => t.active && t.rate > 0));
       } catch {}
-      // Fetch sale types (with NCF defaults and tax exemptions)
+      // Fetch sale types (with NCF defaults and tax exemptions) - 100% dynamic from DB
       try {
         const stRes = await fetch(`${API_BASE}/api/sale-types`);
         const stData = await stRes.json();
-        setSaleTypes(stData);
-        // Set initial sale type based on serviceType
-        const initialSaleType = stData.find(st => st.code === 'dine_in') || stData[0];
+        // Sort by order field and filter active
+        const sortedTypes = stData.filter(st => st.active !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
+        setSaleTypes(sortedTypes);
+        // Set initial sale type to first one (usually "Consumo Local")
+        const initialSaleType = sortedTypes.find(st => st.code === 'consumo_local') || sortedTypes[0];
         setCurrentSaleType(initialSaleType);
+        // Also set serviceType for compatibility
+        if (initialSaleType) {
+          const typeMap = {
+            'consumo_local': 'dine_in',
+            'para_llevar': 'takeaway',
+            'delivery': 'delivery',
+            'credito_fiscal': 'dine_in',
+            'exportacion': 'export',
+            'servicios': 'service'
+          };
+          setServiceType(typeMap[initialSaleType.code] || 'dine_in');
+        }
       } catch {}
     };
     fetchAll(); fetchOrder();
