@@ -709,9 +709,10 @@ async def calculate_cart_taxes(input: IntelligentTaxCalculationInput):
             if tax_id not in sale_type_exemptions
         ]
         
-        # Special case: Government/Exempt sale type → Remove all ITBIS
-        if is_government_exempt and itbis_tax_id:
-            applicable_tax_ids = [tid for tid in applicable_tax_ids if tid != itbis_tax_id]
+        # Special case: Government/Exempt sale type → Remove ALL ITBIS variants
+        if is_government_exempt:
+            itbis_tax_ids = [t["id"] for t in all_taxes if "ITBIS" in t.get("code", "").upper()]
+            applicable_tax_ids = [tid for tid in applicable_tax_ids if tid not in itbis_tax_ids]
         
         # Calculate taxes for this line
         line_itbis = 0
