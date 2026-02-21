@@ -32,10 +32,24 @@ export default function InventarioTab() {
   const [inventarioSubTab, setInventarioSubTab] = useState('categorias');
   const [productSearch, setProductSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [taxConfigs, setTaxConfigs] = useState([]);
   
   // Dialogs
-  const [categoryDialog, setCategoryDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '' });
+  const [categoryDialog, setCategoryDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '', tax_ids: [] });
   const [warehouseDialog, setWarehouseDialog] = useState({ open: false, name: '', location: '', editId: null });
+
+  // Load tax configs
+  useEffect(() => {
+    const loadTaxConfigs = async () => {
+      try {
+        const res = await axios.get(`${API}/tax-config`, { headers: hdrs() });
+        setTaxConfigs(res.data.filter(t => t.is_active && t.code !== 'EXENTO'));
+      } catch (e) {
+        console.error('Error loading tax configs:', e);
+      }
+    };
+    loadTaxConfigs();
+  }, []);
 
   // Category handlers
   const handleSaveCategory = async () => {
