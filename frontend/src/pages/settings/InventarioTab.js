@@ -1,0 +1,334 @@
+import { useState, useMemo } from 'react';
+import { useSettings } from './SettingsContext';
+import { categoriesAPI, productsAPI, warehousesAPI, inventorySettingsAPI } from '@/lib/api';
+import { Tag, Package, Plus, Trash2, Pencil, Search, X, Sparkles, ListChecks, Truck, BarChart3, Cog } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import axios from 'axios';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
+
+const SubTabButton = ({ active, onClick, icon: Icon, label }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+      active 
+        ? 'bg-primary/20 text-primary border border-primary/30' 
+        : 'bg-card/50 text-muted-foreground border border-border hover:border-primary/30 hover:text-primary'
+    }`}
+  >
+    <Icon size={14} />
+    {label}
+  </button>
+);
+
+export default function InventarioTab() {
+  const { categories, products, printChannels, categoryChannels, inventorySettings, setInventorySettings, warehouses, fetchAll } = useSettings();
+  const [inventarioSubTab, setInventarioSubTab] = useState('categorias');
+  const [productSearch, setProductSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  
+  // Dialogs
+  const [categoryDialog, setCategoryDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '' });
+  const [warehouseDialog, setWarehouseDialog] = useState({ open: false, name: '', location: '', editId: null });
+
+  // Category handlers
+  const handleSaveCategory = async () => {
+    if (!categoryDialog.name.trim()) return;
+    try {
+      const data = { name: categoryDialog.name, color: categoryDialog.color };
+      if (categoryDialog.editId) {
+        await categoriesAPI.update(categoryDialog.editId, data);
+      } else {
+        await categoriesAPI.create(data);
+      }
+      
+      // Save channel assignment if specified
+      if (categoryDialog.print_channel && categoryDialog.editId) {
+        await axios.post(`${API}/category-channels`, {
+          category_id: categoryDialog.editId,
+          channel_code: categoryDialog.print_channel
+        }, { headers: hdrs() });
+      }
+      
+      toast.success(categoryDialog.editId ? 'Categoría actualizada' : 'Categoría creada');
+      setCategoryDialog({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '' }); 
+      fetchAll();
+    } catch { toast.error('Error'); }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (!confirm('¿Eliminar categoría?')) return;
+    try { 
+      await categoriesAPI.delete(id); 
+      toast.success('Eliminada'); 
+      fetchAll(); 
+    } catch { toast.error('Error'); }
+  };
+
+  // Warehouse handlers
+  const handleSaveWarehouse = async () => {
+    if (!warehouseDialog.name.trim()) return;
+    try {
+      const data = { name: warehouseDialog.name, location: warehouseDialog.location };
+      if (warehouseDialog.editId) {
+        await warehousesAPI.update(warehouseDialog.editId, data);
+      } else {
+        await warehousesAPI.create(data);
+      }
+      toast.success(warehouseDialog.editId ? 'Almacén actualizado' : 'Almacén creado');
+      setWarehouseDialog({ open: false, name: '', location: '', editId: null }); 
+      fetchAll();
+    } catch { toast.error('Error'); }
+  };
+
+  const handleSaveInventorySettings = async () => {
+    try {
+      await inventorySettingsAPI.update(inventorySettings);
+      toast.success('Configuración guardada');
+    } catch { toast.error('Error'); }
+  };
+
+  // Filter products
+  const filteredProducts = useMemo(() => {
+    if (!productSearch) return products;
+    return products.filter(p => 
+      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      categories.find(c => c.id === p.category_id)?.name.toLowerCase().includes(productSearch.toLowerCase())
+    );
+  }, [products, productSearch, categories]);
+
+  // Group products by category
+  const productsByCategory = useMemo(() => {
+    const grouped = {};
+    filteredProducts.forEach(p => {
+      const cat = categories.find(c => c.id === p.category_id);
+      const catName = cat?.name || 'Sin categoría';
+      if (!grouped[catName]) grouped[catName] = { color: cat?.color || '#666', products: [] };
+      grouped[catName].products.push(p);
+    });
+    return grouped;
+  }, [filteredProducts, categories]);
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <SubTabButton active={inventarioSubTab === 'categorias'} onClick={() => setInventarioSubTab('categorias')} icon={Tag} label="Categorías" />
+        <SubTabButton active={inventarioSubTab === 'productos'} onClick={() => setInventarioSubTab('productos')} icon={Package} label="Productos" />
+        <SubTabButton active={inventarioSubTab === 'modificadores'} onClick={() => setInventarioSubTab('modificadores')} icon={ListChecks} label="Modificadores" />
+        <SubTabButton active={inventarioSubTab === 'compras'} onClick={() => setInventarioSubTab('compras')} icon={Truck} label="Compras" />
+        <SubTabButton active={inventarioSubTab === 'stock'} onClick={() => setInventarioSubTab('stock')} icon={BarChart3} label="Stock" />
+        <SubTabButton active={inventarioSubTab === 'config'} onClick={() => setInventarioSubTab('config')} icon={Cog} label="Config" />
+      </div>
+
+      {/* CATEGORIAS */}
+      {inventarioSubTab === 'categorias' && (
+        <>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-oswald text-base font-bold">Categorías de Productos</h2>
+            <Button onClick={() => setCategoryDialog({ open: true, name: '', color: '#FF6600', editId: null, print_channel: '' })} size="sm"
+              className="bg-primary text-primary-foreground font-bold" data-testid="add-category-btn">
+              <Plus size={14} className="mr-1" /> Nueva Categoría
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {categories.map(cat => (
+              <div key={cat.id} className="flex items-center justify-between p-4 rounded-xl border-2"
+                style={{ borderColor: cat.color + '50', backgroundColor: cat.color + '10' }} data-testid={`category-${cat.id}`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: cat.color }}>
+                    <Tag size={18} className="text-white" />
+                  </div>
+                  <div>
+                    <span className="font-oswald font-bold">{cat.name}</span>
+                    <p className="text-[10px] text-muted-foreground">{products.filter(p => p.category_id === cat.id).length} productos</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8"
+                    onClick={() => setCategoryDialog({ open: true, name: cat.name, color: cat.color || '#FF6600', editId: cat.id, print_channel: categoryChannels.find(cc => cc.category_id === cat.id)?.channel_code || '' })}>
+                    <Pencil size={14} />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteCategory(cat.id)}>
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* PRODUCTOS */}
+      {inventarioSubTab === 'productos' && (
+        <>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-oswald text-base font-bold flex items-center gap-2">
+              <Package size={18} className="text-primary" />
+              Productos
+              <Badge variant="secondary" className="text-[10px]">{products.length}</Badge>
+            </h2>
+            <a href="/product/new?from=products" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold" data-testid="add-product-btn">
+              <Plus size={14} /> Nuevo Producto
+            </a>
+          </div>
+          
+          {/* Search */}
+          <div className={`relative mb-5 transition-all ${searchFocused ? 'scale-[1.01]' : ''}`}>
+            <div className={`relative flex items-center bg-background border-2 rounded-2xl overflow-hidden transition-all ${searchFocused ? 'border-primary shadow-lg' : 'border-border'}`}>
+              <div className={`pl-4 ${searchFocused ? 'text-primary' : 'text-muted-foreground'}`}><Search size={20} /></div>
+              <input type="text" value={productSearch} onChange={(e) => setProductSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}
+                placeholder="Buscar producto..." className="flex-1 bg-transparent px-3 py-3.5 text-sm outline-none" data-testid="product-search-input" />
+              {productSearch && (
+                <button onClick={() => setProductSearch('')} className="p-2 mr-2 rounded-full hover:bg-muted"><X size={16} /></button>
+              )}
+            </div>
+            {productSearch && (
+              <div className="mt-2 px-1 text-xs text-muted-foreground">{filteredProducts.length} productos encontrados</div>
+            )}
+          </div>
+
+          {/* Products grouped by category */}
+          <div className="space-y-4">
+            {Object.entries(productsByCategory).map(([catName, { color, products: prods }]) => (
+              <div key={catName}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                  <span className="font-oswald font-bold text-sm">{catName}</span>
+                  <Badge variant="secondary" className="text-[9px]">{prods.length}</Badge>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {prods.map(prod => (
+                    <a key={prod.id} href={`/product/${prod.id}?from=products`}
+                      className="flex items-center justify-between p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors" data-testid={`product-${prod.id}`}>
+                      <div>
+                        <span className="font-semibold text-sm">{prod.name}</span>
+                        {prod.track_inventory && <Badge variant="outline" className="ml-2 text-[8px]">Stock</Badge>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-oswald font-bold text-primary">${(prod.price || prod.price_a || 0).toLocaleString()}</span>
+                        <Pencil size={14} className="text-muted-foreground" />
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* MODIFICADORES */}
+      {inventarioSubTab === 'modificadores' && (
+        <div className="text-center py-8">
+          <ListChecks size={40} className="mx-auto mb-3 text-primary opacity-50" />
+          <h2 className="font-oswald text-lg mb-2">Modificadores</h2>
+          <p className="text-sm text-muted-foreground mb-4">Gestiona extras, opciones y variantes de productos</p>
+          <a href="/modifiers" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold">
+            <ListChecks size={16} /> Abrir Modificadores
+          </a>
+        </div>
+      )}
+
+      {/* COMPRAS */}
+      {inventarioSubTab === 'compras' && (
+        <div className="text-center py-8">
+          <Truck size={40} className="mx-auto mb-3 text-primary opacity-50" />
+          <h2 className="font-oswald text-lg mb-2">Compras</h2>
+          <p className="text-sm text-muted-foreground mb-4">Gestiona órdenes de compra y proveedores</p>
+          <a href="/purchases" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold">
+            <Truck size={16} /> Abrir Compras
+          </a>
+        </div>
+      )}
+
+      {/* STOCK */}
+      {inventarioSubTab === 'stock' && (
+        <div className="text-center py-8">
+          <BarChart3 size={40} className="mx-auto mb-3 text-primary opacity-50" />
+          <h2 className="font-oswald text-lg mb-2">Niveles de Stock</h2>
+          <p className="text-sm text-muted-foreground mb-4">Visualiza y ajusta el inventario</p>
+          <a href="/inventory" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold">
+            <BarChart3 size={16} /> Abrir Inventario
+          </a>
+        </div>
+      )}
+
+      {/* CONFIG */}
+      {inventarioSubTab === 'config' && (
+        <div className="space-y-4 max-w-lg">
+          <h2 className="font-oswald text-base font-bold">Configuración de Inventario</h2>
+          
+          <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+            <div>
+              <span className="text-sm font-semibold">Permitir venta sin stock</span>
+              <p className="text-[10px] text-muted-foreground">Permite vender productos aunque no haya inventario</p>
+            </div>
+            <Switch checked={inventorySettings.allow_sale_without_stock}
+              onCheckedChange={(v) => setInventorySettings(p => ({ ...p, allow_sale_without_stock: v }))} />
+          </div>
+          
+          <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+            <div>
+              <span className="text-sm font-semibold">Deducir automáticamente al pagar</span>
+              <p className="text-[10px] text-muted-foreground">Reduce el stock cuando se completa una venta</p>
+            </div>
+            <Switch checked={inventorySettings.auto_deduct_on_payment}
+              onCheckedChange={(v) => setInventorySettings(p => ({ ...p, auto_deduct_on_payment: v }))} />
+          </div>
+          
+          <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+            <div>
+              <span className="text-sm font-semibold">Mostrar alertas de stock bajo</span>
+              <p className="text-[10px] text-muted-foreground">Notifica cuando un producto está por agotarse</p>
+            </div>
+            <Switch checked={inventorySettings.show_stock_alerts}
+              onCheckedChange={(v) => setInventorySettings(p => ({ ...p, show_stock_alerts: v }))} />
+          </div>
+
+          <Button onClick={handleSaveInventorySettings} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold">
+            GUARDAR CONFIGURACIÓN
+          </Button>
+        </div>
+      )}
+
+      {/* Category Dialog */}
+      <Dialog open={categoryDialog.open} onOpenChange={(o) => !o && setCategoryDialog({ ...categoryDialog, open: false })}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-oswald">{categoryDialog.editId ? 'Editar Categoría' : 'Nueva Categoría'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Nombre</label>
+              <input type="text" value={categoryDialog.name} onChange={e => setCategoryDialog({ ...categoryDialog, name: e.target.value })}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" placeholder="Ej: Bebidas" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Color</label>
+              <input type="color" value={categoryDialog.color} onChange={e => setCategoryDialog({ ...categoryDialog, color: e.target.value })}
+                className="w-full h-10 mt-1 rounded-lg border border-border cursor-pointer" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Canal de Impresión</label>
+              <select value={categoryDialog.print_channel} onChange={e => setCategoryDialog({ ...categoryDialog, print_channel: e.target.value })}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm">
+                <option value="">Sin asignar</option>
+                {printChannels.map(ch => <option key={ch.id} value={ch.code || ch.id}>{ch.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCategoryDialog({ ...categoryDialog, open: false })}>Cancelar</Button>
+            <Button onClick={handleSaveCategory} className="bg-primary text-primary-foreground">Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
