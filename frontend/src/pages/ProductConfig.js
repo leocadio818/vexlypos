@@ -59,6 +59,7 @@ export default function ProductConfig() {
     track_inventory: false,
     print_channels: [],  // Array of channel codes for multi-channel printing
     tax_exemptions: [],  // Array of tax IDs this product is exempt from
+    use_category_taxes: true,  // If true, inherit tax settings from category
     modifier_assignments: [],
     // Recipe fields (for display)
     recipe_ingredients: []
