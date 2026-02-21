@@ -1450,27 +1450,6 @@ export default function PaymentScreen() {
                 })}
               </div>
               
-              {/* Reference document - Required when any tax is disabled */}
-              {Object.values(taxOverrides).some(v => v === false) && (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle size={14} className="text-amber-400" />
-                    <label className="text-amber-300 text-xs font-medium">Referencia/Documento *</label>
-                  </div>
-                  <input
-                    type="text"
-                    value={taxOverrideReference}
-                    onChange={(e) => setTaxOverrideReference(e.target.value)}
-                    placeholder="Ej: Carta exención #123, Carnet diplomático..."
-                    className="w-full h-10 bg-white/5 border border-amber-500/30 rounded-lg px-3 text-white text-sm focus:border-amber-400 focus:outline-none"
-                    data-testid="tax-override-reference"
-                  />
-                  <p className="text-[10px] text-white/40">
-                    Ingrese el número de documento que autoriza la exención fiscal
-                  </p>
-                </div>
-              )}
-              
               {/* Summary */}
               <div className="bg-white/5 border border-white/10 rounded-lg p-3">
                 <div className="flex justify-between items-center">
