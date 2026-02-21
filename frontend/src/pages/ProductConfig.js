@@ -527,77 +527,115 @@ export default function ProductConfig() {
                     <span className="text-sm font-semibold">Impuestos Aplicables</span>
                   </div>
                   <p className="text-[10px] text-muted-foreground mb-3">
-                    Todos los impuestos están activos por defecto. Desmarca los impuestos de los que este producto esté exento.
+                    Configura qué impuestos aplican a este producto. Puedes heredar de la categoría o configurar individualmente.
                   </p>
                   
-                  <div className="space-y-2">
-                    {taxConfig.filter(tax => tax.is_active).map(tax => {
-                      const isExempt = (product.tax_exemptions || []).includes(tax.id);
-                      const isApplied = !isExempt;
-                      return (
-                        <div 
-                          key={tax.id}
-                          className={`flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer ${
-                            isApplied 
-                              ? 'bg-green-500/10 border-green-500/50' 
-                              : 'bg-red-500/5 border-red-500/30'
-                          }`}
-                          onClick={() => {
-                            setProduct(p => {
-                              const current = p.tax_exemptions || [];
-                              if (current.includes(tax.id)) {
-                                // Remove from exemptions (re-apply tax)
-                                return { ...p, tax_exemptions: current.filter(id => id !== tax.id) };
-                              } else {
-                                // Add to exemptions (exempt from tax)
-                                return { ...p, tax_exemptions: [...current, tax.id] };
-                              }
-                            });
-                          }}
-                          data-testid={`tax-toggle-${tax.id}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                              isApplied 
-                                ? 'border-green-500 bg-green-500' 
-                                : 'border-muted-foreground'
-                            }`}>
-                              {isApplied && <Check size={12} className="text-white" />}
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium">{tax.description}</span>
-                              <p className="text-[10px] text-muted-foreground">{tax.rate}%</p>
-                            </div>
-                          </div>
-                          <Badge 
-                            variant="outline" 
-                            className={`text-[9px] ${
-                              isApplied 
-                                ? 'border-green-500/50 text-green-500' 
-                                : 'border-red-500/50 text-red-500'
-                            }`}
-                          >
-                            {isApplied ? 'Aplica' : 'Exento'}
-                          </Badge>
-                        </div>
-                      );
-                    })}
-                    
-                    {taxConfig.filter(tax => tax.is_active).length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        No hay impuestos configurados. Ve a Configuración → Ventas → Impuestos.
-                      </p>
-                    )}
+                  {/* Usar el de la Categoría - Similar to print channels */}
+                  <div 
+                    className={`flex items-center justify-between p-3 rounded-lg border mb-3 transition-all cursor-pointer ${
+                      product.use_category_taxes 
+                        ? 'bg-green-500/10 border-green-500/50' 
+                        : 'bg-background border-border hover:bg-muted/30'
+                    }`}
+                    onClick={() => setProduct(p => ({ ...p, use_category_taxes: !p.use_category_taxes, tax_exemptions: [] }))}
+                    data-testid="use-category-taxes-toggle"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                        product.use_category_taxes 
+                          ? 'border-green-500 bg-green-500' 
+                          : 'border-muted-foreground'
+                      }`}>
+                        {product.use_category_taxes && <Check size={12} className="text-white" />}
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium">Usar el de la Categoría</span>
+                        <p className="text-[10px] text-muted-foreground">Hereda configuración de impuestos de la categoría del producto</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={`text-[9px] ${product.use_category_taxes ? 'border-green-500/50 text-green-500' : ''}`}>
+                      {product.use_category_taxes ? 'Por defecto' : ''}
+                    </Badge>
                   </div>
-
-                  {/* Resumen de impuestos exentos */}
-                  {(product.tax_exemptions || []).length > 0 && (
-                    <div className="mt-3 flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] text-muted-foreground">Exento de:</span>
-                      {(product.tax_exemptions || []).map(taxId => {
-                        const tax = taxConfig.find(t => t.id === taxId);
+                  
+                  {/* Individual tax toggles - only show when not using category taxes */}
+                  {!product.use_category_taxes && (
+                    <div className="space-y-2">
+                      {taxConfig.filter(tax => tax.is_active).map(tax => {
+                        const isExempt = (product.tax_exemptions || []).includes(tax.id);
+                        const isApplied = !isExempt;
                         return (
-                          <Badge key={taxId} className="bg-red-500/20 text-red-400 text-[10px]">
+                          <div 
+                            key={tax.id}
+                            className={`flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer ${
+                              isApplied 
+                                ? 'bg-green-500/10 border-green-500/50' 
+                                : 'bg-red-500/5 border-red-500/30'
+                            }`}
+                            onClick={() => {
+                              setProduct(p => {
+                                const current = p.tax_exemptions || [];
+                                if (current.includes(tax.id)) {
+                                  // Remove from exemptions (re-apply tax)
+                                  return { ...p, tax_exemptions: current.filter(id => id !== tax.id) };
+                                } else {
+                                  // Add to exemptions (exempt from tax)
+                                  return { ...p, tax_exemptions: [...current, tax.id] };
+                                }
+                              });
+                            }}
+                            data-testid={`tax-toggle-${tax.id}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                isApplied 
+                                  ? 'border-green-500 bg-green-500' 
+                                  : 'border-muted-foreground'
+                              }`}>
+                                {isApplied && <Check size={12} className="text-white" />}
+                              </div>
+                              <div>
+                                <span className="text-sm font-medium">{tax.description}</span>
+                                <p className="text-[10px] text-muted-foreground">{tax.rate}%</p>
+                              </div>
+                            </div>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-[9px] ${
+                                isApplied 
+                                  ? 'border-green-500/50 text-green-500' 
+                                  : 'border-red-500/50 text-red-500'
+                              }`}
+                            >
+                              {isApplied ? 'Aplica' : 'Exento'}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                      
+                      {taxConfig.filter(tax => tax.is_active).length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No hay impuestos configurados. Ve a Configuración → Ventas → Impuestos.
+                        </p>
+                      )}
+
+                      {/* Resumen de impuestos exentos */}
+                      {(product.tax_exemptions || []).length > 0 && (
+                        <div className="mt-3 flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] text-muted-foreground">Exento de:</span>
+                          {(product.tax_exemptions || []).map(taxId => {
+                            const tax = taxConfig.find(t => t.id === taxId);
+                            return (
+                              <Badge key={taxId} className="bg-red-500/20 text-red-400 text-[10px]">
+                                {tax?.name || taxId}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                             {tax?.description || taxId}
                           </Badge>
                         );
