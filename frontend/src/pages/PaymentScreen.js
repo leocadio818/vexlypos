@@ -786,6 +786,25 @@ export default function PaymentScreen() {
                     );
                   })()}
                   
+                  {/* Botón Impuesto - Tax Override */}
+                  <div className="flex justify-center pt-2">
+                    <button
+                      onClick={handleTaxOverrideClick}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                        ${adjustedBill?.tax_override_applied 
+                          ? 'bg-amber-500/20 border border-amber-400/50 text-amber-300' 
+                          : 'bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white/70'
+                        }`}
+                      data-testid="tax-override-btn"
+                    >
+                      <Shield size={12} />
+                      Impuesto
+                      {adjustedBill?.tax_override_applied && (
+                        <Badge className="ml-1 text-[8px] bg-amber-500/30">Ajustado</Badge>
+                      )}
+                    </button>
+                  </div>
+                  
                   {/* TOTAL GENERAL - Elemento más grande y visible */}
                   <div className={`flex justify-between items-center text-white font-bold pt-3 mt-2 border-t-2 border-cyan-400/30 ${isMobile ? 'text-base' : ''}`}>
                     <span className={`font-oswald tracking-wide ${isMobile ? '' : 'text-2xl'}`}>TOTAL</span>
