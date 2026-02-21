@@ -667,11 +667,9 @@ async def calculate_cart_taxes(input: IntelligentTaxCalculationInput):
     taxes_by_id = {t["id"]: t for t in all_taxes}
     taxes_by_code = {t["code"]: t for t in all_taxes}
     
-    # Find ITBIS and PROPINA tax IDs
+    # Find ITBIS tax ID for government exemption filtering
     itbis_tax = taxes_by_code.get("ITBIS")
-    propina_tax = taxes_by_code.get("PROPINA")
     itbis_tax_id = itbis_tax["id"] if itbis_tax else None
-    # propina_tax_id not directly used but kept for reference
     
     # Process each line item
     line_items = []
