@@ -271,6 +271,17 @@ export default function NcfTab() {
                     <Badge className="ml-1 text-[9px] bg-red-500/20 text-red-400">VENCIDO</Badge>
                   )}
                 </div>
+                {/* Alert Config Display */}
+                {seq.alert_threshold && (
+                  <div className="col-span-2 flex items-center gap-1 pt-1 border-t border-border/50 mt-1">
+                    <Bell size={12} className="text-amber-500" />
+                    <span className="text-muted-foreground text-[10px]">Alerta:</span>
+                    <span className="text-[10px] text-amber-400">
+                      ≤{seq.alert_threshold} NCF
+                      {seq.alert_interval && ` (cada ${seq.alert_interval} ventas)`}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
