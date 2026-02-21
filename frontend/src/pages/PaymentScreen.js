@@ -903,7 +903,12 @@ export default function PaymentScreen() {
                 {fiscalTypes.map(ft => (
                   <button
                     key={ft.code}
-                    onClick={() => setSelectedFiscalType(ft.code)}
+                    onClick={() => {
+                      setSelectedFiscalType(ft.code);
+                      // Auto-select first service type for this NCF
+                      const firstMatch = saleTypes.find(st => st.default_ncf_type_id === ft.code);
+                      if (firstMatch) setSelectedServiceType(firstMatch);
+                    }}
                     className={`p-3 rounded-xl text-center transition-all ${
                       selectedFiscalType === ft.code
                         ? 'bg-cyan-500/30 border-2 border-cyan-400 text-cyan-300'
