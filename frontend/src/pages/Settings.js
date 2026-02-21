@@ -1263,8 +1263,8 @@ export default function Settings() {
                             </Badge>
                           )}
                           {exemptCount > 0 && (
-                            <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-500">
-                              {exemptCount} exento(s)
+                            <Badge variant="outline" className="text-[9px] border-muted-foreground/50 text-muted-foreground">
+                              {exemptCount} no aplica(n)
                             </Badge>
                           )}
                         </div>
