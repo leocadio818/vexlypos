@@ -472,27 +472,34 @@ async def generate_ncf_for_sale(
         if not seq_response.data:
             raise HTTPException(status_code=404, detail="No hay secuencias NCF activas")
         
+        sequences = seq_response.data
+        
+        # Cargar authorized_sale_types desde MongoDB
+        seq_ids = [s["id"] for s in sequences]
+        mongo_configs = await db.ncf_sequence_config.find({"sequence_id": {"$in": seq_ids}}, {"_id": 0}).to_list(100)
+        config_map = {c["sequence_id"]: c.get("authorized_sale_types", []) for c in mongo_configs}
+        
         # Buscar secuencia que tenga este sale_type_id autorizado
         matching_seq = None
-        for seq in seq_response.data:
-            authorized = seq.get("authorized_sale_types") or []
+        for seq in sequences:
+            authorized = config_map.get(seq["id"], [])
             if sale_type_id in authorized:
                 matching_seq = seq
                 break
         
         if not matching_seq:
-            # Fallback: buscar el default_ncf_type del sale_type
-            sale_type_result = supabase_client.table("sale_types").select("default_ncf_type_id").eq("id", sale_type_id).single().execute()
-            if sale_type_result.data and sale_type_result.data.get("default_ncf_type_id"):
-                default_ncf = sale_type_result.data["default_ncf_type_id"]
-                for seq in seq_response.data:
+            # Fallback: buscar el default_ncf_type del sale_type desde MongoDB
+            sale_type = await db.sale_types.find_one({"id": sale_type_id}, {"_id": 0})
+            if sale_type and sale_type.get("default_ncf_type_id"):
+                default_ncf = sale_type["default_ncf_type_id"]
+                for seq in sequences:
                     if seq.get("ncf_type_id") == default_ncf:
                         matching_seq = seq
                         break
         
         if not matching_seq:
             # Último fallback: usar B02 (Consumidor Final)
-            for seq in seq_response.data:
+            for seq in sequences:
                 if seq.get("ncf_type_id") == "B02":
                     matching_seq = seq
                     break
