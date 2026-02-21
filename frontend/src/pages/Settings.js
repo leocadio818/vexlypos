@@ -473,9 +473,15 @@ export default function Settings() {
   const handleSaveSaleType = async () => {
     if (!saleDialog.name) return;
     try {
+      // Auto-generate code from name if not provided
+      const autoCode = saleDialog.code || saleDialog.name.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+        .replace(/\s+/g, '_'); // Replace spaces with underscores
+      
       const data = { 
         name: saleDialog.name, 
-        code: saleDialog.code, 
+        code: autoCode, 
         tax_exemptions: saleDialog.tax_exemptions || [],
         default_ncf_type_id: saleDialog.default_ncf_type_id || 'B02'
       };
