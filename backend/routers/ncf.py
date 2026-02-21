@@ -45,6 +45,7 @@ class NCFSequenceInput(BaseModel):
     expiration_date: str  # YYYY-MM-DD (stored as valid_until)
     is_active: bool = True
     notes: Optional[str] = None
+    authorized_sale_types: Optional[List[str]] = None  # IDs of sale types that can use this sequence
 
 class NCFSequenceUpdate(BaseModel):
     current_number: Optional[int] = None
@@ -52,6 +53,7 @@ class NCFSequenceUpdate(BaseModel):
     expiration_date: Optional[str] = None  # stored as valid_until
     is_active: Optional[bool] = None
     notes: Optional[str] = None
+    authorized_sale_types: Optional[List[str]] = None  # IDs of sale types that can use this sequence
 
 
 # ─── NCF TYPES ───
