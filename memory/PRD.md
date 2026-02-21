@@ -73,6 +73,15 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **Propina Condicional**: Solo aplica si is_dine_in_only=false Y producto no tiene exención
 - ✅ **Mensaje informativo**: "*Propina omitida (solo aplica en local)" cuando se selecciona Para Llevar
 
+### 2025-02-21: Sistema 100% Dinámico - Tipos de Venta Configurables
+- ✅ **Perfiles de Venta**: 6 tipos configurados (Consumo Local, Para Llevar, Delivery, Crédito Fiscal, Exportación, Servicios)
+- ✅ **Botones de Acceso Rápido**: Botones dinámicos en OrderScreen cargados desde DB
+- ✅ **Tax Exemptions por Tipo**: Cada tipo tiene lista de impuestos exentos
+- ✅ **Sin Hardcoding**: Todo se lee de tax_config y sale_types desde la DB
+- ✅ **Sincronización Automática**: Refresco cada 30s para reflejar cambios del admin inmediatamente
+- ✅ **CRUD Completo**: Crear, editar, eliminar tipos de venta desde Settings > Ventas > Tipos de Venta
+- ✅ **NCF Dinámico por Tipo**: B02 para consumidor, B01 para crédito fiscal, B16 para exportación
+
 ## Key Features
 
 ### Ticket Térmico 80mm
