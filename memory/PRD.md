@@ -303,5 +303,27 @@ CREATE TABLE ncf_sequences (
   - "Sin propina de ley" (ámbar) para tipos que NO tienen propina (Consumo Llevar, Régimen Especial)
 - ✅ **Root cause**: El filtro `t.active` no encontraba los impuestos porque el campo era `is_active`
 
+### 2025-02-21: Refactorización de Settings.js
+- ✅ **P2 Completado**: Archivo monolito de 4115 líneas dividido en 12 componentes modulares
+- ✅ **Arquitectura**:
+  ```
+  /frontend/src/pages/settings/
+  ├── index.js              (Componente principal)
+  ├── SettingsContext.js    (Estado compartido)
+  ├── UsersTab.js           (Gestión de usuarios)
+  ├── MesasTab.js           (Áreas y mesas)
+  ├── VentasTab.js          (Pagos, anulaciones, tipos de venta)
+  ├── InventarioTab.js      (Categorías, productos, stock)
+  ├── ChannelsTab.js        (Canales de impresión)
+  ├── StationTab.js         (Config de estación)
+  ├── ReportsTab.js         (Link a reportes)
+  ├── CustomersTab.js       (Link a clientes)
+  ├── TaxesTab.js           (Impuestos DGII)
+  ├── NcfTab.js             (Secuencias NCF)
+  ├── SystemTab.js          (Sistema y datos del ticket)
+  └── ThemeTab.js           (Personalización visual)
+  ```
+- ✅ **Beneficios**: Mejor mantenibilidad, carga más rápida, menos conflictos
+
 ## 📅 Last Updated
-2025-02-21 - Corrección de etiquetas de propina en PaymentScreen
+2025-02-21 - Refactorización completa de Settings.js
