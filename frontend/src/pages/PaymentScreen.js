@@ -538,6 +538,21 @@ export default function PaymentScreen() {
         customer_name: selectedCustomer?.name || null,
         customer_rnc: selectedCustomer?.rnc || null
       });
+      
+      // Show NCF Alert Modal if configured and triggered
+      if (generatedNcf?.should_show_alert && generatedNcf?.alert_message) {
+        setNcfAlertModal({ 
+          open: true, 
+          ncfData: {
+            ncf_type: generatedNcf.ncf_type,
+            remaining: generatedNcf.remaining,
+            alert_level: generatedNcf.alert,
+            alert_message: generatedNcf.alert_message,
+            expiration_date: generatedNcf.expiration_date
+          }
+        });
+      }
+      
       setPrintDialogOpen(true);
     } catch (err) {
       // Handle specific error from backend
