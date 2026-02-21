@@ -1100,7 +1100,16 @@ export default function PaymentScreen() {
       <Dialog open={customerDialog} onOpenChange={setCustomerDialog}>
         <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-md'} ${glassStyles.card} border-white/20 bg-slate-900/80`}>
           <DialogHeader>
-            <DialogTitle className="font-oswald text-white text-lg">Buscar Cliente</DialogTitle>
+            <DialogTitle className="font-oswald text-white text-lg flex items-center justify-between">
+              <span>Buscar Cliente</span>
+              <button
+                onClick={() => setNewCustomerDialog({ open: true, name: '', phone: '', email: '' })}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary text-xs font-semibold transition-all"
+                data-testid="add-customer-from-payment-btn"
+              >
+                <Plus size={14} /> Nuevo
+              </button>
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="relative">
@@ -1117,7 +1126,15 @@ export default function PaymentScreen() {
             <ScrollArea className="h-64">
               <div className="space-y-2">
                 {filteredCustomers.length === 0 ? (
-                  <p className="text-center text-white/40 py-8">No se encontraron clientes</p>
+                  <div className="text-center py-8">
+                    <p className="text-white/40 mb-3">No se encontraron clientes</p>
+                    <button
+                      onClick={() => setNewCustomerDialog({ open: true, name: customerSearch, phone: '', email: '' })}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/80 transition-all"
+                    >
+                      <Plus size={16} /> Crear "{customerSearch || 'Nuevo Cliente'}"
+                    </button>
+                  </div>
                 ) : (
                   filteredCustomers.map(customer => (
                     <button
@@ -1145,6 +1162,68 @@ export default function PaymentScreen() {
                 )}
               </div>
             </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Customer Dialog from Payment Screen */}
+      <Dialog open={newCustomerDialog.open} onOpenChange={(open) => !open && setNewCustomerDialog({ ...newCustomerDialog, open: false })}>
+        <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-sm'} ${glassStyles.card} border-white/20 bg-slate-900/90`}>
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-white text-lg flex items-center gap-2">
+              <Plus size={18} className="text-primary" />
+              Nuevo Cliente
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-white/60 text-xs mb-1 block">Nombre *</label>
+              <input
+                value={newCustomerDialog.name}
+                onChange={e => setNewCustomerDialog({ ...newCustomerDialog, name: e.target.value })}
+                placeholder="Nombre del cliente"
+                className={`w-full ${glassStyles.input} rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none`}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="text-white/60 text-xs mb-1 block flex items-center gap-1">
+                <Phone size={12} /> Teléfono
+              </label>
+              <input
+                value={newCustomerDialog.phone}
+                onChange={e => setNewCustomerDialog({ ...newCustomerDialog, phone: e.target.value })}
+                placeholder="809-555-1234"
+                className={`w-full ${glassStyles.input} rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none`}
+              />
+            </div>
+            <div>
+              <label className="text-white/60 text-xs mb-1 block flex items-center gap-1">
+                <Mail size={12} /> Email
+              </label>
+              <input
+                value={newCustomerDialog.email}
+                onChange={e => setNewCustomerDialog({ ...newCustomerDialog, email: e.target.value })}
+                placeholder="cliente@email.com"
+                type="email"
+                className={`w-full ${glassStyles.input} rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none`}
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setNewCustomerDialog({ open: false, name: '', phone: '', email: '' })}
+                className={`flex-1 py-3 rounded-xl ${glassStyles.card} text-white/70 font-semibold hover:bg-white/10 transition-all`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAddNewCustomer}
+                className="flex-1 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary/80 transition-all flex items-center justify-center gap-2"
+                data-testid="save-new-customer-btn"
+              >
+                <Check size={16} /> Guardar
+              </button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
