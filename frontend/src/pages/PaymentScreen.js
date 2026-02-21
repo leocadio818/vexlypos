@@ -1520,6 +1520,68 @@ export default function PaymentScreen() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* NCF Alert Modal - Dynamic alerts based on configuration */}
+      <Dialog open={ncfAlertModal.open} onOpenChange={(o) => setNcfAlertModal({ open: o, ncfData: ncfAlertModal.ncfData })}>
+        <DialogContent className={`max-w-sm bg-slate-900/95 backdrop-blur-xl ${ncfAlertModal.ncfData?.alert_level === 'critical' ? 'border-red-500/50' : 'border-amber-500/50'}`} data-testid="ncf-alert-modal">
+          <DialogHeader>
+            <DialogTitle className={`font-oswald flex items-center gap-2 ${ncfAlertModal.ncfData?.alert_level === 'critical' ? 'text-red-400' : 'text-amber-400'}`}>
+              <Bell size={20} className="animate-pulse" />
+              Alerta de Comprobantes NCF
+            </DialogTitle>
+            <DialogDescription className="text-white/60">
+              Notificación configurada para secuencia {ncfAlertModal.ncfData?.ncf_type}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Alert Content */}
+            <div className={`rounded-xl p-4 ${ncfAlertModal.ncfData?.alert_level === 'critical' ? 'bg-red-500/10 border border-red-500/30' : 'bg-amber-500/10 border border-amber-500/30'}`}>
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-oswald text-2xl font-bold ${ncfAlertModal.ncfData?.alert_level === 'critical' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                  {ncfAlertModal.ncfData?.ncf_type}
+                </div>
+              </div>
+              
+              <p className={`text-center font-medium ${ncfAlertModal.ncfData?.alert_level === 'critical' ? 'text-red-300' : 'text-amber-300'}`}>
+                {ncfAlertModal.ncfData?.alert_message}
+              </p>
+              
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Comprobantes restantes:</span>
+                  <span className={`font-oswald font-bold ${ncfAlertModal.ncfData?.remaining <= 10 ? 'text-red-400' : 'text-amber-400'}`}>
+                    {ncfAlertModal.ncfData?.remaining}
+                  </span>
+                </div>
+                {ncfAlertModal.ncfData?.expiration_date && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/50">Fecha vencimiento:</span>
+                    <span className="text-white/80 font-mono">{ncfAlertModal.ncfData?.expiration_date}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Recommendation */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+              <p className="text-xs text-blue-300 flex items-center gap-2">
+                <FileText size={14} />
+                Solicite nuevos comprobantes a la DGII antes de que se agoten
+              </p>
+            </div>
+            
+            {/* Close Button */}
+            <button
+              onClick={() => setNcfAlertModal({ open: false, ncfData: null })}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-slate-600 to-slate-700 text-white font-oswald font-bold hover:from-slate-500 hover:to-slate-600 transition-all active:scale-95"
+              data-testid="ncf-alert-close-btn"
+            >
+              ENTENDIDO
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
