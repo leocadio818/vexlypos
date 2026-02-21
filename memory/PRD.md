@@ -283,7 +283,7 @@ El sistema aplica impuestos basándose en la intersección:
 - [x] ~~**Seguridad Fiscal**: Bloquear NCF en facturas $0.00~~ ✅ COMPLETADO 2025-02-21
 - [x] ~~**Flujo de Nota de Crédito B04**: Reversión de factura con nota de crédito~~ ✅ COMPLETADO 2025-02-21
 - [x] ~~**Sistema de Alertas NCF Dinámico**: Modal de alerta configurable por secuencia NCF~~ ✅ COMPLETADO 2025-02-21
-- [ ] **UI Asignación de Impuestos a Productos**: Checkboxes en ProductConfig
+- [x] ~~**UI Asignación de Impuestos a Productos**: Checkboxes en ProductConfig~~ ✅ COMPLETADO 2025-02-21
 
 ### P1 - Alta Prioridad
 - [ ] Audit Trail Security (solo Admin ve PINs)
