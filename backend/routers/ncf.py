@@ -254,6 +254,8 @@ async def update_ncf_sequence(seq_id: str, input: NCFSequenceUpdate):
             update_data["valid_until"] = input.expiration_date  # Map to DB column name
         if input.is_active is not None:
             update_data["is_active"] = input.is_active
+        if input.authorized_sale_types is not None:
+            update_data["authorized_sale_types"] = input.authorized_sale_types
         
         if not update_data:
             raise HTTPException(status_code=400, detail="No hay campos para actualizar")
