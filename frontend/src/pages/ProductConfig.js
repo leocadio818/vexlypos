@@ -86,7 +86,7 @@ export default function ProductConfig() {
         reportCategoriesAPI.list(),
         modifiersAPI.list(),
         fetch(`${process.env.REACT_APP_BACKEND_URL}/api/print-channels`).then(r => r.json()),
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/tax-config`).then(r => r.json())
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/taxes/config`).then(r => r.json())
       ]);
       setCategories(catRes.data);
       setReportCategories(reportCatRes.data);
