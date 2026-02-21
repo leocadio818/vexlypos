@@ -53,6 +53,8 @@ class NCFSequenceInput(BaseModel):
     is_active: bool = True
     notes: Optional[str] = None
     authorized_sale_types: Optional[List[str]] = None  # IDs of sale types that can use this sequence
+    alert_threshold: Optional[int] = None  # Start alerting when remaining <= this value
+    alert_interval: Optional[int] = None   # Show alert every N sales after threshold
 
 class NCFSequenceUpdate(BaseModel):
     current_number: Optional[int] = None
@@ -61,6 +63,8 @@ class NCFSequenceUpdate(BaseModel):
     is_active: Optional[bool] = None
     notes: Optional[str] = None
     authorized_sale_types: Optional[List[str]] = None  # IDs of sale types that can use this sequence
+    alert_threshold: Optional[int] = None  # Start alerting when remaining <= this value
+    alert_interval: Optional[int] = None   # Show alert every N sales after threshold
 
 
 # ─── NCF TYPES ───
@@ -177,13 +181,16 @@ async def get_ncf_sequences(
                     seq["alert_level"] = "ok"
                     seq["alert_message"] = None
         
-        # Cargar authorized_sale_types desde MongoDB
+        # Cargar authorized_sale_types y alert config desde MongoDB
         seq_ids = [s["id"] for s in sequences]
         mongo_configs = await db.ncf_sequence_config.find({"sequence_id": {"$in": seq_ids}}, {"_id": 0}).to_list(100)
-        config_map = {c["sequence_id"]: c.get("authorized_sale_types", []) for c in mongo_configs}
+        config_map = {c["sequence_id"]: c for c in mongo_configs}
         
         for seq in sequences:
-            seq["authorized_sale_types"] = config_map.get(seq["id"], [])
+            config = config_map.get(seq["id"], {})
+            seq["authorized_sale_types"] = config.get("authorized_sale_types", [])
+            seq["alert_threshold"] = config.get("alert_threshold")
+            seq["alert_interval"] = config.get("alert_interval")
         
         return sequences
     except Exception as e:
@@ -243,20 +250,28 @@ async def create_ncf_sequence(input: NCFSequenceInput):
             result["range_end"] = result.get("end_number")
             result["expiration_date"] = result.get("valid_until")
             
-            # Guardar authorized_sale_types en MongoDB
-            if input.authorized_sale_types:
+            # Guardar authorized_sale_types y alert config en MongoDB
+            mongo_data = {
+                "sequence_id": result["id"],
+                "updated_at": now_iso()
+            }
+            if input.authorized_sale_types is not None:
+                mongo_data["authorized_sale_types"] = input.authorized_sale_types
+            if input.alert_threshold is not None:
+                mongo_data["alert_threshold"] = input.alert_threshold
+            if input.alert_interval is not None:
+                mongo_data["alert_interval"] = input.alert_interval
+            
+            if any([input.authorized_sale_types, input.alert_threshold is not None, input.alert_interval is not None]):
                 await db.ncf_sequence_config.update_one(
                     {"sequence_id": result["id"]},
-                    {"$set": {
-                        "sequence_id": result["id"],
-                        "authorized_sale_types": input.authorized_sale_types,
-                        "updated_at": now_iso()
-                    }},
+                    {"$set": mongo_data},
                     upsert=True
                 )
-                result["authorized_sale_types"] = input.authorized_sale_types
-            else:
-                result["authorized_sale_types"] = []
+            
+            result["authorized_sale_types"] = input.authorized_sale_types or []
+            result["alert_threshold"] = input.alert_threshold
+            result["alert_interval"] = input.alert_interval
             
             return result
         else:
@@ -286,29 +301,40 @@ async def update_ncf_sequence(seq_id: str, input: NCFSequenceUpdate):
         if input.is_active is not None:
             supabase_data["is_active"] = input.is_active
         
-        # Guardar authorized_sale_types en MongoDB (campo adicional no en Supabase)
+        # Guardar campos adicionales en MongoDB (authorized_sale_types, alert_threshold, alert_interval)
+        mongo_update = {"sequence_id": seq_id, "updated_at": now_iso()}
+        has_mongo_update = False
+        
         if input.authorized_sale_types is not None:
+            mongo_update["authorized_sale_types"] = input.authorized_sale_types
+            has_mongo_update = True
+        if input.alert_threshold is not None:
+            mongo_update["alert_threshold"] = input.alert_threshold
+            has_mongo_update = True
+        if input.alert_interval is not None:
+            mongo_update["alert_interval"] = input.alert_interval
+            has_mongo_update = True
+        
+        if has_mongo_update:
             await db.ncf_sequence_config.update_one(
                 {"sequence_id": seq_id},
-                {"$set": {
-                    "sequence_id": seq_id,
-                    "authorized_sale_types": input.authorized_sale_types,
-                    "updated_at": now_iso()
-                }},
+                {"$set": mongo_update},
                 upsert=True
             )
         
         if not supabase_data:
-            # Si solo se actualizó authorized_sale_types, retornar éxito
-            if input.authorized_sale_types is not None:
-                # Obtener la secuencia actual y agregar authorized_sale_types
+            # Si solo se actualizaron campos de MongoDB, retornar éxito
+            if has_mongo_update:
+                # Obtener la secuencia actual y agregar campos de MongoDB
                 seq_response = supabase_client.table("ncf_sequences").select("*").eq("id", seq_id).single().execute()
                 if seq_response.data:
                     result = seq_response.data
-                    # Agregar authorized_sale_types desde MongoDB
+                    # Agregar campos desde MongoDB
                     mongo_config = await db.ncf_sequence_config.find_one({"sequence_id": seq_id}, {"_id": 0})
                     if mongo_config:
                         result["authorized_sale_types"] = mongo_config.get("authorized_sale_types", [])
+                        result["alert_threshold"] = mongo_config.get("alert_threshold")
+                        result["alert_interval"] = mongo_config.get("alert_interval")
                     return result
             raise HTTPException(status_code=400, detail="No hay campos para actualizar")
         
@@ -319,10 +345,12 @@ async def update_ncf_sequence(seq_id: str, input: NCFSequenceUpdate):
         
         result = response.data[0]
         
-        # Agregar authorized_sale_types al resultado desde MongoDB
+        # Agregar campos de MongoDB al resultado
         mongo_config = await db.ncf_sequence_config.find_one({"sequence_id": seq_id}, {"_id": 0})
         if mongo_config:
             result["authorized_sale_types"] = mongo_config.get("authorized_sale_types", [])
+            result["alert_threshold"] = mongo_config.get("alert_threshold")
+            result["alert_interval"] = mongo_config.get("alert_interval")
         
         return result
     except HTTPException:
@@ -552,6 +580,34 @@ async def generate_ncf_for_sale(
         
         remaining = end_num - current_num
         
+        # Obtener configuración de alertas desde MongoDB
+        mongo_config = await db.ncf_sequence_config.find_one({"sequence_id": seq["id"]}, {"_id": 0})
+        alert_threshold = mongo_config.get("alert_threshold") if mongo_config else None
+        alert_interval = mongo_config.get("alert_interval", 1) if mongo_config else 1
+        
+        # Determinar si mostrar alerta basado en configuración dinámica
+        should_show_alert = False
+        alert_level = None
+        alert_message = None
+        
+        if alert_threshold is not None and remaining <= alert_threshold:
+            # Calcular cuántos NCF se han usado desde que cruzó el umbral
+            used_since_threshold = alert_threshold - remaining
+            # Mostrar alerta cada N ventas (alert_interval)
+            if alert_interval and alert_interval > 0:
+                should_show_alert = (used_since_threshold % alert_interval == 0) or remaining <= 10
+            else:
+                should_show_alert = True
+            
+            if should_show_alert:
+                alert_level = "critical" if remaining <= 10 else "warning"
+                alert_message = f"Quedan {remaining} comprobantes {ncf_type} disponibles"
+        elif remaining < 10:
+            # Alerta crítica siempre si quedan menos de 10
+            should_show_alert = True
+            alert_level = "critical"
+            alert_message = f"¡URGENTE! Solo quedan {remaining} comprobantes {ncf_type}"
+        
         return {
             "ncf": ncf_full,
             "ncf_type": ncf_type,
@@ -560,8 +616,11 @@ async def generate_ncf_for_sale(
             "remaining": remaining,
             "expiration_date": exp_date_str,
             "sale_type_id": sale_type_id,
-            "alert": "critical" if remaining < 10 else ("warning" if remaining < 50 else None),
-            "alert_message": f"Solo quedan {remaining} comprobantes {ncf_type}" if remaining < 50 else None
+            "alert": alert_level,
+            "alert_message": alert_message,
+            "should_show_alert": should_show_alert,
+            "alert_threshold": alert_threshold,
+            "alert_interval": alert_interval
         }
         
     except HTTPException:
