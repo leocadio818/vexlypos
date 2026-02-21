@@ -1,21 +1,39 @@
 """
 Tax Configuration Router - Sistema de Impuestos Dinámico
 Permite configurar impuestos por producto y calcularlos dinámicamente
+Motor de Inteligencia Fiscal con Jerarquía: Tipo de Venta + Producto/Categoría
 """
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime, timezone
 import uuid
+import os
 
 router = APIRouter(prefix="/taxes", tags=["Taxes"])
 
 # Database reference
 db = None
 
+# Supabase client for sale_types
+supabase_client = None
+
 def set_db(database):
     global db
     db = database
+
+def init_supabase():
+    """Initialize Supabase client"""
+    global supabase_client
+    try:
+        from supabase import create_client
+        url = os.environ.get("SUPABASE_URL", "")
+        key = os.environ.get("SUPABASE_ANON_KEY", "")
+        if url and key:
+            supabase_client = create_client(url, key)
+            print("✅ Taxes Router: Supabase initialized")
+    except Exception as e:
+        print(f"❌ Taxes Router: Supabase init error: {e}")
 
 def gen_id() -> str:
     return str(uuid.uuid4())
