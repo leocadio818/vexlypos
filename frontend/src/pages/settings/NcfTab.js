@@ -1,19 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { ncfAPI } from '@/lib/api';
-import { FileText, Plus, Trash2, Pencil, RefreshCw, AlertTriangle, AlertCircle, Calendar, ListChecks } from 'lucide-react';
+import { FileText, Plus, Trash2, Pencil, RefreshCw, AlertTriangle, AlertCircle, Calendar, ListChecks, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import axios from 'axios';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
 
 export default function NcfTab() {
   const { ncfTypes, ncfSequences, ncfAlerts, refreshNCFData } = useSettings();
+  const [saleTypes, setSaleTypes] = useState([]);
   const [ncfDialog, setNcfDialog] = useState({ 
     open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, 
-    range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null 
+    range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null,
+    authorized_sale_types: []
   });
+
+  // Load sale types
+  useEffect(() => {
+    const loadSaleTypes = async () => {
+      try {
+        const res = await axios.get(`${API}/pos/sale-types`, { headers: hdrs() });
+        setSaleTypes(res.data || []);
+      } catch (e) {
+        console.error('Error loading sale types:', e);
+      }
+    };
+    loadSaleTypes();
+  }, []);
 
   const handleSaveNCFSequence = async () => {
     if (!ncfDialog.ncf_type_code || !ncfDialog.expiration_date || !ncfDialog.range_end) {
