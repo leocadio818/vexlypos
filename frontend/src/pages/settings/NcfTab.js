@@ -331,6 +331,41 @@ export default function NcfTab() {
               <input type="text" value={ncfDialog.notes} onChange={e => setNcfDialog({ ...ncfDialog, notes: e.target.value })}
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" placeholder="Notas internas..." />
             </div>
+            
+            {/* Authorized Sale Types */}
+            <div>
+              <label className="text-sm font-medium flex items-center gap-2 mb-2">
+                <Store size={14} className="text-blue-500" />
+                Autorizado para estos Tipos de Venta
+              </label>
+              <p className="text-[10px] text-muted-foreground mb-2">
+                Esta secuencia se usará automáticamente al procesar pagos con estos tipos de venta
+              </p>
+              <div className="space-y-2 bg-background rounded-lg p-3 border border-border max-h-40 overflow-y-auto">
+                {saleTypes.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No hay tipos de venta configurados</p>
+                ) : (
+                  saleTypes.map(st => (
+                    <div 
+                      key={st.id} 
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                      onClick={() => toggleSaleType(st.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={ncfDialog.authorized_sale_types?.includes(st.id)}
+                          onCheckedChange={() => toggleSaleType(st.id)}
+                        />
+                        <span className="text-sm font-medium">{st.name}</span>
+                      </div>
+                      {st.code && (
+                        <Badge variant="outline" className="text-[8px]">{st.code}</Badge>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setNcfDialog({ ...ncfDialog, open: false })}>Cancelar</Button>
