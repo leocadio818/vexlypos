@@ -180,9 +180,10 @@ Componente `ThermalTicket.js` con:
 - [x] **Motor de Cálculo Fiscal Inteligente** - Cruza impuestos Tipo de Venta ∩ Producto
 - [x] **Vínculo Venta-NCF** - Selector de NCF por defecto en Tipos de Venta
 - [x] **Toggle Para Llevar / Local / Delivery** - Recalcula impuestos automáticamente
+- [x] **Sistema 100% Dinámico** - 6 tipos de venta configurables, sin hardcoding, refresco automático
 
 ### P0 - Pendiente
-- [ ] Asignación de impuestos específicos a productos (UI en ProductConfig)
+- [ ] Asignación de impuestos específicos a productos (UI en ProductConfig con checkboxes)
 - [ ] Seguridad Fiscal: Bloquear NCF en facturas $0.00
 - [ ] Flujo de Nota de Crédito B04 (reversión de factura)
 
