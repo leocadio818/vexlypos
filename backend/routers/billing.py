@@ -294,6 +294,13 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     propina = round(bill["subtotal"] * (input.tip_percentage / 100), 2) + input.additional_tip
     itbis = bill.get("itbis", 0)
     total = round(bill["subtotal"] + itbis + propina, 2)
+    
+    # DGII Fiscal Security: Block zero-value invoices
+    if total <= 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="No se puede procesar un pago con valor $0.00. La DGII no permite asignar NCF a facturas sin valor."
+        )
 
     # Get payment method details
     payment_method_doc = await db.payment_methods.find_one({"id": input.payment_method_id}, {"_id": 0})
