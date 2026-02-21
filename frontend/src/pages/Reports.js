@@ -64,6 +64,7 @@ const REPORT_CATEGORIES = [
     reports: [
       { id: 'taxes', name: 'Impuestos (ITBIS y Propina)', description: 'Recaudación fiscal para declaraciones' },
       { id: 'by-supplier', name: 'Gastos por Proveedor', description: 'Desglose para reportes 606/607' },
+      { id: 'bill-history', name: 'Historial de Facturas', description: 'Facturas pagadas y notas de crédito (B04)', link: '/reports/facturas' },
     ]
   },
   {
