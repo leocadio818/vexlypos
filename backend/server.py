@@ -59,6 +59,7 @@ credit_notes_set_db(db)
 credit_notes_init_supabase()  # Initialize Supabase for Credit Notes
 kitchen_set_db(db)
 taxes_set_db(db)
+taxes_init_supabase()  # Initialize Supabase for tax calculations
 customers_set_db(db)
 config_set_db(db)
 
