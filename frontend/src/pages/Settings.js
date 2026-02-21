@@ -3597,7 +3597,7 @@ export default function Settings() {
                       className={`flex items-center justify-between p-2 rounded-lg border transition-all ${
                         isApplied 
                           ? 'bg-green-500/10 border-green-500/50' 
-                          : 'bg-red-500/5 border-red-500/30'
+                          : 'bg-muted/30 border-border'
                       }`}
                       data-testid={`saletype-tax-${tax.id}`}
                     >
@@ -3608,15 +3608,15 @@ export default function Settings() {
                           data-testid={`saletype-tax-switch-${tax.id}`}
                         />
                         <div>
-                          <span className="text-sm font-medium">{tax.description}</span>
+                          <span className={`text-sm font-medium ${!isApplied ? 'text-muted-foreground' : ''}`}>{tax.description}</span>
                           <span className="text-[10px] text-muted-foreground ml-2">{tax.rate}%</span>
                         </div>
                       </div>
                       <Badge 
                         variant="outline" 
-                        className={`text-[9px] ${isApplied ? 'border-green-500/50 text-green-500' : 'border-red-500/50 text-red-500'}`}
+                        className={`text-[9px] ${isApplied ? 'border-green-500/50 text-green-500 bg-green-500/10' : 'border-border text-muted-foreground'}`}
                       >
-                        {isApplied ? 'Aplica' : 'Exento'}
+                        {isApplied ? 'Aplica' : 'No Aplica'}
                       </Badge>
                     </div>
                   );
