@@ -391,6 +391,44 @@ export default function InventarioTab() {
                 {printChannels.map(ch => <option key={ch.id} value={ch.code || ch.id}>{ch.name}</option>)}
               </select>
             </div>
+            
+            {/* Tax Configuration */}
+            <div>
+              <label className="text-sm font-medium flex items-center gap-2 mb-2">
+                <Receipt size={14} className="text-primary" />
+                Impuestos Aplicables
+              </label>
+              <p className="text-[10px] text-muted-foreground mb-2">
+                Los productos de esta categoría heredarán estos impuestos (si no tienen configuración propia)
+              </p>
+              <div className="space-y-2 bg-background rounded-lg p-3 border border-border">
+                {taxConfigs.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No hay impuestos configurados</p>
+                ) : (
+                  taxConfigs.map(tax => (
+                    <div 
+                      key={tax.id} 
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                      onClick={() => toggleCategoryTax(tax.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={categoryDialog.tax_ids?.includes(tax.id)}
+                          onCheckedChange={() => toggleCategoryTax(tax.id)}
+                        />
+                        <div>
+                          <span className="text-sm font-medium">{tax.name}</span>
+                          <span className="text-[10px] text-muted-foreground ml-2">({tax.rate}%)</span>
+                        </div>
+                      </div>
+                      {tax.is_dine_in_only && (
+                        <Badge variant="outline" className="text-[8px]">Solo local</Badge>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCategoryDialog({ ...categoryDialog, open: false })}>Cancelar</Button>
