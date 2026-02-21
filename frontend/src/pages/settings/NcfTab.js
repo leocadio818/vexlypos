@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { ncfAPI } from '@/lib/api';
-import { FileText, Plus, Trash2, Pencil, RefreshCw, AlertTriangle, AlertCircle, Calendar, ListChecks, Store } from 'lucide-react';
+import { FileText, Plus, Trash2, Pencil, RefreshCw, AlertTriangle, AlertCircle, Calendar, ListChecks, Store, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -19,7 +19,7 @@ export default function NcfTab() {
   const [ncfDialog, setNcfDialog] = useState({ 
     open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, 
     range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null,
-    authorized_sale_types: []
+    authorized_sale_types: [], alert_threshold: '', alert_interval: ''
   });
 
   // Load sale types
@@ -50,7 +50,9 @@ export default function NcfTab() {
         range_end: parseInt(ncfDialog.range_end),
         expiration_date: ncfDialog.expiration_date,
         notes: ncfDialog.notes || null,
-        authorized_sale_types: ncfDialog.authorized_sale_types || []
+        authorized_sale_types: ncfDialog.authorized_sale_types || [],
+        alert_threshold: ncfDialog.alert_threshold ? parseInt(ncfDialog.alert_threshold) : null,
+        alert_interval: ncfDialog.alert_interval ? parseInt(ncfDialog.alert_interval) : null
       };
       
       if (ncfDialog.editId) {
@@ -59,14 +61,16 @@ export default function NcfTab() {
           range_end: data.range_end,
           expiration_date: data.expiration_date,
           notes: data.notes,
-          authorized_sale_types: data.authorized_sale_types
+          authorized_sale_types: data.authorized_sale_types,
+          alert_threshold: data.alert_threshold,
+          alert_interval: data.alert_interval
         });
         toast.success('Secuencia NCF actualizada');
       } else {
         await ncfAPI.createSequence(data);
         toast.success('Secuencia NCF creada');
       }
-      setNcfDialog({ open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [] });
+      setNcfDialog({ open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' });
       refreshNCFData();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error al guardar secuencia');
@@ -112,7 +116,7 @@ export default function NcfTab() {
           </Button>
           <Button 
             size="sm" 
-            onClick={() => setNcfDialog({ open: true, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null })}
+            onClick={() => setNcfDialog({ open: true, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' })}
             className="bg-blue-600 hover:bg-blue-700"
             data-testid="add-ncf-btn"
           >
@@ -148,7 +152,7 @@ export default function NcfTab() {
           <h3 className="font-oswald font-bold mb-2">No hay secuencias NCF configuradas</h3>
           <p className="text-sm text-muted-foreground mb-4">Crea una secuencia para empezar a emitir comprobantes fiscales</p>
           <Button 
-            onClick={() => setNcfDialog({ open: true, ncf_type_code: 'B02', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 500, expiration_date: '', notes: '', editId: null })}
+            onClick={() => setNcfDialog({ open: true, ncf_type_code: 'B02', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 500, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' })}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Plus size={14} className="mr-1" /> Crear Secuencia B02
@@ -200,7 +204,9 @@ export default function NcfTab() {
                       expiration_date: seq.expiration_date,
                       notes: seq.notes || '',
                       editId: seq.id,
-                      authorized_sale_types: seq.authorized_sale_types || []
+                      authorized_sale_types: seq.authorized_sale_types || [],
+                      alert_threshold: seq.alert_threshold || '',
+                      alert_interval: seq.alert_interval || ''
                     })}
                   >
                     <Pencil size={14} />
