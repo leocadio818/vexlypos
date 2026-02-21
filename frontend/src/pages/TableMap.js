@@ -299,61 +299,6 @@ export default function TableMap() {
         </div>
       </div>
 
-      {/* NCF Alerts Banner */}
-      {showNcfAlert && (ncfAlerts.has_critical || ncfAlerts.has_warnings) && (
-        <div 
-          className={`mx-3 sm:mx-4 mt-2 sm:mt-3 rounded-xl border backdrop-blur-xl cursor-pointer transition-all hover:scale-[1.01] ${
-            ncfAlerts.has_critical 
-              ? 'bg-red-500/20 border-red-500/50' 
-              : 'bg-yellow-500/20 border-yellow-500/50'
-          }`}
-          onClick={() => navigate('/settings?tab=ncf')}
-          data-testid="ncf-alerts-banner"
-        >
-          <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center ${
-                ncfAlerts.has_critical ? 'bg-red-500/30' : 'bg-yellow-500/30'
-              }`}>
-                <AlertTriangle size={isMobile ? 16 : 18} className={ncfAlerts.has_critical ? 'text-red-400' : 'text-yellow-400'} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className={`font-oswald font-bold ${isMobile ? 'text-xs' : 'text-sm'} ${ncfAlerts.has_critical ? 'text-red-400' : 'text-yellow-400'}`}>
-                    {ncfAlerts.has_critical ? 'ALERTA CRÍTICA NCF' : 'ADVERTENCIA NCF'}
-                  </span>
-                  <Badge className={`${isMobile ? 'text-[9px] px-1.5' : 'text-[10px] px-2'} ${ncfAlerts.has_critical ? 'bg-red-500/30 text-red-300' : 'bg-yellow-500/30 text-yellow-300'}`}>
-                    <FileText size={10} className="mr-1" />
-                    {(ncfAlerts.alerts?.critical?.length || 0) + (ncfAlerts.alerts?.warning?.length || 0)} alerta{((ncfAlerts.alerts?.critical?.length || 0) + (ncfAlerts.alerts?.warning?.length || 0)) !== 1 ? 's' : ''}
-                  </Badge>
-                </div>
-                <p className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-white/60 mt-0.5`}>
-                  {ncfAlerts.alerts?.critical?.[0]?.message || ncfAlerts.alerts?.warning?.[0]?.message || 'Revisa las secuencias NCF'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`${isMobile ? 'h-7 px-2 text-[10px]' : 'h-8 px-3 text-xs'} ${ncfAlerts.has_critical ? 'text-red-400 hover:text-red-300 hover:bg-red-500/20' : 'text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/20'}`}
-                onClick={(e) => { e.stopPropagation(); navigate('/settings?tab=ncf'); }}
-              >
-                Ver Detalles <ChevronRight size={14} className="ml-1" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`${isMobile ? 'h-6 w-6' : 'h-7 w-7'} rounded-full hover:bg-white/10`}
-                onClick={(e) => { e.stopPropagation(); setShowNcfAlert(false); }}
-              >
-                <span className="text-white/50 hover:text-white text-lg">&times;</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Area Tabs - Glassmorphism */}
       <div className={`flex gap-1 px-3 sm:px-4 pt-2 sm:pt-3 overflow-x-auto scrollbar-hide`} data-testid="area-tabs">
         {areas.map(area => (
