@@ -2,9 +2,13 @@
 Authentication and Users Router
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
+from pydantic import BaseModel
+from typing import List
+from datetime import datetime, timezone
 import hashlib
 import jwt
 import os
+import uuid
 
 from models.database import db
 from models.schemas import LoginInput
