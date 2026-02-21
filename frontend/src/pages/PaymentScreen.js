@@ -194,6 +194,17 @@ export default function PaymentScreen() {
         setSelectedServiceType(fromUrl || matchingBillST || dineIn || stRes[0]);
       }
       
+      // Check tax override permission
+      try {
+        const permRes = await fetch(`${API_BASE}/api/auth/tax-override/check-permission`, { 
+          headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } 
+        });
+        const permData = await permRes.json();
+        setUserHasTaxPermission(permData.has_permission || false);
+      } catch {
+        setUserHasTaxPermission(false);
+      }
+      
       try {
         const configRes = await fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
         const config = await configRes.json();
@@ -202,9 +213,141 @@ export default function PaymentScreen() {
     } catch {
       toast.error('Error cargando datos');
     }
-  }, [billId, API_BASE]);
+  }, [billId, API_BASE, urlServiceType]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Handle tax override button click
+  const handleTaxOverrideClick = () => {
+    if (userHasTaxPermission) {
+      // User has permission, go directly to adjust step
+      setTaxOverrideDialog({ open: true, step: 'adjust' });
+      setTaxOverrideAuthorized({ authorized_by: user.name, authorized_by_id: user.user_id });
+    } else {
+      // Need PIN authorization
+      setTaxOverrideDialog({ open: true, step: 'pin' });
+      setTaxOverridePin('');
+    }
+  };
+
+  // Verify admin PIN for tax override
+  const verifyTaxOverridePin = async () => {
+    if (!taxOverridePin || taxOverridePin.length < 4) {
+      toast.error('Ingrese un PIN válido');
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/tax-override/authorize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('pos_token')}`
+        },
+        body: JSON.stringify({
+          pin: taxOverridePin,
+          bill_id: billId,
+          taxes_removed: [],
+          reference_document: 'pending'
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setTaxOverrideAuthorized(data);
+        setTaxOverrideDialog({ open: true, step: 'adjust' });
+        setTaxOverridePin('');
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'PIN inválido o sin permiso');
+      }
+    } catch {
+      toast.error('Error verificando PIN');
+    }
+  };
+
+  // Toggle individual tax
+  const toggleTaxOverride = (taxCode) => {
+    setTaxOverrides(prev => ({
+      ...prev,
+      [taxCode]: prev[taxCode] === undefined ? false : !prev[taxCode]
+    }));
+  };
+
+  // Apply tax overrides and recalculate
+  const applyTaxOverrides = async () => {
+    const removedTaxes = Object.entries(taxOverrides)
+      .filter(([_, enabled]) => enabled === false)
+      .map(([code]) => code);
+    
+    if (removedTaxes.length > 0 && (!taxOverrideReference || taxOverrideReference.trim().length < 3)) {
+      toast.error('Referencia/Documento es obligatorio al quitar impuestos');
+      return;
+    }
+    
+    // Log the tax override with reference
+    if (removedTaxes.length > 0) {
+      try {
+        await fetch(`${API_BASE}/api/auth/tax-override/authorize`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('pos_token')}`
+          },
+          body: JSON.stringify({
+            pin: taxOverrideAuthorized?.authorized_by_id ? '00000' : taxOverridePin, // Dummy for already authorized
+            bill_id: billId,
+            taxes_removed: removedTaxes,
+            reference_document: taxOverrideReference.trim()
+          })
+        });
+      } catch {
+        // Log error but continue
+      }
+    }
+    
+    // Recalculate totals with overrides
+    const subtotal = bill?.subtotal || adjustedBill?.subtotal || 0;
+    let newItbis = 0;
+    let newPropina = 0;
+    
+    taxConfig.forEach(tax => {
+      if (!tax.is_active && !tax.active) return;
+      const taxCode = tax.code || tax.name?.toUpperCase();
+      const isEnabled = taxOverrides[taxCode] !== false;
+      
+      if (!isEnabled) return; // Tax is disabled by override
+      
+      // Check if exempted by sale type
+      const exemptions = selectedServiceType?.tax_exemptions || [];
+      if (exemptions.includes(tax.id)) return;
+      
+      const amount = subtotal * (tax.rate / 100);
+      if (tax.code === 'PROPINA' || tax.is_tip || tax.is_dine_in_only) {
+        newPropina += amount;
+      } else if (tax.code?.includes('ITBIS')) {
+        newItbis += amount;
+      }
+    });
+    
+    const newTotal = Math.round((subtotal + newItbis + newPropina) * 100) / 100;
+    
+    setAdjustedBill(prev => ({
+      ...prev,
+      itbis: Math.round(newItbis * 100) / 100,
+      propina_legal: Math.round(newPropina * 100) / 100,
+      total: newTotal,
+      tax_override_applied: removedTaxes.length > 0,
+      tax_override_reference: taxOverrideReference.trim(),
+      tax_override_by: taxOverrideAuthorized?.authorized_by
+    }));
+    
+    setTaxOverrideDialog({ open: false, step: 'pin' });
+    
+    if (removedTaxes.length > 0) {
+      toast.success(`Impuestos ajustados por ${taxOverrideAuthorized?.authorized_by || 'Admin'}`);
+    }
+  };
 
   // Recalculate taxes when service type changes using Intelligent Tax Engine
   useEffect(() => {
