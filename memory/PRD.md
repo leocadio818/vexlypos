@@ -116,6 +116,60 @@ Sistema POS de propósito general para República Dominicana con soporte complet
   - Cuando está desmarcado, muestra toggles individuales para cada impuesto (ITBIS, Propina, etc.)
   - Cada impuesto puede configurarse como "Aplica" o "Exento" a nivel de producto
 
+### 2025-02-21: Reorganización de Pestañas de Configuración e Inventario
+- ✅ **Renombrado "Inventario" → "Configuración Productos"**: La pestaña ahora tiene un nombre más descriptivo
+- ✅ **Nueva pestaña "Inventario Maestro"**: Añadida en el menú de Configuración principal
+  - Navega directamente a la pantalla de Inventario Maestro sin pasos intermedios
+  - Aparece al lado de "Configuración Productos"
+- ✅ **Eliminadas sub-pestañas de "Configuración Productos"**:
+  - Eliminada "Compras" (ya existe en Inventario Maestro)
+  - Eliminada "Stock" (ya existe en Inventario Maestro)  
+  - Eliminada "Config" (movida a Inventario Maestro)
+- ✅ **"Configuración Productos" simplificada**: Ahora solo contiene:
+  - Categorías
+  - Productos
+  - Modificadores
+- ✅ **Pestaña "Config" movida a Inventario Maestro**: 
+  - Nueva pestaña en `/inventory-manager` con opciones:
+    - Permitir venta sin stock
+    - Deducir automáticamente al pagar
+    - Mostrar alertas de stock bajo
+  - Componente: `/app/frontend/src/pages/inventory/components/ConfigTab.jsx`
+
+#### ESTRUCTURA ACTUAL DE PESTAÑAS (MEMORIZADA)
+```
+CONFIGURACIÓN (Settings):
+├── Usuarios
+├── Mesas
+├── Ventas
+├── Configuración Productos  ← (antes "Inventario")
+│   ├── Categorías
+│   ├── Productos
+│   └── Modificadores
+├── Inventario Maestro ← NUEVO (navega a /inventory-manager)
+├── Impresión
+├── Estación
+├── Reportes
+├── Clientes
+├── Impuestos
+├── NCF
+├── Paleta
+└── Sistema
+
+INVENTARIO MAESTRO (/inventory-manager):
+├── Insumos
+├── Producción
+├── Almacenes
+├── Proveedores
+├── Recetas
+├── Stock
+├── Compras
+├── Valorización
+├── Auditoría
+├── Config ← NUEVO (antes estaba en Configuración Productos)
+└── Asistente
+```
+
 #### LÓGICA DE ALERTAS NCF (MEMORIZADA)
 ```
 FLUJO DE PAGO CON ALERTAS:
