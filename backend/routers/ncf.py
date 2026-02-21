@@ -170,6 +170,14 @@ async def get_ncf_sequences(
                     seq["alert_level"] = "ok"
                     seq["alert_message"] = None
         
+        # Cargar authorized_sale_types desde MongoDB
+        seq_ids = [s["id"] for s in sequences]
+        mongo_configs = await db.ncf_sequence_config.find({"sequence_id": {"$in": seq_ids}}, {"_id": 0}).to_list(100)
+        config_map = {c["sequence_id"]: c.get("authorized_sale_types", []) for c in mongo_configs}
+        
+        for seq in sequences:
+            seq["authorized_sale_types"] = config_map.get(seq["id"], [])
+        
         return sequences
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
