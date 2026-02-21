@@ -423,6 +423,8 @@ const exportToExcel = async (reportId, data, dateRange) => {
 };
 
 export default function Reports() {
+  const navigate = useNavigate();
+  
   // State
   const [dateRange, setDateRange] = useState({
     from: new Date().toISOString().slice(0, 10),
