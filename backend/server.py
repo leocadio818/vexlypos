@@ -36,7 +36,7 @@ from routers.billing import router as billing_router, set_db as billing_set_db, 
 from routers.kitchen import router as kitchen_router, set_db as kitchen_set_db, notify_kds
 from routers.customers import router as customers_router, set_db as customers_set_db
 from routers.config import router as config_router, set_db as config_set_db
-from routers.ncf import router as ncf_router, init_supabase as ncf_init_supabase
+from routers.ncf import router as ncf_router, init_supabase as ncf_init_supabase, set_db as ncf_set_db
 from routers.credit_notes import router as credit_notes_router, set_db as credit_notes_set_db, init_supabase as credit_notes_init_supabase
 
 ROOT_DIR = Path(__file__).parent
