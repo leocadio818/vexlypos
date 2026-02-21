@@ -234,17 +234,36 @@ export default function OrderScreen() {
     loadStockData();
   }, []);
 
-  // Re-sync tax config every 30s so changes reflect immediately
+  // Re-sync tax config AND sale types every 30s so admin changes reflect immediately
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const r = await fetch(`${API_BASE}/api/tax-config`);
-        const taxes = await r.json();
+        // Refresh taxes
+        const taxRes = await fetch(`${API_BASE}/api/tax-config`);
+        const taxes = await taxRes.json();
         setTaxConfig(taxes.filter(t => t.active && t.rate > 0));
+        
+        // Refresh sale types - 100% dynamic
+        const stRes = await fetch(`${API_BASE}/api/sale-types`);
+        const stData = await stRes.json();
+        const sortedTypes = stData.filter(st => st.active !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
+        setSaleTypes(sortedTypes);
+        
+        // Update currentSaleType if it still exists, otherwise default to first
+        if (currentSaleType) {
+          const stillExists = sortedTypes.find(st => st.id === currentSaleType.id);
+          if (stillExists) {
+            // Update with any changes from admin
+            setCurrentSaleType(stillExists);
+          } else {
+            // Sale type was deleted, fallback to first
+            setCurrentSaleType(sortedTypes[0]);
+          }
+        }
       } catch {}
     }, 30000);
     return () => clearInterval(interval);
-  }, [API_BASE]);
+  }, [API_BASE, currentSaleType]);
 
   // Sync serviceType with currentSaleType
   useEffect(() => {
