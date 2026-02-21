@@ -1047,11 +1047,10 @@ export default function Settings() {
             )}
           </TabsContent>
 
-          {/* VENTAS (includes Pagos, Impuestos, Anulaciones, Tipos de Venta) */}
+          {/* VENTAS (includes Pagos, Anulaciones, Tipos de Venta) */}
           <TabsContent value="ventas">
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               <SubTabButton active={ventasSubTab === 'pagos'} onClick={() => setVentasSubTab('pagos')} icon={CreditCard} label="Formas de Pago" />
-              <SubTabButton active={ventasSubTab === 'impuestos'} onClick={() => setVentasSubTab('impuestos')} icon={Percent} label="Impuestos" />
               <SubTabButton active={ventasSubTab === 'anulaciones'} onClick={() => setVentasSubTab('anulaciones')} icon={AlertTriangle} label="Anulaciones" />
               <SubTabButton active={ventasSubTab === 'tipos'} onClick={() => setVentasSubTab('tipos')} icon={ShoppingBag} label="Tipos de Venta" />
             </div>
