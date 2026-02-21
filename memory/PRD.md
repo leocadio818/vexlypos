@@ -178,9 +178,6 @@ Componente `ThermalTicket.js` con:
 - [ ] Flujo de Nota de Crédito B04 (reversión de factura)
 
 ### P1 - Alta Prioridad
-- [ ] UI para configurar impuestos en Settings
-- [ ] UI para asignar impuestos a productos/categorías
-- [ ] Checkbox "Para Llevar" en el carrito de compras
 - [ ] Audit Trail Security (solo Admin ve PINs)
 - [ ] Employee Time Clock (entrada/salida)
 - [ ] Generación reportes DGII (607, 608)
