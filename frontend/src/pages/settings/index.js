@@ -53,7 +53,10 @@ function SettingsContent() {
               <CreditCard size={14} className="mr-1" /> Ventas
             </TabsTrigger>
             <TabsTrigger value="inventario" className="flex items-center gap-1 px-3 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs" data-testid="tab-inventario">
-              <Package size={14} className="mr-1" /> Inventario
+              <Package size={14} className="mr-1" /> Configuración Productos
+            </TabsTrigger>
+            <TabsTrigger value="inventario-maestro" className="flex items-center gap-1 px-3 py-2 rounded-lg data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs" data-testid="tab-inventario-maestro">
+              <Warehouse size={14} className="mr-1" /> Inventario Maestro
             </TabsTrigger>
             <TabsTrigger value="channels" className="flex items-center gap-1 px-3 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs" data-testid="tab-channels">
               <Printer size={14} className="mr-1" /> Impresion
