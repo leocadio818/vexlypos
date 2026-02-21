@@ -64,6 +64,15 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **Dashboard Alertas**: Banner de alertas NCF en pantalla principal (Mapa de Mesas)
 - ✅ **Validaciones**: < 50 = advertencia, < 10 = crítico, vencido = crítico
 
+### 2025-02-20: Motor de Cálculo Fiscal Inteligente
+- ✅ **Vínculo Venta-NCF**: Campo `default_ncf_type_id` en Tipos de Venta
+- ✅ **Selector NCF en Settings**: Dropdown para asignar NCF por defecto (B01-B17) a cada Tipo de Venta
+- ✅ **Badge NCF**: Etiqueta visual (B02 Factura de Consumo) en lista de Tipos de Venta
+- ✅ **Toggle Tipo de Servicio**: Local / Llevar / Delivery en OrderScreen
+- ✅ **Motor de Cálculo Inteligente**: Cruza impuestos del Tipo de Venta ∩ impuestos del Producto
+- ✅ **Propina Condicional**: Solo aplica si is_dine_in_only=false Y producto no tiene exención
+- ✅ **Mensaje informativo**: "*Propina omitida (solo aplica en local)" cuando se selecciona Para Llevar
+
 ## Key Features
 
 ### Ticket Térmico 80mm
