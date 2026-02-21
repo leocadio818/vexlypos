@@ -77,9 +77,11 @@ export default function Customers() {
           <h1 className="font-oswald text-xl font-bold tracking-wide">CLIENTES & FIDELIDAD</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setConfigDialog(true)} className="text-xs" data-testid="loyalty-config-btn">
-            <Star size={14} className="mr-1" /> Config Puntos
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={() => setConfigDialog(true)} className="text-xs" data-testid="loyalty-config-btn">
+              <Star size={14} className="mr-1" /> Config Puntos
+            </Button>
+          )}
           <Button size="sm" onClick={() => setAddDialog({ open: true, name: '', phone: '', email: '' })}
             className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-customer-btn">
             <Plus size={14} className="mr-1" /> Nuevo Cliente
