@@ -42,7 +42,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://pos-fiscal-dr.preview.emergentagent.com"
+SERVER_URL = "https://pos-fiscal-dr-1.preview.emergentagent.com"
 
 # Nombre de la impresora en Windows (como aparece en "Dispositivos e impresoras")
 DEFAULT_PRINTER = "Caja"

@@ -1,58 +1,60 @@
 <analysis>**original_problem_statement:**
-The user initiated a project to analyze the Dolibarr ERP system to extract architectural patterns for a new POS application. The project has since moved into the implementation phase. The core architecture is a hybrid database system: new features like Point of Sale (POS), Cash Management, and Fiscal Compliance are built on Supabase (PostgreSQL), while legacy features remain on MongoDB.
+The user is building a Point of Sale (POS) application for the Dominican Republic, requiring compliance with DGII fiscal regulations. The project started with a hybrid database architecture (MongoDB + Supabase/PostgreSQL).
 
-**PRODUCT REQUIREMENTS (From PRD):**
-1.  **Hybrid Database:** Connect FastAPI to a new Supabase instance.
-2.  **POS Session Management:** Implement Open/Close Cash Register with audit trails.
-3.  **Sales Integration:** Update POS session and cash movements on sale completion.
-4.  **Cash Count (Arqueo de Caja):** UI for cash denomination counting.
-5.  **Dynamic Tax Engine:** Implement a flexible tax system based on product and service type (Dine-In vs. Take Away).
-6.  **Thermal Printer Ticket:** 80mm ticket compliant with Dominican Republic's DGII standards.
-7.  **Tax Management UI:** Create a UI in Settings to manage tax rules and assign them to products.
-8.  **NCF (Fiscal Sequence) Management:** CRUD module for DGII fiscal sequences with low-count alerts and expiration validation.
-9.  **Fiscal Security & Reversal Flow:**
-    *   Block billing for /bin/bash.00 orders.
-    *   Create a flow to reverse a completed invoice by generating a credit note (B04).
-10. **Ticket Personalization:** Allow business details (name, RNC, etc.) to be configured from the Settings panel.
+Over the course of development, several key features have been requested and implemented:
+1.  **Hybrid Database:** FastAPI connected to both Supabase and MongoDB.
+2.  **Dynamic Intelligent Tax Engine:** A hierarchical tax system where taxes are calculated per line item. The final tax is determined by an intersection of rules at the Sale Type, Category, and Product levels. It correctly handles partial application of taxes like Propina Legal (Legal Tip) and tax annulment for specific sale types (e.g., Gubernamental).
+3.  **NCF (Fiscal Sequence) Management:**
+    *   CRUD module for NCF sequences.
+    *   Logical linking of NCF sequences to one or more Sale Types.
+    *   Automatic decrementing of the correct NCF sequence upon sale completion, based on the selected Sale Type.
+    *   Dynamic, configurable NCF depletion warnings.
+4.  **Fiscal Security & Reversal Flow:**
+    *   Blocking of zero-value orders.
+    *   A complete invoice reversal flow, allowing authorized users to generate a B04 credit note.
+5.  **Granular Tax Adjustment (Tax Override):**
+    *   A discreet Impuesto button on the checkout screen.
+    *   Functionality is restricted by user permissions (), requiring an Admin PIN for unauthorized users.
+    *   A modal allows for the manual, individual toggling of each applied tax (e.g., ITBIS, Propina).
+    *   Disabling any tax requires a mandatory Reference/Document entry.
+    *   All override actions are logged for auditing.
+6.  **UI/UX Requirements:**
+    *   Dynamic creation/management of Sale Types.
+    *   UI to manage tax rules and product/category tax settings.
+    *   Personalized 80mm thermal printer tickets.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-The application is a functional POS system with a hybrid database (MongoDB/Supabase). It features POS session management, sales processing, and cash-out functionality. A fiscally compliant 80mm thermal printer ticket is integrated into the payment flow.
+The application is a sophisticated POS system with a robust, dynamic fiscal engine. The core functionalities requested by the user, including the Intelligent Tax Engine, NCF linking, invoice reversal (B04), and granular tax override, have been implemented and tested. The system correctly handles complex tax scenarios and ensures fiscal compliance.
 
-Key features implemented in the last session include:
--   A Settings section to dynamically configure the business details (name, RNC, address) that appear on the thermal ticket.
--   A complete UI for managing tax rules () in a new Impuestos (Taxes) tab within Settings.
--   A complete UI for managing NCF fiscal sequences () in a new NCF tab within Settings, including progress bars indicating usage.
--   A live preview of the thermal ticket within the Settings page that updates in real-time as business details are edited.
--   A persistent alert banner on the main dashboard (Tables Map) that warns users when NCF sequences are running low or nearing expiration.
+Two critical bugs reported by the user regarding NCF configuration saving and automatic decrementing have been resolved. The fix involved adopting a hybrid data storage pattern where flexible configuration data () is stored in MongoDB, while core relational data remains in Supabase. The agent has just begun refactoring the NCF warning system as per the user's latest request.
 
 **Last working item**:
--   **Last item agent was working:** Implementing the Para Llevar / Comer Aquí (Take Away / Dine-In) toggle on the . The goal is to allow taxes to be recalculated automatically based on the selected service type, as some taxes (like the 10% legal tip) only apply to dine-in orders.
+-   **Last item agent was working:** Refactoring the NCF (Número de Comprobante Fiscal) warning system. The goal is to replace a static warning banner with a dynamic, configurable modal that appears at checkout based on rules set for each NCF sequence.
 -   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
--   **Which testing method agent to use?**: frontend testing agent. The agent should verify that adding items to the cart, toggling the service type, and observing the tax and total recalculation works correctly before proceeding to payment.
+-   **Which testing method agent to use?**: manual testing by screenshot tool. The agent needs to configure an NCF sequence with the new alert settings, perform sales to trigger the alert threshold, and capture a screenshot of the modal appearing at checkout to verify the implementation.
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Finalize and Verify Service Type Toggle (P0)**
-    -   **Description:** The UI toggle and tax calculation logic have been implemented in , but the end-to-end flow was not verified. The agent added products to the cart but then navigated away before confirming the tax recalculation.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend
+-   **Issue 1: NCF Warning System Refactor (P0 - HIGHEST PRIORITY)**
+    -   This is the current task. The static banner has been removed, but the core logic for the new dynamic alerts is yet to be implemented.
 
 **In progress Task List**:
--   **Task 1: Implement Take Away / Dine-In Toggle (P0)**
-    -   **Where to resume:** In . The next step is to perform a manual test: add items to an order, confirm the toggle appears, switch between Comer Aquí and Para Llevar, and verify that the Propina Legal 10% tax appears/disappears accordingly, updating the total amount.
-    -   **What will be achieved with this?** This completes a core requirement of the dynamic tax engine.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Frontend
-    -   **Blocked on something:** Nothing.
+-   **Task 1: Complete the NCF Warning System Refactor (P0)**
+    -   **Where to resume**:
+        1.  **Backend:** Modify the  router () and the corresponding database (Supabase or MongoDB as appropriate) to include two new fields for NCF sequences:  and . Update the create/update endpoints to handle these new fields.
+        2.  **Frontend:** Update the NCF editing modal in  to include input fields for 'Inicio de Alerta' () and 'Intervalo de Alerta' ().
+        3.  **Frontend:** Implement the core notification logic in . After a successful payment (within the  function), check the remaining count of the used NCF sequence against its  and  to decide whether to trigger a notification modal.
+    -   **What will be achieved with this?** A more user-friendly and configurable NCF alert system that avoids persistent, intrusive banners and notifies the user at the precise moment it's relevant (upon sale completion).
+    -   **Status**: IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?**: Both
+    -   **Blocked on something**: No
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P0: Fiscal Security & Reversal Flow:** Implement the block for zero-value orders and the invoice reversal process (generating a B04 credit note).
-    *   **P0: Assign Taxes to Products:** The Tax Management UI is done, but the UI to link specific taxes to individual products in the catalog is still needed.
+    *   **P0: Assign Taxes to Products UI:** The Intelligent Tax Engine relies on tax exemptions at the product level, but the UI to manage these exemptions for each product in the catalog needs to be implemented. Currently, exemptions are only managed at the Category level.
     *   **P1: DGII Report Generation:** Create functionality for Dominican tax reports (607, 608).
     *   **P1: Implement Audit Trail Security:** Ensure only 'Admin' role can view user PINs in reports.
     *   **P1: Employee Time Clock:** Implement a feature for employees to clock in and out.
@@ -64,19 +66,22 @@ Key features implemented in the last session include:
     *   **P3: Duplicate Product Feature.**
 
 **Completed work in this session**
--   **Configurable Business Details (DONE):**
-    -   Added a new form section to  to manage ticket details.
-    -   Modified  to fetch and display this dynamic data.
--   **Tax Management UI (DONE):**
-    -   Created a new Impuestos tab in  with a full CRUD interface for the  Supabase table.
--   **NCF Management Module (DONE):**
-    -   Created  with CRUD endpoints for .
-    -   Created  to communicate with the backend.
-    -   Built a full CRUD interface in a new NCF tab in .
--   **Live Ticket Preview (DONE):**
-    -   Implemented a real-time preview of the thermal ticket within  that updates as the user types in the business details form.
--   **NCF Alert Dashboard (DONE):**
-    -   Created a banner component in  that displays critical and warning alerts for NCF sequences.
+-   **Settings Page Refactor Verification (DONE):** Confirmed via a full regression test () that the major refactoring of the Settings page was successful.
+-   **P0: Fiscal Security & Reversal Flow (B04) (DONE):**
+    -   Implemented backend logic to block zero-value orders and generate B04 credit notes.
+    -   Created a new  page to view invoice history and initiate reversals.
+-   **Intelligent Tax Engine (DONE):**
+    -   Implemented a backend endpoint () for hierarchical tax calculation (Product > Category > Sale Type).
+    -   Refactored  to use the new engine for dynamic, real-time total updates.
+-   **NCF Sequence Logic (DONE):**
+    -   Enabled linking NCF sequences to specific Sale Types.
+    -   Implemented automatic NCF decrementing upon successful payment.
+-   **Tax Override Feature (DONE):**
+    -   Added a permission-controlled Impuesto button on the checkout screen for granular tax adjustments.
+    -   Implemented a full UI/UX flow with PIN validation, a mandatory reference field, and audit logging.
+-   **Critical Bug Fixes (DONE):**
+    -   **NCF Save Error:** Fixed an issue where saving an NCF sequence with Sale Types failed. The solution involved storing the  in a separate MongoDB collection ().
+    -   **NCF Decrement Error:** Fixed a bug where the NCF sequence was not being decremented on sale. The logic was updated to correctly query both Supabase and MongoDB to find the appropriate sequence.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Print Agent is a script, not an executable (.exe)**
@@ -92,71 +97,82 @@ Key features implemented in the last session include:
 
 
 **Key Technical Concepts**
--   **Hybrid Database Architecture:** Using MongoDB for general app config and Supabase (PostgreSQL) for all POS, tax, and fiscal data.
--   **Dynamic UI Components:** Extensive use of React state and effects to create interactive UIs, such as the live ticket preview and the NCF alert banner.
--   **Component-Based Design:** New features like the NCF alert banner were built as separate components for reusability.
--   **Supabase API Interaction:** The agent successfully implemented full CRUD functionality against Supabase tables from the FastAPI backend.
+-   **Hybrid Data Storage for Configuration:** Using Supabase (PostgreSQL) for core, structured data and MongoDB for flexible, evolving configuration fields (e.g., ). This pattern was adopted to resolve a schema mismatch without requiring a database migration.
+-   **Dynamic Tax Engine:** The core logic intersects tax rules from Sale Type, Category, and Product to determine final taxes per line item.
+-   **Role-Based Access Control (RBAC):** User permissions (e.g., ) are checked on the frontend and validated on the backend to control access to sensitive features.
+-   **Component-Based Architecture:** The application heavily uses a React component-based structure, with pages composed of smaller, reusable components.
 
 **key DB schema**
-The agent discovered the actual schema of user-created Supabase tables through iterative debugging. This is critical information as it differs from initial assumptions.
--   ****: 
--   ****: 
--   ****: 
+-   ** (Supabase):** .
+-   ** (Supabase):** .
+-   ** (Supabase):** .
+-   ** (MongoDB):** Contains a  array.
+-   ** (MongoDB):** . This collection links Supabase NCF sequences to sale types.
+-   ** (MongoDB):** Logs tax override events.
 
 **changes in tech stack**
--   None.
+-   A hybrid data storage pattern was formally adopted, with MongoDB now officially storing configuration data linked to the primary Supabase database.
 
 **All files of reference**
 -   **Created:**
-    -   : FastAPI router for NCF sequence management.
-    -   : Frontend API client for NCF endpoints.
+    -   : Handles invoice reversal and B04 generation.
+    -   : Contains the Intelligent Tax Engine logic.
+    -   : Manages the tax adjustment feature.
+    -   : UI for viewing past invoices and initiating reversals.
 -   **Updated:**
-    -   : Became a monolith containing UI for System, Taxes, and NCF. **(>3000 lines)**
-    -   : Added logic for service type toggle and tax recalculation.
-    -   : Added the NCF alert banner.
-    -   : Updated to consume dynamic business configuration.
-    -   : Registered the new NCF router.
+    -   : Significantly refactored to use a hybrid Supabase/MongoDB approach for storing NCF configurations.
+    -   : Registered all new API routers.
+    -   : Heavily modified to integrate the tax engine, tax override feature, and updated NCF logic.
+    -   : Added UI for linking sale types to NCF sequences.
+    -   : Added UI for setting taxes at the category level.
+    -   : Removed the static NCF warning banner.
 
 **Areas that need refactoring**:
--   **:** This file has grown to over 3000 lines and manages the state and UI for at least three distinct domains (System, Taxes, NCF). It urgently needs to be broken down into smaller, self-contained components for each tab to improve maintainability.
--   The print agent remains a Python script. This could be compiled into a self-contained executable for easier distribution.
+-   None at the moment. Major technical debt has been addressed.
 
 **key api endpoints**
--   ****: Get all NCF sequences.
--   ****: Create a new NCF sequence.
--   ****: Update an NCF sequence.
--   ****: Delete an NCF sequence.
--   ****: Get all NCF types.
--   ****: Get NCF sequences that are low on stock or expiring soon.
+-   : Calculates taxes using the hierarchical engine.
+-   : Creates a B04 credit note for an invoice reversal.
+-   : Gets the next available NCF for a given sale type and decrements the sequence.
+-   : Updates an NCF sequence, now storing sale type links in MongoDB.
+-   : Validates an admin PIN for tax adjustments.
+-   : Logs a tax override event for auditing.
 
 **Critical Info for New Agent**
--   **Complete the Service Type Toggle:** Your first priority is to finish and verify the Take Away / Dine-In toggle on the . Add an item to the cart and confirm the taxes recalculate correctly when toggled.
--   **Refactor :** Before adding more features, strongly consider refactoring the massive  file. Create separate components for each tab (, , ) and manage their state within the main  parent or a context.
 -   **User Language:** The user communicates exclusively in **Spanish**. All communication must be in Spanish.
--   **Database Schema:** The correct column names for the Supabase tables (, ) were discovered through trial and error. Refer to the  section, not assumptions. For example,  is used instead of .
+-   **Hybrid DB Pattern:** Be aware of the established pattern of using Supabase for core data and MongoDB for flexible configuration (). When modifying features related to NCFs, you will likely need to touch both  and interact with both databases.
+-   **Next Task:** Your immediate priority is to complete the NCF Warning System refactor. The static banner is gone; now you must implement the new fields and the checkout modal logic.
+-   **User Frustration:** The user has previously expressed frustration about bugs making it to the testing link and wasting their credits. It is critical to test all changes thoroughly before asking the user for verification. For the current task, this means setting up the NCF alerts and confirming the modal appears as expected via screenshots.
 
 **documents and test reports created in this job**
--   : Contains successful test results for the business details configuration feature.
--   : Updated with the completion of the Tax UI and NCF module tasks.
+-   : Updated to reflect completed work on Fiscal Security, Tax Engine, and Tax Override.
+-   : Test report from the Settings page regression test.
+-   : Test report from the Fiscal Security / B04 feature.
+-   : Test report from the Intelligent Tax Engine feature.
 
 **Last 10 User Messages and any pending HUMAN messages**
--   **User:** Approved starting work on the Take Away / Dine-In toggle. (IN PROGRESS)
--   **Agent:** Provided a live preview link and test credentials. (COMPLETED)
--   **User:** Asked for the link to test the application. (COMPLETED)
--   **User:** Approved implementing the live ticket preview and NCF alert dashboard. (COMPLETED)
--   **Agent:** Finished implementing the Tax and NCF management UIs. (COMPLETED)
--   **User:** Confirmed that the database tables for Taxes and NCFs are ready and instructed the agent to proceed with UI implementation. (COMPLETED)
+10. **User:** Requests a refactor of the NCF warning system to be dynamic and modal-based. (Status: **In Progress**)
+9.  **User:** Asks for refinement of the Impuesto button to allow granular, manual control over each tax. (Status: **Completed**)
+8.  **User:** Requests the Tax Adjustment feature with RBAC, PIN auth, and audit logs. (Status: **Completed**)
+7.  **User:** Reports that closing a sale does not decrement the NCF sequence. (Status: **Completed & Fixed**)
+6.  **User:** Reports an error when saving an NCF sequence after assigning sale types and expresses frustration about bugs. (Status: **Completed & Fixed**)
+5.  **User:** Asks for the test link. (Status: **Completed**)
+4.  **Agent:** Asks clarifying questions about the Tax Engine and NCF logic. (Status: Answered)
+3.  **User:** Provides answers to the agent's questions. (Status: Acknowledged)
+2.  **User:** Provides detailed requirements for the Intelligent Tax Engine and NCF linking logic. (Status: **Completed**)
+1.  **Agent:** Finishes the B04 reversal flow and asks for the next task. (Status: Acknowledged)
 
 **Project Health Check:**
 -   **Broken:** None.
 -   **Mocked:** None.
--   **Technical Debt:** The  file is a major concern due to its size and complexity. It poses a risk to future development speed and stability.
+-   **Technical Debt:** Low. The codebase is actively being improved, and recent refactoring and bug fixes have addressed major issues.
 
 **3rd Party Integrations**
--   **Supabase:** Used as the primary database for all new POS, fiscal, and inventory features.
+-   Supabase (PostgreSQL)
+-   MongoDB
 
 **Testing status**
--   **Testing agent used after significant changes**: YES, for the initial Configurable Business Details feature.
+-   **Testing agent used after significant changes**: YES. Used multiple times to verify major features like the Settings refactor, B04 flow, and Tax Engine.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
 -   **Known regressions**: None.
@@ -165,5 +181,4 @@ The agent discovered the actual schema of user-created Supabase tables through i
 -   **PINs:** Admin (), Luis (), Carlos (), María ().
 
 **What agent forgot to execute**
--   The agent did not complete the verification of the Take Away / Dine-In toggle feature after implementing the code.
--   The agent did not proactively refactor the  file after adding two large new feature sets to it, leading to significant technical debt.</analysis>
+-   The agent initially missed that the Supabase schema did not support the new  field, which led to a bug report from the user. However, this was promptly investigated and corrected by adopting the hybrid MongoDB storage pattern.</analysis>
