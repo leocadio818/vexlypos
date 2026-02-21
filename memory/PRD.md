@@ -136,6 +136,28 @@ Sistema POS de propósito general para República Dominicana con soporte complet
     - Mostrar alertas de stock bajo
   - Componente: `/app/frontend/src/pages/inventory/components/ConfigTab.jsx`
 
+### 2025-02-21: Mejoras de Clientes y Anulación
+- ✅ **Botón "Nuevo Cliente" en modal de búsqueda (PaymentScreen)**:
+  - Añadido botón "+ Nuevo" en el título del modal "Buscar Cliente"
+  - Permite crear clientes rápidamente sin salir del flujo de cobro
+  - Formulario con campos: Nombre, Teléfono, Email
+  - Auto-selecciona el cliente recién creado
+  - Si no hay resultados de búsqueda, muestra botón para crear con el texto buscado
+  - Archivo: `/app/frontend/src/pages/PaymentScreen.js`
+
+- ✅ **Botón "Config Puntos" restringido a administradores (Customers.js)**:
+  - Solo visible para roles: `admin`, `gerente`, `propietario`, `manager`, `owner`
+  - Los roles no administrativos (waiter, cashier, kitchen) NO ven el botón
+  - Archivo: `/app/frontend/src/pages/Customers.js`
+
+- ✅ **Eliminado switch redundante "¿Devolver a Inventario?" en anulación**:
+  - Las razones de anulación ya tienen configurado si retornan al inventario (Retorna/Merma)
+  - Eliminado el switch manual que permitía sobrescribir la configuración
+  - El comportamiento de inventario ahora se determina automáticamente por la razón seleccionada:
+    - Razón con badge "Retorna" (verde) → devuelve insumos al inventario
+    - Razón con badge "Merma" (rojo) → no devuelve (es pérdida)
+  - Archivo: `/app/frontend/src/pages/OrderScreen.js`
+
 #### ESTRUCTURA ACTUAL DE PESTAÑAS (MEMORIZADA)
 ```
 CONFIGURACIÓN (Settings):
