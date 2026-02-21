@@ -141,6 +141,9 @@ export default function PaymentScreen() {
   const [ncfDialogOpen, setNcfDialogOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [paidBill, setPaidBill] = useState(null); // Bill after payment for printing
+  
+  // NCF Alert Modal state (dynamic alerts based on configuration)
+  const [ncfAlertModal, setNcfAlertModal] = useState({ open: false, ncfData: null });
 
   // Tax Override (Impuesto) states
   const [taxOverrideDialog, setTaxOverrideDialog] = useState({ open: false, step: 'pin' }); // step: 'pin' | 'adjust'
