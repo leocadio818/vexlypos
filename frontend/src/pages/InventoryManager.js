@@ -393,7 +393,7 @@ export default function InventoryManager() {
               <History size={14} className="mr-1" /> Auditoría
             </TabsTrigger>
             <TabsTrigger value="config" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs">
-              <Package size={14} className="mr-1" /> Config
+              <Cog size={14} className="mr-1" /> Config
             </TabsTrigger>
             <TabsTrigger value="assistant" className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white font-oswald text-xs">
               <TrendingDown size={14} className="mr-1" /> Asistente
