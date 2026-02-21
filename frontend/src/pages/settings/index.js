@@ -19,9 +19,15 @@ import ThemeTab from './ThemeTab';
 
 function SettingsContent() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialTab = searchParams.get('tab') || 'users';
 
   const handleTabChange = (value) => {
+    // Si es "inventario-maestro", navegar a la página de Inventario Maestro
+    if (value === 'inventario-maestro') {
+      navigate('/inventory');
+      return;
+    }
     setSearchParams({ tab: value });
   };
 
