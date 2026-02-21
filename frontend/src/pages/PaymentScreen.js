@@ -142,6 +142,14 @@ export default function PaymentScreen() {
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [paidBill, setPaidBill] = useState(null); // Bill after payment for printing
 
+  // Tax Override (Impuesto) states
+  const [taxOverrideDialog, setTaxOverrideDialog] = useState({ open: false, step: 'pin' }); // step: 'pin' | 'adjust'
+  const [taxOverridePin, setTaxOverridePin] = useState('');
+  const [taxOverrideAuthorized, setTaxOverrideAuthorized] = useState(null);
+  const [taxOverrides, setTaxOverrides] = useState({}); // { taxCode: false } = tax disabled
+  const [taxOverrideReference, setTaxOverrideReference] = useState('');
+  const [userHasTaxPermission, setUserHasTaxPermission] = useState(false);
+
   // Business config for thermal ticket (loaded from backend)
   const { config: businessConfig } = useBusinessConfig();
 
