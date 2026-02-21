@@ -126,6 +126,28 @@ Componente `ThermalTicket.js` con:
 }
 ```
 
+### Motor de Inteligencia Fiscal (Implementado 2025-02-21)
+Sistema avanzado de cálculo de impuestos con jerarquía:
+- **Fórmula**: `Impuesto Aplicado = (Impuesto en Tipo de Venta) AND (Impuesto en Producto o Categoría)`
+- **Herencia de Categoría**: Productos sin configuración heredan impuestos de su categoría
+- **Exención Gubernamental**: Tipos "Gubernamental" o "Régimen Especial" anulan ITBIS automáticamente
+- **Propina Selectiva**: Propina Legal se aplica solo a productos que lo permiten
+- **Actualización en Tiempo Real**: PaymentScreen recalcula al cambiar Tipo de Venta
+
+Endpoint: `POST /api/taxes/calculate-cart`
+```json
+{
+  "items": [{"product_id": "...", "product_name": "...", "quantity": 1, "unit_price": 100}],
+  "sale_type_id": "uuid-del-tipo-de-venta"
+}
+```
+
+### Secuencias NCF Vinculadas a Tipos de Venta (Implementado 2025-02-21)
+- Campo `authorized_sale_types` en `ncf_sequences` (array de IDs de tipos de venta)
+- Descuento automático al confirmar pago vía `POST /api/ncf/generate-for-sale`
+- Validación de disponibilidad y bloqueo si secuencia agotada
+- Selector múltiple en UI de Settings → NCF
+
 ### Sistema de Impuestos Dinámicos
 | Código | Nombre | Tasa | Solo Local |
 |--------|--------|------|------------|
