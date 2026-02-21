@@ -581,7 +581,7 @@ export default function ProductConfig() {
                       );
                     })}
                     
-                    {taxConfig.filter(tax => tax.active).length === 0 && (
+                    {taxConfig.filter(tax => tax.is_active).length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
                         No hay impuestos configurados. Ve a Configuración → Ventas → Impuestos.
                       </p>
