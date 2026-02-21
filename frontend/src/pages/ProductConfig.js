@@ -636,13 +636,6 @@ export default function ProductConfig() {
                     </div>
                   )}
                 </div>
-                            {tax?.description || taxId}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
               </div>
 
               {/* Button Style */}
