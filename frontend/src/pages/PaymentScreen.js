@@ -261,6 +261,11 @@ export default function PaymentScreen() {
       toast.error('Monto insuficiente');
       return;
     }
+    // DGII Fiscal Security: Block zero-value payments
+    if (billTotal <= 0) {
+      toast.error('No se puede procesar un pago con valor $0.00. La DGII no permite asignar NCF a facturas sin valor.');
+      return;
+    }
     setProcessing(true);
     try {
       const entries = Object.entries(payAmounts).filter(([_, v]) => parseFloat(v) > 0);
@@ -288,8 +293,10 @@ export default function PaymentScreen() {
         customer_rnc: selectedCustomer?.rnc || null
       });
       setPrintDialogOpen(true);
-    } catch {
-      toast.error('Error procesando pago');
+    } catch (err) {
+      // Handle specific error from backend
+      const errorMsg = err?.response?.data?.detail || 'Error procesando pago';
+      toast.error(errorMsg);
     } finally {
       setProcessing(false);
     }
