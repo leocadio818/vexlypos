@@ -281,7 +281,6 @@ export default function CashRegister() {
         <div className="flex items-center gap-2">
           <CircleDollarSign size={22} className="text-orange-400" />
           <h1 className="font-oswald text-xl font-bold tracking-wide text-white">CAJA / TURNOS</h1>
-          <Badge variant="outline" className="ml-2 text-xs text-emerald-400 border-emerald-400/30">Supabase</Badge>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={fetchData} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all">
