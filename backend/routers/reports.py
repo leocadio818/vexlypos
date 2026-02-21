@@ -1256,10 +1256,7 @@ async def valuation_trends(
     elif period == "90d":
         days = 90
     elif period == "year" and year:
-        # Monthly data for the fiscal year
-        start_date = datetime(year, 1, 1, tzinfo=timezone.utc)
-        end_date = datetime(year, 12, 31, tzinfo=timezone.utc)
-        days = (end_date - start_date).days
+        days = 365
     else:
         days = 30
     
@@ -1267,57 +1264,98 @@ async def valuation_trends(
     ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(5000)
     warehouse_stock = await db.warehouse_stock.find({}, {"_id": 0}).to_list(10000)
     
-    # Calculate current total
+    # Calculate current total and by category
     stock_map = {}
     for ws in warehouse_stock:
         ing_id = ws.get("ingredient_id")
         stock_map[ing_id] = stock_map.get(ing_id, 0) + ws.get("quantity", 0)
     
     current_value = 0
+    by_category = {}
+    
     for ing in ingredients:
         stock = stock_map.get(ing.get("id"), 0)
-        current_value += stock * ing.get("cost_per_unit", 0)
+        cost = ing.get("cost_per_unit", 0)
+        item_value = stock * cost
+        current_value += item_value
+        
+        # Aggregate by category
+        category = ing.get("category", "general")
+        if category not in by_category:
+            by_category[category] = {"category": category, "value": 0}
+        by_category[category]["value"] += item_value
     
-    # Generate trend data (simulated history based on movement patterns)
+    # Build category distribution for pie chart
+    category_labels = {
+        'general': 'General', 'carnes': 'Carnes', 'lacteos': 'Lácteos',
+        'vegetales': 'Vegetales', 'frutas': 'Frutas', 'bebidas': 'Bebidas',
+        'licores': 'Licores', 'condimentos': 'Condimentos', 'empaque': 'Empaque',
+        'limpieza': 'Limpieza'
+    }
+    
+    category_distribution = []
+    for cat, data in by_category.items():
+        percentage = (data["value"] / current_value * 100) if current_value > 0 else 0
+        category_distribution.append({
+            "category": cat,
+            "label": category_labels.get(cat, cat.title()),
+            "value": round(data["value"], 2),
+            "percentage": round(percentage, 1)
+        })
+    category_distribution.sort(key=lambda x: -x["value"])
+    
+    # Generate daily valuations (simulated history based on current value)
     # In a real scenario, you'd store historical snapshots
-    trend_data = []
+    daily_valuations = []
+    start_date = now - timedelta(days=days - 1)
+    end_date = now
     
     if period == "year" and year:
-        # Monthly data
-        months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-        for i, month in enumerate(months):
+        # Monthly data for fiscal year
+        for i in range(12):
+            month_date = datetime(year, i + 1, 1, tzinfo=timezone.utc)
             # Simulate seasonal variation
             factor = 1 + (0.1 * ((i % 3) - 1))  # ±10% variation
-            trend_data.append({
-                "date": f"{month} {year}",
-                "value": round(current_value * factor, 2)
+            daily_valuations.append({
+                "date": month_date.isoformat(),
+                "total_value": round(current_value * factor, 2)
             })
+        start_date = datetime(year, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(year, 12, 31, tzinfo=timezone.utc)
     else:
         # Daily data
         for i in range(days):
             date = now - timedelta(days=days - 1 - i)
-            # Simulate gradual change
-            factor = 0.9 + (0.2 * (i / days))  # 90% to 110% of current
-            trend_data.append({
-                "date": date.strftime("%d/%m"),
-                "value": round(current_value * factor, 2)
+            # Simulate gradual change (90% to 100% of current)
+            factor = 0.9 + (0.1 * (i / days))
+            daily_valuations.append({
+                "date": date.isoformat(),
+                "total_value": round(current_value * factor, 2)
             })
     
     # Calculate change metrics
-    if len(trend_data) >= 2:
-        first_value = trend_data[0]["value"]
-        last_value = trend_data[-1]["value"]
+    if len(daily_valuations) >= 2:
+        first_value = daily_valuations[0]["total_value"]
+        last_value = daily_valuations[-1]["total_value"]
         change = last_value - first_value
         change_pct = (change / first_value * 100) if first_value > 0 else 0
+        direction = "up" if change > 0 else "down" if change < 0 else "stable"
     else:
         change = 0
         change_pct = 0
+        direction = "stable"
     
     return {
         "period": period,
         "year": year,
         "current_value": round(current_value, 2),
-        "change": round(change, 2),
-        "change_percentage": round(change_pct, 1),
-        "trend": trend_data
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "daily_valuations": daily_valuations,
+        "category_distribution": category_distribution,
+        "trend": {
+            "direction": direction,
+            "change": round(change, 2),
+            "change_pct": round(change_pct, 1)
+        }
     }
