@@ -533,11 +533,9 @@ async def generate_ncf_for_sale(
         prefix = seq.get("sequence_prefix", f"B{ncf_type[1:]}")
         ncf_full = f"{prefix}{str(current_num).zfill(8)}"
         
-        # Actualización atómica del contador
+        # Actualización atómica del contador (solo campos que existen en la tabla)
         update_response = supabase_client.table("ncf_sequences").update({
-            "current_number": current_num + 1,
-            "last_used_at": now_iso(),
-            "updated_at": now_iso()
+            "current_number": current_num + 1
         }).eq("id", seq["id"]).eq("current_number", current_num).execute()
         
         # Si no se actualizó, significa que otro proceso tomó ese número
