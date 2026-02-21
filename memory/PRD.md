@@ -194,5 +194,8 @@ Componente `ThermalTicket.js` con:
 - [ ] Drag-and-drop reordenar métodos de pago
 
 ## Test Credentials
+- Admin: PIN 10000
+- Carlos: PIN 1234
+- María: PIN 5678
 - Luis (Cajero): PIN 4321
-- Admin: PIN 1234
+- Chef Pedro: PIN 9999
