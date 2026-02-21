@@ -36,12 +36,14 @@ DEFAULT_PERMISSIONS = {
         "release_reserved_table": True,
         "access_all_tables": True,
         "reprint_receipt": True,  # Admin can always reprint
+        "can_manage_tax_override": True,  # Admin can override taxes with documentation
     },
     "waiter": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
         "split_bill": True, "manage_reservations": True, "manage_customers": True,
         "access_all_tables": False,
         "reprint_receipt": False,
+        "can_manage_tax_override": False,
     },
     "cashier": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
