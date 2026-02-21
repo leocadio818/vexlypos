@@ -2168,30 +2168,6 @@ export default function OrderScreen() {
                 </div>
               </div>
 
-              {/* Inventory Toggle - Can override the default from reason */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    {cancelDialog.returnToInventory ? (
-                      <RotateCcw size={16} className="text-green-500" />
-                    ) : (
-                      <Ban size={16} className="text-red-500" />
-                    )}
-                    <span className="text-sm font-semibold">¿Devolver a Inventario?</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {cancelDialog.returnToInventory 
-                      ? 'Los insumos volverán al stock' 
-                      : 'Se registrará como merma/pérdida'}
-                  </p>
-                </div>
-                <Switch 
-                  checked={cancelDialog.returnToInventory}
-                  onCheckedChange={(v) => setCancelDialog(prev => ({ ...prev, returnToInventory: v }))}
-                  data-testid="toggle-return-inventory"
-                />
-              </div>
-
               {/* Manager Auth Required Notice */}
               {cancelDialog.requiresManagerAuth && (
                 <div className={`flex items-center gap-2 p-3 rounded-lg border ${
