@@ -378,6 +378,9 @@ El sistema aplica impuestos basándose en la intersección:
 - [x] ~~**Bug Fix Valorización**: Error "Error al cargar tendencias" corregido~~ ✅ COMPLETADO 2025-02-21
 - [x] ~~**Feature Impuestos de Categoría**: Opción "Usar el de la Categoría" para impuestos de producto~~ ✅ COMPLETADO 2025-02-21
 - [x] ~~**Reorganización Pestañas**: "Inventario" → "Configuración Productos", nueva pestaña "Inventario Maestro"~~ ✅ COMPLETADO 2025-02-21
+- [x] ~~**Botón Nuevo Cliente en Pago**: Añadir cliente rápido desde modal de búsqueda en PaymentScreen~~ ✅ COMPLETADO 2025-02-21
+- [x] ~~**Config Puntos solo Admin**: Restringir botón a roles administrativos~~ ✅ COMPLETADO 2025-02-21
+- [x] ~~**Eliminar switch redundante en Anulación**: Comportamiento de inventario determinado por razón~~ ✅ COMPLETADO 2025-02-21
 
 ### P1 - Alta Prioridad
 - [ ] Audit Trail Security (solo Admin ve PINs)
