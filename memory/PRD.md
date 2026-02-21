@@ -203,6 +203,10 @@ El sistema aplica impuestos basándose en la intersección:
 | `/api/taxes/report/summary` | GET | Reporte Z de impuestos |
 | `/api/ncf/sequences` | GET | Listar secuencias NCF |
 | `/api/ncf/sequences/{id}` | PUT | Actualizar secuencia NCF |
+| `/api/credit-notes` | GET | Listar notas de crédito |
+| `/api/credit-notes` | POST | Crear nota de crédito B04 |
+| `/api/credit-notes/return-reasons` | GET | Motivos de devolución |
+| `/api/credit-notes/reports/summary` | GET | Resumen de reversiones |
 
 ---
 
