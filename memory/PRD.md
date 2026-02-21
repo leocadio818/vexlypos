@@ -97,6 +97,14 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **UI Consistente**: Terminología "No Aplica" en lugar de "Exento" para evitar confusión fiscal
 - ✅ **Badge en lista**: Muestra "X no aplica(n)" para cada tipo de venta
 
+### 2025-02-21: Sistema de Alertas NCF Dinámico
+- ✅ **Campos configurables**: `alert_threshold` y `alert_interval` en secuencias NCF
+- ✅ **Backend actualizado**: `/api/ncf/sequences` y `/api/ncf/generate-for-sale` devuelven info de alertas
+- ✅ **UI de configuración**: Sección "Configuración de Alertas" en modal de edición NCF
+- ✅ **Modal de alerta**: En PaymentScreen, muestra modal dinámico al cumplir condiciones de alerta
+- ✅ **Visualización**: Badge de configuración de alerta visible en tarjeta de secuencia NCF
+- ✅ **Almacenamiento híbrido**: Configuración en MongoDB (`ncf_sequence_config`)
+
 ---
 
 ## 🔧 Key Features Documentation
