@@ -936,7 +936,9 @@ export default function PaymentScreen() {
                   .filter(st => st.default_ncf_type_id === selectedFiscalType)
                   .map(st => {
                   const isSelected = selectedServiceType?.id === st.id;
-                  const hasExemptions = (st.tax_exemptions || []).length > 0;
+                  // Check if PROPINA tax is exempted for this sale type
+                  const propinaTax = taxConfig.find(t => t.code === 'PROPINA');
+                  const hasPropinaExemption = propinaTax && (st.tax_exemptions || []).includes(propinaTax.id);
                   const iconMap = {
                     'consumo_local': UtensilsCrossed,
                     'para_llevar': Store,
@@ -967,9 +969,9 @@ export default function PaymentScreen() {
                         {st.description && (
                           <p className="text-[10px] text-white/40">{st.description}</p>
                         )}
-                        {hasExemptions && (
-                          <p className="text-[10px] text-amber-400/80">Sin propina de ley</p>
-                        )}
+                        <p className={`text-[10px] ${hasPropinaExemption ? 'text-amber-400/80' : 'text-green-400/80'}`}>
+                          {hasPropinaExemption ? 'Sin propina de ley' : 'Con propina de ley'}
+                        </p>
                       </div>
                       {isSelected && (
                         <Check size={18} className="text-orange-400" />
