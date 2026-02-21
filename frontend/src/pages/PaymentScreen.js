@@ -283,12 +283,7 @@ export default function PaymentScreen() {
       .filter(([_, enabled]) => enabled === false)
       .map(([code]) => code);
     
-    if (removedTaxes.length > 0 && (!taxOverrideReference || taxOverrideReference.trim().length < 3)) {
-      toast.error('Referencia/Documento es obligatorio al quitar impuestos');
-      return;
-    }
-    
-    // Log the tax override with reference
+    // Log the tax override (sin requerir referencia)
     if (removedTaxes.length > 0) {
       try {
         await fetch(`${API_BASE}/api/tax-override/authorize`, {
