@@ -1317,6 +1317,191 @@ export default function PaymentScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Tax Override Dialog */}
+      <Dialog open={taxOverrideDialog.open} onOpenChange={(o) => !o && setTaxOverrideDialog({ open: false, step: 'pin' })}>
+        <DialogContent className="max-w-sm bg-slate-900/95 backdrop-blur-xl border-amber-500/30" data-testid="tax-override-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-amber-400 flex items-center gap-2">
+              <Shield size={18} />
+              Ajuste de Impuesto
+            </DialogTitle>
+            <DialogDescription className="text-white/50 text-xs">
+              {taxOverrideDialog.step === 'pin' 
+                ? 'Ingrese PIN de administrador para autorizar'
+                : `Autorizado por: ${taxOverrideAuthorized?.authorized_by || 'Admin'}`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Step 1: PIN Authorization */}
+          {taxOverrideDialog.step === 'pin' && (
+            <div className="space-y-4">
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Lock size={16} className="text-amber-400 mt-0.5" />
+                  <div>
+                    <p className="text-amber-300 text-xs font-medium">Autorización Requerida</p>
+                    <p className="text-white/50 text-[10px]">Esta acción requiere un PIN de administrador con permisos de ajuste fiscal.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-xs text-white/50 block mb-2">PIN de Autorización</label>
+                <input
+                  type="password"
+                  value={taxOverridePin}
+                  onChange={(e) => setTaxOverridePin(e.target.value)}
+                  placeholder="••••••"
+                  className="w-full h-12 bg-white/5 border border-white/10 rounded-xl text-center text-white text-2xl font-oswald tracking-[0.5em] focus:border-amber-500/50 focus:outline-none"
+                  maxLength={10}
+                  autoFocus
+                  data-testid="tax-override-pin-input"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTaxOverrideDialog({ open: false, step: 'pin' })}
+                  className="flex-1 h-12 rounded-xl bg-white/5 border border-white/10 text-white/70 font-oswald font-bold hover:bg-white/10 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={verifyTaxOverridePin}
+                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-oswald font-bold flex items-center justify-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all active:scale-95"
+                  data-testid="verify-pin-btn"
+                >
+                  <Check size={16} />
+                  Verificar
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Step 2: Tax Adjustment */}
+          {taxOverrideDialog.step === 'adjust' && (
+            <div className="space-y-4">
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2 flex items-center gap-2">
+                <Check size={14} className="text-green-400" />
+                <span className="text-green-300 text-xs">
+                  Autorizado por {taxOverrideAuthorized?.authorized_by || 'Admin'}
+                </span>
+              </div>
+              
+              {/* Tax toggles */}
+              <div className="space-y-2">
+                <label className="text-xs text-white/50 block">Impuestos Aplicados</label>
+                {taxConfig.filter(t => t.is_active || t.active).map(tax => {
+                  const taxCode = tax.code || tax.name?.toUpperCase();
+                  const isEnabled = taxOverrides[taxCode] !== false;
+                  const exemptedBySaleType = selectedServiceType?.tax_exemptions?.includes(tax.id);
+                  const taxAmount = (adjustedBill?.subtotal || bill?.subtotal || 0) * (tax.rate / 100);
+                  
+                  return (
+                    <div 
+                      key={tax.id}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer
+                        ${exemptedBySaleType 
+                          ? 'bg-red-500/10 border-red-500/30 opacity-50' 
+                          : isEnabled 
+                            ? 'bg-white/5 border-white/10 hover:border-cyan-500/30' 
+                            : 'bg-amber-500/10 border-amber-500/30'
+                        }`}
+                      onClick={() => !exemptedBySaleType && toggleTaxOverride(taxCode)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isEnabled && !exemptedBySaleType}
+                          disabled={exemptedBySaleType}
+                          onCheckedChange={() => !exemptedBySaleType && toggleTaxOverride(taxCode)}
+                          className={isEnabled ? 'border-cyan-500' : 'border-amber-500'}
+                        />
+                        <div>
+                          <p className="text-white text-sm font-medium">{tax.name}</p>
+                          <p className="text-white/40 text-[10px]">
+                            {tax.rate}% {tax.is_dine_in_only && '(Solo local)'}
+                            {exemptedBySaleType && ' - Excluido por tipo de venta'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`font-oswald font-bold ${isEnabled && !exemptedBySaleType ? 'text-cyan-400' : 'text-white/30 line-through'}`}>
+                        {formatMoney(isEnabled && !exemptedBySaleType ? taxAmount : 0)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Reference document - Required when any tax is disabled */}
+              {Object.values(taxOverrides).some(v => v === false) && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={14} className="text-amber-400" />
+                    <label className="text-amber-300 text-xs font-medium">Referencia/Documento *</label>
+                  </div>
+                  <input
+                    type="text"
+                    value={taxOverrideReference}
+                    onChange={(e) => setTaxOverrideReference(e.target.value)}
+                    placeholder="Ej: Carta exención #123, Carnet diplomático..."
+                    className="w-full h-10 bg-white/5 border border-amber-500/30 rounded-lg px-3 text-white text-sm focus:border-amber-400 focus:outline-none"
+                    data-testid="tax-override-reference"
+                  />
+                  <p className="text-[10px] text-white/40">
+                    Ingrese el número de documento que autoriza la exención fiscal
+                  </p>
+                </div>
+              )}
+              
+              {/* Summary */}
+              <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-xs">Nuevo Total:</span>
+                  <span className="font-oswald text-2xl font-bold text-cyan-400">
+                    {(() => {
+                      const subtotal = adjustedBill?.subtotal || bill?.subtotal || 0;
+                      let total = subtotal;
+                      taxConfig.forEach(tax => {
+                        if (!tax.is_active && !tax.active) return;
+                        const taxCode = tax.code || tax.name?.toUpperCase();
+                        const isEnabled = taxOverrides[taxCode] !== false;
+                        const exempted = selectedServiceType?.tax_exemptions?.includes(tax.id);
+                        if (isEnabled && !exempted) {
+                          total += subtotal * (tax.rate / 100);
+                        }
+                      });
+                      return formatMoney(Math.round(total * 100) / 100);
+                    })()}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setTaxOverrideDialog({ open: false, step: 'pin' });
+                    setTaxOverrides({});
+                    setTaxOverrideReference('');
+                  }}
+                  className="flex-1 h-12 rounded-xl bg-white/5 border border-white/10 text-white/70 font-oswald font-bold hover:bg-white/10 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={applyTaxOverrides}
+                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-oswald font-bold flex items-center justify-center gap-2 hover:from-cyan-400 hover:to-blue-500 transition-all active:scale-95"
+                  data-testid="apply-tax-override-btn"
+                >
+                  <Check size={16} />
+                  Aplicar
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
