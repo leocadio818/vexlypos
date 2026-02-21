@@ -1715,7 +1715,7 @@ export default function Reports() {
                     {category.reports.map(report => (
                       <button
                         key={report.id}
-                        onClick={() => loadReport(report.id)}
+                        onClick={() => report.link ? navigate(report.link) : loadReport(report.id)}
                         className={`w-full text-left p-2 rounded-lg text-xs transition-all ${selectedReport === report.id ? 'bg-primary/20 border border-primary/40 text-primary' : 'hover:bg-card text-muted-foreground hover:text-foreground'}`}
                         data-testid={`report-${report.id}`}
                       >
