@@ -37,6 +37,7 @@ from routers.kitchen import router as kitchen_router, set_db as kitchen_set_db, 
 from routers.customers import router as customers_router, set_db as customers_set_db
 from routers.config import router as config_router, set_db as config_set_db
 from routers.ncf import router as ncf_router, init_supabase as ncf_init_supabase
+from routers.credit_notes import router as credit_notes_router, set_db as credit_notes_set_db, init_supabase as credit_notes_init_supabase
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -54,6 +55,8 @@ tables_set_db(db)
 billing_set_db(db)
 billing_init_supabase()  # Initialize Supabase for pos_sessions integration
 ncf_init_supabase()  # Initialize Supabase for NCF management
+credit_notes_set_db(db)
+credit_notes_init_supabase()  # Initialize Supabase for Credit Notes
 kitchen_set_db(db)
 taxes_set_db(db)
 customers_set_db(db)
@@ -80,6 +83,7 @@ api.include_router(kitchen_router)
 api.include_router(customers_router)
 api.include_router(config_router)
 api.include_router(ncf_router)
+api.include_router(credit_notes_router)
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()
