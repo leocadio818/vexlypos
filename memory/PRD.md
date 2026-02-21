@@ -321,6 +321,16 @@ CREATE TABLE ncf_sequences (
 
 ---
 
+### 2025-02-21: Botón "Impuesto" - Ajuste Fiscal con RBAC y Auditoría
+- ✅ **Botón Discreto**: "Impuesto" en área de totales del checkout (sin términos como "Exención")
+- ✅ **Control de Acceso RBAC**: Permiso `can_manage_tax_override` en Admin (cajero/mesero no)
+- ✅ **Autorización PIN**: Si el usuario no tiene permiso, requiere PIN de Admin
+- ✅ **Control Granular**: Checkboxes individuales para cada impuesto (ITBIS 18%, Propina 10%, etc.)
+- ✅ **Recálculo Dinámico**: Total se actualiza instantáneamente al desmarcar impuestos
+- ✅ **Referencia Obligatoria**: Campo "Referencia/Documento" aparece al quitar cualquier impuesto
+- ✅ **Auditoría Silenciosa**: Log en `tax_override_audit` con quién autorizó, qué impuestos se quitaron, y documento de respaldo
+- ✅ **Endpoint Backend**: `POST /api/tax-override/authorize` y `GET /api/tax-override/check-permission`
+
 ### 2025-02-21: Motor de Inteligencia Fiscal y NCF Automático
 - ✅ **Motor de Inteligencia Fiscal**: Endpoint `/api/taxes/calculate-cart` con jerarquía Producto/Categoría
 - ✅ **Herencia de Impuestos**: Productos heredan de Categoría si no tienen config propia
