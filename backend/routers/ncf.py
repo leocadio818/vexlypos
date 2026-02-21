@@ -216,7 +216,8 @@ async def create_ncf_sequence(input: NCFSequenceInput):
             "current_number": input.current_number,
             "end_number": input.range_end,
             "valid_until": input.expiration_date,
-            "is_active": input.is_active if input.is_active is not None else True
+            "is_active": input.is_active if input.is_active is not None else True,
+            "authorized_sale_types": input.authorized_sale_types or []
         }
         
         response = supabase_client.table("ncf_sequences").insert(data).execute()
