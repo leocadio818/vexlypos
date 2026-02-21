@@ -54,6 +54,7 @@ orders_set_db(db)
 tables_set_db(db)
 billing_set_db(db)
 billing_init_supabase()  # Initialize Supabase for pos_sessions integration
+ncf_set_db(db)  # Set MongoDB for NCF additional config
 ncf_init_supabase()  # Initialize Supabase for NCF management
 credit_notes_set_db(db)
 credit_notes_init_supabase()  # Initialize Supabase for Credit Notes
