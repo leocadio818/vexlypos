@@ -116,6 +116,7 @@ export default function PaymentScreen() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerDialog, setCustomerDialog] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
+  const [newCustomerDialog, setNewCustomerDialog] = useState({ open: false, name: '', phone: '', email: '' });
   const [keypadDialog, setKeypadDialog] = useState({ open: false, method: null });
   const [keypadValue, setKeypadValue] = useState('');
   const [quickAmounts, setQuickAmounts] = useState([100, 200, 500, 1000, 2000, 5000]);
