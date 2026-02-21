@@ -184,6 +184,13 @@ El sistema aplica impuestos basándose en la intersección:
 - 🟡 Advertencia: < 50 restantes
 - 🔴 Crítico: < 10 restantes o secuencia vencida
 
+**Sistema de Alertas Dinámico (Implementado 2025-02-21):**
+- `alert_threshold`: Número de NCF restantes para iniciar alertas
+- `alert_interval`: Frecuencia de alertas (cada N ventas)
+- Modal de alerta en checkout cuando se cumplan las condiciones
+- Configuración guardada en MongoDB (`ncf_sequence_config`)
+- Campos visibles en UI de Settings → NCF al editar secuencia
+
 ---
 
 ## 📁 Key Files
