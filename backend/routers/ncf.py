@@ -145,7 +145,7 @@ async def get_ncf_sequences(
             if exp_date_str:
                 try:
                     exp_date = datetime.strptime(str(exp_date_str)[:10], "%Y-%m-%d").date()
-                except:
+                except ValueError:
                     pass
             
             seq["remaining"] = remaining
