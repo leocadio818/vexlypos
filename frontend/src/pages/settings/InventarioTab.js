@@ -56,24 +56,78 @@ export default function InventarioTab() {
     if (!categoryDialog.name.trim()) return;
     try {
       const data = { name: categoryDialog.name, color: categoryDialog.color };
+      let categoryId = categoryDialog.editId;
+      
       if (categoryDialog.editId) {
         await categoriesAPI.update(categoryDialog.editId, data);
       } else {
-        await categoriesAPI.create(data);
+        const res = await categoriesAPI.create(data);
+        categoryId = res.data?.id;
       }
       
       // Save channel assignment if specified
-      if (categoryDialog.print_channel && categoryDialog.editId) {
+      if (categoryDialog.print_channel && categoryId) {
         await axios.post(`${API}/category-channels`, {
-          category_id: categoryDialog.editId,
+          category_id: categoryId,
           channel_code: categoryDialog.print_channel
         }, { headers: hdrs() });
       }
       
+      // Save tax configuration for category
+      if (categoryId) {
+        await axios.post(`${API}/taxes/category/config`, {
+          category_id: categoryId,
+          tax_ids: categoryDialog.tax_ids || []
+        }, { headers: hdrs() });
+      }
+      
       toast.success(categoryDialog.editId ? 'Categoría actualizada' : 'Categoría creada');
-      setCategoryDialog({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '' }); 
+      setCategoryDialog({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '', tax_ids: [] }); 
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch (e) { 
+      toast.error('Error al guardar categoría'); 
+      console.error(e);
+    }
+  };
+
+  // Load category tax config when editing
+  const openCategoryDialog = async (cat = null) => {
+    if (cat) {
+      try {
+        const taxRes = await axios.get(`${API}/taxes/category/${cat.id}/config`, { headers: hdrs() });
+        const channel = categoryChannels.find(cc => cc.category_id === cat.id)?.channel_code || '';
+        setCategoryDialog({ 
+          open: true, 
+          name: cat.name, 
+          color: cat.color || '#FF6600', 
+          editId: cat.id, 
+          print_channel: channel,
+          tax_ids: taxRes.data?.tax_ids || []
+        });
+      } catch {
+        setCategoryDialog({ 
+          open: true, 
+          name: cat.name, 
+          color: cat.color || '#FF6600', 
+          editId: cat.id, 
+          print_channel: categoryChannels.find(cc => cc.category_id === cat.id)?.channel_code || '',
+          tax_ids: []
+        });
+      }
+    } else {
+      // New category - default all taxes enabled
+      const defaultTaxIds = taxConfigs.map(t => t.id);
+      setCategoryDialog({ open: true, name: '', color: '#FF6600', editId: null, print_channel: '', tax_ids: defaultTaxIds });
+    }
+  };
+
+  const toggleCategoryTax = (taxId) => {
+    setCategoryDialog(prev => ({
+      ...prev,
+      tax_ids: prev.tax_ids.includes(taxId) 
+        ? prev.tax_ids.filter(id => id !== taxId)
+        : [...prev.tax_ids, taxId]
+    }));
   };
 
   const handleDeleteCategory = async (id) => {
