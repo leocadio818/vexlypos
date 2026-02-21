@@ -219,7 +219,7 @@ export default function InventarioTab() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="h-8 w-8"
-                    onClick={() => setCategoryDialog({ open: true, name: cat.name, color: cat.color || '#FF6600', editId: cat.id, print_channel: categoryChannels.find(cc => cc.category_id === cat.id)?.channel_code || '' })}>
+                    onClick={() => openCategoryDialog(cat)}>
                     <Pencil size={14} />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteCategory(cat.id)}>
