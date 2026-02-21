@@ -16,7 +16,7 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - **Databases:** 
   - MongoDB (datos legacy, productos, usuarios)
   - Supabase/PostgreSQL (datos fiscales, POS sessions, impuestos, NCF)
-- **Preview URL:** https://pos-fiscal-dr-1.preview.emergentagent.com
+- **Preview URL:** https://impuestos-dr.preview.emergentagent.com
 
 ## Test Credentials
 | Usuario | PIN | Rol |
