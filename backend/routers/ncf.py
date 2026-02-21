@@ -1,7 +1,7 @@
 """
 NCF Router - Gestión de Comprobantes Fiscales (DGII República Dominicana)
 Maneja secuencias NCF, tipos de comprobantes y validaciones fiscales
-Datos almacenados en Supabase (PostgreSQL)
+Datos principales en Supabase (PostgreSQL), configuraciones adicionales en MongoDB
 """
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -13,6 +13,13 @@ router = APIRouter(prefix="/ncf", tags=["NCF - Comprobantes Fiscales"])
 
 # Supabase client
 supabase_client = None
+
+# MongoDB database reference
+db = None
+
+def set_db(database):
+    global db
+    db = database
 
 def init_supabase():
     """Initialize Supabase client for NCF management"""
