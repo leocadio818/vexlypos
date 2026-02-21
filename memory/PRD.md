@@ -101,7 +101,8 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **Campos configurables**: `alert_threshold` y `alert_interval` en secuencias NCF
 - ✅ **Backend actualizado**: `/api/ncf/sequences` y `/api/ncf/generate-for-sale` devuelven info de alertas
 - ✅ **UI de configuración**: Sección "Configuración de Alertas" en modal de edición NCF
-- ✅ **Modal de alerta**: En PaymentScreen, muestra modal dinámico al cumplir condiciones de alerta
+- ✅ **Modal de alerta BLOQUEANTE**: Aparece en el centro de la pantalla después del pago cuando se cumplen las condiciones
+- ✅ **Flujo secuencial**: Primero aparece modal de alerta (obligatorio), luego modal de impresión
 - ✅ **Visualización**: Badge de configuración de alerta visible en tarjeta de secuencia NCF
 - ✅ **Almacenamiento híbrido**: Configuración en MongoDB (`ncf_sequence_config`)
 
