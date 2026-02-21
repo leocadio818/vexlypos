@@ -58,7 +58,7 @@ class TestCreditNotes:
     def auth_token(self):
         """Get auth token for authenticated requests"""
         # Login with admin PIN
-        login_response = requests.post(f"{BASE_URL}/api/auth/pin", json={"pin": "10000"})
+        login_response = requests.post(f"{BASE_URL}/api/auth/login", json={"pin": "10000"})
         if login_response.status_code != 200:
             pytest.skip("Could not authenticate - skipping authenticated tests")
         return login_response.json().get("token")
@@ -194,7 +194,7 @@ class TestZeroValuePaymentValidation:
     @pytest.fixture
     def auth_token(self):
         """Get auth token for authenticated requests"""
-        login_response = requests.post(f"{BASE_URL}/api/auth/pin", json={"pin": "10000"})
+        login_response = requests.post(f"{BASE_URL}/api/auth/login", json={"pin": "10000"})
         if login_response.status_code != 200:
             pytest.skip("Could not authenticate")
         return login_response.json().get("token")
@@ -240,7 +240,7 @@ class TestCreditNotesIntegration:
     @pytest.fixture
     def auth_headers(self):
         """Get authenticated headers"""
-        login_response = requests.post(f"{BASE_URL}/api/auth/pin", json={"pin": "10000"})
+        login_response = requests.post(f"{BASE_URL}/api/auth/login", json={"pin": "10000"})
         if login_response.status_code != 200:
             pytest.skip("Could not authenticate")
         token = login_response.json().get("token")
