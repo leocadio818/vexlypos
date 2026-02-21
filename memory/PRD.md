@@ -209,8 +209,8 @@ El sistema aplica impuestos basándose en la intersección:
 ## 📋 PRIORITIZED BACKLOG
 
 ### P0 - Pendiente (Alta Prioridad)
-- [ ] **Seguridad Fiscal**: Bloquear NCF en facturas $0.00
-- [ ] **Flujo de Nota de Crédito B04**: Reversión de factura con nota de crédito
+- [x] ~~**Seguridad Fiscal**: Bloquear NCF en facturas $0.00~~ ✅ COMPLETADO 2025-02-21
+- [x] ~~**Flujo de Nota de Crédito B04**: Reversión de factura con nota de crédito~~ ✅ COMPLETADO 2025-02-21
 - [ ] **UI Asignación de Impuestos a Productos**: Checkboxes en ProductConfig
 
 ### P1 - Alta Prioridad
