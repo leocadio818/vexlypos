@@ -196,7 +196,7 @@ export default function PaymentScreen() {
       
       // Check tax override permission
       try {
-        const permRes = await fetch(`${API_BASE}/api/auth/tax-override/check-permission`, { 
+        const permRes = await fetch(`${API_BASE}/api/tax-override/check-permission`, { 
           headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } 
         });
         const permData = await permRes.json();
