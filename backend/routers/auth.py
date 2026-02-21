@@ -339,7 +339,7 @@ async def authorize_tax_override(input: TaxOverrideAuthRequest, user=Depends(get
     
     # Check if authorizing user has tax override permission
     auth_role = auth_user.get("role", "waiter")
-    auth_permissions = ROLE_PERMISSIONS.get(auth_role, {})
+    auth_permissions = DEFAULT_PERMISSIONS.get(auth_role, {})
     
     # Check custom role permissions
     if auth_user.get("custom_role_id"):
@@ -382,7 +382,7 @@ async def authorize_tax_override(input: TaxOverrideAuthRequest, user=Depends(get
 async def check_tax_override_permission(user=Depends(get_current_user)):
     """Check if current user has tax override permission"""
     role = user.get("role", "waiter")
-    permissions = ROLE_PERMISSIONS.get(role, {})
+    permissions = DEFAULT_PERMISSIONS.get(role, {})
     
     # Check custom role
     user_doc = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
