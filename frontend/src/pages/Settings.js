@@ -1249,13 +1249,11 @@ export default function Settings() {
                 <div className="space-y-2">
                   {saleTypes.map(st => {
                     const exemptCount = (st.tax_exemptions || []).length;
-                    const appliedTaxes = taxConfig.filter(t => t.active && !(st.tax_exemptions || []).includes(t.id));
                     const ncfType = ncfTypes.find(n => n.id === st.default_ncf_type_id || n.code === st.default_ncf_type_id);
                     return (
                       <div key={st.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`saletype-${st.id}`}>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold">{st.name}</span>
-                          <Badge variant="secondary" className="text-[9px]">{st.code}</Badge>
                           {/* NCF Badge */}
                           {st.default_ncf_type_id && (
                             <Badge variant="outline" className="text-[9px] border-blue-500/50 text-blue-400 bg-blue-500/10">
@@ -1264,13 +1262,8 @@ export default function Settings() {
                               {ncfType && <span className="ml-1 opacity-70">({ncfType.description?.split(' ')[0] || ''})</span>}
                             </Badge>
                           )}
-                          {appliedTaxes.length > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              {appliedTaxes.map(t => `${t.description} ${t.rate}%`).join(' + ')}
-                            </span>
-                          )}
                           {exemptCount > 0 && (
-                            <Badge variant="outline" className="text-[9px] border-red-500/50 text-red-500">
+                            <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-500">
                               {exemptCount} exento(s)
                             </Badge>
                           )}
