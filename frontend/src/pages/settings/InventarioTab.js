@@ -301,68 +301,6 @@ export default function InventarioTab() {
         </div>
       )}
 
-      {/* COMPRAS */}
-      {inventarioSubTab === 'compras' && (
-        <div className="text-center py-8">
-          <Truck size={40} className="mx-auto mb-3 text-primary opacity-50" />
-          <h2 className="font-oswald text-lg mb-2">Compras</h2>
-          <p className="text-sm text-muted-foreground mb-4">Gestiona órdenes de compra y proveedores</p>
-          <a href="/purchases" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold">
-            <Truck size={16} /> Abrir Compras
-          </a>
-        </div>
-      )}
-
-      {/* STOCK */}
-      {inventarioSubTab === 'stock' && (
-        <div className="text-center py-8">
-          <BarChart3 size={40} className="mx-auto mb-3 text-primary opacity-50" />
-          <h2 className="font-oswald text-lg mb-2">Niveles de Stock</h2>
-          <p className="text-sm text-muted-foreground mb-4">Visualiza y ajusta el inventario</p>
-          <a href="/inventory" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold">
-            <BarChart3 size={16} /> Abrir Inventario
-          </a>
-        </div>
-      )}
-
-      {/* CONFIG */}
-      {inventarioSubTab === 'config' && (
-        <div className="space-y-4 max-w-lg">
-          <h2 className="font-oswald text-base font-bold">Configuración de Inventario</h2>
-          
-          <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
-            <div>
-              <span className="text-sm font-semibold">Permitir venta sin stock</span>
-              <p className="text-[10px] text-muted-foreground">Permite vender productos aunque no haya inventario</p>
-            </div>
-            <Switch checked={inventorySettings.allow_sale_without_stock}
-              onCheckedChange={(v) => setInventorySettings(p => ({ ...p, allow_sale_without_stock: v }))} />
-          </div>
-          
-          <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
-            <div>
-              <span className="text-sm font-semibold">Deducir automáticamente al pagar</span>
-              <p className="text-[10px] text-muted-foreground">Reduce el stock cuando se completa una venta</p>
-            </div>
-            <Switch checked={inventorySettings.auto_deduct_on_payment}
-              onCheckedChange={(v) => setInventorySettings(p => ({ ...p, auto_deduct_on_payment: v }))} />
-          </div>
-          
-          <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
-            <div>
-              <span className="text-sm font-semibold">Mostrar alertas de stock bajo</span>
-              <p className="text-[10px] text-muted-foreground">Notifica cuando un producto está por agotarse</p>
-            </div>
-            <Switch checked={inventorySettings.show_stock_alerts}
-              onCheckedChange={(v) => setInventorySettings(p => ({ ...p, show_stock_alerts: v }))} />
-          </div>
-
-          <Button onClick={handleSaveInventorySettings} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold">
-            GUARDAR CONFIGURACIÓN
-          </Button>
-        </div>
-      )}
-
       {/* Category Dialog */}
       <Dialog open={categoryDialog.open} onOpenChange={(o) => !o && setCategoryDialog({ ...categoryDialog, open: false })}>
         <DialogContent className="sm:max-w-md bg-card border-border">
