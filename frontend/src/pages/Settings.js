@@ -3579,7 +3579,7 @@ export default function Settings() {
               </p>
               
               <div className="space-y-2">
-                {taxConfig.filter(tax => tax.active).map(tax => {
+                {taxConfig.filter(tax => tax.active !== false).map(tax => {
                   const isExempt = (saleDialog.tax_exemptions || []).includes(tax.id);
                   const isApplied = !isExempt;
                   
