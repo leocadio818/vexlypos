@@ -355,6 +355,7 @@ El sistema aplica impuestos basándose en la intersección:
 - [x] ~~**UI Asignación de Impuestos a Productos**: Checkboxes en ProductConfig~~ ✅ COMPLETADO 2025-02-21
 - [x] ~~**Bug Fix Valorización**: Error "Error al cargar tendencias" corregido~~ ✅ COMPLETADO 2025-02-21
 - [x] ~~**Feature Impuestos de Categoría**: Opción "Usar el de la Categoría" para impuestos de producto~~ ✅ COMPLETADO 2025-02-21
+- [x] ~~**Reorganización Pestañas**: "Inventario" → "Configuración Productos", nueva pestaña "Inventario Maestro"~~ ✅ COMPLETADO 2025-02-21
 
 ### P1 - Alta Prioridad
 - [ ] Audit Trail Security (solo Admin ve PINs)
