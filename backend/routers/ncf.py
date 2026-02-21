@@ -244,28 +244,57 @@ async def update_ncf_sequence(seq_id: str, input: NCFSequenceUpdate):
         raise HTTPException(status_code=503, detail="Supabase no disponible")
     
     try:
-        update_data = {}
+        # Datos para Supabase (campos que existen en la tabla)
+        supabase_data = {}
         
         if input.current_number is not None:
-            update_data["current_number"] = input.current_number
+            supabase_data["current_number"] = input.current_number
         if input.range_end is not None:
-            update_data["end_number"] = input.range_end  # Map to DB column name
+            supabase_data["end_number"] = input.range_end  # Map to DB column name
         if input.expiration_date is not None:
-            update_data["valid_until"] = input.expiration_date  # Map to DB column name
+            supabase_data["valid_until"] = input.expiration_date  # Map to DB column name
         if input.is_active is not None:
-            update_data["is_active"] = input.is_active
-        if input.authorized_sale_types is not None:
-            update_data["authorized_sale_types"] = input.authorized_sale_types
+            supabase_data["is_active"] = input.is_active
         
-        if not update_data:
+        # Guardar authorized_sale_types en MongoDB (campo adicional no en Supabase)
+        if input.authorized_sale_types is not None:
+            await db.ncf_sequence_config.update_one(
+                {"sequence_id": seq_id},
+                {"$set": {
+                    "sequence_id": seq_id,
+                    "authorized_sale_types": input.authorized_sale_types,
+                    "updated_at": now_iso()
+                }},
+                upsert=True
+            )
+        
+        if not supabase_data:
+            # Si solo se actualizó authorized_sale_types, retornar éxito
+            if input.authorized_sale_types is not None:
+                # Obtener la secuencia actual y agregar authorized_sale_types
+                seq_response = supabase_client.table("ncf_sequences").select("*").eq("id", seq_id).single().execute()
+                if seq_response.data:
+                    result = seq_response.data
+                    # Agregar authorized_sale_types desde MongoDB
+                    mongo_config = await db.ncf_sequence_config.find_one({"sequence_id": seq_id}, {"_id": 0})
+                    if mongo_config:
+                        result["authorized_sale_types"] = mongo_config.get("authorized_sale_types", [])
+                    return result
             raise HTTPException(status_code=400, detail="No hay campos para actualizar")
         
-        response = supabase_client.table("ncf_sequences").update(update_data).eq("id", seq_id).execute()
+        response = supabase_client.table("ncf_sequences").update(supabase_data).eq("id", seq_id).execute()
         
         if not response.data:
             raise HTTPException(status_code=404, detail="Secuencia no encontrada")
         
-        return response.data[0]
+        result = response.data[0]
+        
+        # Agregar authorized_sale_types al resultado desde MongoDB
+        mongo_config = await db.ncf_sequence_config.find_one({"sequence_id": seq_id}, {"_id": 0})
+        if mongo_config:
+            result["authorized_sale_types"] = mongo_config.get("authorized_sale_types", [])
+        
+        return result
     except HTTPException:
         raise
     except Exception as e:
