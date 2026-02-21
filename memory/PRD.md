@@ -295,6 +295,20 @@ CREATE TABLE ncf_sequences (
 
 ---
 
+### 2025-02-21: P0 Seguridad Fiscal y Flujo de Reversión B04
+- ✅ **Validación $0.00**: Backend bloquea pagos con valor cero en `/api/bills/{id}/pay`
+- ✅ **Mensaje DGII**: "No se puede procesar pago con valor $0.00. La DGII no permite asignar NCF"
+- ✅ **Router Notas de Crédito**: `/app/backend/routers/credit_notes.py` nuevo módulo completo
+- ✅ **Motivos de Devolución**: 6 razones configurables (Error de Facturación, Devolución, Anulación, etc.)
+- ✅ **Generación NCF B04**: Secuencia automática con fallback MongoDB/Supabase
+- ✅ **Reversión Total/Parcial**: Soporte para ambos tipos de reversión
+- ✅ **Actualización de Inventario**: Reversión del stock cuando `affects_inventory=true`
+- ✅ **Audit Trail**: Log completo de cada nota de crédito generada
+- ✅ **Frontend**: Nueva página `/reports/facturas` con historial de facturas
+- ✅ **UI Reversar**: Diálogo completo con advertencia DGII, tipos de reversión, motivos
+- ✅ **Badges**: Facturas reversadas muestran "Reversada" y NCF de nota de crédito
+- ✅ **Integración Reportes**: Link a historial desde Reportes > Fiscal
+
 ### 2025-02-21: Corrección Etiquetas Propina en PaymentScreen
 - ✅ **Bug Fix**: Corregida lógica de visualización de propina en el diálogo de Tipo de Venta
 - ✅ **Antes**: Todas las opciones mostraban "Sin propina de ley" incorrectamente
