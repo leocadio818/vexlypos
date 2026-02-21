@@ -173,7 +173,7 @@ export default function PaymentScreen() {
       setPaymentMethods(sortedMethods);
       setCustomers(custRes);
       setSaleTypes(stRes.filter(st => st.active));
-      setTaxConfig(taxRes.filter(t => t.active));
+      setTaxConfig(taxRes.filter(t => t.active || t.is_active));
       
       // Set default service type: use URL param if provided, else prioritize "Dine In"
       if (stRes.length > 0) {
