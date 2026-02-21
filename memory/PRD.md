@@ -168,10 +168,12 @@ Componente `ThermalTicket.js` con:
 - [x] Configuración de datos del negocio para ticket (personalización desde Settings)
 - [x] **UI de Gestión de Impuestos** - CRUD completo en Settings > Impuestos
 - [x] **Módulo NCF** - Gestión de secuencias fiscales DGII (Serie B) en Settings > NCF
+- [x] **Motor de Cálculo Fiscal Inteligente** - Cruza impuestos Tipo de Venta ∩ Producto
+- [x] **Vínculo Venta-NCF** - Selector de NCF por defecto en Tipos de Venta
+- [x] **Toggle Para Llevar / Local / Delivery** - Recalcula impuestos automáticamente
 
 ### P0 - Pendiente
-- [ ] Toggle "Para Llevar / Comer Aquí" en pantalla de orden
-- [ ] Asignación de impuestos específicos a productos
+- [ ] Asignación de impuestos específicos a productos (UI en ProductConfig)
 - [ ] Seguridad Fiscal: Bloquear NCF en facturas $0.00
 - [ ] Flujo de Nota de Crédito B04 (reversión de factura)
 
