@@ -208,7 +208,7 @@ async def create_ncf_sequence(input: NCFSequenceInput):
         if existing:
             raise HTTPException(status_code=400, detail=f"Ya existe una secuencia activa para {input.ncf_type_code}")
         
-        # Map our API fields to the actual DB column names
+        # Map our API fields to the actual DB column names (sin authorized_sale_types que no existe en Supabase)
         prefix = input.prefix if input.prefix else f"{input.serie}{input.ncf_type_code[1:]}"
         data = {
             "ncf_type_id": input.ncf_type_code.upper(),
@@ -216,8 +216,7 @@ async def create_ncf_sequence(input: NCFSequenceInput):
             "current_number": input.current_number,
             "end_number": input.range_end,
             "valid_until": input.expiration_date,
-            "is_active": input.is_active if input.is_active is not None else True,
-            "authorized_sale_types": input.authorized_sale_types or []
+            "is_active": input.is_active if input.is_active is not None else True
         }
         
         response = supabase_client.table("ncf_sequences").insert(data).execute()
@@ -228,6 +227,22 @@ async def create_ncf_sequence(input: NCFSequenceInput):
             result["prefix"] = result.get("sequence_prefix")
             result["range_end"] = result.get("end_number")
             result["expiration_date"] = result.get("valid_until")
+            
+            # Guardar authorized_sale_types en MongoDB
+            if input.authorized_sale_types:
+                await db.ncf_sequence_config.update_one(
+                    {"sequence_id": result["id"]},
+                    {"$set": {
+                        "sequence_id": result["id"],
+                        "authorized_sale_types": input.authorized_sale_types,
+                        "updated_at": now_iso()
+                    }},
+                    upsert=True
+                )
+                result["authorized_sale_types"] = input.authorized_sale_types
+            else:
+                result["authorized_sale_types"] = []
+            
             return result
         else:
             raise HTTPException(status_code=500, detail="Error al insertar secuencia")
