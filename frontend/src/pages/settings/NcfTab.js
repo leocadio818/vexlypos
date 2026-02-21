@@ -372,6 +372,43 @@ export default function NcfTab() {
                 )}
               </div>
             </div>
+            
+            {/* Alert Configuration - NEW */}
+            <div className="border-t border-border pt-4 mt-4">
+              <label className="text-sm font-medium flex items-center gap-2 mb-2">
+                <Bell size={14} className="text-amber-500" />
+                Configuración de Alertas
+              </label>
+              <p className="text-[10px] text-muted-foreground mb-3">
+                Recibe notificaciones en checkout cuando los comprobantes estén por agotarse
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Inicio de Alerta</label>
+                  <input 
+                    type="number" 
+                    value={ncfDialog.alert_threshold} 
+                    onChange={e => setNcfDialog({ ...ncfDialog, alert_threshold: e.target.value })}
+                    className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
+                    placeholder="Ej: 50"
+                    min="1"
+                  />
+                  <p className="text-[9px] text-muted-foreground mt-1">Alertar cuando queden ≤ este número</p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Intervalo de Alerta</label>
+                  <input 
+                    type="number" 
+                    value={ncfDialog.alert_interval} 
+                    onChange={e => setNcfDialog({ ...ncfDialog, alert_interval: e.target.value })}
+                    className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
+                    placeholder="Ej: 5"
+                    min="1"
+                  />
+                  <p className="text-[9px] text-muted-foreground mt-1">Mostrar alerta cada N ventas</p>
+                </div>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setNcfDialog({ ...ncfDialog, open: false })}>Cancelar</Button>
