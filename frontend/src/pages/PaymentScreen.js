@@ -288,7 +288,7 @@ export default function PaymentScreen() {
     // Log the tax override with reference
     if (removedTaxes.length > 0) {
       try {
-        await fetch(`${API_BASE}/api/auth/tax-override/authorize`, {
+        await fetch(`${API_BASE}/api/tax-override/authorize`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
