@@ -671,7 +671,7 @@ async def calculate_cart_taxes(input: IntelligentTaxCalculationInput):
     itbis_tax = taxes_by_code.get("ITBIS")
     propina_tax = taxes_by_code.get("PROPINA")
     itbis_tax_id = itbis_tax["id"] if itbis_tax else None
-    propina_tax_id = propina_tax["id"] if propina_tax else None
+    # propina_tax_id not directly used but kept for reference
     
     # Process each line item
     line_items = []
