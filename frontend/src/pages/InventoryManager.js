@@ -494,6 +494,11 @@ export default function InventoryManager() {
               <AuditTab />
             </TabsContent>
 
+            {/* ─── CONFIG TAB ─── */}
+            <TabsContent value="config" className="mt-0">
+              <ConfigTab />
+            </TabsContent>
+
             {/* ─── SHOPPING ASSISTANT TAB ─── */}
             <TabsContent value="assistant" className="mt-0">
               <AssistantTab 
