@@ -107,7 +107,7 @@ const glassStyles = {
 export default function PaymentScreen() {
   const { billId } = useParams();
   const navigate = useNavigate();
-  const { largeMode, device } = useAuth();
+  const { largeMode, device, user } = useAuth();
   const ticketRef = useRef(null);
   const [bill, setBill] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
