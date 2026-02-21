@@ -502,3 +502,286 @@ async def seed_default_taxes():
             created += 1
     
     return {"ok": True, "created": created, "total": len(defaults)}
+
+
+# ─── MOTOR DE INTELIGENCIA FISCAL ───
+# Jerarquía: Impuesto Aplicado = (Impuesto en Tipo de Venta) AND (Impuesto en Producto o Categoría)
+
+class CartItem(BaseModel):
+    product_id: str
+    product_name: str
+    quantity: float
+    unit_price: float
+    category_id: Optional[str] = None
+    modifiers_total: float = 0
+
+class IntelligentTaxCalculationInput(BaseModel):
+    items: List[CartItem]
+    sale_type_id: str  # ID del tipo de venta seleccionado
+    
+class CategoryTaxInput(BaseModel):
+    category_id: str
+    tax_ids: List[str]  # IDs de impuestos aplicables
+
+
+@router.post("/category/config")
+async def set_category_taxes(input: CategoryTaxInput):
+    """
+    Configura los impuestos aplicables a una categoría
+    Los productos sin configuración propia heredarán estos impuestos
+    """
+    # Verificar que la categoría existe
+    category = await db.categories.find_one({"id": input.category_id}, {"_id": 0})
+    if not category:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    
+    # Actualizar la categoría con los impuestos
+    await db.categories.update_one(
+        {"id": input.category_id},
+        {"$set": {
+            "tax_ids": input.tax_ids,
+            "updated_at": now_iso()
+        }}
+    )
+    
+    return {"ok": True, "category_id": input.category_id, "tax_ids": input.tax_ids}
+
+
+@router.get("/category/{category_id}/config")
+async def get_category_taxes(category_id: str):
+    """Obtiene la configuración de impuestos de una categoría"""
+    category = await db.categories.find_one({"id": category_id}, {"_id": 0})
+    if not category:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    
+    return {
+        "category_id": category_id,
+        "tax_ids": category.get("tax_ids", []),
+        "name": category.get("name")
+    }
+
+
+@router.post("/product/config")
+async def set_product_taxes(product_id: str, tax_ids: List[str]):
+    """
+    Configura los impuestos aplicables a un producto específico
+    Estos sobrescriben la herencia de categoría
+    """
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    await db.products.update_one(
+        {"id": product_id},
+        {"$set": {
+            "tax_ids": tax_ids,
+            "has_custom_taxes": True,
+            "updated_at": now_iso()
+        }}
+    )
+    
+    return {"ok": True, "product_id": product_id, "tax_ids": tax_ids}
+
+
+@router.get("/product/{product_id}/config")
+async def get_product_tax_config(product_id: str):
+    """Obtiene la configuración de impuestos de un producto (incluye herencia)"""
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    # Si tiene impuestos personalizados, usar esos
+    if product.get("has_custom_taxes") and product.get("tax_ids"):
+        return {
+            "product_id": product_id,
+            "tax_ids": product["tax_ids"],
+            "source": "product",
+            "name": product.get("name")
+        }
+    
+    # Si no, buscar en la categoría
+    if product.get("category_id"):
+        category = await db.categories.find_one({"id": product["category_id"]}, {"_id": 0})
+        if category and category.get("tax_ids"):
+            return {
+                "product_id": product_id,
+                "tax_ids": category["tax_ids"],
+                "source": "category",
+                "category_name": category.get("name"),
+                "name": product.get("name")
+            }
+    
+    # Default: todos los impuestos aplican excepto EXENTO
+    all_taxes = await db.tax_config.find({"is_active": True, "code": {"$ne": "EXENTO"}}, {"_id": 0}).to_list(50)
+    default_ids = [t["id"] for t in all_taxes]
+    
+    return {
+        "product_id": product_id,
+        "tax_ids": default_ids,
+        "source": "default",
+        "name": product.get("name")
+    }
+
+
+@router.post("/calculate-cart")
+async def calculate_cart_taxes(input: IntelligentTaxCalculationInput):
+    """
+    MOTOR DE INTELIGENCIA FISCAL
+    
+    Calcula los impuestos de un carrito completo según la jerarquía:
+    1. Obtener exenciones del Tipo de Venta
+    2. Para cada producto:
+       - Obtener impuestos aplicables (producto > categoría > default)
+       - Intersectar con impuestos permitidos por el Tipo de Venta
+       - Calcular monto por línea
+    3. Caso especial: Tipos de Venta "Gubernamental" o "Exento" → ITBIS = 0
+    4. Propina Legal solo sobre productos que lo permiten
+    """
+    # Get sale type configuration from Supabase
+    sale_type = None
+    sale_type_exemptions = []
+    is_government_exempt = False
+    
+    if supabase_client:
+        try:
+            result = supabase_client.table("sale_types").select("*").eq("id", input.sale_type_id).single().execute()
+            sale_type = result.data
+            sale_type_exemptions = sale_type.get("tax_exemptions", []) if sale_type else []
+            
+            # Check if this is a government/special regime type (ITBIS = 0 for all)
+            code = (sale_type.get("code") or "").lower() if sale_type else ""
+            is_government_exempt = "gubernamental" in code or "regimen" in code or "especial" in code or "exento" in code
+        except Exception as e:
+            print(f"Warning: Could not fetch sale type: {e}")
+    
+    if not sale_type:
+        # Fallback to MongoDB
+        sale_type = await db.sale_types.find_one({"id": input.sale_type_id}, {"_id": 0})
+        if sale_type:
+            sale_type_exemptions = sale_type.get("tax_exemptions", [])
+            code = (sale_type.get("code") or "").lower()
+            is_government_exempt = "gubernamental" in code or "regimen" in code or "especial" in code or "exento" in code
+    
+    # Get all active tax configs
+    all_taxes = await db.tax_config.find({"is_active": True}, {"_id": 0}).to_list(50)
+    taxes_by_id = {t["id"]: t for t in all_taxes}
+    taxes_by_code = {t["code"]: t for t in all_taxes}
+    
+    # Find ITBIS and PROPINA tax IDs
+    itbis_tax = taxes_by_code.get("ITBIS")
+    propina_tax = taxes_by_code.get("PROPINA")
+    itbis_tax_id = itbis_tax["id"] if itbis_tax else None
+    propina_tax_id = propina_tax["id"] if propina_tax else None
+    
+    # Process each line item
+    line_items = []
+    total_subtotal = 0
+    total_itbis = 0
+    total_propina = 0
+    itbis_base = 0  # Subtotal of products that have ITBIS
+    propina_base = 0  # Subtotal of products that have propina
+    
+    for item in input.items:
+        item_subtotal = round(item.quantity * item.unit_price + item.modifiers_total, 2)
+        total_subtotal += item_subtotal
+        
+        # Get product's applicable taxes (product > category > default)
+        product = await db.products.find_one({"id": item.product_id}, {"_id": 0})
+        product_tax_ids = []
+        tax_source = "default"
+        
+        if product:
+            if product.get("has_custom_taxes") and product.get("tax_ids"):
+                product_tax_ids = product["tax_ids"]
+                tax_source = "product"
+            elif product.get("category_id"):
+                category = await db.categories.find_one({"id": product["category_id"]}, {"_id": 0})
+                if category and category.get("tax_ids"):
+                    product_tax_ids = category["tax_ids"]
+                    tax_source = "category"
+        
+        # Default: all taxes except EXENTO
+        if not product_tax_ids:
+            product_tax_ids = [t["id"] for t in all_taxes if t["code"] != "EXENTO"]
+        
+        # INTERSECT: taxes must be allowed by BOTH product AND sale type
+        # A tax is applied if: (tax in product_tax_ids) AND (tax NOT in sale_type_exemptions)
+        applicable_tax_ids = [
+            tax_id for tax_id in product_tax_ids 
+            if tax_id not in sale_type_exemptions
+        ]
+        
+        # Special case: Government/Exempt sale type → Remove all ITBIS
+        if is_government_exempt and itbis_tax_id:
+            applicable_tax_ids = [tid for tid in applicable_tax_ids if tid != itbis_tax_id]
+        
+        # Calculate taxes for this line
+        line_itbis = 0
+        line_propina = 0
+        line_taxes = []
+        
+        for tax_id in applicable_tax_ids:
+            tax = taxes_by_id.get(tax_id)
+            if not tax:
+                continue
+            
+            rate = tax.get("rate", 0)
+            if tax.get("tax_type") == "percentage":
+                tax_amount = round(item_subtotal * (rate / 100), 2)
+            else:
+                tax_amount = round(rate * item.quantity, 2)
+            
+            if tax["code"] == "ITBIS" or tax.get("dgii_code") in ["01", "02"]:
+                line_itbis += tax_amount
+                itbis_base += item_subtotal
+            elif tax["code"] == "PROPINA" or tax.get("is_dine_in_only"):
+                line_propina += tax_amount
+                propina_base += item_subtotal
+            
+            line_taxes.append({
+                "tax_id": tax["id"],
+                "tax_code": tax["code"],
+                "tax_name": tax["name"],
+                "rate": rate,
+                "amount": tax_amount
+            })
+        
+        total_itbis += line_itbis
+        total_propina += line_propina
+        
+        line_items.append({
+            "product_id": item.product_id,
+            "product_name": item.product_name,
+            "quantity": item.quantity,
+            "unit_price": item.unit_price,
+            "modifiers_total": item.modifiers_total,
+            "subtotal": item_subtotal,
+            "itbis": round(line_itbis, 2),
+            "propina": round(line_propina, 2),
+            "total": round(item_subtotal + line_itbis + line_propina, 2),
+            "taxes": line_taxes,
+            "tax_source": tax_source
+        })
+    
+    grand_total = round(total_subtotal + total_itbis + total_propina, 2)
+    
+    return {
+        "sale_type_id": input.sale_type_id,
+        "sale_type_name": sale_type.get("name") if sale_type else None,
+        "sale_type_code": sale_type.get("code") if sale_type else None,
+        "is_government_exempt": is_government_exempt,
+        "items": line_items,
+        "summary": {
+            "subtotal": round(total_subtotal, 2),
+            "itbis": round(total_itbis, 2),
+            "itbis_base": round(itbis_base, 2),
+            "propina_legal": round(total_propina, 2),
+            "propina_base": round(propina_base, 2),
+            "total": grand_total
+        },
+        "tax_breakdown": [
+            {"code": "ITBIS", "name": "ITBIS 18%", "base": round(itbis_base, 2), "amount": round(total_itbis, 2)},
+            {"code": "PROPINA", "name": "Propina Legal 10%", "base": round(propina_base, 2), "amount": round(total_propina, 2)}
+        ]
+    }
+
