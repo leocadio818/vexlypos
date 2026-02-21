@@ -529,7 +529,7 @@ export default function ProductConfig() {
                   </p>
                   
                   <div className="space-y-2">
-                    {taxConfig.filter(tax => tax.active).map(tax => {
+                    {taxConfig.filter(tax => tax.is_active).map(tax => {
                       const isExempt = (product.tax_exemptions || []).includes(tax.id);
                       const isApplied = !isExempt;
                       return (
