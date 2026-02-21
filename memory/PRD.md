@@ -1,4 +1,4 @@
-# PRD - POS Dominicana
+# PRD - POS Dominicana (TPV Dominicano)
 
 ## Original Problem Statement
 Sistema POS de propósito general para República Dominicana con soporte completo para:
@@ -10,10 +10,26 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - Reportes fiscales dominicanos (Reporte Z)
 - Ticket térmico 80mm compatible DGII
 
-## Current Branch
-`feature/analisis-dolibarr` - Rama de análisis e implementación Supabase
+## Tech Stack
+- **Frontend:** React 18 + TailwindCSS + Shadcn/UI
+- **Backend:** FastAPI (Python)
+- **Databases:** 
+  - MongoDB (datos legacy, productos, usuarios)
+  - Supabase/PostgreSQL (datos fiscales, POS sessions, impuestos, NCF)
+- **Preview URL:** https://tpv-dominicano.preview.emergentagent.com
 
-## What's Been Implemented
+## Test Credentials
+| Usuario | PIN | Rol |
+|---------|-----|-----|
+| Admin | 10000 | admin |
+| Carlos | 1234 | waiter |
+| María | 5678 | waiter |
+| Luis | 4321 | cashier |
+| Chef Pedro | 9999 | kitchen |
+
+---
+
+## ✅ COMPLETED FEATURES
 
 ### 2025-02-18: Análisis Dolibarr ERP
 - ✅ Análisis completo de 4 módulos Dolibarr
@@ -64,25 +80,26 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **Dashboard Alertas**: Banner de alertas NCF en pantalla principal (Mapa de Mesas)
 - ✅ **Validaciones**: < 50 = advertencia, < 10 = crítico, vencido = crítico
 
-### 2025-02-20: Motor de Cálculo Fiscal Inteligente
+### 2025-02-21: Motor de Cálculo Fiscal Inteligente
 - ✅ **Vínculo Venta-NCF**: Campo `default_ncf_type_id` en Tipos de Venta
 - ✅ **Selector NCF en Settings**: Dropdown para asignar NCF por defecto (B01-B17) a cada Tipo de Venta
 - ✅ **Badge NCF**: Etiqueta visual (B02 Factura de Consumo) en lista de Tipos de Venta
-- ✅ **Toggle Tipo de Servicio**: Local / Llevar / Delivery en OrderScreen
 - ✅ **Motor de Cálculo Inteligente**: Cruza impuestos del Tipo de Venta ∩ impuestos del Producto
 - ✅ **Propina Condicional**: Solo aplica si is_dine_in_only=false Y producto no tiene exención
-- ✅ **Mensaje informativo**: "*Propina omitida (solo aplica en local)" cuando se selecciona Para Llevar
 
 ### 2025-02-21: Sistema 100% Dinámico - Tipos de Venta Configurables
-- ✅ **Perfiles de Venta**: 6 tipos configurados (Consumo Local, Para Llevar, Delivery, Crédito Fiscal, Exportación, Servicios)
-- ✅ **Botones de Acceso Rápido**: Botones dinámicos en OrderScreen cargados desde DB
-- ✅ **Tax Exemptions por Tipo**: Cada tipo tiene lista de impuestos exentos
-- ✅ **Sin Hardcoding**: Todo se lee de tax_config y sale_types desde la DB
-- ✅ **Sincronización Automática**: Refresco cada 30s para reflejar cambios del admin inmediatamente
+- ✅ **Perfiles de Venta**: 8+ tipos configurados (Consumo Local, Para Llevar, Delivery, Crédito Fiscal, Gubernamental, Régimen Especial, etc.)
 - ✅ **CRUD Completo**: Crear, editar, eliminar tipos de venta desde Settings > Ventas > Tipos de Venta
-- ✅ **NCF Dinámico por Tipo**: B02 para consumidor, B01 para crédito fiscal, B16 para exportación
+- ✅ **Tax Exemptions por Tipo**: Cada tipo tiene lista de impuestos "no aplica" configurable
+- ✅ **Sin Hardcoding**: Todo se lee de tax_config y sale_types desde la DB
+- ✅ **NCF Dinámico por Tipo**: B02 para consumidor, B01 para crédito fiscal, B14/B15 para gubernamental/especial, B16 para exportación
+- ✅ **Filtrado en PaymentScreen**: Solo muestra Tipos de Venta relevantes al NCF seleccionado
+- ✅ **UI Consistente**: Terminología "No Aplica" en lugar de "Exento" para evitar confusión fiscal
+- ✅ **Badge en lista**: Muestra "X no aplica(n)" para cada tipo de venta
 
-## Key Features
+---
+
+## 🔧 Key Features Documentation
 
 ### Ticket Térmico 80mm
 Componente `ThermalTicket.js` con:
@@ -118,9 +135,11 @@ Componente `ThermalTicket.js` con:
 | ISC | Impuesto Selectivo | Variable | No |
 | EXENTO | Exento de ITBIS | 0% | No |
 
-### Cálculo de Impuestos
-- **Consumo en local**: ITBIS + Propina (todos los impuestos)
-- **Para Llevar (Delivery)**: Solo ITBIS (propina omitida automáticamente)
+### Motor de Cálculo Inteligente
+El sistema aplica impuestos basándose en la intersección:
+- **Impuestos del Tipo de Venta**: Definidos en `sale_types.tax_exemptions`
+- **Impuestos del Producto**: Definidos en `products.tax_exemptions`
+- Un impuesto solo aplica si NO está en ninguna de las dos listas de exenciones
 
 ### Módulo NCF - Comprobantes Fiscales DGII
 **Tipos de comprobantes (Serie B):**
@@ -143,69 +162,138 @@ Componente `ThermalTicket.js` con:
 - 🟡 Advertencia: < 50 restantes
 - 🔴 Crítico: < 10 restantes o secuencia vencida
 
-## Key API Endpoints
+---
+
+## 📁 Key Files
+
+### Backend
+| Archivo | Descripción |
+|---------|-------------|
+| `/app/backend/server.py` | Servidor FastAPI principal |
+| `/app/backend/routers/pos.py` | CRUD de sale_types, NCF |
+| `/app/backend/routers/pos_sessions.py` | Sesiones de caja (Supabase) |
+| `/app/backend/routers/taxes.py` | Sistema de impuestos dinámicos |
+| `/app/backend/routers/billing.py` | Facturación |
+| `/app/backend/routers/ncf.py` | Gestión NCF |
+
+### Frontend
+| Archivo | Descripción |
+|---------|-------------|
+| `/app/frontend/src/pages/Settings.js` | Configuración (MONOLITO ~2000+ líneas) |
+| `/app/frontend/src/pages/OrderScreen.js` | Pantalla de pedidos con cálculo de impuestos |
+| `/app/frontend/src/pages/PaymentScreen.js` | Pantalla de pago con selección de NCF y Tipo de Venta |
+| `/app/frontend/src/components/ThermalTicket.js` | Ticket térmico 80mm |
+| `/app/frontend/src/pages/TicketDemo.js` | Demo de ticket |
+| `/app/frontend/src/lib/api.js` | APIs (taxesAPI, posSessionsAPI, etc.) |
+
+---
+
+## 🔌 Key API Endpoints
+
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/pos-sessions/open` | POST | Abrir turno |
 | `/api/pos-sessions/{id}/close` | PUT | Cerrar turno con cash_breakdown |
+| `/api/pos/sale-types` | GET | Listar tipos de venta |
+| `/api/pos/sale-types` | POST | Crear tipo de venta |
+| `/api/pos/sale-types/{id}` | PUT | Actualizar tipo de venta |
 | `/api/taxes/config` | GET | Listar configuraciones de impuestos |
 | `/api/taxes/products/assign` | POST | Asignar impuesto a producto |
-| `/api/taxes/calculate` | POST | Calcular impuestos (con is_delivery) |
+| `/api/taxes/calculate` | POST | Calcular impuestos |
 | `/api/taxes/report/summary` | GET | Reporte Z de impuestos |
+| `/api/ncf/sequences` | GET | Listar secuencias NCF |
+| `/api/ncf/sequences/{id}` | PUT | Actualizar secuencia NCF |
 
-## Files Created/Modified
-- `/app/backend/routers/pos_sessions.py` - Router Supabase
-- `/app/backend/routers/taxes.py` - NEW: Sistema de impuestos dinámicos
-- `/app/backend/routers/billing.py` - Integración ventas con Supabase
-- `/app/frontend/src/pages/CashRegister.js` - UI Arqueo de caja
-- `/app/frontend/src/lib/api.js` - taxesAPI, posSessionsAPI
-- `/app/frontend/src/components/ThermalTicket.js` - NEW: Componente ticket térmico
-- `/app/frontend/src/pages/TicketDemo.js` - NEW: Página demo ticket
-- `/app/frontend/src/styles/ticket-print.css` - Estilos impresión 80mm
-- `/app/frontend/src/pages/PaymentScreen.js` - Diálogo impresión post-pago
+---
 
-## Prioritized Backlog
+## 📋 PRIORITIZED BACKLOG
 
-### P0 - Completado ✅
-- [x] Apertura de caja con monto inicial
-- [x] Integración ventas con sesión de caja
-- [x] Arqueo de caja con desglose de denominaciones
-- [x] Sistema de impuestos dinámicos por producto
-- [x] Propina solo para consumo en local
-- [x] Reporte Z con desglose de impuestos
-- [x] Ticket térmico 80mm compatible DGII
-- [x] Configuración de datos del negocio para ticket (personalización desde Settings)
-- [x] **UI de Gestión de Impuestos** - CRUD completo en Settings > Impuestos
-- [x] **Módulo NCF** - Gestión de secuencias fiscales DGII (Serie B) en Settings > NCF
-- [x] **Motor de Cálculo Fiscal Inteligente** - Cruza impuestos Tipo de Venta ∩ Producto
-- [x] **Vínculo Venta-NCF** - Selector de NCF por defecto en Tipos de Venta
-- [x] **Toggle Para Llevar / Local / Delivery** - Recalcula impuestos automáticamente
-- [x] **Sistema 100% Dinámico** - 6 tipos de venta configurables, sin hardcoding, refresco automático
-
-### P0 - Pendiente
-- [ ] Asignación de impuestos específicos a productos (UI en ProductConfig con checkboxes)
-- [ ] Seguridad Fiscal: Bloquear NCF en facturas $0.00
-- [ ] Flujo de Nota de Crédito B04 (reversión de factura)
+### P0 - Pendiente (Alta Prioridad)
+- [ ] **Seguridad Fiscal**: Bloquear NCF en facturas $0.00
+- [ ] **Flujo de Nota de Crédito B04**: Reversión de factura con nota de crédito
+- [ ] **UI Asignación de Impuestos a Productos**: Checkboxes en ProductConfig
 
 ### P1 - Alta Prioridad
 - [ ] Audit Trail Security (solo Admin ve PINs)
-- [ ] Employee Time Clock (entrada/salida)
+- [ ] Employee Time Clock (entrada/salida de empleados)
 - [ ] Generación reportes DGII (607, 608)
 
 ### P2 - Media Prioridad
 - [ ] Reportes de caja por período
 - [ ] Imágenes/iconos para botones de productos
-- [ ] Print Agent como ejecutable .exe
+- [ ] Print Agent como ejecutable .exe (cross-compilation)
 - [ ] Cache de imágenes offline
+- [ ] **REFACTORIZAR Settings.js** (dividir en componentes: SystemSettings, TaxSettings, NcfSettings, SalesSettings)
 
 ### P3 - Baja Prioridad
 - [ ] Exportar Audit Trail a Excel/CSV
 - [ ] Duplicar producto feature
 - [ ] Drag-and-drop reordenar métodos de pago
 
-## Test Credentials
-- Admin: PIN 10000
-- Carlos: PIN 1234
-- María: PIN 5678
-- Luis (Cajero): PIN 4321
-- Chef Pedro: PIN 9999
+---
+
+## 🗄️ Database Schema (Key Tables)
+
+### Supabase/PostgreSQL
+```sql
+-- sale_types
+CREATE TABLE sale_types (
+  id UUID PRIMARY KEY,
+  name VARCHAR NOT NULL,
+  code VARCHAR,
+  tax_exemptions TEXT[], -- Array de IDs de impuestos que NO aplican
+  default_ncf_type_id VARCHAR -- FK a ncf_types (B01, B02, etc.)
+);
+
+-- tax_config
+CREATE TABLE tax_config (
+  id UUID PRIMARY KEY,
+  code VARCHAR UNIQUE,
+  name VARCHAR NOT NULL,
+  rate DECIMAL,
+  is_dine_in_only BOOLEAN DEFAULT FALSE
+);
+
+-- ncf_sequences
+CREATE TABLE ncf_sequences (
+  id UUID PRIMARY KEY,
+  type_code VARCHAR, -- B01, B02, etc.
+  description VARCHAR,
+  current_number INTEGER,
+  start_number INTEGER,
+  end_number INTEGER,
+  expiration_date DATE,
+  is_active BOOLEAN
+);
+```
+
+### MongoDB
+```javascript
+// products collection
+{
+  _id: ObjectId,
+  name: String,
+  price: Number,
+  category_id: ObjectId,
+  tax_exemptions: [String], // Array de IDs de impuestos exentos
+  // ...
+}
+```
+
+---
+
+## 🚨 Technical Debt
+
+1. **Settings.js Monolith**: Este archivo tiene ~2000+ líneas y maneja todas las pestañas de configuración. Debe dividirse en componentes separados:
+   - `SystemSettings.js`
+   - `TaxSettings.js`
+   - `NcfSettings.js`
+   - `SalesSettings.js`
+   - `UserSettings.js`
+
+2. **Print Agent**: Actualmente es un script Python, debería ser un ejecutable .exe para Windows.
+
+---
+
+## 📅 Last Updated
+2025-02-21 - Verificación de etiqueta "no aplica(n)" completada
