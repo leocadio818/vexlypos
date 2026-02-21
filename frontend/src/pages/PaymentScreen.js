@@ -530,7 +530,7 @@ export default function PaymentScreen() {
       if (pts > 0) msg += ` | +${pts} pts fidelidad`;
       toast.success(msg);
       
-      // Store the paid bill for printing and show print dialog
+      // Store the paid bill for printing
       setPaidBill({
         ...res.data,
         ncf: generatedNcf?.ncf || res.data?.ncf,
@@ -539,7 +539,8 @@ export default function PaymentScreen() {
         customer_rnc: selectedCustomer?.rnc || null
       });
       
-      // Show NCF Alert Modal if configured and triggered
+      // Show NCF Alert Modal FIRST if configured and triggered (blocking)
+      // The print dialog will open only after user acknowledges the alert
       if (generatedNcf?.should_show_alert && generatedNcf?.alert_message) {
         setNcfAlertModal({ 
           open: true, 
@@ -551,9 +552,11 @@ export default function PaymentScreen() {
             expiration_date: generatedNcf.expiration_date
           }
         });
+        // Don't open print dialog yet - wait for alert acknowledgment
+      } else {
+        // No alert needed, go directly to print dialog
+        setPrintDialogOpen(true);
       }
-      
-      setPrintDialogOpen(true);
     } catch (err) {
       // Handle specific error from backend
       const errorMsg = err?.response?.data?.detail || 'Error procesando pago';
