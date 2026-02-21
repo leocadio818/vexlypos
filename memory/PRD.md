@@ -106,6 +106,35 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **Visualización**: Badge de configuración de alerta visible en tarjeta de secuencia NCF
 - ✅ **Almacenamiento híbrido**: Configuración en MongoDB (`ncf_sequence_config`)
 
+#### LÓGICA DE ALERTAS NCF (MEMORIZADA)
+```
+FLUJO DE PAGO CON ALERTAS:
+1. Usuario confirma pago → Backend genera NCF
+2. Backend verifica: remaining <= alert_threshold?
+   - SÍ → should_show_alert = true
+   - NO → should_show_alert = false
+3. Frontend recibe respuesta:
+   - Si should_show_alert = true:
+     a) Muestra PRIMERO modal de alerta NCF (bloqueante)
+     b) Cajero DEBE presionar "ENTENDIDO - CONTINUAR"
+     c) DESPUÉS aparece modal "Pago Completado" (CERRAR / IMPRIMIR TICKET)
+   - Si should_show_alert = false:
+     a) Muestra directamente modal "Pago Completado"
+
+CONDICIONES PARA ACTIVAR ALERTA:
+- La secuencia NCF debe tener alert_threshold configurado (> 0)
+- Los comprobantes restantes deben ser <= alert_threshold
+- Aplica a CUALQUIER tipo de venta (B01, B02, B14, etc.)
+
+CONFIGURACIÓN EN SETTINGS > NCF:
+- "Inicio de Alerta": Número de NCF restantes para comenzar alertas
+- "Intervalo de Alerta": Mostrar cada N ventas (1 = siempre)
+
+EJEMPLO:
+- B02 con threshold=500, restantes=484 → ALERTA ACTIVA (484 <= 500)
+- B02 con threshold=100, restantes=484 → SIN ALERTA (484 > 100)
+```
+
 ---
 
 ## 🔧 Key Features Documentation
