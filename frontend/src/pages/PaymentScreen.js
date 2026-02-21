@@ -238,7 +238,7 @@ export default function PaymentScreen() {
     }
     
     try {
-      const res = await fetch(`${API_BASE}/api/auth/tax-override/authorize`, {
+      const res = await fetch(`${API_BASE}/api/tax-override/authorize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
