@@ -22,6 +22,7 @@ import ProductConfig from "@/pages/ProductConfig";
 import UserConfig from "@/pages/UserConfig";
 import AnulacionesReport from "@/pages/AnulacionesReport";
 import TicketDemo from "@/pages/TicketDemo";
+import BillHistory from "@/pages/BillHistory";
 import Layout from "@/components/Layout";
 
 function ProtectedRoute({ children }) {
