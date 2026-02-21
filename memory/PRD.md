@@ -379,4 +379,4 @@ CREATE TABLE ncf_sequences (
 - ✅ **Beneficios**: Mejor mantenibilidad, carga más rápida, menos conflictos
 
 ## 📅 Last Updated
-2025-02-21 - Motor de Inteligencia Fiscal y NCF Automático completado
+2025-02-21 - Botón "Impuesto" con ajuste fiscal granular y auditoría
