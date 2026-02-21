@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { formatMoney } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,13 +12,20 @@ import axios from 'axios';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
 
+// Admin roles that can configure loyalty points
+const ADMIN_ROLES = ['admin', 'gerente', 'propietario', 'manager', 'owner'];
+
 export default function Customers() {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState('');
   const [config, setConfig] = useState({ points_per_hundred: 10, point_value_rd: 1, min_redemption: 50 });
   const [addDialog, setAddDialog] = useState({ open: false, name: '', phone: '', email: '' });
   const [redeemDialog, setRedeemDialog] = useState({ open: false, customer: null, points: '' });
   const [configDialog, setConfigDialog] = useState(false);
+
+  // Check if current user has admin privileges
+  const isAdmin = user && ADMIN_ROLES.includes(user.role?.toLowerCase());
 
   const fetchAll = useCallback(async () => {
     try {
