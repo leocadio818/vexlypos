@@ -395,6 +395,9 @@ export default function BillHistory() {
               <AlertTriangle size={20} />
               Generar Nota de Crédito (B04)
             </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Proceso de reversión fiscal conforme a regulaciones DGII
+            </DialogDescription>
           </DialogHeader>
           
           {reversalDialog.bill && (
