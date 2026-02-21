@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { 
   Package, Warehouse, Truck, FileText, ArrowLeftRight, AlertTriangle,
   ChevronRight, ArrowLeft, RefreshCw, Mail, Bell, Check, Plus, Save, X,
-  Factory, History, Calculator, Info, DollarSign, TrendingDown
+  Factory, History, Calculator, Info, DollarSign, TrendingDown, Cog
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
