@@ -197,44 +197,100 @@ export default function PaymentScreen() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Recalculate taxes when service type changes
+  // Recalculate taxes when service type changes using Intelligent Tax Engine
   useEffect(() => {
-    if (!bill || !selectedServiceType || !taxConfig.length) return;
+    if (!bill || !selectedServiceType?.id || !bill.items?.length) return;
 
-    const exemptions = selectedServiceType.tax_exemptions || [];
-    let newItbis = 0;
-    let newPropina = 0;
-    const subtotal = bill.subtotal || 0;
+    const calculateIntelligentTaxes = async () => {
+      try {
+        // Prepare cart items for the tax engine
+        const cartItems = bill.items.map(item => ({
+          product_id: item.product_id || item.id,
+          product_name: item.product_name || item.name,
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || item.price || 0,
+          category_id: item.category_id || null,
+          modifiers_total: item.modifiers_total || 0
+        }));
 
-    // Calculate taxes that are NOT exempt
-    taxConfig.forEach(tax => {
-      if (!tax.active || exemptions.includes(tax.id)) return;
-      const amount = subtotal * (tax.rate / 100);
-      if (tax.is_tip) {
-        newPropina += amount;
-      } else {
-        newItbis += amount;
+        const res = await fetch(`${API_BASE}/api/taxes/calculate-cart`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('pos_token')}`
+          },
+          body: JSON.stringify({
+            items: cartItems,
+            sale_type_id: selectedServiceType.id
+          })
+        });
+
+        if (res.ok) {
+          const taxResult = await res.json();
+          const summary = taxResult.summary;
+          
+          setAdjustedBill({
+            ...bill,
+            itbis: summary.itbis,
+            itbis_base: summary.itbis_base,
+            propina_legal: summary.propina_legal,
+            propina_base: summary.propina_base,
+            total: summary.total,
+            subtotal: summary.subtotal,
+            sale_type: selectedServiceType.code,
+            sale_type_name: selectedServiceType.name,
+            is_government_exempt: taxResult.is_government_exempt,
+            tax_breakdown: taxResult.tax_breakdown,
+            items_with_taxes: taxResult.items
+          });
+
+          // Update quick amounts based on new total
+          const baseAmounts = [100, 200, 500, 1000, 2000, 5000];
+          const nearestHigher = baseAmounts.find(a => a >= summary.total) || Math.ceil(summary.total / 100) * 100;
+          if (!baseAmounts.includes(nearestHigher) && nearestHigher > 0) {
+            setQuickAmounts([...baseAmounts, nearestHigher].sort((a, b) => a - b));
+          }
+        } else {
+          // Fallback to simple calculation
+          fallbackTaxCalculation();
+        }
+      } catch (err) {
+        console.warn('Tax calculation error, using fallback:', err);
+        fallbackTaxCalculation();
       }
-    });
+    };
 
-    const newTotal = Math.round((subtotal + newItbis + newPropina) * 100) / 100;
+    const fallbackTaxCalculation = () => {
+      const exemptions = selectedServiceType.tax_exemptions || [];
+      let newItbis = 0;
+      let newPropina = 0;
+      const subtotal = bill.subtotal || 0;
 
-    setAdjustedBill({
-      ...bill,
-      itbis: Math.round(newItbis * 100) / 100,
-      propina_legal: Math.round(newPropina * 100) / 100,
-      total: newTotal,
-      sale_type: selectedServiceType.code,
-      sale_type_name: selectedServiceType.name
-    });
+      // Calculate taxes that are NOT exempt
+      taxConfig.forEach(tax => {
+        if (!tax.is_active || exemptions.includes(tax.id)) return;
+        const amount = subtotal * (tax.rate / 100);
+        if (tax.is_tip || tax.code === 'PROPINA') {
+          newPropina += amount;
+        } else if (tax.code === 'ITBIS') {
+          newItbis += amount;
+        }
+      });
 
-    // Update quick amounts based on new total
-    const baseAmounts = [100, 200, 500, 1000, 2000, 5000];
-    const nearestHigher = baseAmounts.find(a => a >= newTotal) || Math.ceil(newTotal / 100) * 100;
-    if (!baseAmounts.includes(nearestHigher) && nearestHigher > 0) {
-      setQuickAmounts([...baseAmounts, nearestHigher].sort((a, b) => a - b));
-    }
-  }, [bill, selectedServiceType, taxConfig]);
+      const newTotal = Math.round((subtotal + newItbis + newPropina) * 100) / 100;
+
+      setAdjustedBill({
+        ...bill,
+        itbis: Math.round(newItbis * 100) / 100,
+        propina_legal: Math.round(newPropina * 100) / 100,
+        total: newTotal,
+        sale_type: selectedServiceType.code,
+        sale_type_name: selectedServiceType.name
+      });
+    };
+
+    calculateIntelligentTaxes();
+  }, [bill, selectedServiceType, taxConfig, API_BASE]);
 
   const totalPaidDOP = paymentMethods.reduce((sum, m) => {
     const amt = parseFloat(payAmounts[m.name]) || 0;
