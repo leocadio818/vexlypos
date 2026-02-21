@@ -667,10 +667,6 @@ async def calculate_cart_taxes(input: IntelligentTaxCalculationInput):
     taxes_by_id = {t["id"]: t for t in all_taxes}
     taxes_by_code = {t["code"]: t for t in all_taxes}
     
-    # Find ITBIS tax ID for government exemption filtering
-    itbis_tax = taxes_by_code.get("ITBIS")
-    itbis_tax_id = itbis_tax["id"] if itbis_tax else None
-    
     # Process each line item
     line_items = []
     total_subtotal = 0
