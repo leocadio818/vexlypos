@@ -19,6 +19,126 @@ const statusColors = {
   divided_other: { border: '#F9A825', bg: 'rgba(249,168,37,0.25)', glow: 'rgba(249,168,37,0.5)' }, // Amarillo para dividida de otros
 };
 
+// Generate chair/seat positions around the table
+const getChairPositions = (capacity, shape, w, h) => {
+  const chairs = [];
+  const chairSize = Math.min(w, h) * 0.22; // Chair size relative to table
+  const offset = chairSize * 0.6; // Distance from table edge
+  
+  if (shape === 'round') {
+    // Distribute chairs in a circle around the table
+    for (let i = 0; i < capacity; i++) {
+      const angle = (i * 360 / capacity) - 90; // Start from top
+      const rad = (angle * Math.PI) / 180;
+      const radius = Math.max(w, h) / 2 + offset;
+      chairs.push({
+        x: Math.cos(rad) * radius,
+        y: Math.sin(rad) * radius,
+        rotation: angle + 90, // Face the table
+        size: chairSize
+      });
+    }
+  } else if (shape === 'rectangle') {
+    // Long table - distribute on long sides
+    const longSide = Math.max(w, h);
+    const shortSide = Math.min(w, h);
+    const isHorizontal = w > h;
+    
+    const perSide = Math.ceil(capacity / 2);
+    const spacing = longSide / (perSide + 1);
+    
+    for (let i = 0; i < capacity; i++) {
+      const side = i < perSide ? 0 : 1; // 0 = top/left, 1 = bottom/right
+      const posOnSide = i < perSide ? i : i - perSide;
+      
+      if (isHorizontal) {
+        chairs.push({
+          x: -longSide/2 + spacing * (posOnSide + 1),
+          y: side === 0 ? -shortSide/2 - offset : shortSide/2 + offset,
+          rotation: side === 0 ? 180 : 0,
+          size: chairSize
+        });
+      } else {
+        chairs.push({
+          x: side === 0 ? -shortSide/2 - offset : shortSide/2 + offset,
+          y: -longSide/2 + spacing * (posOnSide + 1),
+          rotation: side === 0 ? 90 : -90,
+          size: chairSize
+        });
+      }
+    }
+  } else {
+    // Square table - distribute on all 4 sides
+    const positions = [];
+    const perSide = Math.ceil(capacity / 4);
+    const sides = ['top', 'right', 'bottom', 'left'];
+    
+    let placed = 0;
+    for (let sideIdx = 0; sideIdx < 4 && placed < capacity; sideIdx++) {
+      const side = sides[sideIdx];
+      const countThisSide = Math.min(perSide, capacity - placed);
+      const spacing = (side === 'top' || side === 'bottom' ? w : h) / (countThisSide + 1);
+      
+      for (let i = 0; i < countThisSide && placed < capacity; i++) {
+        let x, y, rotation;
+        const pos = spacing * (i + 1);
+        
+        switch(side) {
+          case 'top':
+            x = -w/2 + pos; y = -h/2 - offset; rotation = 180; break;
+          case 'right':
+            x = w/2 + offset; y = -h/2 + pos; rotation = -90; break;
+          case 'bottom':
+            x = -w/2 + pos; y = h/2 + offset; rotation = 0; break;
+          case 'left':
+            x = -w/2 - offset; y = -h/2 + pos; rotation = 90; break;
+          default:
+            x = 0; y = 0; rotation = 0;
+        }
+        
+        chairs.push({ x, y, rotation, size: chairSize });
+        placed++;
+      }
+    }
+  }
+  
+  return chairs;
+};
+
+// Chair/Person icon component
+const ChairIcon = ({ x, y, rotation, size, color, isMobile }) => {
+  const actualSize = isMobile ? size * 0.8 : size;
+  
+  return (
+    <div
+      className="absolute transition-all duration-300"
+      style={{
+        left: '50%',
+        top: '50%',
+        width: actualSize,
+        height: actualSize,
+        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${rotation}deg)`,
+      }}
+    >
+      {/* Person silhouette - modern minimal style */}
+      <svg 
+        viewBox="0 0 24 24" 
+        fill={color}
+        className="w-full h-full drop-shadow-sm"
+        style={{ filter: `drop-shadow(0 1px 2px rgba(0,0,0,0.3))` }}
+      >
+        {/* Head */}
+        <circle cx="12" cy="6" r="4" opacity="0.9" />
+        {/* Body */}
+        <path 
+          d="M12 12c-4 0-7 2-7 5v2a1 1 0 001 1h12a1 1 0 001-1v-2c0-3-3-5-7-5z" 
+          opacity="0.8"
+        />
+      </svg>
+    </div>
+  );
+};
+
 // More visible pattern for divided tables - diagonal stripes with higher contrast
 const stripedPattern = (isOther) => `repeating-linear-gradient(
   -45deg,
