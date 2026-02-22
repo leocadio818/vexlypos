@@ -882,6 +882,12 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     config = await db.system_config.find_one({}, {"_id": 0}) or {}
     printer_config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or config
     
+    biz_name = printer_config.get("business_name", "ALONZO CIGAR")
+    biz_addr = printer_config.get("business_address", "C/ Las Flores #12, Jarabacoa")
+    biz_rnc = printer_config.get("rnc", "1-31-75577-1")
+    biz_phone = printer_config.get("phone", "809-301-3858")
+    footer = printer_config.get("footer_text", "Gracias por su visita!")
+    
     # If send_to_queue, add to print queue
     if send_to_queue:
         receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
@@ -890,10 +896,10 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
         receipt_data = {
             "type": "receipt",
             "paper_width": 80,
-            "business_name": printer_config.get("business_name", "MESA POS RD"),
-            "business_address": printer_config.get("business_address", ""),
-            "rnc": printer_config.get("rnc", ""),
-            "phone": printer_config.get("phone", ""),
+            "business_name": biz_name,
+            "business_address": biz_addr,
+            "rnc": biz_rnc,
+            "phone": biz_phone,
             "bill_number": bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8],
             "table_number": bill.get("table_number", ""),
             "waiter_name": bill.get("waiter_name", ""),
@@ -904,8 +910,9 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
             "itbis": bill.get("itbis", 0),
             "tip": bill.get("propina_legal", 0),
             "total": bill.get("total", 0),
+            "amount_received": bill.get("amount_received", 0),
             "payment_method": bill.get("payment_method_name", "Efectivo"),
-            "footer_text": printer_config.get("footer_text", "Gracias por su visita!")
+            "footer_text": footer
         }
         job = {"id": gen_id(), "type": "receipt", "channel": "receipt", "printer_name": printer_name, "data": receipt_data, "status": "pending", "created_at": now_iso()}
         await db.print_queue.insert_one(job)
@@ -913,23 +920,38 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     items_html = ""
     for item in bill.get("items", []):
         items_html += f"<tr><td>{item['quantity']}x {item['product_name']}</td><td style='text-align:right'>RD$ {item['total']:,.2f}</td></tr>"
+    
+    # Payment & change info
+    payment_html = ""
+    if bill.get("payment_method_name"):
+        payment_html += f"<tr><td>Pagado con:</td><td style='text-align:right'>{bill.get('payment_method_name', 'Efectivo')}</td></tr>"
+    amount_received = bill.get("amount_received", 0)
+    if amount_received > bill["total"]:
+        cambio = amount_received - bill["total"]
+        payment_html += f"<tr><td>Recibido:</td><td style='text-align:right'>RD$ {amount_received:,.2f}</td></tr>"
+        payment_html += f"<tr><td><b>CAMBIO:</b></td><td style='text-align:right'><b>RD$ {cambio:,.2f}</b></td></tr>"
+    
     return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
-    <b style='font-size:16px;'>{printer_config.get('business_name', 'MESA POS RD')}</b><br>
-    <span style='font-size:10px;'>{printer_config.get('business_address', '')}<br>
-    RNC: {printer_config.get('rnc', '')} Tel: {printer_config.get('phone', '')}</span>
+    <b style='font-size:18px;'>{biz_name}</b><br>
+    <span style='font-size:11px;font-weight:bold;'>RNC: {biz_rnc}</span><br>
+    <span style='font-size:10px;'>{biz_addr}<br>Tel: {biz_phone}</span>
     </div>
-    <div>NCF: {bill.get('ncf', '')}<br>Mesa: {bill['table_number']}<br>Fecha: {bill.get('paid_at', bill['created_at'])[:19]}</div>
+    <div style='border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;'>
+    <b>NCF: {bill.get('ncf', '')}</b><br>
+    Valido hasta: {printer_config.get('ncf_expiry', config.get('ticket_ncf_expiry', '31/12/2026'))}<br>
+    Mesa: {bill['table_number']} | Fecha: {bill.get('paid_at', bill['created_at'])[:19]}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;'>
     {items_html}</table>
     <table style='width:100%;font-size:12px;'>
     <tr><td>Subtotal</td><td style='text-align:right'>RD$ {bill['subtotal']:,.2f}</td></tr>
-    <tr><td>ITBIS 18%</td><td style='text-align:right'>RD$ {bill['itbis']:,.2f}</td></tr>
-    <tr><td>Propina {bill.get('propina_percentage', 10)}%</td><td style='text-align:right'>RD$ {bill.get('propina_legal', 0):,.2f}</td></tr>
-    <tr><td><b style='font-size:14px;'>TOTAL</b></td><td style='text-align:right;font-size:14px;'><b>RD$ {bill['total']:,.2f}</b></td></tr>
+    <tr><td>ITBIS 18%</td><td style='text-align:right'>RD$ {bill.get('itbis', 0):,.2f}</td></tr>
+    <tr><td>Propina Legal {bill.get('propina_percentage', 10)}%</td><td style='text-align:right'>RD$ {bill.get('propina_legal', 0):,.2f}</td></tr>
+    <tr><td><b style='font-size:16px;'>TOTAL</b></td><td style='text-align:right;font-size:16px;'><b>RD$ {bill['total']:,.2f}</b></td></tr>
+    {payment_html}
     </table>
     <div style='text-align:center;margin-top:8px;font-size:10px;border-top:1px dashed #000;padding-top:8px;'>
-    {printer_config.get('footer_text', 'Gracias por su visita')}</div></div>""", "queued": send_to_queue}
+    {footer}<br><span style='font-size:9px;'>Conserve este documento para fines de DGII</span></div></div>""", "queued": send_to_queue}
 
 @api.get("/print/receipt-escpos/{bill_id}")
 async def print_receipt_escpos(bill_id: str):
