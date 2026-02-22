@@ -2293,18 +2293,18 @@ def format_qty(q):
 def build_comanda(data):
     commands = []
     channel = data.get("channel_name", "COMANDA")
-    # Encabezado grande
-    commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True, "size": 3}})
+    # Encabezado
+    commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True, "size": 2}})
     commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True, "size": 2}})
     commands.append({{"type": "divider"}})
-    # Info de mesa - tamaño grande
+    # Info de mesa
     commands.append({{"type": "text", "text": f"MESA: {{data.get('table_number', '?')}}", "align": "center", "bold": True, "size": 2}})
     commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20], "bold": True}})
     fecha = data.get("date", "")
     commands.append({{"type": "columns", "left": "Hora:", "right": fecha[-8:] if len(fecha) > 8 else fecha}})
     commands.append({{"type": "divider"}})
     
-    # Items - TEXTO GRANDE
+    # Items
     for item in data.get("items", []):
         qty = item.get('quantity', 1)
         qty_str = format_qty(qty)
