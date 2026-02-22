@@ -2082,7 +2082,7 @@ async def update_printer_config(input: dict):
 
 # ─── DOWNLOAD PRINT AGENT ───
 @api.get("/download/print-agent", response_class=PlainTextResponse)
-async def download_print_agent(printer_name: str = Query("Caja", description="Nombre de la impresora en Windows")):
+async def download_print_agent(printer_name: str = Query("RECIBO", description="Nombre de la impresora en Windows")):
     """
     Descarga el agente de impresión configurado para tu servidor y impresora.
     Guárdalo como 'MesaPOS_PrintAgent.py' y ejecútalo con Python.
@@ -2092,34 +2092,17 @@ async def download_print_agent(printer_name: str = Query("Caja", description="No
     agent_code = f'''#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-╔═══════════════════════════════════════════════════════════════╗
-║     MESA POS RD - AGENTE DE IMPRESION v2.0                    ║
-║     Alonzo Cigar - Mesa POS RD                                ║
-╠═══════════════════════════════════════════════════════════════╣
-║  INSTALACION:                                                  ║
-║  1. pip install requests pywin32                               ║
-║  2. Ejecutar como Servicio (ver instrucciones abajo)          ║
-╚═══════════════════════════════════════════════════════════════╝
+MESA POS RD - AGENTE DE IMPRESION v2.1
+======================================
+Alonzo Cigar - Mesa POS RD
 
-PARA INSTALAR COMO SERVICIO DE WINDOWS:
-========================================
-1. Descarga NSSM desde: https://nssm.cc/download
-2. Extrae nssm.exe en C:\\nssm\\
-3. Abre CMD como Administrador y ejecuta:
-   
-   C:\\nssm\\nssm.exe install MesaPOS_PrintAgent "C:\\Python312\\python.exe" "C:\\MesaPOS\\MesaPOS_PrintAgent.py"
-   C:\\nssm\\nssm.exe set MesaPOS_PrintAgent AppDirectory "C:\\MesaPOS"
-   C:\\nssm\\nssm.exe set MesaPOS_PrintAgent DisplayName "Mesa POS - Agente de Impresion"
-   C:\\nssm\\nssm.exe set MesaPOS_PrintAgent Start SERVICE_AUTO_START
-   net start MesaPOS_PrintAgent
+INSTALACION:
+1. Ejecuta el instalador .bat como Administrador
+2. O manualmente: pip install requests pywin32
 
-4. El servicio se iniciara automaticamente con Windows.
-
-COMANDOS UTILES:
-- Ver estado: sc query MesaPOS_PrintAgent
-- Detener: net stop MesaPOS_PrintAgent
-- Iniciar: net start MesaPOS_PrintAgent
-- Eliminar: C:\\nssm\\nssm.exe remove MesaPOS_PrintAgent confirm
+CAMBIAR URL DEL SERVIDOR:
+- Edita el archivo config.txt en la misma carpeta
+- O vuelve a ejecutar el instalador desde la nueva URL
 """
 
 import os
@@ -2127,6 +2110,7 @@ import sys
 import time
 import socket
 import logging
+import json
 from datetime import datetime
 
 # ════════════════════════════════════════════════════════════════
