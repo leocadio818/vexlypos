@@ -57,6 +57,10 @@ class PayBillInput(BaseModel):
     additional_tip: float = 0
     customer_id: str = ""
     sale_type: str = "dine_in"
+    itbis: Optional[float] = None
+    propina_legal: Optional[float] = None
+    total: Optional[float] = None
+    amount_received: Optional[float] = None
 
 # ─── PAYMENT METHODS ───
 @router.get("/payment-methods")
