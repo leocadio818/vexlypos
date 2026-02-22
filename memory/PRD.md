@@ -49,6 +49,28 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 
 - ✅ **Test Report**: 100% passed (5/5 backend + frontend verified) - `/app/test_reports/iteration_56.json`
 
+### 2025-02-22: Impuestos Dinamicos + Rediseno Ticket + Campos Expandidos
+- ✅ **Nombres de Impuestos Dinamicos**:
+  - Eliminada la palabra "Sugerida" de todo el sistema
+  - Pre-cuenta, pantalla de pago y factura usan el nombre exacto del `tax_config.description`
+  - Flujo: `tax_config.description` → `bill.tax_breakdown[].description` → recibo
+  - Archivos: `PaymentScreen.js`, `ThermalTicket.js`, `server.py` (5 endpoints de impresion)
+
+- ✅ **Rediseno Bloque TOTAL**:
+  - Fondo negro eliminado → fondo blanco con borde negro 2px (identico a Comprobante Fiscal)
+  - Monto centrado y en negrita
+  - Archivos: `ThermalTicket.js`, `ticket-print.css`, `server.py` (HTML receipts)
+
+- ✅ **Expansion Direccion del Negocio (4 campos)**:
+  - Calle (`ticket_address_street`), Edificio/Local (`ticket_address_building`), Sector (`ticket_address_sector`), Ciudad (`ticket_address_city`)
+  - Archivos: `SystemTab.js`, `ThermalTicket.js`
+
+- ✅ **Mensajes de Pie (4 campos)**:
+  - `ticket_footer_msg1` a `ticket_footer_msg4` (para redes sociales, politicas, etc.)
+  - Archivos: `SystemTab.js`, `ThermalTicket.js`, `server.py`
+
+- ✅ **Test Report**: 100% passed (10/10) - `/app/test_reports/iteration_57.json`
+
 ---
 
 ## ✅ COMPLETED FEATURES
