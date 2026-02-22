@@ -1814,18 +1814,31 @@ async def send_comanda_to_printer(order_id: str):
 
 @api.post("/print/pre-check/{order_id}/send")
 async def send_precheck_to_printer(order_id: str):
-    """Envía una pre-cuenta a la cola de impresión"""
+    """Envia una pre-cuenta a la cola de impresion"""
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
     items = [i for i in order.get("items", []) if i["status"] != "cancelled"]
     subtotal = sum((i["unit_price"] + sum(m.get("price",0) for m in i.get("modifiers",[]))) * i["quantity"] for i in items)
-    itbis = round(subtotal * 0.18, 2)
-    propina = round(subtotal * 0.10, 2)
-    total = round(subtotal + itbis + propina, 2)
     
-    # Registrar impresión
+    # Get dynamic tax names from tax_config
+    taxes = await db.tax_config.find({"active": True}, {"_id": 0}).sort("order", 1).to_list(10)
+    tax_lines = []
+    total_tax = 0
+    for tax in taxes:
+        rate = tax.get("rate", 0)
+        if rate <= 0:
+            continue
+        amount = round(subtotal * (rate / 100), 2)
+        tax_lines.append({"description": tax.get("description", ""), "rate": rate, "amount": amount})
+        total_tax += amount
+    if not tax_lines:
+        tax_lines = [{"description": "ITBIS", "rate": 18, "amount": round(subtotal * 0.18, 2)}, {"description": "Propina", "rate": 10, "amount": round(subtotal * 0.10, 2)}]
+        total_tax = sum(t["amount"] for t in tax_lines)
+    total = round(subtotal + total_tax, 2)
+    
+    # Registrar impresion
     print_count = await db.pre_check_prints.count_documents({"order_id": order_id})
     await db.pre_check_prints.insert_one({"order_id": order_id, "print_number": print_count + 1, "printed_at": now_iso()})
     
@@ -1851,8 +1864,8 @@ async def send_precheck_to_printer(order_id: str):
     
     commands.append({"type": "divider"})
     commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {subtotal:,.2f}"})
-    commands.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {itbis:,.2f}"})
-    commands.append({"type": "columns", "left": "Propina Sugerida 10%", "right": f"RD$ {propina:,.2f}"})
+    for tl in tax_lines:
+        commands.append({"type": "columns", "left": f"{tl['description']} {tl['rate']}%", "right": f"RD$ {tl['amount']:,.2f}"})
     commands.append({"type": "columns", "bold": True, "left": "TOTAL ESTIMADO", "right": f"RD$ {total:,.2f}"})
     commands.append({"type": "divider"})
     commands.append({"type": "center", "text": "La propina es voluntaria"})
