@@ -140,33 +140,50 @@ async def kitchen_stream(request: Request):
 # ─── DEBUG/STATUS ENDPOINT ───
 @router.get("/kitchen/status")
 async def kitchen_status():
-    """Debug endpoint to check KDS connectivity and order status"""
+    """Debug endpoint to check KDS connectivity and order status - FILTERED BY CHANNEL"""
+    # Get category IDs that belong to kitchen
+    kitchen_cat_ids = await get_kitchen_category_ids()
+    
     orders = await db.orders.find(
         {"status": {"$in": ["sent", "active", "pending"]},
          "items": {"$elemMatch": {"sent_to_kitchen": True}}},
         {"_id": 0}
     ).to_list(100)
     
-    pending = [o for o in orders if any(i.get("status") in ["sent", "pending"] for i in o.get("items", []) if i.get("sent_to_kitchen"))]
-    preparing = [o for o in orders if any(i.get("status") == "preparing" for i in o.get("items", []) if i.get("sent_to_kitchen"))]
-    ready = [o for o in orders if any(i.get("status") == "ready" for i in o.get("items", []) if i.get("sent_to_kitchen"))]
+    # Filter items by kitchen categories
+    filtered_orders = []
+    for order in orders:
+        kitchen_items = [
+            item for item in order.get("items", [])
+            if item.get("sent_to_kitchen") 
+            and item.get("category_id") in kitchen_cat_ids
+        ]
+        if kitchen_items:
+            order_copy = dict(order)
+            order_copy["items"] = kitchen_items
+            filtered_orders.append(order_copy)
+    
+    pending = [o for o in filtered_orders if any(i.get("status") in ["sent", "pending"] for i in o.get("items", []))]
+    preparing = [o for o in filtered_orders if any(i.get("status") == "preparing" for i in o.get("items", []))]
+    ready = [o for o in filtered_orders if any(i.get("status") == "ready" for i in o.get("items", []))]
     
     return {
         "status": "connected",
         "timestamp": now_iso(),
-        "total_orders": len(orders),
+        "total_orders": len(filtered_orders),
         "pending_count": len(pending),
         "preparing_count": len(preparing),
         "ready_count": len(ready),
+        "kitchen_categories": len(kitchen_cat_ids),
         "orders_summary": [
             {
                 "id": o["id"],
                 "table": o.get("table_number"),
                 "waiter": o.get("waiter_name"),
-                "items_count": len([i for i in o.get("items", []) if i.get("sent_to_kitchen") and i.get("status") not in ["served", "cancelled"]]),
+                "items_count": len(o.get("items", [])),
                 "created_at": o.get("created_at")
             }
-            for o in orders[:10]
+            for o in filtered_orders[:10]
         ]
     }
 
