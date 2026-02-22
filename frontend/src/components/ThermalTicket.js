@@ -255,45 +255,43 @@ const ThermalTicket = forwardRef(({
       <div className="ticket-taxes">
         <div className="ticket-taxes-title">DESGLOSE DE IMPUESTOS</div>
         
-        {/* ITBIS */}
-        {(bill.itbis > 0 || bill.itbis_rate) && (
-          <div className="ticket-tax-row">
-            <span className="ticket-tax-label">
-              ITBIS <span className="ticket-tax-rate">({bill.itbis_rate || 18}%)</span>
-            </span>
-            <span className="ticket-tax-value">{formatMoney(bill.itbis)}</span>
-          </div>
+        {/* Render all taxes from tax_breakdown with their configured names */}
+        {bill.tax_breakdown?.length > 0 ? (
+          <>
+            {bill.tax_breakdown.map((tax, i) => (
+              <div key={i} className="ticket-tax-row">
+                <span className="ticket-tax-label">
+                  {tax.description} <span className="ticket-tax-rate">({tax.rate}%)</span>
+                </span>
+                <span className="ticket-tax-value">{formatMoney(tax.amount)}</span>
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            {(bill.itbis > 0 || bill.itbis_rate) && (
+              <div className="ticket-tax-row">
+                <span className="ticket-tax-label">
+                  ITBIS <span className="ticket-tax-rate">({bill.itbis_rate || 18}%)</span>
+                </span>
+                <span className="ticket-tax-value">{formatMoney(bill.itbis)}</span>
+              </div>
+            )}
+            {bill.propina_legal > 0 && (
+              <div className="ticket-tax-row">
+                <span className="ticket-tax-label">
+                  Propina <span className="ticket-tax-rate">({bill.propina_percentage || 10}%)</span>
+                </span>
+                <span className="ticket-tax-value">{formatMoney(bill.propina_legal)}</span>
+              </div>
+            )}
+          </>
         )}
-        
-        {/* Propina Legal */}
-        {bill.propina_legal > 0 && (
-          <div className="ticket-tax-row">
-            <span className="ticket-tax-label">
-              PROPINA LEY <span className="ticket-tax-rate">({bill.propina_percentage || 10}%)</span>
-            </span>
-            <span className="ticket-tax-value">{formatMoney(bill.propina_legal)}</span>
-          </div>
-        )}
-        
-        {/* Otros impuestos del tax_breakdown */}
-        {bill.tax_breakdown?.filter(t => 
-          !['ITBIS', 'itbis', 'PROPINA', 'propina'].some(k => 
-            t.tax_id?.toLowerCase().includes(k.toLowerCase()) || 
-            t.description?.toLowerCase().includes(k.toLowerCase())
-          )
-        ).map((tax, i) => (
-          <div key={i} className="ticket-tax-row">
-            <span className="ticket-tax-label">
-              {tax.description} <span className="ticket-tax-rate">({tax.rate}%)</span>
-            </span>
-            <span className="ticket-tax-value">{formatMoney(tax.amount)}</span>
-          </div>
-        ))}
         
         {/* Total impuestos */}
         <div className="ticket-tax-total">
           <span>Total Impuestos:</span>
-          <span>{formatMoney((bill.itbis || 0) + (bill.propina_legal || 0))}</span>
+          <span>{formatMoney(bill.tax_breakdown?.reduce((sum, t) => sum + (t.amount || 0), 0) || ((bill.itbis || 0) + (bill.propina_legal || 0)))}</span>
         </div>
       </div>
 
