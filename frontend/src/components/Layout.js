@@ -31,6 +31,39 @@ export default function Layout() {
 
   const handleLogout = () => { logout(); navigate('/login'); };
   
+  // Logout with auto-send pending comandas
+  const handleLogoutWithComandas = async () => {
+    try {
+      // Send pending comandas for all user's orders
+      const res = await api.get('/orders');
+      const userOrders = res.data?.filter(o => 
+        o.waiter_id === user?.user_id && 
+        ['active', 'sent'].includes(o.status) &&
+        o.items?.some(i => i.status === 'pending')
+      );
+      
+      if (userOrders?.length > 0) {
+        let sentCount = 0;
+        for (const order of userOrders) {
+          try {
+            await api.orders.sendToKitchen(order.id);
+            sentCount++;
+          } catch (e) {
+            // Ignore errors for individual orders
+          }
+        }
+        if (sentCount > 0) {
+          toast.success(`${sentCount} comanda(s) enviada(s) automáticamente`);
+        }
+      }
+    } catch (e) {
+      // Ignore errors, just logout
+    }
+    
+    logout();
+    navigate('/login');
+  };
+  
   // Check if current page should use glass design
   const isGlassPage = !noGlassPages.some(p => location.pathname.startsWith(p));
   
