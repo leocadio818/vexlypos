@@ -1983,7 +1983,7 @@ async def send_comanda_to_printer(order_id: str):
 
 @api.post("/print/pre-check/{order_id}/send")
 async def send_precheck_to_printer(order_id: str):
-    """Envia una pre-cuenta a la cola de impresion"""
+    """Envia una pre-cuenta directamente a la impresora (red) o a la cola (USB)"""
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
@@ -2011,25 +2011,31 @@ async def send_precheck_to_printer(order_id: str):
     print_count = await db.pre_check_prints.count_documents({"order_id": order_id})
     await db.pre_check_prints.insert_one({"order_id": order_id, "print_number": print_count + 1, "printed_at": now_iso()})
     
+    # Obtener configuración de impresora de recibos
+    receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+    printer_target = receipt_channel.get("target", "usb") if receipt_channel else "usb"
+    printer_ip = receipt_channel.get("ip", "") if receipt_channel else ""
+    
+    # Construir comandos ESC/POS
     commands = []
     
     if print_count > 0:
-        commands.append({"type": "center", "bold": True, "text": f"*** RE-IMPRESION #{print_count} ***"})
+        commands.append({"type": "text", "text": f"*** RE-IMPRESION #{print_count} ***", "align": "center", "bold": True})
     
-    commands.append({"type": "center", "bold": True, "size": "large", "text": "ALONZO CIGAR"})
-    commands.append({"type": "center", "bold": True, "text": "PRE-CUENTA"})
+    commands.append({"type": "text", "text": "ALONZO CIGAR", "align": "center", "bold": True, "size": 2})
+    commands.append({"type": "text", "text": "PRE-CUENTA", "align": "center", "bold": True})
     commands.append({"type": "divider"})
-    commands.append({"type": "left", "text": f"Mesa: {order['table_number']}"})
-    commands.append({"type": "left", "text": f"Mesero: {order['waiter_name']}"})
-    commands.append({"type": "left", "text": f"Fecha: {order['created_at'][:19]}"})
+    commands.append({"type": "columns", "left": "Mesa:", "right": str(order['table_number'])})
+    commands.append({"type": "columns", "left": "Mesero:", "right": order['waiter_name'][:20]})
+    commands.append({"type": "columns", "left": "Fecha:", "right": order['created_at'][:19]})
     commands.append({"type": "divider"})
     
     for item in items:
         item_total = (item["unit_price"] + sum(m.get("price",0) for m in item.get("modifiers",[]))) * item["quantity"]
-        commands.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name']}", "right": f"RD$ {item_total:,.2f}"})
+        commands.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name'][:25]}", "right": f"RD$ {item_total:,.2f}"})
         if item.get("modifiers"):
             mods = ", ".join(m["name"] for m in item["modifiers"])
-            commands.append({"type": "left", "text": f"  ({mods})"})
+            commands.append({"type": "text", "text": f"  ({mods})"})
     
     commands.append({"type": "divider"})
     commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {subtotal:,.2f}"})
@@ -2037,22 +2043,49 @@ async def send_precheck_to_printer(order_id: str):
         commands.append({"type": "columns", "left": f"{tl['description']} {tl['rate']}%", "right": f"RD$ {tl['amount']:,.2f}"})
     commands.append({"type": "columns", "bold": True, "left": "TOTAL ESTIMADO", "right": f"RD$ {total:,.2f}"})
     commands.append({"type": "divider"})
-    commands.append({"type": "center", "text": "La propina es voluntaria"})
-    commands.append({"type": "center", "text": "Este NO es un comprobante fiscal"})
-    commands.append({"type": "feed", "lines": 2})
+    commands.append({"type": "text", "text": "La propina es voluntaria", "align": "center"})
+    commands.append({"type": "text", "text": "Este NO es un comprobante fiscal", "align": "center"})
+    commands.append({"type": "feed", "lines": 3})
     commands.append({"type": "cut"})
     
+    # Si es impresora de red, enviar directamente
+    if printer_target == "network" and printer_ip:
+        escpos_data = build_escpos_commands(commands)
+        success, error = await send_to_network_printer(printer_ip, escpos_data)
+        
+        if success:
+            logging.info(f"Pre-cuenta {order_id[:8]} enviada a {printer_ip} OK")
+            return {"ok": True, "print_number": print_count + 1, "message": "Pre-cuenta impresa", "method": "network", "ip": printer_ip}
+        else:
+            logging.error(f"Pre-cuenta {order_id[:8]} a {printer_ip} FALLÓ: {error}")
+            # Fallback: agregar a cola
+            job = {
+                "id": gen_id(),
+                "type": "pre-check",
+                "reference_id": order_id,
+                "commands": commands,
+                "printer_target": printer_target,
+                "printer_ip": printer_ip,
+                "status": "pending",
+                "created_at": now_iso()
+            }
+            await db.print_queue.insert_one(job)
+            return {"ok": True, "print_number": print_count + 1, "message": f"Error de red ({error}), agregado a cola", "method": "queue"}
+    
+    # Si es USB, agregar a la cola para el agente
     job = {
         "id": gen_id(),
         "type": "pre-check",
         "reference_id": order_id,
         "commands": commands,
+        "printer_name": receipt_channel.get("printer_name", "") if receipt_channel else "",
+        "printer_target": printer_target,
         "status": "pending",
         "created_at": now_iso()
     }
     await db.print_queue.insert_one(job)
     
-    return {"ok": True, "job_id": job["id"], "print_number": print_count + 1, "message": "Pre-cuenta enviada a impresora"}
+    return {"ok": True, "job_id": job["id"], "print_number": print_count + 1, "message": "Pre-cuenta enviada a cola", "method": "queue"}
 
 # ─── PRINTER CONFIG ───
 @api.get("/printer-config")
