@@ -242,16 +242,19 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
   const chairs = getChairPositions(table.capacity || 4, table.shape, w, h);
   const chairColor = editMode ? '#FF6600' : colors.border;
 
+  // Calculate container padding for chairs
+  const maxChairOffset = Math.min(w, h) * 0.35;
+
   return (
     <div
       ref={nodeRef}
       data-testid={`table-${table.number}`}
       className="absolute select-none touch-none"
       style={{
-        left: pos.x - w * 0.3, // Extra space for chairs
-        top: pos.y - h * 0.3,
-        width: w * 1.6,
-        height: h * 1.6,
+        left: pos.x - maxChairOffset,
+        top: pos.y - maxChairOffset,
+        width: w + maxChairOffset * 2,
+        height: h + maxChairOffset * 2,
         zIndex: isDragging ? 100 : 1,
       }}
     >
@@ -259,8 +262,8 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
       {!editMode && chairs.map((chair, idx) => (
         <ChairIcon
           key={idx}
-          x={chair.x + w * 0.3}
-          y={chair.y + h * 0.3}
+          x={chair.x + maxChairOffset}
+          y={chair.y + maxChairOffset}
           rotation={chair.rotation}
           size={chair.size}
           color={chairColor}
@@ -272,8 +275,8 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
       <div
         className="absolute flex flex-col items-center justify-center"
         style={{
-          left: w * 0.3,
-          top: h * 0.3,
+          left: maxChairOffset,
+          top: maxChairOffset,
           width: w, 
           height: h, 
           borderRadius: radius,
