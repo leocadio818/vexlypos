@@ -10,6 +10,7 @@ import uuid
 import hashlib
 import jwt
 import asyncio
+import socket
 import resend
 from pathlib import Path
 from pydantic import BaseModel
