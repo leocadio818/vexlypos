@@ -407,6 +407,7 @@ El sistema aplica impuestos basándose en la intersección:
 - [x] ~~**Reformateo Ticket POS 80mm**: Header Alonzo Cigar, fuentes mejoradas, NCF legible~~ ✅ COMPLETADO 2025-02-22
 
 ### P1 - Alta Prioridad
+- [ ] Implementar datos reales para `/api/reports/valuation-trends` (actualmente MOCK)
 - [ ] Audit Trail Security (solo Admin ve PINs)
 - [ ] Employee Time Clock (entrada/salida de empleados)
 - [ ] Generación reportes DGII (607, 608)
