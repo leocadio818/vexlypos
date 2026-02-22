@@ -110,8 +110,8 @@ class PrintAgent:
                 elif cmd_type == "columns":
                     left_text = cmd.get("left", "")
                     right_text = cmd.get("right", "")
-                    # Para 80mm, aproximadamente 48 caracteres
-                    width = 48
+                    # Para 80mm con área imprimible de 72mm, aproximadamente 42 caracteres
+                    width = 42
                     spaces = width - len(left_text) - len(right_text)
                     if spaces < 1:
                         spaces = 1
@@ -121,7 +121,7 @@ class PrintAgent:
                     self.printer.set(bold=False)
                     
                 elif cmd_type == "divider":
-                    self.printer.text("-" * 48 + "\n")
+                    self.printer.text("-" * 42 + "\n")
                     
                 elif cmd_type == "cut":
                     self.printer.cut()
