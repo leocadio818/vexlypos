@@ -171,8 +171,9 @@ async def kitchen_stream(request: Request):
 @router.get("/kitchen/status")
 async def kitchen_status():
     """Debug endpoint to check KDS connectivity and order status - FILTERED BY CHANNEL"""
-    # Get category IDs that belong to kitchen
-    kitchen_cat_ids = await get_kitchen_category_ids()
+    # Get filtering data
+    kitchen_cat_ids, bar_channels, mapping_dict = await get_kitchen_category_ids()
+    product_cat_map = await get_product_category_map()
     
     orders = await db.orders.find(
         {"status": {"$in": ["sent", "active", "pending"]},
@@ -183,11 +184,10 @@ async def kitchen_status():
     # Filter items by kitchen categories
     filtered_orders = []
     for order in orders:
-        kitchen_items = [
-            item for item in order.get("items", [])
-            if item.get("sent_to_kitchen") 
-            and item.get("category_id") in kitchen_cat_ids
-        ]
+        kitchen_items = await filter_items_for_kds(
+            order.get("items", []), 
+            kitchen_cat_ids, bar_channels, mapping_dict, product_cat_map
+        )
         if kitchen_items:
             order_copy = dict(order)
             order_copy["items"] = kitchen_items
