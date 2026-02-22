@@ -2093,44 +2093,105 @@ async def download_print_agent(printer_name: str = Query("Caja", description="No
 # -*- coding: utf-8 -*-
 """
 ╔═══════════════════════════════════════════════════════════════╗
-║     MESA POS RD - AGENTE DE IMPRESION (Alonzo Cigar)         ║
+║     MESA POS RD - AGENTE DE IMPRESION v2.0                    ║
+║     Alonzo Cigar - Mesa POS RD                                ║
 ╠═══════════════════════════════════════════════════════════════╣
-║  SOLO NECESITAS: pip install requests pywin32                 ║
+║  INSTALACION:                                                  ║
+║  1. pip install requests pywin32                               ║
+║  2. Ejecutar como Servicio (ver instrucciones abajo)          ║
 ╚═══════════════════════════════════════════════════════════════╝
+
+PARA INSTALAR COMO SERVICIO DE WINDOWS:
+========================================
+1. Descarga NSSM desde: https://nssm.cc/download
+2. Extrae nssm.exe en C:\\nssm\\
+3. Abre CMD como Administrador y ejecuta:
+   
+   C:\\nssm\\nssm.exe install MesaPOS_PrintAgent "C:\\Python312\\python.exe" "C:\\MesaPOS\\MesaPOS_PrintAgent.py"
+   C:\\nssm\\nssm.exe set MesaPOS_PrintAgent AppDirectory "C:\\MesaPOS"
+   C:\\nssm\\nssm.exe set MesaPOS_PrintAgent DisplayName "Mesa POS - Agente de Impresion"
+   C:\\nssm\\nssm.exe set MesaPOS_PrintAgent Start SERVICE_AUTO_START
+   net start MesaPOS_PrintAgent
+
+4. El servicio se iniciara automaticamente con Windows.
+
+COMANDOS UTILES:
+- Ver estado: sc query MesaPOS_PrintAgent
+- Detener: net stop MesaPOS_PrintAgent
+- Iniciar: net start MesaPOS_PrintAgent
+- Eliminar: C:\\nssm\\nssm.exe remove MesaPOS_PrintAgent confirm
 """
 
 import os
 import sys
 import time
 import socket
-import requests
+import logging
+from datetime import datetime
 
 # ════════════════════════════════════════════════════════════════
-# CONFIGURACION - NO MODIFICAR
+# CONFIGURACION
 # ════════════════════════════════════════════════════════════════
 SERVER_URL = "{server_url}"
 PRINTER_NAME = "{printer_name}"
 POLL_INTERVAL = 3
 NETWORK_PORT = 9100
+RETRY_INTERVAL = 10  # Segundos entre reintentos si hay error
+MAX_CONSECUTIVE_ERRORS = 5  # Errores consecutivos antes de pausa larga
+LONG_RETRY_INTERVAL = 30  # Pausa larga despues de muchos errores
 
-print("=" * 60)
-print("  MESA POS RD - AGENTE DE IMPRESION")
-print("=" * 60)
-print(f"  Servidor: {{SERVER_URL}}")
-print(f"  Impresora USB: {{PRINTER_NAME}}")
-print(f"  Puerto red: {{NETWORK_PORT}}")
-print("=" * 60)
-print()
+# ════════════════════════════════════════════════════════════════
+# CONFIGURAR LOGGING (archivo + consola)
+# ════════════════════════════════════════════════════════════════
+LOG_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE = os.path.join(LOG_DIR, "MesaPOS_PrintAgent.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+log = logging.getLogger("PrintAgent")
+
+def log_info(msg):
+    log.info(msg)
+
+def log_error(msg):
+    log.error(msg)
+
+def log_warning(msg):
+    log.warning(msg)
+
+# ════════════════════════════════════════════════════════════════
+# INICIO
+# ════════════════════════════════════════════════════════════════
+log_info("=" * 60)
+log_info("  MESA POS RD - AGENTE DE IMPRESION v2.0")
+log_info("=" * 60)
+log_info(f"  Servidor: {{SERVER_URL}}")
+log_info(f"  Impresora USB: {{PRINTER_NAME}}")
+log_info(f"  Puerto red: {{NETWORK_PORT}}")
+log_info(f"  Log: {{LOG_FILE}}")
+log_info("=" * 60)
 
 # ════════════════════════════════════════════════════════════════
 # VERIFICAR DEPENDENCIAS
 # ════════════════════════════════════════════════════════════════
 try:
     import win32print
-    print("[OK] pywin32 instalado")
+    log_info("[OK] pywin32 instalado")
 except ImportError:
-    print("[ERROR] Falta pywin32. Ejecuta: pip install pywin32")
-    input("\\nPresiona ENTER para salir...")
+    log_error("[ERROR] Falta pywin32. Ejecuta: pip install pywin32")
+    sys.exit(1)
+
+try:
+    import requests
+    log_info("[OK] requests instalado")
+except ImportError:
+    log_error("[ERROR] Falta requests. Ejecuta: pip install requests")
     sys.exit(1)
 
 # ════════════════════════════════════════════════════════════════
@@ -2140,7 +2201,8 @@ def get_windows_printers():
     try:
         printers = [p[2] for p in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
         return printers
-    except:
+    except Exception as e:
+        log_error(f"Error obteniendo impresoras: {{e}}")
         return []
 
 def printer_exists(name):
