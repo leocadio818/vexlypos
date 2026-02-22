@@ -2177,7 +2177,7 @@ async def download_print_agent(printer_name: str = Query("Caja", description="No
     Descarga el agente de impresión configurado para tu servidor y impresora.
     Guárdalo como 'MesaPOS_PrintAgent.py' y ejecútalo con Python.
     """
-    server_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://ticket-dinamico.preview.emergentagent.com')
+    server_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://pos-printing-system.preview.emergentagent.com')
     
     agent_code = f'''#!/usr/bin/env python3
 # -*- coding: utf-8 -*-

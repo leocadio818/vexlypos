@@ -16,7 +16,7 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - **Databases:** 
   - MongoDB (datos legacy, productos, usuarios)
   - Supabase/PostgreSQL (datos fiscales, POS sessions, impuestos, NCF)
-- **Preview URL:** https://ticket-dinamico.preview.emergentagent.com
+- **Preview URL:** https://pos-printing-system.preview.emergentagent.com
 
 ## Test Credentials
 | Usuario | PIN | Rol |
