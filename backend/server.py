@@ -2497,11 +2497,18 @@ def print_worker():
                 
                 try:
                     commands = job.get("commands", [])
+                    
+                    # Si no hay commands, generar desde data (comandas)
+                    if not commands and job.get("data"):
+                        data = job["data"]
+                        commands = build_comanda_commands(data)
+                    
                     if commands:
                         raw_data = build_escpos_data(commands)
                         print_raw_to_windows(state.printer_name, raw_data)
                         state.jobs_printed += 1
                         mark_job_complete(job_id, True)
+                        print(f"  OK - Impreso en {{state.printer_name}}")
                     processed.add(job_id)
                 except Exception as e:
                     state.last_error = str(e)
