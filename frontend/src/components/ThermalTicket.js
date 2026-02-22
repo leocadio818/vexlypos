@@ -301,8 +301,7 @@ const ThermalTicket = forwardRef(({
       <div className="ticket-total">
         <div className="ticket-total-label">TOTAL A PAGAR</div>
         <div className="ticket-total-amount">
-          <span className="ticket-total-currency">RD$ </span>
-          {formatMoney(bill.total)}
+          RD$ {formatMoney(bill.total)}
         </div>
       </div>
 
