@@ -49,6 +49,51 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 
 - ✅ **Test Report**: 100% passed (5/5 backend + frontend verified) - `/app/test_reports/iteration_56.json`
 
+### 2025-02-22: Corrección Desbordamiento Impresión 80mm (Área Imprimible 72mm)
+- ✅ **PROBLEMA**: Letras cortadas en los lados al imprimir en impresora térmica 80mm
+- ✅ **CAUSA**: El papel es 80mm pero el área imprimible real es ~72mm
+- ✅ **SOLUCIÓN IMPLEMENTADA**:
+
+#### Configuración CSS para Tickets (Factura Final + Pre-Cuenta):
+```css
+/* Contenedor principal - 72mm área imprimible */
+max-width: 72mm;
+width: 72mm;
+padding: 2mm 4mm;  /* Arriba/abajo 2mm, Izquierda/derecha 4mm */
+margin: 0 auto;    /* Centrar en el papel */
+box-sizing: border-box;
+
+/* Nombres de productos largos - salto de línea automático */
+.ticket-item-name {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  max-width: 100%;
+}
+```
+
+#### Print Agents (ESC/POS) - Ancho de Caracteres:
+- **Antes**: 48 caracteres (causaba desbordamiento)
+- **Después**: 42 caracteres (cabe en 72mm)
+- Archivos: `print_agent.py`, `print_agent_pro.py`
+
+#### Archivos Modificados:
+| Archivo | Cambio |
+|---------|--------|
+| `frontend/src/styles/ticket-print.css` | max-width:72mm, padding 4mm lateral |
+| `frontend/src/components/ThermalTicket.js` | Estilos inline actualizados para printTicket() |
+| `frontend/src/pages/OrderScreen.js` | Pre-cuenta preview con 72mm, @page size correcto |
+| `backend/server.py` | HTML pre-cuenta endpoint con 72mm y padding |
+| `backend/print_agent.py` | width=42, divider 42 chars |
+| `backend/print_agent_pro.py` | width=42, divider 42 chars |
+
+#### Resultado:
+- "ALONZO CIGAR" queda perfectamente centrado con aire a los lados
+- Sin corte de letras en bordes
+- Productos con nombres largos hacen wrap automático
+
+---
+
 ### 2025-02-22: Impuestos Dinamicos + Rediseno Ticket + Campos Expandidos
 - ✅ **Nombres de Impuestos Dinamicos**:
   - Eliminada la palabra "Sugerida" de todo el sistema
