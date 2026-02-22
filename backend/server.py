@@ -1871,7 +1871,8 @@ async def send_receipt_to_printer(bill_id: str):
     
     # Items
     for item in bill.get("items", []):
-        commands.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name'][:22]}", "right": f"RD$ {item['total']:,.2f}"})
+        qty_str = format_qty(item['quantity'])
+        commands.append({"type": "columns", "left": f"{qty_str} X {item['product_name'][:22]}", "right": f"RD$ {item['total']:,.2f}", "bold": True})
     
     commands.append({"type": "divider"})
     commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
