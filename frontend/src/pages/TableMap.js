@@ -20,31 +20,25 @@ const statusColors = {
 };
 
 // Generate chair/seat positions around the table - as small semicircles attached to the table edge
-const getChairPositions = (capacity, shape, w, h) => {
+const getChairPositions = (capacity, shape) => {
   const chairs = [];
-  const chairSize = Math.min(w, h) * 0.18;
   
   if (shape === 'round') {
     for (let i = 0; i < capacity; i++) {
       const angle = (i * 360 / capacity) - 90;
-      const rad = (angle * Math.PI) / 180;
-      chairs.push({ angle, size: chairSize });
+      chairs.push({ type: 'round', angle });
     }
-  } else if (shape === 'rectangle' || shape === 'square') {
-    // Distribute chairs on all 4 sides
-    const isWide = w >= h;
-    const perLongSide = Math.ceil(capacity / 2);
-    const perShortSide = Math.floor(capacity / 4);
-    
-    // Simple distribution: top and bottom for wide, left and right for tall
+  } else {
+    // Square or rectangle - distribute on top and bottom
+    const perSide = Math.ceil(capacity / 2);
     for (let i = 0; i < capacity; i++) {
-      const side = i % 2 === 0 ? 'top' : 'bottom';
-      const posIndex = Math.floor(i / 2);
-      const total = Math.ceil(capacity / 2);
+      const side = i < perSide ? 'top' : 'bottom';
+      const posIndex = i < perSide ? i : i - perSide;
+      const total = side === 'top' ? perSide : capacity - perSide;
       chairs.push({ 
+        type: 'rect',
         side, 
-        position: (posIndex + 1) / (total + 1), // 0 to 1 percentage
-        size: chairSize 
+        position: (posIndex + 1) / (total + 1)
       });
     }
   }
@@ -54,70 +48,68 @@ const getChairPositions = (capacity, shape, w, h) => {
 
 // Chair component - small semicircle attached to table
 const Chair = ({ chair, tableW, tableH, shape, color }) => {
-  const size = chair.size;
+  // Chair size proportional to table - MIN ensures visibility on small tables
+  const minDimension = Math.min(tableW, tableH);
+  const size = Math.max(minDimension * 0.15, 8);
   
-  if (shape === 'round') {
-    // For round tables, position around the circle
+  if (chair.type === 'round') {
     const angle = chair.angle;
     const rad = (angle * Math.PI) / 180;
-    const radius = Math.max(tableW, tableH) / 2;
-    const x = Math.cos(rad) * radius;
-    const y = Math.sin(rad) * radius;
+    const radiusX = tableW / 2;
+    const radiusY = tableH / 2;
+    const x = Math.cos(rad) * radiusX;
+    const y = Math.sin(rad) * radiusY;
     
     return (
       <div
-        className="absolute"
+        className="absolute pointer-events-none"
         style={{
           width: size,
-          height: size * 0.6,
+          height: size * 0.55,
           left: '50%',
           top: '50%',
           transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${angle + 90}deg)`,
-          background: `linear-gradient(180deg, ${color} 0%, ${color}80 100%)`,
+          background: `linear-gradient(180deg, ${color} 0%, ${color}90 100%)`,
           borderRadius: '50% 50% 0 0',
-          boxShadow: `0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.2)`,
+          boxShadow: `0 1px 3px rgba(0,0,0,0.4)`,
         }}
       />
     );
   } else {
-    // For square/rectangle tables
+    // Rectangle/Square tables
     const { side, position } = chair;
-    let style = { 
-      width: size, 
-      height: size * 0.5,
-      background: `linear-gradient(180deg, ${color} 0%, ${color}80 100%)`,
-      boxShadow: `0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.2)`,
+    const baseStyle = { 
+      position: 'absolute',
+      background: `linear-gradient(180deg, ${color} 0%, ${color}90 100%)`,
+      boxShadow: `0 1px 3px rgba(0,0,0,0.4)`,
+      pointerEvents: 'none',
     };
     
     if (side === 'top') {
-      style = { ...style, 
-        left: `${position * 100}%`, top: 0, 
-        transform: `translate(-50%, -50%)`,
-        borderRadius: '50% 50% 0 0',
-      };
-    } else if (side === 'bottom') {
-      style = { ...style,
-        left: `${position * 100}%`, bottom: 0,
-        transform: `translate(-50%, 50%) rotate(180deg)`,
-        borderRadius: '50% 50% 0 0',
-      };
-    } else if (side === 'left') {
-      style = { ...style,
-        width: size * 0.5, height: size,
-        left: 0, top: `${position * 100}%`,
-        transform: `translate(-50%, -50%)`,
-        borderRadius: '50% 0 0 50%',
-      };
-    } else if (side === 'right') {
-      style = { ...style,
-        width: size * 0.5, height: size,
-        right: 0, top: `${position * 100}%`,
-        transform: `translate(50%, -50%)`,
-        borderRadius: '0 50% 50% 0',
-      };
+      return (
+        <div style={{ 
+          ...baseStyle,
+          width: size, 
+          height: size * 0.5,
+          left: `${position * 100}%`, 
+          top: 0, 
+          transform: `translate(-50%, -50%)`,
+          borderRadius: '50% 50% 0 0',
+        }} />
+      );
+    } else {
+      return (
+        <div style={{ 
+          ...baseStyle,
+          width: size, 
+          height: size * 0.5,
+          left: `${position * 100}%`, 
+          bottom: 0,
+          transform: `translate(-50%, 50%) rotate(180deg)`,
+          borderRadius: '50% 50% 0 0',
+        }} />
+      );
     }
-    
-    return <div className="absolute" style={style} />;
   }
 };
 
