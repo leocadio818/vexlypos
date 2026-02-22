@@ -2436,6 +2436,12 @@ def print_worker():
                     
                     try:
                         commands = job.get("commands", [])
+                        
+                        # Si no hay commands, generar desde data (comandas)
+                        if not commands and job.get("data"):
+                            data = job["data"]
+                            commands = build_comanda_commands(data)
+                        
                         if commands:
                             raw_data = build_escpos_data(commands)
                             success, error = send_to_network_printer(printer_ip, raw_data)
