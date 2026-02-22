@@ -2036,31 +2036,8 @@ async def send_precheck_to_printer(order_id: str):
     commands.append({"type": "feed", "lines": 3})
     commands.append({"type": "cut"})
     
-    # Si es impresora de red, enviar directamente
-    if printer_target == "network" and printer_ip:
-        escpos_data = build_escpos_commands(commands)
-        success, error = await send_to_network_printer(printer_ip, escpos_data)
-        
-        if success:
-            logging.info(f"Pre-cuenta {order_id[:8]} enviada a {printer_ip} OK")
-            return {"ok": True, "print_number": print_count + 1, "message": "Pre-cuenta impresa", "method": "network", "ip": printer_ip}
-        else:
-            logging.error(f"Pre-cuenta {order_id[:8]} a {printer_ip} FALLÓ: {error}")
-            # Fallback: agregar a cola
-            job = {
-                "id": gen_id(),
-                "type": "pre-check",
-                "reference_id": order_id,
-                "commands": commands,
-                "printer_target": printer_target,
-                "printer_ip": printer_ip,
-                "status": "pending",
-                "created_at": now_iso()
-            }
-            await db.print_queue.insert_one(job)
-            return {"ok": True, "print_number": print_count + 1, "message": f"Error de red ({error}), agregado a cola", "method": "queue"}
-    
-    # Si es USB, agregar a la cola para el agente
+    # TODAS las impresiones van a la cola - el agente local las procesa
+    # El servidor en la nube NO puede alcanzar IPs de red local
     job = {
         "id": gen_id(),
         "type": "pre-check",
@@ -2068,6 +2045,7 @@ async def send_precheck_to_printer(order_id: str):
         "commands": commands,
         "printer_name": receipt_channel.get("printer_name", "") if receipt_channel else "",
         "printer_target": printer_target,
+        "printer_ip": printer_ip,
         "status": "pending",
         "created_at": now_iso()
     }
