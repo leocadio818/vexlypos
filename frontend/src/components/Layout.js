@@ -167,14 +167,18 @@ export default function Layout() {
           }`} 
           data-testid="sidebar"
         >
-          <div 
-            className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-lg flex items-center justify-center mb-4 lg:mb-6 ${
-              isGlassPage ? 'backdrop-blur-xl bg-white/10 border border-white/20' : ''
+          {/* Logo RD - Click to logout with auto-send comandas */}
+          <button
+            onClick={handleLogoutWithComandas}
+            data-testid="logo-logout-btn"
+            title="Salir del sistema"
+            className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-lg flex items-center justify-center mb-4 lg:mb-6 transition-all hover:opacity-80 active:scale-95 ${
+              isGlassPage ? 'backdrop-blur-xl bg-white/10 border border-white/20 hover:bg-white/20' : 'hover:ring-2 hover:ring-primary/50'
             }`}
             style={{ backgroundColor: isGlassPage ? 'transparent' : theme.accentColor }}
           >
             <span className={`font-oswald font-bold ${isGlassPage ? 'text-white' : 'text-primary-foreground'} ${isTablet ? 'text-base' : largeMode ? 'text-xl' : 'text-lg'}`}>RD</span>
-          </div>
+          </button>
 
           <nav className="flex-1 flex flex-col gap-1.5 lg:gap-2">
             {filteredNav.map(({ to, icon: Icon, label }) => (
