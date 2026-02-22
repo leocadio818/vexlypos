@@ -550,13 +550,14 @@ export const printTicket = (ticketRef) => {
           
           /* Total */
           .ticket-total {
-            background: #000;
-            color: #fff;
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
             padding: 3mm;
             margin-bottom: 3mm;
             text-align: center;
           }
-          .ticket-total-label { font-size: 12px; margin-bottom: 1mm; }
+          .ticket-total-label { font-size: 12px; font-weight: bold; margin-bottom: 1mm; }
           .ticket-total-amount { font-size: 22px; font-weight: bold; letter-spacing: 1px; }
           .ticket-total-currency { font-size: 12px; }
           
