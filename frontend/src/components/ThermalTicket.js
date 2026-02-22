@@ -49,13 +49,17 @@ export const useBusinessConfig = () => {
             name: data.ticket_business_name || data.restaurant_name || DEFAULT_BUSINESS_CONFIG.name,
             legal_name: data.ticket_legal_name || DEFAULT_BUSINESS_CONFIG.legal_name,
             rnc: data.ticket_rnc || data.rnc || DEFAULT_BUSINESS_CONFIG.rnc,
-            address: data.ticket_address || DEFAULT_BUSINESS_CONFIG.address,
-            address2: data.ticket_address2 || DEFAULT_BUSINESS_CONFIG.address2,
+            address_street: data.ticket_address_street || data.ticket_address || DEFAULT_BUSINESS_CONFIG.address_street,
+            address_building: data.ticket_address_building || '',
+            address_sector: data.ticket_address_sector || DEFAULT_BUSINESS_CONFIG.address_sector,
+            address_city: data.ticket_address_city || data.ticket_city || data.ticket_address2 || DEFAULT_BUSINESS_CONFIG.address_city,
             phone: data.ticket_phone || DEFAULT_BUSINESS_CONFIG.phone,
             email: data.ticket_email || DEFAULT_BUSINESS_CONFIG.email,
             ncf_expiry: data.ticket_ncf_expiry || DEFAULT_BUSINESS_CONFIG.ncf_expiry,
-            footer_message: data.ticket_footer_message || DEFAULT_BUSINESS_CONFIG.footer_message,
-            dgii_message: data.ticket_dgii_message || DEFAULT_BUSINESS_CONFIG.dgii_message
+            footer_msg1: data.ticket_footer_msg1 || data.ticket_footer_message || data.ticket_thank_you || DEFAULT_BUSINESS_CONFIG.footer_msg1,
+            footer_msg2: data.ticket_footer_msg2 || data.ticket_dgii_message || DEFAULT_BUSINESS_CONFIG.footer_msg2,
+            footer_msg3: data.ticket_footer_msg3 || '',
+            footer_msg4: data.ticket_footer_msg4 || ''
           });
         }
       } catch (err) {
