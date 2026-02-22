@@ -788,8 +788,13 @@ async def get_table_orders(table_id: str, user: dict = Depends(get_current_user)
     return orders
 
 @router.post("/tables/{table_id}/new-account")
-async def create_new_account_on_table(table_id: str, user: dict = Depends(get_current_user)):
+async def create_new_account_on_table(table_id: str, input: dict = None, user: dict = Depends(get_current_user)):
     """Create a new empty account (order) on a table"""
+    if input is None:
+        input = {}
+    
+    account_label = input.get("label", "")
+    
     table = await db.tables.find_one({"id": table_id}, {"_id": 0})
     if not table:
         raise HTTPException(status_code=404, detail="Mesa no encontrada")
@@ -813,6 +818,7 @@ async def create_new_account_on_table(table_id: str, user: dict = Depends(get_cu
         "table_id": table_id,
         "table_number": table["number"],
         "account_number": new_account_number,
+        "account_label": account_label,
         "waiter_id": user["user_id"],
         "waiter_name": user["name"],
         "status": "active",
