@@ -29,6 +29,28 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 
 ---
 
+### 2025-02-22: Bug Fix Propina Legal + Reformateo Ticket POS
+- ✅ **BUG FIX CRITICO - Propina Legal**: 
+  - **Problema**: `pay_bill` recalculaba total con `tip_percentage=0` (enviado desde frontend), anulando la propina y mostrando la diferencia como CAMBIO
+  - **Solución**: `PayBillInput` ahora acepta `itbis`, `propina_legal`, `total`, `amount_received` opcionales del frontend
+  - El backend usa los valores calculados por el Motor Fiscal Inteligente en vez de recalcular
+  - `Total a Pagar = Subtotal + ITBIS + Propina Legal` (correcto)
+  - CAMBIO solo aparece cuando `amount_received > total`
+  - Archivos: `billing.py` (PayBillInput + pay_bill), `PaymentScreen.js` (envía amount_received)
+
+- ✅ **Reformateo Ticket POS 80mm**:
+  - **Header**: "ALONZO CIGAR" con fuente 18px bold, RNC 1-31-75577-1, dirección Jarabacoa, teléfono 809-301-3858
+  - **NCF**: Línea "Valido hasta" con fecha de expiración, NCF en bold
+  - **TOTAL**: Fuente 16px bold destacada
+  - **Footer**: Mensaje DGII incluido
+  - **Sin espacios iniciales**: Eliminados line-feeds innecesarios
+  - Actualizado en: `print_receipt` (HTML), `print_receipt_escpos` (ESC/POS), `send_receipt_to_printer` (cola), `send_receipt_to_queue` (80mm)
+  - Default config: `ThermalTicket.js`, `printer_config` en DB, defaults en `server.py`
+
+- ✅ **Test Report**: 100% passed (5/5 backend + frontend verified) - `/app/test_reports/iteration_56.json`
+
+---
+
 ## ✅ COMPLETED FEATURES
 
 ### 2025-02-18: Análisis Dolibarr ERP
