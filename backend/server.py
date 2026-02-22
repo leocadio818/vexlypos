@@ -2400,7 +2400,7 @@ def print_worker():
         update_icon_status()
     else:
         state.status = "connected"
-        show_notification("Mesa POS Activo", f"Conectado a: {{state.printer_name}}")
+        show_notification("Mesa POS Activo", f"Conectado a: {{state.printer_name}}\\nTambien procesa impresoras de RED")
         update_icon_status()
     
     while state.running:
@@ -2424,7 +2424,39 @@ def print_worker():
                 if job_id in processed:
                     continue
                 
+                printer_target = job.get("printer_target", "usb")
+                printer_ip = job.get("printer_ip", "")
                 job_printer = job.get("printer_name", PRINTER_NAME)
+                
+                # IMPRESORAS DE RED: Procesar si tiene IP
+                if printer_target == "network" and printer_ip:
+                    state.status = "printing"
+                    update_icon_status()
+                    print(f"Enviando a impresora de red: {{printer_ip}}")
+                    
+                    try:
+                        commands = job.get("commands", [])
+                        if commands:
+                            raw_data = build_escpos_data(commands)
+                            success, error = send_to_network_printer(printer_ip, raw_data)
+                            if success:
+                                state.jobs_printed += 1
+                                mark_job_complete(job_id, True)
+                                print(f"  OK - Enviado a {{printer_ip}}")
+                            else:
+                                print(f"  ERROR: {{error}}")
+                                mark_job_complete(job_id, False)
+                        processed.add(job_id)
+                    except Exception as e:
+                        state.last_error = str(e)
+                        mark_job_complete(job_id, False)
+                        processed.add(job_id)
+                    finally:
+                        state.status = "connected"
+                        update_icon_status()
+                    continue
+                
+                # IMPRESORAS USB: Solo si coincide el nombre
                 if job_printer != state.printer_name:
                     continue
                 
