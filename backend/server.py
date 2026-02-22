@@ -98,6 +98,12 @@ def gen_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+def format_qty(q) -> str:
+    """Formatea cantidad: 1.0 -> '1', 1.5 -> '1.5'"""
+    if q == int(q):
+        return str(int(q))
+    return str(q)
+
 # ─── IMPRESIÓN DIRECTA A RED ───
 NETWORK_PRINTER_PORT = 9100
 
