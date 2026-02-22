@@ -142,12 +142,6 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
           ÷
         </div>
       )}
-      {/* Other user indicator */}
-      {isOtherUser && !isDivided && !editMode && (
-        <div className={`absolute -top-1.5 -right-1.5 ${device?.isMobile ? 'w-4 h-4' : largeMode ? 'w-5 h-5' : 'w-4 h-4'} rounded-full bg-yellow-500 flex items-center justify-center shadow-lg border-2 border-background`}>
-          <Users size={device?.isMobile ? 8 : largeMode ? 10 : 8} className="text-white" />
-        </div>
-      )}
       <span className={`font-oswald font-bold ${numberSize}`} style={{ color: editMode ? '#FF6600' : colors.border }}>
         {table.number}
       </span>
