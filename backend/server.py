@@ -2114,21 +2114,45 @@ import json
 from datetime import datetime
 
 # ════════════════════════════════════════════════════════════════
-# CONFIGURACION
+# CONFIGURACION - Lee de config.txt si existe
 # ════════════════════════════════════════════════════════════════
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.txt")
+
+# Valores por defecto (se sobreescriben con config.txt)
 SERVER_URL = "{server_url}"
 PRINTER_NAME = "{printer_name}"
 POLL_INTERVAL = 3
 NETWORK_PORT = 9100
-RETRY_INTERVAL = 10  # Segundos entre reintentos si hay error
-MAX_CONSECUTIVE_ERRORS = 5  # Errores consecutivos antes de pausa larga
-LONG_RETRY_INTERVAL = 30  # Pausa larga despues de muchos errores
+RETRY_INTERVAL = 10
+MAX_CONSECUTIVE_ERRORS = 5
+LONG_RETRY_INTERVAL = 30
+
+# Cargar configuracion desde archivo si existe
+if os.path.exists(CONFIG_FILE):
+    try:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if '=' in line and not line.startswith('#'):
+                    key, value = line.split('=', 1)
+                    key = key.strip().upper()
+                    value = value.strip()
+                    if key == 'SERVER_URL':
+                        SERVER_URL = value
+                    elif key == 'PRINTER_NAME':
+                        PRINTER_NAME = value
+                    elif key == 'POLL_INTERVAL':
+                        POLL_INTERVAL = int(value)
+                    elif key == 'NETWORK_PORT':
+                        NETWORK_PORT = int(value)
+    except Exception as e:
+        print(f"Error leyendo config.txt: {{e}}")
 
 # ════════════════════════════════════════════════════════════════
 # CONFIGURAR LOGGING (archivo + consola)
 # ════════════════════════════════════════════════════════════════
-LOG_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(LOG_DIR, "MesaPOS_PrintAgent.log")
+LOG_FILE = os.path.join(SCRIPT_DIR, "MesaPOS_PrintAgent.log")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -2153,7 +2177,7 @@ def log_warning(msg):
 # INICIO
 # ════════════════════════════════════════════════════════════════
 log_info("=" * 60)
-log_info("  MESA POS RD - AGENTE DE IMPRESION v2.0")
+log_info("  MESA POS RD - AGENTE DE IMPRESION v2.1")
 log_info("=" * 60)
 log_info(f"  Servidor: {{SERVER_URL}}")
 log_info(f"  Impresora USB: {{PRINTER_NAME}}")
