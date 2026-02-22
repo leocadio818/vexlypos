@@ -19,132 +19,106 @@ const statusColors = {
   divided_other: { border: '#F9A825', bg: 'rgba(249,168,37,0.25)', glow: 'rgba(249,168,37,0.5)' }, // Amarillo para dividida de otros
 };
 
-// Generate chair/seat positions around the table
+// Generate chair/seat positions around the table - as small semicircles attached to the table edge
 const getChairPositions = (capacity, shape, w, h) => {
   const chairs = [];
-  const chairSize = Math.min(w, h) * 0.25; // Chair size relative to table
-  const offset = chairSize * 0.7; // Distance from table edge
+  const chairSize = Math.min(w, h) * 0.18;
   
   if (shape === 'round') {
-    // Distribute chairs in a circle around the table
     for (let i = 0; i < capacity; i++) {
-      const angle = (i * 360 / capacity) - 90; // Start from top
+      const angle = (i * 360 / capacity) - 90;
       const rad = (angle * Math.PI) / 180;
-      const radius = Math.max(w, h) / 2 + offset;
-      chairs.push({
-        x: Math.cos(rad) * radius,
-        y: Math.sin(rad) * radius,
-        rotation: angle + 90, // Face the table
-        size: chairSize
-      });
+      chairs.push({ angle, size: chairSize });
     }
-  } else if (shape === 'rectangle') {
-    // Long table - distribute on long sides primarily
-    const isHorizontal = w >= h;
-    const longSide = Math.max(w, h);
-    const shortSide = Math.min(w, h);
-    
-    // For rectangle: put chairs on the long sides
+  } else if (shape === 'rectangle' || shape === 'square') {
+    // Distribute chairs on all 4 sides
+    const isWide = w >= h;
     const perLongSide = Math.ceil(capacity / 2);
-    const spacingLong = longSide / (perLongSide + 1);
+    const perShortSide = Math.floor(capacity / 4);
     
+    // Simple distribution: top and bottom for wide, left and right for tall
     for (let i = 0; i < capacity; i++) {
-      const side = i < perLongSide ? 0 : 1;
-      const posIndex = i < perLongSide ? i : i - perLongSide;
-      
-      if (isHorizontal) {
-        // Wide table - chairs on top and bottom
-        chairs.push({
-          x: -w/2 + spacingLong * (posIndex + 1),
-          y: side === 0 ? -h/2 - offset : h/2 + offset,
-          rotation: side === 0 ? 180 : 0,
-          size: chairSize
-        });
-      } else {
-        // Tall table - chairs on left and right
-        chairs.push({
-          x: side === 0 ? -w/2 - offset : w/2 + offset,
-          y: -h/2 + spacingLong * (posIndex + 1),
-          rotation: side === 0 ? 90 : -90,
-          size: chairSize
-        });
-      }
-    }
-  } else {
-    // Square table - distribute evenly on all 4 sides
-    const perSide = Math.ceil(capacity / 4);
-    const extraChairs = capacity % 4;
-    const sides = [
-      { name: 'top', chairs: perSide + (extraChairs > 0 ? 1 : 0) },
-      { name: 'right', chairs: perSide + (extraChairs > 1 ? 1 : 0) },
-      { name: 'bottom', chairs: perSide + (extraChairs > 2 ? 1 : 0) },
-      { name: 'left', chairs: perSide + (extraChairs > 3 ? 1 : 0) }
-    ];
-    
-    let placed = 0;
-    for (const sideInfo of sides) {
-      if (placed >= capacity) break;
-      const count = Math.min(sideInfo.chairs, capacity - placed);
-      const spacing = (sideInfo.name === 'top' || sideInfo.name === 'bottom' ? w : h) / (count + 1);
-      
-      for (let i = 0; i < count && placed < capacity; i++) {
-        let x, y, rotation;
-        const pos = spacing * (i + 1);
-        
-        switch(sideInfo.name) {
-          case 'top':
-            x = -w/2 + pos; y = -h/2 - offset; rotation = 180; break;
-          case 'right':
-            x = w/2 + offset; y = -h/2 + pos; rotation = -90; break;
-          case 'bottom':
-            x = -w/2 + pos; y = h/2 + offset; rotation = 0; break;
-          case 'left':
-            x = -w/2 - offset; y = -h/2 + pos; rotation = 90; break;
-          default:
-            x = 0; y = 0; rotation = 0;
-        }
-        
-        chairs.push({ x, y, rotation, size: chairSize });
-        placed++;
-      }
+      const side = i % 2 === 0 ? 'top' : 'bottom';
+      const posIndex = Math.floor(i / 2);
+      const total = Math.ceil(capacity / 2);
+      chairs.push({ 
+        side, 
+        position: (posIndex + 1) / (total + 1), // 0 to 1 percentage
+        size: chairSize 
+      });
     }
   }
   
   return chairs;
 };
 
-// Chair/Person icon component
-const ChairIcon = ({ x, y, rotation, size, color, isMobile }) => {
-  const actualSize = isMobile ? size * 0.75 : size;
+// Chair component - small semicircle attached to table
+const Chair = ({ chair, tableW, tableH, shape, color }) => {
+  const size = chair.size;
   
-  return (
-    <div
-      className="absolute pointer-events-none"
-      style={{
-        left: '50%',
-        top: '50%',
-        width: actualSize,
-        height: actualSize,
-        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${rotation}deg)`,
-      }}
-    >
-      {/* Person silhouette - modern minimal style */}
-      <svg 
-        viewBox="0 0 24 24" 
-        fill={color}
-        className="w-full h-full"
-        style={{ filter: `drop-shadow(0 1px 3px rgba(0,0,0,0.4))` }}
-      >
-        {/* Head */}
-        <circle cx="12" cy="5" r="4" opacity="0.95" />
-        {/* Body - rounded shoulders */}
-        <path 
-          d="M12 11c-4.5 0-8 2.5-8 6v1.5c0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5V17c0-3.5-3.5-6-8-6z" 
-          opacity="0.85"
-        />
-      </svg>
-    </div>
-  );
+  if (shape === 'round') {
+    // For round tables, position around the circle
+    const angle = chair.angle;
+    const rad = (angle * Math.PI) / 180;
+    const radius = Math.max(tableW, tableH) / 2;
+    const x = Math.cos(rad) * radius;
+    const y = Math.sin(rad) * radius;
+    
+    return (
+      <div
+        className="absolute"
+        style={{
+          width: size,
+          height: size * 0.6,
+          left: '50%',
+          top: '50%',
+          transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${angle + 90}deg)`,
+          background: `linear-gradient(180deg, ${color} 0%, ${color}80 100%)`,
+          borderRadius: '50% 50% 0 0',
+          boxShadow: `0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.2)`,
+        }}
+      />
+    );
+  } else {
+    // For square/rectangle tables
+    const { side, position } = chair;
+    let style = { 
+      width: size, 
+      height: size * 0.5,
+      background: `linear-gradient(180deg, ${color} 0%, ${color}80 100%)`,
+      boxShadow: `0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.2)`,
+    };
+    
+    if (side === 'top') {
+      style = { ...style, 
+        left: `${position * 100}%`, top: 0, 
+        transform: `translate(-50%, -50%)`,
+        borderRadius: '50% 50% 0 0',
+      };
+    } else if (side === 'bottom') {
+      style = { ...style,
+        left: `${position * 100}%`, bottom: 0,
+        transform: `translate(-50%, 50%) rotate(180deg)`,
+        borderRadius: '50% 50% 0 0',
+      };
+    } else if (side === 'left') {
+      style = { ...style,
+        width: size * 0.5, height: size,
+        left: 0, top: `${position * 100}%`,
+        transform: `translate(-50%, -50%)`,
+        borderRadius: '50% 0 0 50%',
+      };
+    } else if (side === 'right') {
+      style = { ...style,
+        width: size * 0.5, height: size,
+        right: 0, top: `${position * 100}%`,
+        transform: `translate(50%, -50%)`,
+        borderRadius: '0 50% 50% 0',
+      };
+    }
+    
+    return <div className="absolute" style={style} />;
+  }
 };
 
 // More visible pattern for divided tables - diagonal stripes with higher contrast
