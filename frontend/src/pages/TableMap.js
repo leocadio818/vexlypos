@@ -214,71 +214,54 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
 
   // Get chair positions for this table
   const chairs = getChairPositions(table.capacity || 4, table.shape, w, h);
-  const chairColor = editMode ? '#FF6600' : colors.border;
-
-  // Calculate container padding for chairs
-  const maxChairOffset = Math.min(w, h) * 0.35;
+  const chairColor = colors.border;
 
   return (
     <div
       ref={nodeRef}
       data-testid={`table-${table.number}`}
-      className="absolute select-none touch-none"
+      className="absolute flex flex-col items-center justify-center select-none touch-none"
       style={{
-        left: pos.x - maxChairOffset,
-        top: pos.y - maxChairOffset,
-        width: w + maxChairOffset * 2,
-        height: h + maxChairOffset * 2,
+        left: pos.x, top: pos.y, width: w, height: h, borderRadius: radius,
+        border: `${isDivided ? '4px' : '3px'} solid ${editMode ? '#FF6600' : colors.border}`,
+        backgroundColor: editMode ? 'rgba(255,102,0,0.1)' : colors.bg,
+        backgroundImage: isDivided && !editMode ? stripedPattern(isOtherUser) : 'none',
+        boxShadow: isDragging 
+          ? `0 0 25px ${colors.glow}, 0 8px 30px rgba(0,0,0,0.5)` 
+          : isDivided 
+            ? `0 0 20px ${colors.glow}, inset 0 0 15px ${isOtherUser ? 'rgba(2,136,209,0.2)' : 'rgba(255,102,0,0.2)'}` 
+            : `0 0 15px ${colors.glow}`,
+        backdropFilter: 'blur(8px)',
+        cursor: editMode ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
         zIndex: isDragging ? 100 : 1,
+        transform: isDragging ? 'scale(1.05)' : 'scale(1)',
+        transition: isDragging ? 'none' : 'transform 0.2s, box-shadow 0.2s',
+        overflow: 'visible',
       }}
+      onPointerDown={editMode ? handlePointerDown : undefined}
+      onPointerMove={editMode ? handlePointerMove : undefined}
+      onPointerUp={editMode ? handlePointerUp : undefined}
+      onClick={handleClick}
     >
-      {/* Chairs/Seats around the table */}
+      {/* Chairs around the table - now INSIDE the table component */}
       {!editMode && chairs.map((chair, idx) => (
-        <ChairIcon
-          key={idx}
-          x={chair.x + maxChairOffset}
-          y={chair.y + maxChairOffset}
-          rotation={chair.rotation}
-          size={chair.size}
-          color={chairColor}
-          isMobile={device?.isMobile}
+        <Chair 
+          key={idx} 
+          chair={chair} 
+          tableW={w} 
+          tableH={h} 
+          shape={table.shape} 
+          color={chairColor} 
         />
       ))}
       
-      {/* The actual table */}
-      <div
-        className="absolute flex flex-col items-center justify-center"
-        style={{
-          left: maxChairOffset,
-          top: maxChairOffset,
-          width: w, 
-          height: h, 
-          borderRadius: radius,
-          border: `${isDivided ? '4px' : '3px'} solid ${editMode ? '#FF6600' : colors.border}`,
-          backgroundColor: editMode ? 'rgba(255,102,0,0.1)' : colors.bg,
-          backgroundImage: isDivided && !editMode ? stripedPattern(isOtherUser) : 'none',
-          boxShadow: isDragging 
-            ? `0 0 25px ${colors.glow}, 0 8px 30px rgba(0,0,0,0.5)` 
-            : isDivided 
-              ? `0 0 20px ${colors.glow}, inset 0 0 15px ${isOtherUser ? 'rgba(2,136,209,0.2)' : 'rgba(255,102,0,0.2)'}` 
-              : `0 0 15px ${colors.glow}`,
-          backdropFilter: 'blur(8px)',
-          cursor: editMode ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
-          transform: isDragging ? 'scale(1.05)' : 'scale(1)',
-          transition: isDragging ? 'none' : 'transform 0.2s, box-shadow 0.2s',
-        }}
-        onPointerDown={editMode ? handlePointerDown : undefined}
-        onPointerMove={editMode ? handlePointerMove : undefined}
-        onPointerUp={editMode ? handlePointerUp : undefined}
-        onClick={handleClick}
-      >
-        {/* Divided badge */}
-        {isDivided && !editMode && (
-          <div className={`absolute -top-2 -right-2 ${device?.isMobile ? 'w-5 h-5 text-[10px]' : largeMode ? 'w-6 h-6 text-xs' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-background ${isOtherUser ? 'bg-yellow-500' : 'bg-orange-500'}`}>
-            ÷
-          </div>
-        )}
-        <span className={`font-oswald font-bold ${numberSize}`} style={{ color: editMode ? '#FF6600' : colors.border }}>
+      {/* Divided badge */}
+      {isDivided && !editMode && (
+        <div className={`absolute -top-2 -right-2 ${device?.isMobile ? 'w-5 h-5 text-[10px]' : largeMode ? 'w-6 h-6 text-xs' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-background ${isOtherUser ? 'bg-yellow-500' : 'bg-orange-500'} z-10`}>
+          ÷
+        </div>
+      )}
+      <span className={`font-oswald font-bold ${numberSize}`} style={{ color: editMode ? '#FF6600' : colors.border }}>
           {table.number}
         </span>
         {editMode && (
