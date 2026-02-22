@@ -262,14 +262,13 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
         </div>
       )}
       <span className={`font-oswald font-bold ${numberSize}`} style={{ color: editMode ? '#FF6600' : colors.border }}>
-          {table.number}
+        {table.number}
+      </span>
+      {editMode && (
+        <span className={`text-primary mt-0.5 ${device?.isMobile ? 'text-[9px]' : largeMode ? 'text-[10px]' : 'text-[8px]'}`}>
+          <Maximize2 size={device?.isMobile ? 9 : largeMode ? 10 : 8} className="inline" />
         </span>
-        {editMode && (
-          <span className={`text-primary mt-0.5 ${device?.isMobile ? 'text-[9px]' : largeMode ? 'text-[10px]' : 'text-[8px]'}`}>
-            <Maximize2 size={device?.isMobile ? 9 : largeMode ? 10 : 8} className="inline" />
-          </span>
-        )}
-      </div>
+      )}
     </div>
   );
 }
