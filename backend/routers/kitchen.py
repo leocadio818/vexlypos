@@ -37,15 +37,18 @@ async def get_kitchen_category_ids():
     # Get all categories
     categories = await db.categories.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
     
-    # Categories that go to kitchen: those without mapping OR mapped to "kitchen"
-    # Exclude: bar, receipt, etc.
-    non_kitchen_channels = {"bar", "receipt", "terraza", "cashier"}
+    # Categories that go to kitchen KDS:
+    # - Those without mapping (default)
+    # - Those mapped to "kitchen" 
+    # - Those mapped to "receipt" (receipt is for printing invoices, not a preparation station)
+    # Exclude from KDS: bar, terraza (these are bar/drink preparation areas)
+    bar_channels = {"bar", "terraza"}
     kitchen_cat_ids = []
     
     for cat in categories:
         cat_id = cat["id"]
         channel = mapping_dict.get(cat_id, "kitchen")  # Default to kitchen
-        if channel not in non_kitchen_channels:
+        if channel not in bar_channels:
             kitchen_cat_ids.append(cat_id)
     
     return kitchen_cat_ids
