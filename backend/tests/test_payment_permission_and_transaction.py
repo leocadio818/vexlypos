@@ -23,8 +23,8 @@ class TestPaymentPermissionAndTransaction:
     def setup(self):
         """Setup test data"""
         self.admin_pin = "10000"
-        self.waitress_pin = "5678"
-        self.cashier_pin = "1234"
+        self.waitress_pin = "5678"  # Maria - waiter role
+        self.cashier_pin = "4321"   # Luis - cashier role (corrected from 1234)
         self.headers = {"Content-Type": "application/json"}
         
     def get_auth_token(self, pin):
