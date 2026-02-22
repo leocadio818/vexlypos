@@ -919,7 +919,7 @@ export default function OrderScreen() {
   };
 
   // Create new order from selected items
-  const createNewOrderFromItems = async () => {
+  const createNewOrderFromItems = async (label = '') => {
     if (selectedSplitItems.length === 0) {
       toast.info('Selecciona items primero');
       return;
@@ -934,9 +934,11 @@ export default function OrderScreen() {
     }
 
     try {
-      const res = await ordersAPI.splitToNewOrder(order.id, selectedSplitItems);
-      toast.success(`Cuenta #${res.data.new_order.account_number} creada`);
+      const res = await ordersAPI.splitToNewOrder(order.id, selectedSplitItems, label);
+      const labelText = label ? ` (${label})` : '';
+      toast.success(`Cuenta #${res.data.new_order.account_number}${labelText} creada`);
       setSelectedSplitItems([]);
+      setAccountLabelDialog({ open: false, label: '', action: null, itemIds: [] });
       // Refresh orders
       await fetchOrder();
       // Switch to new order
@@ -946,16 +948,47 @@ export default function OrderScreen() {
     }
   };
 
+  // Open label dialog for split
+  const openSplitLabelDialog = () => {
+    if (selectedSplitItems.length === 0) {
+      toast.info('Selecciona items primero');
+      return;
+    }
+    const allItemIds = activeItems.map(i => i.id);
+    if (selectedSplitItems.length === allItemIds.length) {
+      toast.error('No puede mover todos los items. Use "Mover Mesa" para eso.');
+      return;
+    }
+    setAccountLabelDialog({ open: true, label: '', action: 'split', itemIds: selectedSplitItems });
+  };
+
   // Create new empty account on the table
-  const createNewEmptyAccount = async () => {
+  const createNewEmptyAccount = async (label = '') => {
     try {
-      const res = await ordersAPI.createNewAccount(tableId);
-      toast.success(`Cuenta #${res.data.account_number} creada`);
+      const res = await ordersAPI.createNewAccount(tableId, label);
+      const labelText = label ? ` (${label})` : '';
+      toast.success(`Cuenta #${res.data.account_number}${labelText} creada`);
+      setAccountLabelDialog({ open: false, label: '', action: null, itemIds: [] });
       // Refresh orders and switch to new account
       await fetchOrder();
       setActiveOrderId(res.data.id);
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Error creando nueva cuenta');
+    }
+  };
+
+  // Open label dialog for new empty account
+  const openNewAccountLabelDialog = () => {
+    setAccountLabelDialog({ open: true, label: '', action: 'new', itemIds: [] });
+  };
+
+  // Handle label dialog confirm
+  const handleAccountLabelConfirm = () => {
+    const label = accountLabelDialog.label.trim();
+    if (accountLabelDialog.action === 'split') {
+      createNewOrderFromItems(label);
+    } else if (accountLabelDialog.action === 'new') {
+      createNewEmptyAccount(label);
     }
   };
 
