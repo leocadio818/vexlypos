@@ -149,8 +149,9 @@ const ThermalTicket = forwardRef(({
       <div className="ticket-header">
         <div className="ticket-business-name">{config.name}</div>
         <div className="ticket-rnc">RNC: {config.rnc}</div>
-        <div className="ticket-address">{config.address}</div>
-        {config.address2 && <div className="ticket-address">{config.address2}</div>}
+        {config.address_street && <div className="ticket-address">{config.address_street}{config.address_building ? `, ${config.address_building}` : ''}</div>}
+        {config.address_sector && <div className="ticket-address">{config.address_sector}{config.address_city ? `, ${config.address_city}` : ''}</div>}
+        {!config.address_sector && config.address_city && <div className="ticket-address">{config.address_city}</div>}
         <div className="ticket-phone">Tel: {config.phone}</div>
       </div>
 
