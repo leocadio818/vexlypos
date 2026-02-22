@@ -159,14 +159,22 @@ export default function SystemTab() {
               <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                 <MapPin size={14} className="text-blue-500" /> Dirección
               </h3>
-              <input value={systemConfig.ticket_address || ''} 
-                onChange={e => setSystemConfig(p => ({ ...p, ticket_address: e.target.value }))}
-                placeholder="Av. Winston Churchill #123"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2" data-testid="ticket-address" />
-              <input value={systemConfig.ticket_city || ''} 
-                onChange={e => setSystemConfig(p => ({ ...p, ticket_city: e.target.value }))}
-                placeholder="Santo Domingo, DN"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
+              <input value={systemConfig.ticket_address_street || ''} 
+                onChange={e => setSystemConfig(p => ({ ...p, ticket_address_street: e.target.value }))}
+                placeholder="Calle y numero (ej: C/ Las Flores #12)"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2" data-testid="ticket-address-street" />
+              <input value={systemConfig.ticket_address_building || ''} 
+                onChange={e => setSystemConfig(p => ({ ...p, ticket_address_building: e.target.value }))}
+                placeholder="Edificio / Local (opcional)"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2" data-testid="ticket-address-building" />
+              <input value={systemConfig.ticket_address_sector || ''} 
+                onChange={e => setSystemConfig(p => ({ ...p, ticket_address_sector: e.target.value }))}
+                placeholder="Sector (ej: Jarabacoa)"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2" data-testid="ticket-address-sector" />
+              <input value={systemConfig.ticket_address_city || ''} 
+                onChange={e => setSystemConfig(p => ({ ...p, ticket_address_city: e.target.value }))}
+                placeholder="Ciudad / Provincia (ej: La Vega)"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="ticket-address-city" />
             </div>
 
             <div className="bg-card border border-border rounded-xl p-4">
