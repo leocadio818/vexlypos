@@ -31,7 +31,7 @@ class TestDynamicTaxNamesAndConfig:
             json={"pin": ADMIN_PIN}
         )
         assert response.status_code == 200, f"Login failed: {response.text}"
-        cls.token = response.json().get("access_token")
+        cls.token = response.json().get("token")
         assert cls.token, "No token received"
     
     def get_headers(self):
