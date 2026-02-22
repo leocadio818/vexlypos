@@ -1443,21 +1443,18 @@ async def send_receipt_to_queue(bill_id: str):
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
-    # Get printer config
     config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or {}
     
-    # Get receipt channel printer
     receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
     printer_name = receipt_channel.get("printer_name", "") if receipt_channel else ""
     
-    # Build receipt data for 80mm thermal printer
     receipt_data = {
         "type": "receipt",
         "paper_width": 80,
-        "business_name": config.get("business_name", "MESA POS RD"),
-        "business_address": config.get("business_address", ""),
-        "rnc": config.get("rnc", ""),
-        "phone": config.get("phone", ""),
+        "business_name": config.get("business_name", "ALONZO CIGAR"),
+        "business_address": config.get("business_address", "C/ Las Flores #12, Jarabacoa"),
+        "rnc": config.get("rnc", "1-31-75577-1"),
+        "phone": config.get("phone", "809-301-3858"),
         "bill_number": bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8],
         "table_number": bill.get("table_number", ""),
         "waiter_name": bill.get("waiter_name", ""),
@@ -1477,6 +1474,7 @@ async def send_receipt_to_queue(bill_id: str):
         "tip": bill.get("propina_legal", 0),
         "discount": bill.get("discount_amount", 0),
         "total": bill.get("total", 0),
+        "amount_received": bill.get("amount_received", 0),
         "payment_method": bill.get("payment_method_name", "Efectivo"),
         "footer_text": config.get("footer_text", "Gracias por su visita!")
     }
