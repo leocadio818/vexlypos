@@ -1015,9 +1015,15 @@ async def print_receipt_escpos(bill_id: str):
         lines.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name']}", "right": f"RD$ {item['total']:,.2f}"})
     lines.append({"type": "divider"})
     lines.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
-    lines.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {bill.get('itbis', 0):,.2f}"})
-    if bill.get('propina_legal', 0) > 0:
-        lines.append({"type": "columns", "left": f"Propina Legal {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
+    # Dynamic tax lines from tax_breakdown
+    tax_breakdown = bill.get("tax_breakdown", [])
+    if tax_breakdown:
+        for tax in tax_breakdown:
+            lines.append({"type": "columns", "left": f"{tax['description']} {tax['rate']}%", "right": f"RD$ {tax['amount']:,.2f}"})
+    else:
+        lines.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {bill.get('itbis', 0):,.2f}"})
+        if bill.get('propina_legal', 0) > 0:
+            lines.append({"type": "columns", "left": f"Propina {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
     lines.append({"type": "columns", "bold": True, "size": "large", "left": "TOTAL", "right": f"RD$ {bill['total']:,.2f}"})
     # Payment and change
     if bill.get('payment_method_name'):
