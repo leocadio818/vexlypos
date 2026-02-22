@@ -4,10 +4,10 @@
 Sistema POS completo para restaurantes/bares con soporte para impresión térmica automática, KDS (Kitchen Display System), y gestión de órdenes.
 
 ## URLs del Sistema
-- **App:** https://pos-printing-system.preview.emergentagent.com
-- **API:** https://pos-printing-system.preview.emergentagent.com/api
-- **Agente Python:** https://pos-printing-system.preview.emergentagent.com/api/download/print-agent?printer_name=RECIBO
-- **Instalador Servicio:** https://pos-printing-system.preview.emergentagent.com/api/download/print-agent-installer?printer_name=RECIBO
+- **App:** https://print-agent-service.preview.emergentagent.com
+- **API:** https://print-agent-service.preview.emergentagent.com/api
+- **Agente Python:** https://print-agent-service.preview.emergentagent.com/api/download/print-agent?printer_name=RECIBO
+- **Instalador Servicio:** https://print-agent-service.preview.emergentagent.com/api/download/print-agent-installer?printer_name=RECIBO
 
 ## Arquitectura de Impresión (v2.1)
 
