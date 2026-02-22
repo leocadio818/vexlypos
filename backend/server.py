@@ -2014,19 +2014,20 @@ async def send_precheck_to_printer(order_id: str):
     commands = []
     
     if print_count > 0:
-        commands.append({"type": "text", "text": f"*** RE-IMPRESION #{print_count} ***", "align": "center", "bold": True})
+        commands.append({"type": "text", "text": f"*** RE-IMPRESION #{print_count} ***", "align": "center", "bold": True, "size": 2})
     
     commands.append({"type": "text", "text": "ALONZO CIGAR", "align": "center", "bold": True, "size": 2})
-    commands.append({"type": "text", "text": "PRE-CUENTA", "align": "center", "bold": True})
+    commands.append({"type": "text", "text": "PRE-CUENTA", "align": "center", "bold": True, "size": 2})
     commands.append({"type": "divider"})
-    commands.append({"type": "columns", "left": "Mesa:", "right": str(order['table_number'])})
-    commands.append({"type": "columns", "left": "Mesero:", "right": order['waiter_name'][:20]})
+    commands.append({"type": "text", "text": f"MESA: {order['table_number']}", "align": "center", "bold": True, "size": 2})
+    commands.append({"type": "columns", "left": "Mesero:", "right": order['waiter_name'][:20], "bold": True})
     commands.append({"type": "columns", "left": "Fecha:", "right": order['created_at'][:19]})
     commands.append({"type": "divider"})
     
     for item in items:
         item_total = (item["unit_price"] + sum(m.get("price",0) for m in item.get("modifiers",[]))) * item["quantity"]
-        commands.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name'][:25]}", "right": f"RD$ {item_total:,.2f}"})
+        qty_str = format_qty(item['quantity'])
+        commands.append({"type": "columns", "left": f"{qty_str} X {item['product_name'][:22]}", "right": f"RD$ {item_total:,.2f}", "bold": True})
         if item.get("modifiers"):
             mods = ", ".join(m["name"] for m in item["modifiers"])
             commands.append({"type": "text", "text": f"  ({mods})"})
