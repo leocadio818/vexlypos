@@ -381,6 +381,8 @@ El sistema aplica impuestos basándose en la intersección:
 - [x] ~~**Botón Nuevo Cliente en Pago**: Añadir cliente rápido desde modal de búsqueda en PaymentScreen~~ ✅ COMPLETADO 2025-02-21
 - [x] ~~**Config Puntos solo Admin**: Restringir botón a roles administrativos~~ ✅ COMPLETADO 2025-02-21
 - [x] ~~**Eliminar switch redundante en Anulación**: Comportamiento de inventario determinado por razón~~ ✅ COMPLETADO 2025-02-21
+- [x] ~~**Bug Fix Propina Legal en Ticket**: Propina se restaba del total y aparecía como CAMBIO~~ ✅ COMPLETADO 2025-02-22
+- [x] ~~**Reformateo Ticket POS 80mm**: Header Alonzo Cigar, fuentes mejoradas, NCF legible~~ ✅ COMPLETADO 2025-02-22
 
 ### P1 - Alta Prioridad
 - [ ] Audit Trail Security (solo Admin ve PINs)
