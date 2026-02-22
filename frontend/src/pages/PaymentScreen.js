@@ -1721,10 +1721,25 @@ export default function PaymentScreen() {
             
             {/* Confirm Button - Large and prominent */}
             <button
-              onClick={() => {
+              onClick={async () => {
                 setNcfAlertModal({ open: false, ncfData: null });
                 // Now open the print dialog after user acknowledged the alert
                 setPrintDialogOpen(true);
+                // Auto-print the receipt
+                if (paidBill?.id) {
+                  try {
+                    const printResp = await fetch(`${API_BASE}/api/print/receipt/${paidBill.id}/send`, {
+                      method: 'POST',
+                      headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+                    });
+                    const printData = await printResp.json();
+                    if (printData.ok) {
+                      toast.success('Factura enviada a impresora');
+                    }
+                  } catch (printErr) {
+                    console.warn('Auto-print error:', printErr);
+                  }
+                }
               }}
               className={`w-full h-16 rounded-xl font-oswald font-bold text-xl text-white transition-all active:scale-95 ${
                 ncfAlertModal.ncfData?.alert_level === 'critical' 
