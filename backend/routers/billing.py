@@ -37,6 +37,20 @@ def gen_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+async def get_next_transaction_number() -> int:
+    """
+    Genera el siguiente número de transacción interno secuencial.
+    Usa find_one_and_update con upsert para garantizar atomicidad.
+    Este número es independiente del NCF fiscal y es solo para control interno.
+    """
+    result = await db.counters.find_one_and_update(
+        {"_id": "internal_transaction"},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER
+    )
+    return result["seq"]
+
 # Import auth dependency
 from routers.auth import get_current_user
 
