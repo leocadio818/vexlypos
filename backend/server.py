@@ -412,10 +412,10 @@ async def get_printer_config():
             "paper_width": 80,
             "auto_print_comanda": False,
             "auto_print_receipt": False,
-            "business_name": "MESA POS RD",
-            "business_address": "",
-            "rnc": "",
-            "phone": "",
+            "business_name": "ALONZO CIGAR",
+            "business_address": "C/ Las Flores #12, Jarabacoa",
+            "rnc": "1-31-75577-1",
+            "phone": "809-301-3858",
             "footer_text": "Gracias por su visita!"
         }
     return config
