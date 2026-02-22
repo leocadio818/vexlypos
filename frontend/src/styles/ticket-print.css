@@ -27,16 +27,21 @@
   }
 }
 
-/* Contenedor principal del ticket */
+/* ═══════════════════════════════════════════════════════════════
+   CONTENEDOR PRINCIPAL - AJUSTADO PARA AREA IMPRIMIBLE 72mm
+   Papel: 80mm | Área imprimible real: ~72mm (280px)
+   Padding lateral: 4mm cada lado para evitar corte
+═══════════════════════════════════════════════════════════════ */
 .ticket-container {
   width: 80mm;
-  max-width: 80mm;
+  max-width: 72mm; /* Área imprimible real */
   font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
   font-size: 12px;
   line-height: 1.3;
   color: #000;
   background: #fff;
-  padding: 3mm;
+  padding: 2mm 4mm; /* Padding: arriba/abajo 2mm, izq/der 4mm */
+  margin: 0 auto; /* Centrar en el papel */
 }
 
 /* ─── ENCABEZADO FISCAL ─── */
@@ -171,11 +176,13 @@
   font-size: 11px;
 }
 
+/* Nombre de producto: permite salto de línea para evitar corte */
 .ticket-item-name {
   font-weight: bold;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  max-width: 100%;
 }
 
 .ticket-item-details {
