@@ -1424,7 +1424,7 @@ export default function OrderScreen() {
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button 
-                      onClick={createNewOrderFromItems}
+                      onClick={openSplitLabelDialog}
                       className="h-10 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold text-xs"
                     >
                       <SplitSquareHorizontal size={12} className="mr-1" /> Nueva Cuenta
