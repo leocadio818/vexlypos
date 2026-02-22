@@ -628,6 +628,7 @@ export const printTicket = (ticketRef) => {
           
           @media print {
             html, body { width: 80mm; margin: 0; padding: 0; }
+            .ticket-container { max-width: 72mm; padding: 2mm 4mm; margin: 0 auto; }
             .no-print { display: none !important; }
           }
         </style>
