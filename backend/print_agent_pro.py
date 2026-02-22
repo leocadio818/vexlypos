@@ -42,7 +42,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://impuestos-dr.preview.emergentagent.com"
+SERVER_URL = "https://receipt-calc-fix.preview.emergentagent.com"
 
 # Nombre de la impresora en Windows (como aparece en "Dispositivos e impresoras")
 DEFAULT_PRINTER = "Caja"
