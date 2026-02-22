@@ -14,13 +14,17 @@ const DEFAULT_BUSINESS_CONFIG = {
   name: 'ALONZO CIGAR',
   legal_name: 'ALONZO CIGAR SRL',
   rnc: '1-31-75577-1',
-  address: 'C/ Las Flores #12, Jarabacoa',
-  address2: 'La Vega, Rep. Dominicana',
+  address_street: 'C/ Las Flores #12',
+  address_building: '',
+  address_sector: 'Jarabacoa',
+  address_city: 'La Vega, Rep. Dominicana',
   phone: '809-301-3858',
   email: '',
   ncf_expiry: '31/12/2026',
-  footer_message: 'Gracias por su visita!',
-  dgii_message: 'Conserve este documento para fines de DGII'
+  footer_msg1: 'Gracias por su visita!',
+  footer_msg2: 'Conserve este documento para fines de DGII',
+  footer_msg3: '',
+  footer_msg4: ''
 };
 
 /**
