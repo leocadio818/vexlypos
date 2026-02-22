@@ -2256,10 +2256,24 @@ export default function OrderScreen() {
         <DialogContent className="max-w-sm bg-white text-black" data-testid="pre-check-dialog">
           <DialogHeader><DialogTitle className="text-black font-oswald">Pre-Cuenta</DialogTitle></DialogHeader>
           <div className="receipt-paper p-2" style={{maxWidth: '72mm', margin: '0 auto'}} dangerouslySetInnerHTML={{ __html: preCheckHtml }} />
-          <Button onClick={() => {
-            const w = window.open('', '_blank', 'width=320,height=600');
-            w.document.write(`<html><head><style>@page{size:80mm auto;margin:0;}body{width:80mm;margin:0 auto;padding:0;font-family:monospace;}</style></head><body>${preCheckHtml}</body></html>`);
-            w.document.close(); w.print();
+          <Button onClick={async () => {
+            try {
+              // Enviar directamente a la impresora
+              const resp = await fetch(`${API_BASE}/api/print/pre-check/${order?.id}/send`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+              });
+              const data = await resp.json();
+              if (data.ok) {
+                toast.success(`Pre-cuenta enviada a impresora (${data.method || 'cola'})`);
+                setPreCheckOpen(false);
+              } else {
+                toast.error(data.message || 'Error al imprimir');
+              }
+            } catch (e) {
+              toast.error('Error de conexión');
+              console.error(e);
+            }
           }} className="w-full h-11 bg-gray-900 text-white font-oswald font-bold active:scale-95" data-testid="print-precheck-btn">
             <Printer size={16} className="mr-2" /> IMPRIMIR PRE-CUENTA
           </Button>
