@@ -224,6 +224,34 @@ def build_escpos_data(commands):
     
     return bytes(data)
 
+# ============ IMPRESIÓN POR RED ============
+def send_to_network_printer(ip_address, data, port=9100, timeout=10):
+    """
+    Envía datos ESC/POS directamente a una impresora de red via socket TCP.
+    
+    Args:
+        ip_address: Dirección IP de la impresora (ej: "192.168.1.114")
+        data: Bytes con los comandos ESC/POS
+        port: Puerto de la impresora (default: 9100)
+        timeout: Timeout de conexión en segundos
+    
+    Returns:
+        (success, error_message)
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((ip_address, port))
+        sock.sendall(data)
+        sock.close()
+        return True, None
+    except socket.timeout:
+        return False, f"Timeout conectando a {ip_address}:{port}"
+    except socket.error as e:
+        return False, f"Error de conexión a {ip_address}:{port}: {str(e)}"
+    except Exception as e:
+        return False, f"Error enviando a impresora de red: {str(e)}"
+
 # ============ COMUNICACIÓN CON SERVIDOR ============
 def check_server_connection():
     """Verifica conexión con el servidor"""
