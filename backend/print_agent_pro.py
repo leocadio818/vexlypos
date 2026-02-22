@@ -42,7 +42,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://receipt-calc-fix.preview.emergentagent.com"
+SERVER_URL = "https://ticket-dinamico.preview.emergentagent.com"
 
 DEFAULT_PRINTER = "Caja"
 
