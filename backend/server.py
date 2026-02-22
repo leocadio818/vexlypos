@@ -2554,11 +2554,11 @@ def main_loop():
                 
                 log_info(f">>> Procesando: {{job_type.upper()}} | Target: {{target}} | Impresora: {{job_printer}}")
                 
-                # Obtener comandos
+                # Obtener comandos - usar build_ticket_from_data para diferenciar por tipo
                 commands = job.get("commands", [])
                 if not commands and job.get("data"):
-                    log_info("    Construyendo comandos desde 'data'...")
-                    commands = build_comanda(job["data"])
+                    log_info(f"    Construyendo comandos para {{job_type}} desde 'data'...")
+                    commands = build_ticket_from_data(job["data"], job_type)
                 
                 if not commands:
                     log_warning(f"    [SKIP] Sin comandos para imprimir")
