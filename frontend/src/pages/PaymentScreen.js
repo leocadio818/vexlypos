@@ -590,10 +590,23 @@ export default function PaymentScreen() {
             expiration_date: generatedNcf.expiration_date
           }
         });
-        // Don't open print dialog yet - wait for alert acknowledgment
+        // Don't print yet - wait for alert acknowledgment, then auto-print
       } else {
-        // No alert needed, go directly to print dialog
+        // No alert needed, print automatically and show dialog
         setPrintDialogOpen(true);
+        // Auto-print the receipt
+        try {
+          const printResp = await fetch(`${API_BASE}/api/print/receipt/${res.data.id}/send`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+          });
+          const printData = await printResp.json();
+          if (printData.ok) {
+            toast.success('Factura enviada a impresora');
+          }
+        } catch (printErr) {
+          console.warn('Auto-print error:', printErr);
+        }
       }
     } catch (err) {
       // Handle specific error from backend
