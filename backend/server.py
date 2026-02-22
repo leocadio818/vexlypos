@@ -1856,7 +1856,7 @@ async def download_print_agent(printer_name: str = Query("Caja", description="No
     
     agent_code = f'''#!/usr/bin/env python3
 """
-MESA POS RD - Agente de Impresion
+MESA POS RD - Agente de Impresion (Alonzo Cigar)
 ==================================
 Agente con icono en bandeja del sistema para Windows.
 
@@ -2109,7 +2109,7 @@ def on_test_print(icon, item):
     try:
         cmds = [
             {{"type": "center", "text": "=" * 32}},
-            {{"type": "center", "text": "MESA POS RD", "bold": True, "size": "large"}},
+            {{"type": "center", "text": "ALONZO CIGAR", "bold": True, "size": "large"}},
             {{"type": "center", "text": "=" * 32}},
             {{"type": "feed", "lines": 1}},
             {{"type": "center", "text": "PRUEBA DE IMPRESION", "bold": True}},
