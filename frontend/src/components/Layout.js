@@ -406,17 +406,6 @@ export default function Layout() {
                 isGlassPage ? 'text-white/50' : 'text-muted-foreground'
               }`}>{user?.name}</p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              data-testid="logout-btn"
-              className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} ${
-                isGlassPage ? 'text-white/60 hover:text-red-400 hover:bg-white/10' : 'text-muted-foreground hover:text-destructive'
-              }`}
-            >
-              <LogOut size={isTablet ? 16 : largeMode ? 22 : 18} />
-            </Button>
           </div>
         </aside>
       ) : null}
