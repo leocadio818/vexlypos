@@ -78,6 +78,9 @@ export default function OrderScreen() {
   const [activeDivision, setActiveDivision] = useState(1);
   const [selectedSplitItems, setSelectedSplitItems] = useState([]);
   
+  // Account Label Dialog
+  const [accountLabelDialog, setAccountLabelDialog] = useState({ open: false, label: '', action: null, itemIds: [] });
+  
   // Move Items Mode
   const [moveItemsMode, setMoveItemsMode] = useState(false);
   const [selectedItemsToMove, setSelectedItemsToMove] = useState([]);
