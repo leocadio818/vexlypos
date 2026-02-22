@@ -1294,7 +1294,7 @@ export default function OrderScreen() {
               {/* Add New Account Button - Hide in move mode */}
               {!moveItemsMode && (
                 <button
-                  onClick={createNewEmptyAccount}
+                  onClick={openNewAccountLabelDialog}
                   data-testid="add-new-account-btn"
                   className="px-2 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all bg-green-600/20 border border-green-600/50 text-green-400 hover:bg-green-600/30 hover:border-green-500 flex items-center gap-1"
                   title="Crear nueva cuenta"
