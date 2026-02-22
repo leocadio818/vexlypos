@@ -1909,31 +1909,8 @@ async def send_receipt_to_printer(bill_id: str):
     commands.append({"type": "feed", "lines": 3})
     commands.append({"type": "cut"})
     
-    # Si es impresora de red, enviar directamente
-    if printer_target == "network" and printer_ip:
-        escpos_data = build_escpos_commands(commands)
-        success, error = await send_to_network_printer(printer_ip, escpos_data)
-        
-        if success:
-            logging.info(f"Factura {bill_id[:8]} enviada a {printer_ip} OK")
-            return {"ok": True, "message": "Factura impresa", "method": "network", "ip": printer_ip}
-        else:
-            logging.error(f"Factura {bill_id[:8]} a {printer_ip} FALLÓ: {error}")
-            # Fallback: agregar a cola
-            job = {
-                "id": gen_id(),
-                "type": "receipt",
-                "reference_id": bill_id,
-                "commands": commands,
-                "printer_target": printer_target,
-                "printer_ip": printer_ip,
-                "status": "pending",
-                "created_at": now_iso()
-            }
-            await db.print_queue.insert_one(job)
-            return {"ok": True, "message": f"Error de red ({error}), agregado a cola", "method": "queue"}
-    
-    # Si es USB, agregar a la cola
+    # TODAS las impresiones van a la cola - el agente local las procesa
+    # El servidor en la nube NO puede alcanzar IPs de red local
     job = {
         "id": gen_id(),
         "type": "receipt",
@@ -1941,6 +1918,7 @@ async def send_receipt_to_printer(bill_id: str):
         "commands": commands,
         "printer_name": receipt_channel.get("printer_name", "") if receipt_channel else "",
         "printer_target": printer_target,
+        "printer_ip": printer_ip,
         "status": "pending",
         "created_at": now_iso()
     }
