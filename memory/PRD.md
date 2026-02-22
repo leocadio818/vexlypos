@@ -95,6 +95,15 @@ box-sizing: border-box;
 | **BAR** | Impresora Térmica | Solo BEBIDAS | ✅ Aplicado |
 | **RECEIPT** | Impresora Térmica | Facturas | ✅ Aplicado |
 
+#### Filtrado KDS por Canal (2025-02-22):
+- El KDS ahora filtra items por el canal de su categoría
+- Categorías con canal "bar" o "terraza" se excluyen del KDS
+- Categorías sin mapping o con "kitchen"/"receipt" van al KDS
+- Archivo modificado: `backend/routers/kitchen.py`
+- Función `get_kitchen_category_ids()` determina qué categorías van al KDS
+
+**Importante:** Las categorías de bebidas (Bebidas, Cervezas, Tragos) deben tener el canal "bar" asignado para excluirlas del KDS.
+
 #### Resultado:
 - "ALONZO CIGAR" queda perfectamente centrado con aire a los lados
 - Sin corte de letras en bordes
