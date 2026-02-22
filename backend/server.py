@@ -931,11 +931,45 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
         payment_html += f"<tr><td>Recibido:</td><td style='text-align:right'>RD$ {amount_received:,.2f}</td></tr>"
         payment_html += f"<tr><td><b>CAMBIO:</b></td><td style='text-align:right'><b>RD$ {cambio:,.2f}</b></td></tr>"
     
+    # Build address from expanded fields or fallback
+    addr_parts = []
+    street = config.get('ticket_address_street') or printer_config.get('business_address', '')
+    building = config.get('ticket_address_building', '')
+    sector = config.get('ticket_address_sector', '')
+    city = config.get('ticket_address_city', '')
+    if street:
+        addr_parts.append(f"{street}{f', {building}' if building else ''}")
+    if sector or city:
+        addr_parts.append(f"{sector}{f', {city}' if city and sector else city}")
+    biz_addr_line = ' | '.join(addr_parts) if addr_parts else printer_config.get('business_address', '')
+    
+    # Build footer messages
+    footer_msgs = []
+    for i in range(1, 5):
+        msg = config.get(f'ticket_footer_msg{i}', '')
+        if msg:
+            footer_msgs.append(msg)
+    if not footer_msgs:
+        footer_msgs = [footer]
+    
+    # Build tax lines from tax_breakdown (dynamic names)
+    tax_html = ""
+    tax_breakdown = bill.get("tax_breakdown", [])
+    if tax_breakdown:
+        for tax in tax_breakdown:
+            tax_html += f"<tr><td>{tax['description']} {tax['rate']}%</td><td style='text-align:right'>RD$ {tax['amount']:,.2f}</td></tr>"
+    else:
+        tax_html += f"<tr><td>ITBIS 18%</td><td style='text-align:right'>RD$ {bill.get('itbis', 0):,.2f}</td></tr>"
+        if bill.get('propina_legal', 0) > 0:
+            tax_html += f"<tr><td>Propina {bill.get('propina_percentage', 10)}%</td><td style='text-align:right'>RD$ {bill.get('propina_legal', 0):,.2f}</td></tr>"
+    
+    footer_html = "<br>".join(f"<span>{m}</span>" for m in footer_msgs)
+    
     return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
     <b style='font-size:18px;'>{biz_name}</b><br>
     <span style='font-size:11px;font-weight:bold;'>RNC: {biz_rnc}</span><br>
-    <span style='font-size:10px;'>{biz_addr}<br>Tel: {biz_phone}</span>
+    <span style='font-size:10px;'>{biz_addr_line}<br>Tel: {biz_phone}</span>
     </div>
     <div style='border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;'>
     <b>NCF: {bill.get('ncf', '')}</b><br>
@@ -945,13 +979,12 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     {items_html}</table>
     <table style='width:100%;font-size:12px;'>
     <tr><td>Subtotal</td><td style='text-align:right'>RD$ {bill['subtotal']:,.2f}</td></tr>
-    <tr><td>ITBIS 18%</td><td style='text-align:right'>RD$ {bill.get('itbis', 0):,.2f}</td></tr>
-    <tr><td>Propina Legal {bill.get('propina_percentage', 10)}%</td><td style='text-align:right'>RD$ {bill.get('propina_legal', 0):,.2f}</td></tr>
-    <tr><td><b style='font-size:16px;'>TOTAL</b></td><td style='text-align:right;font-size:16px;'><b>RD$ {bill['total']:,.2f}</b></td></tr>
+    {tax_html}
+    <tr><td colspan='2' style='padding:4px 0;'><div style='border:2px solid #000;text-align:center;padding:6px;'><b style='font-size:10px;'>TOTAL A PAGAR</b><br><b style='font-size:16px;'>RD$ {bill['total']:,.2f}</b></div></td></tr>
     {payment_html}
     </table>
     <div style='text-align:center;margin-top:8px;font-size:10px;border-top:1px dashed #000;padding-top:8px;'>
-    {footer}<br><span style='font-size:9px;'>Conserve este documento para fines de DGII</span></div></div>""", "queued": send_to_queue}
+    {footer_html}</div></div>""", "queued": send_to_queue}
 
 @api.get("/print/receipt-escpos/{bill_id}")
 async def print_receipt_escpos(bill_id: str):
