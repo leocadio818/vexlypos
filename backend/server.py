@@ -2365,6 +2365,32 @@ def send_to_network_printer(ip, data, port=9100, timeout=10):
     except Exception as e:
         return False, str(e)
 
+def build_comanda_commands(data):
+    \"\"\"Genera comandos ESC/POS desde data de comanda\"\"\"
+    commands = []
+    channel_name = data.get("channel_name", "COMANDA")
+    commands.append({{"type": "text", "text": channel_name.upper(), "align": "center", "bold": True, "size": 2}})
+    commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True}})
+    commands.append({{"type": "divider"}})
+    commands.append({{"type": "columns", "left": "Mesa:", "right": str(data.get("table_number", "?"))}})
+    commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20]}})
+    commands.append({{"type": "columns", "left": "Hora:", "right": data.get("date", "")[-5:] if data.get("date") else ""}})
+    commands.append({{"type": "divider"}})
+    
+    for item in data.get("items", []):
+        item_text = f"{{item.get('quantity', 1)}}x {{item.get('name', '')}}"
+        commands.append({{"type": "text", "text": item_text, "bold": True}})
+        for mod in item.get("modifiers", []):
+            if mod:
+                commands.append({{"type": "text", "text": f"  + {{mod}}"}})
+        if item.get("notes"):
+            commands.append({{"type": "text", "text": f"  NOTA: {{item['notes']}}"}})
+    
+    commands.append({{"type": "divider"}})
+    commands.append({{"type": "feed", "lines": 3}})
+    commands.append({{"type": "cut"}})
+    return commands
+
 def check_server():
     try:
         r = requests.get(f"{{state.server_url}}/api", timeout=5)
