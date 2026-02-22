@@ -138,6 +138,48 @@ export default function PaymentScreen() {
   const [selectedServiceType, setSelectedServiceType] = useState(null);
   const [adjustedBill, setAdjustedBill] = useState(null);
   
+  // Dialog states
+  const [ncfDialogOpen, setNcfDialogOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [paidBill, setPaidBill] = useState(null);
+  
+  // NCF Alert Modal state
+  const [ncfAlertModal, setNcfAlertModal] = useState({ open: false, ncfData: null });
+
+  // Tax Override states
+  const [taxOverrideDialog, setTaxOverrideDialog] = useState({ open: false, step: 'pin' });
+  const [taxOverridePin, setTaxOverridePin] = useState('');
+  const [taxOverrideAuthorized, setTaxOverrideAuthorized] = useState(null);
+  const [taxOverrides, setTaxOverrides] = useState({});
+  const [taxOverrideReference, setTaxOverrideReference] = useState('');
+  const [userHasTaxPermission, setUserHasTaxPermission] = useState(false);
+
+  // Business config for thermal ticket
+  const { config: businessConfig } = useBusinessConfig();
+
+  // NCF Fiscal Types
+  const fiscalTypes = [
+    { code: 'B02', name: 'Consumidor Final', short: 'CF' },
+    { code: 'B01', name: 'Crédito Fiscal', short: 'CF' },
+    { code: 'B14', name: 'Gubernamental', short: 'GOB' },
+    { code: 'B15', name: 'Régimen Especial', short: 'RE' }
+  ];
+
+  const API_BASE = process.env.REACT_APP_BACKEND_URL;
+  const isMobile = device?.isMobile;
+  const isTablet = device?.isTablet;
+  const isLandscape = device?.isLandscape;
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [billRes, pmRes, custRes, stRes, taxRes] = await Promise.all([
+        billsAPI.get(billId),
+        fetch(`${API_BASE}/api/payment-methods`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
+        fetch(`${API_BASE}/api/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
+        fetch(`${API_BASE}/api/sale-types`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
+        fetch(`${API_BASE}/api/tax-config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json())
+      ]);
+  
   // ═══════════════════════════════════════════════════════════════════════════════
   // VERIFICAR PERMISOS - Solo cajeros, admin y gerentes pueden procesar pagos
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -166,48 +208,6 @@ export default function PaymentScreen() {
       </div>
     );
   }
-
-  // Dialog states
-  const [ncfDialogOpen, setNcfDialogOpen] = useState(false);
-  const [printDialogOpen, setPrintDialogOpen] = useState(false);
-  const [paidBill, setPaidBill] = useState(null); // Bill after payment for printing
-  
-  // NCF Alert Modal state (dynamic alerts based on configuration)
-  const [ncfAlertModal, setNcfAlertModal] = useState({ open: false, ncfData: null });
-
-  // Tax Override (Impuesto) states
-  const [taxOverrideDialog, setTaxOverrideDialog] = useState({ open: false, step: 'pin' }); // step: 'pin' | 'adjust'
-  const [taxOverridePin, setTaxOverridePin] = useState('');
-  const [taxOverrideAuthorized, setTaxOverrideAuthorized] = useState(null);
-  const [taxOverrides, setTaxOverrides] = useState({}); // { taxCode: false } = tax disabled
-  const [taxOverrideReference, setTaxOverrideReference] = useState('');
-  const [userHasTaxPermission, setUserHasTaxPermission] = useState(false);
-
-  // Business config for thermal ticket (loaded from backend)
-  const { config: businessConfig } = useBusinessConfig();
-
-  // NCF Fiscal Types (Dominican Republic) - B02 = Consumidor Final es el default
-  const fiscalTypes = [
-    { code: 'B02', name: 'Consumidor Final', short: 'CF' },
-    { code: 'B01', name: 'Crédito Fiscal', short: 'CF' },
-    { code: 'B14', name: 'Gubernamental', short: 'GOB' },
-    { code: 'B15', name: 'Régimen Especial', short: 'RE' }
-  ];
-
-  const API_BASE = process.env.REACT_APP_BACKEND_URL;
-  const isMobile = device?.isMobile;
-  const isTablet = device?.isTablet;
-  const isLandscape = device?.isLandscape;
-
-  const fetchData = useCallback(async () => {
-    try {
-      const [billRes, pmRes, custRes, stRes, taxRes] = await Promise.all([
-        billsAPI.get(billId),
-        fetch(`${API_BASE}/api/payment-methods`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
-        fetch(`${API_BASE}/api/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
-        fetch(`${API_BASE}/api/sale-types`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
-        fetch(`${API_BASE}/api/tax-config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json())
-      ]);
       const billData = billRes.data;
       setBill(billData);
       setAdjustedBill(billData); // Initially same as bill
