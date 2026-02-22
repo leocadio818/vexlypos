@@ -1034,8 +1034,13 @@ async def print_receipt_escpos(bill_id: str):
         cambio = round(amount_received - bill["total"], 2)
         lines.append({"type": "columns", "bold": True, "left": "CAMBIO", "right": f"RD$ {cambio:,.2f}"})
     lines.append({"type": "divider"})
-    lines.append({"type": "center", "text": config.get('footer_text', 'Gracias por su visita!')})
-    lines.append({"type": "center", "text": "Conserve este documento para DGII"})
+    # Footer messages
+    for i in range(1, 5):
+        msg = config.get(f'ticket_footer_msg{i}', '')
+        if msg:
+            lines.append({"type": "center", "text": msg})
+    if not any(config.get(f'ticket_footer_msg{i}') for i in range(1, 5)):
+        lines.append({"type": "center", "text": config.get('footer_text', 'Gracias por su visita!')})
     lines.append({"type": "cut"})
     return {"lines": lines}
 
