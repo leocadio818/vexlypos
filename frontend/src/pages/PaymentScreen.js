@@ -549,14 +549,15 @@ export default function PaymentScreen() {
       const res = await billsAPI.pay(billId, { 
         payment_method: mainMethod, 
         tip_percentage: 0, 
-        additional_tip: cardTip, // Add card tip as additional tip
+        additional_tip: cardTip,
         customer_id: selectedCustomer?.id || '',
         ncf: generatedNcf?.ncf || null,
         sale_type_id: selectedServiceType?.id || null,
         sale_type_name: selectedServiceType?.name || null,
         itbis: adjustedBill?.itbis ?? bill?.itbis ?? 0,
         propina_legal: adjustedBill?.propina_legal ?? bill?.propina_legal ?? 0,
-        total: billTotal
+        total: billTotal,
+        amount_received: totalPaidDOP
       });
       
       const pts = res.data?.points_earned;
