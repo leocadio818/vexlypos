@@ -2580,7 +2580,7 @@ echo       [OK] Python: %PYTHON_PATH%
 echo.
 
 :: Instalar dependencias
-echo [3/5] Instalando dependencias...
+echo [3/6] Instalando dependencias...
 python -m pip install requests pywin32 --quiet --disable-pip-version-check
 if %errorLevel% neq 0 (
     echo       [ERROR] No se pudieron instalar las dependencias
@@ -2591,7 +2591,7 @@ echo       [OK] requests y pywin32 instalados
 echo.
 
 :: Descargar agente
-echo [4/5] Descargando agente de impresion...
+echo [4/6] Descargando agente de impresion...
 powershell -Command "try {{ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%SERVER_URL%/api/download/print-agent?printer_name=%PRINTER_NAME%' -OutFile '%INSTALL_DIR%\\MesaPOS_PrintAgent.py' -UseBasicParsing }} catch {{ Write-Host $_.Exception.Message; exit 1 }}"
 if not exist "%INSTALL_DIR%\\MesaPOS_PrintAgent.py" (
     echo       [ERROR] No se pudo descargar el agente
@@ -2602,8 +2602,24 @@ if not exist "%INSTALL_DIR%\\MesaPOS_PrintAgent.py" (
 echo       [OK] Agente descargado
 echo.
 
+:: Crear archivo de configuracion
+echo [5/6] Creando archivo de configuracion...
+echo # Mesa POS RD - Configuracion del Agente de Impresion > "%INSTALL_DIR%\\config.txt"
+echo # Puedes editar este archivo para cambiar la configuracion >> "%INSTALL_DIR%\\config.txt"
+echo # El agente leera estos valores al iniciar >> "%INSTALL_DIR%\\config.txt"
+echo. >> "%INSTALL_DIR%\\config.txt"
+echo SERVER_URL=%SERVER_URL% >> "%INSTALL_DIR%\\config.txt"
+echo PRINTER_NAME=%PRINTER_NAME% >> "%INSTALL_DIR%\\config.txt"
+echo POLL_INTERVAL=3 >> "%INSTALL_DIR%\\config.txt"
+echo NETWORK_PORT=9100 >> "%INSTALL_DIR%\\config.txt"
+echo       [OK] config.txt creado
+echo.
+
 :: Crear script de inicio
-echo [5/5] Configurando inicio automatico...
+echo [6/6] Configurando inicio automatico...
+
+:: Matar proceso anterior si existe
+taskkill /f /im pythonw.exe >nul 2>&1
 
 :: Crear archivo VBS para ejecutar sin ventana
 echo Set WshShell = CreateObject("WScript.Shell") > "%INSTALL_DIR%\\RunAgent.vbs"
@@ -2636,14 +2652,20 @@ echo Se iniciara automaticamente cuando enciendas la PC.
 echo.
 echo Archivos instalados en: %INSTALL_DIR%
 echo   - MesaPOS_PrintAgent.py (agente)
+echo   - config.txt (EDITABLE - para cambiar URL)
 echo   - MesaPOS_PrintAgent.log (logs)
 echo   - RunAgent.vbs (iniciador)
 echo.
+echo ========================================================
+echo   IMPORTANTE: Si cambias de servidor (produccion)
+echo   solo edita C:\\MesaPOS\\config.txt y cambia SERVER_URL
+echo   Luego reinicia el agente con:
+echo   taskkill /f /im pythonw.exe
+echo   wscript C:\\MesaPOS\\RunAgent.vbs
+echo ========================================================
+echo.
 echo Para ver los logs:
 echo   type %INSTALL_DIR%\\MesaPOS_PrintAgent.log
-echo.
-echo Para detener el agente:
-echo   taskkill /f /im pythonw.exe
 echo.
 pause
 '''
