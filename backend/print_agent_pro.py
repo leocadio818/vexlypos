@@ -3,7 +3,7 @@
 MESA POS RD - Agente de Impresión Profesional
 ==============================================
 Agente con icono en bandeja del sistema, notificaciones nativas
-y soporte para impresoras Windows por nombre.
+y soporte para impresoras Windows por nombre + Impresoras de Red.
 
 Para compilar a .exe:
     pyinstaller --onefile --noconsole --icon=printer_icon.ico print_agent_pro.py
@@ -18,6 +18,7 @@ import time
 import json
 import threading
 import requests
+import socket
 from datetime import datetime
 from io import BytesIO
 import ctypes
@@ -45,6 +46,9 @@ except ImportError:
 SERVER_URL = "https://ticket-dinamico.preview.emergentagent.com"
 
 DEFAULT_PRINTER = "Caja"
+
+# Puerto estándar para impresoras ESC/POS por red
+NETWORK_PRINTER_PORT = 9100
 
 # Intervalo de polling en segundos
 POLL_INTERVAL = 3
