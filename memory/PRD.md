@@ -54,7 +54,7 @@ Sistema POS de propósito general para República Dominicana con soporte complet
 - ✅ **CAUSA**: El papel es 80mm pero el área imprimible real es ~72mm
 - ✅ **SOLUCIÓN IMPLEMENTADA**:
 
-#### Configuración CSS para Tickets (Factura Final + Pre-Cuenta):
+#### Configuración CSS para Tickets (Factura Final + Pre-Cuenta + Comandas):
 ```css
 /* Contenedor principal - 72mm área imprimible */
 max-width: 72mm;
@@ -83,14 +83,23 @@ box-sizing: border-box;
 | `frontend/src/styles/ticket-print.css` | max-width:72mm, padding 4mm lateral |
 | `frontend/src/components/ThermalTicket.js` | Estilos inline actualizados para printTicket() |
 | `frontend/src/pages/OrderScreen.js` | Pre-cuenta preview con 72mm, @page size correcto |
-| `backend/server.py` | HTML pre-cuenta endpoint con 72mm y padding |
+| `frontend/src/pages/Kitchen.js` | Comanda preview con 72mm, @page size correcto |
+| `backend/server.py` | HTML pre-cuenta, factura y comanda endpoints con 72mm y padding |
 | `backend/print_agent.py` | width=42, divider 42 chars |
 | `backend/print_agent_pro.py` | width=42, divider 42 chars |
+
+#### Canales de Impresión:
+| Canal | Destino | Contenido | Ajuste 72mm |
+|-------|---------|-----------|-------------|
+| **COCINA** | KDS (Pantalla TV) | Solo COMIDA | No aplica (pantalla) |
+| **BAR** | Impresora Térmica | Solo BEBIDAS | ✅ Aplicado |
+| **RECEIPT** | Impresora Térmica | Facturas | ✅ Aplicado |
 
 #### Resultado:
 - "ALONZO CIGAR" queda perfectamente centrado con aire a los lados
 - Sin corte de letras en bordes
 - Productos con nombres largos hacen wrap automático
+- Comandas del BAR imprimen correctamente en 72mm
 
 ---
 
