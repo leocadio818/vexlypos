@@ -230,15 +230,19 @@ export default function SystemTab() {
                   <ThermalTicket
                     order={demoOrder}
                     businessConfig={{
-                      business_name: systemConfig.ticket_business_name || systemConfig.restaurant_name || 'RESTAURANTE DEMO',
+                      business_name: systemConfig.ticket_business_name || systemConfig.restaurant_name || 'ALONZO CIGAR',
                       legal_name: systemConfig.ticket_legal_name || '',
                       rnc: systemConfig.ticket_rnc || systemConfig.rnc || '000-000000-0',
-                      address: systemConfig.ticket_address || 'Dirección del negocio',
-                      city: systemConfig.ticket_city || 'Santo Domingo',
+                      address_street: systemConfig.ticket_address_street || '',
+                      address_building: systemConfig.ticket_address_building || '',
+                      address_sector: systemConfig.ticket_address_sector || '',
+                      address_city: systemConfig.ticket_address_city || '',
                       phone: systemConfig.ticket_phone || '809-555-0000',
                       email: systemConfig.ticket_email || '',
-                      thank_you_message: systemConfig.ticket_thank_you || '¡Gracias por su preferencia!',
-                      dgii_message: systemConfig.ticket_dgii_message || 'Consulte este NCF en dgii.gov.do'
+                      footer_msg1: systemConfig.ticket_footer_msg1 || '',
+                      footer_msg2: systemConfig.ticket_footer_msg2 || '',
+                      footer_msg3: systemConfig.ticket_footer_msg3 || '',
+                      footer_msg4: systemConfig.ticket_footer_msg4 || ''
                     }}
                   />
                 </div>
