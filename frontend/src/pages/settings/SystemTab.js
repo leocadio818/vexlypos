@@ -193,16 +193,24 @@ export default function SystemTab() {
 
             <div className="bg-card border border-border rounded-xl p-4">
               <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                <FileText size={14} className="text-purple-500" /> Mensajes
+                <FileText size={14} className="text-purple-500" /> Mensajes de Pie (4 lineas)
               </h3>
-              <input value={systemConfig.ticket_thank_you || ''} 
-                onChange={e => setSystemConfig(p => ({ ...p, ticket_thank_you: e.target.value }))}
-                placeholder="¡Gracias por su preferencia!"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2" />
-              <input value={systemConfig.ticket_dgii_message || ''} 
-                onChange={e => setSystemConfig(p => ({ ...p, ticket_dgii_message: e.target.value }))}
-                placeholder="Consulte este NCF en dgii.gov.do"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" />
+              <input value={systemConfig.ticket_footer_msg1 || ''} 
+                onChange={e => setSystemConfig(p => ({ ...p, ticket_footer_msg1: e.target.value }))}
+                placeholder="Mensaje 1 (ej: Gracias por su visita!)"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2" data-testid="ticket-footer-msg1" />
+              <input value={systemConfig.ticket_footer_msg2 || ''} 
+                onChange={e => setSystemConfig(p => ({ ...p, ticket_footer_msg2: e.target.value }))}
+                placeholder="Mensaje 2 (ej: Conserve para fines de DGII)"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2" data-testid="ticket-footer-msg2" />
+              <input value={systemConfig.ticket_footer_msg3 || ''} 
+                onChange={e => setSystemConfig(p => ({ ...p, ticket_footer_msg3: e.target.value }))}
+                placeholder="Mensaje 3 (ej: @alonzocigar)"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2" data-testid="ticket-footer-msg3" />
+              <input value={systemConfig.ticket_footer_msg4 || ''} 
+                onChange={e => setSystemConfig(p => ({ ...p, ticket_footer_msg4: e.target.value }))}
+                placeholder="Mensaje 4 (opcional)"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="ticket-footer-msg4" />
             </div>
 
             <Button onClick={handleSaveSystemConfig} className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold">
