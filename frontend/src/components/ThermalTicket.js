@@ -11,15 +11,15 @@ import '../styles/ticket-print.css';
 
 // Configuración por defecto (fallback si no hay config en BD)
 const DEFAULT_BUSINESS_CONFIG = {
-  name: 'RESTAURANTE DEMO',
-  legal_name: 'RESTAURANTE DEMO SRL',
-  rnc: '1-31-12345-6',
-  address: 'Av. Winston Churchill #123',
-  address2: 'Ens. Piantini, Santo Domingo',
-  phone: '809-555-1234',
-  email: 'info@restaurantedemo.com',
-  ncf_expiry: '31/12/2025',
-  footer_message: '¡Gracias por su visita!',
+  name: 'ALONZO CIGAR',
+  legal_name: 'ALONZO CIGAR SRL',
+  rnc: '1-31-75577-1',
+  address: 'C/ Las Flores #12, Jarabacoa',
+  address2: 'La Vega, Rep. Dominicana',
+  phone: '809-301-3858',
+  email: '',
+  ncf_expiry: '31/12/2026',
+  footer_message: 'Gracias por su visita!',
   dgii_message: 'Conserve este documento para fines de DGII'
 };
 
