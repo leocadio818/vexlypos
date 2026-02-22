@@ -98,6 +98,101 @@ def gen_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+# ─── IMPRESIÓN DIRECTA A RED ───
+NETWORK_PRINTER_PORT = 9100
+
+# Comandos ESC/POS
+ESC = b'\x1b'
+GS = b'\x1d'
+
+def build_escpos_commands(commands: list) -> bytes:
+    """Construye datos ESC/POS desde lista de comandos"""
+    data = bytearray()
+    data.extend(ESC + b'@')  # Inicializar impresora
+    
+    for cmd in commands:
+        cmd_type = cmd.get("type", "")
+        
+        if cmd_type == "text":
+            text = cmd.get("text", "")
+            align = cmd.get("align", "left")
+            bold = cmd.get("bold", False)
+            size = cmd.get("size", 1)
+            
+            # Alineación
+            if align == "center":
+                data.extend(ESC + b'a\x01')
+            elif align == "right":
+                data.extend(ESC + b'a\x02')
+            else:
+                data.extend(ESC + b'a\x00')
+            
+            # Negrita
+            if bold:
+                data.extend(ESC + b'E\x01')
+            
+            # Tamaño
+            if size == 2:
+                data.extend(GS + b'!\x11')
+            elif size == 3:
+                data.extend(GS + b'!\x22')
+            else:
+                data.extend(GS + b'!\x00')
+            
+            data.extend(text.encode('cp437', errors='replace'))
+            data.extend(b'\n')
+            
+            # Reset
+            data.extend(ESC + b'E\x00')
+            data.extend(GS + b'!\x00')
+            
+        elif cmd_type == "columns":
+            data.extend(ESC + b'a\x00')
+            left = cmd.get("left", "")
+            right = cmd.get("right", "")
+            width = 42  # 72mm = ~42 caracteres
+            spaces = max(1, width - len(left) - len(right))
+            line = left + " " * spaces + right
+            if cmd.get("bold"):
+                data.extend(ESC + b'E\x01')
+            data.extend(line.encode('cp437', errors='replace'))
+            data.extend(b'\n')
+            data.extend(ESC + b'E\x00')
+            
+        elif cmd_type == "divider":
+            data.extend(b'-' * 42 + b'\n')
+            
+        elif cmd_type == "feed":
+            lines = cmd.get("lines", 1)
+            data.extend(b'\n' * lines)
+            
+        elif cmd_type == "cut":
+            data.extend(GS + b'V\x00')
+    
+    return bytes(data)
+
+async def send_to_network_printer(ip: str, data: bytes, port: int = 9100, timeout: int = 10) -> tuple:
+    """Envía datos ESC/POS a impresora de red via socket TCP"""
+    try:
+        loop = asyncio.get_event_loop()
+        
+        def _send():
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            sock.connect((ip, port))
+            sock.sendall(data)
+            sock.close()
+            return True, None
+        
+        success, error = await loop.run_in_executor(None, _send)
+        return success, error
+    except socket.timeout:
+        return False, f"Timeout conectando a {ip}:{port}"
+    except socket.error as e:
+        return False, f"Error de red: {str(e)}"
+    except Exception as e:
+        return False, f"Error: {str(e)}"
+
 # ─── INPUT MODELS ───
 class EmailInput(BaseModel):
     to: str
