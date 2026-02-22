@@ -274,6 +274,8 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
     bill = {
         "id": gen_id(), "order_id": input.order_id, "table_id": input.table_id,
         "table_number": table["number"] if table else 0,
+        "account_number": order.get("account_number", 1),
+        "account_label": order.get("account_label", ""),
         "label": input.label or f"Mesa {table['number'] if table else '?'}",
         "items": items_data, "subtotal": round(subtotal, 2),
         "itbis": itbis_amount, "itbis_rate": 18,
