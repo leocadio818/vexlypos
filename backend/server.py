@@ -2303,7 +2303,18 @@ def build_escpos_data(commands):
         cmd_type = cmd.get("type", "")
         text = cmd.get("text", "")
         
-        if cmd_type == "center":
+        if cmd_type == "text":
+            align = cmd.get("align", "left")
+            if align == "center": data.extend(ESC + b'a\\x01')
+            elif align == "right": data.extend(ESC + b'a\\x02')
+            else: data.extend(ESC + b'a\\x00')
+            if cmd.get("bold"): data.extend(ESC + b'E\\x01')
+            size = cmd.get("size", 1)
+            if size == 2: data.extend(GS + b'!\\x11')
+            elif size == 3: data.extend(GS + b'!\\x22')
+            data.extend(text.encode('cp437', errors='replace') + b'\\n')
+            data.extend(ESC + b'E\\x00' + GS + b'!\\x00')
+        elif cmd_type == "center":
             data.extend(ESC + b'a\\x01')
             if cmd.get("bold"): data.extend(ESC + b'E\\x01')
             if cmd.get("size") == "large": data.extend(GS + b'!\\x11')
@@ -2321,18 +2332,38 @@ def build_escpos_data(commands):
         elif cmd_type == "columns":
             data.extend(ESC + b'a\\x00')
             left, right = cmd.get("left", ""), cmd.get("right", "")
-            spaces = max(1, 48 - len(left) - len(right))
+            spaces = max(1, 42 - len(left) - len(right))
             if cmd.get("bold"): data.extend(ESC + b'E\\x01')
             data.extend((left + " " * spaces + right).encode('cp437', errors='replace') + b'\\n')
             data.extend(ESC + b'E\\x00')
         elif cmd_type == "divider":
-            data.extend(b'-' * 48 + b'\\n')
+            data.extend(b'-' * 42 + b'\\n')
         elif cmd_type == "feed":
             data.extend(b'\\n' * cmd.get("lines", 1))
         elif cmd_type == "cut":
             data.extend(GS + b'V\\x00')
     
     return bytes(data)
+
+# ═══════════════════════════════════════════════════════════════
+# SOPORTE PARA IMPRESORAS DE RED
+# ═══════════════════════════════════════════════════════════════
+import socket
+
+def send_to_network_printer(ip, data, port=9100, timeout=10):
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((ip, port))
+        sock.sendall(data)
+        sock.close()
+        return True, None
+    except socket.timeout:
+        return False, f"Timeout conectando a {{ip}}:{{port}}"
+    except socket.error as e:
+        return False, f"Error de red: {{str(e)}}"
+    except Exception as e:
+        return False, str(e)
 
 def check_server():
     try:
