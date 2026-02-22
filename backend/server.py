@@ -2020,7 +2020,22 @@ async def send_precheck_to_printer(order_id: str):
     commands.append({"type": "text", "text": "ALONZO CIGAR", "align": "center", "bold": True, "size": 2})
     commands.append({"type": "text", "text": "PRE-CUENTA", "align": "center", "bold": True})
     commands.append({"type": "divider"})
-    commands.append({"type": "columns", "left": "Mesa:", "right": str(order['table_number'])})
+    
+    # Check if table has multiple accounts
+    table_orders_count = await db.orders.count_documents({"table_id": order.get("table_id"), "status": {"$in": ["active", "sent"]}})
+    account_number = order.get('account_number', 1)
+    account_label = order.get('account_label', '')
+    
+    # Build mesa description
+    mesa_desc = f"Mesa: {order['table_number']}"
+    if table_orders_count > 1 or account_number > 1:
+        mesa_desc = f"Mesa: {order['table_number']} - Cuenta #{account_number}"
+        if account_label:
+            mesa_desc = f"Mesa: {order['table_number']} - Cta #{account_number}"
+    
+    commands.append({"type": "columns", "left": mesa_desc, "right": ""})
+    if account_label:
+        commands.append({"type": "columns", "left": "Cliente:", "right": account_label[:20]})
     commands.append({"type": "columns", "left": "Mesero:", "right": order['waiter_name'][:20]})
     commands.append({"type": "columns", "left": "Fecha:", "right": order['created_at'][:19]})
     commands.append({"type": "divider"})
