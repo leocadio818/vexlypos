@@ -6,10 +6,10 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 ## URLs del Sistema
 - **App:** https://pos-printing-system.preview.emergentagent.com
 - **API:** https://pos-printing-system.preview.emergentagent.com/api
-- **Agente Python:** https://pos-printing-system.preview.emergentagent.com/api/download/print-agent?printer_name=Caja
-- **Instalador Servicio:** https://pos-printing-system.preview.emergentagent.com/api/download/print-agent-installer?printer_name=Caja
+- **Agente Python:** https://pos-printing-system.preview.emergentagent.com/api/download/print-agent?printer_name=RECIBO
+- **Instalador Servicio:** https://pos-printing-system.preview.emergentagent.com/api/download/print-agent-installer?printer_name=RECIBO
 
-## Arquitectura de Impresión (v2.0 - 2026-02-22)
+## Arquitectura de Impresión (v2.1 - 2026-02-22)
 
 ### Flujo de Impresión
 ```
@@ -18,23 +18,33 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 
 **IMPORTANTE:** El servidor en la nube NO puede alcanzar impresoras de red local. TODO va a la cola.
 
-### Características del Agente v2.0
+### Características del Agente v2.1
 - **Auto-Reintento:** Si pierde conexión, espera 10s y reintenta automáticamente
-- **Logging:** Escribe logs a `MesaPOS_PrintAgent.log` en el mismo directorio
-- **Servicio Windows:** Se puede instalar como servicio para inicio automático
+- **Logging:** Escribe logs a `MesaPOS_PrintAgent.log`
+- **Config Editable:** Archivo `config.txt` para cambiar URL sin reinstalar
+- **Inicio Automático:** Tarea programada con Windows
 - **Sin Ventana:** Corre silenciosamente en segundo plano
 
-### Instalación como Servicio
-1. Descargar `Instalar_MesaPOS_PrintAgent.bat`
-2. Ejecutar como Administrador
-3. El servicio se iniciará automáticamente con Windows
+### Formato de Cantidades (IMPORTANTE)
+- Cantidades SIN decimales innecesarios: `1 X` en lugar de `1.0 X`
+- Cantidades CON decimales cuando aplica: `1.5 X PESCADO FRITO`
+- Aplica a: Comandas, Pre-cuentas y Facturas
 
-### Comandos del Servicio
+### Instalación del Agente
+1. Descargar `Instalar_MesaPOS_PrintAgent.bat` desde el link del instalador
+2. Clic derecho → "Ejecutar como administrador"
+3. El instalador hace todo automático
+
+### Cambiar URL (Producción)
+Editar `C:\MesaPOS\config.txt`:
+```
+SERVER_URL=https://tu-url-de-produccion.com
+PRINTER_NAME=RECIBO
+```
+Luego reiniciar:
 ```cmd
-sc query MesaPOS_PrintAgent          # Ver estado
-net stop MesaPOS_PrintAgent          # Detener
-net start MesaPOS_PrintAgent         # Iniciar
-C:\nssm\nssm.exe remove MesaPOS_PrintAgent confirm  # Eliminar
+taskkill /f /im pythonw.exe
+wscript C:\MesaPOS\RunAgent.vbs
 ```
 
 ### Canales Configurados
@@ -54,15 +64,18 @@ C:\nssm\nssm.exe remove MesaPOS_PrintAgent confirm  # Eliminar
 - `GET /api/download/print-agent` - Descarga agente Python
 - `GET /api/download/print-agent-installer` - Descarga instalador .bat
 
-## Completado
+## Completado (2026-02-22)
 - [x] Sistema de impresión con cola asíncrona
-- [x] Agente local v2.0 para Windows (Python)
+- [x] Agente local v2.1 para Windows (Python)
 - [x] Auto-reintento de conexión (10s/30s)
 - [x] Logging a archivo
-- [x] Instalador automático como servicio Windows
+- [x] Archivo config.txt editable para cambiar URL
+- [x] Instalador automático con Tarea Programada de Windows
 - [x] KDS con filtrado por canal
 - [x] Formato 72mm para tickets térmicos
 - [x] Comandas separadas por canal (cocina/bar)
+- [x] Impresión automática de comandas al "Enviar a Cocina"
+- [x] Formato de cantidad sin decimales innecesarios (1 X en vez de 1.0 X)
 
 ## Pendiente
 ### P1 - Alta Prioridad
