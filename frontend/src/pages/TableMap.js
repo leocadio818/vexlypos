@@ -22,8 +22,8 @@ const statusColors = {
 // Generate chair/seat positions around the table
 const getChairPositions = (capacity, shape, w, h) => {
   const chairs = [];
-  const chairSize = Math.min(w, h) * 0.22; // Chair size relative to table
-  const offset = chairSize * 0.6; // Distance from table edge
+  const chairSize = Math.min(w, h) * 0.25; // Chair size relative to table
+  const offset = chairSize * 0.7; // Distance from table edge
   
   if (shape === 'round') {
     // Distribute chairs in a circle around the table
@@ -39,51 +39,59 @@ const getChairPositions = (capacity, shape, w, h) => {
       });
     }
   } else if (shape === 'rectangle') {
-    // Long table - distribute on long sides
+    // Long table - distribute on long sides primarily
+    const isHorizontal = w >= h;
     const longSide = Math.max(w, h);
     const shortSide = Math.min(w, h);
-    const isHorizontal = w > h;
     
-    const perSide = Math.ceil(capacity / 2);
-    const spacing = longSide / (perSide + 1);
+    // For rectangle: put chairs on the long sides
+    const perLongSide = Math.ceil(capacity / 2);
+    const spacingLong = longSide / (perLongSide + 1);
     
     for (let i = 0; i < capacity; i++) {
-      const side = i < perSide ? 0 : 1; // 0 = top/left, 1 = bottom/right
-      const posOnSide = i < perSide ? i : i - perSide;
+      const side = i < perLongSide ? 0 : 1;
+      const posIndex = i < perLongSide ? i : i - perLongSide;
       
       if (isHorizontal) {
+        // Wide table - chairs on top and bottom
         chairs.push({
-          x: -longSide/2 + spacing * (posOnSide + 1),
-          y: side === 0 ? -shortSide/2 - offset : shortSide/2 + offset,
+          x: -w/2 + spacingLong * (posIndex + 1),
+          y: side === 0 ? -h/2 - offset : h/2 + offset,
           rotation: side === 0 ? 180 : 0,
           size: chairSize
         });
       } else {
+        // Tall table - chairs on left and right
         chairs.push({
-          x: side === 0 ? -shortSide/2 - offset : shortSide/2 + offset,
-          y: -longSide/2 + spacing * (posOnSide + 1),
+          x: side === 0 ? -w/2 - offset : w/2 + offset,
+          y: -h/2 + spacingLong * (posIndex + 1),
           rotation: side === 0 ? 90 : -90,
           size: chairSize
         });
       }
     }
   } else {
-    // Square table - distribute on all 4 sides
-    const positions = [];
+    // Square table - distribute evenly on all 4 sides
     const perSide = Math.ceil(capacity / 4);
-    const sides = ['top', 'right', 'bottom', 'left'];
+    const extraChairs = capacity % 4;
+    const sides = [
+      { name: 'top', chairs: perSide + (extraChairs > 0 ? 1 : 0) },
+      { name: 'right', chairs: perSide + (extraChairs > 1 ? 1 : 0) },
+      { name: 'bottom', chairs: perSide + (extraChairs > 2 ? 1 : 0) },
+      { name: 'left', chairs: perSide + (extraChairs > 3 ? 1 : 0) }
+    ];
     
     let placed = 0;
-    for (let sideIdx = 0; sideIdx < 4 && placed < capacity; sideIdx++) {
-      const side = sides[sideIdx];
-      const countThisSide = Math.min(perSide, capacity - placed);
-      const spacing = (side === 'top' || side === 'bottom' ? w : h) / (countThisSide + 1);
+    for (const sideInfo of sides) {
+      if (placed >= capacity) break;
+      const count = Math.min(sideInfo.chairs, capacity - placed);
+      const spacing = (sideInfo.name === 'top' || sideInfo.name === 'bottom' ? w : h) / (count + 1);
       
-      for (let i = 0; i < countThisSide && placed < capacity; i++) {
+      for (let i = 0; i < count && placed < capacity; i++) {
         let x, y, rotation;
         const pos = spacing * (i + 1);
         
-        switch(side) {
+        switch(sideInfo.name) {
           case 'top':
             x = -w/2 + pos; y = -h/2 - offset; rotation = 180; break;
           case 'right':
