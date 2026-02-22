@@ -1744,6 +1744,9 @@ async def send_comanda_to_queue(order_id: str):
     jobs_created = []
     network_results = []
     
+    # Generar un solo número de transacción interno para esta comanda
+    internal_trans_num = await get_next_transaction_number()
+    
     for channel_code, items in items_by_channel.items():
         # Skip empty channels - no blank tickets
         if not items:
@@ -1763,6 +1766,7 @@ async def send_comanda_to_queue(order_id: str):
             "table_number": order.get("table_number", "?"),
             "waiter_name": order.get("waiter_name", ""),
             "order_number": order.get("id", "")[:8],
+            "internal_transaction_number": internal_trans_num,
             "date": now_iso()[:19].replace("T", " "),
             "items_count": len(items),
             "items": [
