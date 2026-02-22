@@ -295,9 +295,22 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
 
-    propina = round(bill["subtotal"] * (input.tip_percentage / 100), 2) + input.additional_tip
-    itbis = bill.get("itbis", 0)
-    total = round(bill["subtotal"] + itbis + propina, 2)
+    # Use frontend-provided values (already calculated by Intelligent Tax Engine)
+    # Fallback to bill's existing values if not provided
+    if input.propina_legal is not None:
+        propina = round(input.propina_legal + input.additional_tip, 2)
+    else:
+        propina = round(bill.get("propina_legal", bill["subtotal"] * (input.tip_percentage / 100)), 2) + input.additional_tip
+    
+    if input.itbis is not None:
+        itbis = round(input.itbis, 2)
+    else:
+        itbis = bill.get("itbis", 0)
+    
+    if input.total is not None:
+        total = round(input.total + input.additional_tip, 2)
+    else:
+        total = round(bill["subtotal"] + itbis + propina, 2)
     
     # DGII Fiscal Security: Block zero-value invoices
     if total <= 0:
