@@ -51,7 +51,36 @@ async def get_kitchen_category_ids():
         if channel not in bar_channels:
             kitchen_cat_ids.append(cat_id)
     
-    return kitchen_cat_ids
+    return kitchen_cat_ids, bar_channels, mapping_dict
+
+async def get_product_category_map():
+    """Get a map of product_id -> category_id for items without category_id"""
+    products = await db.products.find({}, {"_id": 0, "id": 1, "category_id": 1}).to_list(1000)
+    return {p["id"]: p.get("category_id") for p in products}
+
+async def filter_items_for_kds(items, kitchen_cat_ids, bar_channels, mapping_dict, product_cat_map):
+    """Filter items to show only kitchen items (not bar)"""
+    kitchen_items = []
+    for item in items:
+        if not item.get("sent_to_kitchen"):
+            continue
+        if item.get("status") in ["served", "cancelled"]:
+            continue
+        
+        # Get category_id from item, or lookup from product
+        cat_id = item.get("category_id")
+        if not cat_id:
+            product_id = item.get("product_id")
+            cat_id = product_cat_map.get(product_id)
+        
+        # Determine channel for this category
+        channel = mapping_dict.get(cat_id, "kitchen") if cat_id else "kitchen"
+        
+        # Include if NOT a bar channel
+        if channel not in bar_channels:
+            kitchen_items.append(item)
+    
+    return kitchen_items
 
 # ─── KITCHEN ORDERS (KDS) ───
 @router.get("/kitchen/orders")
