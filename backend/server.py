@@ -866,19 +866,20 @@ async def print_pre_check(order_id: str):
     await db.pre_check_prints.insert_one({"order_id": order_id, "print_number": print_count + 1, "printed_at": now_iso()})
     reprint_label = f"<div style='text-align:center;color:red;font-weight:bold;'>*** RE-IMPRESION #{print_count} ***</div>" if print_count > 0 else ""
     tax_html = "".join(f"<tr><td>{t['description']} {t['rate']}%</td><td style='text-align:right'>RD$ {t['amount']:,.2f}</td></tr>" for t in tax_lines)
-    return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
+    # Pre-cuenta HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
+    return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:12px;margin:0 auto;box-sizing:border-box;'>
     {reprint_label}
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
-    <b style='font-size:18px;'>ALONZO CIGAR</b><br><b>PRE-CUENTA</b></div>
-    <div>Mesa: {order['table_number']}<br>Mesero: {order['waiter_name']}<br>Fecha: {order['created_at'][:19]}</div>
-    <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;'>
+    <b style='font-size:16px;'>ALONZO CIGAR</b><br><b>PRE-CUENTA</b></div>
+    <div style='font-size:11px;'>Mesa: {order['table_number']}<br>Mesero: {order['waiter_name']}<br>Fecha: {order['created_at'][:19]}</div>
+    <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;font-size:11px;'>
     {items_html}</table>
-    <table style='width:100%;font-size:12px;'>
+    <table style='width:100%;font-size:11px;'>
     <tr><td>Subtotal</td><td style='text-align:right'>RD$ {subtotal:,.2f}</td></tr>
     {tax_html}
-    <tr><td><b style='font-size:14px;'>TOTAL ESTIMADO</b></td><td style='text-align:right;font-size:14px;'><b>RD$ {total:,.2f}</b></td></tr>
+    <tr style='border:2px solid #000;'><td style='padding:4px;'><b style='font-size:13px;'>TOTAL ESTIMADO</b></td><td style='text-align:right;padding:4px;font-size:13px;'><b>RD$ {total:,.2f}</b></td></tr>
     </table>
-    <div style='text-align:center;margin-top:8px;font-size:10px;border-top:1px dashed #000;padding-top:8px;'>
+    <div style='text-align:center;margin-top:8px;font-size:9px;border-top:1px dashed #000;padding-top:8px;'>
     La propina es voluntaria<br>Este NO es un comprobante fiscal</div></div>""",
     "print_number": print_count + 1, "is_reprint": print_count > 0}
 
