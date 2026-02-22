@@ -1779,7 +1779,7 @@ async def send_precheck_to_printer(order_id: str):
     if print_count > 0:
         commands.append({"type": "center", "bold": True, "text": f"*** RE-IMPRESION #{print_count} ***"})
     
-    commands.append({"type": "center", "bold": True, "size": "large", "text": "MESA POS RD"})
+    commands.append({"type": "center", "bold": True, "size": "large", "text": "ALONZO CIGAR"})
     commands.append({"type": "center", "bold": True, "text": "PRE-CUENTA"})
     commands.append({"type": "divider"})
     commands.append({"type": "left", "text": f"Mesa: {order['table_number']}"})
