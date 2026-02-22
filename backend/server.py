@@ -2177,47 +2177,262 @@ async def download_print_agent(printer_name: str = Query("Caja", description="No
     Descarga el agente de impresión configurado para tu servidor y impresora.
     Guárdalo como 'MesaPOS_PrintAgent.py' y ejecútalo con Python.
     """
-    # Obtener la URL del servidor desde la configuración
     server_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://ticket-dinamico.preview.emergentagent.com')
     
     agent_code = f'''#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-MESA POS RD - Agente de Impresion (Alonzo Cigar)
-==================================
-Agente con icono en bandeja del sistema para Windows.
-
-INSTALACION RAPIDA:
-1. Instala Python desde https://www.python.org/downloads/
-2. Abre CMD como Administrador y ejecuta:
-   pip install requests pystray Pillow plyer pywin32
-
-3. Guarda este archivo como: MesaPOS_PrintAgent.py
-4. Doble click para ejecutar
-
-Para que inicie con Windows:
-- Presiona Win+R, escribe: shell:startup
-- Crea un acceso directo a este archivo ahi
-
+╔═══════════════════════════════════════════════════════════════╗
+║     MESA POS RD - AGENTE DE IMPRESION (Alonzo Cigar)         ║
+╠═══════════════════════════════════════════════════════════════╣
+║  SOLO NECESITAS: pip install requests pywin32                 ║
+╚═══════════════════════════════════════════════════════════════╝
 """
 
 import os
 import sys
 import time
-import threading
+import socket
 import requests
-from datetime import datetime
 
-# ============ CONFIGURACION ============
+# ════════════════════════════════════════════════════════════════
+# CONFIGURACION - NO MODIFICAR
+# ════════════════════════════════════════════════════════════════
 SERVER_URL = "{server_url}"
 PRINTER_NAME = "{printer_name}"
 POLL_INTERVAL = 3
+NETWORK_PORT = 9100
 
-# Windows printer support
+print("=" * 60)
+print("  MESA POS RD - AGENTE DE IMPRESION")
+print("=" * 60)
+print(f"  Servidor: {{SERVER_URL}}")
+print(f"  Impresora USB: {{PRINTER_NAME}}")
+print(f"  Puerto red: {{NETWORK_PORT}}")
+print("=" * 60)
+print()
+
+# ════════════════════════════════════════════════════════════════
+# VERIFICAR DEPENDENCIAS
+# ════════════════════════════════════════════════════════════════
 try:
     import win32print
-    from PIL import Image, ImageDraw
-    import pystray
-    from pystray import MenuItem as item
+    print("[OK] pywin32 instalado")
+except ImportError:
+    print("[ERROR] Falta pywin32. Ejecuta: pip install pywin32")
+    input("\\nPresiona ENTER para salir...")
+    sys.exit(1)
+
+# ════════════════════════════════════════════════════════════════
+# FUNCIONES DE IMPRESION
+# ════════════════════════════════════════════════════════════════
+def get_windows_printers():
+    try:
+        printers = [p[2] for p in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
+        return printers
+    except:
+        return []
+
+def printer_exists(name):
+    return name in get_windows_printers()
+
+def print_raw(printer_name, data):
+    hPrinter = win32print.OpenPrinter(printer_name)
+    try:
+        win32print.StartDocPrinter(hPrinter, 1, ("POS Receipt", None, "RAW"))
+        win32print.StartPagePrinter(hPrinter)
+        win32print.WritePrinter(hPrinter, data)
+        win32print.EndPagePrinter(hPrinter)
+        win32print.EndDocPrinter(hPrinter)
+    finally:
+        win32print.ClosePrinter(hPrinter)
+
+def send_to_network(ip, data, port=9100, timeout=10):
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((ip, port))
+        sock.sendall(data)
+        sock.close()
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+# ════════════════════════════════════════════════════════════════
+# GENERADOR ESC/POS
+# ════════════════════════════════════════════════════════════════
+def build_escpos(commands):
+    ESC, GS = b'\\x1b', b'\\x1d'
+    data = bytearray(ESC + b'@')
+    
+    for cmd in commands:
+        t = cmd.get("type", "")
+        text = cmd.get("text", "")
+        
+        if t == "text":
+            align = cmd.get("align", "left")
+            if align == "center": data.extend(ESC + b'a\\x01')
+            elif align == "right": data.extend(ESC + b'a\\x02')
+            else: data.extend(ESC + b'a\\x00')
+            if cmd.get("bold"): data.extend(ESC + b'E\\x01')
+            size = cmd.get("size", 1)
+            if size == 2: data.extend(GS + b'!\\x11')
+            elif size == 3: data.extend(GS + b'!\\x22')
+            data.extend(text.encode('cp437', errors='replace') + b'\\n')
+            data.extend(ESC + b'E\\x00' + GS + b'!\\x00')
+        elif t == "columns":
+            data.extend(ESC + b'a\\x00')
+            left, right = cmd.get("left", ""), cmd.get("right", "")
+            spaces = max(1, 42 - len(left) - len(right))
+            if cmd.get("bold"): data.extend(ESC + b'E\\x01')
+            data.extend((left + " " * spaces + right).encode('cp437', errors='replace') + b'\\n')
+            data.extend(ESC + b'E\\x00')
+        elif t == "divider":
+            data.extend(b'-' * 42 + b'\\n')
+        elif t == "feed":
+            data.extend(b'\\n' * cmd.get("lines", 1))
+        elif t == "cut":
+            data.extend(GS + b'V\\x00')
+    
+    return bytes(data)
+
+def build_comanda(data):
+    commands = []
+    channel = data.get("channel_name", "COMANDA")
+    commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True, "size": 2}})
+    commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True}})
+    commands.append({{"type": "divider"}})
+    commands.append({{"type": "columns", "left": "Mesa:", "right": str(data.get("table_number", "?"))}})
+    commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20]}})
+    fecha = data.get("date", "")
+    commands.append({{"type": "columns", "left": "Hora:", "right": fecha[-8:] if len(fecha) > 8 else fecha}})
+    commands.append({{"type": "divider"}})
+    
+    for item in data.get("items", []):
+        txt = f"{{item.get('quantity', 1)}}x {{item.get('name', '')}}"
+        commands.append({{"type": "text", "text": txt, "bold": True}})
+        for mod in item.get("modifiers", []):
+            if mod: commands.append({{"type": "text", "text": f"  + {{mod}}"}})
+        if item.get("notes"):
+            commands.append({{"type": "text", "text": f"  NOTA: {{item['notes']}}"}})
+    
+    commands.append({{"type": "divider"}})
+    commands.append({{"type": "feed", "lines": 3}})
+    commands.append({{"type": "cut"}})
+    return commands
+
+# ════════════════════════════════════════════════════════════════
+# COMUNICACION CON SERVIDOR
+# ════════════════════════════════════════════════════════════════
+def get_jobs():
+    try:
+        r = requests.get(f"{{SERVER_URL}}/api/print-queue/pending", timeout=10)
+        if r.status_code == 200:
+            return r.json()
+    except Exception as e:
+        print(f"[ERROR] Conexion: {{e}}")
+    return []
+
+def mark_done(job_id, success):
+    try:
+        requests.post(f"{{SERVER_URL}}/api/print-queue/{{job_id}}/complete", 
+                     json={{"success": success}}, timeout=5)
+    except:
+        pass
+
+# ════════════════════════════════════════════════════════════════
+# VERIFICAR IMPRESORA
+# ════════════════════════════════════════════════════════════════
+printers = get_windows_printers()
+print(f"\\nImpresoras disponibles: {{', '.join(printers) if printers else 'NINGUNA'}}")
+
+if not printer_exists(PRINTER_NAME):
+    print(f"\\n[ADVERTENCIA] La impresora '{{PRINTER_NAME}}' no existe")
+    print("El agente solo procesara impresoras de RED")
+else:
+    print(f"[OK] Impresora '{{PRINTER_NAME}}' encontrada")
+
+# ════════════════════════════════════════════════════════════════
+# BUCLE PRINCIPAL
+# ════════════════════════════════════════════════════════════════
+print("\\n" + "=" * 60)
+print("  AGENTE INICIADO - Esperando trabajos de impresion...")
+print("  Presiona Ctrl+C para detener")
+print("=" * 60 + "\\n")
+
+processed = set()
+jobs_printed = 0
+
+try:
+    while True:
+        jobs = get_jobs()
+        
+        for job in jobs:
+            job_id = job.get("id", "")
+            if job_id in processed:
+                continue
+            
+            target = job.get("printer_target", "usb")
+            ip = job.get("printer_ip", "")
+            job_type = job.get("type", "?")
+            
+            # Obtener comandos
+            commands = job.get("commands", [])
+            if not commands and job.get("data"):
+                commands = build_comanda(job["data"])
+            
+            if not commands:
+                processed.add(job_id)
+                continue
+            
+            raw_data = build_escpos(commands)
+            
+            # IMPRESORA DE RED
+            if target == "network" and ip:
+                print(f"[{{job_type.upper()}}] Enviando a {{ip}}...")
+                success, error = send_to_network(ip, raw_data)
+                if success:
+                    print(f"  [OK] Enviado a {{ip}}")
+                    jobs_printed += 1
+                    mark_done(job_id, True)
+                else:
+                    print(f"  [ERROR] {{error}}")
+                    mark_done(job_id, False)
+                processed.add(job_id)
+                continue
+            
+            # IMPRESORA USB
+            job_printer = job.get("printer_name", PRINTER_NAME)
+            if job_printer == PRINTER_NAME and printer_exists(PRINTER_NAME):
+                print(f"[{{job_type.upper()}}] Imprimiendo en {{PRINTER_NAME}}...")
+                try:
+                    print_raw(PRINTER_NAME, raw_data)
+                    print(f"  [OK] Impreso")
+                    jobs_printed += 1
+                    mark_done(job_id, True)
+                except Exception as e:
+                    print(f"  [ERROR] {{e}}")
+                    mark_done(job_id, False)
+            
+            processed.add(job_id)
+        
+        # Limpiar cache
+        if len(processed) > 200:
+            processed = set(list(processed)[-100:])
+        
+        time.sleep(POLL_INTERVAL)
+
+except KeyboardInterrupt:
+    print("\\n\\nAgente detenido por el usuario")
+    print(f"Total impresiones: {{jobs_printed}}")
+    input("\\nPresiona ENTER para cerrar...")
+'''
+    
+    return PlainTextResponse(
+        content=agent_code,
+        media_type="text/plain",
+        headers={{"Content-Disposition": f'attachment; filename="MesaPOS_PrintAgent.py"'}}
+    )
     WIN32_AVAILABLE = True
 except ImportError:
     WIN32_AVAILABLE = False
