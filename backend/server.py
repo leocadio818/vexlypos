@@ -1634,6 +1634,7 @@ async def send_receipt_to_queue(bill_id: str):
         "rnc": config.get("rnc", "1-31-75577-1"),
         "phone": config.get("phone", "809-301-3858"),
         "bill_number": bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8],
+        "internal_transaction_number": bill.get("internal_transaction_number"),
         "table_number": bill.get("table_number", ""),
         "waiter_name": bill.get("waiter_name", ""),
         "cashier_name": bill.get("paid_by_name", ""),
