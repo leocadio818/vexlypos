@@ -2305,36 +2305,42 @@ try:
             
             print(f"    Comandos ESC/POS: {{len(commands)}} instrucciones")
             raw_data = build_escpos(commands)
-                continue
             
-            raw_data = build_escpos(commands)
-            
+            # ═══════════════════════════════════════════════════════════
             # IMPRESORA DE RED
+            # ═══════════════════════════════════════════════════════════
             if target == "network" and ip:
-                print(f"[{{job_type.upper()}}] Enviando a {{ip}}...")
+                print(f"[{{job_type.upper()}}] Enviando a impresora de red {{ip}}:{{NETWORK_PORT}}...")
                 success, error = send_to_network(ip, raw_data)
                 if success:
-                    print(f"  [OK] Enviado a {{ip}}")
+                    print(f"    [OK] Enviado correctamente a {{ip}}")
                     jobs_printed += 1
                     mark_done(job_id, True)
                 else:
-                    print(f"  [ERROR] {{error}}")
+                    print(f"    [ERROR] Fallo de red: {{error}}")
                     mark_done(job_id, False)
                 processed.add(job_id)
                 continue
             
-            # IMPRESORA USB
-            job_printer = job.get("printer_name", PRINTER_NAME)
-            if job_printer == PRINTER_NAME and printer_exists(PRINTER_NAME):
-                print(f"[{{job_type.upper()}}] Imprimiendo en {{PRINTER_NAME}}...")
+            # ═══════════════════════════════════════════════════════════
+            # IMPRESORA USB - Usar la impresora del trabajo o la default
+            # ═══════════════════════════════════════════════════════════
+            actual_printer = job_printer if job_printer in printers_list else PRINTER_NAME
+            
+            if actual_printer in printers_list:
+                print(f"[{{job_type.upper()}}] Imprimiendo en USB: {{actual_printer}}...")
                 try:
-                    print_raw(PRINTER_NAME, raw_data)
-                    print(f"  [OK] Impreso")
+                    print_raw(actual_printer, raw_data)
+                    print(f"    [OK] Impreso correctamente")
                     jobs_printed += 1
                     mark_done(job_id, True)
                 except Exception as e:
-                    print(f"  [ERROR] {{e}}")
+                    print(f"    [ERROR] {{e}}")
                     mark_done(job_id, False)
+            else:
+                print(f"    [ERROR] Impresora '{{actual_printer}}' no disponible")
+                print(f"    Impresoras disponibles: {{', '.join(printers_list)}}")
+                mark_done(job_id, False)
             
             processed.add(job_id)
         
