@@ -2381,6 +2381,78 @@ def build_comanda(data):
     commands.append({{"type": "cut"}})
     return commands
 
+def build_receipt(data):
+    """Construye comandos ESC/POS para un recibo/factura"""
+    commands = []
+    
+    # Encabezado con nombre del negocio
+    commands.append({{"type": "text", "text": data.get("business_name", "MESA POS RD"), "align": "center", "bold": True, "size": 2}})
+    commands.append({{"type": "text", "text": data.get("business_address", ""), "align": "center"}})
+    commands.append({{"type": "text", "text": f"RNC: {{data.get('rnc', '')}}", "align": "center"}})
+    commands.append({{"type": "text", "text": f"Tel: {{data.get('phone', '')}}", "align": "center"}})
+    commands.append({{"type": "divider"}})
+    
+    # Número de transacción interno y NCF
+    trans_num = data.get("internal_transaction_number")
+    if trans_num:
+        commands.append({{"type": "text", "text": f"Trans. #{{trans_num}}", "align": "center", "bold": True}})
+    bill_num = data.get("bill_number", "")
+    if bill_num:
+        commands.append({{"type": "text", "text": f"NCF: {{bill_num}}", "align": "center", "bold": True}})
+    
+    commands.append({{"type": "columns", "left": "Fecha:", "right": data.get("date", "")[:19]}})
+    commands.append({{"type": "columns", "left": "Mesa:", "right": str(data.get("table_number", ""))}})
+    commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20]}})
+    commands.append({{"type": "columns", "left": "Cajero:", "right": data.get("cashier_name", "")[:20]}})
+    commands.append({{"type": "divider"}})
+    
+    # Productos
+    for item in data.get("items", []):
+        qty = item.get('quantity', 1)
+        qty_str = format_qty(qty)
+        name = item.get("name", "")[:28]
+        total = item.get("total", 0)
+        commands.append({{"type": "columns", "left": f"{{qty_str}} x {{name}}", "right": f"RD$ {{total:,.2f}}"}})
+    
+    commands.append({{"type": "divider"}})
+    
+    # Totales
+    commands.append({{"type": "columns", "left": "Subtotal", "right": f"RD$ {{data.get('subtotal', 0):,.2f}}"}})
+    commands.append({{"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {{data.get('itbis', 0):,.2f}}"}})
+    commands.append({{"type": "columns", "left": "Propina 10%", "right": f"RD$ {{data.get('tip', 0):,.2f}}"}})
+    if data.get("discount", 0) > 0:
+        commands.append({{"type": "columns", "left": "Descuento", "right": f"-RD$ {{data.get('discount', 0):,.2f}}"}})
+    commands.append({{"type": "columns", "left": "TOTAL", "right": f"RD$ {{data.get('total', 0):,.2f}}", "bold": True}})
+    
+    # Pago y cambio
+    commands.append({{"type": "divider"}})
+    commands.append({{"type": "columns", "left": "Metodo:", "right": data.get("payment_method", "Efectivo")}})
+    received = data.get("amount_received", 0)
+    total = data.get("total", 0)
+    if received > 0:
+        commands.append({{"type": "columns", "left": "Recibido:", "right": f"RD$ {{received:,.2f}}"}})
+    if received > total:
+        cambio = received - total
+        commands.append({{"type": "columns", "left": "CAMBIO:", "right": f"RD$ {{cambio:,.2f}}", "bold": True}})
+    
+    commands.append({{"type": "divider"}})
+    commands.append({{"type": "text", "text": data.get("footer_text", "Gracias por su visita!"), "align": "center"}})
+    commands.append({{"type": "feed", "lines": 3}})
+    commands.append({{"type": "cut"}})
+    
+    return commands
+
+def build_ticket_from_data(data, job_type):
+    """Construye comandos segun el tipo de trabajo"""
+    if job_type == "receipt":
+        return build_receipt(data)
+    elif job_type == "comanda":
+        return build_comanda(data)
+    elif job_type == "pre-check":
+        # Pre-check usa comandos directos, no data
+        return build_comanda(data)  # Fallback
+    return build_comanda(data)
+
 # ════════════════════════════════════════════════════════════════
 # COMUNICACION CON SERVIDOR (con auto-reintento)
 # ════════════════════════════════════════════════════════════════
