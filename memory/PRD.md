@@ -9,14 +9,12 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 - **Agente Python:** https://pos-printing-system.preview.emergentagent.com/api/download/print-agent?printer_name=RECIBO
 - **Instalador Servicio:** https://pos-printing-system.preview.emergentagent.com/api/download/print-agent-installer?printer_name=RECIBO
 
-## Arquitectura de Impresión (v2.1 - 2026-02-22)
+## Arquitectura de Impresión (v2.1)
 
 ### Flujo de Impresión
 ```
 [Acción en App] → [Backend crea job en print_queue] → [Agente Local procesa] → [Impresora]
 ```
-
-**IMPORTANTE:** El servidor en la nube NO puede alcanzar impresoras de red local. TODO va a la cola.
 
 ### Características del Agente v2.1
 - **Auto-Reintento:** Si pierde conexión, espera 10s y reintenta automáticamente
@@ -25,57 +23,66 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 - **Inicio Automático:** Tarea programada con Windows
 - **Sin Ventana:** Corre silenciosamente en segundo plano
 
-### Formato de Cantidades (IMPORTANTE)
+### Formato de Cantidades
 - Cantidades SIN decimales innecesarios: `1 X` en lugar de `1.0 X`
 - Cantidades CON decimales cuando aplica: `1.5 X PESCADO FRITO`
-- Aplica a: Comandas, Pre-cuentas y Facturas
 
-### Instalación del Agente
-1. Descargar `Instalar_MesaPOS_PrintAgent.bat` desde el link del instalador
-2. Clic derecho → "Ejecutar como administrador"
-3. El instalador hace todo automático
+### Cuentas Divididas en Tickets
+- Pre-cuenta y Factura muestran: `Mesa: X - Cuenta #Y`
+- Si tiene etiqueta: `Mesa: X - Cta #Y` + `Cliente: Nombre`
 
-### Cambiar URL (Producción)
-Editar `C:\MesaPOS\config.txt`:
-```
-SERVER_URL=https://tu-url-de-produccion.com
-PRINTER_NAME=RECIBO
-```
-Luego reiniciar:
-```cmd
-taskkill /f /im pythonw.exe
-wscript C:\MesaPOS\RunAgent.vbs
-```
+## Mapa de Mesas (NUEVO)
 
-### Canales Configurados
-| Canal | Target | IP/Impresora |
-|-------|--------|--------------|
-| Cocina | USB | RECIBO |
-| Bar | Network | 192.168.1.114 |
-| Receipt | Network | 192.168.1.114 |
-| Terraza | USB | TERRAZA |
+### Sillas Visuales
+- Cada mesa muestra **sillas/asientos** como semicírculos pegados al borde
+- Las sillas representan la **capacidad** de la mesa
+- **Se escalan** automáticamente con el tamaño de la mesa
+- **Se mueven** junto con la mesa al arrastrar
+- Mesas redondas: sillas distribuidas en círculo
+- Mesas cuadradas/rectangulares: sillas arriba y abajo
 
-## Endpoints de Impresión
-- `POST /api/print/send-comanda/{order_id}` - Envía comanda a cola
-- `POST /api/print/pre-check/{order_id}/send` - Envía pre-cuenta a cola
-- `POST /api/print/receipt/{bill_id}/send` - Envía recibo a cola
-- `GET /api/print-queue/pending` - Obtiene trabajos pendientes
-- `POST /api/print-queue/{job_id}/complete` - Marca trabajo completado
-- `GET /api/download/print-agent` - Descarga agente Python
-- `GET /api/download/print-agent-installer` - Descarga instalador .bat
+### Indicadores de Mesa
+- **Azul:** Mesa libre
+- **Rojo:** Mis mesas (ocupadas por mí)
+- **Amarillo:** Mesas de otros usuarios
+- **Verde:** Por facturar
+- **Naranja:** Mesa dividida (múltiples cuentas)
+- **Morado:** Reservada
+
+## División de Cuentas
+
+### Funcionalidad
+- Botón **"+Nueva"** crea nueva cuenta con modal para etiqueta opcional
+- **"Editar Cuenta"** permite seleccionar items y moverlos a nueva cuenta
+- Modal responsive para poner **etiqueta/nombre** a cada cuenta (ej: "Juan", "María")
+- Etiqueta aparece en pre-cuenta y factura final
+
+### Endpoints
+- `POST /api/tables/{table_id}/new-account` - Crear cuenta vacía con label
+- `POST /api/orders/{order_id}/split` - Dividir items a nueva cuenta con label
+
+## Navegación y Permisos
+
+### Logo RD (Logout)
+- Al hacer clic en el logo "RD", envía comandas pendientes automáticamente y cierra sesión
+- Botón de logout antiguo eliminado para ahorrar espacio
+
+### Visibilidad de Botones
+- **Caja:** Solo visible para Cajeros y Administradores (no meseros)
+- **Config:** Solo visible para Administradores
 
 ## Completado (2026-02-22)
 - [x] Sistema de impresión con cola asíncrona
-- [x] Agente local v2.1 para Windows (Python)
-- [x] Auto-reintento de conexión (10s/30s)
-- [x] Logging a archivo
-- [x] Archivo config.txt editable para cambiar URL
-- [x] Instalador automático con Tarea Programada de Windows
-- [x] KDS con filtrado por canal
-- [x] Formato 72mm para tickets térmicos
-- [x] Comandas separadas por canal (cocina/bar)
-- [x] Impresión automática de comandas al "Enviar a Cocina"
-- [x] Formato de cantidad sin decimales innecesarios (1 X en vez de 1.0 X)
+- [x] Agente local v2.1 con auto-reintento y config.txt
+- [x] Instalador automático con Tarea Programada
+- [x] Comandas automáticas al "Enviar a Cocina"
+- [x] Formato cantidad sin decimales innecesarios
+- [x] División de cuentas con etiquetas/nombres
+- [x] Pre-cuenta y factura con "Mesa X - Cuenta #Y"
+- [x] Logo RD como botón de logout con envío de comandas
+- [x] Botón Caja oculto para meseros
+- [x] **Sillas visuales en mapa de mesas** (escalables, móviles)
+- [x] Eliminado ícono de "otros usuarios" (solo color amarillo)
 
 ## Pendiente
 ### P1 - Alta Prioridad
