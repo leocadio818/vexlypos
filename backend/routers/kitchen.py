@@ -83,13 +83,16 @@ async def kitchen_orders():
 # ─── SSE STREAM FOR KDS REAL-TIME ───
 @router.get("/kitchen/stream")
 async def kitchen_stream(request: Request):
-    """Server-Sent Events stream for real-time KDS updates"""
+    """Server-Sent Events stream for real-time KDS updates - FILTERED BY CHANNEL"""
     async def event_generator():
         global kds_event
         while True:
             # Check if client disconnected
             if await request.is_disconnected():
                 break
+            
+            # Get category IDs that belong to kitchen
+            kitchen_cat_ids = await get_kitchen_category_ids()
             
             # Get current orders
             orders = await db.orders.find(
@@ -98,8 +101,22 @@ async def kitchen_stream(request: Request):
                 {"_id": 0}
             ).sort("created_at", 1).to_list(100)
             
+            # Filter items by kitchen categories
+            filtered_orders = []
+            for order in orders:
+                kitchen_items = [
+                    item for item in order.get("items", [])
+                    if item.get("sent_to_kitchen") 
+                    and item.get("status") not in ["served", "cancelled"]
+                    and item.get("category_id") in kitchen_cat_ids
+                ]
+                if kitchen_items:
+                    order_copy = dict(order)
+                    order_copy["items"] = kitchen_items
+                    filtered_orders.append(order_copy)
+            
             # Send orders as SSE event
-            data = json.dumps(orders, default=str)
+            data = json.dumps(filtered_orders, default=str)
             yield f"data: {data}\n\n"
             
             # Wait for notification or timeout (poll every 3 seconds as fallback)
