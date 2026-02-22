@@ -1866,7 +1866,7 @@ async def send_test_print(channel_code: str):
 # ─── PRINT TO QUEUE HELPERS ───
 @api.post("/print/receipt/{bill_id}/send")
 async def send_receipt_to_printer(bill_id: str):
-    """Envia un recibo a la cola de impresion"""
+    """Envia un recibo/factura directamente a la impresora (red) o a la cola (USB)"""
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
@@ -1874,30 +1874,49 @@ async def send_receipt_to_printer(bill_id: str):
     config = await db.system_config.find_one({}, {"_id": 0}) or {}
     biz_name = config.get('business_name', 'ALONZO CIGAR')
     biz_rnc = config.get('rnc', '1-31-75577-1')
-    biz_addr = config.get('business_address', 'C/ Las Flores #12, Jarabacoa')
     biz_phone = config.get('phone', '809-301-3858')
     
+    # Obtener dirección estructurada
+    addr = config.get('business_address', {})
+    if isinstance(addr, dict):
+        addr_parts = [addr.get('street', ''), addr.get('building', ''), addr.get('sector', ''), addr.get('city', '')]
+        biz_addr = ', '.join(p for p in addr_parts if p)
+    else:
+        biz_addr = str(addr) if addr else ''
+    
+    # Obtener configuración de impresora de recibos
+    receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+    printer_target = receipt_channel.get("target", "usb") if receipt_channel else "usb"
+    printer_ip = receipt_channel.get("ip", "") if receipt_channel else ""
+    
     commands = []
-    commands.append({"type": "center", "bold": True, "size": "large", "text": biz_name})
-    commands.append({"type": "center", "bold": True, "text": f"RNC: {biz_rnc}"})
+    commands.append({"type": "text", "text": biz_name, "align": "center", "bold": True, "size": 2})
+    commands.append({"type": "text", "text": f"RNC: {biz_rnc}", "align": "center", "bold": True})
     if biz_addr:
-        commands.append({"type": "center", "text": biz_addr})
-    commands.append({"type": "center", "text": f"Tel: {biz_phone}"})
-    commands.append({"type": "divider"})
-    commands.append({"type": "left", "bold": True, "text": f"NCF: {bill.get('ncf', '')}"})
-    commands.append({"type": "left", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}"})
-    commands.append({"type": "left", "text": f"Mesa: {bill['table_number']}"})
-    commands.append({"type": "left", "text": f"Fecha: {bill.get('paid_at', bill['created_at'])[:19]}"})
-    if bill.get('cashier_name'):
-        commands.append({"type": "left", "text": f"Cajero: {bill['cashier_name']}"})
+        commands.append({"type": "text", "text": biz_addr[:40], "align": "center"})
+    commands.append({"type": "text", "text": f"Tel: {biz_phone}", "align": "center"})
     commands.append({"type": "divider"})
     
+    # NCF Section
+    commands.append({"type": "text", "text": "COMPROBANTE FISCAL", "align": "center", "bold": True})
+    commands.append({"type": "text", "text": bill.get('ncf', ''), "align": "center", "bold": True, "size": 2})
+    commands.append({"type": "text", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}", "align": "center"})
+    commands.append({"type": "divider"})
+    
+    commands.append({"type": "columns", "left": "Mesa:", "right": str(bill['table_number'])})
+    commands.append({"type": "columns", "left": "Fecha:", "right": bill.get('paid_at', bill['created_at'])[:19]})
+    if bill.get('cashier_name'):
+        commands.append({"type": "columns", "left": "Cajero:", "right": bill['cashier_name'][:20]})
+    commands.append({"type": "divider"})
+    
+    # Items
     for item in bill.get("items", []):
-        commands.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name']}", "right": f"RD$ {item['total']:,.2f}"})
+        commands.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name'][:22]}", "right": f"RD$ {item['total']:,.2f}"})
     
     commands.append({"type": "divider"})
     commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
-    # Dynamic tax lines from tax_breakdown
+    
+    # Tax breakdown
     tax_breakdown = bill.get("tax_breakdown", [])
     if tax_breakdown:
         for tax in tax_breakdown:
@@ -1906,37 +1925,74 @@ async def send_receipt_to_printer(bill_id: str):
         commands.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {bill.get('itbis', 0):,.2f}"})
         if bill.get('propina_legal', 0) > 0:
             commands.append({"type": "columns", "left": f"Propina {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
-    commands.append({"type": "columns", "bold": True, "size": "large", "left": "TOTAL", "right": f"RD$ {bill['total']:,.2f}"})
-    # Payment and change
+    
+    # Total con borde
+    commands.append({"type": "feed", "lines": 1})
+    commands.append({"type": "text", "text": "═" * 42})
+    commands.append({"type": "text", "text": "TOTAL A PAGAR", "align": "center", "bold": True})
+    commands.append({"type": "text", "text": f"RD$ {bill['total']:,.2f}", "align": "center", "bold": True, "size": 2})
+    commands.append({"type": "text", "text": "═" * 42})
+    
+    # Payment info
     if bill.get('payment_method_name'):
-        commands.append({"type": "left", "text": f"Pago: {bill['payment_method_name']}"})
+        commands.append({"type": "columns", "left": "Forma de pago:", "right": bill['payment_method_name']})
     amount_received = bill.get("amount_received", 0)
     if amount_received > bill["total"]:
-        commands.append({"type": "columns", "left": "Recibido", "right": f"RD$ {amount_received:,.2f}"})
+        commands.append({"type": "columns", "left": "Recibido:", "right": f"RD$ {amount_received:,.2f}"})
         cambio = round(amount_received - bill["total"], 2)
-        commands.append({"type": "columns", "bold": True, "left": "CAMBIO", "right": f"RD$ {cambio:,.2f}"})
+        commands.append({"type": "columns", "bold": True, "left": "CAMBIO:", "right": f"RD$ {cambio:,.2f}"})
+    
     commands.append({"type": "divider"})
+    
     # Footer messages
     for i in range(1, 5):
         msg = config.get(f'ticket_footer_msg{i}', '')
         if msg:
-            commands.append({"type": "center", "text": msg})
+            commands.append({"type": "text", "text": msg, "align": "center"})
     if not any(config.get(f'ticket_footer_msg{i}') for i in range(1, 5)):
-        commands.append({"type": "center", "text": config.get('footer_text', 'Gracias por su visita!')})
+        commands.append({"type": "text", "text": config.get('footer_text', 'Gracias por su visita!'), "align": "center"})
+    
+    commands.append({"type": "feed", "lines": 3})
     commands.append({"type": "cut"})
     
-    # Agregar a cola
+    # Si es impresora de red, enviar directamente
+    if printer_target == "network" and printer_ip:
+        escpos_data = build_escpos_commands(commands)
+        success, error = await send_to_network_printer(printer_ip, escpos_data)
+        
+        if success:
+            logging.info(f"Factura {bill_id[:8]} enviada a {printer_ip} OK")
+            return {"ok": True, "message": "Factura impresa", "method": "network", "ip": printer_ip}
+        else:
+            logging.error(f"Factura {bill_id[:8]} a {printer_ip} FALLÓ: {error}")
+            # Fallback: agregar a cola
+            job = {
+                "id": gen_id(),
+                "type": "receipt",
+                "reference_id": bill_id,
+                "commands": commands,
+                "printer_target": printer_target,
+                "printer_ip": printer_ip,
+                "status": "pending",
+                "created_at": now_iso()
+            }
+            await db.print_queue.insert_one(job)
+            return {"ok": True, "message": f"Error de red ({error}), agregado a cola", "method": "queue"}
+    
+    # Si es USB, agregar a la cola
     job = {
         "id": gen_id(),
         "type": "receipt",
         "reference_id": bill_id,
         "commands": commands,
+        "printer_name": receipt_channel.get("printer_name", "") if receipt_channel else "",
+        "printer_target": printer_target,
         "status": "pending",
         "created_at": now_iso()
     }
     await db.print_queue.insert_one(job)
     
-    return {"ok": True, "job_id": job["id"], "message": "Recibo enviado a impresora"}
+    return {"ok": True, "job_id": job["id"], "message": "Factura enviada a cola", "method": "queue"}
 
 @api.post("/print/comanda/{order_id}/send")
 async def send_comanda_to_printer(order_id: str):
