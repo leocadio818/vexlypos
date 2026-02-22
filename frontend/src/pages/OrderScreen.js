@@ -2255,10 +2255,10 @@ export default function OrderScreen() {
       <Dialog open={preCheckOpen} onOpenChange={setPreCheckOpen}>
         <DialogContent className="max-w-sm bg-white text-black" data-testid="pre-check-dialog">
           <DialogHeader><DialogTitle className="text-black font-oswald">Pre-Cuenta</DialogTitle></DialogHeader>
-          <div className="receipt-paper p-2" dangerouslySetInnerHTML={{ __html: preCheckHtml }} />
+          <div className="receipt-paper p-2" style={{maxWidth: '72mm', margin: '0 auto'}} dangerouslySetInnerHTML={{ __html: preCheckHtml }} />
           <Button onClick={() => {
             const w = window.open('', '_blank', 'width=320,height=600');
-            w.document.write(`<html><body style="margin:0;padding:0;">${preCheckHtml}</body></html>`);
+            w.document.write(`<html><head><style>@page{size:80mm auto;margin:0;}body{width:80mm;margin:0 auto;padding:0;font-family:monospace;}</style></head><body>${preCheckHtml}</body></html>`);
             w.document.close(); w.print();
           }} className="w-full h-11 bg-gray-900 text-white font-oswald font-bold active:scale-95" data-testid="print-precheck-btn">
             <Printer size={16} className="mr-2" /> IMPRIMIR PRE-CUENTA
