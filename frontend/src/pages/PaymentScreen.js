@@ -176,6 +176,14 @@ export default function PaymentScreen() {
   const allowedRoles = ['admin', 'cashier', 'manager'];
   const canProcessPayment = user && allowedRoles.includes(user.role);
 
+  // Redirect unauthorized users
+  useEffect(() => {
+    if (user && !canProcessPayment) {
+      toast.error('No tienes permiso para procesar pagos');
+      navigate('/tables');
+    }
+  }, [user, canProcessPayment, navigate]);
+
   const fetchData = useCallback(async () => {
     try {
       const [billRes, pmRes, custRes, stRes, taxRes] = await Promise.all([
