@@ -2294,128 +2294,196 @@ def build_comanda(data):
     return commands
 
 # ════════════════════════════════════════════════════════════════
-# COMUNICACION CON SERVIDOR
+# COMUNICACION CON SERVIDOR (con auto-reintento)
 # ════════════════════════════════════════════════════════════════
 def get_jobs():
+    """Obtiene trabajos pendientes del servidor"""
     try:
-        r = requests.get(f"{{SERVER_URL}}/api/print-queue/pending", timeout=10)
+        r = requests.get(f"{{SERVER_URL}}/api/print-queue/pending", timeout=15)
         if r.status_code == 200:
-            return r.json()
+            return r.json(), None
+        return [], f"HTTP {{r.status_code}}"
+    except requests.exceptions.ConnectionError:
+        return [], "Sin conexion a internet"
+    except requests.exceptions.Timeout:
+        return [], "Timeout - servidor no responde"
     except Exception as e:
-        print(f"[ERROR] Conexion: {{e}}")
-    return []
+        return [], str(e)
 
 def mark_done(job_id, success):
+    """Marca trabajo como completado"""
     try:
         requests.post(f"{{SERVER_URL}}/api/print-queue/{{job_id}}/complete", 
-                     json={{"success": success}}, timeout=5)
+                     json={{"success": success}}, timeout=10)
+    except Exception as e:
+        log_warning(f"No se pudo marcar trabajo {{job_id[:8]}} como completado: {{e}}")
+
+def test_connection():
+    """Prueba conexion al servidor"""
+    try:
+        r = requests.get(f"{{SERVER_URL}}/api/print-channels", timeout=10)
+        return r.status_code == 200
     except:
-        pass
+        return False
 
 # ════════════════════════════════════════════════════════════════
 # VERIFICAR IMPRESORA
 # ════════════════════════════════════════════════════════════════
 printers = get_windows_printers()
-print(f"\\nImpresoras disponibles: {{', '.join(printers) if printers else 'NINGUNA'}}")
+log_info(f"Impresoras disponibles: {{', '.join(printers) if printers else 'NINGUNA'}}")
 
 if not printer_exists(PRINTER_NAME):
-    print(f"\\n[ADVERTENCIA] La impresora '{{PRINTER_NAME}}' no existe")
-    print("El agente solo procesara impresoras de RED")
+    log_warning(f"La impresora '{{PRINTER_NAME}}' no existe. Solo se procesaran impresoras de RED")
 else:
-    print(f"[OK] Impresora '{{PRINTER_NAME}}' encontrada")
+    log_info(f"[OK] Impresora '{{PRINTER_NAME}}' encontrada")
 
 # ════════════════════════════════════════════════════════════════
-# BUCLE PRINCIPAL
+# BUCLE PRINCIPAL CON AUTO-REINTENTO
 # ════════════════════════════════════════════════════════════════
-print("\\n" + "=" * 60)
-print("  AGENTE INICIADO - Esperando trabajos de impresion...")
-print("  Presiona Ctrl+C para detener")
-print("=" * 60 + "\\n")
+log_info("=" * 60)
+log_info("  AGENTE INICIADO - Esperando trabajos de impresion...")
+log_info("  El agente se reconectara automaticamente si pierde conexion")
+log_info("=" * 60)
 
 processed = set()
 jobs_printed = 0
-printers_list = get_windows_printers()
+consecutive_errors = 0
+last_connection_ok = True
 
-try:
+def main_loop():
+    global processed, jobs_printed, consecutive_errors, last_connection_ok
+    printers_list = get_windows_printers()
+    
     while True:
-        jobs = get_jobs()
-        
-        for job in jobs:
-            job_id = job.get("id", "")
-            if job_id in processed:
-                continue
+        try:
+            # Obtener trabajos pendientes
+            jobs, error = get_jobs()
             
-            target = job.get("printer_target", "usb")
-            ip = job.get("printer_ip", "")
-            job_type = job.get("type", "?")
-            job_printer = job.get("printer_name", PRINTER_NAME)
-            
-            print(f"\\n>>> Procesando trabajo: {{job_type.upper()}}")
-            print(f"    Target: {{target}}, IP: {{ip}}, Impresora: {{job_printer}}")
-            
-            # Obtener comandos
-            commands = job.get("commands", [])
-            if not commands and job.get("data"):
-                print(f"    Construyendo comandos desde 'data'...")
-                commands = build_comanda(job["data"])
-            
-            if not commands:
-                print(f"    [SKIP] Sin comandos para imprimir")
-                mark_done(job_id, False)
-                processed.add(job_id)
-                continue
-            
-            print(f"    Comandos ESC/POS: {{len(commands)}} instrucciones")
-            raw_data = build_escpos(commands)
-            
-            # ═══════════════════════════════════════════════════════════
-            # IMPRESORA DE RED
-            # ═══════════════════════════════════════════════════════════
-            if target == "network" and ip:
-                print(f"[{{job_type.upper()}}] Enviando a impresora de red {{ip}}:{{NETWORK_PORT}}...")
-                success, error = send_to_network(ip, raw_data)
-                if success:
-                    print(f"    [OK] Enviado correctamente a {{ip}}")
-                    jobs_printed += 1
-                    mark_done(job_id, True)
+            # Manejar errores de conexion
+            if error:
+                consecutive_errors += 1
+                if last_connection_ok:
+                    log_error(f"Error de conexion: {{error}}")
+                    last_connection_ok = False
+                
+                # Determinar tiempo de espera
+                if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                    log_warning(f"{{consecutive_errors}} errores consecutivos. Esperando {{LONG_RETRY_INTERVAL}}s...")
+                    time.sleep(LONG_RETRY_INTERVAL)
                 else:
-                    print(f"    [ERROR] Fallo de red: {{error}}")
-                    mark_done(job_id, False)
-                processed.add(job_id)
+                    log_info(f"Reintentando en {{RETRY_INTERVAL}}s... (intento {{consecutive_errors}})")
+                    time.sleep(RETRY_INTERVAL)
                 continue
             
-            # ═══════════════════════════════════════════════════════════
-            # IMPRESORA USB - Usar la impresora del trabajo o la default
-            # ═══════════════════════════════════════════════════════════
-            actual_printer = job_printer if job_printer in printers_list else PRINTER_NAME
+            # Conexion restaurada
+            if not last_connection_ok:
+                log_info("[OK] Conexion restaurada!")
+                last_connection_ok = True
+            consecutive_errors = 0
             
-            if actual_printer in printers_list:
-                print(f"[{{job_type.upper()}}] Imprimiendo en USB: {{actual_printer}}...")
-                try:
-                    print_raw(actual_printer, raw_data)
-                    print(f"    [OK] Impreso correctamente")
-                    jobs_printed += 1
-                    mark_done(job_id, True)
-                except Exception as e:
-                    print(f"    [ERROR] {{e}}")
+            # Procesar trabajos
+            for job in jobs:
+                job_id = job.get("id", "")
+                if job_id in processed:
+                    continue
+                
+                target = job.get("printer_target", "usb")
+                ip = job.get("printer_ip", "")
+                job_type = job.get("type", "?")
+                job_printer = job.get("printer_name", PRINTER_NAME)
+                
+                log_info(f">>> Procesando: {{job_type.upper()}} | Target: {{target}} | Impresora: {{job_printer}}")
+                
+                # Obtener comandos
+                commands = job.get("commands", [])
+                if not commands and job.get("data"):
+                    log_info("    Construyendo comandos desde 'data'...")
+                    commands = build_comanda(job["data"])
+                
+                if not commands:
+                    log_warning(f"    [SKIP] Sin comandos para imprimir")
                     mark_done(job_id, False)
-            else:
-                print(f"    [ERROR] Impresora '{{actual_printer}}' no disponible")
-                print(f"    Impresoras disponibles: {{', '.join(printers_list)}}")
-                mark_done(job_id, False)
+                    processed.add(job_id)
+                    continue
+                
+                log_info(f"    Comandos ESC/POS: {{len(commands)}} instrucciones")
+                raw_data = build_escpos(commands)
+                
+                # ═══════════════════════════════════════════════════════════
+                # IMPRESORA DE RED
+                # ═══════════════════════════════════════════════════════════
+                if target == "network" and ip:
+                    log_info(f"[{{job_type.upper()}}] Enviando a red {{ip}}:{{NETWORK_PORT}}...")
+                    success, net_error = send_to_network(ip, raw_data)
+                    if success:
+                        log_info(f"    [OK] Enviado a {{ip}}")
+                        jobs_printed += 1
+                        mark_done(job_id, True)
+                    else:
+                        log_error(f"    [ERROR] Red: {{net_error}}")
+                        mark_done(job_id, False)
+                    processed.add(job_id)
+                    continue
+                
+                # ═══════════════════════════════════════════════════════════
+                # IMPRESORA USB
+                # ═══════════════════════════════════════════════════════════
+                # Actualizar lista de impresoras por si se conecto una nueva
+                current_printers = get_windows_printers()
+                actual_printer = job_printer if job_printer in current_printers else PRINTER_NAME
+                
+                if actual_printer in current_printers:
+                    log_info(f"[{{job_type.upper()}}] Imprimiendo en USB: {{actual_printer}}...")
+                    try:
+                        print_raw(actual_printer, raw_data)
+                        log_info(f"    [OK] Impreso correctamente")
+                        jobs_printed += 1
+                        mark_done(job_id, True)
+                    except Exception as e:
+                        log_error(f"    [ERROR] {{e}}")
+                        mark_done(job_id, False)
+                else:
+                    log_error(f"    [ERROR] Impresora '{{actual_printer}}' no disponible")
+                    log_info(f"    Disponibles: {{', '.join(current_printers)}}")
+                    mark_done(job_id, False)
+                
+                processed.add(job_id)
             
-            processed.add(job_id)
-        
-        # Limpiar cache
-        if len(processed) > 200:
-            processed = set(list(processed)[-100:])
-        
-        time.sleep(POLL_INTERVAL)
+            # Limpiar cache periodicamente
+            if len(processed) > 200:
+                processed = set(list(processed)[-100:])
+            
+            time.sleep(POLL_INTERVAL)
+            
+        except Exception as e:
+            log_error(f"Error inesperado en bucle principal: {{e}}")
+            log_info(f"Reintentando en {{RETRY_INTERVAL}}s...")
+            time.sleep(RETRY_INTERVAL)
 
-except KeyboardInterrupt:
-    print("\\n\\nAgente detenido por el usuario")
-    print(f"Total impresiones: {{jobs_printed}}")
-    input("\\nPresiona ENTER para cerrar...")
+# ════════════════════════════════════════════════════════════════
+# INICIO DEL AGENTE
+# ════════════════════════════════════════════════════════════════
+if __name__ == "__main__":
+    try:
+        # Probar conexion inicial
+        log_info("Probando conexion al servidor...")
+        if test_connection():
+            log_info("[OK] Servidor accesible")
+        else:
+            log_warning("Servidor no accesible. El agente reintentara automaticamente.")
+        
+        # Iniciar bucle principal
+        main_loop()
+        
+    except KeyboardInterrupt:
+        log_info("")
+        log_info("=" * 60)
+        log_info("  AGENTE DETENIDO POR EL USUARIO")
+        log_info(f"  Total impresiones: {{jobs_printed}}")
+        log_info("=" * 60)
+    except Exception as e:
+        log_error(f"Error fatal: {{e}}")
+        log_info("El agente se reiniciara automaticamente si esta como servicio")
 '''
     
     return PlainTextResponse(
