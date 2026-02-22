@@ -1072,10 +1072,11 @@ async def print_comanda(order_id: str):
         mod_str = f"<br><small>  + {mods}</small>" if mods else ""
         notes_str = f"<br><small style='color:red'>  NOTA: {item['notes']}</small>" if item.get("notes") else ""
         items_html += f"<tr><td><b>{item['quantity']}x</b> {item['product_name']}{mod_str}{notes_str}</td></tr>"
-    return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:14px;'>
+    # Comanda HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
+    return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:13px;margin:0 auto;box-sizing:border-box;'>
     <div style='text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;'>
-    <b style='font-size:20px;'>COMANDA</b></div>
-    <div style='font-size:16px;'><b>Mesa: {order['table_number']}</b><br>Mesero: {order['waiter_name']}<br>Hora: {now_iso()[11:16]}</div>
+    <b style='font-size:18px;'>COMANDA</b></div>
+    <div style='font-size:14px;'><b>Mesa: {order['table_number']}</b><br>Mesero: {order['waiter_name']}<br>Hora: {now_iso()[11:16]}</div>
     <table style='width:100%;margin-top:10px;border-top:1px dashed #000;'>
     {items_html}</table></div>"""}
 
