@@ -351,12 +351,10 @@ const ThermalTicket = forwardRef(({
           PIE DE PÁGINA
       ═══════════════════════════════════════════════════════════════ */}
       <div className="ticket-footer">
-        <div className="ticket-footer-message">
-          {config.footer_message}
-        </div>
-        <div className="ticket-footer-dgii">
-          {config.dgii_message}
-        </div>
+        {config.footer_msg1 && <div className="ticket-footer-message">{config.footer_msg1}</div>}
+        {config.footer_msg2 && <div className="ticket-footer-message">{config.footer_msg2}</div>}
+        {config.footer_msg3 && <div className="ticket-footer-message">{config.footer_msg3}</div>}
+        {config.footer_msg4 && <div className="ticket-footer-message">{config.footer_msg4}</div>}
       </div>
     </div>
   );
