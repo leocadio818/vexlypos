@@ -2294,12 +2294,12 @@ def build_comanda(data):
     commands = []
     channel = data.get("channel_name", "COMANDA")
     # Encabezado
-    commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True, "size": 2}})
-    commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True, "size": 2}})
+    commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True}})
+    commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True}})
     commands.append({{"type": "divider"}})
     # Info de mesa
-    commands.append({{"type": "text", "text": f"MESA: {{data.get('table_number', '?')}}", "align": "center", "bold": True, "size": 2}})
-    commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20], "bold": True}})
+    commands.append({{"type": "columns", "left": "Mesa:", "right": str(data.get("table_number", "?"))}})
+    commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20]}})
     fecha = data.get("date", "")
     commands.append({{"type": "columns", "left": "Hora:", "right": fecha[-8:] if len(fecha) > 8 else fecha}})
     commands.append({{"type": "divider"}})
@@ -2309,11 +2309,11 @@ def build_comanda(data):
         qty = item.get('quantity', 1)
         qty_str = format_qty(qty)
         txt = f"{{qty_str}} X {{item.get('name', '')}}"
-        commands.append({{"type": "text", "text": txt, "bold": True, "size": 2}})
+        commands.append({{"type": "text", "text": txt, "bold": True}})
         for mod in item.get("modifiers", []):
-            if mod: commands.append({{"type": "text", "text": f"  + {{mod}}", "size": 2}})
+            if mod: commands.append({{"type": "text", "text": f"  + {{mod}}"}})
         if item.get("notes"):
-            commands.append({{"type": "text", "text": f"  NOTA: {{item['notes']}}", "size": 2}})
+            commands.append({{"type": "text", "text": f"  NOTA: {{item['notes']}}"}})
     
     commands.append({{"type": "divider"}})
     commands.append({{"type": "feed", "lines": 3}})
