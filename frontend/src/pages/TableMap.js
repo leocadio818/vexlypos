@@ -205,7 +205,7 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
   };
 
   // Get chair positions for this table
-  const chairs = getChairPositions(table.capacity || 4, table.shape, w, h);
+  const chairs = getChairPositions(table.capacity || 4, table.shape);
   const chairColor = colors.border;
 
   return (
