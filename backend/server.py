@@ -1774,14 +1774,13 @@ async def send_comanda_to_queue(order_id: str):
         jobs_created.append({k: v for k, v in job.items() if k != "_id"})
     
     # Log for debugging
-    channels_used = [j["channel"] for j in jobs_created] + [r["channel"] for r in network_results if r["success"]]
+    channels_used = [j["channel"] for j in jobs_created]
     
     return {
         "jobs": jobs_created, 
         "count": len(jobs_created),
         "channels_used": channels_used,
-        "network_prints": network_results,
-        "message": f"{len(network_results)} enviados a red, {len(jobs_created)} en cola USB"
+        "message": f"{len(jobs_created)} trabajos agregados a la cola"
     }
 
 
