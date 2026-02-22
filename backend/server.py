@@ -959,24 +959,44 @@ async def print_receipt_escpos(bill_id: str):
     if not bill:
         raise HTTPException(status_code=404)
     config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    biz_name = config.get('business_name', 'ALONZO CIGAR')
+    biz_rnc = config.get('rnc', '1-31-75577-1')
+    biz_addr = config.get('business_address', 'C/ Las Flores #12, Jarabacoa')
+    biz_phone = config.get('phone', '809-301-3858')
+    
     lines = []
-    lines.append({"type": "center", "bold": True, "size": "large", "text": config.get('business_name', 'MESA POS RD')})
-    if config.get('business_address'):
-        lines.append({"type": "center", "text": config.get('business_address', '')})
+    lines.append({"type": "center", "bold": True, "size": "large", "text": biz_name})
+    lines.append({"type": "center", "bold": True, "text": f"RNC: {biz_rnc}"})
+    if biz_addr:
+        lines.append({"type": "center", "text": biz_addr})
+    lines.append({"type": "center", "text": f"Tel: {biz_phone}"})
     lines.append({"type": "divider"})
-    lines.append({"type": "left", "text": f"NCF: {bill.get('ncf', '')}"})
+    lines.append({"type": "left", "bold": True, "text": f"NCF: {bill.get('ncf', '')}"})
+    lines.append({"type": "left", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}"})
     lines.append({"type": "left", "text": f"Mesa: {bill['table_number']}"})
     lines.append({"type": "left", "text": f"Fecha: {bill.get('paid_at', bill['created_at'])[:19]}"})
+    if bill.get('cashier_name'):
+        lines.append({"type": "left", "text": f"Cajero: {bill['cashier_name']}"})
     lines.append({"type": "divider"})
     for item in bill.get("items", []):
         lines.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name']}", "right": f"RD$ {item['total']:,.2f}"})
     lines.append({"type": "divider"})
     lines.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
-    lines.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {bill['itbis']:,.2f}"})
-    lines.append({"type": "columns", "left": f"Propina {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
+    lines.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {bill.get('itbis', 0):,.2f}"})
+    if bill.get('propina_legal', 0) > 0:
+        lines.append({"type": "columns", "left": f"Propina Legal {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
     lines.append({"type": "columns", "bold": True, "size": "large", "left": "TOTAL", "right": f"RD$ {bill['total']:,.2f}"})
+    # Payment and change
+    if bill.get('payment_method_name'):
+        lines.append({"type": "left", "text": f"Pago: {bill['payment_method_name']}"})
+    amount_received = bill.get("amount_received", 0)
+    if amount_received > bill["total"]:
+        lines.append({"type": "columns", "left": "Recibido", "right": f"RD$ {amount_received:,.2f}"})
+        cambio = round(amount_received - bill["total"], 2)
+        lines.append({"type": "columns", "bold": True, "left": "CAMBIO", "right": f"RD$ {cambio:,.2f}"})
     lines.append({"type": "divider"})
-    lines.append({"type": "center", "text": "Gracias por su visita"})
+    lines.append({"type": "center", "text": config.get('footer_text', 'Gracias por su visita!')})
+    lines.append({"type": "center", "text": "Conserve este documento para DGII"})
     lines.append({"type": "cut"})
     return {"lines": lines}
 
