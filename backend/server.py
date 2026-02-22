@@ -2353,6 +2353,10 @@ def build_comanda(data):
     # Encabezado
     commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True}})
     commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True}})
+    # Número de transacción interno
+    trans_num = data.get("internal_transaction_number")
+    if trans_num:
+        commands.append({{"type": "text", "text": f"Trans. #{{trans_num}}", "align": "center"}})
     commands.append({{"type": "divider"}})
     # Info de mesa
     commands.append({{"type": "columns", "left": "Mesa:", "right": str(data.get("table_number", "?"))}})
