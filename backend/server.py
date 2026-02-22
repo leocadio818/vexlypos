@@ -1728,9 +1728,15 @@ async def send_receipt_to_printer(bill_id: str):
     
     commands.append({"type": "divider"})
     commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
-    commands.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {bill.get('itbis', 0):,.2f}"})
-    if bill.get('propina_legal', 0) > 0:
-        commands.append({"type": "columns", "left": f"Propina Legal {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
+    # Dynamic tax lines from tax_breakdown
+    tax_breakdown = bill.get("tax_breakdown", [])
+    if tax_breakdown:
+        for tax in tax_breakdown:
+            commands.append({"type": "columns", "left": f"{tax['description']} {tax['rate']}%", "right": f"RD$ {tax['amount']:,.2f}"})
+    else:
+        commands.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {bill.get('itbis', 0):,.2f}"})
+        if bill.get('propina_legal', 0) > 0:
+            commands.append({"type": "columns", "left": f"Propina {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
     commands.append({"type": "columns", "bold": True, "size": "large", "left": "TOTAL", "right": f"RD$ {bill['total']:,.2f}"})
     # Payment and change
     if bill.get('payment_method_name'):
@@ -1741,8 +1747,13 @@ async def send_receipt_to_printer(bill_id: str):
         cambio = round(amount_received - bill["total"], 2)
         commands.append({"type": "columns", "bold": True, "left": "CAMBIO", "right": f"RD$ {cambio:,.2f}"})
     commands.append({"type": "divider"})
-    commands.append({"type": "center", "text": config.get('footer_text', 'Gracias por su visita!')})
-    commands.append({"type": "center", "text": "Conserve este documento para DGII"})
+    # Footer messages
+    for i in range(1, 5):
+        msg = config.get(f'ticket_footer_msg{i}', '')
+        if msg:
+            commands.append({"type": "center", "text": msg})
+    if not any(config.get(f'ticket_footer_msg{i}') for i in range(1, 5)):
+        commands.append({"type": "center", "text": config.get('footer_text', 'Gracias por su visita!')})
     commands.append({"type": "cut"})
     
     # Agregar a cola
