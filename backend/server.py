@@ -980,25 +980,26 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     
     footer_html = "<br>".join(f"<span>{m}</span>" for m in footer_msgs)
     
-    return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
+    # Factura HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
+    return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:12px;margin:0 auto;box-sizing:border-box;'>
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
-    <b style='font-size:18px;'>{biz_name}</b><br>
-    <span style='font-size:11px;font-weight:bold;'>RNC: {biz_rnc}</span><br>
-    <span style='font-size:10px;'>{biz_addr_line}<br>Tel: {biz_phone}</span>
+    <b style='font-size:16px;'>{biz_name}</b><br>
+    <span style='font-size:10px;font-weight:bold;'>RNC: {biz_rnc}</span><br>
+    <span style='font-size:9px;'>{biz_addr_line}<br>Tel: {biz_phone}</span>
     </div>
-    <div style='border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;'>
+    <div style='border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;font-size:10px;'>
     <b>NCF: {bill.get('ncf', '')}</b><br>
     Valido hasta: {printer_config.get('ncf_expiry', config.get('ticket_ncf_expiry', '31/12/2026'))}<br>
     Mesa: {bill['table_number']} | Fecha: {bill.get('paid_at', bill['created_at'])[:19]}</div>
-    <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;'>
+    <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;font-size:11px;'>
     {items_html}</table>
-    <table style='width:100%;font-size:12px;'>
+    <table style='width:100%;font-size:11px;'>
     <tr><td>Subtotal</td><td style='text-align:right'>RD$ {bill['subtotal']:,.2f}</td></tr>
     {tax_html}
-    <tr><td colspan='2' style='padding:4px 0;'><div style='border:2px solid #000;text-align:center;padding:6px;'><b style='font-size:10px;'>TOTAL A PAGAR</b><br><b style='font-size:16px;'>RD$ {bill['total']:,.2f}</b></div></td></tr>
+    <tr><td colspan='2' style='padding:4px 0;'><div style='border:2px solid #000;text-align:center;padding:6px;'><b style='font-size:9px;'>TOTAL A PAGAR</b><br><b style='font-size:14px;'>RD$ {bill['total']:,.2f}</b></div></td></tr>
     {payment_html}
     </table>
-    <div style='text-align:center;margin-top:8px;font-size:10px;border-top:1px dashed #000;padding-top:8px;'>
+    <div style='text-align:center;margin-top:8px;font-size:9px;border-top:1px dashed #000;padding-top:8px;'>
     {footer_html}</div></div>""", "queued": send_to_queue}
 
 @api.get("/print/receipt-escpos/{bill_id}")
