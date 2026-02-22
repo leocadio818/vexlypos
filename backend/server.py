@@ -2276,25 +2276,36 @@ def build_escpos(commands):
     
     return bytes(data)
 
+def format_qty(q):
+    """Formatea cantidad: 1.0 -> '1', 1.5 -> '1.5'"""
+    if q == int(q):
+        return str(int(q))
+    return str(q)
+
 def build_comanda(data):
     commands = []
     channel = data.get("channel_name", "COMANDA")
-    commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True, "size": 2}})
-    commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True}})
+    # Encabezado grande
+    commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True, "size": 3}})
+    commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True, "size": 2}})
     commands.append({{"type": "divider"}})
-    commands.append({{"type": "columns", "left": "Mesa:", "right": str(data.get("table_number", "?"))}})
-    commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20]}})
+    # Info de mesa - tamaño grande
+    commands.append({{"type": "text", "text": f"MESA: {{data.get('table_number', '?')}}", "align": "center", "bold": True, "size": 2}})
+    commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20], "bold": True}})
     fecha = data.get("date", "")
     commands.append({{"type": "columns", "left": "Hora:", "right": fecha[-8:] if len(fecha) > 8 else fecha}})
     commands.append({{"type": "divider"}})
     
+    # Items - TEXTO GRANDE
     for item in data.get("items", []):
-        txt = f"{{item.get('quantity', 1)}}x {{item.get('name', '')}}"
-        commands.append({{"type": "text", "text": txt, "bold": True}})
+        qty = item.get('quantity', 1)
+        qty_str = format_qty(qty)
+        txt = f"{{qty_str}} X {{item.get('name', '')}}"
+        commands.append({{"type": "text", "text": txt, "bold": True, "size": 2}})
         for mod in item.get("modifiers", []):
-            if mod: commands.append({{"type": "text", "text": f"  + {{mod}}"}})
+            if mod: commands.append({{"type": "text", "text": f"  + {{mod}}", "size": 2}})
         if item.get("notes"):
-            commands.append({{"type": "text", "text": f"  NOTA: {{item['notes']}}"}})
+            commands.append({{"type": "text", "text": f"  NOTA: {{item['notes']}}", "size": 2}})
     
     commands.append({{"type": "divider"}})
     commands.append({{"type": "feed", "lines": 3}})
