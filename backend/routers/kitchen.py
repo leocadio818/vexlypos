@@ -28,16 +28,56 @@ def notify_kds():
 # Import auth dependency
 from routers.auth import get_current_user
 
+async def get_kitchen_category_ids():
+    """Get category IDs that should appear in kitchen KDS (not bar)"""
+    # Get all category-channel mappings
+    mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
+    mapping_dict = {m["category_id"]: m["channel_code"] for m in mappings}
+    
+    # Get all categories
+    categories = await db.categories.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    
+    # Categories that go to kitchen: those without mapping OR mapped to "kitchen"
+    # Exclude: bar, receipt, etc.
+    non_kitchen_channels = {"bar", "receipt", "terraza", "cashier"}
+    kitchen_cat_ids = []
+    
+    for cat in categories:
+        cat_id = cat["id"]
+        channel = mapping_dict.get(cat_id, "kitchen")  # Default to kitchen
+        if channel not in non_kitchen_channels:
+            kitchen_cat_ids.append(cat_id)
+    
+    return kitchen_cat_ids
+
 # ─── KITCHEN ORDERS (KDS) ───
 @router.get("/kitchen/orders")
 async def kitchen_orders():
-    """Get orders with items sent to kitchen that are not yet served"""
+    """Get orders with items sent to kitchen that are not yet served - FILTERED BY CHANNEL"""
+    # Get category IDs that belong to kitchen
+    kitchen_cat_ids = await get_kitchen_category_ids()
+    
     orders = await db.orders.find(
         {"status": {"$in": ["sent", "active", "pending"]},
          "items": {"$elemMatch": {"sent_to_kitchen": True, "status": {"$nin": ["served", "cancelled"]}}}},
         {"_id": 0}
     ).sort("created_at", 1).to_list(100)
-    return orders
+    
+    # Filter items by kitchen categories
+    filtered_orders = []
+    for order in orders:
+        kitchen_items = [
+            item for item in order.get("items", [])
+            if item.get("sent_to_kitchen") 
+            and item.get("status") not in ["served", "cancelled"]
+            and item.get("category_id") in kitchen_cat_ids
+        ]
+        if kitchen_items:
+            order_copy = dict(order)
+            order_copy["items"] = kitchen_items
+            filtered_orders.append(order_copy)
+    
+    return filtered_orders
 
 
 # ─── SSE STREAM FOR KDS REAL-TIME ───
