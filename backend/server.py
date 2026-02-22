@@ -2272,6 +2272,7 @@ print("=" * 60 + "\\n")
 
 processed = set()
 jobs_printed = 0
+printers_list = get_windows_printers()
 
 try:
     while True:
@@ -2285,14 +2286,25 @@ try:
             target = job.get("printer_target", "usb")
             ip = job.get("printer_ip", "")
             job_type = job.get("type", "?")
+            job_printer = job.get("printer_name", PRINTER_NAME)
+            
+            print(f"\\n>>> Procesando trabajo: {{job_type.upper()}}")
+            print(f"    Target: {{target}}, IP: {{ip}}, Impresora: {{job_printer}}")
             
             # Obtener comandos
             commands = job.get("commands", [])
             if not commands and job.get("data"):
+                print(f"    Construyendo comandos desde 'data'...")
                 commands = build_comanda(job["data"])
             
             if not commands:
+                print(f"    [SKIP] Sin comandos para imprimir")
+                mark_done(job_id, False)
                 processed.add(job_id)
+                continue
+            
+            print(f"    Comandos ESC/POS: {{len(commands)}} instrucciones")
+            raw_data = build_escpos(commands)
                 continue
             
             raw_data = build_escpos(commands)
