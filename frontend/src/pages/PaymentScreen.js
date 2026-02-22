@@ -170,6 +170,12 @@ export default function PaymentScreen() {
   const isTablet = device?.isTablet;
   const isLandscape = device?.isLandscape;
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // VERIFICAR PERMISOS - Solo cajeros, admin y gerentes pueden procesar pagos
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const allowedRoles = ['admin', 'cashier', 'manager'];
+  const canProcessPayment = user && allowedRoles.includes(user.role);
+
   const fetchData = useCallback(async () => {
     try {
       const [billRes, pmRes, custRes, stRes, taxRes] = await Promise.all([
@@ -179,35 +185,6 @@ export default function PaymentScreen() {
         fetch(`${API_BASE}/api/sale-types`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
         fetch(`${API_BASE}/api/tax-config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json())
       ]);
-  
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // VERIFICAR PERMISOS - Solo cajeros, admin y gerentes pueden procesar pagos
-  // ═══════════════════════════════════════════════════════════════════════════════
-  const allowedRoles = ['admin', 'cashier', 'manager'];
-  const canProcessPayment = user && allowedRoles.includes(user.role);
-  
-  useEffect(() => {
-    if (user && !canProcessPayment) {
-      toast.error('No tienes permisos para procesar pagos');
-      navigate(-1);
-    }
-  }, [user, canProcessPayment, navigate]);
-  
-  // Si no tiene permisos, mostrar pantalla de acceso restringido
-  if (!canProcessPayment) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }}>
-        <div className="text-center p-8 rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20">
-          <Lock size={64} className="mx-auto mb-4 text-red-400" />
-          <h2 className="text-2xl font-oswald font-bold text-white mb-2">Acceso Restringido</h2>
-          <p className="text-white/70 mb-4">Solo cajeros, gerentes y administradores pueden procesar pagos.</p>
-          <Button onClick={() => navigate(-1)} className="bg-primary hover:bg-primary/80">
-            Volver
-          </Button>
-        </div>
-      </div>
-    );
-  }
       const billData = billRes.data;
       setBill(billData);
       setAdjustedBill(billData); // Initially same as bill
