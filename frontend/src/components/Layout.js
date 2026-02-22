@@ -80,12 +80,16 @@ export default function Layout() {
   
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
+  const isCashier = user?.role === 'cashier';
+  const canAccessCash = isAdmin || isCashier;
 
   const filteredNav = navItems.filter(item => {
     if (item.to === '/dashboard') return hasPermission('view_dashboard');
     if (item.to === '/reservations') return hasPermission('manage_reservations');
     // Only show Config for admins
     if (item.to === '/settings') return isAdmin;
+    // Only show Caja for cashiers and admins
+    if (item.to === '/cash-register') return canAccessCash;
     return true;
   });
 
