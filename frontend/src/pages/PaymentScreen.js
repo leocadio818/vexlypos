@@ -604,9 +604,23 @@ export default function PaymentScreen() {
     }
   };
 
-  const handlePrintTicket = () => {
-    printTicket(ticketRef);
-    toast.success('Enviando ticket a impresora...');
+  const handlePrintTicket = async () => {
+    try {
+      // Enviar directamente a la impresora térmica
+      const resp = await fetch(`${API_BASE}/api/print/receipt/${paidBill?.id}/send`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        toast.success(`Factura enviada a impresora`);
+      } else {
+        toast.error(data.message || 'Error al imprimir');
+      }
+    } catch (e) {
+      toast.error('Error de conexión');
+      console.error(e);
+    }
   };
 
   const handleCloseAndNavigate = () => {
