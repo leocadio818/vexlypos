@@ -109,36 +109,6 @@ export default function PaymentScreen() {
   const navigate = useNavigate();
   const { largeMode, device, user } = useAuth();
   const ticketRef = useRef(null);
-  
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // VERIFICAR PERMISOS - Solo cajeros, admin y gerentes pueden procesar pagos
-  // ═══════════════════════════════════════════════════════════════════════════════
-  const allowedRoles = ['admin', 'cashier', 'manager'];
-  const canProcessPayment = user && allowedRoles.includes(user.role);
-  
-  useEffect(() => {
-    if (user && !canProcessPayment) {
-      toast.error('No tienes permisos para procesar pagos');
-      navigate(-1); // Volver atrás
-    }
-  }, [user, canProcessPayment, navigate]);
-  
-  // Si no tiene permisos, no renderizar nada
-  if (!canProcessPayment) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }}>
-        <div className="text-center p-8 rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20">
-          <Lock size={64} className="mx-auto mb-4 text-red-400" />
-          <h2 className="text-2xl font-oswald font-bold text-white mb-2">Acceso Restringido</h2>
-          <p className="text-white/70 mb-4">Solo cajeros, gerentes y administradores pueden procesar pagos.</p>
-          <Button onClick={() => navigate(-1)} className="bg-primary hover:bg-primary/80">
-            Volver
-          </Button>
-        </div>
-      </div>
-    );
-  }
-  
   const [bill, setBill] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [payAmounts, setPayAmounts] = useState({});
@@ -158,15 +128,44 @@ export default function PaymentScreen() {
   const [showDetails, setShowDetails] = useState(false);
   
   // New state for smart payment flow
-  const [pendingAmount, setPendingAmount] = useState(null); // Amount waiting for method selection
+  const [pendingAmount, setPendingAmount] = useState(null);
   const [methodSelectorOpen, setMethodSelectorOpen] = useState(false);
 
-  // NEW: Tax type selection state
+  // Tax type selection state
   const [saleTypes, setSaleTypes] = useState([]);
   const [taxConfig, setTaxConfig] = useState([]);
-  const [selectedFiscalType, setSelectedFiscalType] = useState('B02'); // Default: Consumidor Final
+  const [selectedFiscalType, setSelectedFiscalType] = useState('B02');
   const [selectedServiceType, setSelectedServiceType] = useState(null);
-  const [adjustedBill, setAdjustedBill] = useState(null); // Bill with recalculated taxes
+  const [adjustedBill, setAdjustedBill] = useState(null);
+  
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // VERIFICAR PERMISOS - Solo cajeros, admin y gerentes pueden procesar pagos
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const allowedRoles = ['admin', 'cashier', 'manager'];
+  const canProcessPayment = user && allowedRoles.includes(user.role);
+  
+  useEffect(() => {
+    if (user && !canProcessPayment) {
+      toast.error('No tienes permisos para procesar pagos');
+      navigate(-1);
+    }
+  }, [user, canProcessPayment, navigate]);
+  
+  // Si no tiene permisos, mostrar pantalla de acceso restringido
+  if (!canProcessPayment) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }}>
+        <div className="text-center p-8 rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20">
+          <Lock size={64} className="mx-auto mb-4 text-red-400" />
+          <h2 className="text-2xl font-oswald font-bold text-white mb-2">Acceso Restringido</h2>
+          <p className="text-white/70 mb-4">Solo cajeros, gerentes y administradores pueden procesar pagos.</p>
+          <Button onClick={() => navigate(-1)} className="bg-primary hover:bg-primary/80">
+            Volver
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Dialog states
   const [ncfDialogOpen, setNcfDialogOpen] = useState(false);
