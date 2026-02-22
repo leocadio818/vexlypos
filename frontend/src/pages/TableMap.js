@@ -115,11 +115,11 @@ const getChairPositions = (capacity, shape, w, h) => {
 
 // Chair/Person icon component
 const ChairIcon = ({ x, y, rotation, size, color, isMobile }) => {
-  const actualSize = isMobile ? size * 0.8 : size;
+  const actualSize = isMobile ? size * 0.75 : size;
   
   return (
     <div
-      className="absolute transition-all duration-300"
+      className="absolute pointer-events-none"
       style={{
         left: '50%',
         top: '50%',
@@ -132,15 +132,15 @@ const ChairIcon = ({ x, y, rotation, size, color, isMobile }) => {
       <svg 
         viewBox="0 0 24 24" 
         fill={color}
-        className="w-full h-full drop-shadow-sm"
-        style={{ filter: `drop-shadow(0 1px 2px rgba(0,0,0,0.3))` }}
+        className="w-full h-full"
+        style={{ filter: `drop-shadow(0 1px 3px rgba(0,0,0,0.4))` }}
       >
         {/* Head */}
-        <circle cx="12" cy="6" r="4" opacity="0.9" />
-        {/* Body */}
+        <circle cx="12" cy="5" r="4" opacity="0.95" />
+        {/* Body - rounded shoulders */}
         <path 
-          d="M12 12c-4 0-7 2-7 5v2a1 1 0 001 1h12a1 1 0 001-1v-2c0-3-3-5-7-5z" 
-          opacity="0.8"
+          d="M12 11c-4.5 0-8 2.5-8 6v1.5c0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5V17c0-3.5-3.5-6-8-6z" 
+          opacity="0.85"
         />
       </svg>
     </div>
