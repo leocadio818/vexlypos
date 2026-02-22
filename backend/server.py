@@ -2510,9 +2510,9 @@ async def get_print_agent_info():
     }
 
 @api.get("/download/print-agent-installer", response_class=PlainTextResponse)
-async def download_print_agent_installer(printer_name: str = Query("Caja", description="Nombre de la impresora")):
+async def download_print_agent_installer(printer_name: str = Query("RECIBO", description="Nombre de la impresora")):
     """
-    Descarga el script .bat para instalar el agente como servicio de Windows.
+    Descarga el script .bat para instalar el agente con Programador de Tareas.
     Debe ejecutarse como Administrador.
     """
     server_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://pos-printing-system.preview.emergentagent.com')
@@ -2523,9 +2523,9 @@ title Mesa POS RD - Instalador del Agente de Impresion
 color 0A
 
 echo.
-echo ╔═══════════════════════════════════════════════════════════════╗
-echo ║     MESA POS RD - INSTALADOR DEL AGENTE DE IMPRESION         ║
-echo ╚═══════════════════════════════════════════════════════════════╝
+echo ========================================================
+echo     MESA POS RD - INSTALADOR DEL AGENTE DE IMPRESION
+echo ========================================================
 echo.
 
 :: Verificar permisos de administrador
@@ -2533,7 +2533,7 @@ net session >nul 2>&1
 if %errorLevel% neq 0 (
     echo [ERROR] Este script necesita permisos de ADMINISTRADOR
     echo.
-    echo Por favor, haz clic derecho en este archivo y selecciona
+    echo Haz clic derecho en este archivo y selecciona
     echo "Ejecutar como administrador"
     echo.
     pause
@@ -2545,106 +2545,97 @@ echo.
 
 :: Configuracion
 set INSTALL_DIR=C:\\MesaPOS
-set NSSM_DIR=C:\\nssm
-set SERVICE_NAME=MesaPOS_PrintAgent
 set PRINTER_NAME={printer_name}
 set SERVER_URL={server_url}
+set TASK_NAME=MesaPOS_PrintAgent
 
-:: Crear directorios
-echo [1/6] Creando directorios...
+:: Crear directorio
+echo [1/5] Creando directorio...
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
-if not exist "%NSSM_DIR%" mkdir "%NSSM_DIR%"
 echo       Directorio: %INSTALL_DIR%
 echo.
 
-:: Descargar NSSM si no existe
-echo [2/6] Verificando NSSM (Non-Sucking Service Manager)...
-if not exist "%NSSM_DIR%\\nssm.exe" (
-    echo       Descargando NSSM...
-    powershell -Command "& {{Invoke-WebRequest -Uri 'https://nssm.cc/release/nssm-2.24.zip' -OutFile '%TEMP%\\nssm.zip'}}"
-    powershell -Command "& {{Expand-Archive -Path '%TEMP%\\nssm.zip' -DestinationPath '%TEMP%\\nssm_temp' -Force}}"
-    copy "%TEMP%\\nssm_temp\\nssm-2.24\\win64\\nssm.exe" "%NSSM_DIR%\\nssm.exe" > nul
-    del /q "%TEMP%\\nssm.zip"
-    rmdir /s /q "%TEMP%\\nssm_temp"
-    echo       [OK] NSSM instalado
-) else (
-    echo       [OK] NSSM ya instalado
-)
-echo.
-
 :: Encontrar Python
-echo [3/6] Buscando Python...
-set PYTHON_PATH=
-for %%i in (python.exe) do set PYTHON_PATH=%%~$PATH:i
-if "%PYTHON_PATH%"=="" (
-    :: Buscar en ubicaciones comunes
-    if exist "C:\\Python312\\python.exe" set PYTHON_PATH=C:\\Python312\\python.exe
-    if exist "C:\\Python311\\python.exe" set PYTHON_PATH=C:\\Python311\\python.exe
-    if exist "C:\\Python310\\python.exe" set PYTHON_PATH=C:\\Python310\\python.exe
-    if exist "%LOCALAPPDATA%\\Programs\\Python\\Python312\\python.exe" set PYTHON_PATH=%LOCALAPPDATA%\\Programs\\Python\\Python312\\python.exe
-    if exist "%LOCALAPPDATA%\\Programs\\Python\\Python311\\python.exe" set PYTHON_PATH=%LOCALAPPDATA%\\Programs\\Python\\Python311\\python.exe
-)
-if "%PYTHON_PATH%"=="" (
-    echo       [ERROR] Python no encontrado!
-    echo       Por favor instala Python desde https://www.python.org/downloads/
-    echo       IMPORTANTE: Marca "Add Python to PATH" durante la instalacion
+echo [2/5] Buscando Python...
+where python >nul 2>&1
+if %errorLevel% neq 0 (
+    echo       [ERROR] Python no encontrado en PATH!
+    echo.
+    echo       Instala Python desde: https://www.python.org/downloads/
+    echo       IMPORTANTE: Marca "Add Python to PATH" durante instalacion
+    echo.
     pause
     exit /b 1
 )
-echo       [OK] Python encontrado: %PYTHON_PATH%
+for /f "delims=" %%i in ('where python') do set PYTHON_PATH=%%i
+echo       [OK] Python: %PYTHON_PATH%
 echo.
 
 :: Instalar dependencias
-echo [4/6] Instalando dependencias de Python...
-"%PYTHON_PATH%" -m pip install --quiet requests pywin32
-echo       [OK] Dependencias instaladas
-echo.
-
-:: Descargar agente
-echo [5/6] Descargando agente de impresion...
-powershell -Command "& {{Invoke-WebRequest -Uri '%SERVER_URL%/api/download/print-agent?printer_name=%PRINTER_NAME%' -OutFile '%INSTALL_DIR%\\MesaPOS_PrintAgent.py'}}"
-if not exist "%INSTALL_DIR%\\MesaPOS_PrintAgent.py" (
-    echo       [ERROR] No se pudo descargar el agente
+echo [3/5] Instalando dependencias...
+python -m pip install requests pywin32 --quiet --disable-pip-version-check
+if %errorLevel% neq 0 (
+    echo       [ERROR] No se pudieron instalar las dependencias
     pause
     exit /b 1
 )
-echo       [OK] Agente descargado en %INSTALL_DIR%\\MesaPOS_PrintAgent.py
+echo       [OK] requests y pywin32 instalados
 echo.
 
-:: Detener servicio existente si existe
-echo [6/6] Configurando servicio de Windows...
-"%NSSM_DIR%\\nssm.exe" stop %SERVICE_NAME% > nul 2>&1
-"%NSSM_DIR%\\nssm.exe" remove %SERVICE_NAME% confirm > nul 2>&1
-
-:: Instalar servicio
-"%NSSM_DIR%\\nssm.exe" install %SERVICE_NAME% "%PYTHON_PATH%" "%INSTALL_DIR%\\MesaPOS_PrintAgent.py"
-"%NSSM_DIR%\\nssm.exe" set %SERVICE_NAME% AppDirectory "%INSTALL_DIR%"
-"%NSSM_DIR%\\nssm.exe" set %SERVICE_NAME% DisplayName "Mesa POS - Agente de Impresion"
-"%NSSM_DIR%\\nssm.exe" set %SERVICE_NAME% Description "Agente de impresion automatica para Mesa POS RD"
-"%NSSM_DIR%\\nssm.exe" set %SERVICE_NAME% Start SERVICE_AUTO_START
-"%NSSM_DIR%\\nssm.exe" set %SERVICE_NAME% AppStdout "%INSTALL_DIR%\\service_stdout.log"
-"%NSSM_DIR%\\nssm.exe" set %SERVICE_NAME% AppStderr "%INSTALL_DIR%\\service_stderr.log"
-"%NSSM_DIR%\\nssm.exe" set %SERVICE_NAME% AppRotateFiles 1
-"%NSSM_DIR%\\nssm.exe" set %SERVICE_NAME% AppRotateBytes 1048576
-
-:: Iniciar servicio
-net start %SERVICE_NAME%
-
-echo       [OK] Servicio instalado e iniciado
+:: Descargar agente
+echo [4/5] Descargando agente de impresion...
+powershell -Command "try {{ [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%SERVER_URL%/api/download/print-agent?printer_name=%PRINTER_NAME%' -OutFile '%INSTALL_DIR%\\MesaPOS_PrintAgent.py' -UseBasicParsing }} catch {{ Write-Host $_.Exception.Message; exit 1 }}"
+if not exist "%INSTALL_DIR%\\MesaPOS_PrintAgent.py" (
+    echo       [ERROR] No se pudo descargar el agente
+    echo       Verifica tu conexion a internet
+    pause
+    exit /b 1
+)
+echo       [OK] Agente descargado
 echo.
-echo ╔═══════════════════════════════════════════════════════════════╗
-echo ║                    INSTALACION COMPLETADA                     ║
-echo ╠═══════════════════════════════════════════════════════════════╣
-echo ║  El agente de impresion esta corriendo como servicio         ║
-echo ║  Se iniciara automaticamente cuando enciendas la PC          ║
-echo ╠═══════════════════════════════════════════════════════════════╣
-echo ║  COMANDOS UTILES:                                             ║
-echo ║  - Ver estado:  sc query %SERVICE_NAME%                      ║
-echo ║  - Ver logs:    type %INSTALL_DIR%\\MesaPOS_PrintAgent.log   ║
-echo ║  - Detener:     net stop %SERVICE_NAME%                      ║
-echo ║  - Iniciar:     net start %SERVICE_NAME%                     ║
-echo ║  - Eliminar:    %NSSM_DIR%\\nssm.exe remove %SERVICE_NAME%   ║
-echo ╚═══════════════════════════════════════════════════════════════╝
+
+:: Crear script de inicio
+echo [5/5] Configurando inicio automatico...
+
+:: Crear archivo VBS para ejecutar sin ventana
+echo Set WshShell = CreateObject("WScript.Shell") > "%INSTALL_DIR%\\RunAgent.vbs"
+echo WshShell.Run "pythonw ""%INSTALL_DIR%\\MesaPOS_PrintAgent.py""", 0, False >> "%INSTALL_DIR%\\RunAgent.vbs"
+
+:: Eliminar tarea anterior si existe
+schtasks /delete /tn "%TASK_NAME%" /f >nul 2>&1
+
+:: Crear tarea programada que inicie con Windows
+schtasks /create /tn "%TASK_NAME%" /tr "wscript.exe \"%INSTALL_DIR%\\RunAgent.vbs\"" /sc onlogon /rl highest /f >nul 2>&1
+if %errorLevel% neq 0 (
+    echo       [WARN] No se pudo crear tarea programada
+    echo       Puedes agregar manualmente a Inicio
+) else (
+    echo       [OK] Tarea programada creada
+)
+
+:: Iniciar el agente ahora
+echo.
+echo Iniciando agente...
+start "" wscript.exe "%INSTALL_DIR%\\RunAgent.vbs"
+
+echo.
+echo ========================================================
+echo           INSTALACION COMPLETADA EXITOSAMENTE
+echo ========================================================
+echo.
+echo El agente esta corriendo en segundo plano.
+echo Se iniciara automaticamente cuando enciendas la PC.
+echo.
+echo Archivos instalados en: %INSTALL_DIR%
+echo   - MesaPOS_PrintAgent.py (agente)
+echo   - MesaPOS_PrintAgent.log (logs)
+echo   - RunAgent.vbs (iniciador)
+echo.
+echo Para ver los logs:
+echo   type %INSTALL_DIR%\\MesaPOS_PrintAgent.log
+echo.
+echo Para detener el agente:
+echo   taskkill /f /im pythonw.exe
 echo.
 pause
 '''
