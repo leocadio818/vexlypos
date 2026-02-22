@@ -830,20 +830,35 @@ export default function PaymentScreen() {
                     <span className={isMobile ? '' : 'text-lg'}>Subtotal</span>
                     <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(adjustedBill?.subtotal ?? bill.subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-white/70">
-                    <span className={isMobile ? '' : 'text-lg'}>ITBIS (18%)</span>
-                    <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(adjustedBill?.itbis ?? bill.itbis)}</span>
-                  </div>
-                  {(() => {
-                    const propinaValue = adjustedBill?.propina_legal ?? bill.propina_legal ?? 0;
-                    const isExempt = propinaValue === 0;
-                    return (
-                      <div className={`flex justify-between ${isExempt ? 'text-red-400/60 line-through' : 'text-white/70'}`}>
-                        <span className={isMobile ? '' : 'text-lg'}>Propina (10%)</span>
-                        <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(propinaValue)}</span>
+                  {/* Dynamic tax display from tax_breakdown or taxConfig */}
+                  {(adjustedBill?.tax_breakdown || bill.tax_breakdown || []).length > 0 ? (
+                    (adjustedBill?.tax_breakdown || bill.tax_breakdown).map((tax, i) => (
+                      <div key={i} className={`flex justify-between ${tax.amount === 0 ? 'text-red-400/60 line-through' : 'text-white/70'}`}>
+                        <span className={isMobile ? '' : 'text-lg'}>{tax.description} ({tax.rate}%)</span>
+                        <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(tax.amount)}</span>
                       </div>
-                    );
-                  })()}
+                    ))
+                  ) : (
+                    <>
+                      {taxConfig.filter(t => !t.is_tip).map((tax, i) => (
+                        <div key={`tax-${i}`} className="flex justify-between text-white/70">
+                          <span className={isMobile ? '' : 'text-lg'}>{tax.description || tax.name} ({tax.rate}%)</span>
+                          <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(adjustedBill?.itbis ?? bill.itbis)}</span>
+                        </div>
+                      ))}
+                      {(() => {
+                        const propinaValue = adjustedBill?.propina_legal ?? bill.propina_legal ?? 0;
+                        const isExempt = propinaValue === 0;
+                        const propinaTax = taxConfig.find(t => t.is_tip || t.code === 'PROPINA');
+                        return (
+                          <div className={`flex justify-between ${isExempt ? 'text-red-400/60 line-through' : 'text-white/70'}`}>
+                            <span className={isMobile ? '' : 'text-lg'}>{propinaTax?.description || propinaTax?.name || 'Propina'} ({propinaTax?.rate || 10}%)</span>
+                            <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(propinaValue)}</span>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
                   
                   {/* Botón Impuesto - Tax Override */}
                   <div className="flex justify-center pt-2">
