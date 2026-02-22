@@ -879,6 +879,8 @@ async def delete_empty_order(order_id: str, user: dict = Depends(get_current_use
 async def split_to_new_order(order_id: str, input: dict, user: dict = Depends(get_current_user)):
     """Split selected items into a new order (account)"""
     item_ids = input.get("item_ids", [])
+    account_label = input.get("label", "")
+    
     if not item_ids:
         raise HTTPException(status_code=400, detail="No items selected")
     
@@ -919,6 +921,7 @@ async def split_to_new_order(order_id: str, input: dict, user: dict = Depends(ge
         "table_id": table_id,
         "table_number": table["number"] if table else "?",
         "account_number": new_account_number,
+        "account_label": account_label,
         "waiter_id": user["user_id"],
         "waiter_name": user["name"],
         "status": "active",
