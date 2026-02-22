@@ -839,9 +839,23 @@ async def print_pre_check(order_id: str):
         raise HTTPException(status_code=404)
     items = [i for i in order.get("items", []) if i["status"] != "cancelled"]
     subtotal = sum((i["unit_price"] + sum(m.get("price",0) for m in i.get("modifiers",[]))) * i["quantity"] for i in items)
-    itbis = round(subtotal * 0.18, 2)
-    propina = round(subtotal * 0.10, 2)
-    total = round(subtotal + itbis + propina, 2)
+    
+    # Get dynamic tax names
+    taxes = await db.tax_config.find({"active": True}, {"_id": 0}).sort("order", 1).to_list(10)
+    tax_lines = []
+    total_tax = 0
+    for tax in taxes:
+        rate = tax.get("rate", 0)
+        if rate <= 0:
+            continue
+        amount = round(subtotal * (rate / 100), 2)
+        tax_lines.append({"description": tax.get("description", ""), "rate": rate, "amount": amount})
+        total_tax += amount
+    if not tax_lines:
+        tax_lines = [{"description": "ITBIS", "rate": 18, "amount": round(subtotal * 0.18, 2)}, {"description": "Propina", "rate": 10, "amount": round(subtotal * 0.10, 2)}]
+        total_tax = sum(t["amount"] for t in tax_lines)
+    total = round(subtotal + total_tax, 2)
+    
     items_html = ""
     for item in items:
         mods = ", ".join(m["name"] for m in item.get("modifiers", []))
@@ -851,6 +865,7 @@ async def print_pre_check(order_id: str):
     print_count = await db.pre_check_prints.count_documents({"order_id": order_id})
     await db.pre_check_prints.insert_one({"order_id": order_id, "print_number": print_count + 1, "printed_at": now_iso()})
     reprint_label = f"<div style='text-align:center;color:red;font-weight:bold;'>*** RE-IMPRESION #{print_count} ***</div>" if print_count > 0 else ""
+    tax_html = "".join(f"<tr><td>{t['description']} {t['rate']}%</td><td style='text-align:right'>RD$ {t['amount']:,.2f}</td></tr>" for t in tax_lines)
     return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
     {reprint_label}
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
@@ -860,8 +875,7 @@ async def print_pre_check(order_id: str):
     {items_html}</table>
     <table style='width:100%;font-size:12px;'>
     <tr><td>Subtotal</td><td style='text-align:right'>RD$ {subtotal:,.2f}</td></tr>
-    <tr><td>ITBIS 18%</td><td style='text-align:right'>RD$ {itbis:,.2f}</td></tr>
-    <tr><td>Propina Sugerida 10%</td><td style='text-align:right'>RD$ {propina:,.2f}</td></tr>
+    {tax_html}
     <tr><td><b style='font-size:14px;'>TOTAL ESTIMADO</b></td><td style='text-align:right;font-size:14px;'><b>RD$ {total:,.2f}</b></td></tr>
     </table>
     <div style='text-align:center;margin-top:8px;font-size:10px;border-top:1px dashed #000;padding-top:8px;'>
