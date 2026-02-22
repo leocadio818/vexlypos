@@ -1630,7 +1630,7 @@ async def send_test_print(channel_code: str):
     test_data = {
         "type": "test",
         "paper_width": 80,
-        "business_name": config.get("business_name", "MESA POS RD"),
+        "business_name": config.get("business_name", "ALONZO CIGAR"),
         "channel_name": channel.get("name", channel_code.title()),
         "date": now_iso()[:19].replace("T", " "),
         "message": "PRUEBA DE IMPRESION",
