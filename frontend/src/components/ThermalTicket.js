@@ -406,16 +406,17 @@ export const printTicket = (ticketRef) => {
             background: #fff;
           }
           
-          /* Contenedor principal */
+          /* Contenedor principal - Ajustado para área imprimible 72mm */
           .ticket-container {
             width: 80mm;
-            max-width: 80mm;
+            max-width: 72mm; /* Área imprimible real */
             font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
             font-size: 12px;
             line-height: 1.3;
             color: #000;
             background: #fff;
-            padding: 3mm;
+            padding: 2mm 4mm; /* Padding: arriba/abajo 2mm, izq/der 4mm */
+            margin: 0 auto; /* Centrar en el papel */
           }
           
           /* Encabezado */
@@ -480,7 +481,7 @@ export const printTicket = (ticketRef) => {
             margin-bottom: 2mm;
           }
           .ticket-item { margin-bottom: 2mm; font-size: 11px; }
-          .ticket-item-name { font-weight: bold; }
+          .ticket-item-name { font-weight: bold; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; max-width: 100%; }
           .ticket-item-details {
             display: flex;
             justify-content: space-between;
