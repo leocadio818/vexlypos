@@ -227,8 +227,9 @@ async def kitchen_tv():
     if not config:
         config = {"warning_minutes": 15, "urgent_minutes": 25, "critical_minutes": 35}
     
-    # Get category IDs that belong to kitchen
-    kitchen_cat_ids = await get_kitchen_category_ids()
+    # Get filtering data
+    kitchen_cat_ids, bar_channels, mapping_dict = await get_kitchen_category_ids()
+    product_cat_map = await get_product_category_map()
     
     orders = await db.orders.find(
         {"status": {"$in": ["sent", "active", "pending"]},
@@ -239,12 +240,10 @@ async def kitchen_tv():
     result = []
     for order in orders:
         # Filter items by kitchen categories only
-        kitchen_items = [
-            i for i in order.get("items", []) 
-            if i.get("sent_to_kitchen") 
-            and i.get("status") not in ["served", "cancelled"]
-            and i.get("category_id") in kitchen_cat_ids
-        ]
+        kitchen_items = await filter_items_for_kds(
+            order.get("items", []), 
+            kitchen_cat_ids, bar_channels, mapping_dict, product_cat_map
+        )
         if not kitchen_items:
             continue
         
