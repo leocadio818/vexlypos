@@ -673,7 +673,101 @@ async def send_to_kitchen(order_id: str, user: dict = Depends(get_current_user))
     # Notify KDS clients of new order
     notify_kds_update()
     
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # AUTO-PRINT COMANDA: Send to print queue automatically
+    # ═══════════════════════════════════════════════════════════════════════════════
+    if pending_items:
+        try:
+            await send_comanda_to_print_queue(order_id, pending_items)
+        except Exception as e:
+            # Don't fail the whole operation if printing fails
+            print(f"Error enviando comanda a impresora: {e}")
+    
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
+
+
+async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
+    """Helper function to send comanda to print queue"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        return
+    
+    # Get channels and category mappings
+    channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
+    category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
+    cat_to_channel = {m["category_id"]: m["channel_code"] for m in category_mappings}
+    
+    # Get products for print_channels
+    products = await db.products.find({}, {"_id": 0, "id": 1, "name": 1, "category_id": 1, "print_channels": 1}).to_list(500)
+    prod_map = {p["id"]: p for p in products}
+    
+    # Group items by channel
+    items_by_channel = {}
+    for item in items_to_print:
+        prod_id = item.get("product_id", "")
+        product = prod_map.get(prod_id, {})
+        
+        product_channels = product.get("print_channels", [])
+        if product_channels and len(product_channels) > 0:
+            target_channels = product_channels
+        else:
+            cat_id = product.get("category_id", "")
+            channel_code = cat_to_channel.get(cat_id, "kitchen")
+            target_channels = [channel_code]
+        
+        for channel_code in target_channels:
+            if channel_code == "receipt":
+                continue
+            if channel_code not in items_by_channel:
+                items_by_channel[channel_code] = []
+            items_by_channel[channel_code].append({
+                **item,
+                "product_name": item.get("product_name") or product.get("name", "?")
+            })
+    
+    # Create print jobs for each channel
+    for channel_code, items in items_by_channel.items():
+        if not items:
+            continue
+        
+        channel = next((c for c in channels if c.get("code") == channel_code), None)
+        printer_name = channel.get("printer_name", "") if channel else ""
+        printer_target = channel.get("target", "usb") if channel else "usb"
+        printer_ip = channel.get("ip", "") if channel else ""
+        channel_name = channel.get("name", channel_code.title()) if channel else channel_code.title()
+        
+        comanda_data = {
+            "type": "comanda",
+            "paper_width": 80,
+            "channel_name": channel_name,
+            "table_number": order.get("table_number", "?"),
+            "waiter_name": order.get("waiter_name", ""),
+            "order_number": order.get("id", "")[:8],
+            "date": now_iso()[:19].replace("T", " "),
+            "items_count": len(items),
+            "items": [
+                {
+                    "name": item.get("product_name", ""),
+                    "quantity": item.get("quantity", 1),
+                    "modifiers": [m.get("name", "") for m in item.get("modifiers", [])],
+                    "notes": item.get("notes", "")
+                }
+                for item in items
+            ]
+        }
+        
+        job = {
+            "id": str(uuid.uuid4()),
+            "type": "comanda",
+            "channel": channel_code,
+            "printer_name": printer_name,
+            "printer_target": printer_target,
+            "printer_ip": printer_ip,
+            "data": comanda_data,
+            "status": "pending",
+            "created_at": now_iso()
+        }
+        await db.print_queue.insert_one(job)
 
 # ─── TABLE ORDERS (Multiple accounts per table) ───
 @router.get("/tables/{table_id}/orders")
