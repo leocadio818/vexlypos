@@ -174,11 +174,14 @@ async def kitchen_status():
 # ─── KITCHEN TV ENDPOINT ───
 @router.get("/kitchen/tv")
 async def kitchen_tv():
-    """Get orders formatted for Kitchen TV display"""
+    """Get orders formatted for Kitchen TV display - FILTERED BY CHANNEL"""
     # Get config
     config = await db.system_config.find_one({"id": "kitchen_config"}, {"_id": 0})
     if not config:
         config = {"warning_minutes": 15, "urgent_minutes": 25, "critical_minutes": 35}
+    
+    # Get category IDs that belong to kitchen
+    kitchen_cat_ids = await get_kitchen_category_ids()
     
     orders = await db.orders.find(
         {"status": {"$in": ["sent", "active", "pending"]},
@@ -188,7 +191,13 @@ async def kitchen_tv():
     
     result = []
     for order in orders:
-        kitchen_items = [i for i in order.get("items", []) if i.get("sent_to_kitchen") and i.get("status") not in ["served", "cancelled"]]
+        # Filter items by kitchen categories only
+        kitchen_items = [
+            i for i in order.get("items", []) 
+            if i.get("sent_to_kitchen") 
+            and i.get("status") not in ["served", "cancelled"]
+            and i.get("category_id") in kitchen_cat_ids
+        ]
         if not kitchen_items:
             continue
         
