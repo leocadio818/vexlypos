@@ -1,0 +1,53 @@
+{
+  "summary": "Propina Legal Bug Fix Testing - VERIFIED. The critical bug where Propina Legal was incorrectly subtracted from total has been fixed. Total a Pagar now correctly equals Subtotal + ITBIS + Propina Legal. CAMBIO only shows when amount_received > total. Business info (ALONZO CIGAR, RNC, phone, address) correctly displays in receipt endpoints.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_propina_legal_fix.py"
+  ],
+  "passed_tests": [
+    "TEST 1: Bill Total = Subtotal (750) + ITBIS (135) + Propina (75) = 960 ✅",
+    "TEST 2: Pay with exact amount (960) - No false CAMBIO displayed ✅",
+    "TEST 3: Receipt HTML contains ALONZO CIGAR, RNC 1-31-75577-1, 809-301-3858, Jarabacoa, 'Valido hasta', DGII ✅",
+    "TEST 4: Receipt ESC/POS contains ALONZO CIGAR, RNC 1-31-75577-1, DGII ✅",
+    "TEST 5: Database bill.total matches calculated total ✅",
+    "ThermalTicket.js DEFAULT_BUSINESS_CONFIG.name = 'ALONZO CIGAR' ✅",
+    "ThermalTicket.js CAMBIO logic correct: shows only when bill.amount_received > bill.total ✅"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PayBillInput model correctly accepts optional itbis, propina_legal, total, amount_received from frontend (billing.py line 53-63)",
+    "pay_bill function correctly uses frontend-calculated values instead of recalculating with tip_percentage=0 (billing.py line 298-314)",
+    "Receipt HTML endpoint includes NCF expiry 'Valido hasta' and DGII footer (server.py line 876-954)",
+    "Receipt ESC/POS endpoint includes business info and DGII message (server.py line 956-1001)",
+    "ThermalTicket.js has correct CAMBIO logic: only displays when amount_received && amount_received > total (line 312)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_propina_legal_fix.py"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 tests passed)",
+    "frontend": "100% (Payment screen verified, ThermalTicket component correct)"
+  },
+  "test_credentials_used": {
+    "admin_pin": "10000"
+  },
+  "features_verified": {
+    "propina_legal_calculation": "PASS - Total = Subtotal + ITBIS + Propina (not subtracted)",
+    "cambio_display_logic": "PASS - Only shows when amount_received > total",
+    "receipt_html_business_info": "PASS - ALONZO CIGAR, RNC, phone, address, NCF expiry, DGII",
+    "receipt_escpos_business_info": "PASS - ALONZO CIGAR, RNC, DGII",
+    "bill_total_persistence": "PASS - Database stores correct calculated total",
+    "thermalticket_default_name": "PASS - Default is ALONZO CIGAR"
+  },
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Propina Legal bug fix verified. The pay_bill endpoint now accepts frontend-calculated tax values (itbis, propina_legal, total) and stores them directly rather than recalculating with tip_percentage=0. This prevents the bug where propina was zeroed out. All receipt endpoints show correct business information for ALONZO CIGAR with RNC 1-31-75577-1."
+}
