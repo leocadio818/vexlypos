@@ -345,12 +345,21 @@ def print_worker():
                 if job_id in processed_jobs:
                     continue
                 
-                # Verificar si es para nuestra impresora
+                # Determinar tipo de impresora destino
+                printer_target = job.get("printer_target", "usb")
+                printer_ip = job.get("printer_ip", "")
                 job_printer = job.get("printer_name", DEFAULT_PRINTER)
-                if job_printer != state.printer_name:
+                
+                # Para impresoras USB, verificar que sea nuestra impresora configurada
+                # Para impresoras de RED, procesar si hay IP válida
+                if printer_target == "usb" and job_printer != state.printer_name:
                     continue
                 
-                print(f"Procesando trabajo: {job_id[:8]}...")
+                if printer_target == "network" and not printer_ip:
+                    print(f"Job {job_id[:8]} tiene target=network pero sin IP, saltando...")
+                    continue
+                
+                print(f"Procesando trabajo: {job_id[:8]}... (target={printer_target})")
                 state.status = "printing"
                 update_icon_status()
                 
@@ -360,12 +369,24 @@ def print_worker():
                         # Construir datos ESC/POS
                         raw_data = build_escpos_data(commands)
                         
-                        # Enviar a impresora Windows
-                        print_raw_to_windows(state.printer_name, raw_data)
-                        
-                        state.jobs_printed += 1
-                        print(f"  ✓ Impreso correctamente")
-                        mark_job_complete(job_id, True)
+                        if printer_target == "network" and printer_ip:
+                            # Enviar a impresora de red via socket TCP
+                            success, error = send_to_network_printer(printer_ip, raw_data)
+                            if success:
+                                print(f"  ✓ Enviado a impresora de red {printer_ip}")
+                                state.jobs_printed += 1
+                                mark_job_complete(job_id, True)
+                            else:
+                                print(f"  ✗ Error de red: {error}")
+                                state.last_error = error
+                                # Intentar marcar como fallido pero no detener
+                                mark_job_complete(job_id, False)
+                        else:
+                            # Enviar a impresora Windows USB
+                            print_raw_to_windows(state.printer_name, raw_data)
+                            state.jobs_printed += 1
+                            print(f"  ✓ Impreso correctamente")
+                            mark_job_complete(job_id, True)
                     
                     processed_jobs.add(job_id)
                     
