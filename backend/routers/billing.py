@@ -330,12 +330,16 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         is_cash_payment = False
         payment_method_name = "Tarjeta"
 
-    await db.bills.update_one({"id": bill_id}, {"$set": {
+    update_fields = {
         "status": "paid", "payment_method": input.payment_method,
         "payment_method_name": payment_method_name,
-        "propina_legal": propina, "propina_percentage": input.tip_percentage,
+        "propina_legal": propina, "propina_percentage": input.tip_percentage if input.propina_legal is None else bill.get("propina_percentage", 10),
+        "itbis": itbis,
         "total": total, "paid_at": now_iso()
-    }})
+    }
+    if input.amount_received is not None:
+        update_fields["amount_received"] = input.amount_received
+    await db.bills.update_one({"id": bill_id}, {"$set": update_fields})
 
     # Update MongoDB shifts (legacy)
     shift = await db.shifts.find_one({"user_id": user["user_id"], "status": "open"}, {"_id": 0})
