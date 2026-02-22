@@ -1658,6 +1658,8 @@ async def send_comanda_to_queue(order_id: str):
             "type": "comanda",
             "channel": channel_code,
             "printer_name": printer_name,
+            "printer_target": channel.get("target", "usb") if channel else "usb",
+            "printer_ip": channel.get("ip", "") if channel else "",
             "data": comanda_data,
             "status": "pending",
             "created_at": now_iso()
