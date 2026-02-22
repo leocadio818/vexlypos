@@ -31,7 +31,14 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 - Pre-cuenta y Factura muestran: `Mesa: X - Cuenta #Y`
 - Si tiene etiqueta: `Mesa: X - Cta #Y` + `Cliente: Nombre`
 
-## Mapa de Mesas (NUEVO)
+### Número de Transacción Interno (NUEVO - 2026-02-22)
+- Cada documento impreso tiene un número secuencial interno: `Trans. #123`
+- Aparece en: **Comandas**, **Pre-cuentas**, **Facturas finales**
+- Generado atómicamente con MongoDB (`counters` collection)
+- Independiente del NCF fiscal - solo para control interno
+- Útil para tracking de cocina y auditoría interna
+
+## Mapa de Mesas
 
 ### Sillas Visuales
 - Cada mesa muestra **sillas/asientos** como semicírculos pegados al borde
@@ -67,9 +74,11 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 - Al hacer clic en el logo "RD", envía comandas pendientes automáticamente y cierra sesión
 - Botón de logout antiguo eliminado para ahorrar espacio
 
-### Visibilidad de Botones
+### Control de Acceso por Roles (ACTUALIZADO - 2026-02-22)
+- **PaymentScreen:** Solo accesible para `admin`, `cashier`, `manager`
 - **Caja:** Solo visible para Cajeros y Administradores (no meseros)
 - **Config:** Solo visible para Administradores
+- Meseros que intenten acceder a /payment/* son redirigidos a /tables
 
 ## Completado (2026-02-22)
 - [x] Sistema de impresión con cola asíncrona
@@ -83,6 +92,8 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 - [x] Botón Caja oculto para meseros
 - [x] **Sillas visuales en mapa de mesas** (escalables, móviles)
 - [x] Eliminado ícono de "otros usuarios" (solo color amarillo)
+- [x] **Restricción PaymentScreen** - Solo admin/cashier/manager
+- [x] **Número de Transacción Interno** - Trans. #XXX en todos los tickets
 
 ## Pendiente
 ### P1 - Alta Prioridad
@@ -103,6 +114,7 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 
 ## Credenciales de Prueba
 - Admin: PIN 10000
-- Carlos (Cajero): PIN 1234
+- Carlos (Mesero): PIN 1234
 - María (Mesera): PIN 5678
 - Luis (Cajero): PIN 4321
+- Chef Pedro: PIN 9999
