@@ -99,8 +99,16 @@ box-sizing: border-box;
 - El KDS ahora filtra items por el canal de su categoría
 - Categorías con canal "bar" o "terraza" se excluyen del KDS
 - Categorías sin mapping o con "kitchen"/"receipt" van al KDS
-- Archivo modificado: `backend/routers/kitchen.py`
-- Función `get_kitchen_category_ids()` determina qué categorías van al KDS
+- Archivos modificados: `backend/routers/kitchen.py`
+- Funciones: `get_kitchen_category_ids()`, `get_product_category_map()`, `filter_items_for_kds()`
+
+**IMPORTANTE:** Los items en órdenes NO tienen `category_id` guardado, así que el filtro busca la categoría del producto via `product_id`.
+
+#### Print Agent con Soporte de Red (2025-02-22):
+- `print_agent_pro.py` ahora soporta impresoras de red via socket TCP
+- Nuevo campo en jobs: `printer_target` (usb/network), `printer_ip`
+- Puerto estándar: 9100
+- Función: `send_to_network_printer(ip, data, port)`
 
 **Importante:** Las categorías de bebidas (Bebidas, Cervezas, Tragos) deben tener el canal "bar" asignado para excluirlas del KDS.
 
