@@ -854,7 +854,7 @@ async def print_pre_check(order_id: str):
     return {"html": f"""<div style='font-family:monospace;width:280px;padding:10px;font-size:12px;'>
     {reprint_label}
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
-    <b style='font-size:16px;'>MESA POS RD</b><br><b>PRE-CUENTA</b></div>
+    <b style='font-size:18px;'>ALONZO CIGAR</b><br><b>PRE-CUENTA</b></div>
     <div>Mesa: {order['table_number']}<br>Mesero: {order['waiter_name']}<br>Fecha: {order['created_at'][:19]}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;'>
     {items_html}</table>
