@@ -355,13 +355,7 @@
 }
 
 .ticket-footer-message {
-  margin-bottom: 2mm;
-}
-
-.ticket-footer-dgii {
-  font-size: 9px;
-  color: #666;
-  margin-top: 2mm;
+  margin-bottom: 1mm;
 }
 
 .ticket-barcode {
