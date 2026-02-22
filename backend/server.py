@@ -1755,68 +1755,23 @@ async def send_comanda_to_queue(order_id: str):
         }
         
         # ═══════════════════════════════════════════════════════════════════════════════
-        # IMPRESIÓN DIRECTA A RED: Si el canal tiene target=network, enviar inmediatamente
+        # TODAS LAS IMPRESIONES VAN A LA COLA (red y USB)
+        # El agente local es quien tiene acceso a las impresoras de red locales
+        # El servidor en la nube NO puede alcanzar IPs de red local como 192.168.x.x
         # ═══════════════════════════════════════════════════════════════════════════════
-        if printer_target == "network" and printer_ip:
-            # Construir comandos ESC/POS para la comanda
-            commands = [
-                {"type": "text", "text": channel_name.upper(), "align": "center", "bold": True, "size": 2},
-                {"type": "text", "text": "COMANDA", "align": "center", "bold": True},
-                {"type": "divider"},
-                {"type": "columns", "left": "Mesa:", "right": str(order.get("table_number", "?"))},
-                {"type": "columns", "left": "Mesero:", "right": order.get("waiter_name", "")[:20]},
-                {"type": "columns", "left": "Hora:", "right": now_iso()[11:16]},
-                {"type": "divider"},
-            ]
-            
-            for item in comanda_data["items"]:
-                item_text = f"{item['quantity']}x {item['name']}"
-                commands.append({"type": "text", "text": item_text, "bold": True})
-                
-                # Modificadores
-                for mod in item.get("modifiers", []):
-                    if mod:
-                        commands.append({"type": "text", "text": f"  + {mod}"})
-                
-                # Notas
-                if item.get("notes"):
-                    commands.append({"type": "text", "text": f"  NOTA: {item['notes']}"})
-            
-            commands.append({"type": "divider"})
-            commands.append({"type": "feed", "lines": 3})
-            commands.append({"type": "cut"})
-            
-            # Enviar directamente a la impresora de red
-            escpos_data = build_escpos_commands(commands)
-            success, error = await send_to_network_printer(printer_ip, escpos_data)
-            
-            network_results.append({
-                "channel": channel_code,
-                "ip": printer_ip,
-                "success": success,
-                "error": error,
-                "items_count": len(items)
-            })
-            
-            if success:
-                logging.info(f"Comanda {channel_code} enviada a {printer_ip} OK")
-            else:
-                logging.error(f"Comanda {channel_code} a {printer_ip} FALLÓ: {error}")
-        else:
-            # Para impresoras USB, agregar a la cola para que el agente lo procese
-            job = {
-                "id": gen_id(),
-                "type": "comanda",
-                "channel": channel_code,
-                "printer_name": printer_name,
-                "printer_target": printer_target,
-                "printer_ip": printer_ip,
-                "data": comanda_data,
-                "status": "pending",
-                "created_at": now_iso()
-            }
-            await db.print_queue.insert_one(job)
-            jobs_created.append({k: v for k, v in job.items() if k != "_id"})
+        job = {
+            "id": gen_id(),
+            "type": "comanda",
+            "channel": channel_code,
+            "printer_name": printer_name,
+            "printer_target": printer_target,
+            "printer_ip": printer_ip,
+            "data": comanda_data,
+            "status": "pending",
+            "created_at": now_iso()
+        }
+        await db.print_queue.insert_one(job)
+        jobs_created.append({k: v for k, v in job.items() if k != "_id"})
     
     # Log for debugging
     channels_used = [j["channel"] for j in jobs_created] + [r["channel"] for r in network_results if r["success"]]
