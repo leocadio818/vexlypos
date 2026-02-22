@@ -2575,6 +2575,62 @@ export default function OrderScreen() {
         </DialogContent>
       </Dialog>
 
+      {/* Account Label Dialog */}
+      <Dialog open={accountLabelDialog.open} onOpenChange={(o) => !o && setAccountLabelDialog({ open: false, label: '', action: null, itemIds: [] })}>
+        <DialogContent className="max-w-sm sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <SplitSquareHorizontal size={18} className="text-green-400" /> 
+              {accountLabelDialog.action === 'split' ? 'Nueva Cuenta (Dividir)' : 'Nueva Cuenta'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">
+                Etiqueta / Nombre (Opcional)
+              </label>
+              <input
+                type="text"
+                value={accountLabelDialog.label}
+                onChange={(e) => setAccountLabelDialog(prev => ({ ...prev, label: e.target.value }))}
+                placeholder="Ej: Juan, María, Grupo VIP..."
+                className="w-full px-4 py-3 rounded-lg border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary"
+                autoFocus
+                data-testid="account-label-input"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Esta etiqueta aparecerá en la pre-cuenta y factura para identificar la cuenta.
+              </p>
+            </div>
+            
+            {accountLabelDialog.action === 'split' && accountLabelDialog.itemIds.length > 0 && (
+              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                <p className="text-sm text-green-400">
+                  <strong>{accountLabelDialog.itemIds.length}</strong> item(s) se moverán a la nueva cuenta
+                </p>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setAccountLabelDialog({ open: false, label: '', action: null, itemIds: [] })}
+                className="font-oswald"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleAccountLabelConfirm}
+                className="bg-green-600 hover:bg-green-700 text-white font-oswald font-bold"
+                data-testid="confirm-account-label-btn"
+              >
+                Crear Cuenta
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
