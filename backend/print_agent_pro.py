@@ -197,7 +197,8 @@ def build_escpos_data(commands):
             data.extend(ESC + b'a\x00')  # Izquierda
             left = cmd.get("left", "")
             right = cmd.get("right", "")
-            width = 48
+            # Para 80mm con área imprimible de 72mm, aproximadamente 42 caracteres
+            width = 42
             spaces = max(1, width - len(left) - len(right))
             line = left + " " * spaces + right
             if cmd.get("bold"):
@@ -207,7 +208,7 @@ def build_escpos_data(commands):
             data.extend(ESC + b'E\x00')
             
         elif cmd_type == "divider":
-            data.extend(b'-' * 48)
+            data.extend(b'-' * 42)
             data.extend(b'\n')
             
         elif cmd_type == "feed":
