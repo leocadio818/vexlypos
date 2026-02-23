@@ -974,7 +974,6 @@ export default function OrderScreen() {
   const deleteEmptyAccount = async (orderId, accountNumber) => {
     try {
       await ordersAPI.deleteEmpty(orderId);
-      toast.success(`Cuenta #${accountNumber} eliminada`);
       // Refresh orders
       await fetchOrder();
       // If current order was deleted, switch to first available
@@ -987,7 +986,7 @@ export default function OrderScreen() {
         }
       }
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error eliminando cuenta');
+      console.warn(e.response?.data?.detail || 'Error eliminando cuenta');
     }
   };
 
@@ -998,13 +997,12 @@ export default function OrderScreen() {
     
     try {
       await ordersAPI.mergeOrders(sourceOrderId, targetOrderId);
-      toast.success('Cuentas fusionadas exitosamente');
       setMergeAccountsDialog({ open: false, sourceOrderId: null });
       // Refresh orders and switch to target
       await fetchOrder();
       setActiveOrderId(targetOrderId);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error fusionando cuentas');
+      console.warn(e.response?.data?.detail || 'Error fusionando cuentas');
     }
   };
 
