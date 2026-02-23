@@ -360,14 +360,13 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 
 ## Pendiente
 ### P1 - Alta Prioridad
-- [ ] Datos reales para tendencias de valoración
 - [ ] Reporte DGII 608
 - [ ] Auditoría - solo Admin ve PINs
 - [ ] Reloj de entrada/salida empleados
+- [ ] Envío automático de facturas por email (requiere integración con servicio de email)
 
 ### P2 - Media Prioridad
 - [ ] Compilar agente como .exe (PyInstaller)
-- [ ] Imágenes/iconos en productos
 - [ ] Cache offline de imágenes
 
 ### P3 - Baja Prioridad
