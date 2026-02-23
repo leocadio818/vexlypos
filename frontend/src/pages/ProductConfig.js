@@ -658,6 +658,90 @@ export default function ProductConfig() {
                 </div>
               </div>
 
+              {/* Imagen / Icono del Producto */}
+              <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+                <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <ImageIcon size={14} /> Imagen / Icono del Producto
+                </h3>
+                <p className="text-[11px] text-muted-foreground -mt-2">
+                  Opcional: Agrega una imagen o selecciona un icono para el botón del producto
+                </p>
+                
+                {/* URL de Imagen */}
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">URL de Imagen</label>
+                  <input 
+                    value={product.image_url}
+                    onChange={e => setProduct(p => ({ ...p, image_url: e.target.value, icon: '' }))}
+                    placeholder="https://ejemplo.com/imagen.jpg"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
+                    data-testid="product-image-url-input"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Pega una URL de imagen (preferiblemente cuadrada, 100x100px o mayor)
+                  </p>
+                </div>
+
+                {/* O selecciona un icono */}
+                <div>
+                  <label className="text-xs text-muted-foreground mb-2 block">O selecciona un Icono</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setProduct(p => ({ ...p, icon: '', image_url: '' }))}
+                      className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-xs transition-all ${
+                        !product.icon && !product.image_url ? 'border-primary bg-primary/10' : 'border-border bg-background hover:border-muted-foreground'
+                      }`}
+                      title="Sin icono"
+                    >
+                      ✕
+                    </button>
+                    {PRODUCT_ICONS.map(({ id, label, Icon }) => (
+                      <button
+                        key={id}
+                        onClick={() => setProduct(p => ({ ...p, icon: id, image_url: '' }))}
+                        className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center transition-all ${
+                          product.icon === id ? 'border-primary bg-primary/10 scale-110' : 'border-border bg-background hover:border-muted-foreground'
+                        }`}
+                        title={label}
+                      >
+                        <Icon size={18} className={product.icon === id ? 'text-primary' : 'text-muted-foreground'} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview de imagen/icono */}
+                {(product.image_url || product.icon) && (
+                  <div className="pt-3 border-t border-border">
+                    <label className="text-xs text-muted-foreground mb-2 block">Vista Previa</label>
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-16 rounded-xl border border-border bg-background flex items-center justify-center overflow-hidden">
+                        {product.image_url ? (
+                          <img 
+                            src={product.image_url} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        ) : product.icon ? (
+                          (() => {
+                            const iconData = PRODUCT_ICONS.find(i => i.id === product.icon);
+                            if (iconData) {
+                              const IconComponent = iconData.Icon;
+                              return <IconComponent size={32} className="text-primary" />;
+                            }
+                            return null;
+                          })()
+                        ) : null}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Así aparecerá en el botón de producto
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Button Style */}
               <div className="bg-card border border-border rounded-xl p-4 space-y-4">
                 <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
