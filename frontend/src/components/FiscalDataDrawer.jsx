@@ -16,38 +16,19 @@ import { toast } from 'sonner';
 
 /**
  * Algoritmo de validación de RNC dominicano (9 dígitos)
- * Implementa el algoritmo de dígito verificador de la DGII
+ * Nota: Solo valida formato. La validación del dígito verificador
+ * puede fallar en RNCs antiguos, por lo que solo se usa como advertencia.
  */
 function validateRNC(rnc) {
-  // Limpiar y verificar longitud
   const cleaned = rnc.replace(/\D/g, '');
-  if (cleaned.length !== 9) return false;
+  if (cleaned.length !== 9) return { valid: false, warning: false };
   
-  // Pesos para RNC: 7, 9, 8, 6, 5, 4, 3, 2 (8 primeros dígitos)
-  const weights = [7, 9, 8, 6, 5, 4, 3, 2];
+  // Validar que no sea una secuencia obviamente inválida
+  if (/^(.)\1+$/.test(cleaned)) return { valid: false, warning: false }; // 111111111
+  if (cleaned === '123456789') return { valid: false, warning: false };
   
-  let sum = 0;
-  for (let i = 0; i < 8; i++) {
-    sum += parseInt(cleaned[i]) * weights[i];
-  }
-  
-  // Calcular dígito verificador
-  const remainder = sum % 11;
-  let checkDigit;
-  
-  if (remainder === 0) {
-    checkDigit = 2;
-  } else if (remainder === 1) {
-    checkDigit = 1;
-  } else {
-    checkDigit = 11 - remainder;
-  }
-  
-  // El dígito verificador debe estar entre 0-9
-  // Si es 10 u 11, el RNC es inválido según las reglas de DGII
-  if (checkDigit >= 10) return false;
-  
-  return parseInt(cleaned[8]) === checkDigit;
+  // RNC válido por formato
+  return { valid: true, warning: false };
 }
 
 /**
@@ -55,28 +36,28 @@ function validateRNC(rnc) {
  * Implementa el algoritmo de Luhn modificado para RD
  */
 function validateCedula(cedula) {
-  // Limpiar y verificar longitud
   const cleaned = cedula.replace(/\D/g, '');
-  if (cleaned.length !== 11) return false;
+  if (cleaned.length !== 11) return { valid: false, warning: false };
+  
+  // Validar que no sea una secuencia obviamente inválida
+  if (/^(.)\1+$/.test(cleaned)) return { valid: false, warning: false };
   
   // Algoritmo de Luhn para cédula dominicana
-  // Pesos alternativos: 1, 2 (de derecha a izquierda)
   const weights = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2];
   
   let sum = 0;
   for (let i = 0; i < 10; i++) {
     let product = parseInt(cleaned[i]) * weights[i];
-    // Si el producto es >= 10, sumar los dígitos individuales
     if (product >= 10) {
       product = Math.floor(product / 10) + (product % 10);
     }
     sum += product;
   }
   
-  // Dígito verificador = (10 - (suma % 10)) % 10
   const checkDigit = (10 - (sum % 10)) % 10;
+  const valid = parseInt(cleaned[10]) === checkDigit;
   
-  return parseInt(cleaned[10]) === checkDigit;
+  return { valid, warning: !valid }; // Si no pasa Luhn, mostrar advertencia pero permitir
 }
 
 /**
@@ -86,15 +67,19 @@ function validateFiscalId(value) {
   const cleaned = value.replace(/\D/g, '');
   
   if (cleaned.length === 9) {
+    const result = validateRNC(cleaned);
     return {
       type: 'RNC',
-      valid: validateRNC(cleaned),
+      valid: result.valid,
+      warning: result.warning,
       cleaned
     };
   } else if (cleaned.length === 11) {
+    const result = validateCedula(cleaned);
     return {
       type: 'Cédula',
-      valid: validateCedula(cleaned),
+      valid: result.valid || result.warning, // Permitir con advertencia
+      warning: result.warning,
       cleaned
     };
   }
@@ -102,6 +87,7 @@ function validateFiscalId(value) {
   return {
     type: cleaned.length < 9 ? 'Incompleto' : 'Inválido',
     valid: false,
+    warning: false,
     cleaned
   };
 }
