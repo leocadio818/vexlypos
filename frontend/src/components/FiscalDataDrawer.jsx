@@ -16,18 +16,26 @@ import { toast } from 'sonner';
 
 /**
  * Algoritmo de validación de RNC dominicano (9 dígitos)
- * Nota: Solo valida formato. La validación del dígito verificador
- * puede fallar en RNCs antiguos, por lo que solo se usa como advertencia.
+ * Nota: Solo valida formato básico. La DGII tiene RNCs antiguos
+ * que no cumplen con el algoritmo moderno de dígito verificador,
+ * por lo que se valida solo la estructura básica.
+ * 
+ * Requisitos:
+ * - Exactamente 9 dígitos
+ * - No puede ser secuencia repetitiva (111111111)
+ * - No puede ser secuencia obvia (123456789)
  */
 function validateRNC(rnc) {
   const cleaned = rnc.replace(/\D/g, '');
   if (cleaned.length !== 9) return { valid: false, warning: false };
   
   // Validar que no sea una secuencia obviamente inválida
-  if (/^(.)\1+$/.test(cleaned)) return { valid: false, warning: false }; // 111111111
-  if (cleaned === '123456789') return { valid: false, warning: false };
+  if (/^(.)\1+$/.test(cleaned)) return { valid: false, warning: false, reason: 'repetitivo' }; // 111111111
+  if (cleaned === '123456789') return { valid: false, warning: false, reason: 'secuencia' };
+  if (cleaned === '000000000') return { valid: false, warning: false, reason: 'ceros' };
   
-  // RNC válido por formato
+  // RNC válido por formato - no verificamos dígito verificador
+  // porque muchos RNCs antiguos no cumplen el algoritmo moderno
   return { valid: true, warning: false };
 }
 
