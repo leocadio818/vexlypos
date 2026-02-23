@@ -64,6 +64,16 @@ class CreateBillInput(BaseModel):
     payment_method: str = "cash"
     customer_id: str = ""
 
+class PaymentEntry(BaseModel):
+    """Entrada individual de pago para pagos múltiples"""
+    payment_method_id: str
+    payment_method_name: str = ""
+    amount: float  # Monto en la moneda del método
+    amount_dop: float = 0  # Monto convertido a DOP
+    currency: str = "DOP"
+    exchange_rate: float = 1
+    brand_icon: Optional[str] = None
+
 class PayBillInput(BaseModel):
     payment_method: str = "cash"
     payment_method_id: str = ""
@@ -75,6 +85,11 @@ class PayBillInput(BaseModel):
     propina_legal: Optional[float] = None
     total: Optional[float] = None
     amount_received: Optional[float] = None
+    # Nuevo: Lista de pagos múltiples
+    payments: Optional[List[PaymentEntry]] = None
+    # Nuevo: Información de cambio en moneda extranjera
+    change_currency: str = "DOP"  # Moneda en que se da el cambio
+    change_amount: float = 0  # Monto del cambio
 
 # ─── PAYMENT METHODS ───
 @router.get("/payment-methods")
