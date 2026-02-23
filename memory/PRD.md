@@ -468,6 +468,21 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
               → Cancelar items sin fiscal
 ```
 
+## Bugs Corregidos
+
+### FiscalDataDrawer - Error al crear cliente nuevo (2026-02-23)
+**Bug:** Al hacer clic en "Continuar" en el drawer de datos fiscales (B01, B14, B15) con un cliente nuevo, se producía un error HTTP 422.
+
+**Causa:** El frontend enviaba `null` para los campos `phone` y `email` al crear un nuevo cliente, pero el backend esperaba strings (vacíos o con contenido).
+
+**Solución:** En `/app/frontend/src/components/FiscalDataDrawer.jsx`, líneas 247-248:
+- Cambiado `email: email.trim() || null` → `email: email.trim() || ''`
+- Cambiado `phone: null` → `phone: ''`
+
+**Verificación:** Testing agent confirmó 100% de tests pasados (backend y frontend).
+
+---
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Reporte DGII 608 (pendiente confirmación del usuario)
