@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { productsAPI, categoriesAPI, modifiersAPI, reportCategoriesAPI } from '@/lib/api';
-import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List, Printer, Check } from 'lucide-react';
+import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List, Printer, Check, Image, ImageIcon, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
