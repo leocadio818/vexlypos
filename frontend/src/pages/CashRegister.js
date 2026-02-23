@@ -286,6 +286,54 @@ export default function CashRegister() {
     }
   };
 
+  // Re-imprimir factura desde movimiento seleccionado
+  const handleReprint = async () => {
+    if (!selectedMovement) return;
+    
+    setReprintLoading(true);
+    try {
+      // Extraer el bill_id de la descripción del movimiento (formato: "Venta NCF - método")
+      // El NCF está en la descripción, necesitamos buscar el bill
+      const ncfMatch = selectedMovement.description?.match(/B\d{10}/);
+      
+      if (ncfMatch) {
+        // Buscar el bill por NCF
+        const searchRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bills?ncf=${ncfMatch[0]}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+        });
+        const bills = await searchRes.json();
+        
+        if (bills && bills.length > 0) {
+          const bill = bills[0];
+          // Enviar a imprimir
+          const printRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/print/receipt/${bill.id}/send`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+          });
+          
+          if (printRes.ok) {
+            toast.success('Factura enviada a imprimir', {
+              description: `NCF: ${ncfMatch[0]}`
+            });
+          } else {
+            throw new Error('Error al enviar a imprimir');
+          }
+        } else {
+          toast.error('No se encontró la factura');
+        }
+      } else {
+        toast.error('Este movimiento no es una venta facturable');
+      }
+    } catch (err) {
+      toast.error('Error al reimprimir', {
+        description: err.message
+      });
+    } finally {
+      setReprintLoading(false);
+      setSelectedMovement(null);
+    }
+  };
+
   const updateDenomination = (valor, delta) => {
     setDenominationCounts(prev => ({
       ...prev,
