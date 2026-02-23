@@ -85,8 +85,10 @@ class AuthorizeDayActionInput(BaseModel):
 async def get_authorizer_by_pin(pin: str):
     """Verifica PIN y retorna usuario si tiene permiso de close_day"""
     users = await db.users.find({"active": True}, {"_id": 0}).to_list(100)
+    pin_hash = hash_pin(pin)
+    
     for user in users:
-        if verify_pin(pin, user.get("pin_hash", "")):
+        if pin_hash == user.get("pin_hash", ""):
             # Verificar que tenga permiso de close_day (admin o gerente)
             permissions = user.get("permissions", {})
             role = user.get("role", "")
