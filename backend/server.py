@@ -2941,6 +2941,13 @@ pause
 
 # ─── APP CONFIG ───
 app.include_router(api)
+
+# Servir archivos estáticos (imágenes de productos)
+UPLOAD_DIR = Path(__file__).parent / "uploads"
+UPLOAD_DIR.mkdir(exist_ok=True)
+(UPLOAD_DIR / "products").mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
