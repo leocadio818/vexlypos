@@ -169,10 +169,14 @@ async def create_order(input: CreateOrderInput, user=Depends(get_current_user)):
             "cancelled_reason_id": None, "return_to_inventory": False
         })
 
+    # Generar número de transacción único al abrir la mesa/cuenta
+    transaction_number = await get_next_transaction_number()
+    
     order_id = gen_id()
     order = {
         "id": order_id, "table_id": input.table_id, "table_number": table["number"],
         "waiter_id": user["user_id"], "waiter_name": user["name"],
+        "transaction_number": transaction_number,
         "status": "active", "items": items,
         "created_at": now_iso(), "updated_at": now_iso()
     }
