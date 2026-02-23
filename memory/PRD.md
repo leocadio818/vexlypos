@@ -481,6 +481,21 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 
 **Verificación:** Testing agent confirmó 100% de tests pasados (backend y frontend).
 
+### Logout RD - No enviaba comandas pendientes (2026-02-23)
+**Bug:** Al hacer clic en el logo "RD" para salir (logout), las comandas pendientes NO se enviaban a los canales de impresión (cocina), a diferencia de los botones "Enviar" y "Mesas".
+
+**Causas identificadas:**
+1. Se usaba `api.orders.sendToKitchen()` que no existía (debía ser `ordersAPI.sendToKitchen()`)
+2. Se filtraba por `user?.user_id` pero el campo correcto es `user?.id`
+3. La llamada a `ordersAPI.list({ status: 'active' })` excluía órdenes con status `sent` que también pueden tener items pendientes
+
+**Solución:** En `/app/frontend/src/components/Layout.js`:
+- Importar `ordersAPI` desde `@/lib/api`
+- Usar `user?.id` en lugar de `user?.user_id`
+- Remover filtro de status en la llamada API (`ordersAPI.list()` sin parámetros)
+
+**Verificación:** Logs de consola confirman `Logout: Comanda enviada para orden {id}` y los items cambian de status `pending` a `sent`.
+
 ---
 
 ## Pendiente
