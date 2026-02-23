@@ -79,6 +79,10 @@ function validateCedula(cedula) {
 
 /**
  * Validar si es RNC o Cédula válido
+ * Política de validación:
+ * - RNC (9 dígitos): Solo valida estructura básica
+ * - Cédula (11 dígitos): Valida estructura + warning si no pasa Luhn
+ * - 10 dígitos o >11: Inválido
  */
 function validateFiscalId(value) {
   const cleaned = value.replace(/\D/g, '');
@@ -89,20 +93,39 @@ function validateFiscalId(value) {
       type: 'RNC',
       valid: result.valid,
       warning: result.warning,
+      reason: result.reason,
       cleaned
     };
   } else if (cleaned.length === 11) {
     const result = validateCedula(cleaned);
     return {
       type: 'Cédula',
-      valid: result.valid || result.warning, // Permitir con advertencia
+      valid: result.valid,
       warning: result.warning,
+      reason: result.reason,
+      cleaned
+    };
+  } else if (cleaned.length === 10) {
+    // 10 dígitos no es ni RNC ni Cédula
+    return {
+      type: 'Inválido',
+      valid: false,
+      warning: false,
+      reason: '10 dígitos no es RNC (9) ni Cédula (11)',
+      cleaned
+    };
+  } else if (cleaned.length > 11) {
+    return {
+      type: 'Inválido',
+      valid: false,
+      warning: false,
+      reason: 'Demasiados dígitos',
       cleaned
     };
   }
   
   return {
-    type: cleaned.length < 9 ? 'Incompleto' : 'Inválido',
+    type: 'Incompleto',
     valid: false,
     warning: false,
     cleaned
