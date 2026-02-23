@@ -397,10 +397,7 @@ export default function PaymentScreen() {
     }));
     
     setTaxOverrideDialog({ open: false, step: 'pin' });
-    
-    if (removedTaxes.length > 0) {
-      toast.success(`Impuestos ajustados por ${taxOverrideAuthorized?.authorized_by || 'Admin'}`);
-    }
+    // Removed toast notification - silent tax adjustment
   };
 
   // Recalculate taxes when service type changes using Intelligent Tax Engine
