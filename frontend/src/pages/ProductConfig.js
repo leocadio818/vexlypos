@@ -664,12 +664,81 @@ export default function ProductConfig() {
                   <ImageIcon size={14} /> Imagen / Icono del Producto
                 </h3>
                 <p className="text-[11px] text-muted-foreground -mt-2">
-                  Opcional: Agrega una imagen o selecciona un icono para el botón del producto
+                  Opcional: Sube una imagen desde tu PC, pega una URL, o selecciona un icono
                 </p>
                 
+                {/* Subir imagen desde PC */}
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground block">Subir imagen desde tu PC</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        // Validar tamaño (5MB max)
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast.error('Imagen muy grande. Máximo 5MB');
+                          return;
+                        }
+                        
+                        // Subir imagen
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        
+                        try {
+                          toast.loading('Subiendo imagen...', { id: 'upload' });
+                          const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/products/upload-image`, {
+                            method: 'POST',
+                            body: formData
+                          });
+                          
+                          if (!res.ok) {
+                            const err = await res.json();
+                            throw new Error(err.detail || 'Error al subir');
+                          }
+                          
+                          const data = await res.json();
+                          // Construir URL completa
+                          const imageUrl = `${process.env.REACT_APP_BACKEND_URL}${data.url}`;
+                          setProduct(p => ({ ...p, image_url: imageUrl, icon: '' }));
+                          toast.success('Imagen subida correctamente', { id: 'upload' });
+                        } catch (err) {
+                          toast.error(err.message || 'Error al subir imagen', { id: 'upload' });
+                        }
+                        
+                        // Limpiar input
+                        e.target.value = '';
+                      }}
+                      className="hidden"
+                      id="product-image-upload"
+                      data-testid="product-image-upload"
+                    />
+                    <label
+                      htmlFor="product-image-upload"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-primary/10 border border-primary/30 rounded-lg cursor-pointer hover:bg-primary/20 transition-colors"
+                    >
+                      <Image size={16} className="text-primary" />
+                      <span className="text-sm font-medium text-primary">Seleccionar imagen</span>
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">
+                      JPG, PNG, WebP o GIF (máx. 5MB)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Separador */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-border"></div>
+                  <span className="text-xs text-muted-foreground">o</span>
+                  <div className="flex-1 h-px bg-border"></div>
+                </div>
+
                 {/* URL de Imagen */}
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">URL de Imagen</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">Pegar URL de imagen</label>
                   <input 
                     value={product.image_url}
                     onChange={e => setProduct(p => ({ ...p, image_url: e.target.value, icon: '' }))}
@@ -677,14 +746,18 @@ export default function ProductConfig() {
                     className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
                     data-testid="product-image-url-input"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Pega una URL de imagen (preferiblemente cuadrada, 100x100px o mayor)
-                  </p>
+                </div>
+
+                {/* Separador */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-border"></div>
+                  <span className="text-xs text-muted-foreground">o</span>
+                  <div className="flex-1 h-px bg-border"></div>
                 </div>
 
                 {/* O selecciona un icono */}
                 <div>
-                  <label className="text-xs text-muted-foreground mb-2 block">O selecciona un Icono</label>
+                  <label className="text-xs text-muted-foreground mb-2 block">Seleccionar un Icono</label>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setProduct(p => ({ ...p, icon: '', image_url: '' }))}
