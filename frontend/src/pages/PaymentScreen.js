@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { billsAPI } from '@/lib/api';
+import { billsAPI, businessDaysAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, X, Check, Wallet, Coins, CircleDollarSign, BadgeDollarSign, ChevronUp, ChevronDown, Receipt, Sparkles, Heart, FileText, Truck, Store, UtensilsCrossed, Printer, Globe, Briefcase, Shield, Lock, AlertTriangle, Bell, Plus, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, X, Check, Wallet, Coins, CircleDollarSign, BadgeDollarSign, ChevronUp, ChevronDown, Receipt, Sparkles, Heart, FileText, Truck, Store, UtensilsCrossed, Printer, Globe, Briefcase, Shield, Lock, AlertTriangle, Bell, Plus, Phone, Mail, Moon, Sun } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import ThermalTicket, { printTicket, useBusinessConfig } from '@/components/ThermalTicket';
 import FiscalDataDrawer from '@/components/FiscalDataDrawer';
+import BusinessDayManager from '@/components/BusinessDayManager';
 
 // Iconos de Lucide para métodos de pago
 const lucideIcons = {
