@@ -710,8 +710,12 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
     if not order:
         return
     
-    # Generar número de transacción interno para esta comanda
-    internal_trans_num = await get_next_transaction_number()
+    # Usar el transaction_number de la orden (generado al crear la cuenta)
+    # Si no existe (órdenes antiguas), generar uno y guardarlo
+    transaction_number = order.get("transaction_number")
+    if not transaction_number:
+        transaction_number = await get_next_transaction_number()
+        await db.orders.update_one({"id": order_id}, {"$set": {"transaction_number": transaction_number}})
     
     # Get channels and category mappings
     channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
@@ -764,7 +768,7 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
             "table_number": order.get("table_number", "?"),
             "waiter_name": order.get("waiter_name", ""),
             "order_number": order.get("id", "")[:8],
-            "internal_transaction_number": internal_trans_num,
+            "transaction_number": transaction_number,
             "date": now_iso()[:19].replace("T", " "),
             "items_count": len(items),
             "items": [
