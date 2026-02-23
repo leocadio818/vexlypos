@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Briefcase, Plus, Trash2, Camera, Settings, ChevronDown, ChevronRight, RotateCcw, AlertTriangle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Briefcase, Plus, Trash2, Camera, Settings, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
