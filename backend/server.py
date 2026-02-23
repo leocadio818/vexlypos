@@ -1813,8 +1813,23 @@ async def send_receipt_to_queue(bill_id: str):
         "total": bill.get("total", 0),
         "amount_received": bill.get("amount_received", 0),
         "payment_method": bill.get("payment_method_name", "Efectivo"),
-        "footer_text": config.get("footer_text", "Gracias por su visita!")
+        "footer_text": config.get("footer_text", "Gracias por su visita!"),
+        # Datos fiscales del cliente (B01, B14, B15)
+        "ncf_type": bill.get("ncf_type", ""),
+        "fiscal_id": bill.get("fiscal_id", ""),
+        "fiscal_id_type": bill.get("fiscal_id_type", ""),
+        "razon_social": bill.get("razon_social", "")
     }
+    
+    # Inferir ncf_type desde el NCF si no está establecido
+    ncf_str = receipt_data.get("bill_number", "")
+    if not receipt_data["ncf_type"] and ncf_str:
+        if ncf_str.startswith("B01"):
+            receipt_data["ncf_type"] = "B01"
+        elif ncf_str.startswith("B14"):
+            receipt_data["ncf_type"] = "B14"
+        elif ncf_str.startswith("B15"):
+            receipt_data["ncf_type"] = "B15"
     
     job = {
         "id": gen_id(),
