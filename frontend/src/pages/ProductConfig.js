@@ -113,6 +113,8 @@ export default function ProductConfig() {
           price_e: p.price_e || 0,
           button_bg_color: p.button_bg_color || '',
           button_text_color: p.button_text_color || '#FFFFFF',
+          image_url: p.image_url || '',
+          icon: p.icon || '',
           track_inventory: p.track_inventory || false,
           print_channels: p.print_channels || [],
           tax_exemptions: p.tax_exemptions || [],
