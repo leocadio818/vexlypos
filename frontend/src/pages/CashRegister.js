@@ -70,6 +70,24 @@ export default function CashRegister() {
   
   // Credit Note Modal (B04)
   const [creditNoteModalOpen, setCreditNoteModalOpen] = useState(false);
+  const [pendingB04Transaction, setPendingB04Transaction] = useState(null);
+  
+  // Check URL params for B04 redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openB04') === 'true') {
+      // Get pending transaction from sessionStorage
+      const pendingTrans = sessionStorage.getItem('pendingB04Transaction');
+      if (pendingTrans) {
+        setPendingB04Transaction(parseInt(pendingTrans, 10));
+        sessionStorage.removeItem('pendingB04Transaction');
+      }
+      // Open B04 modal
+      setCreditNoteModalOpen(true);
+      // Clean URL
+      window.history.replaceState({}, '', '/cash-register');
+    }
+  }, []);
   
   // Default terminals if none configured
   const defaultTerminals = [
