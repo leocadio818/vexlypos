@@ -133,6 +133,59 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **UI/UX Overhaul** - Toasts eliminados, modal glassmorphism para funciones de mesa
 - [x] **Notas de Crédito B04** - Flujo completo de post-venta con cumplimiento DGII
 - [x] **Reporte 607 para B04** - Datos formateados para declaración fiscal
+- [x] **Motor de Pagos Múltiples** - Soporte para múltiples formas de pago en una transacción
+- [x] **Multimoneda en Pre-cuenta** - Equivalentes USD/EUR con tasas configuradas
+- [x] **Lógica de Cambio Multimoneda** - Recibido en moneda original, cambio siempre en RD$
+
+## Motor de Pagos Múltiples (NUEVO - 2026-02-23)
+
+### Descripción
+Sistema mejorado de procesamiento de pagos que soporta múltiples formas de pago por transacción y conversión automática de monedas.
+
+### Características
+
+#### Pagos Múltiples en Factura Final
+- Si hay más de una forma de pago, se listan todas individualmente:
+  ```
+  FORMAS DE PAGO
+  Efectivo RD$:        RD$ 2,000.00
+  Tarjeta (Visa):      RD$ 3,000.00
+  ```
+
+#### Multimoneda en Pre-cuenta
+- Debajo del Total Estimado, muestra conversiones automáticas:
+  ```
+  TOTAL ESTIMADO        RD$ 5,000.00
+  ----------------------------------
+  Equiv US$         78.12 (Tasa:64.00)
+  Equiv €           71.43 (Tasa:70.00)
+  ```
+
+#### Lógica de Cambio con Moneda Extranjera
+- Si el cliente paga en USD/EUR, el ticket muestra:
+  ```
+  Recibido (USD):       US$ 100.00
+  Total a Cobrar:       RD$ 5,000.00
+  CAMBIO (RD$):         RD$ 1,400.00
+  ```
+- **Nota:** El cambio siempre se da en RD$ (pesos dominicanos)
+
+### Modelo de Datos
+```python
+class PaymentEntry:
+    payment_method_id: str
+    payment_method_name: str
+    amount: float           # Monto en moneda original
+    amount_dop: float       # Monto convertido a DOP
+    currency: str           # "DOP", "USD", "EUR"
+    exchange_rate: float    # Tasa de cambio
+    brand_icon: str         # Ícono (visa, mastercard, etc.)
+```
+
+### Tasas de Cambio Configuradas
+- USD Dólar: 64.00
+- EUR Euro: 70.00
+- Las tasas se configuran en Configuración → Métodos de Pago
 
 ## Pendiente
 ### P1 - Alta Prioridad
