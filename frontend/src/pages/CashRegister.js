@@ -68,6 +68,9 @@ export default function CashRegister() {
     notes: ''
   });
   
+  // Credit Note Modal (B04)
+  const [creditNoteModalOpen, setCreditNoteModalOpen] = useState(false);
+  
   // Default terminals if none configured
   const defaultTerminals = [
     { id: null, code: 'POS1', name: 'Caja 1' },
