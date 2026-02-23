@@ -144,6 +144,38 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Búsqueda por # Orden Global** - Historial de Facturas y Caja permiten buscar por número de transacción
 - [x] **Datos Reales Valuation-Trends** - Endpoint usa movimientos de stock y órdenes para calcular valores históricos
 - [x] **Imágenes/Iconos en Productos** - Nueva sección en configuración de productos con URL de imagen y 12 iconos predefinidos
+- [x] **Captura de Datos Fiscales (B01/B14/B15)** - Drawer para capturar RNC/Cédula con validación flexible y búsqueda de clientes
+
+## Captura de Datos Fiscales (NUEVO - 2026-02-23)
+
+### Descripción
+Drawer que aparece al seleccionar tipos fiscales B01 (Crédito Fiscal), B14 (Gubernamental), o B15 (Régimen Especial) durante el proceso de pago.
+
+### Características
+1. **Validación de RNC/Cédula**
+   - RNC (9 dígitos): Validación de estructura básica (no verifica dígito verificador por compatibilidad con RNCs antiguos)
+   - Cédula (11 dígitos): Valida con algoritmo Luhn, pero permite continuar con advertencia si falla
+   - Formato automático: 131-09801-7 (RNC) o 001-1234567-8 (Cédula)
+
+2. **Búsqueda de Clientes**
+   - Botón "Buscar" consulta la base de datos por RNC exacto
+   - Si el cliente existe: Autocompleta Razón Social y Email
+   - Si es nuevo: Permite entrada manual y guarda el cliente al completar la transacción
+
+3. **Campos del Drawer**
+   - RNC/Cédula (obligatorio)
+   - Razón Social (obligatorio)
+   - Email (opcional - para envío de factura digital)
+
+4. **Estados de Validación**
+   - Verde: Validación exitosa
+   - Ámbar: Validación con advertencia (permitido continuar)
+   - Rojo: Formato inválido (no permite continuar)
+
+### Endpoints Usados
+- `GET /api/customers?rnc=XXXXX` - Busca cliente por RNC
+- `POST /api/customers` - Crea nuevo cliente con RNC
+- `POST /api/bills/{id}/pay` - Procesa pago con datos fiscales (fiscal_id, razon_social, customer_email)
 
 ## Búsqueda y Re-impresión de Facturas (NUEVO - 2026-02-23)
 
