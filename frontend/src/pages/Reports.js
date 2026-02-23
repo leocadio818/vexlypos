@@ -1715,6 +1715,53 @@ export default function Reports() {
           >
             <RefreshCw size={12} className="mr-1" /> Actualizar
           </Button>
+          
+          {/* Business Day (Jornada) Filter */}
+          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
+            <Sun size={14} className="text-amber-400" />
+            <select
+              value={selectedBusinessDay?.id || ''}
+              onChange={(e) => {
+                const day = businessDays.find(d => d.id === e.target.value);
+                handleSelectBusinessDay(day);
+                if (day && selectedReport) {
+                  setTimeout(() => loadReport(selectedReport), 100);
+                }
+              }}
+              className="bg-card border border-border rounded-lg px-2 py-1 text-xs w-48"
+              data-testid="business-day-filter"
+            >
+              <option value="">Por Fecha Civil</option>
+              {loadingBusinessDays ? (
+                <option disabled>Cargando...</option>
+              ) : (
+                businessDays.map(day => (
+                  <option key={day.id} value={day.id}>
+                    {day.ref} ({day.business_date}) {day.status === 'open' ? '🟢' : ''}
+                  </option>
+                ))
+              )}
+            </select>
+            {selectedBusinessDay && (
+              <>
+                <Badge className="bg-amber-500/20 text-amber-300 text-[10px]">
+                  Jornada: {selectedBusinessDay.business_date}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0"
+                  onClick={() => {
+                    setReportZDayId(selectedBusinessDay.id);
+                    setReportZOpen(true);
+                  }}
+                  title="Ver Reporte Z"
+                >
+                  <FileText size={12} className="text-cyan-400" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
