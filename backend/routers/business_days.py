@@ -58,7 +58,7 @@ def today_str() -> str:
 
 
 # Import auth dependency
-from routers.auth import get_current_user, verify_pin
+from routers.auth import get_current_user, hash_pin
 
 
 # ─── INPUT MODELS ───
