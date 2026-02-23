@@ -485,11 +485,11 @@ export default function OrderScreen() {
   const handleSendToKitchen = async () => {
     if (!order) return;
     const pendingItems = order.items.filter(i => i.status === 'pending');
-    if (pendingItems.length === 0) { toast.info('No hay items pendientes'); return; }
+    if (pendingItems.length === 0) return; // Silent - no items to send
     try {
       const res = await ordersAPI.sendToKitchen(order.id);
-      setOrder(res.data); toast.success('Comanda enviada a cocina');
-    } catch { toast.error('Error enviando a cocina'); }
+      setOrder(res.data);
+    } catch { console.warn('Error enviando a cocina'); }
   };
 
   // EXPRESS VOID: Direct deletion for PENDING items (no reason, no PIN, no inventory impact)
@@ -504,12 +504,11 @@ export default function OrderScreen() {
         authorized_by_name: null,
         express_void: true  // Flag for express void
       });
-      toast.success(`${itemIds.length} item(s) eliminado(s)`);
       setOrder(res.data);
       setSelectedItems([]);
     } catch (e) {
       const msg = e.response?.data?.detail || 'Error eliminando item(s)';
-      toast.error(msg);
+      console.warn(msg);
     }
   };
 
