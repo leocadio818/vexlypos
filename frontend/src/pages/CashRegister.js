@@ -543,11 +543,14 @@ export default function CashRegister() {
                   {movements.filter(mov => {
                     if (!movementSearch) return true;
                     const search = movementSearch.toLowerCase();
+                    const transMatch = mov.description?.match(/#?(\d+)/);
+                    const transNum = transMatch ? transMatch[1] : '';
                     return (
                       mov.description?.toLowerCase().includes(search) ||
                       mov.ref?.toLowerCase().includes(search) ||
                       mov.payment_method?.toLowerCase().includes(search) ||
-                      String(mov.amount).includes(search)
+                      String(mov.amount).includes(search) ||
+                      transNum.includes(search)
                     );
                   }).length === 0 && (
                     <p className="text-center text-white/40 text-sm py-4">No se encontraron movimientos</p>
