@@ -254,8 +254,15 @@ export default function BillHistory() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex flex-col">
-                      <span className="font-oswald font-bold text-sm">{bill.ncf || 'Sin NCF'}</span>
-                      <span className="text-xs text-muted-foreground">{bill.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-oswald font-bold text-sm">{bill.ncf || 'Sin NCF'}</span>
+                        {bill.transaction_number && (
+                          <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            #{bill.transaction_number}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">{bill.label || `Mesa ${bill.table_number}`}</span>
                     </div>
                     <Badge className={`${getBillStatusColor(bill)} text-white text-[10px]`}>
                       {getBillStatusLabel(bill)}
