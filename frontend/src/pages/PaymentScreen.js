@@ -199,6 +199,34 @@ export default function PaymentScreen() {
     }
   }, [user, canProcessPayment, navigate]);
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // VERIFICAR JORNADA DE TRABAJO - Bloquea pagos si no hay jornada abierta
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const checkBusinessDay = useCallback(async () => {
+    try {
+      setBusinessDayLoading(true);
+      const res = await businessDaysAPI.check();
+      if (res.data.has_open_day) {
+        setBusinessDay({
+          business_date: res.data.business_date,
+          id: res.data.day_id,
+          opened_at: res.data.opened_at
+        });
+      } else {
+        setBusinessDay(null);
+      }
+    } catch (err) {
+      console.error('Error checking business day:', err);
+      setBusinessDay(null);
+    } finally {
+      setBusinessDayLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkBusinessDay();
+  }, [checkBusinessDay]);
+
   const fetchData = useCallback(async () => {
     try {
       const [billRes, pmRes, custRes, stRes, taxRes] = await Promise.all([
