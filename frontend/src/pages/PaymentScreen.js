@@ -1444,10 +1444,18 @@ export default function PaymentScreen() {
                   <button
                     key={ft.code}
                     onClick={() => {
-                      setSelectedFiscalType(ft.code);
-                      // Auto-select first service type for this NCF
-                      const firstMatch = saleTypes.find(st => st.default_ncf_type_id === ft.code);
-                      if (firstMatch) setSelectedServiceType(firstMatch);
+                      // Si es B01, B14 o B15, abrir el drawer de datos fiscales
+                      if (['B01', 'B14', 'B15'].includes(ft.code)) {
+                        setPendingFiscalType(ft.code);
+                        setFiscalDrawerOpen(true);
+                      } else {
+                        // B02 (Consumo) - flujo directo sin datos fiscales
+                        setSelectedFiscalType(ft.code);
+                        setFiscalData(null); // Limpiar datos fiscales previos
+                        // Auto-select first service type for this NCF
+                        const firstMatch = saleTypes.find(st => st.default_ncf_type_id === ft.code);
+                        if (firstMatch) setSelectedServiceType(firstMatch);
+                      }
                     }}
                     className={`p-3 rounded-xl text-center transition-all ${
                       selectedFiscalType === ft.code
@@ -1461,6 +1469,33 @@ export default function PaymentScreen() {
                   </button>
                 ))}
               </div>
+              
+              {/* Mostrar datos fiscales si fueron capturados */}
+              {fiscalData && ['B01', 'B14', 'B15'].includes(selectedFiscalType) && (
+                <div className="mt-3 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-xs text-cyan-300 font-medium">{fiscalData.razonSocial}</p>
+                      <p className="text-[10px] text-white/60 font-mono">{fiscalData.fiscalIdType}: {fiscalData.fiscalIdFormatted}</p>
+                      {fiscalData.email && (
+                        <p className="text-[10px] text-cyan-400/70 flex items-center gap-1">
+                          <Mail size={10} /> {fiscalData.email}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setPendingFiscalType(selectedFiscalType);
+                        setFiscalDrawerOpen(true);
+                      }}
+                      className="text-[10px] text-cyan-400 hover:text-cyan-300 underline"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                </div>
+              )}
+              
               <p className="text-xs text-white/40 mt-2 text-center">
                 {fiscalTypes.find(f => f.code === selectedFiscalType)?.name}
               </p>
