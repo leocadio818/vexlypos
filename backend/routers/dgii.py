@@ -1,9 +1,8 @@
 # DGII RNC Validation Router
-# Validates RNC against DGII and returns company information
-from fastapi import APIRouter, HTTPException
+# Validates RNC against DGII via Megaplus API and returns company information
+from fastapi import APIRouter
 from pydantic import BaseModel
 import httpx
-import asyncio
 import re
 from typing import Optional
 
@@ -19,13 +18,16 @@ class RNCValidationResponse(BaseModel):
     nombre_comercial: Optional[str] = None
     estado: Optional[str] = None
     actividad_economica: Optional[str] = None
+    regimen_pagos: Optional[str] = None
+    administracion: Optional[str] = None
+    es_facturador_electronico: Optional[bool] = None
     error: Optional[str] = None
 
 @router.get("/dgii/validate-rnc/{rnc}")
 async def validate_rnc(rnc: str) -> RNCValidationResponse:
     """
     Validates an RNC against DGII and returns company information.
-    Uses aggressive timeout (2s) for fast response in POS context.
+    Uses Megaplus API with 3s timeout for fast response in POS context.
     """
     # Clean RNC - remove dashes and spaces
     clean_rnc = re.sub(r'[^0-9]', '', rnc)
@@ -38,27 +40,26 @@ async def validate_rnc(rnc: str) -> RNCValidationResponse:
             error="RNC debe tener 9 dígitos o Cédula 11 dígitos"
         )
     
-    # Check cache first (valid for 24 hours in production, here we just use memory)
+    # Check cache first
     if clean_rnc in _rnc_cache:
         return _rnc_cache[clean_rnc]
     
     try:
-        # Try to fetch from DGII with very short timeout
-        result = await _fetch_from_dgii(clean_rnc)
+        result = await _fetch_from_megaplus(clean_rnc)
         if result:
             _rnc_cache[clean_rnc] = result
             return result
-    except asyncio.TimeoutError:
+    except httpx.TimeoutException:
         return RNCValidationResponse(
             valid=False,
             rnc=clean_rnc,
-            error="Timeout consultando DGII (continue manualmente)"
+            error="Timeout consultando DGII"
         )
     except Exception as e:
         return RNCValidationResponse(
             valid=False,
             rnc=clean_rnc,
-            error=f"Error consultando DGII: {str(e)[:50]}"
+            error=f"Error: {str(e)[:50]}"
         )
     
     return RNCValidationResponse(
@@ -67,79 +68,38 @@ async def validate_rnc(rnc: str) -> RNCValidationResponse:
         error="No encontrado en DGII"
     )
 
-async def _fetch_from_dgii(rnc: str) -> Optional[RNCValidationResponse]:
+async def _fetch_from_megaplus(rnc: str) -> Optional[RNCValidationResponse]:
     """
-    Fetches RNC information from DGII web service.
-    Uses POST to their consultation endpoint.
-    Timeout: 2 seconds max for POS speed requirements.
+    Fetches RNC information from Megaplus API.
+    Timeout: 3 seconds max for POS speed requirements.
     """
-    url = "https://dgii.gov.do/app/WebApps/ConsultasWeb2/ConsultasWeb/consultas/rnc.aspx"
+    url = f"https://rnc.megaplus.com.do/api/consulta?rnc={rnc}"
     
-    # First, get the page to extract ViewState (required for ASP.NET)
-    async with httpx.AsyncClient(timeout=2.0, verify=False) as client:
-        # Get initial page
+    async with httpx.AsyncClient(timeout=3.0) as client:
         response = await client.get(url)
-        html = response.text
+        data = response.json()
         
-        # Extract ViewState and other hidden fields
-        viewstate = _extract_field(html, "__VIEWSTATE")
-        viewstate_gen = _extract_field(html, "__VIEWSTATEGENERATOR")
-        event_validation = _extract_field(html, "__EVENTVALIDATION")
-        
-        if not viewstate:
-            return None
-        
-        # Submit the form with RNC
-        form_data = {
-            "__VIEWSTATE": viewstate,
-            "__VIEWSTATEGENERATOR": viewstate_gen,
-            "__EVENTVALIDATION": event_validation,
-            "ctl00$cphMain$txtRNCCedula": rnc,
-            "ctl00$cphMain$btnBuscarPorRNC": "Buscar"
-        }
-        
-        response = await client.post(url, data=form_data)
-        html = response.text
-        
-        # Parse response for RNC data
-        return _parse_dgii_response(html, rnc)
-
-def _extract_field(html: str, field_name: str) -> Optional[str]:
-    """Extract hidden field value from ASP.NET page."""
-    pattern = rf'id="{field_name}" value="([^"]*)"'
-    match = re.search(pattern, html)
-    return match.group(1) if match else None
-
-def _parse_dgii_response(html: str, rnc: str) -> Optional[RNCValidationResponse]:
-    """Parse DGII response HTML to extract company information."""
-    
-    # Check if we got a result (look for result table)
-    if "No se encontraron resultados" in html or "lblNombreComercial" not in html:
-        return None
-    
-    # Extract fields using regex
-    nombre = _extract_label_value(html, "lblNombre")
-    nombre_comercial = _extract_label_value(html, "lblNombreComercial")
-    estado = _extract_label_value(html, "lblEstado")
-    actividad = _extract_label_value(html, "lblActividadEconomica")
-    
-    if nombre:
-        return RNCValidationResponse(
-            valid=True,
-            rnc=rnc,
-            nombre=nombre,
-            nombre_comercial=nombre_comercial if nombre_comercial else None,
-            estado=estado,
-            actividad_economica=actividad
-        )
-    
-    return None
-
-def _extract_label_value(html: str, label_id: str) -> Optional[str]:
-    """Extract text content from a label element."""
-    pattern = rf'id="cphMain_{label_id}"[^>]*>([^<]*)</span>'
-    match = re.search(pattern, html)
-    if match:
-        value = match.group(1).strip()
-        return value if value else None
-    return None
+        if data.get("error") is False and data.get("codigo_http") == 200:
+            return RNCValidationResponse(
+                valid=True,
+                rnc=rnc,
+                nombre=data.get("nombre_razon_social"),
+                nombre_comercial=data.get("nombre_comercial") or None,
+                estado=data.get("estado"),
+                actividad_economica=data.get("actividad_economica"),
+                regimen_pagos=data.get("regimen_de_pagos"),
+                administracion=data.get("administracion_local"),
+                es_facturador_electronico=data.get("facturador_electronico") == "SI"
+            )
+        elif data.get("codigo_http") == 404:
+            return RNCValidationResponse(
+                valid=False,
+                rnc=rnc,
+                error="RNC no inscrito como contribuyente"
+            )
+        else:
+            return RNCValidationResponse(
+                valid=False,
+                rnc=rnc,
+                error=data.get("mensaje", "Error desconocido")
+            )
