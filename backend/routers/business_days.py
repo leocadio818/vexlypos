@@ -551,3 +551,493 @@ async def require_business_day():
             detail="No hay jornada de trabajo abierta. Debe abrir el día antes de realizar ventas."
         )
     return business_day
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REPORTES X y Z - Cierres de Turno y Día
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ReportInput(BaseModel):
+    session_id: Optional[str] = None  # Para reporte X (turno específico)
+    include_details: bool = True  # Incluir desglose detallado
+
+
+@router.get("/{day_id}/report-z")
+async def generate_z_report(
+    day_id: str,
+    user=Depends(get_current_user)
+):
+    """
+    Genera el Reporte Z (Cierre de Día) completo.
+    
+    Incluye:
+    - Desglose por forma de pago (Efectivo, Tarjeta, Dólar, Euro)
+    - Notas de crédito B04
+    - Ventas por categoría de producto
+    - Descuentos y anulaciones con razones
+    - Resumen final: Fondo Inicial + Ventas - Retiros = Total a Entregar
+    """
+    business_day = await db.business_days.find_one({"id": day_id}, {"_id": 0})
+    
+    if not business_day:
+        raise HTTPException(status_code=404, detail="Jornada no encontrada")
+    
+    business_date = business_day["business_date"]
+    
+    # ═══ 1. VENTAS TOTALES ═══
+    sales_pipeline = [
+        {"$match": {"business_date": business_date, "status": "paid"}},
+        {"$group": {
+            "_id": None,
+            "subtotal": {"$sum": "$subtotal"},
+            "itbis": {"$sum": "$itbis"},
+            "propina": {"$sum": "$propina_legal"},
+            "total": {"$sum": "$total"},
+            "count": {"$sum": 1}
+        }}
+    ]
+    sales_result = await db.bills.aggregate(sales_pipeline).to_list(1)
+    sales_totals = sales_result[0] if sales_result else {
+        "subtotal": 0, "itbis": 0, "propina": 0, "total": 0, "count": 0
+    }
+    
+    # ═══ 2. DESGLOSE POR FORMA DE PAGO ═══
+    payment_pipeline = [
+        {"$match": {"business_date": business_date, "status": "paid"}},
+        {"$unwind": {"path": "$payments", "preserveNullAndEmptyArrays": True}},
+        {"$group": {
+            "_id": {
+                "method_name": {"$ifNull": ["$payments.payment_method_name", "$payment_method_name"]},
+                "currency": {"$ifNull": ["$payments.currency", "DOP"]}
+            },
+            "amount_dop": {"$sum": {"$ifNull": ["$payments.amount_dop", "$total"]}},
+            "amount_original": {"$sum": {"$ifNull": ["$payments.amount", "$total"]}},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"amount_dop": -1}}
+    ]
+    payment_result = await db.payments.aggregate(payment_pipeline).to_list(20) if hasattr(db, 'payments') else []
+    
+    # Fallback: agrupar desde bills si no hay colección payments
+    if not payment_result:
+        payment_pipeline = [
+            {"$match": {"business_date": business_date, "status": "paid"}},
+            {"$unwind": {"path": "$payments", "preserveNullAndEmptyArrays": True}},
+            {"$group": {
+                "_id": {"$ifNull": ["$payments.payment_method_name", "$payment_method_name"]},
+                "amount": {"$sum": {"$ifNull": ["$payments.amount_dop", "$total"]}},
+                "count": {"$sum": 1}
+            }},
+            {"$sort": {"amount": -1}}
+        ]
+        payment_result = await db.bills.aggregate(payment_pipeline).to_list(20)
+    
+    # Organizar por tipo de pago
+    payment_breakdown = []
+    totals_by_type = {"efectivo": 0, "tarjeta": 0, "transferencia": 0, "dolar": 0, "euro": 0, "otro": 0}
+    
+    for p in payment_result:
+        method_name = p.get("_id") or "Otro"
+        if isinstance(method_name, dict):
+            method_name = method_name.get("method_name", "Otro")
+        
+        amount = p.get("amount") or p.get("amount_dop", 0)
+        count = p.get("count", 0)
+        
+        payment_breakdown.append({
+            "method": method_name,
+            "amount": round(amount, 2),
+            "count": count
+        })
+        
+        # Clasificar por tipo
+        name_lower = (method_name or "").lower()
+        if "efectivo" in name_lower or "cash" in name_lower:
+            totals_by_type["efectivo"] += amount
+        elif "tarjeta" in name_lower or "card" in name_lower or "visa" in name_lower or "mastercard" in name_lower:
+            totals_by_type["tarjeta"] += amount
+        elif "transfer" in name_lower:
+            totals_by_type["transferencia"] += amount
+        elif "dolar" in name_lower or "usd" in name_lower or "$" in name_lower:
+            totals_by_type["dolar"] += amount
+        elif "euro" in name_lower or "eur" in name_lower or "€" in name_lower:
+            totals_by_type["euro"] += amount
+        else:
+            totals_by_type["otro"] += amount
+    
+    # ═══ 3. VENTAS POR CATEGORÍA ═══
+    category_pipeline = [
+        {"$match": {"business_date": business_date, "status": "paid"}},
+        {"$unwind": "$items"},
+        {"$lookup": {
+            "from": "products",
+            "localField": "items.product_id",
+            "foreignField": "id",
+            "as": "product_info"
+        }},
+        {"$unwind": {"path": "$product_info", "preserveNullAndEmptyArrays": True}},
+        {"$lookup": {
+            "from": "categories",
+            "localField": "product_info.category_id",
+            "foreignField": "id",
+            "as": "category_info"
+        }},
+        {"$unwind": {"path": "$category_info", "preserveNullAndEmptyArrays": True}},
+        {"$group": {
+            "_id": {
+                "category_id": "$product_info.category_id",
+                "category_name": {"$ifNull": ["$category_info.name", "Sin Categoría"]}
+            },
+            "quantity": {"$sum": "$items.quantity"},
+            "subtotal": {"$sum": "$items.total"},
+            "items_count": {"$sum": 1}
+        }},
+        {"$sort": {"subtotal": -1}}
+    ]
+    category_result = await db.bills.aggregate(category_pipeline).to_list(50)
+    
+    sales_by_category = []
+    for cat in category_result:
+        sales_by_category.append({
+            "category_id": cat["_id"].get("category_id"),
+            "category_name": cat["_id"].get("category_name", "Sin Categoría"),
+            "quantity": round(cat.get("quantity", 0), 2),
+            "subtotal": round(cat.get("subtotal", 0), 2),
+            "items_count": cat.get("items_count", 0)
+        })
+    
+    # ═══ 4. NOTAS DE CRÉDITO (B04) ═══
+    b04_pipeline = [
+        {"$match": {"business_date": business_date}},
+        {"$project": {
+            "_id": 0,
+            "ncf": 1,
+            "original_ncf": 1,
+            "amount": 1,
+            "reason": 1,
+            "created_at": 1,
+            "created_by_name": 1
+        }}
+    ]
+    credit_notes = await db.credit_notes.aggregate(b04_pipeline).to_list(100)
+    
+    b04_total = sum(cn.get("amount", 0) for cn in credit_notes)
+    
+    # ═══ 5. ANULACIONES Y DESCUENTOS ═══
+    voids_pipeline = [
+        {"$match": {"business_date": business_date, "status": "cancelled"}},
+        {"$project": {
+            "_id": 0,
+            "id": 1,
+            "transaction_number": 1,
+            "label": 1,
+            "total": 1,
+            "cancellation_reason": 1,
+            "cancelled_at": 1,
+            "cancelled_by_name": 1
+        }}
+    ]
+    voids = await db.bills.aggregate(voids_pipeline).to_list(100)
+    voids_total = sum(v.get("total", 0) for v in voids)
+    
+    # Descuentos aplicados (si existe campo discount en bills)
+    discounts_pipeline = [
+        {"$match": {"business_date": business_date, "status": "paid", "discount": {"$gt": 0}}},
+        {"$group": {
+            "_id": None,
+            "total_discount": {"$sum": "$discount"},
+            "count": {"$sum": 1}
+        }}
+    ]
+    discounts_result = await db.bills.aggregate(discounts_pipeline).to_list(1)
+    discounts_total = discounts_result[0].get("total_discount", 0) if discounts_result else 0
+    discounts_count = discounts_result[0].get("count", 0) if discounts_result else 0
+    
+    # ═══ 6. MOVIMIENTOS DE CAJA (Fondo, Retiros) ═══
+    # Buscar sesiones POS de este día
+    initial_fund = 0
+    withdrawals = 0
+    deposits = 0
+    
+    if supabase_client:
+        try:
+            # Obtener sesiones del día
+            sessions_response = supabase_client.table("pos_sessions").select("*").gte(
+                "opened_at", f"{business_date}T00:00:00"
+            ).lte(
+                "opened_at", f"{business_date}T23:59:59"
+            ).execute()
+            
+            if sessions_response.data:
+                for session in sessions_response.data:
+                    initial_fund += session.get("initial_cash", 0) or 0
+                    
+                    # Obtener movimientos de cada sesión
+                    movements = supabase_client.table("pos_movements").select("*").eq(
+                        "session_id", session["id"]
+                    ).execute()
+                    
+                    if movements.data:
+                        for mov in movements.data:
+                            if mov.get("type") == "withdrawal":
+                                withdrawals += mov.get("amount", 0)
+                            elif mov.get("type") == "deposit":
+                                deposits += mov.get("amount", 0)
+        except Exception as e:
+            print(f"Warning: Could not fetch POS sessions: {e}")
+    
+    # ═══ 7. CÁLCULO FINAL DE CAJA ═══
+    # Fórmula: Fondo Inicial + Ventas Efectivo + Depósitos - Retiros = Total a Entregar
+    cash_sales = totals_by_type["efectivo"]
+    total_to_deliver = initial_fund + cash_sales + deposits - withdrawals
+    
+    # ═══ 8. INFORMACIÓN DE JORNADA ═══
+    report = {
+        "report_type": "Z",
+        "report_name": "REPORTE Z - CIERRE DE DÍA",
+        "business_day": {
+            "ref": business_day.get("ref"),
+            "business_date": business_date,
+            "opened_at": business_day.get("opened_at"),
+            "opened_by": business_day.get("opened_by_name"),
+            "closed_at": business_day.get("closed_at"),
+            "closed_by": business_day.get("closed_by_name"),
+            "status": business_day.get("status")
+        },
+        "generated_at": now_iso(),
+        "generated_by": user.get("name"),
+        
+        # Resumen de Ventas
+        "sales_summary": {
+            "subtotal": round(sales_totals.get("subtotal", 0), 2),
+            "itbis": round(sales_totals.get("itbis", 0), 2),
+            "propina": round(sales_totals.get("propina", 0), 2),
+            "total": round(sales_totals.get("total", 0), 2),
+            "invoices_count": sales_totals.get("count", 0)
+        },
+        
+        # Desglose por Forma de Pago
+        "payment_breakdown": payment_breakdown,
+        "payment_totals": {
+            "efectivo": round(totals_by_type["efectivo"], 2),
+            "tarjeta": round(totals_by_type["tarjeta"], 2),
+            "transferencia": round(totals_by_type["transferencia"], 2),
+            "dolar": round(totals_by_type["dolar"], 2),
+            "euro": round(totals_by_type["euro"], 2),
+            "otro": round(totals_by_type["otro"], 2)
+        },
+        
+        # Ventas por Categoría
+        "sales_by_category": sales_by_category,
+        
+        # Notas de Crédito B04
+        "credit_notes": {
+            "list": credit_notes,
+            "count": len(credit_notes),
+            "total": round(b04_total, 2)
+        },
+        
+        # Anulaciones
+        "voids": {
+            "list": voids,
+            "count": len(voids),
+            "total": round(voids_total, 2)
+        },
+        
+        # Descuentos
+        "discounts": {
+            "count": discounts_count,
+            "total": round(discounts_total, 2)
+        },
+        
+        # Cuadre de Caja
+        "cash_reconciliation": {
+            "initial_fund": round(initial_fund, 2),
+            "cash_sales": round(cash_sales, 2),
+            "deposits": round(deposits, 2),
+            "withdrawals": round(withdrawals, 2),
+            "total_to_deliver": round(total_to_deliver, 2),
+            "formula": "Fondo Inicial + Ventas Efectivo + Depósitos - Retiros = Total a Entregar"
+        }
+    }
+    
+    return report
+
+
+@router.get("/session/{session_id}/report-x")
+async def generate_x_report(
+    session_id: str,
+    user=Depends(get_current_user)
+):
+    """
+    Genera el Reporte X (Cierre de Turno) para una sesión específica.
+    
+    Similar al Reporte Z pero solo incluye transacciones de la sesión.
+    """
+    # Obtener sesión de Supabase
+    if not supabase_client:
+        raise HTTPException(status_code=500, detail="Supabase no configurado")
+    
+    try:
+        session_response = supabase_client.table("pos_sessions").select("*").eq("id", session_id).single().execute()
+        session = session_response.data
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Sesión no encontrada: {e}")
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Sesión no encontrada")
+    
+    # Obtener jornada activa para contexto
+    business_day = await get_current_business_day()
+    business_date = business_day.get("business_date") if business_day else session.get("business_date")
+    
+    session_id_str = session.get("id")
+    opened_at = session.get("opened_at")
+    closed_at = session.get("closed_at")
+    
+    # Filtrar por rango de tiempo de la sesión
+    time_filter = {"paid_at": {"$gte": opened_at}}
+    if closed_at:
+        time_filter["paid_at"]["$lte"] = closed_at
+    
+    # ═══ 1. VENTAS DE LA SESIÓN ═══
+    sales_pipeline = [
+        {"$match": {
+            **time_filter,
+            "status": "paid",
+            "paid_by_id": session.get("opened_by_id")
+        }},
+        {"$group": {
+            "_id": None,
+            "subtotal": {"$sum": "$subtotal"},
+            "itbis": {"$sum": "$itbis"},
+            "propina": {"$sum": "$propina_legal"},
+            "total": {"$sum": "$total"},
+            "count": {"$sum": 1}
+        }}
+    ]
+    sales_result = await db.bills.aggregate(sales_pipeline).to_list(1)
+    sales_totals = sales_result[0] if sales_result else {
+        "subtotal": 0, "itbis": 0, "propina": 0, "total": 0, "count": 0
+    }
+    
+    # ═══ 2. DESGLOSE POR FORMA DE PAGO ═══
+    payment_pipeline = [
+        {"$match": {
+            **time_filter,
+            "status": "paid",
+            "paid_by_id": session.get("opened_by_id")
+        }},
+        {"$unwind": {"path": "$payments", "preserveNullAndEmptyArrays": True}},
+        {"$group": {
+            "_id": {"$ifNull": ["$payments.payment_method_name", "$payment_method_name"]},
+            "amount": {"$sum": {"$ifNull": ["$payments.amount_dop", "$total"]}},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"amount": -1}}
+    ]
+    payment_result = await db.bills.aggregate(payment_pipeline).to_list(20)
+    
+    payment_breakdown = []
+    cash_total = 0
+    card_total = 0
+    
+    for p in payment_result:
+        method_name = p.get("_id") or "Otro"
+        amount = p.get("amount", 0)
+        payment_breakdown.append({
+            "method": method_name,
+            "amount": round(amount, 2),
+            "count": p.get("count", 0)
+        })
+        
+        name_lower = (method_name or "").lower()
+        if "efectivo" in name_lower or "cash" in name_lower:
+            cash_total += amount
+        elif "tarjeta" in name_lower or "card" in name_lower:
+            card_total += amount
+    
+    # ═══ 3. MOVIMIENTOS DE LA SESIÓN ═══
+    initial_fund = session.get("initial_cash", 0) or 0
+    withdrawals = 0
+    deposits = 0
+    
+    try:
+        movements = supabase_client.table("pos_movements").select("*").eq(
+            "session_id", session_id
+        ).execute()
+        
+        if movements.data:
+            for mov in movements.data:
+                if mov.get("type") == "withdrawal":
+                    withdrawals += mov.get("amount", 0)
+                elif mov.get("type") == "deposit":
+                    deposits += mov.get("amount", 0)
+    except Exception as e:
+        print(f"Warning: Could not fetch movements: {e}")
+    
+    # ═══ 4. CÁLCULO DE CAJA ═══
+    total_to_deliver = initial_fund + cash_total + deposits - withdrawals
+    
+    report = {
+        "report_type": "X",
+        "report_name": "REPORTE X - CIERRE DE TURNO",
+        "session": {
+            "id": session.get("id"),
+            "ref": session.get("ref"),
+            "terminal": session.get("terminal_code"),
+            "opened_at": session.get("opened_at"),
+            "opened_by": session.get("opened_by_name"),
+            "closed_at": session.get("closed_at"),
+            "status": session.get("status")
+        },
+        "business_date": business_date,
+        "generated_at": now_iso(),
+        "generated_by": user.get("name"),
+        
+        # Resumen de Ventas
+        "sales_summary": {
+            "subtotal": round(sales_totals.get("subtotal", 0), 2),
+            "itbis": round(sales_totals.get("itbis", 0), 2),
+            "propina": round(sales_totals.get("propina", 0), 2),
+            "total": round(sales_totals.get("total", 0), 2),
+            "invoices_count": sales_totals.get("count", 0)
+        },
+        
+        # Desglose por Forma de Pago
+        "payment_breakdown": payment_breakdown,
+        "payment_totals": {
+            "efectivo": round(cash_total, 2),
+            "tarjeta": round(card_total, 2)
+        },
+        
+        # Cuadre de Caja
+        "cash_reconciliation": {
+            "initial_fund": round(initial_fund, 2),
+            "cash_sales": round(cash_total, 2),
+            "deposits": round(deposits, 2),
+            "withdrawals": round(withdrawals, 2),
+            "total_to_deliver": round(total_to_deliver, 2),
+            "formula": "Fondo Inicial + Ventas Efectivo + Depósitos - Retiros = Total a Entregar"
+        }
+    }
+    
+    return report
+
+
+@router.get("/current/report-z")
+async def generate_current_z_report(user=Depends(get_current_user)):
+    """
+    Genera el Reporte Z para la jornada actual (si existe).
+    Útil para ver un preview antes de cerrar el día.
+    """
+    business_day = await get_current_business_day()
+    
+    if not business_day:
+        raise HTTPException(
+            status_code=404,
+            detail="No hay jornada de trabajo abierta"
+        )
+    
+    return await generate_z_report(business_day["id"], user)
