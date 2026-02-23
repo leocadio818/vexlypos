@@ -454,3 +454,235 @@ async def get_credit_notes_summary(
         "by_reason": [{"reason": k, **v} for k, v in by_reason.items()],
         "recent_notes": notes[:10]
     }
+
+
+# ─── SEARCH BY TRANSACTION NUMBER ───
+
+class SearchTransactionInput(BaseModel):
+    transaction_number: int
+
+@router.post("/search-by-transaction")
+async def search_by_transaction_number(input: SearchTransactionInput, user=Depends(get_current_user)):
+    """
+    Busca una factura pagada por su número de transacción interno.
+    Solo retorna facturas que están cerradas (paid) y son elegibles para nota de crédito.
+    
+    SEGURIDAD: Solo administradores pueden usar esta función.
+    """
+    # Verificar permisos de admin
+    if user.get("role") != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Solo administradores pueden re-abrir transacciones"
+        )
+    
+    # Buscar factura por número de transacción
+    bill = await db.bills.find_one(
+        {"transaction_number": input.transaction_number, "status": "paid"},
+        {"_id": 0}
+    )
+    
+    if not bill:
+        # Intentar buscar en facturas revertidas
+        bill_reversed = await db.bills.find_one(
+            {"transaction_number": input.transaction_number, "status": {"$in": ["reversed", "partially_reversed"]}},
+            {"_id": 0}
+        )
+        if bill_reversed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Esta transacción ya fue anulada. NCF B04: {bill_reversed.get('credit_note_ncf', 'N/A')}"
+            )
+        
+        raise HTTPException(
+            status_code=404,
+            detail=f"No se encontró factura pagada con transacción #{input.transaction_number}"
+        )
+    
+    # Verificar si ya tiene nota de crédito
+    if bill.get("credit_note_id"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Esta factura ya tiene una nota de crédito: {bill.get('credit_note_ncf', 'N/A')}"
+        )
+    
+    # Obtener detalles adicionales
+    order = await db.orders.find_one({"id": bill.get("order_id")}, {"_id": 0})
+    
+    return {
+        "bill": bill,
+        "order": order,
+        "can_create_credit_note": True,
+        "original_ncf": bill.get("ncf"),
+        "original_total": bill.get("total"),
+        "paid_at": bill.get("paid_at"),
+        "table_number": bill.get("table_number")
+    }
+
+
+# ─── PRINT CREDIT NOTE ───
+
+@router.post("/{note_id}/print")
+async def print_credit_note(note_id: str, user=Depends(get_current_user)):
+    """
+    Genera trabajo de impresión para nota de crédito.
+    Formato sigue requerimientos DGII para B04.
+    """
+    cn = await db.credit_notes.find_one({"id": note_id}, {"_id": 0})
+    if not cn:
+        raise HTTPException(status_code=404, detail="Nota de crédito no encontrada")
+    
+    # Obtener configuración
+    config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or {}
+    receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+    printer_name = receipt_channel.get("printer_name", "") if receipt_channel else ""
+    
+    # Construir comandos ESC/POS
+    commands = []
+    
+    # Encabezado del negocio
+    commands.append({"type": "text", "text": config.get("business_name", "ALONZO CIGAR"), "align": "center", "bold": True, "size": 2})
+    biz_addr = config.get("business_address", "")
+    if biz_addr:
+        commands.append({"type": "text", "text": biz_addr[:40], "align": "center"})
+    commands.append({"type": "text", "text": f"RNC: {config.get('rnc', '1-31-75577-1')}", "align": "center"})
+    commands.append({"type": "text", "text": f"Tel: {config.get('phone', '809-301-3858')}", "align": "center"})
+    commands.append({"type": "divider"})
+    
+    # NOTA DE CRÉDITO Header (prominente)
+    commands.append({"type": "text", "text": "*** NOTA DE CREDITO ***", "align": "center", "bold": True, "size": 2})
+    commands.append({"type": "text", "text": cn.get("ncf", ""), "align": "center", "bold": True, "size": 2})
+    commands.append({"type": "divider"})
+    
+    # NCF AFECTADO (crítico para DGII)
+    commands.append({"type": "text", "text": "NCF AFECTADO:", "align": "center", "bold": True})
+    commands.append({"type": "text", "text": cn.get("original_ncf", "N/A"), "align": "center", "bold": True})
+    commands.append({"type": "text", "text": f"Fecha Original: {cn.get('original_date', '')[:10]}", "align": "center"})
+    commands.append({"type": "divider"})
+    
+    # Información de la transacción
+    # Obtener número de transacción del bill original
+    original_bill = await db.bills.find_one({"id": cn.get("original_bill_id")}, {"_id": 0, "transaction_number": 1, "table_number": 1})
+    trans_num = original_bill.get("transaction_number") if original_bill else cn.get("transaction_number")
+    
+    commands.append({"type": "columns", "left": "Transaccion:", "right": f"#{trans_num or 'N/A'}"})
+    table_num = original_bill.get("table_number") if original_bill else cn.get("table_number")
+    commands.append({"type": "columns", "left": "Mesa:", "right": str(table_num or "")})
+    commands.append({"type": "columns", "left": "Fecha:", "right": cn.get("created_at", "")[:19].replace("T", " ")})
+    commands.append({"type": "columns", "left": "Autorizado:", "right": (cn.get("authorized_by_name") or cn.get("created_by_name", ""))[:20]})
+    commands.append({"type": "divider"})
+    
+    # Razón de anulación
+    commands.append({"type": "text", "text": f"RAZON: {cn.get('reason_name', '')}", "align": "center", "bold": True})
+    if cn.get("notes"):
+        # Dividir notas largas en líneas
+        notes = cn["notes"][:80]
+        commands.append({"type": "text", "text": notes, "align": "center"})
+    commands.append({"type": "divider"})
+    
+    # Items (mostrando como crédito/negativo)
+    for item in cn.get("items", []):
+        qty = item.get("quantity_reversed", item.get("quantity", 1))
+        name = item.get("product_name", "")[:25]
+        total = abs(item.get("total_reversed", item.get("total", 0)))
+        commands.append({"type": "columns", "left": f"{qty}x {name}", "right": f"-RD$ {total:,.2f}"})
+    
+    commands.append({"type": "divider"})
+    
+    # Totales (negativos - crédito)
+    subtotal = abs(cn.get("subtotal_reversed", abs(cn.get("subtotal", 0))))
+    itbis = abs(cn.get("itbis_reversed", abs(cn.get("itbis", 0))))
+    propina = abs(cn.get("propina_reversed", abs(cn.get("propina_legal", 0))))
+    total = abs(cn.get("total_reversed", abs(cn.get("total", 0))))
+    
+    commands.append({"type": "columns", "left": "Subtotal", "right": f"-RD$ {subtotal:,.2f}"})
+    commands.append({"type": "columns", "left": "ITBIS 18%", "right": f"-RD$ {itbis:,.2f}"})
+    if propina > 0:
+        commands.append({"type": "columns", "left": "Propina", "right": f"-RD$ {propina:,.2f}"})
+    commands.append({"type": "double_divider"})
+    commands.append({"type": "columns", "left": "TOTAL CREDITO", "right": f"-RD$ {total:,.2f}", "bold": True})
+    
+    commands.append({"type": "divider"})
+    
+    # Aviso legal
+    commands.append({"type": "text", "text": "DOCUMENTO FISCAL", "align": "center", "bold": True})
+    commands.append({"type": "text", "text": "ANULA FACTURA INDICADA", "align": "center", "bold": True})
+    commands.append({"type": "text", "text": "Conserve para fines de DGII", "align": "center"})
+    
+    commands.append({"type": "feed", "lines": 3})
+    commands.append({"type": "cut"})
+    
+    # Crear trabajo de impresión
+    job = {
+        "id": gen_id(),
+        "type": "credit_note",
+        "channel": "receipt",
+        "printer_name": printer_name,
+        "commands": commands,
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    await db.print_queue.insert_one(job)
+    
+    return {"ok": True, "job_id": job["id"], "message": "Nota de crédito enviada a impresora"}
+
+
+# ─── REPORT 607 INTEGRATION ───
+
+@router.get("/report-607-data")
+async def get_607_credit_notes_data(
+    start_date: str = Query(..., description="Fecha inicio YYYY-MM-DD"),
+    end_date: str = Query(..., description="Fecha fin YYYY-MM-DD"),
+    user=Depends(get_current_user)
+):
+    """
+    Obtiene datos de notas de crédito formateados para el Reporte 607.
+    
+    En el 607, las notas de crédito (B04) aparecen con:
+    - Tipo de NCF: 04
+    - Montos negativos
+    - Referencia al NCF afectado
+    """
+    # Buscar notas de crédito completadas en el período
+    notes = await db.credit_notes.find({
+        "status": "completed",
+        "created_at": {
+            "$gte": f"{start_date}T00:00:00",
+            "$lte": f"{end_date}T23:59:59"
+        }
+    }, {"_id": 0}).to_list(1000)
+    
+    # Formatear para 607
+    report_data = []
+    for cn in notes:
+        report_data.append({
+            "rnc_cedula": cn.get("customer_rnc", ""),
+            "tipo_identificacion": "1" if cn.get("customer_rnc") else "3",
+            "ncf": cn.get("ncf", ""),
+            "ncf_modificado": cn.get("original_ncf", ""),  # NCF que se está afectando
+            "tipo_ingreso": "04",  # Nota de Crédito
+            "fecha_comprobante": cn.get("created_at", "")[:10],
+            "fecha_pago": cn.get("created_at", "")[:10],
+            "monto_facturado_itbis": round(abs(cn.get("itbis_reversed", 0)), 2),
+            "monto_facturado": round(abs(cn.get("subtotal_reversed", 0)), 2),
+            "itbis_retenido": 0,
+            "itbis_proporcionalidad": 0,
+            "itbis_costo": 0,
+            "retencion_renta": 0,
+            "isr_percibido": 0,
+            "impuesto_selectivo": 0,
+            "otros_impuestos": 0,
+            "monto_propina": round(abs(cn.get("propina_reversed", 0)), 2),
+            "forma_pago": "03",  # Nota de Crédito
+            # Indicador de que es anulación
+            "is_credit_note": True,
+            "affects_ncf": cn.get("original_ncf"),
+            "reason": cn.get("reason_name")
+        })
+    
+    return {
+        "period": f"{start_date} - {end_date}",
+        "total_credit_notes": len(report_data),
+        "total_amount": sum(abs(cn.get("total_reversed", 0)) for cn in notes),
+        "data": report_data
+    }
