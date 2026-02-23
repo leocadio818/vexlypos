@@ -1204,9 +1204,24 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     
     footer_html = "<br>".join(f"<span>{m}</span>" for m in footer_msgs)
     
-    # Build customer fiscal data for B01, B14, B15
+    # Build customer fiscal data - Show if fiscal_id or razon_social exists
+    # Also infer NCF type from NCF string if ncf_type field is not set
     customer_fiscal_html = ""
     ncf_type = bill.get("ncf_type", "")
+    ncf_str = bill.get("ncf", "")
+    
+    # Infer ncf_type from NCF string if not explicitly set
+    if not ncf_type and ncf_str:
+        if ncf_str.startswith("B01"):
+            ncf_type = "B01"
+        elif ncf_str.startswith("B14"):
+            ncf_type = "B14"
+        elif ncf_str.startswith("B15"):
+            ncf_type = "B15"
+        elif ncf_str.startswith("B02"):
+            ncf_type = "B02"
+    
+    # Show fiscal data if we have fiscal_id or razon_social AND it's a fiscal invoice type
     if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
         fiscal_id = bill.get("fiscal_id", "")
         fiscal_id_type = bill.get("fiscal_id_type", "RNC")
@@ -1261,8 +1276,19 @@ async def print_receipt_escpos(bill_id: str):
     lines.append({"type": "left", "bold": True, "text": f"NCF: {bill.get('ncf', '')}"})
     lines.append({"type": "left", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}"})
     
-    # Datos fiscales del cliente para B01, B14, B15
+    # Datos fiscales del cliente - Inferir tipo de NCF si no está establecido
     ncf_type = bill.get("ncf_type", "")
+    ncf_str = bill.get("ncf", "")
+    
+    # Infer ncf_type from NCF string if not explicitly set
+    if not ncf_type and ncf_str:
+        if ncf_str.startswith("B01"):
+            ncf_type = "B01"
+        elif ncf_str.startswith("B14"):
+            ncf_type = "B14"
+        elif ncf_str.startswith("B15"):
+            ncf_type = "B15"
+    
     if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
         lines.append({"type": "divider"})
         lines.append({"type": "left", "bold": True, "text": "DATOS DEL CLIENTE"})
