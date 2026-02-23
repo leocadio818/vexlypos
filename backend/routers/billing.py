@@ -424,7 +424,13 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         "paid_by_id": user["user_id"],
         "paid_by_name": user["name"],
         "change_currency": input.change_currency,
-        "change_amount": input.change_amount
+        "change_amount": input.change_amount,
+        # Datos Fiscales (B01, B14, B15)
+        "fiscal_id": input.fiscal_id,
+        "fiscal_id_type": input.fiscal_id_type,
+        "razon_social": input.razon_social,
+        "customer_email": input.customer_email,
+        "send_email": input.send_email
     }
     if input.amount_received is not None:
         update_fields["amount_received"] = input.amount_received
