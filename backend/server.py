@@ -1774,69 +1774,120 @@ async def get_print_status():
 # ─── SEND RECEIPT TO PRINT QUEUE (80mm Format) ───
 @api.post("/print/send-receipt/{bill_id}")
 async def send_receipt_to_queue(bill_id: str):
-    """Send a formatted receipt to the print queue"""
+    """Send a formatted receipt to the print queue using ESC/POS commands"""
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
-    config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    biz_name = config.get('business_name', 'ALONZO CIGAR')
+    biz_rnc = config.get('rnc', '1-31-75577-1')
+    biz_addr = config.get('business_address', 'C/ Las Flores #12, Jarabacoa')
+    biz_phone = config.get('phone', '809-301-3858')
     
     receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
     printer_name = receipt_channel.get("printer_name", "") if receipt_channel else ""
+    printer_target = receipt_channel.get("printer_target", "usb") if receipt_channel else "usb"
+    printer_ip = receipt_channel.get("printer_ip", "") if receipt_channel else ""
+    copies = receipt_channel.get("copies", 1) if receipt_channel else 1
     
-    receipt_data = {
-        "type": "receipt",
-        "paper_width": 80,
-        "business_name": config.get("business_name", "ALONZO CIGAR"),
-        "business_address": config.get("business_address", "C/ Las Flores #12, Jarabacoa"),
-        "rnc": config.get("rnc", "1-31-75577-1"),
-        "phone": config.get("phone", "809-301-3858"),
-        "bill_number": bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8],
-        "internal_transaction_number": bill.get("internal_transaction_number"),
-        "table_number": bill.get("table_number", ""),
-        "waiter_name": bill.get("waiter_name", ""),
-        "cashier_name": bill.get("paid_by_name", ""),
-        "date": bill.get("paid_at", "")[:19].replace("T", " ") if bill.get("paid_at") else "",
-        "items": [
-            {
-                "name": item.get("product_name", ""),
-                "quantity": item.get("quantity", 1),
-                "unit_price": item.get("unit_price", 0),
-                "total": item.get("total", 0)
-            }
-            for item in bill.get("items", [])
-        ],
-        "subtotal": bill.get("subtotal", 0),
-        "itbis": bill.get("itbis", 0),
-        "tip": bill.get("propina_legal", 0),
-        "discount": bill.get("discount_amount", 0),
-        "total": bill.get("total", 0),
-        "amount_received": bill.get("amount_received", 0),
-        "payment_method": bill.get("payment_method_name", "Efectivo"),
-        "footer_text": config.get("footer_text", "Gracias por su visita!"),
-        # Datos fiscales del cliente (B01, B14, B15)
-        "ncf_type": bill.get("ncf_type", ""),
-        "fiscal_id": bill.get("fiscal_id", ""),
-        "fiscal_id_type": bill.get("fiscal_id_type", ""),
-        "razon_social": bill.get("razon_social", "")
-    }
+    # Construir comandos ESC/POS (igual que print_receipt_escpos)
+    commands = []
+    commands.append({"type": "center", "bold": True, "size": "large", "text": biz_name})
+    commands.append({"type": "center", "bold": True, "text": f"RNC: {biz_rnc}"})
+    if biz_addr:
+        commands.append({"type": "center", "text": biz_addr})
+    commands.append({"type": "center", "text": f"Tel: {biz_phone}"})
+    commands.append({"type": "divider"})
+    commands.append({"type": "center", "bold": True, "text": "COMPROBANTE FISCAL"})
+    commands.append({"type": "center", "bold": True, "text": bill.get('ncf', '')})
+    commands.append({"type": "center", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}"})
+    commands.append({"type": "divider"})
     
-    # Inferir ncf_type desde el NCF si no está establecido
-    ncf_str = receipt_data.get("bill_number", "")
-    if not receipt_data["ncf_type"] and ncf_str:
+    # Datos fiscales del cliente - Inferir tipo de NCF si no está establecido
+    ncf_type = bill.get("ncf_type", "")
+    ncf_str = bill.get("ncf", "")
+    if not ncf_type and ncf_str:
         if ncf_str.startswith("B01"):
-            receipt_data["ncf_type"] = "B01"
+            ncf_type = "B01"
         elif ncf_str.startswith("B14"):
-            receipt_data["ncf_type"] = "B14"
+            ncf_type = "B14"
         elif ncf_str.startswith("B15"):
-            receipt_data["ncf_type"] = "B15"
+            ncf_type = "B15"
+    
+    if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
+        commands.append({"type": "left", "bold": True, "text": "DATOS DEL CLIENTE"})
+        fiscal_id_type = bill.get("fiscal_id_type", "RNC")
+        commands.append({"type": "left", "text": f"{fiscal_id_type}: {bill.get('fiscal_id', '')}"})
+        commands.append({"type": "left", "text": f"Razon Social: {bill.get('razon_social', '')}"})
+        commands.append({"type": "divider"})
+    
+    commands.append({"type": "left", "text": f"Mesa: {bill['table_number']}"})
+    commands.append({"type": "left", "text": f"Fecha: {bill.get('paid_at', bill['created_at'])[:19]}"})
+    if bill.get('waiter_name'):
+        commands.append({"type": "left", "text": f"Mesero: {bill['waiter_name']}"})
+    if bill.get('paid_by_name'):
+        commands.append({"type": "left", "text": f"Cajero: {bill['paid_by_name']}"})
+    if bill.get('transaction_number'):
+        commands.append({"type": "left", "text": f"Transaccion: #{bill['transaction_number']}"})
+    commands.append({"type": "divider"})
+    
+    # Items
+    for item in bill.get("items", []):
+        qty = item.get('quantity', 1)
+        qty_str = str(int(qty)) if qty == int(qty) else str(qty)
+        commands.append({"type": "columns", "left": f"{qty_str} X {item['product_name']}", "right": f"RD$ {item['total']:,.2f}"})
+    
+    commands.append({"type": "divider"})
+    commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
+    
+    # Dynamic tax lines from tax_breakdown
+    tax_breakdown = bill.get("tax_breakdown", [])
+    if tax_breakdown:
+        for tax in tax_breakdown:
+            commands.append({"type": "columns", "left": f"{tax['description']} {tax['rate']}%", "right": f"RD$ {tax['amount']:,.2f}"})
+    else:
+        commands.append({"type": "columns", "left": "ITBIS 18%", "right": f"RD$ {bill.get('itbis', 0):,.2f}"})
+        if bill.get('propina_legal', 0) > 0:
+            commands.append({"type": "columns", "left": f"Propina Legal {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
+    
+    commands.append({"type": "divider"})
+    commands.append({"type": "center", "text": "================================"})
+    commands.append({"type": "center", "bold": True, "text": "TOTAL A PAGAR"})
+    commands.append({"type": "center", "bold": True, "size": "large", "text": f"RD$ {bill['total']:,.2f}"})
+    commands.append({"type": "center", "text": "================================"})
+    
+    # Payment and change
+    if bill.get('payment_method_name'):
+        commands.append({"type": "columns", "left": f"Recibido {bill['payment_method_name']}:", "right": f"RD$ {bill.get('amount_received', bill['total']):,.2f}"})
+    
+    amount_received = bill.get("amount_received", 0)
+    if amount_received > bill["total"]:
+        cambio = round(amount_received - bill["total"], 2)
+        commands.append({"type": "columns", "bold": True, "left": "CAMBIO:", "right": f"RD$ {cambio:,.2f}"})
+    
+    commands.append({"type": "divider"})
+    
+    # Footer messages
+    for i in range(1, 5):
+        msg = config.get(f'ticket_footer_msg{i}', '')
+        if msg:
+            commands.append({"type": "center", "text": msg})
+    if not any(config.get(f'ticket_footer_msg{i}') for i in range(1, 5)):
+        commands.append({"type": "center", "text": config.get('footer_text', 'Gracias por su visita!')})
+    
+    commands.append({"type": "feed", "lines": 2})
+    commands.append({"type": "cut"})
     
     job = {
         "id": gen_id(),
         "type": "receipt",
         "channel": "receipt",
         "printer_name": printer_name,
-        "data": receipt_data,
+        "printer_target": printer_target,
+        "printer_ip": printer_ip,
+        "copies": copies,
+        "commands": commands,
         "status": "pending",
         "created_at": now_iso()
     }
