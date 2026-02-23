@@ -214,8 +214,8 @@ class TestMultiplePayments:
         order_response = requests.post(f"{BASE_URL}/api/orders", json=order_data, headers=self.headers)
         order = order_response.json()
         
-        # Add items with higher quantity
-        item_data = {"product_id": product['id'], "product_name": product['name'], "quantity": 5, "unit_price": 200, "modifiers": []}
+        # Add items with higher quantity (endpoint expects {"items": [...]})
+        item_data = {"items": [{"product_id": product['id'], "product_name": product['name'], "quantity": 5, "unit_price": 200, "modifiers": []}]}
         requests.post(f"{BASE_URL}/api/orders/{order['id']}/items", json=item_data, headers=self.headers)
         
         # Create bill
@@ -382,8 +382,8 @@ class TestMultiplePayments:
         order_response = requests.post(f"{BASE_URL}/api/orders", json=order_data, headers=self.headers)
         order = order_response.json()
         
-        # Add item worth ~1000 DOP
-        item_data = {"product_id": product['id'], "product_name": product['name'], "quantity": 2, "unit_price": 300, "modifiers": []}
+        # Add item worth ~1000 DOP (endpoint expects {"items": [...]})
+        item_data = {"items": [{"product_id": product['id'], "product_name": product['name'], "quantity": 2, "unit_price": 300, "modifiers": []}]}
         requests.post(f"{BASE_URL}/api/orders/{order['id']}/items", json=item_data, headers=self.headers)
         
         # Create bill
@@ -538,8 +538,8 @@ class TestMultiplePayments:
         order_response = requests.post(f"{BASE_URL}/api/orders", json=order_data, headers=self.headers)
         order = order_response.json()
         
-        # Add items
-        item_data = {"product_id": product['id'], "product_name": product['name'], "quantity": 3, "unit_price": 300, "modifiers": []}
+        # Add items (endpoint expects {"items": [...]})
+        item_data = {"items": [{"product_id": product['id'], "product_name": product['name'], "quantity": 3, "unit_price": 300, "modifiers": []}]}
         requests.post(f"{BASE_URL}/api/orders/{order['id']}/items", json=item_data, headers=self.headers)
         
         # Create bill
