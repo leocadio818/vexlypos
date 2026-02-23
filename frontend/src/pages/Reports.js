@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { formatMoney } from '@/lib/api';
+import { formatMoney, businessDaysAPI } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
@@ -8,7 +8,7 @@ import {
   Table2, Clock, ChevronDown, ChevronRight, FileText, Download,
   Printer, Send, DollarSign, Package, ShoppingCart, AlertTriangle,
   Percent, Receipt, Building2, ArrowUpRight, ArrowDownRight, Minus,
-  Filter, RefreshCw, X, Loader2, FileSpreadsheet, File
+  Filter, RefreshCw, X, Loader2, FileSpreadsheet, File, Sun
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -17,6 +17,7 @@ import {
   CartesianGrid, Legend
 } from 'recharts';
 import axios from 'axios';
+import ReportXZ from '@/components/ReportXZ';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
