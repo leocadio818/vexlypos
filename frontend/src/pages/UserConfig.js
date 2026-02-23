@@ -196,7 +196,18 @@ const PERM_LABELS = Object.values(PERMISSION_CATEGORIES).reduce((acc, cat) => {
 export default function UserConfig() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const isNew = userId === 'new';
+  
+  // Verificar si el usuario actual puede editar PINs
+  // Solo Admin puede ver/editar PINs de otros usuarios
+  // Cualquiera puede editar su propio PIN
+  const isAdmin = currentUser?.role === 'admin';
+  const isEditingSelf = !isNew && currentUser?.user_id === userId;
+  const canEditPin = isAdmin || isEditingSelf || isNew;
+  
+  // State para mostrar/ocultar PIN (solo para admin)
+  const [showPin, setShowPin] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
