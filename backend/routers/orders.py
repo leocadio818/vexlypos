@@ -835,12 +835,16 @@ async def create_new_account_on_table(table_id: str, input: dict = None, user: d
     new_account_number = max_account + 1
     order_id = gen_id()
     
+    # Generar número de transacción único para la nueva cuenta
+    transaction_number = await get_next_transaction_number()
+    
     order = {
         "id": order_id,
         "table_id": table_id,
         "table_number": table["number"],
         "account_number": new_account_number,
         "account_label": account_label,
+        "transaction_number": transaction_number,
         "waiter_id": user["user_id"],
         "waiter_name": user["name"],
         "status": "active",
