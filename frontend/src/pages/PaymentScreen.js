@@ -1182,11 +1182,11 @@ export default function PaymentScreen() {
                 </div>
               )}
               
-              {/* Amount remaining */}
+              {/* Amount remaining - DESTACADO para mejor visibilidad */}
               {overpaid < 0 && (
-                <div className="flex justify-between items-center mt-2 text-sm">
-                  <span className="text-red-400/80">Falta</span>
-                  <span className="font-oswald font-bold text-red-400">{formatMoney(Math.abs(overpaid))}</span>
+                <div className="flex justify-between items-center mt-3 p-3 rounded-xl bg-red-500/20 border border-red-500/40">
+                  <span className="text-red-300 font-semibold text-base">Falta por pagar</span>
+                  <span className="font-oswald font-bold text-red-400 text-xl">{formatMoney(Math.abs(overpaid))}</span>
                 </div>
               )}
             </div>
