@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import ThermalTicket, { printTicket, useBusinessConfig } from '@/components/ThermalTicket';
+import FiscalDataDrawer from '@/components/FiscalDataDrawer';
 
 // Iconos de Lucide para métodos de pago
 const lucideIcons = {
