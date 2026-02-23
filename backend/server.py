@@ -304,6 +304,71 @@ async def update_product(product_id: str, input: dict):
     await db.products.update_one({"id": product_id}, {"$set": input})
     return {"ok": True}
 
+# ─── UPLOAD DE IMÁGENES DE PRODUCTOS ───
+ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
+
+@api.post("/products/upload-image")
+async def upload_product_image(file: UploadFile = File(...)):
+    """
+    Sube una imagen de producto al servidor.
+    Retorna la URL de la imagen para usar en el producto.
+    """
+    # Validar tipo de archivo
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Tipo de archivo no permitido. Usa: JPG, PNG, WebP o GIF"
+        )
+    
+    # Leer contenido del archivo
+    contents = await file.read()
+    
+    # Validar tamaño
+    if len(contents) > MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Imagen muy grande. Máximo 5MB"
+        )
+    
+    # Generar nombre único para el archivo
+    file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else "jpg"
+    if file_ext not in ["jpg", "jpeg", "png", "webp", "gif"]:
+        file_ext = "jpg"
+    
+    unique_filename = f"{gen_id()}.{file_ext}"
+    
+    # Guardar archivo
+    upload_path = Path(__file__).parent / "uploads" / "products" / unique_filename
+    
+    with open(upload_path, "wb") as f:
+        f.write(contents)
+    
+    # Retornar URL relativa que será servida por el servidor estático
+    # La URL completa será construida en el frontend usando REACT_APP_BACKEND_URL
+    return {
+        "success": True,
+        "filename": unique_filename,
+        "url": f"/api/uploads/products/{unique_filename}",
+        "size": len(contents),
+        "content_type": file.content_type
+    }
+
+@api.delete("/products/delete-image/{filename}")
+async def delete_product_image(filename: str):
+    """Elimina una imagen de producto del servidor"""
+    # Validar que el filename no contenga path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Nombre de archivo inválido")
+    
+    file_path = Path(__file__).parent / "uploads" / "products" / filename
+    
+    if file_path.exists():
+        file_path.unlink()
+        return {"success": True, "message": "Imagen eliminada"}
+    else:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+
 # ─── MODIFIERS ───
 @api.get("/modifiers")
 async def list_modifiers():
