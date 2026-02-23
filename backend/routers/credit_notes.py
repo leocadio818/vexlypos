@@ -517,51 +517,6 @@ async def cancel_credit_note(note_id: str, user=Depends(get_current_user)):
     return {"ok": True, "message": "Nota de crédito cancelada"}
 
 
-# ─── REPORTS ───
-
-@router.get("/reports/summary")
-async def get_credit_notes_summary(
-    period: str = Query("month", description="day, week, month"),
-    user=Depends(get_current_user)
-):
-    """Resumen de notas de crédito por período"""
-    from datetime import timedelta
-    
-    now = datetime.now(timezone.utc)
-    if period == "day":
-        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == "week":
-        start_date = now - timedelta(days=7)
-    else:  # month
-        start_date = now - timedelta(days=30)
-    
-    notes = await db.credit_notes.find({
-        "created_at": {"$gte": start_date.isoformat()},
-        "status": "completed"
-    }, {"_id": 0}).to_list(500)
-    
-    total_reversed = sum(n.get("total_reversed", 0) for n in notes)
-    total_itbis = sum(n.get("itbis_reversed", 0) for n in notes)
-    
-    # Group by reason
-    by_reason = {}
-    for n in notes:
-        reason = n.get("reason_name", "Sin razón")
-        if reason not in by_reason:
-            by_reason[reason] = {"count": 0, "total": 0}
-        by_reason[reason]["count"] += 1
-        by_reason[reason]["total"] += n.get("total_reversed", 0)
-    
-    return {
-        "period": period,
-        "total_notes": len(notes),
-        "total_reversed": round(total_reversed, 2),
-        "total_itbis_reversed": round(total_itbis, 2),
-        "by_reason": [{"reason": k, **v} for k, v in by_reason.items()],
-        "recent_notes": notes[:10]
-    }
-
-
 # ─── SEARCH BY TRANSACTION NUMBER ───
 
 class SearchTransactionInput(BaseModel):
