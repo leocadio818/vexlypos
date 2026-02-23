@@ -72,6 +72,11 @@ export default function CashRegister() {
   const [creditNoteModalOpen, setCreditNoteModalOpen] = useState(false);
   const [pendingB04Transaction, setPendingB04Transaction] = useState(null);
   
+  // Buscador de movimientos y selección para re-impresión
+  const [movementSearch, setMovementSearch] = useState('');
+  const [selectedMovement, setSelectedMovement] = useState(null);
+  const [reprintLoading, setReprintLoading] = useState(false);
+  
   // Check URL params for B04 redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
