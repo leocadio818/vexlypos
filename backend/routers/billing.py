@@ -345,8 +345,8 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
             detail="No se puede procesar un pago con valor $0.00. La DGII no permite asignar NCF a facturas sin valor."
         )
 
-    # Obtener número de transacción interno secuencial para el recibo
-    internal_trans_num = await get_next_transaction_number()
+    # El transaction_number ya viene del bill (copiado de la orden)
+    # No se genera nuevo número aquí
 
     # Get payment method details
     payment_method_doc = await db.payment_methods.find_one({"id": input.payment_method_id}, {"_id": 0})
@@ -365,7 +365,8 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         "propina_legal": propina, "propina_percentage": input.tip_percentage if input.propina_legal is None else bill.get("propina_percentage", 10),
         "itbis": itbis,
         "total": total, "paid_at": now_iso(),
-        "internal_transaction_number": internal_trans_num
+        "paid_by_id": user["user_id"],
+        "paid_by_name": user["name"]
     }
     if input.amount_received is not None:
         update_fields["amount_received"] = input.amount_received
