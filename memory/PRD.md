@@ -148,6 +148,26 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Sistema de Jornada de Trabajo** - Fecha contable independiente del calendario civil (Business Day)
 - [x] **Reportes X y Z** - Cierre de turno y día con desglose completo
 - [x] **Sincronización Reportes por Jornada** - Filtro de jornada en página de Reports
+- [x] **Auditoría - Solo Admin ve PINs** - Restricción de visibilidad de PINs por rol
+
+## Auditoría - Restricción de PINs (NUEVO - 2026-02-23)
+
+### Descripción
+Solo los administradores pueden ver y editar los PINs de otros usuarios. Medida de seguridad para proteger credenciales.
+
+### Reglas de Acceso
+| Usuario | Su propio PIN | PINs de otros |
+|---------|---------------|---------------|
+| **Admin** | ✅ Ver/Editar | ✅ Ver/Editar |
+| **Manager** | ✅ Ver/Editar | ❌ Solo asteriscos |
+| **Cajero** | ✅ Ver/Editar | ❌ Solo asteriscos |
+| **Mesero** | ✅ Ver/Editar | ❌ Solo asteriscos |
+
+### Características UI
+1. **Campo PIN restringido**: Muestra `••••••••` y mensaje "(Contacte al administrador)"
+2. **Badge "Solo Admin"**: Con ícono de candado junto al label
+3. **Botón ojo**: Solo visible para Admin, permite mostrar/ocultar PIN
+4. **Validación backend**: No permite guardar PIN si no tiene permiso
 
 ## Sincronización de Reportes por Jornada (NUEVO - 2026-02-23)
 
