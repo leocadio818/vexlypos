@@ -419,7 +419,7 @@ export default function UserConfig() {
     }
     
     // Validate PIN if provided
-    if (user.pin) {
+    if (user.pin && canEditPin) {
       const pinValidation = validatePin(user.pin);
       if (!pinValidation.valid) {
         toast.error(pinValidation.error);
@@ -429,11 +429,17 @@ export default function UserConfig() {
       toast.error('El PIN es requerido para nuevos usuarios');
       return;
     }
+    
+    // Si no tiene permiso para editar PIN, asegurarse de no enviarlo
+    if (!canEditPin && user.pin) {
+      toast.error('No tiene permiso para modificar el PIN de este usuario');
+      return;
+    }
 
     setSaving(true);
     try {
-      // Check for duplicate PIN before saving
-      if (user.pin) {
+      // Check for duplicate PIN before saving (only if can edit and has pin)
+      if (user.pin && canEditPin) {
         const checkRes = await axios.post(`${API}/users/check-pin`, { 
           pin: user.pin, 
           exclude_user_id: isNew ? null : userId 
@@ -454,8 +460,8 @@ export default function UserConfig() {
         pos_name: user.pos_name || `${user.name} ${user.last_name}`.trim(),
       };
       
-      // Remove empty pin if editing
-      if (!isNew && !data.pin) {
+      // Remove pin if editing and user can't edit pin, or if pin is empty
+      if (!isNew && (!data.pin || !canEditPin)) {
         delete data.pin;
       }
 
