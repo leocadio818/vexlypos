@@ -2645,6 +2645,85 @@ export default function OrderScreen() {
         </DialogContent>
       </Dialog>
 
+      {/* ═══ B04 REDIRECT DIALOG - Cuenta Cerrada ═══ */}
+      <Dialog open={b04RedirectDialog.open} onOpenChange={(o) => !o && setB04RedirectDialog({ open: false, transactionNumber: null, ncf: null, total: 0, paidAt: null })}>
+        <DialogContent className="max-w-md backdrop-blur-xl bg-slate-900/95 border-amber-500/30" data-testid="b04-redirect-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-xl text-amber-400 flex items-center gap-2">
+              <AlertTriangle size={24} />
+              Cuenta Ya Facturada
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Alerta Visual */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+              <p className="text-amber-200 text-sm leading-relaxed">
+                Esta cuenta ya fue <strong>facturada y pagada</strong>. Para anularla, debe generar una{' '}
+                <strong>Nota de Crédito (NCF B04)</strong> que afecte el comprobante fiscal original.
+              </p>
+            </div>
+            
+            {/* Información de la Factura */}
+            <div className="bg-white/5 rounded-xl p-4 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-white/60 text-sm">Transacción:</span>
+                <span className="text-white font-oswald font-bold text-lg">#{b04RedirectDialog.transactionNumber}</span>
+              </div>
+              {b04RedirectDialog.ncf && (
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60 text-sm">NCF:</span>
+                  <span className="text-green-400 font-mono text-sm">{b04RedirectDialog.ncf}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center">
+                <span className="text-white/60 text-sm">Total:</span>
+                <span className="text-white font-oswald">RD$ {b04RedirectDialog.total?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</span>
+              </div>
+              {b04RedirectDialog.paidAt && (
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60 text-sm">Fecha Pago:</span>
+                  <span className="text-white/80 text-sm">{new Date(b04RedirectDialog.paidAt).toLocaleDateString('es-DO')}</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Acciones */}
+            <div className="flex gap-3 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setB04RedirectDialog({ open: false, transactionNumber: null, ncf: null, total: 0, paidAt: null })}
+                className="flex-1 font-oswald border-white/20 text-white/70 hover:bg-white/10"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => {
+                  // Navegar a Caja con el número de transacción para B04
+                  const transNum = b04RedirectDialog.transactionNumber;
+                  setB04RedirectDialog({ open: false, transactionNumber: null, ncf: null, total: 0, paidAt: null });
+                  // Guardar en sessionStorage para que CashRegister lo recoja
+                  if (transNum) {
+                    sessionStorage.setItem('pendingB04Transaction', transNum.toString());
+                  }
+                  navigate('/cash-register?openB04=true');
+                }}
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-oswald font-bold"
+                data-testid="go-to-b04-btn"
+              >
+                <Receipt size={18} className="mr-2" />
+                Ir a Crear B04
+              </Button>
+            </div>
+            
+            {/* Nota informativa */}
+            <p className="text-white/40 text-xs text-center">
+              Solo los administradores pueden generar Notas de Crédito (B04)
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
