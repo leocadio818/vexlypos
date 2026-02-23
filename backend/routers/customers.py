@@ -29,13 +29,36 @@ class CustomerInput(BaseModel):
 
 # ─── CUSTOMERS ───
 @router.get("/customers")
-async def list_customers(search: Optional[str] = Query(None)):
+async def list_customers(
+    search: Optional[str] = Query(None),
+    rnc: Optional[str] = Query(None)
+):
+    """
+    Lista clientes con filtros opcionales.
+    - search: Busca por nombre, teléfono o email
+    - rnc: Busca por RNC/Cédula exacto (para datos fiscales)
+    """
     query = {}
-    if search:
+    
+    # Búsqueda por RNC específico (para validación fiscal)
+    if rnc:
+        # Limpiar el RNC de caracteres no numéricos
+        cleaned_rnc = ''.join(c for c in rnc if c.isdigit())
+        # Buscar tanto el RNC limpio como formateado
+        query = {"$or": [
+            {"rnc": cleaned_rnc},
+            {"rnc": {"$regex": f"^{cleaned_rnc}$"}},
+            # También buscar con formato (guiones)
+            {"rnc": {"$regex": cleaned_rnc.replace("-", "")}}
+        ]}
+    elif search:
         query = {"$or": [
             {"name": {"$regex": search, "$options": "i"}},
-            {"phone": {"$regex": search, "$options": "i"}}
+            {"phone": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+            {"rnc": {"$regex": search, "$options": "i"}}
         ]}
+    
     return await db.customers.find(query, {"_id": 0}).sort("name", 1).to_list(500)
 
 @router.get("/customers/{cid}")
