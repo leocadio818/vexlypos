@@ -342,8 +342,7 @@ export default function OrderScreen() {
       // Anular cuenta entera - SIEMPRE requiere PIN
       const currentActiveItems = order?.items?.filter(i => i.status !== 'cancelled') || [];
       if (!order || currentActiveItems.length === 0) {
-        toast.info('No hay items para anular');
-        return;
+        return; // Silent - no items to void
       }
       const allItemIds = currentActiveItems.map(i => i.id);
       openBulkCancelDialog(allItemIds, true); // true = force manager auth
