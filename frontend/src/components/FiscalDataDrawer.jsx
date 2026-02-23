@@ -41,14 +41,17 @@ function validateRNC(rnc) {
 
 /**
  * Algoritmo de validación de Cédula dominicana (11 dígitos)
- * Implementa el algoritmo de Luhn modificado para RD
+ * Implementa el algoritmo de Luhn modificado para RD.
+ * Si la cédula no pasa el algoritmo, se marca como WARNING pero
+ * se permite continuar (puede haber cédulas antiguas o especiales).
  */
 function validateCedula(cedula) {
   const cleaned = cedula.replace(/\D/g, '');
   if (cleaned.length !== 11) return { valid: false, warning: false };
   
   // Validar que no sea una secuencia obviamente inválida
-  if (/^(.)\1+$/.test(cleaned)) return { valid: false, warning: false };
+  if (/^(.)\1+$/.test(cleaned)) return { valid: false, warning: false, reason: 'repetitivo' };
+  if (cleaned === '00000000000') return { valid: false, warning: false, reason: 'ceros' };
   
   // Algoritmo de Luhn para cédula dominicana
   const weights = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2];
@@ -63,9 +66,15 @@ function validateCedula(cedula) {
   }
   
   const checkDigit = (10 - (sum % 10)) % 10;
-  const valid = parseInt(cleaned[10]) === checkDigit;
+  const algorithmPasses = parseInt(cleaned[10]) === checkDigit;
   
-  return { valid, warning: !valid }; // Si no pasa Luhn, mostrar advertencia pero permitir
+  // Si pasa el algoritmo: válido sin warning
+  // Si no pasa: válido CON warning (permitir continuar)
+  return { 
+    valid: true, // Siempre válido si tiene 11 dígitos y no es secuencia obvia
+    warning: !algorithmPasses, // Warning si no pasa Luhn
+    algorithmPasses
+  };
 }
 
 /**
