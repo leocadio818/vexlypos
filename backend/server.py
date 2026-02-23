@@ -1877,9 +1877,14 @@ async def send_receipt_to_printer(bill_id: str):
     commands.append({"type": "text", "text": f"Tel: {biz_phone}", "align": "center"})
     commands.append({"type": "divider"})
     
-    # NCF Section
+    # Número de Transacción Interno (para control interno)
+    internal_trans = bill.get('internal_transaction_number')
+    if internal_trans:
+        commands.append({"type": "text", "text": f"Trans. #{internal_trans}", "align": "center", "bold": True})
+    
+    # NCF Section (tamaño reducido)
     commands.append({"type": "text", "text": "COMPROBANTE FISCAL", "align": "center", "bold": True})
-    commands.append({"type": "text", "text": bill.get('ncf', ''), "align": "center", "bold": True, "size": 2})
+    commands.append({"type": "text", "text": bill.get('ncf', ''), "align": "center", "bold": True})
     commands.append({"type": "text", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}", "align": "center"})
     commands.append({"type": "divider"})
     
