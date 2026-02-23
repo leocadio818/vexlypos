@@ -431,7 +431,7 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 - [ ] Auditoría - solo Admin ve PINs
 - [ ] Reloj de entrada/salida empleados
 - [ ] Envío automático de facturas por email (requiere integración con servicio de email)
-- [ ] Reportes X y Z detallados (desglose por forma de pago, ventas por categoría)
+- [ ] Sincronización de reportes en Config con filtro por Jornada
 
 ### P2 - Media Prioridad
 - [ ] Compilar agente como .exe (PyInstaller)
