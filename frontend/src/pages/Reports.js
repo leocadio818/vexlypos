@@ -441,6 +441,13 @@ export default function Reports() {
   const [sparklineData, setSparklineData] = useState([]);
   const [businessConfig, setBusinessConfig] = useState({ name: 'Mesa POS RD', rnc: '000-000000-0' });
   
+  // Business Day (Jornada) filter state
+  const [businessDays, setBusinessDays] = useState([]);
+  const [selectedBusinessDay, setSelectedBusinessDay] = useState(null);
+  const [loadingBusinessDays, setLoadingBusinessDays] = useState(false);
+  const [reportZOpen, setReportZOpen] = useState(false);
+  const [reportZDayId, setReportZDayId] = useState(null);
+  
   // Quick date presets
   const datePresets = [
     { label: 'Hoy', value: () => {
