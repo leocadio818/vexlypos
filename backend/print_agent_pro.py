@@ -43,7 +43,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://fiscal-capture-1.preview.emergentagent.com"
+SERVER_URL = "https://drawer-continue-bug.preview.emergentagent.com"
 
 DEFAULT_PRINTER = "Caja"
 

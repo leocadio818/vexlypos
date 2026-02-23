@@ -1,134 +1,141 @@
 <analysis>**original_problem_statement:**
-The user requested a Fiscal Data Capture component for their Point of Sale system. This component must be a Drawer/Sheet from Shadcn/UI that slides up when a fiscal type of B01 (Crédito Fiscal), B14 (Comprobante para Regímenes Especiales), or B15 (Comprobante Gubernamental) is selected during payment.
+The user initially requested a Fiscal Data Capture component for their Point of Sale system, which should appear for specific fiscal types (B01, B14, B15), validate the RNC/Cédula, search for existing clients, and persist new ones.
 
-PRODUCT REQUIREMENTS:
-1.  **Component Activation:** The drawer should only appear for fiscal types B01, B14, and B15. The flow for B02 (Consumidor Final) must remain unchanged.
-2.  **Algorithmic Validation:** The RNC/Cédula input must validate the number's format (9 digits for RNC, 11 for Cédula) and its check digit using the official DGII algorithm. Invalid entries should trigger a visible error and disable the Continue button.
-3.  **Client Search & Persistence:** A Buscar (Search) button should query the existing client database.
-    *   If the client exists, their Razón Social (Business Name) and Correo Electrónico (Email) should be auto-filled.
-    *   If the client is new, manual entry should be allowed, and the new client must be saved to the database upon completing the transaction.
-4.  **Optional Email for Invoices:** An optional email field should, when filled, trigger the automatic sending of the digital invoice to the client.
-5.  **UI/UX:** The drawer must have a smooth slide-in animation and feature large, touch-friendly input fields.
+Subsequently, the user requested a major architectural change to implement a Business Date (Jornada de Trabajo) system. This system decouples the accounting date from the calendar date. Key requirements include:
+1.  **Manual Day Open/Close:** The business date is set upon Apertura de Día and remains fixed until a Cierre de Día is performed by an authorized user. Transactions are recorded against this business date.
+2.  **Dual Timestamps:** Every transaction must store both the real timestamp and the active business date.
+3.  **Workflow Enforcement:** The system must block sales if no business day is open. The flow is: Open Day -> Open Shift -> Sales -> Close Shift (Report X) -> Close Day (Report Z).
+4.  **Detailed Reporting (X/Z):** Generate reports with breakdowns by payment method, category, discounts, and a final cash summary.
+5.  **Report Synchronization:** All administrative reports must be filterable by the Business Date.
+6.  **Audit Security:** Restrict visibility of user PINs to only the 'Admin' role.
+7.  **DGII Reports:** Clarified requirements for fiscal reports 607 (including B04 Notes of Credit affecting other invoices) and 608 (annulled NCFs). Implementation of 608 is currently on hold per user request.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-A full-stack POS application with a React frontend, FastAPI backend, and MongoDB database. Key features include table management, ordering, fiscal compliance, multi-currency payments, a local print agent, product image/icon support, and search/reprint functionality. A new component, , has been created and integrated into the  to handle the fiscal data capture. The backend has been updated to accept fiscal data (, ) during payment processing.
+A full-stack POS application with a React frontend, FastAPI backend, and MongoDB. The application now includes a complete Fiscal Data Capture drawer and a robust Business Date (Jornada de Trabajo) system. This system correctly blocks transactions when a business day isn't open and associates all sales with the active business date. The application can generate detailed X and Z reports. Administrative reports are now filterable by business date. A security enhancement has been implemented to restrict user PIN visibility to administrators only.
 
 **Last working item**:
--   **Last item agent was working:** Debugging and refining the RNC/Cédula validation algorithm within the new  component. The agent discovered that the strict check-digit validation was incorrectly failing for some legitimate, older RNCs. The plan was to modify the logic to be more flexible.
+-   **Last item agent was working:** Debugging an error reported by the user. The user gets an error when clicking the Continuar (Continue) button in the  component after filling in the fiscal information. The agent has confirmed the backend logs show no errors and was about to investigate the frontend component.
 -   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
 -   **Which testing method agent to use?**: both
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: RNC/Cédula validation is overly strict, blocking valid user entries. (P0)**
-    -   **Attempted fixes:** A standard DGII check-digit algorithm was implemented but proved too rigid for real-world data, where many older RNCs don't conform.
+-   **Issue 1: Error on Continuar button in FiscalDataDrawer (P0)**
+    -   **Attempted fixes:** The agent checked backend logs () and found no errors, indicating the issue is likely on the client side.
     -   **Next debug checklist:**
-        -   Modify the validation logic in .
-        -   Change the validation from a hard block (red border, disabled button) to a soft warning for algorithmic failures. The length validation (9 or 11 digits) should remain as a hard requirement. This allows users to proceed with valid RNCs that don't fit the modern algorithm.
-    -   **Why fix this issue and what will be achieved with the fix?** To unblock the critical invoicing workflow for customers with valid fiscal information.
+        1.  Examine the  function within  to understand the logic executed on click.
+        2.  Use the browser's developer console to check for any JavaScript errors when the Continuar button is clicked.
+        3.  Add  statements to trace the , , and  state variables right before the  and  functions are called.
+        4.  Verify the payload structure being sent to the backend against the expected format in the  endpoint in .
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical bug blocking the core workflow for generating fiscal invoices for new or existing clients. Fixing it will restore a key feature.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** frontend
+    -   **Should Test frontend/backend/both after fix?** both
     -   **Blocked on other issue**: No
 
 **In progress Task List**:
--   **Task 1: Complete Fiscal Data Capture Feature (P0)**
-    -   **Where to resume:** Continue work on . After relaxing the validation logic, implement the remaining features:
-        1.  **Client Search:** Implement the Buscar button's  handler to call a backend endpoint that searches the  collection in MongoDB by RNC/Cédula.
-        2.  **Client Persistence:** Enhance the  backend logic in  to create a new client record if one doesn't already exist with the provided RNC/Cédula.
-        3.  **Automatic Emailing:** Plan and implement the functionality to automatically send the digital invoice. This will require a new backend endpoint and likely a third-party email service integration.
-    -   **What will be achieved with this?** A complete, compliant, and user-friendly workflow for capturing and persisting customer fiscal data.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** both
-    -   **Blocked on something**: Blocked on resolving Issue 1.
+-   None. The current focus is entirely on the bug fix.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   P1: DGII Report Generation (608).
-    -   P1: Employee Time Clock feature.
--   **Future Tasks:**
+    -   P1: Implement the employee time clock (Reloj de entrada/salida) feature.
+    -   P2: Implement automatic sending of invoices via email.
+-   **Future Tasks (User confirmed backlog):**
+    -   P2: Implement DGII Report 608 (NCF Anulados), currently on hold by user.
     -   P2: Cache product images for offline access.
     -   P2: Compile the  script into a standalone Windows executable.
     -   P3: Export Audit Trail to Excel/CSV.
 
 **Completed work in this session**
--   **Feature: Upload Product Images from PC:** Implemented a file upload system allowing users to upload product images directly from their computer, in addition to using URLs or pre-defined icons.
--   **Feature: Search by Transaction Number:** Added the ability to search by  (transaction number) in both the Bill History and Cash Register screens.
--   **Feature: Real Data for Valuation Trends:** Replaced mock data in the  endpoint with logic that calculates inventory value based on real stock movements and sales data.
+-   **Feature: Fiscal Data Capture:** Completed the fiscal data drawer () with flexible RNC/Cédula validation, client search, and new client persistence.
+-   **Feature: Business Date (Jornada de Trabajo):** Implemented the entire business date lifecycle, including backend logic (), frontend management UI (), and blocking of payments when no day is open.
+-   **Feature: Reports X and Z:** Created backend endpoints and frontend UI to generate and display detailed end-of-shift (X) and end-of-day (Z) reports.
+-   **Feature: Report Synchronization:** Integrated a Business Date filter into the main reports page () to allow filtering all historical data by the accounting date.
+-   **Enhancement: Audit Security:** Restricted user PIN visibility and editing capabilities to Admin users only in the user management section ().
+-   **Fix:** Corrected the client search endpoint in  to support searching by .
+
+**Earlier issues found/mentioned but not fixed**
+-   None.
+
+**Known issue recurrence from previous fork**
+-   None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Conditional UI (React):** Using state to conditionally render the  when specific fiscal types are selected.
+-   **Business Date Logic:** Decoupling the accounting date from the system's calendar date. Transactions are tied to a manually managed .
+-   **Role-Based UI Rendering (RBAC):** Conditionally rendering UI elements (like the PIN field in ) based on the current user's role.
+-   **Stateful API-driven UI:** The frontend heavily relies on API calls to determine its state (e.g., if a business day is open, which reports to show).
 -   **Client-Side Validation:** Performing RNC/Cédula validation directly in the frontend for immediate user feedback.
--   **File Uploads (FastAPI):** Handling  requests on the backend to accept and store user-uploaded images.
--   **Static File Serving (FastAPI):** Configuring the backend to serve the stored images to the frontend.
 
 **key DB schema**
--   ****: Updated to include  (String) and  (String).
--   ****: Updated to include  (String) and  (String).
--   ****: Contains , , . This collection is central to the fiscal data feature.
+-   ****: Added  (String, ISO format) to associate each bill with a business day.
+-   ****: New collection to store business day sessions.
+    -   
+-   ****: Contains user data including  ('Admin', 'Cashier', etc.) used for RBAC.
 
 **changes in tech stack**
 -   None.
 
 **All files of reference**
--    (Primary file for the current task)
--    (Integrates the drawer)
--    (Backend payment processing logic)
--    (Handles file uploads and serving)
--    (UI for product image configuration)
+-   **/app/frontend/src/components/drawers/FiscalDataDrawer.js**: Component with the user-reported bug.
+-   **/app/backend/routers/business_days.py**: Core backend logic for the Business Date feature.
+-   **/app/backend/routers/billing.py**: Where payment processing is blocked if a business day is not open.
+-   **/app/frontend/src/pages/PaymentScreen.js**: Integrates the  and the business day check.
+-   **/app/frontend/src/pages/settings/UserEdit.jsx**: Where PIN visibility rules were implemented.
+-   **/app/frontend/src/pages/Reports.jsx**: Where the business day filter was added.
+-   **/app/frontend/src/components/BusinessDayManager.jsx**: The main UI for managing business days.
 
 **Areas that need refactoring**:
--   The RNC/Cédula validation function in  needs to be refactored to be less strict and provide warnings instead of hard errors for algorithmic mismatches.
+-   None at the moment. The focus is on the critical bug.
 
 **key api endpoints**
--   : **MODIFIED** to accept  and .
--   : **NEW** endpoint for handling product image uploads.
--   : **NEW** route to serve uploaded images statically.
+-   : Opens a new business day.
+-   : Closes the current business day.
+-   : Gets the status of the current business day.
+-   : Generates the Z report for the current open day.
+-   : Searches for a customer by RNC.
 
 **Critical Info for New Agent**
--   **User Language:** You **must** respond in **Spanish**.
--   **Immediate Priority (P0 Task):** Your primary task is to complete the Fiscal Data Capture feature.
-    -   **Resume Point:** Start by modifying the validation logic in . The current algorithm is too strict and must be changed to a non-blocking warning for check-digit failures, while still enforcing correct length.
-    -   **Next Steps:** Once the validation is fixed, implement the remaining features in this order: client search via the Buscar button, persistence of new clients upon payment, and finally, the automatic emailing of invoices.
+-   **Respond in Spanish.**
+-   **P0 Priority:** Your first and only task is to fix the bug reported by the user in the  component. The user cannot proceed with fiscal invoices, which is a critical workflow. Follow the debug checklist provided in the All Pending/In progress Issue list section.
+-   **Business Day Context:** Remember that all financial transactions are now tied to a Jornada de Trabajo (Business Day). The payment screen will be blocked if a day is not manually opened via the  component.
 
 **documents and test reports created in this job**
--   
--   
+-    (updated with all completed features and backlog)
+-    (last successful test run for report sync)
+-    (last successful test run for reports X/Z)
+-    (last successful test run for business day logic)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User Request:** Implement the Fiscal Data Capture Drawer with detailed requirements. **Status: In Progress.**
-2.  **User Confirmation:** Agreed to the agent's proposal to add image uploads from the PC. **Status: Completed.**
-3.  **User Question:** Asked about the tech stack and how to use the image URL feature. **Status: Answered.**
-4.  **User Approval:** Approved the plan to implement real data for valuation trends and product image support. **Status: Completed.**
-5.  **User Approval:** Approved adding search by order number. **Status: Completed.**
-6.  **User Request:** Identified that search by order number was missing and requested it be added. **Status: Completed.**
+1.  **User Request:** Implement synchronization of reports with the new Business Date filter. **Status: Completed.**
+2.  **User Query:** Asked for clarification on the DGII 608 report. **Status: Answered.**
+3.  **User Query:** Asked for clarification on how B04 Notes of Credit are handled in reports 607 and 608. **Status: Answered.**
+4.  **User Decision:** Confirmed that the  field was correctly implemented for B04 notes. Put the 608 report on hold. **Status: Acknowledged.**
+5.  **User Request:** Prioritized implementing the audit rule: only Admins can see/edit PINs. **Status: Completed.**
+6.  **User Bug Report:** me da error al momento de darle a continuar (I get an error when I click continue) with a screenshot of the . **Status: In Progress.**
 
 **Project Health Check:**
--   **Broken:** The RNC/Cédula validation in the new  is too strict and blocks users from entering valid fiscal IDs.
--   **Mocked:**
-    -   The Buscar (Search) client button in the fiscal drawer is a placeholder and has no functionality.
-    -   The automatic sending of email invoices is not yet implemented.
+-   **Broken:** The Continuar button in the  component is not working, blocking a critical user workflow.
+-   **Mocked:** None.
 
 **3rd Party Integrations**
--   MongoDB (Database)
--   Python  (Used by local print agent)
--   Python  (Used by local print agent)
--   **Potential Future Integration:** An email service like Resend or SendGrid will be required to implement the automatic sending of invoices.
+-   MongoDB
+-   React
+-   FastAPI
 
 **Testing status**
 -   **Testing agent used after significant changes**: YES
 -   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: None
--   **Known regressions**: None
+-   **Test files created**: None.
+-   **Known regressions**: The  functionality appears to have regressed or has a bug.
 
 **Credentials to test flow:**
 -   **PINs:** Admin (), Cashier (), Waitress ().
 
 **What agent forgot to execute**
--   The agent has not yet implemented three key requirements from the user's request for the Fiscal Data Drawer: the client search functionality (Buscar button), the persistence of new client data, and the automatic sending of invoices via email. The immediate focus must be on fixing the validation blocker before proceeding with these items.</analysis>
+-   The agent was actively working on the user's latest request (the bug fix) and had not forgotten any tasks. The user has explicitly put the Report 608 task on hold.</analysis>

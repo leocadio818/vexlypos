@@ -4,10 +4,10 @@
 Sistema POS completo para restaurantes/bares con soporte para impresión térmica automática, KDS (Kitchen Display System), gestión de órdenes, y cumplimiento fiscal DGII (República Dominicana).
 
 ## URLs del Sistema
-- **App:** https://fiscal-capture-1.preview.emergentagent.com
-- **API:** https://fiscal-capture-1.preview.emergentagent.com/api
-- **Agente Python:** https://fiscal-capture-1.preview.emergentagent.com/api/download/print-agent?printer_name=RECIBO
-- **Instalador Servicio:** https://fiscal-capture-1.preview.emergentagent.com/api/download/print-agent-installer?printer_name=RECIBO
+- **App:** https://drawer-continue-bug.preview.emergentagent.com
+- **API:** https://drawer-continue-bug.preview.emergentagent.com/api
+- **Agente Python:** https://drawer-continue-bug.preview.emergentagent.com/api/download/print-agent?printer_name=RECIBO
+- **Instalador Servicio:** https://drawer-continue-bug.preview.emergentagent.com/api/download/print-agent-installer?printer_name=RECIBO
 
 ## Arquitectura de Impresión (v2.1)
 
