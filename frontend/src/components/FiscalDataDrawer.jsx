@@ -163,6 +163,8 @@ const FiscalDataDrawer = ({
   const [searching, setSearching] = useState(false);
   const [customerFound, setCustomerFound] = useState(null);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
+  const [dgiiData, setDgiiData] = useState(null);
+  const [dgiiSearching, setDgiiSearching] = useState(false);
   
   // Reset state when drawer opens
   useEffect(() => {
@@ -173,6 +175,7 @@ const FiscalDataDrawer = ({
       setValidation({ type: '', valid: false, cleaned: '' });
       setCustomerFound(null);
       setIsNewCustomer(false);
+      setDgiiData(null);
     }
   }, [open]);
   
@@ -185,6 +188,38 @@ const FiscalDataDrawer = ({
       setValidation({ type: '', valid: false, cleaned: '' });
     }
   }, [fiscalId]);
+  
+  // Auto-search DGII when RNC is valid (debounced)
+  useEffect(() => {
+    if (validation.valid && validation.type === 'RNC' && !customerFound && !dgiiData) {
+      const timer = setTimeout(async () => {
+        setDgiiSearching(true);
+        try {
+          const res = await fetch(
+            `${apiBase}/api/dgii/validate-rnc/${validation.cleaned}`,
+            { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }
+          );
+          const data = await res.json();
+          if (data.valid && data.nombre) {
+            setDgiiData(data);
+            // Auto-fill if razón social is empty
+            if (!razonSocial) {
+              setRazonSocial(data.nombre);
+              setIsNewCustomer(true);
+              toast.success(`DGII: ${data.nombre}`, { duration: 2000 });
+            }
+          }
+        } catch (err) {
+          // Silent fail - DGII is optional
+          console.log('DGII search error (optional):', err);
+        } finally {
+          setDgiiSearching(false);
+        }
+      }, 300); // 300ms debounce
+      
+      return () => clearTimeout(timer);
+    }
+  }, [validation.valid, validation.type, validation.cleaned, apiBase, customerFound, dgiiData, razonSocial]);
   
   // Buscar cliente en la base de datos
   const searchCustomer = useCallback(async () => {
@@ -211,13 +246,37 @@ const FiscalDataDrawer = ({
         setRazonSocial(found.name || '');
         setEmail(found.email || '');
         setIsNewCustomer(false);
+        setDgiiData(null);
         toast.success('Cliente encontrado');
       } else {
         setCustomerFound(null);
-        setRazonSocial('');
-        setEmail('');
         setIsNewCustomer(true);
-        toast.info('Cliente no encontrado. Ingresa los datos manualmente.');
+        
+        // If we already have DGII data, use it
+        if (dgiiData?.nombre && !razonSocial) {
+          setRazonSocial(dgiiData.nombre);
+          toast.info('Cliente nuevo - Datos de DGII aplicados');
+        } else if (!dgiiData && validation.type === 'RNC') {
+          // Try DGII if we don't have data yet
+          try {
+            const dgiiRes = await fetch(
+              `${apiBase}/api/dgii/validate-rnc/${validation.cleaned}`,
+              { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }
+            );
+            const dgii = await dgiiRes.json();
+            if (dgii.valid && dgii.nombre) {
+              setDgiiData(dgii);
+              setRazonSocial(dgii.nombre);
+              toast.success(`DGII: ${dgii.nombre}`);
+            } else {
+              toast.info('Cliente no encontrado. Ingresa los datos manualmente.');
+            }
+          } catch {
+            toast.info('Cliente no encontrado. Ingresa los datos manualmente.');
+          }
+        } else {
+          toast.info('Cliente no encontrado. Ingresa los datos manualmente.');
+        }
       }
     } catch (err) {
       console.error('Error searching customer:', err);
@@ -225,7 +284,7 @@ const FiscalDataDrawer = ({
     } finally {
       setSearching(false);
     }
-  }, [validation, apiBase]);
+  }, [validation, apiBase, dgiiData, razonSocial]);
   
   // Guardar nuevo cliente
   const saveNewCustomer = async () => {
