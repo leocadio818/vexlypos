@@ -474,14 +474,28 @@ const FiscalDataDrawer = ({
               </div>
             </div>
             
-            {/* Indicador de cliente encontrado o nuevo */}
-            {(customerFound || isNewCustomer) && (
+            {/* Indicador de cliente encontrado, nuevo, o datos DGII */}
+            {(customerFound || isNewCustomer || dgiiData) && (
               <div className={`p-3 rounded-xl flex items-center gap-3 ${
-                customerFound ? 'bg-green-500/10 border border-green-500/30' : 'bg-amber-500/10 border border-amber-500/30'
+                customerFound ? 'bg-green-500/10 border border-green-500/30' : 
+                dgiiData && isNewCustomer ? 'bg-cyan-500/10 border border-cyan-500/30' :
+                'bg-amber-500/10 border border-amber-500/30'
               }`}>
-                <User size={20} className={customerFound ? 'text-green-400' : 'text-amber-400'} />
-                <span className={`text-sm ${customerFound ? 'text-green-300' : 'text-amber-300'}`}>
-                  {customerFound ? 'Cliente existente - Datos autocompletados' : 'Cliente nuevo - Ingresa los datos'}
+                {customerFound ? (
+                  <User size={20} className="text-green-400" />
+                ) : dgiiData && isNewCustomer ? (
+                  <Building2 size={20} className="text-cyan-400" />
+                ) : (
+                  <User size={20} className="text-amber-400" />
+                )}
+                <span className={`text-sm ${
+                  customerFound ? 'text-green-300' : 
+                  dgiiData && isNewCustomer ? 'text-cyan-300' :
+                  'text-amber-300'
+                }`}>
+                  {customerFound ? 'Cliente existente - Datos autocompletados' : 
+                   dgiiData && isNewCustomer ? `Datos de DGII - ${dgiiData.estado || 'Contribuyente activo'}` :
+                   'Cliente nuevo - Ingresa los datos'}
                 </span>
               </div>
             )}
