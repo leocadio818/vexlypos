@@ -346,14 +346,48 @@ export default function OrderScreen() {
       enterSplitMode();
     };
     
-    const handleVoidEntireOrder = () => {
-      // Anular cuenta entera - SIEMPRE requiere PIN
-      const currentActiveItems = order?.items?.filter(i => i.status !== 'cancelled') || [];
-      if (!order || currentActiveItems.length === 0) {
-        return; // Silent - no items to void
+    const handleVoidEntireOrder = async () => {
+      // ═══════════════════════════════════════════════════════════════════════════════
+      // LÓGICA DUAL DE ANULACIÓN:
+      // 1. Cuenta ABIERTA (sin factura pagada): Cancela items sin registro fiscal
+      // 2. Cuenta CERRADA (con factura NCF): Redirige al módulo B04 de Notas de Crédito
+      // ═══════════════════════════════════════════════════════════════════════════════
+      
+      if (!order) return;
+      
+      try {
+        // Verificar si existe una factura PAGADA para esta orden
+        const billsRes = await billsAPI.list({ order_id: order.id });
+        const paidBill = billsRes.data?.find(b => b.status === 'paid');
+        
+        if (paidBill) {
+          // ─── CUENTA CERRADA: Redirigir a B04 ───
+          // La cuenta ya fue facturada y pagada, necesita una Nota de Crédito
+          setB04RedirectDialog({
+            open: true,
+            transactionNumber: paidBill.transaction_number || order.transaction_number,
+            ncf: paidBill.ncf,
+            total: paidBill.total,
+            paidAt: paidBill.paid_at
+          });
+        } else {
+          // ─── CUENTA ABIERTA: Cancelar sin fiscal ───
+          // La cuenta NO ha sido facturada, se puede cancelar directamente
+          const currentActiveItems = order?.items?.filter(i => i.status !== 'cancelled') || [];
+          if (currentActiveItems.length === 0) {
+            return; // Silent - no items to void
+          }
+          const allItemIds = currentActiveItems.map(i => i.id);
+          openBulkCancelDialog(allItemIds, true); // true = force manager auth
+        }
+      } catch (err) {
+        console.error('Error checking bill status:', err);
+        // En caso de error, asumir cuenta abierta
+        const currentActiveItems = order?.items?.filter(i => i.status !== 'cancelled') || [];
+        if (currentActiveItems.length === 0) return;
+        const allItemIds = currentActiveItems.map(i => i.id);
+        openBulkCancelDialog(allItemIds, true);
       }
-      const allItemIds = currentActiveItems.map(i => i.id);
-      openBulkCancelDialog(allItemIds, true); // true = force manager auth
     };
     
     window.addEventListener('openMoveTableDialog', handleOpenMoveDialog);
