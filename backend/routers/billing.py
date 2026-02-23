@@ -342,6 +342,17 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
 
+    # ─── VERIFICAR JORNADA DE TRABAJO ABIERTA ───
+    business_day = await db.business_days.find_one({"status": "open"}, {"_id": 0})
+    if not business_day:
+        raise HTTPException(
+            status_code=403,
+            detail="No hay jornada de trabajo abierta. Debe abrir el día antes de procesar pagos."
+        )
+    
+    # Obtener la fecha de negocio (contable)
+    business_date = business_day["business_date"]
+    
     # Use frontend-provided values (already calculated by Intelligent Tax Engine)
     # Fallback to bill's existing values if not provided
     if input.propina_legal is not None:
