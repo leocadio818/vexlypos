@@ -1877,11 +1877,6 @@ async def send_receipt_to_printer(bill_id: str):
     commands.append({"type": "text", "text": f"Tel: {biz_phone}", "align": "center"})
     commands.append({"type": "divider"})
     
-    # Número de Transacción Interno (para control interno)
-    internal_trans = bill.get('internal_transaction_number')
-    if internal_trans:
-        commands.append({"type": "text", "text": f"Trans. #{internal_trans}", "align": "center", "bold": True})
-    
     # NCF Section (tamaño reducido)
     commands.append({"type": "text", "text": "COMPROBANTE FISCAL", "align": "center", "bold": True})
     commands.append({"type": "text", "text": bill.get('ncf', ''), "align": "center", "bold": True})
@@ -1904,6 +1899,12 @@ async def send_receipt_to_printer(bill_id: str):
     commands.append({"type": "columns", "left": "Fecha:", "right": bill.get('paid_at', bill['created_at'])[:19]})
     if bill.get('cashier_name'):
         commands.append({"type": "columns", "left": "Cajero:", "right": bill['cashier_name'][:20]})
+    
+    # Número de Transacción Interno (debajo del cajero)
+    internal_trans = bill.get('internal_transaction_number')
+    if internal_trans:
+        commands.append({"type": "columns", "left": "Trans:", "right": f"#{internal_trans}"})
+    
     commands.append({"type": "divider"})
     
     # Items
