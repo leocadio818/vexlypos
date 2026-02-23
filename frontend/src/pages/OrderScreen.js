@@ -11,6 +11,22 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
+// Mapa de iconos de producto
+const PRODUCT_ICON_MAP = {
+  'pizza': Pizza,
+  'coffee': Coffee,
+  'sandwich': Sandwich,
+  'ice-cream': IceCream,
+  'soup': Soup,
+  'wine': Wine,
+  'beer': Beer,
+  'beef': Beef,
+  'fish': Fish,
+  'salad': Salad,
+  'cookie': Cookie,
+  'cake': Cake,
+};
+
 export default function OrderScreen() {
   const { tableId } = useParams();
   const navigate = useNavigate();
