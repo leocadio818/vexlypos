@@ -1837,6 +1837,24 @@ export default function OrderScreen() {
                           : 'bg-card border-border hover:border-primary/50 active:scale-[0.97]'
                     }`}
                   >
+                    {/* Imagen o Icono del producto */}
+                    {(product.image_url || product.icon) && (
+                      <div className={`${largeMode ? 'mb-2' : 'mb-1'}`}>
+                        {product.image_url ? (
+                          <img 
+                            src={product.image_url} 
+                            alt="" 
+                            className={`${largeMode ? 'w-12 h-12' : 'w-8 h-8'} rounded-lg object-cover`}
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        ) : product.icon && PRODUCT_ICON_MAP[product.icon] ? (
+                          (() => {
+                            const IconComponent = PRODUCT_ICON_MAP[product.icon];
+                            return <IconComponent size={largeMode ? 28 : 20} className="text-primary/80" />;
+                          })()
+                        ) : null}
+                      </div>
+                    )}
                     <span className={`font-semibold leading-tight line-clamp-2 ${largeMode ? 'text-base' : 'text-sm'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
                     <span className={`font-oswald font-bold ${largeMode ? 'text-xl' : 'text-lg'} ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>{formatMoney(product.price)}</span>
                     {hasModifiers && !isOutOfStock && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
