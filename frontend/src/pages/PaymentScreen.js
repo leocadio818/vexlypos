@@ -149,6 +149,11 @@ export default function PaymentScreen() {
   
   // NCF Alert Modal state
   const [ncfAlertModal, setNcfAlertModal] = useState({ open: false, ncfData: null });
+  
+  // Fiscal Data Drawer state (for B01, B14, B15)
+  const [fiscalDrawerOpen, setFiscalDrawerOpen] = useState(false);
+  const [pendingFiscalType, setPendingFiscalType] = useState(null);
+  const [fiscalData, setFiscalData] = useState(null); // Datos fiscales capturados
 
   // Tax Override states
   const [taxOverrideDialog, setTaxOverrideDialog] = useState({ open: false, step: 'pin' });
