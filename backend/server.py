@@ -2113,6 +2113,28 @@ async def send_receipt_to_printer(bill_id: str):
     commands.append({"type": "text", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}", "align": "center"})
     commands.append({"type": "divider"})
     
+    # ─── DATOS FISCALES DEL CLIENTE (B01, B14, B15) ───
+    # Inferir ncf_type desde el NCF si no está establecido
+    ncf_type = bill.get("ncf_type", "")
+    ncf_str = bill.get("ncf", "")
+    if not ncf_type and ncf_str:
+        if ncf_str.startswith("B01"):
+            ncf_type = "B01"
+        elif ncf_str.startswith("B14"):
+            ncf_type = "B14"
+        elif ncf_str.startswith("B15"):
+            ncf_type = "B15"
+    
+    # Mostrar datos fiscales si es factura fiscal y tiene datos del cliente
+    if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
+        commands.append({"type": "text", "text": "DATOS DEL CLIENTE", "align": "left", "bold": True})
+        fiscal_id_type = bill.get("fiscal_id_type", "RNC")
+        fiscal_id = bill.get("fiscal_id", "")
+        razon_social = bill.get("razon_social", "")
+        commands.append({"type": "text", "text": f"{fiscal_id_type}: {fiscal_id}", "align": "left"})
+        commands.append({"type": "text", "text": f"Razon Social: {razon_social}", "align": "left"})
+        commands.append({"type": "divider"})
+    
     # Build mesa description with account info if divided
     account_number = bill.get('account_number', 1)
     account_label = bill.get('account_label', '')
