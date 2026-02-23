@@ -363,25 +363,62 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     # El transaction_number ya viene del bill (copiado de la orden)
     # No se genera nuevo número aquí
 
-    # Get payment method details
-    payment_method_doc = await db.payment_methods.find_one({"id": input.payment_method_id}, {"_id": 0})
+    # ─── PROCESAR PAGOS MÚLTIPLES ───
+    payments_list = []
+    primary_payment_method_name = "Efectivo"
     is_cash_payment = True
-    payment_method_name = "Efectivo"
-    if payment_method_doc:
-        is_cash_payment = payment_method_doc.get("is_cash", input.payment_method == "cash")
-        payment_method_name = payment_method_doc.get("name", input.payment_method)
-    elif input.payment_method == "card":
-        is_cash_payment = False
-        payment_method_name = "Tarjeta"
+    
+    if input.payments and len(input.payments) > 0:
+        # Pagos múltiples
+        for pmt in input.payments:
+            pmt_doc = await db.payment_methods.find_one({"id": pmt.payment_method_id}, {"_id": 0})
+            if pmt_doc:
+                payments_list.append({
+                    "payment_method_id": pmt.payment_method_id,
+                    "payment_method_name": pmt_doc.get("name", pmt.payment_method_name),
+                    "amount": pmt.amount,  # Monto en moneda original
+                    "amount_dop": pmt.amount_dop if pmt.amount_dop else round(pmt.amount * pmt_doc.get("exchange_rate", 1), 2),
+                    "currency": pmt_doc.get("currency", "DOP"),
+                    "exchange_rate": pmt_doc.get("exchange_rate", 1),
+                    "brand_icon": pmt_doc.get("brand_icon"),
+                    "is_cash": pmt_doc.get("is_cash", False)
+                })
+        
+        # El método principal es el primero de la lista
+        if payments_list:
+            primary_payment_method_name = payments_list[0]["payment_method_name"]
+            is_cash_payment = payments_list[0].get("is_cash", True)
+    else:
+        # Pago único (compatibilidad hacia atrás)
+        payment_method_doc = await db.payment_methods.find_one({"id": input.payment_method_id}, {"_id": 0})
+        if payment_method_doc:
+            is_cash_payment = payment_method_doc.get("is_cash", input.payment_method == "cash")
+            primary_payment_method_name = payment_method_doc.get("name", input.payment_method)
+            payments_list.append({
+                "payment_method_id": input.payment_method_id,
+                "payment_method_name": primary_payment_method_name,
+                "amount": input.amount_received or total,
+                "amount_dop": total,
+                "currency": payment_method_doc.get("currency", "DOP"),
+                "exchange_rate": payment_method_doc.get("exchange_rate", 1),
+                "brand_icon": payment_method_doc.get("brand_icon"),
+                "is_cash": is_cash_payment
+            })
+        elif input.payment_method == "card":
+            is_cash_payment = False
+            primary_payment_method_name = "Tarjeta"
 
     update_fields = {
         "status": "paid", "payment_method": input.payment_method,
-        "payment_method_name": payment_method_name,
+        "payment_method_name": primary_payment_method_name,
+        "payments": payments_list,  # Lista de pagos múltiples
         "propina_legal": propina, "propina_percentage": input.tip_percentage if input.propina_legal is None else bill.get("propina_percentage", 10),
         "itbis": itbis,
         "total": total, "paid_at": now_iso(),
         "paid_by_id": user["user_id"],
-        "paid_by_name": user["name"]
+        "paid_by_name": user["name"],
+        "change_currency": input.change_currency,
+        "change_amount": input.change_amount
     }
     if input.amount_received is not None:
         update_fields["amount_received"] = input.amount_received
