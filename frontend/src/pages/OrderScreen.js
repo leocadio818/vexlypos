@@ -809,12 +809,11 @@ export default function OrderScreen() {
           await tablesAPI.update(table.id, { status: 'billed' });
         } catch {}
       }
-    } catch { toast.error('Error generando pre-cuenta'); }
+    } catch { console.warn('Error generando pre-cuenta'); }
   };
 
   // Print pre-check for a specific account
   const handlePrintAccountPreCheck = async (orderId, accountNumber) => {
-    toast.info(`Generando pre-cuenta de Cuenta #${accountNumber}...`);
     await doPrintPreCheck(orderId);
   };
 
@@ -830,9 +829,7 @@ export default function OrderScreen() {
       });
       if (r.ok) {
         const data = await r.json();
-        const superuserBadge = data.is_superuser ? ' (Superusuario)' : '';
         setManagerPinDialog({ open: false, pin: '', error: '' });
-        toast.success(`Autorizado por ${data.user_name}${superuserBadge}`);
         await doPrintPreCheck();
       } else {
         const d = await r.json();
