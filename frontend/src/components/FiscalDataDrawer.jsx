@@ -443,6 +443,8 @@ const FiscalDataDrawer = ({
                       <>
                         <Check size={12} />
                         {validation.type} válido: {formatFiscalId(validation.cleaned)}
+                        {dgiiSearching && <Loader2 className="animate-spin ml-2 text-cyan-400" size={12} />}
+                        {dgiiSearching && <span className="text-cyan-400 ml-1">Buscando en DGII...</span>}
                       </>
                     ) : validation.valid && validation.warning ? (
                       <>
