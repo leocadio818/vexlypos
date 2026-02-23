@@ -478,24 +478,72 @@ const FiscalDataDrawer = ({
             {(customerFound || isNewCustomer || dgiiData) && (
               <div className={`p-3 rounded-xl flex items-center gap-3 ${
                 customerFound ? 'bg-green-500/10 border border-green-500/30' : 
-                dgiiData && isNewCustomer ? 'bg-cyan-500/10 border border-cyan-500/30' :
+                dgiiData && isNewCustomer ? (
+                  dgiiData.estado === 'ACTIVO' ? 'bg-cyan-500/10 border border-cyan-500/30' :
+                  dgiiData.estado === 'SUSPENDIDO' ? 'bg-amber-500/10 border border-amber-500/30' :
+                  dgiiData.estado === 'INACTIVO' || dgiiData.estado === 'DADO DE BAJA' ? 'bg-red-500/10 border border-red-500/30' :
+                  'bg-cyan-500/10 border border-cyan-500/30'
+                ) :
                 'bg-amber-500/10 border border-amber-500/30'
               }`}>
                 {customerFound ? (
                   <User size={20} className="text-green-400" />
                 ) : dgiiData && isNewCustomer ? (
-                  <Building2 size={20} className="text-cyan-400" />
+                  <Building2 size={20} className={
+                    dgiiData.estado === 'ACTIVO' ? 'text-cyan-400' :
+                    dgiiData.estado === 'SUSPENDIDO' ? 'text-amber-400' :
+                    dgiiData.estado === 'INACTIVO' || dgiiData.estado === 'DADO DE BAJA' ? 'text-red-400' :
+                    'text-cyan-400'
+                  } />
                 ) : (
                   <User size={20} className="text-amber-400" />
                 )}
-                <span className={`text-sm ${
-                  customerFound ? 'text-green-300' : 
-                  dgiiData && isNewCustomer ? 'text-cyan-300' :
-                  'text-amber-300'
-                }`}>
-                  {customerFound ? 'Cliente existente - Datos autocompletados' : 
-                   dgiiData && isNewCustomer ? `Datos de DGII - ${dgiiData.estado || 'Contribuyente activo'}` :
-                   'Cliente nuevo - Ingresa los datos'}
+                <div className="flex-1 flex items-center gap-2">
+                  <span className={`text-sm ${
+                    customerFound ? 'text-green-300' : 
+                    dgiiData && isNewCustomer ? 'text-white/80' :
+                    'text-amber-300'
+                  }`}>
+                    {customerFound ? 'Cliente existente - Datos autocompletados' : 
+                     dgiiData && isNewCustomer ? 'Datos de DGII' :
+                     'Cliente nuevo - Ingresa los datos'}
+                  </span>
+                  {/* Badge de estado del contribuyente */}
+                  {dgiiData && isNewCustomer && dgiiData.estado && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
+                      dgiiData.estado === 'ACTIVO' 
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                      dgiiData.estado === 'SUSPENDIDO' 
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                      dgiiData.estado === 'INACTIVO' || dgiiData.estado === 'DADO DE BAJA'
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                        'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                    }`}>
+                      {dgiiData.estado}
+                    </span>
+                  )}
+                </div>
+                {/* Alerta si el contribuyente no está activo */}
+                {dgiiData && isNewCustomer && dgiiData.estado && dgiiData.estado !== 'ACTIVO' && (
+                  <AlertCircle size={18} className={
+                    dgiiData.estado === 'SUSPENDIDO' ? 'text-amber-400' : 'text-red-400'
+                  } />
+                )}
+              </div>
+            )}
+            
+            {/* Alerta adicional para contribuyentes problemáticos */}
+            {dgiiData && isNewCustomer && dgiiData.estado && dgiiData.estado !== 'ACTIVO' && (
+              <div className={`p-2 rounded-lg flex items-center gap-2 text-xs ${
+                dgiiData.estado === 'SUSPENDIDO' 
+                  ? 'bg-amber-500/10 border border-amber-500/20 text-amber-300'
+                  : 'bg-red-500/10 border border-red-500/20 text-red-300'
+              }`}>
+                <AlertCircle size={14} />
+                <span>
+                  {dgiiData.estado === 'SUSPENDIDO' 
+                    ? '⚠️ Contribuyente SUSPENDIDO - Verificar antes de facturar'
+                    : '🚫 Contribuyente INACTIVO - No se recomienda facturar con crédito fiscal'}
                 </span>
               </div>
             )}
