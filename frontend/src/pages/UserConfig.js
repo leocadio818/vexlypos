@@ -203,7 +203,7 @@ export default function UserConfig() {
   // Solo Admin puede ver/editar PINs de otros usuarios
   // Cualquiera puede editar su propio PIN
   const isAdmin = currentUser?.role === 'admin';
-  const isEditingSelf = !isNew && currentUser?.user_id === userId;
+  const isEditingSelf = !isNew && currentUser?.id === userId;
   const canEditPin = isAdmin || isEditingSelf || isNew;
   
   // State para mostrar/ocultar PIN (solo para admin)
