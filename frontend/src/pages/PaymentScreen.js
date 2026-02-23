@@ -935,24 +935,36 @@ export default function PaymentScreen() {
                   {(adjustedBill?.tax_breakdown || bill.tax_breakdown || []).length > 0 ? (
                     (adjustedBill?.tax_breakdown || bill.tax_breakdown).map((tax, i) => (
                       <div key={i} className={`flex justify-between ${tax.amount === 0 ? 'text-red-400/60 line-through' : 'text-white/70'}`}>
-                        <span className={isMobile ? '' : 'text-lg'}>{tax.description || tax.name || (tax.is_tip ? 'Propina' : 'ITBIS')} ({tax.rate}%)</span>
+                        <span className={isMobile ? '' : 'text-lg'}>
+                          {tax.description || tax.name || (tax.is_tip ? 'Propina' : 'ITBIS')}
+                          {/* Solo mostrar rate si no está incluido en el nombre */}
+                          {tax.rate && !(tax.description || tax.name || '').includes('%') ? ` (${tax.rate}%)` : ''}
+                        </span>
                         <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(tax.amount)}</span>
                       </div>
                     ))
                   ) : (
                     <>
-                      {/* ITBIS */}
-                      <div className="flex justify-between text-white/70">
-                        <span className={isMobile ? '' : 'text-lg'}>ITBIS (18%)</span>
-                        <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(adjustedBill?.itbis ?? bill.itbis)}</span>
-                      </div>
+                      {/* ITBIS - usar nombre del taxConfig o default */}
+                      {(() => {
+                        const itbisTax = taxConfig.find(t => t.code === 'ITBIS' || (t.name && t.name.includes('ITBIS') && t.rate >= 16));
+                        const itbisName = itbisTax?.name || 'ITBIS 18%';
+                        return (
+                          <div className="flex justify-between text-white/70">
+                            <span className={isMobile ? '' : 'text-lg'}>{itbisName}</span>
+                            <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(adjustedBill?.itbis ?? bill.itbis)}</span>
+                          </div>
+                        );
+                      })()}
                       {/* Propina */}
                       {(() => {
                         const propinaValue = adjustedBill?.propina_legal ?? bill.propina_legal ?? 0;
                         const isExempt = propinaValue === 0;
+                        const propinaTax = taxConfig.find(t => t.is_tip || t.code === 'PROPINA' || (t.name && t.name.toLowerCase().includes('propina')));
+                        const propinaName = propinaTax?.name || 'Propina Legal 10%';
                         return (
                           <div className={`flex justify-between ${isExempt ? 'text-red-400/60 line-through' : 'text-white/70'}`}>
-                            <span className={isMobile ? '' : 'text-lg'}>Propina Legal (10%)</span>
+                            <span className={isMobile ? '' : 'text-lg'}>{propinaName}</span>
                             <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(propinaValue)}</span>
                           </div>
                         );
