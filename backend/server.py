@@ -1931,12 +1931,12 @@ async def send_receipt_to_printer(bill_id: str):
         if bill.get('propina_legal', 0) > 0:
             commands.append({"type": "columns", "left": f"Propina {bill.get('propina_percentage', 10)}%", "right": f"RD$ {bill.get('propina_legal', 0):,.2f}"})
     
-    # Total con borde
+    # Total con borde (lineas simples para compatibilidad)
     commands.append({"type": "feed", "lines": 1})
-    commands.append({"type": "text", "text": "═" * 42})
+    commands.append({"type": "text", "text": "=" * 42})
     commands.append({"type": "text", "text": "TOTAL A PAGAR", "align": "center", "bold": True})
     commands.append({"type": "text", "text": f"RD$ {bill['total']:,.2f}", "align": "center", "bold": True, "size": 2})
-    commands.append({"type": "text", "text": "═" * 42})
+    commands.append({"type": "text", "text": "=" * 42})
     
     # ─── DESGLOSE DE RECIBIDO (Factura Final - Estado Pagado) ───
     # Muestra exactamente qué se recibió del cliente
