@@ -138,9 +138,10 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Lógica de Cambio Multimoneda** - Recibido en moneda original, cambio siempre en RD$
 - [x] **Menú Funciones Glassmorphism** - Modal con fondo desenfocado y botones píldora
 - [x] **Lógica Dual de Anulación** - Cuenta abierta (cancela sin fiscal) vs cerrada (B04 redirect)
-- [x] **Búsqueda Inteligente en Caja** - Filtrar movimientos por NCF, monto, descripción
+- [x] **Búsqueda Inteligente en Caja** - Filtrar movimientos por NCF, # orden, monto, descripción
 - [x] **Re-impresión desde Movimientos** - Botón flotante para reimprimir factura seleccionada
 - [x] **Copias Configurables por Impresora** - Campo "Copias" (1-5) en configuración de cada canal
+- [x] **Búsqueda por # Orden Global** - Historial de Facturas y Caja permiten buscar por número de transacción
 
 ## Búsqueda y Re-impresión de Facturas (NUEVO - 2026-02-23)
 
