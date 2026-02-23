@@ -1938,64 +1938,55 @@ async def send_receipt_to_printer(bill_id: str):
     commands.append({"type": "text", "text": f"RD$ {bill['total']:,.2f}", "align": "center", "bold": True, "size": 2})
     commands.append({"type": "text", "text": "═" * 42})
     
-    # ─── DESGLOSE DE FORMAS DE PAGO (múltiples) ───
+    # ─── DESGLOSE DE RECIBIDO (Factura Final - Estado Pagado) ───
+    # Muestra exactamente qué se recibió del cliente
     payments = bill.get('payments', [])
-    if payments and len(payments) > 1:
-        # Múltiples formas de pago - listar cada una
-        commands.append({"type": "text", "text": "FORMAS DE PAGO", "align": "center", "bold": True})
-        for pmt in payments:
-            pmt_name = pmt.get('payment_method_name', 'Pago')[:20]
-            pmt_currency = pmt.get('currency', 'DOP')
-            pmt_amount = pmt.get('amount', 0)
-            pmt_amount_dop = pmt.get('amount_dop', pmt_amount)
-            
-            # Mostrar en moneda original si no es DOP
-            if pmt_currency != 'DOP' and pmt_currency != 'RD$':
-                # Símbolo de moneda
-                curr_symbol = "US$" if pmt_currency == "USD" else "€" if pmt_currency == "EUR" else pmt_currency
-                commands.append({"type": "columns", "left": f"{pmt_name}:", "right": f"{curr_symbol} {pmt_amount:,.2f}"})
-                # Mostrar equivalente en DOP debajo
-                commands.append({"type": "columns", "left": "  (Equiv. RD$)", "right": f"RD$ {pmt_amount_dop:,.2f}"})
-            else:
-                commands.append({"type": "columns", "left": f"{pmt_name}:", "right": f"RD$ {pmt_amount_dop:,.2f}"})
-    elif bill.get('payment_method_name'):
-        # Pago único
-        commands.append({"type": "columns", "left": "Forma de pago:", "right": bill['payment_method_name'][:22]})
-    
-    # ─── LÓGICA DE CAMBIO (con soporte multimoneda) ───
     amount_received = bill.get("amount_received", 0)
-    change_currency = bill.get("change_currency", "DOP")
     change_amount = bill.get("change_amount", 0)
     
-    # Detectar si el pago fue en moneda extranjera
-    foreign_payment = None
-    if payments:
+    if payments and len(payments) > 0:
+        # Listar cada pago recibido con formato "Recibido [Método]: [Monto]"
         for pmt in payments:
-            if pmt.get('currency') not in ['DOP', 'RD$'] and pmt.get('is_cash', False):
-                foreign_payment = pmt
-                break
+            pmt_currency = pmt.get('currency', 'DOP')
+            pmt_amount = pmt.get('amount', 0)
+            
+            # Determinar etiqueta según tipo de pago
+            if pmt_currency == 'USD':
+                label = "Recibido Dólar:"
+                curr_symbol = "US$"
+                display_amount = pmt_amount
+            elif pmt_currency == 'EUR':
+                label = "Recibido Euro:"
+                curr_symbol = "€"
+                display_amount = pmt_amount
+            elif pmt.get('is_cash', True) and pmt_currency in ['DOP', 'RD$']:
+                label = "Recibido Efectivo:"
+                curr_symbol = "RD$"
+                display_amount = pmt_amount
+            else:
+                # Tarjeta u otro método
+                pmt_name = pmt.get('payment_method_name', 'Pago')[:15]
+                label = f"Recibido {pmt_name}:"
+                curr_symbol = "RD$"
+                display_amount = pmt.get('amount_dop', pmt_amount)
+            
+            commands.append({"type": "columns", "left": label, "right": f"{curr_symbol} {display_amount:,.2f}"})
+    elif bill.get('payment_method_name'):
+        # Pago único (compatibilidad hacia atrás)
+        pmt_name = bill['payment_method_name'][:15]
+        if amount_received > 0:
+            commands.append({"type": "columns", "left": f"Recibido {pmt_name}:", "right": f"RD$ {amount_received:,.2f}"})
+        else:
+            commands.append({"type": "columns", "left": "Forma de pago:", "right": bill['payment_method_name'][:22]})
     
-    if foreign_payment and amount_received > 0:
-        # Pago en moneda extranjera - mostrar recibido en moneda original
-        curr_code = foreign_payment.get('currency', 'USD')
-        curr_symbol = "US$" if curr_code == "USD" else "€" if curr_code == "EUR" else curr_code
-        received_foreign = foreign_payment.get('amount', 0)
-        
-        commands.append({"type": "columns", "left": f"Recibido ({curr_code}):", "right": f"{curr_symbol} {received_foreign:,.2f}"})
-        commands.append({"type": "columns", "left": "Total a Cobrar:", "right": f"RD$ {bill['total']:,.2f}"})
-        
-        # Cambio siempre en RD$ (el cambio se da en pesos)
-        if change_amount > 0:
-            commands.append({"type": "columns", "bold": True, "left": "CAMBIO (RD$):", "right": f"RD$ {change_amount:,.2f}"})
-        elif amount_received > bill["total"]:
-            cambio = round(amount_received - bill["total"], 2)
-            if cambio > 0:
-                commands.append({"type": "columns", "bold": True, "left": "CAMBIO (RD$):", "right": f"RD$ {cambio:,.2f}"})
+    # ─── CÁLCULO DE DEVUELTA (siempre en RD$) ───
+    # El cambio se calcula y muestra únicamente en Pesos Dominicanos
+    if change_amount > 0:
+        commands.append({"type": "columns", "bold": True, "left": "CAMBIO:", "right": f"RD$ {change_amount:,.2f}"})
     elif amount_received > bill["total"]:
-        # Pago normal en RD$
-        commands.append({"type": "columns", "left": "Recibido:", "right": f"RD$ {amount_received:,.2f}"})
         cambio = round(amount_received - bill["total"], 2)
-        commands.append({"type": "columns", "bold": True, "left": "CAMBIO:", "right": f"RD$ {cambio:,.2f}"})
+        if cambio > 0:
+            commands.append({"type": "columns", "bold": True, "left": "CAMBIO:", "right": f"RD$ {cambio:,.2f}"})
     
     commands.append({"type": "divider"})
     
