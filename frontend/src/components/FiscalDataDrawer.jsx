@@ -334,19 +334,24 @@ const FiscalDataDrawer = ({
                     onChange={(e) => setFiscalId(e.target.value.replace(/[^0-9-]/g, ''))}
                     placeholder="Ej: 123456789 o 00112345678"
                     className={`bg-white/5 border-2 text-white text-lg h-14 pr-12 font-mono tracking-wider transition-all ${
-                      fiscalId && validation.valid 
+                      fiscalId && validation.valid && !validation.warning
                         ? 'border-green-500/50 focus:border-green-400' 
-                        : fiscalId && !validation.valid && validation.cleaned.length >= 9
-                          ? 'border-red-500/50 focus:border-red-400'
-                          : 'border-white/20 focus:border-cyan-400'
+                        : fiscalId && validation.valid && validation.warning
+                          ? 'border-amber-500/50 focus:border-amber-400'
+                          : fiscalId && !validation.valid && validation.cleaned.length >= 9
+                            ? 'border-red-500/50 focus:border-red-400'
+                            : 'border-white/20 focus:border-cyan-400'
                     }`}
                     data-testid="fiscal-id-input"
                     autoFocus
                   />
                   {/* Indicador de validación */}
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    {fiscalId && validation.valid && (
+                    {fiscalId && validation.valid && !validation.warning && (
                       <Check className="text-green-400" size={20} />
+                    )}
+                    {fiscalId && validation.valid && validation.warning && (
+                      <AlertCircle className="text-amber-400" size={20} />
                     )}
                     {fiscalId && !validation.valid && validation.cleaned.length >= 9 && (
                       <AlertCircle className="text-red-400" size={20} />
