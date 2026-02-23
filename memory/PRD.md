@@ -138,6 +138,64 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Lógica de Cambio Multimoneda** - Recibido en moneda original, cambio siempre en RD$
 - [x] **Menú Funciones Glassmorphism** - Modal con fondo desenfocado y botones píldora
 - [x] **Lógica Dual de Anulación** - Cuenta abierta (cancela sin fiscal) vs cerrada (B04 redirect)
+- [x] **Búsqueda Inteligente en Caja** - Filtrar movimientos por NCF, monto, descripción
+- [x] **Re-impresión desde Movimientos** - Botón flotante para reimprimir factura seleccionada
+- [x] **Copias Configurables por Impresora** - Campo "Copias" (1-5) en configuración de cada canal
+
+## Búsqueda y Re-impresión de Facturas (NUEVO - 2026-02-23)
+
+### Descripción
+Sistema de búsqueda inteligente en la pantalla de Caja con capacidad de seleccionar y reimprimir facturas pasadas.
+
+### Características
+1. **Barra de Búsqueda Inteligente**
+   - Ubicación: Sección "MOVIMIENTOS DEL TURNO" en Caja/Turnos
+   - Placeholder: "Buscar por NCF, monto, descripción..."
+   - Filtros disponibles: NCF (ej: B01), monto, descripción del pago, método de pago
+   - Botón X para limpiar búsqueda
+
+2. **Selección de Movimiento**
+   - Click en movimiento resalta con borde naranja y punto pulsante
+   - Click de nuevo deselecciona
+
+3. **Botón Flotante de Re-impresión**
+   - Aparece en la parte inferior al seleccionar un movimiento de tipo venta
+   - Muestra: descripción, monto, referencia NCF
+   - Botón "Re-imprimir" envía factura a cola de impresión
+   - Botón "X" para cerrar
+
+### Endpoints Usados
+- `GET /api/bills?ncf={ncf}` - Buscar factura por NCF
+- `POST /api/print/receipt/{bill_id}/send` - Enviar factura a cola de impresión
+
+## Copias Configurables por Canal (NUEVO - 2026-02-23)
+
+### Descripción
+Permite configurar el número de copias a imprimir para cada canal de impresión (Cocina, Bar, Recibo, etc).
+
+### Ubicación
+Configuración → Impresión → Configurar Impresora USB/Red
+
+### Características
+- Campo numérico "Copias:" junto al nombre de impresora Windows
+- Rango: 1 a 5 copias
+- Valor por defecto: 1
+- Badge visual muestra "X copias" cuando > 1
+
+### Funcionamiento Técnico
+1. **Backend**: Campo `copies` en colección `print_channels`
+2. **API**: `PUT /api/print-channels/{id}` guarda el valor
+3. **Print Queue**: Cada job incluye `copies` en su payload
+4. **Print Agent v2.1**: Loop de impresión según `copies`:
+   ```python
+   for copy_num in range(1, copies + 1):
+       print_raw(printer, raw_data)
+       time.sleep(0.5)  # Pausa entre copias
+   ```
+
+### Nota Importante
+Después de modificar las copias, el usuario debe **reinstalar el agente de impresión** desde:
+`/api/download/print-agent-installer?printer_name=NOMBRE_IMPRESORA`
 
 ## Motor de Pagos Múltiples (NUEVO - 2026-02-23)
 
