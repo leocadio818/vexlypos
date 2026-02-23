@@ -2161,6 +2161,21 @@ async def send_precheck_to_printer(order_id: str):
     for tl in tax_lines:
         commands.append({"type": "columns", "left": f"{tl['description']} {tl['rate']}%", "right": f"RD$ {tl['amount']:,.2f}"})
     commands.append({"type": "columns", "bold": True, "left": "TOTAL ESTIMADO", "right": f"RD$ {total:,.2f}"})
+    
+    # ─── EQUIVALENTES EN MONEDA EXTRANJERA ───
+    # Obtener tasas de cambio configuradas de los métodos de pago
+    payment_methods = await db.payment_methods.find({"active": True, "currency": {"$ne": "DOP"}}, {"_id": 0}).to_list(10)
+    if payment_methods:
+        commands.append({"type": "text", "text": "-" * 42})
+        for pm in payment_methods:
+            currency = pm.get("currency", "")
+            exchange_rate = pm.get("exchange_rate", 1)
+            if currency and exchange_rate and exchange_rate > 0:
+                equiv_amount = round(total / exchange_rate, 2)
+                curr_symbol = "US$" if currency == "USD" else "€" if currency == "EUR" else currency
+                # Formato compacto para 72mm: "Equiv US$ 82.65 (60.50)"
+                commands.append({"type": "columns", "left": f"Equiv {curr_symbol}", "right": f"{equiv_amount:,.2f} (Tasa:{exchange_rate:.2f})"})
+    
     commands.append({"type": "divider"})
     commands.append({"type": "text", "text": "La propina es voluntaria", "align": "center"})
     commands.append({"type": "text", "text": "Este NO es un comprobante fiscal", "align": "center"})
