@@ -803,8 +803,12 @@ export default function CashRegister() {
       {/* Credit Note Modal (B04 - Nota de Crédito para Post-Venta) */}
       <CreditNoteModal 
         open={creditNoteModalOpen} 
-        onOpenChange={setCreditNoteModalOpen}
+        onOpenChange={(open) => {
+          setCreditNoteModalOpen(open);
+          if (!open) setPendingB04Transaction(null);
+        }}
         API_BASE={process.env.REACT_APP_BACKEND_URL}
+        initialTransactionNumber={pendingB04Transaction}
       />
     </div>
   );
