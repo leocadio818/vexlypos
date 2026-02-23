@@ -73,10 +73,15 @@ export default function BillHistory() {
   const filteredBills = bills.filter(b => {
     if (!search) return true;
     const s = search.toLowerCase();
+    // Búsqueda por # de orden (transaction_number)
+    const transNum = String(b.transaction_number || '');
     return (
       b.ncf?.toLowerCase().includes(s) ||
       b.label?.toLowerCase().includes(s) ||
       b.cashier_name?.toLowerCase().includes(s) ||
+      b.waiter_name?.toLowerCase().includes(s) ||
+      String(b.table_number || '').includes(s) ||
+      transNum.includes(s) ||
       b.id?.toLowerCase().includes(s)
     );
   });
