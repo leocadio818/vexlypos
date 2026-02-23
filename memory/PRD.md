@@ -189,38 +189,40 @@ class PaymentEntry:
 - EUR Euro: 70.00
 - Las tasas se configuran en Configuración → Métodos de Pago
 
-### Formato de Impresión por Estado
+### Formato de Impresion por Estado
+
+#### Codificacion Compatible (ASCII)
+Para evitar caracteres raros en impresoras termicas:
+- Sin acentos: `Dolar` (no Dólar), `Transaccion` (no Transacción)
+- Sin simbolos especiales: `EUR` (no €)
+- Lineas simples: `=` o `-` (no ═)
+- Ancho maximo: 42 caracteres (72mm)
 
 #### Pre-cuenta (Estado Pendiente)
-Muestra equivalentes de moneda de forma limpia:
 ```
 TOTAL ESTIMADO          RD$ 5,000.00
-----------------------------------
-Dólar                     US$ 78.12
-Euro                         € 71.43
-----------------------------------
+------------------------------------------
+Dolar                        US$ 78.12
+Euro                         EUR 71.43
+------------------------------------------
 La propina es voluntaria
 Este NO es un comprobante fiscal
 ```
-- Sin "Equiv", sin tasas entre paréntesis
-- Solo nombre de moneda y monto calculado
 
 #### Factura Final (Estado Pagado)
-Muestra desglose de lo recibido:
 ```
-═══════════════════════════════════════════
+Cajero:                            Admin
+Transaccion:                       #1025
+------------------------------------------
+==========================================
               TOTAL A PAGAR
              RD$ 5,000.00
-═══════════════════════════════════════════
+==========================================
 Recibido Efectivo:          RD$ 2,000.00
-Recibido Dólar:               US$ 50.00
+Recibido Dolar:               US$ 50.00
 CAMBIO:                        RD$ 200.00
--------------------------------------------
+------------------------------------------
 ```
-- Sin bloque informativo de monedas (ya no es necesario)
-- Lista exactamente qué se recibió del cliente
-- Cambio siempre en Pesos Dominicanos (RD$)
-- Número de Transacción debajo del Cajero
 
 ## Menú Funciones de Mesa - Lógica Dual de Anulación (NUEVO - 2026-02-23)
 
