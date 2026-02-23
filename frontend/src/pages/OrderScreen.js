@@ -907,22 +907,18 @@ export default function OrderScreen() {
   // Create new order from selected items
   const createNewOrderFromItems = async (label = '') => {
     if (selectedSplitItems.length === 0) {
-      toast.info('Selecciona items primero');
-      return;
+      return; // Silent - no items selected
     }
     if (!order) return;
     
     // Check if ALL items are selected - not allowed
     const allItemIds = activeItems.map(i => i.id);
     if (selectedSplitItems.length === allItemIds.length) {
-      toast.error('No puede mover todos los items. Use "Mover Mesa" para eso.');
-      return;
+      return; // Silent - use "Mover Mesa" instead
     }
 
     try {
       const res = await ordersAPI.splitToNewOrder(order.id, selectedSplitItems, label);
-      const labelText = label ? ` (${label})` : '';
-      toast.success(`Cuenta #${res.data.new_order.account_number}${labelText} creada`);
       setSelectedSplitItems([]);
       setAccountLabelDialog({ open: false, label: '', action: null, itemIds: [] });
       // Refresh orders
@@ -930,20 +926,18 @@ export default function OrderScreen() {
       // Switch to new order
       setActiveOrderId(res.data.new_order.id);
     } catch (e) { 
-      toast.error(e.response?.data?.detail || 'Error dividiendo cuenta'); 
+      console.warn(e.response?.data?.detail || 'Error dividiendo cuenta'); 
     }
   };
 
   // Open label dialog for split
   const openSplitLabelDialog = () => {
     if (selectedSplitItems.length === 0) {
-      toast.info('Selecciona items primero');
-      return;
+      return; // Silent - no items selected
     }
     const allItemIds = activeItems.map(i => i.id);
     if (selectedSplitItems.length === allItemIds.length) {
-      toast.error('No puede mover todos los items. Use "Mover Mesa" para eso.');
-      return;
+      return; // Silent - use "Mover Mesa" instead
     }
     setAccountLabelDialog({ open: true, label: '', action: 'split', itemIds: selectedSplitItems });
   };
@@ -952,14 +946,12 @@ export default function OrderScreen() {
   const createNewEmptyAccount = async (label = '') => {
     try {
       const res = await ordersAPI.createNewAccount(tableId, label);
-      const labelText = label ? ` (${label})` : '';
-      toast.success(`Cuenta #${res.data.account_number}${labelText} creada`);
       setAccountLabelDialog({ open: false, label: '', action: null, itemIds: [] });
       // Refresh orders and switch to new account
       await fetchOrder();
       setActiveOrderId(res.data.id);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error creando nueva cuenta');
+      console.warn(e.response?.data?.detail || 'Error creando nueva cuenta');
     }
   };
 
