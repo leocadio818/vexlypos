@@ -2040,15 +2040,19 @@ async def send_precheck_to_printer(order_id: str):
         total_tax = sum(t["amount"] for t in tax_lines)
     total = round(subtotal + total_tax, 2)
     
-    # Obtener número de transacción interno secuencial
-    internal_trans_num = await get_next_transaction_number()
+    # Usar transaction_number de la orden (generado al crear la cuenta)
+    # Si no existe (órdenes antiguas), generar uno y guardarlo
+    transaction_number = order.get("transaction_number")
+    if not transaction_number:
+        transaction_number = await get_next_transaction_number()
+        await db.orders.update_one({"id": order_id}, {"$set": {"transaction_number": transaction_number}})
     
     # Registrar impresion
     print_count = await db.pre_check_prints.count_documents({"order_id": order_id})
     await db.pre_check_prints.insert_one({
         "order_id": order_id, 
         "print_number": print_count + 1, 
-        "internal_transaction_number": internal_trans_num,
+        "transaction_number": transaction_number,
         "printed_at": now_iso()
     })
     
@@ -2065,8 +2069,8 @@ async def send_precheck_to_printer(order_id: str):
     
     commands.append({"type": "text", "text": "ALONZO CIGAR", "align": "center", "bold": True, "size": 2})
     commands.append({"type": "text", "text": "PRE-CUENTA", "align": "center", "bold": True})
-    # Mostrar número de transacción interno
-    commands.append({"type": "text", "text": f"Trans. #{internal_trans_num}", "align": "center", "bold": False})
+    # Mostrar número de transacción (ID de Venta) como referencia
+    commands.append({"type": "text", "text": f"ORDEN #{transaction_number}", "align": "center", "bold": True})
     commands.append({"type": "divider"})
     
     # Check if table has multiple accounts
