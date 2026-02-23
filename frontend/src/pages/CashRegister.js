@@ -414,15 +414,59 @@ export default function CashRegister() {
               </div>
             </div>
             
-            {/* Recent Movements */}
+            {/* Recent Movements with Search and Reprint */}
             {movements.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-oswald text-sm font-bold text-white/50 mb-3 uppercase tracking-wider flex items-center gap-2">
                   <History size={14} /> Movimientos del Turno
                 </h3>
+                
+                {/* Buscador Inteligente */}
+                <div className="relative mb-3">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por NCF, monto, descripción..."
+                    value={movementSearch}
+                    onChange={(e) => setMovementSearch(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-white/30 focus:border-orange-400/50 focus:outline-none transition-all"
+                    data-testid="movement-search"
+                  />
+                  {movementSearch && (
+                    <button 
+                      onClick={() => setMovementSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Lista de Movimientos Filtrada */}
                 <div className="space-y-2 max-h-64 overflow-auto">
-                  {movements.slice(0, 10).map(mov => (
-                    <div key={mov.id} className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-3 flex items-center justify-between">
+                  {movements
+                    .filter(mov => {
+                      if (!movementSearch) return true;
+                      const search = movementSearch.toLowerCase();
+                      return (
+                        mov.description?.toLowerCase().includes(search) ||
+                        mov.ref?.toLowerCase().includes(search) ||
+                        mov.payment_method?.toLowerCase().includes(search) ||
+                        String(mov.amount).includes(search)
+                      );
+                    })
+                    .slice(0, 20)
+                    .map(mov => (
+                    <div 
+                      key={mov.id} 
+                      onClick={() => setSelectedMovement(selectedMovement?.id === mov.id ? null : mov)}
+                      className={`backdrop-blur-xl border rounded-lg p-3 flex items-center justify-between cursor-pointer transition-all ${
+                        selectedMovement?.id === mov.id 
+                          ? 'bg-orange-500/20 border-orange-500/50 ring-1 ring-orange-400/30' 
+                          : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                      }`}
+                      data-testid={`movement-${mov.id}`}
+                    >
                       <div className="flex items-center gap-3">
                         {mov.direction === 1 ? (
                           <ArrowUpCircle size={18} className="text-green-400" />
@@ -434,11 +478,28 @@ export default function CashRegister() {
                           <p className="text-[10px] text-white/50">{mov.ref} - {mov.payment_method} - {new Date(mov.created_at).toLocaleTimeString('es-DO')}</p>
                         </div>
                       </div>
-                      <p className={`font-oswald text-base font-bold ${mov.direction === 1 ? 'text-green-400' : 'text-red-400'}`}>
-                        {mov.direction === 1 ? '+' : '-'}{formatMoney(mov.amount)}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <p className={`font-oswald text-base font-bold ${mov.direction === 1 ? 'text-green-400' : 'text-red-400'}`}>
+                          {mov.direction === 1 ? '+' : '-'}{formatMoney(mov.amount)}
+                        </p>
+                        {selectedMovement?.id === mov.id && (
+                          <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                        )}
+                      </div>
                     </div>
                   ))}
+                  {movements.filter(mov => {
+                    if (!movementSearch) return true;
+                    const search = movementSearch.toLowerCase();
+                    return (
+                      mov.description?.toLowerCase().includes(search) ||
+                      mov.ref?.toLowerCase().includes(search) ||
+                      mov.payment_method?.toLowerCase().includes(search) ||
+                      String(mov.amount).includes(search)
+                    );
+                  }).length === 0 && (
+                    <p className="text-center text-white/40 text-sm py-4">No se encontraron movimientos</p>
+                  )}
                 </div>
               </div>
             )}
