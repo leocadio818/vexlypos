@@ -129,6 +129,7 @@ async def get_loyalty_config():
 
 @router.put("/loyalty/config")
 async def update_loyalty_config(input: dict):
-    if "_id" in input: del input["_id"]
+    if "_id" in input:
+        del input["_id"]
     await db.loyalty_config.update_one({}, {"$set": input}, upsert=True)
     return {"ok": True}
