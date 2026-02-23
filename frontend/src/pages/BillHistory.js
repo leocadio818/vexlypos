@@ -218,7 +218,7 @@ export default function BillHistory() {
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar por NCF, mesa, cajero..."
+          placeholder="Buscar por NCF, # orden, mesa, cajero..."
           className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm"
           data-testid="search-input"
         />
