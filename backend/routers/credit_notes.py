@@ -644,11 +644,12 @@ async def get_607_credit_notes_data(
     - Referencia al NCF afectado
     """
     # Buscar notas de crédito completadas en el período
+    # Usar regex para filtrar por fecha (comparación de prefijo de string ISO)
     notes = await db.credit_notes.find({
         "status": "completed",
         "created_at": {
-            "$gte": f"{start_date}T00:00:00",
-            "$lte": f"{end_date}T23:59:59"
+            "$gte": f"{start_date}",
+            "$lte": f"{end_date}T23:59:59.999999"
         }
     }, {"_id": 0}).to_list(1000)
     
