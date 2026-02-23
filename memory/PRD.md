@@ -1,7 +1,7 @@
 # MESA POS RD - Sistema de Punto de Venta
 
 ## Descripción General
-Sistema POS completo para restaurantes/bares con soporte para impresión térmica automática, KDS (Kitchen Display System), y gestión de órdenes.
+Sistema POS completo para restaurantes/bares con soporte para impresión térmica automática, KDS (Kitchen Display System), gestión de órdenes, y cumplimiento fiscal DGII (República Dominicana).
 
 ## URLs del Sistema
 - **App:** https://pos-b04-fiscal.preview.emergentagent.com
@@ -31,9 +31,10 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 - Pre-cuenta y Factura muestran: `Mesa: X - Cuenta #Y`
 - Si tiene etiqueta: `Mesa: X - Cta #Y` + `Cliente: Nombre`
 
-### Número de Transacción Interno (NUEVO - 2026-02-22)
-- Cada documento impreso tiene un número secuencial interno: `Trans. #123`
-- Aparece en: **Comandas**, **Pre-cuentas**, **Facturas finales**
+### Número de Transacción Interno
+- Cada documento impreso tiene un número secuencial interno
+- **Comandas:** "ORDEN #XXXX" (grande, bold, arriba del ticket)
+- **Facturas:** "Transacción: #XXXX" (debajo del nombre del cajero)
 - Generado atómicamente con MongoDB (`counters` collection)
 - Independiente del NCF fiscal - solo para control interno
 - Útil para tracking de cocina y auditoría interna
@@ -74,13 +75,48 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 - Al hacer clic en el logo "RD", envía comandas pendientes automáticamente y cierra sesión
 - Botón de logout antiguo eliminado para ahorrar espacio
 
-### Control de Acceso por Roles (ACTUALIZADO - 2026-02-22)
+### Control de Acceso por Roles
 - **PaymentScreen:** Solo accesible para `admin`, `cashier`, `manager`
 - **Caja:** Solo visible para Cajeros y Administradores (no meseros)
 - **Config:** Solo visible para Administradores
+- **B04 (Notas de Crédito):** Solo Admin puede generar
 - Meseros que intenten acceder a /payment/* son redirigidos a /tables
 
-## Completado (2026-02-22)
+## Notas de Crédito B04 (NUEVO - 2026-02-23)
+
+### Descripción
+Sistema completo para anulación de facturas cerradas (Post-Venta) cumpliendo regulaciones DGII.
+
+### Flujo de Trabajo
+1. Admin navega a **Caja → Botón "B04"**
+2. Ingresa número de transacción interno de la factura a anular
+3. Verifica PIN de administrador (autenticación adicional)
+4. Sistema busca y muestra la factura original
+5. Admin selecciona **razón de anulación** (Error facturación, devolución, etc.)
+6. Sistema genera **NCF B04** vinculado al NCF original
+7. Factura original cambia de `paid` a `reversed`
+8. Se imprime recibo de Nota de Crédito
+
+### Características Técnicas
+- **NCF B04:** Prefijo "B04" para notas de crédito fiscales
+- **`ncf_afectado`:** Referencia al NCF de factura original
+- **Estado `reversed`:** Facturas anuladas quedan marcadas
+- **Auditoría:** Log completo de cada anulación
+- **Razones DGII:** 6 razones pre-configuradas según normativa
+
+### Endpoints Clave
+- `POST /api/credit-notes/search-by-transaction` - Buscar factura por #Trans
+- `POST /api/credit-notes` - Crear nota de crédito B04
+- `GET /api/credit-notes/report-607-data` - Datos formato DGII 607
+- `GET /api/credit-notes/reports/summary` - Resumen por período
+
+### Integración Reporte 607
+Las notas de crédito aparecen en el 607 con:
+- `tipo_ingreso: "04"` (Nota de Crédito)
+- `ncf_modificado:` NCF de factura afectada
+- Montos negativos (crédito)
+
+## Completado (2026-02-23)
 - [x] Sistema de impresión con cola asíncrona
 - [x] Agente local v2.1 con auto-reintento y config.txt
 - [x] Instalador automático con Tarea Programada
@@ -93,12 +129,15 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 - [x] **Sillas visuales en mapa de mesas** (escalables, móviles)
 - [x] Eliminado ícono de "otros usuarios" (solo color amarillo)
 - [x] **Restricción PaymentScreen** - Solo admin/cashier/manager
-- [x] **Número de Transacción Interno** - Trans. #XXX en todos los tickets
+- [x] **Número de Transacción Interno** - ORDEN #XXXX en comandas, Transacción: #XXXX en facturas
+- [x] **UI/UX Overhaul** - Toasts eliminados, modal glassmorphism para funciones de mesa
+- [x] **Notas de Crédito B04** - Flujo completo de post-venta con cumplimiento DGII
+- [x] **Reporte 607 para B04** - Datos formateados para declaración fiscal
 
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Datos reales para tendencias de valoración
-- [ ] Reportes DGII (607, 608)
+- [ ] Reporte DGII 608
 - [ ] Auditoría - solo Admin ve PINs
 - [ ] Reloj de entrada/salida empleados
 
@@ -113,8 +152,8 @@ Sistema POS completo para restaurantes/bares con soporte para impresión térmic
 - [ ] Duplicar productos
 
 ## Credenciales de Prueba
-- Admin: PIN 10000
-- Carlos (Mesero): PIN 1234
-- María (Mesera): PIN 5678
-- Luis (Cajero): PIN 4321
-- Chef Pedro: PIN 9999
+- **Admin:** PIN 10000 (puede crear B04)
+- **Carlos (Mesero):** PIN 1234
+- **María (Mesera):** PIN 5678
+- **Luis (Cajero):** PIN 4321
+- **Chef Pedro:** PIN 9999
