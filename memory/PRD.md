@@ -502,7 +502,10 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 **Beneficios:**
 - Reduce tiempo de captura de datos fiscales
 - Reduce errores de tipeo en nombres de empresas
-- Muestra estado del contribuyente (ACTIVO/INACTIVO)
+- Muestra estado del contribuyente con badges de colores:
+  - 🟢 **ACTIVO** - Badge verde, sin alertas
+  - 🟡 **SUSPENDIDO** - Badge amarillo con alerta de verificación
+  - 🔴 **INACTIVO** - Badge rojo con advertencia de no facturar con crédito fiscal
 
 **Implementación:**
 - Nuevo endpoint: `GET /api/dgii/validate-rnc/{rnc}` en `/app/backend/routers/dgii.py`
