@@ -2409,10 +2409,7 @@ def build_receipt(data):
     commands.append({{"type": "text", "text": f"Tel: {{data.get('phone', '')}}", "align": "center"}})
     commands.append({{"type": "divider"}})
     
-    # Número de transacción interno y NCF
-    trans_num = data.get("internal_transaction_number")
-    if trans_num:
-        commands.append({{"type": "text", "text": f"Trans. #{{trans_num}}", "align": "center", "bold": True}})
+    # NCF
     bill_num = data.get("bill_number", "")
     if bill_num:
         commands.append({{"type": "text", "text": f"NCF: {{bill_num}}", "align": "center", "bold": True}})
@@ -2421,6 +2418,10 @@ def build_receipt(data):
     commands.append({{"type": "columns", "left": "Mesa:", "right": str(data.get("table_number", ""))}})
     commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20]}})
     commands.append({{"type": "columns", "left": "Cajero:", "right": data.get("cashier_name", "")[:20]}})
+    # Número de Transacción (ID de Venta) - DEBAJO del cajero
+    trans_num = data.get("transaction_number") or data.get("internal_transaction_number")
+    if trans_num:
+        commands.append({{"type": "columns", "left": "Transacción:", "right": f"#{{trans_num}}"}})
     commands.append({{"type": "divider"}})
     
     # Productos
