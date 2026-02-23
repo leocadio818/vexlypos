@@ -1260,6 +1260,17 @@ async def print_receipt_escpos(bill_id: str):
     lines.append({"type": "divider"})
     lines.append({"type": "left", "bold": True, "text": f"NCF: {bill.get('ncf', '')}"})
     lines.append({"type": "left", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}"})
+    
+    # Datos fiscales del cliente para B01, B14, B15
+    ncf_type = bill.get("ncf_type", "")
+    if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
+        lines.append({"type": "divider"})
+        lines.append({"type": "left", "bold": True, "text": "DATOS DEL CLIENTE"})
+        fiscal_id_type = bill.get("fiscal_id_type", "RNC")
+        lines.append({"type": "left", "text": f"{fiscal_id_type}: {bill.get('fiscal_id', '')}"})
+        lines.append({"type": "left", "text": f"Razon Social: {bill.get('razon_social', '')}"})
+        lines.append({"type": "divider"})
+    
     lines.append({"type": "left", "text": f"Mesa: {bill['table_number']}"})
     lines.append({"type": "left", "text": f"Fecha: {bill.get('paid_at', bill['created_at'])[:19]}"})
     if bill.get('cashier_name'):
