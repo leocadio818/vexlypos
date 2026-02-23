@@ -1901,13 +1901,15 @@ async def send_receipt_to_printer(bill_id: str):
     if account_label:
         commands.append({"type": "columns", "left": "Cliente:", "right": account_label[:20]})
     commands.append({"type": "columns", "left": "Fecha:", "right": bill.get('paid_at', bill['created_at'])[:19]})
+    if bill.get('waiter_name'):
+        commands.append({"type": "columns", "left": "Mesero:", "right": bill['waiter_name'][:20]})
     if bill.get('cashier_name'):
         commands.append({"type": "columns", "left": "Cajero:", "right": bill['cashier_name'][:20]})
     
-    # Número de Transacción Interno (debajo del cajero)
-    internal_trans = bill.get('internal_transaction_number')
-    if internal_trans:
-        commands.append({"type": "columns", "left": "Trans:", "right": f"#{internal_trans}"})
+    # Número de Transacción (ID de Venta) - DEBAJO del cajero
+    transaction_number = bill.get('transaction_number')
+    if transaction_number:
+        commands.append({"type": "columns", "left": "Transacción:", "right": f"#{transaction_number}"})
     
     commands.append({"type": "divider"})
     
