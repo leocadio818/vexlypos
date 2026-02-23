@@ -64,7 +64,7 @@ export default function Layout() {
       const res = await ordersAPI.list({ status: 'active' });
       const allOrders = res.data || [];
       const userOrders = allOrders.filter(o => 
-        o.waiter_id === user?.user_id && 
+        o.waiter_id === user?.id && 
         ['active', 'sent'].includes(o.status) &&
         o.items?.some(i => i.status === 'pending')
       );
