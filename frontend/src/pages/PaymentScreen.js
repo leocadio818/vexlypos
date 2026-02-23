@@ -615,9 +615,7 @@ export default function PaymentScreen() {
             headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
           });
           const printData = await printResp.json();
-          if (printData.ok) {
-            toast.success('Factura enviada a impresora');
-          }
+          // Removed success toast - silent print
         } catch (printErr) {
           console.warn('Auto-print error:', printErr);
         }
@@ -639,14 +637,12 @@ export default function PaymentScreen() {
         headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
       });
       const data = await resp.json();
-      if (data.ok) {
-        toast.success(`Factura enviada a impresora`);
-      } else {
-        toast.error(data.message || 'Error al imprimir');
+      // Removed success/error toasts - silent print operation
+      if (!data.ok) {
+        console.warn('Print error:', data.message);
       }
     } catch (e) {
-      toast.error('Error de conexión');
-      console.error(e);
+      console.error('Print connection error:', e);
     }
   };
 
