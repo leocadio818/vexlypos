@@ -52,11 +52,23 @@ class TestBusinessDaysAuth:
         """Test authorization with invalid PIN"""
         resp = requests.post(
             f"{BASE_URL}/api/business-days/authorize",
-            json={"pin": "9999", "action": "open"},
+            json={"pin": "0000", "action": "open"},  # Non-existent PIN
             headers=self.headers
         )
+        # Should be 401 for non-existent PIN
         assert resp.status_code == 401, f"Expected 401, got {resp.status_code}: {resp.text}"
         print("✓ Invalid PIN correctly rejected with 401")
+    
+    def test_authorize_cashier_pin_rejected(self):
+        """Test authorization with cashier PIN (no permission)"""
+        resp = requests.post(
+            f"{BASE_URL}/api/business-days/authorize",
+            json={"pin": CASHIER_PIN, "action": "open"},
+            headers=self.headers
+        )
+        # Cashier doesn't have permission, should be 403
+        assert resp.status_code == 403, f"Expected 403, got {resp.status_code}: {resp.text}"
+        print("✓ Cashier PIN correctly rejected with 403 (no permission)")
 
 
 class TestBusinessDaysOperations:
