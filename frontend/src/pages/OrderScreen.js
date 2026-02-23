@@ -604,7 +604,6 @@ export default function OrderScreen() {
         // Show specific error message for permission denied vs invalid PIN
         const errorMsg = data.detail || 'Error de autenticación';
         setCancelDialog(prev => ({ ...prev, managerAuthError: errorMsg, managerPin: '' }));
-        toast.error(errorMsg);
         return;
       }
       
@@ -619,14 +618,12 @@ export default function OrderScreen() {
         authorizedBy: { id: data.user_id, name: data.user_name, is_superuser: data.is_superuser }
       }));
       
-      const superuserBadge = data.is_superuser ? ' (Superusuario)' : '';
-      toast.success(`Autorizado por ${data.user_name}${superuserBadge}`);
+      // Removed toast - silent authorization (user sees the UI update)
       
       // DON'T auto-submit - let user confirm with "Anular" button
     } catch (e) {
       const errorMsg = 'Error verificando PIN - intenta de nuevo';
       setCancelDialog(prev => ({ ...prev, managerAuthError: errorMsg, managerPin: '' }));
-      toast.error(errorMsg);
     }
   };
 
