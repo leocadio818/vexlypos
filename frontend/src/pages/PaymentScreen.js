@@ -618,7 +618,7 @@ export default function PaymentScreen() {
         payment_method: mainMethod, 
         tip_percentage: 0, 
         additional_tip: cardTip,
-        customer_id: selectedCustomer?.id || '',
+        customer_id: selectedCustomer?.id || fiscalData?.customer?.id || '',
         ncf: generatedNcf?.ncf || null,
         sale_type_id: selectedServiceType?.id || null,
         sale_type_name: selectedServiceType?.name || null,
@@ -629,7 +629,13 @@ export default function PaymentScreen() {
         // Nuevos campos para pagos múltiples
         payments: paymentsList.length > 0 ? paymentsList : null,
         change_currency: changeCurrency,
-        change_amount: changeAmount
+        change_amount: changeAmount,
+        // Datos fiscales (B01, B14, B15)
+        fiscal_id: fiscalData?.fiscalId || null,
+        fiscal_id_type: fiscalData?.fiscalIdType || null,
+        razon_social: fiscalData?.razonSocial || selectedCustomer?.name || null,
+        customer_email: fiscalData?.email || selectedCustomer?.email || null,
+        send_email: fiscalData?.sendEmail || false
       });
       
       const pts = res.data?.points_earned;
@@ -645,8 +651,9 @@ export default function PaymentScreen() {
         ...res.data,
         ncf: generatedNcf?.ncf || res.data?.ncf,
         amount_received: totalPaidDOP,
-        customer_name: selectedCustomer?.name || null,
-        customer_rnc: selectedCustomer?.rnc || null
+        customer_name: fiscalData?.razonSocial || selectedCustomer?.name || null,
+        customer_rnc: fiscalData?.fiscalId || selectedCustomer?.rnc || null,
+        customer_email: fiscalData?.email || selectedCustomer?.email || null
       });
       
       // Show NCF Alert Modal FIRST if configured and triggered (blocking)
