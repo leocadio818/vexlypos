@@ -563,10 +563,37 @@ class ReportInput(BaseModel):
     include_details: bool = True  # Incluir desglose detallado
 
 
+@router.get("/current/report-z")
+async def generate_current_z_report(user=Depends(get_current_user)):
+    """
+    Genera el Reporte Z para la jornada actual (si existe).
+    Útil para ver un preview antes de cerrar el día.
+    """
+    business_day = await get_current_business_day()
+    
+    if not business_day:
+        raise HTTPException(
+            status_code=404,
+            detail="No hay jornada de trabajo abierta"
+        )
+    
+    return await generate_z_report_internal(business_day["id"], user)
+
+
 @router.get("/{day_id}/report-z")
 async def generate_z_report(
     day_id: str,
     user=Depends(get_current_user)
+):
+    """
+    Genera el Reporte Z (Cierre de Día) completo por ID.
+    """
+    return await generate_z_report_internal(day_id, user)
+
+
+async def generate_z_report_internal(
+    day_id: str,
+    user
 ):
     """
     Genera el Reporte Z (Cierre de Día) completo.
