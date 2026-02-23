@@ -369,6 +369,33 @@ async def delete_product_image(filename: str):
     else:
         raise HTTPException(status_code=404, detail="Imagen no encontrada")
 
+from fastapi.responses import FileResponse
+
+@api.get("/uploads/products/{filename}")
+async def get_product_image(filename: str):
+    """Sirve imágenes de productos"""
+    # Validar que el filename no contenga path traversal
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Nombre de archivo inválido")
+    
+    file_path = Path(__file__).parent / "uploads" / "products" / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+    
+    # Determinar content type
+    ext = filename.split(".")[-1].lower()
+    content_types = {
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "webp": "image/webp",
+        "gif": "image/gif"
+    }
+    content_type = content_types.get(ext, "image/jpeg")
+    
+    return FileResponse(file_path, media_type=content_type)
+
 # ─── MODIFIERS ───
 @api.get("/modifiers")
 async def list_modifiers():
