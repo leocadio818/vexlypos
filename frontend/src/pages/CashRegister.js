@@ -781,6 +781,13 @@ export default function CashRegister() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Credit Note Modal (B04 - Nota de Crédito para Post-Venta) */}
+      <CreditNoteModal 
+        open={creditNoteModalOpen} 
+        onOpenChange={setCreditNoteModalOpen}
+        API_BASE={process.env.REACT_APP_BACKEND_URL}
+      />
     </div>
   );
 }
