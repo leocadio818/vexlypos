@@ -1108,7 +1108,6 @@ export default function OrderScreen() {
       }
       
       const data = await res.json();
-      toast.success(`${data.items_moved} artículo(s) movido(s)`);
       
       // Reset and refresh
       setMoveItemsMode(false);
@@ -1119,7 +1118,7 @@ export default function OrderScreen() {
       // Switch to target order
       setActiveOrderId(targetOrderId);
     } catch (e) {
-      toast.error(e.message || 'Error moviendo artículos');
+      console.warn(e.message || 'Error moviendo artículos');
     }
   };
 
