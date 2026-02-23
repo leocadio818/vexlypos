@@ -942,12 +942,16 @@ async def split_to_new_order(order_id: str, input: dict, user: dict = Depends(ge
     new_account_number = max_account + 1
     new_order_id = gen_id()
     
+    # Generar número de transacción correlativo para la cuenta dividida
+    transaction_number = await get_next_transaction_number()
+    
     new_order = {
         "id": new_order_id,
         "table_id": table_id,
         "table_number": table["number"] if table else "?",
         "account_number": new_account_number,
         "account_label": account_label,
+        "transaction_number": transaction_number,
         "waiter_id": user["user_id"],
         "waiter_name": user["name"],
         "status": "active",
