@@ -2643,8 +2643,9 @@ def main_loop():
                 ip = job.get("printer_ip", "")
                 job_type = job.get("type", "?")
                 job_printer = job.get("printer_name", PRINTER_NAME)
+                copies = job.get("copies", 1)  # Numero de copias a imprimir
                 
-                log_info(f">>> Procesando: {{job_type.upper()}} | Target: {{target}} | Impresora: {{job_printer}}")
+                log_info(f">>> Procesando: {{job_type.upper()}} | Target: {{target}} | Impresora: {{job_printer}} | Copias: {{copies}}")
                 
                 # Obtener comandos - usar build_ticket_from_data para diferenciar por tipo
                 commands = job.get("commands", [])
@@ -2662,37 +2663,51 @@ def main_loop():
                 raw_data = build_escpos(commands)
                 
                 # ═══════════════════════════════════════════════════════════
-                # IMPRESORA DE RED
+                # IMPRESORA DE RED (con soporte de copias)
                 # ═══════════════════════════════════════════════════════════
                 if target == "network" and ip:
-                    log_info(f"[{{job_type.upper()}}] Enviando a red {{ip}}:{{NETWORK_PORT}}...")
-                    success, net_error = send_to_network(ip, raw_data)
-                    if success:
-                        log_info(f"    [OK] Enviado a {{ip}}")
-                        jobs_printed += 1
+                    all_ok = True
+                    for copy_num in range(1, copies + 1):
+                        log_info(f"[{{job_type.upper()}}] Enviando copia {{copy_num}}/{{copies}} a red {{ip}}:{{NETWORK_PORT}}...")
+                        success, net_error = send_to_network(ip, raw_data)
+                        if success:
+                            log_info(f"    [OK] Copia {{copy_num}} enviada a {{ip}}")
+                        else:
+                            log_error(f"    [ERROR] Copia {{copy_num}} fallo: {{net_error}}")
+                            all_ok = False
+                        if copy_num < copies:
+                            time.sleep(0.5)  # Breve pausa entre copias
+                    if all_ok:
+                        jobs_printed += copies
                         mark_done(job_id, True)
                     else:
-                        log_error(f"    [ERROR] Red: {{net_error}}")
                         mark_done(job_id, False)
                     processed.add(job_id)
                     continue
                 
                 # ═══════════════════════════════════════════════════════════
-                # IMPRESORA USB
+                # IMPRESORA USB (con soporte de copias)
                 # ═══════════════════════════════════════════════════════════
                 # Actualizar lista de impresoras por si se conecto una nueva
                 current_printers = get_windows_printers()
                 actual_printer = job_printer if job_printer in current_printers else PRINTER_NAME
                 
                 if actual_printer in current_printers:
-                    log_info(f"[{{job_type.upper()}}] Imprimiendo en USB: {{actual_printer}}...")
-                    try:
-                        print_raw(actual_printer, raw_data)
-                        log_info(f"    [OK] Impreso correctamente")
-                        jobs_printed += 1
+                    all_ok = True
+                    for copy_num in range(1, copies + 1):
+                        log_info(f"[{{job_type.upper()}}] Imprimiendo copia {{copy_num}}/{{copies}} en USB: {{actual_printer}}...")
+                        try:
+                            print_raw(actual_printer, raw_data)
+                            log_info(f"    [OK] Copia {{copy_num}} impresa correctamente")
+                        except Exception as e:
+                            log_error(f"    [ERROR] Copia {{copy_num}} fallo: {{e}}")
+                            all_ok = False
+                        if copy_num < copies:
+                            time.sleep(0.5)  # Breve pausa entre copias
+                    if all_ok:
+                        jobs_printed += copies
                         mark_done(job_id, True)
-                    except Exception as e:
-                        log_error(f"    [ERROR] {{e}}")
+                    else:
                         mark_done(job_id, False)
                 else:
                     log_error(f"    [ERROR] Impresora '{{actual_printer}}' no disponible")
