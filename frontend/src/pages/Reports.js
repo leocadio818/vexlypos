@@ -493,12 +493,32 @@ export default function Reports() {
           BUSINESS_INFO.name = businessName;
           BUSINESS_INFO.rnc = rnc;
         }
+        
+        // Fetch business days (jornadas) for filter
+        setLoadingBusinessDays(true);
+        const daysRes = await businessDaysAPI.history({ limit: 30 });
+        setBusinessDays(daysRes.data || []);
+        setLoadingBusinessDays(false);
       } catch (err) {
         console.log('Error fetching initial data');
+        setLoadingBusinessDays(false);
       }
     };
     fetchInitialData();
   }, []);
+  
+  // When selecting a business day, update the date range
+  const handleSelectBusinessDay = (day) => {
+    if (day) {
+      setSelectedBusinessDay(day);
+      setDateRange({
+        from: day.business_date,
+        to: day.business_date
+      });
+    } else {
+      setSelectedBusinessDay(null);
+    }
+  };
 
   // Load report data
   const loadReport = useCallback(async (reportId) => {
