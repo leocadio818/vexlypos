@@ -265,14 +265,24 @@ export default function BusinessDayManager({
           
           <div className="flex gap-2">
             {businessDay ? (
-              <Button
-                onClick={() => startAction('close')}
-                className="bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300"
-                data-testid="close-day-btn"
-              >
-                <Lock size={16} className="mr-2" />
-                Cerrar Día
-              </Button>
+              <>
+                <Button
+                  onClick={() => setReportZDialog({ open: true, dayId: businessDay.id })}
+                  className="bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-300"
+                  data-testid="report-z-btn"
+                >
+                  <FileText size={16} className="mr-2" />
+                  Reporte Z
+                </Button>
+                <Button
+                  onClick={() => startAction('close')}
+                  className="bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300"
+                  data-testid="close-day-btn"
+                >
+                  <Lock size={16} className="mr-2" />
+                  Cerrar Día
+                </Button>
+              </>
             ) : (
               <Button
                 onClick={() => startAction('open')}
