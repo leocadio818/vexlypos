@@ -17,6 +17,22 @@ const PRESET_COLORS = [
   '#FF5722', '#673AB7', '#009688', '#CDDC39', '#FFC107', '#03A9F4'
 ];
 
+// Iconos predefinidos para productos de restaurante
+const PRODUCT_ICONS = [
+  { id: 'pizza', label: 'Pizza', Icon: Pizza },
+  { id: 'coffee', label: 'Café', Icon: Coffee },
+  { id: 'sandwich', label: 'Sandwich', Icon: Sandwich },
+  { id: 'ice-cream', label: 'Helado', Icon: IceCream },
+  { id: 'soup', label: 'Sopa', Icon: Soup },
+  { id: 'wine', label: 'Vino', Icon: Wine },
+  { id: 'beer', label: 'Cerveza', Icon: Beer },
+  { id: 'beef', label: 'Carne', Icon: Beef },
+  { id: 'fish', label: 'Pescado', Icon: Fish },
+  { id: 'salad', label: 'Ensalada', Icon: Salad },
+  { id: 'cookie', label: 'Galleta', Icon: Cookie },
+  { id: 'cake', label: 'Postre', Icon: Cake },
+];
+
 export default function ProductConfig() {
   const { productId } = useParams();
   const navigate = useNavigate();
