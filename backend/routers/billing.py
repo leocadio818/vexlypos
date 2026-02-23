@@ -472,6 +472,13 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                 supabase_client.table("pos_sessions").update(update_data).eq("id", session_id).execute()
                 
                 # Create cash_movement record for this sale
+                # Descripción incluye todos los métodos de pago si son múltiples
+                if len(payments_list) > 1:
+                    pmt_names = ", ".join([p["payment_method_name"] for p in payments_list])
+                    pmt_description = f"Venta {bill.get('ncf', bill_id[:8])} - Pago mixto: {pmt_names}"
+                else:
+                    pmt_description = f"Venta {bill.get('ncf', bill_id[:8])} - {primary_payment_method_name}"
+                
                 movement_ref = f"MOV-{datetime.now().year}-{gen_id()[:5].upper()}"
                 movement_data = {
                     "id": gen_id(),
@@ -481,7 +488,7 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                     "direction": 1,
                     "amount": total,
                     "payment_method": movement_payment_method,
-                    "description": f"Venta {bill.get('ncf', bill_id[:8])} - {payment_method_name}",
+                    "description": pmt_description,
                     "created_by": user["user_id"],
                     "created_by_name": user["name"]
                 }
