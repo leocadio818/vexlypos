@@ -61,8 +61,9 @@ export default function Layout() {
   const handleLogoutWithComandas = async () => {
     try {
       // Send pending comandas for all user's orders
-      const res = await api.get('/orders');
-      const userOrders = res.data?.filter(o => 
+      const res = await ordersAPI.list({ status: 'active' });
+      const allOrders = res.data || [];
+      const userOrders = allOrders.filter(o => 
         o.waiter_id === user?.user_id && 
         ['active', 'sent'].includes(o.status) &&
         o.items?.some(i => i.status === 'pending')
@@ -72,16 +73,17 @@ export default function Layout() {
         let sentCount = 0;
         for (const order of userOrders) {
           try {
-            await api.orders.sendToKitchen(order.id);
+            await ordersAPI.sendToKitchen(order.id);
             sentCount++;
+            console.log('Logout: Comanda enviada para orden', order.id);
           } catch (e) {
-            // Ignore errors for individual orders
+            console.error('Logout: Error enviando orden', order.id, e);
           }
         }
-        // Removed toast notification - silent operation
+        console.log('Logout: Enviadas', sentCount, 'comandas pendientes');
       }
     } catch (e) {
-      // Ignore errors, just logout
+      console.error('Logout: Error obteniendo órdenes', e);
     }
     
     logout();
