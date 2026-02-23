@@ -871,10 +871,9 @@ export default function OrderScreen() {
     if (!order || !mergeConfirm.targetTableId) return;
     try {
       await ordersAPI.moveToTable(order.id, mergeConfirm.targetTableId, true);
-      toast.success('Cuenta unida exitosamente');
       setMergeConfirm({ open: false, targetTableId: null, targetTableNumber: null });
       navigate(`/order/${mergeConfirm.targetTableId}`);
-    } catch { toast.error('Error uniendo cuenta'); }
+    } catch { console.warn('Error uniendo cuenta'); }
   };
 
   // Split/Divide Functions - Create new orders
