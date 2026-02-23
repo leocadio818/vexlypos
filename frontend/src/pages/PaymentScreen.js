@@ -1879,6 +1879,33 @@ export default function PaymentScreen() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Fiscal Data Drawer - Para B01, B14, B15 */}
+      <FiscalDataDrawer
+        open={fiscalDrawerOpen}
+        onOpenChange={(open) => {
+          setFiscalDrawerOpen(open);
+          if (!open) setPendingFiscalType(null);
+        }}
+        fiscalType={pendingFiscalType}
+        apiBase={API_BASE}
+        onConfirm={(data) => {
+          // Guardar los datos fiscales
+          setFiscalData(data);
+          // Establecer el tipo fiscal seleccionado
+          setSelectedFiscalType(pendingFiscalType);
+          // Si se encontró un cliente, seleccionarlo
+          if (data.customer) {
+            setSelectedCustomer(data.customer);
+          }
+          // Auto-select first service type for this NCF
+          const firstMatch = saleTypes.find(st => st.default_ncf_type_id === pendingFiscalType);
+          if (firstMatch) setSelectedServiceType(firstMatch);
+          // Cerrar el drawer
+          setFiscalDrawerOpen(false);
+          setPendingFiscalType(null);
+        }}
+      />
     </div>
   );
 }
