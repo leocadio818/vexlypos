@@ -484,6 +484,24 @@ export default function PaymentScreen() {
       });
 
       const newTotal = Math.round((subtotal + newItbis + newPropina) * 100) / 100;
+      
+      // Build tax_breakdown with proper names
+      const taxBreakdown = [
+        {
+          tax_id: 'itbis_default',
+          description: 'ITBIS',
+          rate: 18,
+          amount: Math.round(newItbis * 100) / 100,
+          is_tip: false
+        },
+        {
+          tax_id: 'propina_default',
+          description: 'Propina Legal',
+          rate: 10,
+          amount: Math.round(newPropina * 100) / 100,
+          is_tip: true
+        }
+      ];
 
       setAdjustedBill({
         ...bill,
@@ -491,7 +509,8 @@ export default function PaymentScreen() {
         propina_legal: Math.round(newPropina * 100) / 100,
         total: newTotal,
         sale_type: selectedServiceType.code,
-        sale_type_name: selectedServiceType.name
+        sale_type_name: selectedServiceType.name,
+        tax_breakdown: taxBreakdown
       });
     };
 
