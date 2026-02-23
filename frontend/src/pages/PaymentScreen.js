@@ -155,6 +155,11 @@ export default function PaymentScreen() {
   const [fiscalDrawerOpen, setFiscalDrawerOpen] = useState(false);
   const [pendingFiscalType, setPendingFiscalType] = useState(null);
   const [fiscalData, setFiscalData] = useState(null); // Datos fiscales capturados
+  
+  // Business Day (Jornada de Trabajo) state
+  const [businessDay, setBusinessDay] = useState(null);
+  const [businessDayLoading, setBusinessDayLoading] = useState(true);
+  const [businessDayDialogOpen, setBusinessDayDialogOpen] = useState(false);
 
   // Tax Override states
   const [taxOverrideDialog, setTaxOverrideDialog] = useState({ open: false, step: 'pin' });
