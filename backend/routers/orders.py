@@ -706,6 +706,9 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
     if not order:
         return
     
+    # Generar número de transacción interno para esta comanda
+    internal_trans_num = await get_next_transaction_number()
+    
     # Get channels and category mappings
     channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
     category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
@@ -757,6 +760,7 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
             "table_number": order.get("table_number", "?"),
             "waiter_name": order.get("waiter_name", ""),
             "order_number": order.get("id", "")[:8],
+            "internal_transaction_number": internal_trans_num,
             "date": now_iso()[:19].replace("T", " "),
             "items_count": len(items),
             "items": [
