@@ -538,7 +538,7 @@ export default function OrderScreen() {
     const { itemId, itemIds, mode, selectedReasonId, returnToInventory, comments, requiresManagerAuth, authorizedBy } = cancelDialog;
     
     if (!selectedReasonId) {
-      toast.error('Selecciona una razón de anulación');
+      // Silent - no reason selected
       return;
     }
     
@@ -564,11 +564,9 @@ export default function OrderScreen() {
           ...cancelData,
           item_ids: itemIds
         });
-        toast.success(`${itemIds.length} items anulados`);
       } else {
         // Single item cancellation
         res = await ordersAPI.cancelItem(order.id, itemId, cancelData);
-        toast.success('Item anulado');
       }
       setOrder(res.data);
       // Clear selected items after successful cancellation
@@ -576,7 +574,7 @@ export default function OrderScreen() {
       resetCancelDialog();
     } catch (e) { 
       const msg = e.response?.data?.detail || 'Error anulando item(s)';
-      toast.error(msg); 
+      console.warn(msg); 
     }
   };
 
