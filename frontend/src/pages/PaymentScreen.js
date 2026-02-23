@@ -990,12 +990,15 @@ export default function PaymentScreen() {
                 </span>
               </div>
               {selectedCustomer && (
-                <button 
+                <div 
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => { e.stopPropagation(); setSelectedCustomer(null); }}
-                  className="p-2 rounded-full hover:bg-red-500/30 text-red-400 transition-colors ml-auto"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setSelectedCustomer(null); } }}
+                  className="p-2 rounded-full hover:bg-red-500/30 text-red-400 transition-colors ml-auto cursor-pointer"
                 >
                   <X size={16} />
-                </button>
+                </div>
               )}
             </button>
 
