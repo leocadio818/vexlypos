@@ -290,6 +290,17 @@ export default function CashRegister() {
           <button onClick={fetchData} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all">
             <RefreshCw size={16} />
           </button>
+          {/* Botón Nota de Crédito B04 - Solo para Admin */}
+          {user?.role === 'admin' && (
+            <button 
+              onClick={() => setCreditNoteModalOpen(true)} 
+              data-testid="credit-note-btn"
+              className="px-3 py-2 rounded-xl bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 font-medium text-sm flex items-center gap-2 transition-all"
+              title="Re-abrir Transacción (Nota de Crédito B04)"
+            >
+              <FileX size={16} /> B04
+            </button>
+          )}
           {currentSession && (
             <button onClick={() => setMovementDialog(true)} data-testid="add-movement-btn"
               className="px-3 py-2 rounded-xl bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30 text-blue-400 font-medium text-sm flex items-center gap-2 transition-all">
