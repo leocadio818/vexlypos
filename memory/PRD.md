@@ -145,8 +145,47 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Datos Reales Valuation-Trends** - Endpoint usa movimientos de stock y órdenes para calcular valores históricos
 - [x] **Imágenes/Iconos en Productos** - Nueva sección en configuración de productos con URL de imagen y 12 iconos predefinidos
 - [x] **Captura de Datos Fiscales (B01/B14/B15)** - Drawer para capturar RNC/Cédula con validación flexible y búsqueda de clientes
+- [x] **Sistema de Jornada de Trabajo** - Fecha contable independiente del calendario civil (Business Day)
 
-## Captura de Datos Fiscales (NUEVO - 2026-02-23)
+## Sistema de Jornada de Trabajo (NUEVO - 2026-02-23)
+
+### Descripción
+Sistema de fecha contable (Business Date) independiente del calendario civil. La fecha de negocio se establece al "Abrir Día" y permanece fija hasta el "Cierre de Día" manual.
+
+### Reglas del Sistema
+1. **Fecha de Negocio**: NO cambia automáticamente a medianoche
+2. **Ticket a las 2:00 AM del día 24**: Se registra con fecha del día 23 si la jornada no ha cerrado
+3. **Doble Marcación de Tiempo**:
+   - `created_at`: Timestamp real (auditoría)
+   - `business_date`: Fecha contable (reportes 607)
+
+### Flujo de Operación
+```
+Apertura de Día → Apertura de Turno → Ventas → Cierre de Turno (X) → Cierre de Día (Z)
+```
+
+### Autorización
+- **Quién puede abrir/cerrar**: Cualquier cajero
+- **Requiere**: PIN de Gerente o Administrador para autorizar
+- **Bloqueo**: Sin jornada abierta, NO se pueden procesar pagos
+
+### Indicador Visual
+- **Sidebar**: Icono de sol verde (abierta) o luna roja pulsante (sin jornada)
+- **PaymentScreen**: Pantalla de bloqueo "JORNADA NO ABIERTA" si no hay jornada activa
+
+### Endpoints API
+- `GET /api/business-days/check` - Verifica estado actual
+- `GET /api/business-days/current` - Obtiene jornada activa con stats
+- `POST /api/business-days/authorize` - Verifica PIN de autorización
+- `POST /api/business-days/open` - Abre nueva jornada
+- `POST /api/business-days/close` - Cierra jornada (incluye stats)
+- `GET /api/business-days/history` - Historial de jornadas
+
+### Datos de Jornada
+- Referencia única: `JORNADA-YYYY-NNNNN`
+- Totales: ventas, efectivo, tarjeta, transferencias, facturas
+- B04 aplicados, anulaciones
+- Apertura/cierre con timestamp y usuario responsable
 
 ### Descripción
 Drawer que aparece al seleccionar tipos fiscales B01 (Crédito Fiscal), B14 (Gubernamental), o B15 (Régimen Especial) durante el proceso de pago.
