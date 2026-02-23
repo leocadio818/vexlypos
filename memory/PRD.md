@@ -470,8 +470,7 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 
 ## Pendiente
 ### P1 - Alta Prioridad
-- [ ] Reporte DGII 608
-- [ ] Auditoría - solo Admin ve PINs
+- [ ] Reporte DGII 608 (pendiente confirmación del usuario)
 - [ ] Reloj de entrada/salida empleados
 - [ ] Envío automático de facturas por email (requiere integración con servicio de email)
 
