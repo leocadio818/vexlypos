@@ -368,24 +368,40 @@ const FiscalDataDrawer = ({
               </div>
               
               {/* Mensaje de validación */}
-              <div className="h-5">
+              <div className="h-6">
                 {fiscalId && (
                   <p className={`text-xs flex items-center gap-1 ${
-                    validation.valid ? 'text-green-400' : 
-                    validation.cleaned.length >= 9 ? 'text-red-400' : 'text-white/50'
+                    validation.valid && !validation.warning ? 'text-green-400' :
+                    validation.valid && validation.warning ? 'text-amber-400' :
+                    validation.type === 'Incompleto' ? 'text-white/50' : 'text-red-400'
                   }`}>
-                    {validation.valid ? (
+                    {validation.valid && !validation.warning ? (
                       <>
                         <Check size={12} />
                         {validation.type} válido: {formatFiscalId(validation.cleaned)}
                       </>
-                    ) : validation.cleaned.length >= 9 ? (
+                    ) : validation.valid && validation.warning ? (
                       <>
                         <AlertCircle size={12} />
-                        {validation.type === 'RNC' ? 'RNC' : validation.type === 'Cédula' ? 'Cédula' : 'Número'} Inválido - Dígito verificador incorrecto
+                        {validation.type} aceptado: {formatFiscalId(validation.cleaned)}
+                        <span className="text-amber-300/70 ml-1">(verificar manualmente)</span>
                       </>
+                    ) : validation.type === 'Inválido' ? (
+                      <>
+                        <AlertCircle size={12} />
+                        {validation.reason || 'Formato inválido'}
+                      </>
+                    ) : validation.type === 'Incompleto' ? (
+                      validation.cleaned.length === 0 ? 
+                        'Ingresa RNC (9 dígitos) o Cédula (11 dígitos)' :
+                        `Faltan ${Math.min(9, 11) - validation.cleaned.length > 0 ? 
+                          `${9 - validation.cleaned.length} dígitos para RNC o ${11 - validation.cleaned.length} para Cédula` : 
+                          `${11 - validation.cleaned.length} dígitos para Cédula`}`
                     ) : (
-                      `Ingresa ${9 - validation.cleaned.length} dígitos más para RNC o ${11 - validation.cleaned.length} para Cédula`
+                      <>
+                        <AlertCircle size={12} />
+                        {validation.reason || 'Secuencia inválida'}
+                      </>
                     )}
                   </p>
                 )}
