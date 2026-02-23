@@ -2053,17 +2053,22 @@ async def send_comanda_to_printer(order_id: str):
     commands.append({"type": "feed", "lines": 2})
     commands.append({"type": "cut"})
     
+    # Obtener configuracion del canal de cocina para copias
+    kitchen_channel = await db.print_channels.find_one({"code": "kitchen"}, {"_id": 0})
+    copies = kitchen_channel.get("copies", 1) if kitchen_channel else 1
+    
     job = {
         "id": gen_id(),
         "type": "comanda",
         "reference_id": order_id,
         "commands": commands,
+        "copies": copies,  # Numero de copias a imprimir
         "status": "pending",
         "created_at": now_iso()
     }
     await db.print_queue.insert_one(job)
     
-    return {"ok": True, "job_id": job["id"], "message": "Comanda enviada a impresora"}
+    return {"ok": True, "job_id": job["id"], "copies": copies, "message": "Comanda enviada a impresora"}
 
 @api.post("/print/pre-check/{order_id}/send")
 async def send_precheck_to_printer(order_id: str):
