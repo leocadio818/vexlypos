@@ -1,165 +1,134 @@
 <analysis>**original_problem_statement:**
-The user initially reported a text overflow issue on printed tickets, as the 80mm thermal paper only has a 72mm printable area. This caused text to be cut off. The agent successfully fixed this for the final receipt, the pre-bill (pre-cuenta), and kitchen/bar orders (comandas) by adjusting CSS and backend HTML generation logic.
+The user requested a Fiscal Data Capture component for their Point of Sale system. This component must be a Drawer/Sheet from Shadcn/UI that slides up when a fiscal type of B01 (Crédito Fiscal), B14 (Comprobante para Regímenes Especiales), or B15 (Comprobante Gubernamental) is selected during payment.
 
-This led to a series of more complex issues:
-1.  **Incorrect KDS Routing:** Drink orders were incorrectly appearing on the Kitchen Display System (KDS) instead of being sent to the bar printer. The agent fixed this by adding filtering logic to the KDS backend endpoints to only display items from categories mapped to the kitchen print channel.
-2.  **Printing System Rearchitecture:** The server, being in the cloud, could not directly access the user's local network printers. To solve this, the agent re-architected the entire printing workflow. All print actions (comandas, pre-cuentas, receipts) now add a job to a MongoDB . A local Python script, , runs on the user's Windows PC, polls this queue, and sends the jobs to the correct local USB or network printers. This makes all printing fully automatic and immediate from the user's perspective.
-3.  **Print Agent Execution Issues:** The user encountered multiple problems running the Python script. The agent iteratively simplified the script, reduced dependencies, and provided detailed, step-by-step guidance until the user successfully ran it.
-
-The current problem is that while the print agent is running and successfully prints the **final receipt**, it is failing to print **comandas** and **pre-cuentas**, even though jobs for them are being created in the queue.
+PRODUCT REQUIREMENTS:
+1.  **Component Activation:** The drawer should only appear for fiscal types B01, B14, and B15. The flow for B02 (Consumidor Final) must remain unchanged.
+2.  **Algorithmic Validation:** The RNC/Cédula input must validate the number's format (9 digits for RNC, 11 for Cédula) and its check digit using the official DGII algorithm. Invalid entries should trigger a visible error and disable the Continue button.
+3.  **Client Search & Persistence:** A Buscar (Search) button should query the existing client database.
+    *   If the client exists, their Razón Social (Business Name) and Correo Electrónico (Email) should be auto-filled.
+    *   If the client is new, manual entry should be allowed, and the new client must be saved to the database upon completing the transaction.
+4.  **Optional Email for Invoices:** An optional email field should, when filled, trigger the automatic sending of the digital invoice to the client.
+5.  **UI/UX:** The drawer must have a smooth slide-in animation and feature large, touch-friendly input fields.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-The application is a full-stack POS system with a React frontend and FastAPI backend. A key feature is a fully automatic, asynchronous printing system. Backend actions add jobs to a  collection in MongoDB. A local Python-based agent (), designed to be run on a Windows PC within the user's local network, continuously polls this queue and dispatches print jobs to the appropriate hardware (USB or network printers). Fixes for a 72mm print width limitation have been applied across all ticket types. The Kitchen Display System (KDS) correctly filters items to show only food, not drinks.
+A full-stack POS application with a React frontend, FastAPI backend, and MongoDB database. Key features include table management, ordering, fiscal compliance, multi-currency payments, a local print agent, product image/icon support, and search/reprint functionality. A new component, , has been created and integrated into the  to handle the fiscal data capture. The backend has been updated to accept fiscal data (, ) during payment processing.
 
 **Last working item**:
--   **Last item agent was working:** Diagnosing why the  script, while successfully running on the user's machine and printing final receipts, is not processing pending comanda and pre-cuenta jobs from the . The agent confirmed via a user-provided screenshot that the agent is running and processed a receipt, but the user reported that other job types failed to print.
+-   **Last item agent was working:** Debugging and refining the RNC/Cédula validation algorithm within the new  component. The agent discovered that the strict check-digit validation was incorrectly failing for some legitimate, older RNCs. The plan was to modify the logic to be more flexible.
 -   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
--   **Which testing method agent to use?**: backend testing agent
--   **User Testing Done**: Y
+-   **Which testing method agent to use?**: both
+-   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Print agent fails to process 'comanda' and 'pre-cuenta' jobs (P0)**
-    -   **Description:** The local print agent, which polls the server for jobs, correctly processes and prints final receipts (). However, it ignores or fails to process jobs for kitchen/bar orders () and pre-bills (), even though they are present in the . This breaks a critical business workflow.
-    -   **Last Known State:** The agent previously identified an inconsistency where receipt jobs used a  field, while comanda jobs used a  field. A patch was added to the agent to handle both formats, but this appears to have been an incomplete solution.
-    -   **Priority:** HIGHEST (P0) - Core functionality is broken.
-
-**Issues Detail:**
--   **Issue 1: Print agent fails to process 'comanda' and 'pre-cuenta' jobs**
-    -   **Attempted fixes:** The agent refactored  to handle an inconsistency in the job data structure (checking for a  field and falling back to a  field to build commands for comandas). While this allowed the agent to run, it did not resolve the issue for all job types.
-    -   **Next debug checklist**:
-        1.  **Inspect the :** Execute a Current Mongosh Log ID:	699b3fdf97ef7aeb3e591666
-Connecting to:		mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.7.0
-Using MongoDB:		7.0.30
-Using Mongosh:		2.7.0
-
-For mongosh info see: https://www.mongodb.com/docs/mongodb-shell/
-
-------
-   The server generated these startup warnings when booting
-   2026-02-22T17:41:47.515+00:00: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem
-   2026-02-22T17:41:48.634+00:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
-   2026-02-22T17:41:48.634+00:00: You are running this process as the root user, which is not recommended
-   2026-02-22T17:41:48.634+00:00: Soft rlimits for open file descriptors too low
-------
-
-test>  command to view all documents in the  collection. Pay close attention to the structure of pending  and  jobs vs. a successfully printed  job.
-            
-        2.  **Verify Job Structure:** Compare the fields (, , , , , and especially the payload in  or ) between a working  job and non-working / jobs.
-        3.  **Trace Agent Logic:** Review the  function in . Trace the  function within the generated Python script. Specifically, examine the  and  logic. There might be a flaw in how the ESC/POS commands are constructed or sent for these types.
-        4.  **Check for Silent Errors:** The agent script might be encountering an error when processing these job types and silently moving on. Ensure the  blocks within the agent's main loop log any exceptions.
-    -   **Why fix this issue and what will be achieved with the fix?** This is critical. Fixing it will restore the automated printing of kitchen/bar orders and pre-bills, making the POS system fully operational.
-    -   **Status**: IN PROGRESS
+-   **Issue 1: RNC/Cédula validation is overly strict, blocking valid user entries. (P0)**
+    -   **Attempted fixes:** A standard DGII check-digit algorithm was implemented but proved too rigid for real-world data, where many older RNCs don't conform.
+    -   **Next debug checklist:**
+        -   Modify the validation logic in .
+        -   Change the validation from a hard block (red border, disabled button) to a soft warning for algorithmic failures. The length validation (9 or 11 digits) should remain as a hard requirement. This allows users to proceed with valid RNCs that don't fit the modern algorithm.
+    -   **Why fix this issue and what will be achieved with the fix?** To unblock the critical invoicing workflow for customers with valid fiscal information.
+    -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** backend
-    -   **Blocked on other issue**: None
+    -   **Should Test frontend/backend/both after fix?** frontend
+    -   **Blocked on other issue**: No
 
 **In progress Task List**:
--   None. The current focus is the P0 bug fix.
+-   **Task 1: Complete Fiscal Data Capture Feature (P0)**
+    -   **Where to resume:** Continue work on . After relaxing the validation logic, implement the remaining features:
+        1.  **Client Search:** Implement the Buscar button's  handler to call a backend endpoint that searches the  collection in MongoDB by RNC/Cédula.
+        2.  **Client Persistence:** Enhance the  backend logic in  to create a new client record if one doesn't already exist with the provided RNC/Cédula.
+        3.  **Automatic Emailing:** Plan and implement the functionality to automatically send the digital invoice. This will require a new backend endpoint and likely a third-party email service integration.
+    -   **What will be achieved with this?** A complete, compliant, and user-friendly workflow for capturing and persisting customer fiscal data.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on something**: Blocked on resolving Issue 1.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **P1: Implement Real Data for Valuation Trends:** Replace mock data in the  endpoint in  with a real database aggregation query.
-    -   **P1: DGII Report Generation:** Create functionality for Dominican tax reports (607, 608).
-    -   **P1: Implement Audit Trail Security:** Ensure only 'Admin' roles can view user PINs in reports.
-    -   **P1: Employee Time Clock:** Implement a feature for employees to clock in and out.
+    -   P1: DGII Report Generation (608).
+    -   P1: Employee Time Clock feature.
 -   **Future Tasks:**
-    -   **P2: Print Agent as .exe:** Compile the  script into a standalone Windows executable.
-    -   **P2: Image/Icon Support for Product Buttons.**
-    -   **P2: Cache Product Images Offline.**
-    -   **P3: Drag-and-Drop Reordering of payment methods.**
-    -   **P3: Export Audit Trail:** to Excel/CSV.
-    -   **P3: Duplicate Product Feature.**
+    -   P2: Cache product images for offline access.
+    -   P2: Compile the  script into a standalone Windows executable.
+    -   P3: Export Audit Trail to Excel/CSV.
 
 **Completed work in this session**
--   **Printing Overflow Fix (DONE):** Resolved the 72mm printable area issue for all ticket types (receipt, pre-cuenta, comanda) by adjusting CSS and backend-generated HTML.
--   **KDS Channel Filtering (DONE):** Modified KDS endpoints to correctly display only kitchen items, successfully separating food from drink orders.
--   **Automatic Printing System (DONE):** Re-architected the printing workflow to use an asynchronous queue () and a local Python print agent (). This makes printing of comandas, pre-cuentas, and receipts automatic and bypasses network limitations.
--   **Print Agent Deployment (DONE):** Successfully guided the user through downloading, configuring, and running the local print agent on their Windows machine.
-
-**Earlier issues found/mentioned but not fixed**
--   **Issue 1: Print Agent is a script, not an executable (.exe)**
-    -   **Debug checklist:** This is a future task. It requires a Windows environment with tools like PyInstaller to bundle the Python script and its dependencies into a single  file. This cannot be done in the current Linux-based development environment.
-    -   **Why to solve this issue and what will be achieved with this?** To simplify deployment for the end-user, removing the need to install Python and its dependencies manually.
-    -   **Should Test frontend/backend/both after fix:** Backend
-    -   **Is recurring issue?** Y
-
-**Known issue recurrence from previous fork**
--   None.
+-   **Feature: Upload Product Images from PC:** Implemented a file upload system allowing users to upload product images directly from their computer, in addition to using URLs or pre-defined icons.
+-   **Feature: Search by Transaction Number:** Added the ability to search by  (transaction number) in both the Bill History and Cash Register screens.
+-   **Feature: Real Data for Valuation Trends:** Replaced mock data in the  endpoint with logic that calculates inventory value based on real stock movements and sales data.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Asynchronous Printing Queue:** The system architecture relies on a  collection in MongoDB to decouple the cloud server from the user's local printers. The server adds jobs, and a local agent consumes them.
--   **Local Print Agent:** A crucial Python script () runs on the user's local machine, acting as a bridge. It polls the server for jobs via a REST API and sends them to the appropriate printers using  for USB and  for network.
--   **Dynamic Script Generation:** The  script is dynamically generated and served by a FastAPI endpoint in , embedding the server URL directly into the script.
+-   **Conditional UI (React):** Using state to conditionally render the  when specific fiscal types are selected.
+-   **Client-Side Validation:** Performing RNC/Cédula validation directly in the frontend for immediate user feedback.
+-   **File Uploads (FastAPI):** Handling  requests on the backend to accept and store user-uploaded images.
+-   **Static File Serving (FastAPI):** Configuring the backend to serve the stored images to the frontend.
 
 **key DB schema**
--   ****: Stores print jobs.
-    -   **Key columns:**  ('pending', 'done'),  ('bar', 'kitchen', 'receipt'),  ('network', 'usb'), , , and a payload field which is inconsistently named ( or ).
+-   ****: Updated to include  (String) and  (String).
+-   ****: Updated to include  (String) and  (String).
+-   ****: Contains , , . This collection is central to the fiscal data feature.
 
 **changes in tech stack**
--   No changes to the core stack.
--   A new, critical dependency was introduced: a local Python agent that requires  and  to be installed on the user's client machine.
+-   None.
 
 **All files of reference**
--   : The central hub for all printing logic, queue management, and dynamic generation of the print agent script.
--   : Contains the logic for the Kitchen Display System (KDS).
--   : Manages the pre-cuenta printing trigger.
--   : Manages the final receipt printing trigger.
+-    (Primary file for the current task)
+-    (Integrates the drawer)
+-    (Backend payment processing logic)
+-    (Handles file uploads and serving)
+-    (UI for product image configuration)
 
 **Areas that need refactoring**:
--   **Print Agent Generation:** The Python code for the print agent is currently embedded as a large multi-line string within . This is difficult to read, maintain, and debug. The script should be moved to a separate  file and served statically. The server URL could be passed as a command-line argument.
--   **Print Job Data Structure:** The payload for print jobs is inconsistent ( for receipts,  for comandas). This should be unified to a single, consistent structure (e.g., always use ) in the backend logic that creates the jobs.
+-   The RNC/Cédula validation function in  needs to be refactored to be less strict and provide warnings instead of hard errors for algorithmic mismatches.
 
 **key api endpoints**
--   ****: Adds a comanda job to the print queue.
--   ****: Adds a pre-cuenta job to the print queue.
--   ****: Adds a final receipt job to the print queue.
--   ****: Polled by the local print agent to fetch pending jobs.
--   ****: Called by the agent to update a job's status.
--   ****: Serves the dynamically generated  script.
+-   : **MODIFIED** to accept  and .
+-   : **NEW** endpoint for handling product image uploads.
+-   : **NEW** route to serve uploaded images statically.
 
 **Critical Info for New Agent**
--   **User Language:** The user communicates exclusively in **Spanish**. All responses must be in Spanish.
--   **Printing Architecture:** Remember that the server **cannot** reach the user's printers directly. All printing MUST go through the  and be processed by the local  script. Do not attempt to connect to the printer's IP from the backend.
--   **Current Blocker:** The immediate priority is fixing why the print agent fails on comanda and pre-cuenta jobs. The investigation must start by inspecting the  in the database.
+-   **User Language:** You **must** respond in **Spanish**.
+-   **Immediate Priority (P0 Task):** Your primary task is to complete the Fiscal Data Capture feature.
+    -   **Resume Point:** Start by modifying the validation logic in . The current algorithm is too strict and must be changed to a non-blocking warning for check-digit failures, while still enforcing correct length.
+    -   **Next Steps:** Once the validation is fixed, implement the remaining features in this order: client search via the Buscar button, persistence of new clients upon payment, and finally, the automatic emailing of invoices.
 
 **documents and test reports created in this job**
--    was updated to reflect the new printing architecture and bug fixes.
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Now it came out right. But the comandas and pre-cuentas didnt come out" (with screenshot of agent output showing a `[RECEIPT]` being printed). **Status: In Progress.** Agent needs to diagnose this.
-2.  **User:** Showed a screenshot of an error trying to run the agent from `C:\Windows\System32`. **Status: Resolved.** Agent guided user to run from the correct directory.
-3.  **User:** "WHERE? I DONT SEE THAT ICON NEAR THE CLOCK. **Status: Resolved.** The agent switched to a simpler console-based agent without a tray icon to reduce complexity.
-4.  **User:** I DID EVERYTHING AND EXECUTED THE AGENT AND IT DOES NOTHING, CHECK THE RECENT INVOICES I CLOSED AND THE COMMANDS THAT WERE SENT. **Status: In Progress.** Agent found an issue in the agent script and provided a new version.
-5.  **User:** YES... (confirming to create the download endpoint). **Status: Completed.**
-6.  **User:** Expressed the need for fully automatic, fast printing for comandas, pre-cuentas, and receipts without extra clicks. **Status: Acknowledged & Implemented.** The architecture was changed to be fully automatic via the print queue.
-7.  **User:** The printer has its own IP and any device can send it data. **Status: Acknowledged.** This confirmed the need for network printing logic, but the agent correctly identified the server couldn't reach it directly, leading to the print agent solution.
-8.  **User:** I dont understand, what do I have to do step-by-step?". **Status: Resolved.** The agent provided a clearer explanation of the print agent architecture.
-9.  **User:** "NOW NEITHER WHATS SUPPOSED TO GO TO THE KDS SHOWS UP, NOR DOES THE BAR STUFF PRINT FROM MY NETWORK PRINTER. **Status: In Progress.** This was the critical message that triggered the investigation into the KDS filtering and print agent logic.
-10. **User:** DRINKS ARE STILL BEING SENT TO THE KITCHEN... **Status: Resolved.** This triggered the fix for KDS channel filtering.
+1.  **User Request:** Implement the Fiscal Data Capture Drawer with detailed requirements. **Status: In Progress.**
+2.  **User Confirmation:** Agreed to the agent's proposal to add image uploads from the PC. **Status: Completed.**
+3.  **User Question:** Asked about the tech stack and how to use the image URL feature. **Status: Answered.**
+4.  **User Approval:** Approved the plan to implement real data for valuation trends and product image support. **Status: Completed.**
+5.  **User Approval:** Approved adding search by order number. **Status: Completed.**
+6.  **User Request:** Identified that search by order number was missing and requested it be added. **Status: Completed.**
 
 **Project Health Check:**
--   **Broken:** The automatic printing of comandas and pre-cuentas is non-functional. This is a critical failure.
--   **Mocked:** The  endpoint still provides static mock data.
+-   **Broken:** The RNC/Cédula validation in the new  is too strict and blocks users from entering valid fiscal IDs.
+-   **Mocked:**
+    -   The Buscar (Search) client button in the fiscal drawer is a placeholder and has no functionality.
+    -   The automatic sending of email invoices is not yet implemented.
 
 **3rd Party Integrations**
 -   MongoDB (Database)
--   Python  (for local print agent)
--   Python  (for local print agent on Windows)
+-   Python  (Used by local print agent)
+-   Python  (Used by local print agent)
+-   **Potential Future Integration:** An email service like Resend or SendGrid will be required to implement the automatic sending of invoices.
 
 **Testing status**
--   **Testing agent used after significant changes**: NO (The last part of the session was intense, iterative debugging with the user).
+-   **Testing agent used after significant changes**: YES
 -   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: None.
--   **Known regressions**: The printing of comandas and pre-cuentas is a regression from the user's perspective, as it was working via a different mechanism before the re-architecture.
+-   **Test files created**: None
+-   **Known regressions**: None
 
 **Credentials to test flow:**
--   **PINs:** Admin (), Carlos/Cashier (), María/Waitress (), Luis/Cashier ().
+-   **PINs:** Admin (), Cashier (), Waitress ().
 
 **What agent forgot to execute**
--   The agent was in the middle of diagnosing the final reported issue. It correctly identified the next logical step—inspecting the —but the session ended before this could be done. The agent did not forget, but was interrupted mid-flow.</analysis>
+-   The agent has not yet implemented three key requirements from the user's request for the Fiscal Data Drawer: the client search functionality (Buscar button), the persistence of new client data, and the automatic sending of invoices via email. The immediate focus must be on fixing the validation blocker before proceeding with these items.</analysis>

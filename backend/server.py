@@ -2338,7 +2338,7 @@ async def download_print_agent(printer_name: str = Query("RECIBO", description="
     Descarga el agente de impresión configurado para tu servidor y impresora.
     Guárdalo como 'MesaPOS_PrintAgent.py' y ejecútalo con Python.
     """
-    server_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://print-config-hub-2.preview.emergentagent.com')
+    server_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://fiscal-capture-1.preview.emergentagent.com')
     
     agent_code = f'''#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -2878,7 +2878,7 @@ async def download_print_agent_installer(printer_name: str = Query("RECIBO", des
     Descarga el script .bat para instalar el agente con Programador de Tareas.
     Debe ejecutarse como Administrador.
     """
-    server_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://print-config-hub-2.preview.emergentagent.com')
+    server_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://fiscal-capture-1.preview.emergentagent.com')
     
     installer_bat = f'''@echo off
 chcp 65001 > nul
