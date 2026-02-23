@@ -95,10 +95,13 @@ async def get_authorizer_by_pin(pin: str):
             
             # Admin y gerentes tienen permiso por defecto
             if role in ["admin", "manager"]:
+                # Normalizar campos para compatibilidad
+                user["user_id"] = user.get("id", user.get("user_id"))
                 return user
             
             # Verificar permiso específico
             if permissions.get("close_day", False):
+                user["user_id"] = user.get("id", user.get("user_id"))
                 return user
             
             raise HTTPException(
