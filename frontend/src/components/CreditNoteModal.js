@@ -24,7 +24,7 @@ const CREDIT_NOTE_REASONS = [
   { id: "cn-other", code: "OTRO", name: "Otro motivo", description: "Especificar en comentarios", color: "gray" }
 ];
 
-export default function CreditNoteModal({ open, onOpenChange, API_BASE }) {
+export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialTransactionNumber = null }) {
   const [step, setStep] = useState(CREDIT_NOTE_STEPS.SEARCH);
   const [transactionNumber, setTransactionNumber] = useState('');
   const [adminPin, setAdminPin] = useState('');
@@ -36,6 +36,13 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE }) {
   const [comments, setComments] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdCreditNote, setCreatedCreditNote] = useState(null);
+  
+  // Cargar número de transacción inicial cuando se abre el modal
+  useEffect(() => {
+    if (open && initialTransactionNumber) {
+      setTransactionNumber(initialTransactionNumber.toString());
+    }
+  }, [open, initialTransactionNumber]);
 
   const resetState = () => {
     setStep(CREDIT_NOTE_STEPS.SEARCH);
