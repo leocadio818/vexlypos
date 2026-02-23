@@ -107,13 +107,15 @@ class TestMultiplePayments:
         TestMultiplePayments.test_order_id = order['id']
         print(f"Created order: {order['id']}")
         
-        # Add items to order
+        # Add items to order (endpoint expects {"items": [...]})
         item_data = {
-            "product_id": product['id'],
-            "product_name": product['name'],
-            "quantity": 2,
-            "unit_price": product.get('price', 100),
-            "modifiers": []
+            "items": [{
+                "product_id": product['id'],
+                "product_name": product['name'],
+                "quantity": 2,
+                "unit_price": product.get('price', 100),
+                "modifiers": []
+            }]
         }
         add_item_response = requests.post(f"{BASE_URL}/api/orders/{order['id']}/items", json=item_data, headers=self.headers)
         assert add_item_response.status_code == 200, f"Failed to add item: {add_item_response.text}"
@@ -156,8 +158,8 @@ class TestMultiplePayments:
         order_response = requests.post(f"{BASE_URL}/api/orders", json=order_data, headers=self.headers)
         order = order_response.json()
         
-        # Add item
-        item_data = {"product_id": product['id'], "product_name": product['name'], "quantity": 1, "unit_price": 100, "modifiers": []}
+        # Add item (endpoint expects {"items": [...]})
+        item_data = {"items": [{"product_id": product['id'], "product_name": product['name'], "quantity": 1, "unit_price": 100, "modifiers": []}]}
         requests.post(f"{BASE_URL}/api/orders/{order['id']}/items", json=item_data, headers=self.headers)
         
         # Create bill
@@ -320,8 +322,8 @@ class TestMultiplePayments:
         order_response = requests.post(f"{BASE_URL}/api/orders", json=order_data, headers=self.headers)
         order = order_response.json()
         
-        # Add item
-        item_data = {"product_id": product['id'], "product_name": product['name'], "quantity": 1, "unit_price": 100, "modifiers": []}
+        # Add item (endpoint expects {"items": [...]})
+        item_data = {"items": [{"product_id": product['id'], "product_name": product['name'], "quantity": 1, "unit_price": 100, "modifiers": []}]}
         requests.post(f"{BASE_URL}/api/orders/{order['id']}/items", json=item_data, headers=self.headers)
         
         # Create bill
@@ -683,8 +685,8 @@ class TestMultiplePayments:
         order_response = requests.post(f"{BASE_URL}/api/orders", json=order_data, headers=self.headers)
         order = order_response.json()
         
-        # Add item
-        item_data = {"product_id": product['id'], "product_name": product['name'], "quantity": 1, "unit_price": 100, "modifiers": []}
+        # Add item (endpoint expects {"items": [...]})
+        item_data = {"items": [{"product_id": product['id'], "product_name": product['name'], "quantity": 1, "unit_price": 100, "modifiers": []}]}
         requests.post(f"{BASE_URL}/api/orders/{order['id']}/items", json=item_data, headers=self.headers)
         
         # Create bill
