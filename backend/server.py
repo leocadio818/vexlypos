@@ -1945,26 +1945,26 @@ async def send_receipt_to_printer(bill_id: str):
     change_amount = bill.get("change_amount", 0)
     
     if payments and len(payments) > 0:
-        # Listar cada pago recibido con formato "Recibido [Método]: [Monto]"
+        # Listar cada pago recibido con formato "Recibido [Metodo]: [Monto]"
         for pmt in payments:
             pmt_currency = pmt.get('currency', 'DOP')
             pmt_amount = pmt.get('amount', 0)
             
-            # Determinar etiqueta según tipo de pago
+            # Determinar etiqueta segun tipo de pago (sin acentos para compatibilidad)
             if pmt_currency == 'USD':
-                label = "Recibido Dólar:"
+                label = "Recibido Dolar:"
                 curr_symbol = "US$"
                 display_amount = pmt_amount
             elif pmt_currency == 'EUR':
                 label = "Recibido Euro:"
-                curr_symbol = "€"
+                curr_symbol = "EUR"  # Sin simbolo especial
                 display_amount = pmt_amount
             elif pmt.get('is_cash', True) and pmt_currency in ['DOP', 'RD$']:
                 label = "Recibido Efectivo:"
                 curr_symbol = "RD$"
                 display_amount = pmt_amount
             else:
-                # Tarjeta u otro método
+                # Tarjeta u otro metodo
                 pmt_name = pmt.get('payment_method_name', 'Pago')[:15]
                 label = f"Recibido {pmt_name}:"
                 curr_symbol = "RD$"
@@ -1972,15 +1972,15 @@ async def send_receipt_to_printer(bill_id: str):
             
             commands.append({"type": "columns", "left": label, "right": f"{curr_symbol} {display_amount:,.2f}"})
     elif bill.get('payment_method_name'):
-        # Pago único (compatibilidad hacia atrás)
+        # Pago unico (compatibilidad hacia atras)
         pmt_name = bill['payment_method_name'][:15]
         if amount_received > 0:
             commands.append({"type": "columns", "left": f"Recibido {pmt_name}:", "right": f"RD$ {amount_received:,.2f}"})
         else:
             commands.append({"type": "columns", "left": "Forma de pago:", "right": bill['payment_method_name'][:22]})
     
-    # ─── CÁLCULO DE DEVUELTA (siempre en RD$) ───
-    # El cambio se calcula y muestra únicamente en Pesos Dominicanos
+    # --- CALCULO DE DEVUELTA (siempre en RD$) ---
+    # El cambio se calcula y muestra unicamente en Pesos Dominicanos
     if change_amount > 0:
         commands.append({"type": "columns", "bold": True, "left": "CAMBIO:", "right": f"RD$ {change_amount:,.2f}"})
     elif amount_received > bill["total"]:
