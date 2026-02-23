@@ -136,6 +136,8 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Motor de Pagos Múltiples** - Soporte para múltiples formas de pago en una transacción
 - [x] **Multimoneda en Pre-cuenta** - Equivalentes USD/EUR con tasas configuradas
 - [x] **Lógica de Cambio Multimoneda** - Recibido en moneda original, cambio siempre en RD$
+- [x] **Menú Funciones Glassmorphism** - Modal con fondo desenfocado y botones píldora
+- [x] **Lógica Dual de Anulación** - Cuenta abierta (cancela sin fiscal) vs cerrada (B04 redirect)
 
 ## Motor de Pagos Múltiples (NUEVO - 2026-02-23)
 
