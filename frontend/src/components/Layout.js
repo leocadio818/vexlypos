@@ -52,9 +52,7 @@ export default function Layout() {
             // Ignore errors for individual orders
           }
         }
-        if (sentCount > 0) {
-          toast.success(`${sentCount} comanda(s) enviada(s) automáticamente`);
-        }
+        // Removed toast notification - silent operation
       }
     } catch (e) {
       // Ignore errors, just logout
