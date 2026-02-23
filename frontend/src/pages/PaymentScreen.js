@@ -839,6 +839,86 @@ export default function PaymentScreen() {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // BLOQUEO POR JORNADA - No se puede procesar pagos sin jornada abierta
+  // ═══════════════════════════════════════════════════════════════════════════════
+  if (!businessDayLoading && !businessDay) {
+    return (
+      <div 
+        className="h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-red-900/30 to-slate-900 p-6"
+        data-testid="no-business-day-block"
+      >
+        <div className="max-w-md text-center space-y-6">
+          {/* Icon */}
+          <div className="relative">
+            <div className="w-24 h-24 mx-auto rounded-full bg-red-500/20 flex items-center justify-center animate-pulse">
+              <Moon size={48} className="text-red-400" />
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <Lock size={20} className="text-amber-400" />
+            </div>
+          </div>
+          
+          {/* Title */}
+          <div>
+            <h2 className="font-oswald font-bold text-2xl text-white mb-2">
+              JORNADA NO ABIERTA
+            </h2>
+            <p className="text-white/60 text-sm">
+              No se pueden procesar pagos sin una jornada de trabajo activa.
+              Todas las transacciones deben registrarse bajo una fecha contable.
+            </p>
+          </div>
+          
+          {/* Info Box */}
+          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+            <p className="text-white/70 text-sm mb-3">
+              Un <strong className="text-amber-400">Gerente</strong> o <strong className="text-amber-400">Administrador</strong> debe autorizar la apertura del día.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-white/50 text-xs">
+              <Shield size={14} />
+              <span>La fecha de jornada se usará para todos los reportes fiscales (607)</span>
+            </div>
+          </div>
+          
+          {/* Action Button */}
+          <Button
+            onClick={() => setBusinessDayDialogOpen(true)}
+            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-8 py-6 text-lg rounded-2xl shadow-lg shadow-green-500/25"
+            data-testid="open-day-from-payment-btn"
+          >
+            <Sun size={20} className="mr-2" />
+            Abrir Jornada de Trabajo
+          </Button>
+          
+          {/* Back Button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="text-white/50 hover:text-white/70 text-sm flex items-center justify-center gap-2 mx-auto transition-colors"
+          >
+            <ArrowLeft size={14} />
+            Volver
+          </button>
+        </div>
+        
+        {/* Business Day Manager Dialog */}
+        <Dialog open={businessDayDialogOpen} onOpenChange={setBusinessDayDialogOpen}>
+          <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-lg">
+            <BusinessDayManager 
+              showStatsInline={false} 
+              onDayStatusChange={(hasDay, day) => {
+                if (hasDay) {
+                  setBusinessDay(day);
+                  setBusinessDayDialogOpen(false);
+                }
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="h-full flex flex-col overflow-hidden relative"
