@@ -1880,6 +1880,17 @@ export default function Reports() {
           </div>
         </div>
       </div>
+      
+      {/* Report Z Dialog */}
+      <ReportXZ
+        type="Z"
+        dayId={reportZDayId}
+        open={reportZOpen}
+        onClose={() => {
+          setReportZOpen(false);
+          setReportZDayId(null);
+        }}
+      />
     </div>
   );
 }
