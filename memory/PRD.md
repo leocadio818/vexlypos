@@ -149,6 +149,38 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Reportes X y Z** - Cierre de turno y día con desglose completo
 - [x] **Sincronización Reportes por Jornada** - Filtro de jornada en página de Reports
 - [x] **Auditoría - Solo Admin ve PINs** - Restricción de visibilidad de PINs por rol
+- [x] **Validación RNC en Tiempo Real** - Consulta API DGII tercero para auto-llenar datos del contribuyente
+- [x] **Indicador Estado Contribuyente** - Badge visual (ACTIVO/SUSPENDIDO/INACTIVO) en captura fiscal
+- [x] **Fix Impresión Datos Fiscales** - Datos del cliente (RNC/Razón Social) ahora aparecen en facturas B01/B14/B15
+
+## Fix: Datos Fiscales en Factura Impresa (CORREGIDO - 2026-02-23)
+
+### Problema
+Los datos fiscales del cliente (RNC/Cédula y Razón Social) no aparecían en las facturas impresas para transacciones fiscales (B01, B14, B15).
+
+### Causa Raíz
+El código de impresión verificaba el campo `ncf_type` para determinar si mostrar datos fiscales, pero facturas existentes tenían `ncf_type=None` aunque fueran B01.
+
+### Solución Implementada
+Inferir el tipo de NCF desde el string del NCF cuando `ncf_type` no está establecido:
+```python
+if not ncf_type and ncf_str:
+    if ncf_str.startswith("B01"):
+        ncf_type = "B01"
+    elif ncf_str.startswith("B14"):
+        ncf_type = "B14"
+    elif ncf_str.startswith("B15"):
+        ncf_type = "B15"
+```
+
+### Archivos Modificados
+- `/app/backend/server.py`: Líneas 1207-1230 (print_receipt HTML) y 1264-1285 (print_receipt_escpos)
+
+### Pruebas
+- ✅ 10/10 pruebas backend pasaron
+- ✅ HTML receipt incluye sección "DATOS DEL CLIENTE"
+- ✅ ESC/POS receipt incluye líneas de datos fiscales
+- ✅ Bills sin datos fiscales no muestran la sección
 
 ## Auditoría - Restricción de PINs (NUEVO - 2026-02-23)
 
