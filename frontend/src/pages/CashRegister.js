@@ -474,7 +474,7 @@ export default function CashRegister() {
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                   <input
                     type="text"
-                    placeholder="Buscar por NCF, monto, descripción..."
+                    placeholder="Buscar por NCF, # orden, monto, descripción..."
                     value={movementSearch}
                     onChange={(e) => setMovementSearch(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-white/30 focus:border-orange-400/50 focus:outline-none transition-all"
@@ -496,11 +496,15 @@ export default function CashRegister() {
                     .filter(mov => {
                       if (!movementSearch) return true;
                       const search = movementSearch.toLowerCase();
+                      // Extraer número de transacción de la descripción (ej: "Venta B0100000186")
+                      const transMatch = mov.description?.match(/#?(\d+)/);
+                      const transNum = transMatch ? transMatch[1] : '';
                       return (
                         mov.description?.toLowerCase().includes(search) ||
                         mov.ref?.toLowerCase().includes(search) ||
                         mov.payment_method?.toLowerCase().includes(search) ||
-                        String(mov.amount).includes(search)
+                        String(mov.amount).includes(search) ||
+                        transNum.includes(search)
                       );
                     })
                     .slice(0, 20)
