@@ -67,6 +67,8 @@ taxes_set_db(db)
 taxes_init_supabase()  # Initialize Supabase for tax calculations
 customers_set_db(db)
 config_set_db(db)
+business_days_set_db(db)
+business_days_init_supabase()  # Initialize Supabase for business days
 
 # Connect KDS notifier to orders
 set_kds_notifier(notify_kds)
