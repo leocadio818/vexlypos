@@ -2164,9 +2164,10 @@ async def send_precheck_to_printer(order_id: str):
             pm_name = pm.get("name", "").replace("USD ", "").replace("EUR ", "")  # Limpiar nombre
             if currency and exchange_rate and exchange_rate > 0:
                 equiv_amount = round(total / exchange_rate, 2)
-                curr_symbol = "US$" if currency == "USD" else "€" if currency == "EUR" else currency
-                # Formato limpio: "Dólar                    US$ 82.65"
-                currency_label = "Dólar" if currency == "USD" else "Euro" if currency == "EUR" else pm_name
+                # Sin simbolos especiales para compatibilidad
+                curr_symbol = "US$" if currency == "USD" else "EUR" if currency == "EUR" else currency
+                # Formato limpio sin acentos: "Dolar                    US$ 82.65"
+                currency_label = "Dolar" if currency == "USD" else "Euro" if currency == "EUR" else pm_name
                 commands.append({"type": "columns", "left": currency_label, "right": f"{curr_symbol} {equiv_amount:,.2f}"})
     
     commands.append({"type": "divider"})
