@@ -1761,6 +1761,7 @@ async def send_comanda_to_queue(order_id: str):
         printer_target = channel.get("target", "usb") if channel else "usb"
         printer_ip = channel.get("ip", "") if channel else ""
         channel_name = channel.get("name", channel_code.title()) if channel else channel_code.title()
+        copies = channel.get("copies", 1) if channel else 1  # Numero de copias
         
         # Build comanda data with ONLY the filtered items for this channel
         comanda_data = {
@@ -1796,6 +1797,7 @@ async def send_comanda_to_queue(order_id: str):
             "printer_name": printer_name,
             "printer_target": printer_target,
             "printer_ip": printer_ip,
+            "copies": copies,  # Numero de copias a imprimir
             "data": comanda_data,
             "status": "pending",
             "created_at": now_iso()
