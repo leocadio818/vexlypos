@@ -229,7 +229,7 @@ export default function PaymentScreen() {
         if (config.quick_amounts) setQuickAmounts(config.quick_amounts);
       } catch {}
     } catch {
-      toast.error('Error cargando datos');
+      console.warn('Error cargando datos de pago');
     }
   }, [billId, API_BASE, urlServiceType]);
 
