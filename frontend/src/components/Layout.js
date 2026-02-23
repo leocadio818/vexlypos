@@ -61,7 +61,8 @@ export default function Layout() {
   const handleLogoutWithComandas = async () => {
     try {
       // Send pending comandas for all user's orders
-      const res = await ordersAPI.list({ status: 'active' });
+      // Fetch all orders without status filter to include 'sent' status orders
+      const res = await ordersAPI.list();
       const allOrders = res.data || [];
       const userOrders = allOrders.filter(o => 
         o.waiter_id === user?.id && 
