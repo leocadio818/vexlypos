@@ -1906,10 +1906,10 @@ async def send_receipt_to_printer(bill_id: str):
     if bill.get('cashier_name'):
         commands.append({"type": "columns", "left": "Cajero:", "right": bill['cashier_name'][:20]})
     
-    # Número de Transacción (ID de Venta) - DEBAJO del cajero
+    # Numero de Transaccion (ID de Venta) - DEBAJO del cajero
     transaction_number = bill.get('transaction_number')
     if transaction_number:
-        commands.append({"type": "columns", "left": "Transacción:", "right": f"#{transaction_number}"})
+        commands.append({"type": "columns", "left": "Transaccion:", "right": f"#{transaction_number}"})
     
     commands.append({"type": "divider"})
     
