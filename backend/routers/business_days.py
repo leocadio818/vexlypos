@@ -1052,18 +1052,4 @@ async def generate_x_report(
     return report
 
 
-@router.get("/current/report-z")
-async def generate_current_z_report(user=Depends(get_current_user)):
-    """
-    Genera el Reporte Z para la jornada actual (si existe).
-    Útil para ver un preview antes de cerrar el día.
-    """
-    business_day = await get_current_business_day()
-    
-    if not business_day:
-        raise HTTPException(
-            status_code=404,
-            detail="No hay jornada de trabajo abierta"
-        )
-    
-    return await generate_z_report(business_day["id"], user)
+
