@@ -285,11 +285,19 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
     ncf_num = ncf_doc.get("current_number", 1)
     ncf = f"B01{ncf_num:08d}"
 
+    # Copiar transaction_number de la orden (ID de Venta persistente)
+    transaction_number = order.get("transaction_number")
+    if not transaction_number:
+        # Órdenes antiguas: generar uno y guardarlo
+        transaction_number = await get_next_transaction_number()
+        await db.orders.update_one({"id": input.order_id}, {"$set": {"transaction_number": transaction_number}})
+
     bill = {
         "id": gen_id(), "order_id": input.order_id, "table_id": input.table_id,
         "table_number": table["number"] if table else 0,
         "account_number": order.get("account_number", 1),
         "account_label": order.get("account_label", ""),
+        "transaction_number": transaction_number,
         "label": input.label or f"Mesa {table['number'] if table else '?'}",
         "items": items_data, "subtotal": round(subtotal, 2),
         "itbis": itbis_amount, "itbis_rate": 18,
@@ -300,6 +308,8 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
         "total": total, "ncf": ncf,
         "payment_method": input.payment_method,
         "cashier_id": user["user_id"], "cashier_name": user["name"],
+        "waiter_id": order.get("waiter_id", ""),
+        "waiter_name": order.get("waiter_name", ""),
         "status": "open", "created_at": now_iso(), "paid_at": None
     }
     await db.bills.insert_one(bill)
