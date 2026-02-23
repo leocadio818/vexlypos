@@ -2275,14 +2275,12 @@ export default function OrderScreen() {
               });
               const data = await resp.json();
               if (data.ok) {
-                toast.success(`Pre-cuenta enviada a impresora (${data.method || 'cola'})`);
                 setPreCheckOpen(false);
               } else {
-                toast.error(data.message || 'Error al imprimir');
+                console.warn(data.message || 'Error al imprimir');
               }
             } catch (e) {
-              toast.error('Error de conexión');
-              console.error(e);
+              console.error('Error de conexión:', e);
             }
           }} className="w-full h-11 bg-gray-900 text-white font-oswald font-bold active:scale-95" data-testid="print-precheck-btn">
             <Printer size={16} className="mr-2" /> IMPRIMIR PRE-CUENTA
