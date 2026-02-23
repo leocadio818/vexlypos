@@ -251,8 +251,7 @@ async def open_business_day(input: OpenBusinessDayInput, user=Depends(get_curren
     
     await db.business_days.insert_one(business_day)
     
-    # Retornar sin _id
-    del business_day["_id"] if "_id" in business_day else None
+    # Retornar sin _id (ya está excluido en el return)
     
     return {
         "ok": True,
