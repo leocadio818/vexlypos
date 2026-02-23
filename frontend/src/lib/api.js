@@ -191,6 +191,10 @@ export const businessDaysAPI = {
   history: (params) => api.get('/business-days/history', { params }),
   get: (id) => api.get(`/business-days/${id}`),
   getTransactions: (id) => api.get(`/business-days/${id}/transactions`),
+  // Reportes X y Z
+  reportZ: (dayId) => api.get(`/business-days/${dayId}/report-z`),
+  reportZCurrent: () => api.get('/business-days/current/report-z'),
+  reportX: (sessionId) => api.get(`/business-days/session/${sessionId}/report-x`),
 };
 
 // Tax Configuration (Sistema de Impuestos Dinámico)
