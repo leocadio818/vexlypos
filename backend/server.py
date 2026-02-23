@@ -2162,19 +2162,21 @@ async def send_precheck_to_printer(order_id: str):
         commands.append({"type": "columns", "left": f"{tl['description']} {tl['rate']}%", "right": f"RD$ {tl['amount']:,.2f}"})
     commands.append({"type": "columns", "bold": True, "left": "TOTAL ESTIMADO", "right": f"RD$ {total:,.2f}"})
     
-    # ─── EQUIVALENTES EN MONEDA EXTRANJERA ───
-    # Obtener tasas de cambio configuradas de los métodos de pago
+    # ─── EQUIVALENTES EN MONEDA EXTRANJERA (formato limpio) ───
+    # Solo nombre de moneda y monto calculado, sin tasas
     payment_methods = await db.payment_methods.find({"active": True, "currency": {"$ne": "DOP"}}, {"_id": 0}).to_list(10)
     if payment_methods:
         commands.append({"type": "text", "text": "-" * 42})
         for pm in payment_methods:
             currency = pm.get("currency", "")
             exchange_rate = pm.get("exchange_rate", 1)
+            pm_name = pm.get("name", "").replace("USD ", "").replace("EUR ", "")  # Limpiar nombre
             if currency and exchange_rate and exchange_rate > 0:
                 equiv_amount = round(total / exchange_rate, 2)
                 curr_symbol = "US$" if currency == "USD" else "€" if currency == "EUR" else currency
-                # Formato compacto para 72mm: "Equiv US$ 82.65 (60.50)"
-                commands.append({"type": "columns", "left": f"Equiv {curr_symbol}", "right": f"{equiv_amount:,.2f} (Tasa:{exchange_rate:.2f})"})
+                # Formato limpio: "Dólar                    US$ 82.65"
+                currency_label = "Dólar" if currency == "USD" else "Euro" if currency == "EUR" else pm_name
+                commands.append({"type": "columns", "left": currency_label, "right": f"{curr_symbol} {equiv_amount:,.2f}"})
     
     commands.append({"type": "divider"})
     commands.append({"type": "text", "text": "La propina es voluntaria", "align": "center"})
