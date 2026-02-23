@@ -244,8 +244,8 @@ const FiscalDataDrawer = ({
         body: JSON.stringify({
           name: razonSocial.trim(),
           rnc: validation.cleaned,
-          email: email.trim() || null,
-          phone: null
+          email: email.trim() || '',
+          phone: ''
         })
       });
       
