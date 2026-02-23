@@ -283,7 +283,7 @@ export default function OrderScreen() {
     if (pendingItems.length === 0) return false;
     try {
       await ordersAPI.sendToKitchen(currentOrder.id);
-      if (showToast) toast.success('Comanda enviada automáticamente');
+      // Removed toast - silent auto-send
       console.log('Auto-enviado a cocina:', pendingItems.length, 'items');
       return true;
     } catch (e) {
@@ -311,7 +311,7 @@ export default function OrderScreen() {
             e.stopPropagation();
             try {
               await ordersAPI.sendToKitchen(currentOrder.id);
-              toast.success('Comanda enviada automáticamente');
+              // Removed toast - silent auto-send
               console.log('Comanda enviada exitosamente');
             } catch (err) {
               console.error('Error enviando a cocina:', err);
