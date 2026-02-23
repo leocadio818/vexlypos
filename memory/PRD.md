@@ -146,6 +146,34 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Imágenes/Iconos en Productos** - Nueva sección en configuración de productos con URL de imagen y 12 iconos predefinidos
 - [x] **Captura de Datos Fiscales (B01/B14/B15)** - Drawer para capturar RNC/Cédula con validación flexible y búsqueda de clientes
 - [x] **Sistema de Jornada de Trabajo** - Fecha contable independiente del calendario civil (Business Day)
+- [x] **Reportes X y Z** - Cierre de turno y día con desglose completo
+
+## Reportes X y Z (NUEVO - 2026-02-23)
+
+### Descripción
+Reportes de cierre con desglose detallado de ventas, formas de pago, y cuadre de caja.
+
+### Reporte Z (Cierre de Día)
+Incluye:
+- **Resumen de Ventas**: Subtotal, ITBIS, Propina Legal, Total
+- **Desglose por Forma de Pago**: Efectivo, Tarjeta, Transferencia, Dólar, Euro
+- **Ventas por Categoría**: Desglose por categoría de producto
+- **Notas de Crédito (B04)**: Lista de NC aplicadas con NCF, monto, razón
+- **Anulaciones**: Lista de facturas anuladas con razón
+- **Cuadre de Caja**: Fondo Inicial + Ventas Efectivo + Depósitos - Retiros = **Total a Entregar**
+
+### Reporte X (Cierre de Turno)
+Similar al Z pero filtrado por sesión específica del cajero.
+
+### Endpoints API
+- `GET /api/business-days/current/report-z` - Reporte Z de jornada actual
+- `GET /api/business-days/{dayId}/report-z` - Reporte Z por ID
+- `GET /api/business-days/session/{sessionId}/report-x` - Reporte X de turno
+
+### UI
+- Botón "Reporte Z" en el diálogo de gestión de jornada
+- Modal con secciones expandibles
+- Botón "Imprimir" para impresión del reporte
 
 ## Sistema de Jornada de Trabajo (NUEVO - 2026-02-23)
 
