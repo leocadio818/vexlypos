@@ -835,11 +835,9 @@ export default function OrderScreen() {
         const d = await r.json();
         const errorMsg = d.detail || 'No autorizado';
         setManagerPinDialog(prev => ({ ...prev, error: errorMsg, pin: '' }));
-        toast.error(errorMsg);
       }
     } catch { 
       setManagerPinDialog(prev => ({ ...prev, error: 'Error de conexión', pin: '' }));
-      toast.error('Error de autorizacion'); 
     }
   };
 
@@ -850,7 +848,7 @@ export default function OrderScreen() {
       setAllTables(tablesRes.data);
       setAllAreas(areasRes.data);
       setMoveDialog({ open: true });
-    } catch { toast.error('Error cargando mesas'); }
+    } catch { console.warn('Error cargando mesas'); }
   };
 
   const handleMoveTable = async (targetTableId) => {
@@ -863,11 +861,10 @@ export default function OrderScreen() {
         setMoveDialog({ open: false });
         setMergeConfirm({ open: true, targetTableId, targetTableNumber: res.data.target_table_number });
       } else {
-        toast.success(`Cuenta #${order.account_number || 1} movida a Mesa ${res.data.target_table_number || targetTableId}`);
         setMoveDialog({ open: false });
         navigate(`/order/${targetTableId}`);
       }
-    } catch { toast.error('Error moviendo cuenta'); }
+    } catch { console.warn('Error moviendo cuenta'); }
   };
 
   const handleConfirmMerge = async () => {
