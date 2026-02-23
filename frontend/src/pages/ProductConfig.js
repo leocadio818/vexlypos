@@ -809,12 +809,24 @@ export default function ProductConfig() {
                   <label className="text-xs text-muted-foreground mb-2 block">Vista Previa</label>
                   <div className="flex items-center gap-3">
                     <button
-                      className="px-4 py-3 rounded-xl font-oswald font-bold text-sm transition-all hover:scale-105"
+                      className="px-4 py-3 rounded-xl font-oswald font-bold text-sm transition-all hover:scale-105 flex items-center gap-2"
                       style={{
                         backgroundColor: product.button_bg_color || '#3f3f46',
                         color: product.button_text_color || '#FFFFFF'
                       }}
                     >
+                      {product.image_url ? (
+                        <img src={product.image_url} alt="" className="w-6 h-6 rounded object-cover" />
+                      ) : product.icon ? (
+                        (() => {
+                          const iconData = PRODUCT_ICONS.find(i => i.id === product.icon);
+                          if (iconData) {
+                            const IconComponent = iconData.Icon;
+                            return <IconComponent size={16} />;
+                          }
+                          return null;
+                        })()
+                      ) : null}
                       {product.name || 'Producto'}
                     </button>
                     <span className="text-xs text-muted-foreground">
