@@ -857,27 +857,56 @@ export default function UserConfig() {
                     </div>
 
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">PIN de Acceso *</label>
-                      <input 
-                        type="password"
-                        value={user.pin}
-                        onChange={e => {
-                          const val = e.target.value.replace(/\D/g, ''); // Solo números
-                          setUser(p => ({ ...p, pin: val }));
-                        }}
-                        placeholder={isNew ? '1-8 dígitos (no inicia con 0)' : 'Vacío = no cambiar'}
-                        maxLength={8}
-                        className={`w-full bg-background border rounded-lg px-3 py-2 text-sm font-mono tracking-widest ${
-                          user.pin && !validatePin(user.pin).valid 
-                            ? 'border-red-500 focus:border-red-500' 
-                            : 'border-border'
-                        }`}
-                        data-testid="user-pin-input"
-                      />
-                      {user.pin && !validatePin(user.pin).valid && (
+                      <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-2">
+                        PIN de Acceso {isNew && '*'}
+                        {!canEditPin && (
+                          <Badge variant="outline" className="text-[9px] border-amber-500 text-amber-400">
+                            <Lock size={10} className="mr-1" />
+                            Solo Admin
+                          </Badge>
+                        )}
+                      </label>
+                      
+                      {canEditPin ? (
+                        <div className="relative">
+                          <input 
+                            type={showPin ? "text" : "password"}
+                            value={user.pin}
+                            onChange={e => {
+                              const val = e.target.value.replace(/\D/g, ''); // Solo números
+                              setUser(p => ({ ...p, pin: val }));
+                            }}
+                            placeholder={isNew ? '1-8 dígitos (no inicia con 0)' : 'Vacío = no cambiar'}
+                            maxLength={8}
+                            className={`w-full bg-background border rounded-lg px-3 py-2 pr-10 text-sm font-mono tracking-widest ${
+                              user.pin && !validatePin(user.pin).valid 
+                                ? 'border-red-500 focus:border-red-500' 
+                                : 'border-border'
+                            }`}
+                            data-testid="user-pin-input"
+                          />
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setShowPin(!showPin)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              title={showPin ? 'Ocultar PIN' : 'Mostrar PIN'}
+                            >
+                              {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-sm font-mono tracking-widest text-muted-foreground">
+                          ••••••••
+                          <span className="text-xs ml-2 text-amber-400">(Contacte al administrador)</span>
+                        </div>
+                      )}
+                      
+                      {canEditPin && user.pin && !validatePin(user.pin).valid && (
                         <p className="text-[10px] text-red-500 mt-1">{validatePin(user.pin).error}</p>
                       )}
-                      {user.pin && validatePin(user.pin).valid && (
+                      {canEditPin && user.pin && validatePin(user.pin).valid && (
                         <p className="text-[10px] text-green-500 mt-1">✓ PIN válido ({user.pin.length} dígitos)</p>
                       )}
                     </div>
