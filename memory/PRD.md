@@ -142,6 +142,8 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Re-impresión desde Movimientos** - Botón flotante para reimprimir factura seleccionada
 - [x] **Copias Configurables por Impresora** - Campo "Copias" (1-5) en configuración de cada canal
 - [x] **Búsqueda por # Orden Global** - Historial de Facturas y Caja permiten buscar por número de transacción
+- [x] **Datos Reales Valuation-Trends** - Endpoint usa movimientos de stock y órdenes para calcular valores históricos
+- [x] **Imágenes/Iconos en Productos** - Nueva sección en configuración de productos con URL de imagen y 12 iconos predefinidos
 
 ## Búsqueda y Re-impresión de Facturas (NUEVO - 2026-02-23)
 
