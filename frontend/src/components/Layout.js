@@ -235,13 +235,54 @@ export default function Layout() {
             onClick={handleLogoutWithComandas}
             data-testid="logo-logout-btn"
             title="Salir del sistema"
-            className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-lg flex items-center justify-center mb-4 lg:mb-6 transition-all hover:opacity-80 active:scale-95 ${
+            className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-lg flex items-center justify-center mb-2 transition-all hover:opacity-80 active:scale-95 ${
               isGlassPage ? 'backdrop-blur-xl bg-white/10 border border-white/20 hover:bg-white/20' : 'hover:ring-2 hover:ring-primary/50'
             }`}
             style={{ backgroundColor: isGlassPage ? 'transparent' : theme.accentColor }}
           >
             <span className={`font-oswald font-bold ${isGlassPage ? 'text-white' : 'text-primary-foreground'} ${isTablet ? 'text-base' : largeMode ? 'text-xl' : 'text-lg'}`}>RD</span>
           </button>
+          
+          {/* Business Day Indicator - Jornada de Trabajo */}
+          <button
+            onClick={() => setBusinessDayDialogOpen(true)}
+            data-testid="business-day-sidebar-btn"
+            title={businessDay ? `Jornada: ${businessDay.business_date}` : 'Sin jornada abierta'}
+            className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-lg flex flex-col items-center justify-center mb-4 transition-all ${
+              businessDayLoading ? 'animate-pulse' : ''
+            } ${
+              businessDay 
+                ? isGlassPage 
+                  ? 'bg-green-500/20 border border-green-500/30 hover:bg-green-500/30' 
+                  : 'bg-green-500/20 hover:bg-green-500/30'
+                : isGlassPage
+                  ? 'bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 animate-pulse'
+                  : 'bg-red-500/20 hover:bg-red-500/30 animate-pulse'
+            }`}
+          >
+            {businessDay ? (
+              <Sun size={isTablet ? 14 : largeMode ? 18 : 16} className="text-green-400" />
+            ) : (
+              <Moon size={isTablet ? 14 : largeMode ? 18 : 16} className="text-red-400" />
+            )}
+            {businessDay && (
+              <span className={`font-mono ${isTablet ? 'text-[6px]' : largeMode ? 'text-[8px]' : 'text-[7px]'} text-green-400 mt-0.5`}>
+                {businessDay.business_date?.slice(5)}
+              </span>
+            )}
+          </button>
+          
+          {/* Business Day Management Dialog */}
+          <Dialog open={businessDayDialogOpen} onOpenChange={setBusinessDayDialogOpen}>
+            <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-lg">
+              <BusinessDayManager 
+                showStatsInline={true} 
+                onDayStatusChange={(hasDay, day) => {
+                  setBusinessDay(hasDay ? day : null);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
 
           <nav className="flex-1 flex flex-col gap-1.5 lg:gap-2">
             {filteredNav.map(({ to, icon: Icon, label }) => (
