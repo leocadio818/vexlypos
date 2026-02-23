@@ -178,9 +178,8 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    // Sync pending operations before logout
+    // Sync pending operations before logout - silently
     if (pendingSyncCount > 0 && navigator.onLine) {
-      toast.loading('Sincronizando operaciones pendientes...');
       await syncPendingOperations();
     }
     
