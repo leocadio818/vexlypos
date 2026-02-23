@@ -317,7 +317,7 @@ export default function TableMap() {
       setAreas(areasRes.data);
       setTables(tablesRes.data);
       if (!activeArea && areasRes.data.length > 0) setActiveArea(areasRes.data[0].id);
-    } catch { toast.error('Error cargando datos'); }
+    } catch { console.warn('Error cargando datos de mesas'); }
   }, [activeArea]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
