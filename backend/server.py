@@ -283,6 +283,8 @@ async def create_product(input: dict):
         "price_e": input.get("price_e", 0),
         "button_bg_color": input.get("button_bg_color", ""),
         "button_text_color": input.get("button_text_color", ""),
+        "image_url": input.get("image_url", ""),  # URL de imagen del producto
+        "icon": input.get("icon", ""),            # Icono de Lucide
         "modifier_group_ids": input.get("modifier_group_ids", []),
         "modifier_assignments": modifier_assignments,
         "track_inventory": input.get("track_inventory", False),
