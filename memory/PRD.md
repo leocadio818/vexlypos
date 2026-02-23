@@ -147,6 +147,29 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Captura de Datos Fiscales (B01/B14/B15)** - Drawer para capturar RNC/Cédula con validación flexible y búsqueda de clientes
 - [x] **Sistema de Jornada de Trabajo** - Fecha contable independiente del calendario civil (Business Day)
 - [x] **Reportes X y Z** - Cierre de turno y día con desglose completo
+- [x] **Sincronización Reportes por Jornada** - Filtro de jornada en página de Reports
+
+## Sincronización de Reportes por Jornada (NUEVO - 2026-02-23)
+
+### Descripción
+La página de Reportes ahora incluye un filtro por Jornada de Trabajo que permite filtrar todos los datos por fecha contable.
+
+### Características
+1. **Dropdown de Jornada**: Selector con las últimas 30 jornadas
+   - Opción "Por Fecha Civil" para usar fechas normales
+   - Lista de jornadas con referencia y estado (abierta/cerrada)
+   
+2. **Auto-actualización de Fechas**: Al seleccionar una jornada, los filtros de fecha se actualizan automáticamente a la `business_date` de esa jornada
+
+3. **Indicadores Visuales**:
+   - Ícono de sol amarillo junto al dropdown
+   - Badge amber mostrando "Jornada: YYYY-MM-DD"
+   - Botón cyan para ver Reporte Z directamente
+
+4. **Acceso Rápido a Reporte Z**: Botón FileText que abre el modal del Reporte Z de la jornada seleccionada
+
+### Ubicación
+Barra superior de la página `/reports`, a la derecha del botón "Actualizar"
 
 ## Reportes X y Z (NUEVO - 2026-02-23)
 
