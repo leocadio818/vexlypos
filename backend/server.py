@@ -1199,6 +1199,19 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     
     footer_html = "<br>".join(f"<span>{m}</span>" for m in footer_msgs)
     
+    # Build customer fiscal data for B01, B14, B15
+    customer_fiscal_html = ""
+    ncf_type = bill.get("ncf_type", "")
+    if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
+        fiscal_id = bill.get("fiscal_id", "")
+        fiscal_id_type = bill.get("fiscal_id_type", "RNC")
+        razon_social = bill.get("razon_social", "")
+        customer_fiscal_html = f"""<div style='background:#f5f5f5;border:1px solid #333;padding:4px;margin:4px 0;font-size:10px;'>
+        <b>DATOS DEL CLIENTE</b><br>
+        {fiscal_id_type}: {fiscal_id}<br>
+        Razón Social: {razon_social}
+        </div>"""
+    
     # Factura HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
     return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:12px;margin:0 auto;box-sizing:border-box;'>
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
@@ -1208,8 +1221,9 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     </div>
     <div style='border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;font-size:10px;'>
     <b>NCF: {bill.get('ncf', '')}</b><br>
-    Valido hasta: {printer_config.get('ncf_expiry', config.get('ticket_ncf_expiry', '31/12/2026'))}<br>
-    Mesa: {bill['table_number']} | Fecha: {bill.get('paid_at', bill['created_at'])[:19]}</div>
+    Valido hasta: {printer_config.get('ncf_expiry', config.get('ticket_ncf_expiry', '31/12/2026'))}</div>
+    {customer_fiscal_html}
+    <div style='font-size:10px;border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;'>Mesa: {bill['table_number']} | Fecha: {bill.get('paid_at', bill['created_at'])[:19]}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;font-size:11px;'>
     {items_html}</table>
     <table style='width:100%;font-size:11px;'>
