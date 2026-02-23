@@ -24,13 +24,10 @@ class RNCValidationResponse(BaseModel):
     error: Optional[str] = None
 
 @router.get("/dgii/validate-rnc/{rnc}")
-async def validate_rnc(rnc: str, test_estado: str = None) -> RNCValidationResponse:
+async def validate_rnc(rnc: str) -> RNCValidationResponse:
     """
     Validates an RNC against DGII and returns company information.
     Uses Megaplus API with 3s timeout for fast response in POS context.
-    
-    Query params:
-    - test_estado: For testing UI with different states (SUSPENDIDO, INACTIVO)
     """
     # Clean RNC - remove dashes and spaces
     clean_rnc = re.sub(r'[^0-9]', '', rnc)
@@ -41,20 +38,6 @@ async def validate_rnc(rnc: str, test_estado: str = None) -> RNCValidationRespon
             valid=False,
             rnc=clean_rnc,
             error="RNC debe tener 9 dígitos o Cédula 11 dígitos"
-        )
-    
-    # Test mode: simulate different states for UI testing
-    if test_estado and test_estado.upper() in ['SUSPENDIDO', 'INACTIVO', 'DADO DE BAJA']:
-        return RNCValidationResponse(
-            valid=True,
-            rnc=clean_rnc,
-            nombre=f"EMPRESA DE PRUEBA ({test_estado.upper()}) SRL",
-            nombre_comercial="EMPRESA PRUEBA",
-            estado=test_estado.upper(),
-            actividad_economica="PRUEBA DE SISTEMA",
-            regimen_pagos="NORMAL",
-            administracion="ADM LOCAL PRUEBA",
-            es_facturador_electronico=False
         )
     
     # Check cache first
