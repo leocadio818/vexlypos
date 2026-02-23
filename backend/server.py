@@ -2366,13 +2366,14 @@ def format_qty(q):
 def build_comanda(data):
     commands = []
     channel = data.get("channel_name", "COMANDA")
-    # Encabezado
+    trans_num = data.get("transaction_number") or data.get("internal_transaction_number")
+    
+    # Encabezado con ORDEN #XXXX arriba en negrita
     commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True}})
-    commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True}})
-    # Número de transacción interno
-    trans_num = data.get("internal_transaction_number")
     if trans_num:
-        commands.append({{"type": "text", "text": f"Trans. #{{trans_num}}", "align": "center"}})
+        commands.append({{"type": "text", "text": f"ORDEN #{{trans_num}}", "align": "center", "bold": True, "size": 2}})
+    else:
+        commands.append({{"type": "text", "text": "COMANDA", "align": "center", "bold": True}})
     commands.append({{"type": "divider"}})
     # Info de mesa
     commands.append({{"type": "columns", "left": "Mesa:", "right": str(data.get("table_number", "?"))}})
