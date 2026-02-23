@@ -892,7 +892,6 @@ async def generate_x_report(
     business_day = await get_current_business_day()
     business_date = business_day.get("business_date") if business_day else session.get("business_date")
     
-    session_id_str = session.get("id")
     opened_at = session.get("opened_at")
     closed_at = session.get("closed_at")
     
