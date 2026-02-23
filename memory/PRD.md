@@ -153,17 +153,34 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Indicador Estado Contribuyente** - Badge visual (ACTIVO/SUSPENDIDO/INACTIVO) en captura fiscal
 - [x] **Fix Impresión Datos Fiscales** - Datos del cliente (RNC/Razón Social) ahora aparecen en facturas B01/B14/B15
 
-## Fix: Datos Fiscales en Factura Impresa (CORREGIDO - 2026-02-23)
+## Fix DEFINITIVO: Datos Fiscales en Factura Impresa (2026-02-23)
 
-### Problema
-Los datos fiscales del cliente (RNC/Cédula y Razón Social) no aparecían en las facturas impresas para transacciones fiscales (B01, B14, B15).
+### Problema Original
+Los datos fiscales del cliente (RNC/Cédula y Razón Social) NO aparecían en las facturas impresas para transacciones fiscales (B01, B14, B15).
 
-### Causa Raíz
-El código de impresión verificaba el campo `ncf_type` para determinar si mostrar datos fiscales, pero facturas existentes tenían `ncf_type=None` aunque fueran B01.
+### Diagnóstico Completo
+**Error #1:** El campo `ncf_type` estaba vacío/None en bills existentes.
+**Error #2 (CRÍTICO):** El frontend usa `/api/print/receipt/{bill_id}/send` (línea 2077) pero el fix inicial se aplicó al endpoint incorrecto `/api/print/send-receipt/{bill_id}`.
 
-### Solución Implementada
-Inferir el tipo de NCF desde el string del NCF cuando `ncf_type` no está establecido:
+### Lección Aprendida - IMPORTANTE
+⚠️ **Hay MÚLTIPLES endpoints de impresión en server.py:**
+- `/api/print/receipt/{bill_id}` (GET) - Retorna HTML para preview
+- `/api/print/receipt-escpos/{bill_id}` (GET) - Retorna comandos ESC/POS para preview
+- `/api/print/send-receipt/{bill_id}` (POST) - Endpoint alternativo
+- `/api/print/receipt/{bill_id}/send` (POST) - **EL QUE USA EL FRONTEND** ← Línea 2077
+
+**Siempre verificar con grep qué endpoint usa el frontend antes de modificar:**
+```bash
+grep -rn "print.*receipt" /app/frontend/src --include="*.js" --include="*.jsx"
+```
+
+### Solución Definitiva Aplicada
+Se agregó la sección "DATOS DEL CLIENTE" en el endpoint correcto `/api/print/receipt/{bill_id}/send` (línea 2077):
+
 ```python
+# ─── DATOS FISCALES DEL CLIENTE (B01, B14, B15) ───
+ncf_type = bill.get("ncf_type", "")
+ncf_str = bill.get("ncf", "")
 if not ncf_type and ncf_str:
     if ncf_str.startswith("B01"):
         ncf_type = "B01"
@@ -171,16 +188,38 @@ if not ncf_type and ncf_str:
         ncf_type = "B14"
     elif ncf_str.startswith("B15"):
         ncf_type = "B15"
+
+if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
+    commands.append({"type": "text", "text": "DATOS DEL CLIENTE", "align": "left", "bold": True})
+    commands.append({"type": "text", "text": f"{fiscal_id_type}: {fiscal_id}", "align": "left"})
+    commands.append({"type": "text", "text": f"Razon Social: {razon_social}", "align": "left"})
+    commands.append({"type": "divider"})
 ```
 
 ### Archivos Modificados
-- `/app/backend/server.py`: Líneas 1207-1230 (print_receipt HTML) y 1264-1285 (print_receipt_escpos)
+- `/app/backend/server.py`: 
+  - Línea ~2110-2135: Endpoint `/api/print/receipt/{bill_id}/send` (EL PRINCIPAL)
+  - Línea ~1207-1230: Endpoint `/api/print/receipt/{bill_id}` (HTML preview)
+  - Línea ~1264-1285: Endpoint `/api/print/receipt-escpos/{bill_id}` (ESC/POS preview)
+  - Línea ~1775-1845: Endpoint `/api/print/send-receipt/{bill_id}` (alternativo)
 
-### Pruebas
-- ✅ 10/10 pruebas backend pasaron
-- ✅ HTML receipt incluye sección "DATOS DEL CLIENTE"
-- ✅ ESC/POS receipt incluye líneas de datos fiscales
-- ✅ Bills sin datos fiscales no muestran la sección
+### Verificación Exitosa
+```
+DATOS DEL CLIENTE
+RNC: 131062822
+Razon Social: SSTECH SRL
+```
+✅ Aparece correctamente en ticket impreso físico
+
+### Flujo de Impresión Documentado
+```
+[Frontend PaymentScreen.js] 
+    → POST /api/print/receipt/{bill_id}/send
+    → Crea job en MongoDB print_queue con commands[]
+    → Agente local (print_agent_pro.py) consulta /api/print-queue/pending
+    → Agente ejecuta build_escpos_data(commands)
+    → Impresora térmica recibe datos ESC/POS
+```
 
 ## Auditoría - Restricción de PINs (NUEVO - 2026-02-23)
 
