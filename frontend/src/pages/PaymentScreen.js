@@ -95,6 +95,9 @@ const BrandIcons = {
 
 export { BrandIcons };
 
+// Helper para redondear montos
+const round = (num, decimals = 2) => Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
+
 // Glassmorphism styles
 const glassStyles = {
   card: "backdrop-blur-xl bg-white/10 border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)]",
