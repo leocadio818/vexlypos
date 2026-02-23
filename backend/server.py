@@ -2182,6 +2182,9 @@ async def send_precheck_to_printer(order_id: str):
     
     # TODAS las impresiones van a la cola - el agente local las procesa
     # El servidor en la nube NO puede alcanzar IPs de red local
+    # Obtener numero de copias configurado
+    copies = receipt_channel.get("copies", 1) if receipt_channel else 1
+    
     job = {
         "id": gen_id(),
         "type": "pre-check",
@@ -2190,12 +2193,13 @@ async def send_precheck_to_printer(order_id: str):
         "printer_name": receipt_channel.get("printer_name", "") if receipt_channel else "",
         "printer_target": printer_target,
         "printer_ip": printer_ip,
+        "copies": copies,  # Numero de copias a imprimir
         "status": "pending",
         "created_at": now_iso()
     }
     await db.print_queue.insert_one(job)
     
-    return {"ok": True, "job_id": job["id"], "print_number": print_count + 1, "message": "Pre-cuenta enviada a cola", "method": "queue"}
+    return {"ok": True, "job_id": job["id"], "print_number": print_count + 1, "copies": copies, "message": "Pre-cuenta enviada a cola", "method": "queue"}
 
 # ─── PRINTER CONFIG ───
 @api.get("/printer-config")
