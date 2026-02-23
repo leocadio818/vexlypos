@@ -87,7 +87,8 @@ async def create_customer(input: CustomerInput):
 
 @router.put("/customers/{cid}")
 async def update_customer(cid: str, input: dict):
-    if "_id" in input: del input["_id"]
+    if "_id" in input:
+        del input["_id"]
     await db.customers.update_one({"id": cid}, {"$set": input})
     return {"ok": True}
 
