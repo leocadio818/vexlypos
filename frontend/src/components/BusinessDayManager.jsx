@@ -618,6 +618,14 @@ export default function BusinessDayManager({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Reporte Z Dialog */}
+      <ReportXZ
+        type="Z"
+        dayId={reportZDialog.dayId}
+        open={reportZDialog.open}
+        onClose={() => setReportZDialog({ open: false, dayId: null })}
+      />
     </div>
   );
 }
