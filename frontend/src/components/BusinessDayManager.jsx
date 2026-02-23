@@ -4,12 +4,13 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   Calendar, Sun, Moon, Clock, Lock, Unlock, CheckCircle2, 
   AlertTriangle, TrendingUp, Banknote, CreditCard, ArrowRight,
-  History, FileText, X, Shield
+  History, FileText, X, Shield, Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import ReportXZ from '@/components/ReportXZ';
 
 /**
  * BusinessDayManager - Componente para gestionar Jornadas de Trabajo
@@ -35,6 +36,7 @@ export default function BusinessDayManager({
   const [closeDayDialog, setCloseDayDialog] = useState(false);
   const [historyDialog, setHistoryDialog] = useState(false);
   const [pinDialog, setPinDialog] = useState({ open: false, action: null });
+  const [reportZDialog, setReportZDialog] = useState({ open: false, dayId: null });
   
   // Form states
   const [authorizerPin, setAuthorizerPin] = useState('');
