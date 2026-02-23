@@ -30,11 +30,11 @@ export default function Login() {
     setLoading(true);
     try {
       const u = await login(pin);
-      toast.success(`Bienvenido, ${u.name}`);
+      // Removed toast - direct navigation
       const canDash = u.permissions?.view_dashboard;
       navigate(canDash ? '/dashboard' : '/tables');
     } catch {
-      toast.error('PIN incorrecto');
+      // Keep error feedback but remove toast - just clear pin
       setPin('');
     }
     setLoading(false);
