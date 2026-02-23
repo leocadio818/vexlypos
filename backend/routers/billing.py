@@ -441,11 +441,26 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         "fiscal_id_type": input.fiscal_id_type,
         "razon_social": input.razon_social,
         "customer_email": input.customer_email,
-        "send_email": input.send_email
+        "send_email": input.send_email,
+        # Doble marcación de tiempo (Jornada de Trabajo)
+        "business_date": business_date,  # Fecha contable (jornada)
+        "business_day_id": business_day["id"]  # Referencia a la jornada
     }
     if input.amount_received is not None:
         update_fields["amount_received"] = input.amount_received
     await db.bills.update_one({"id": bill_id}, {"$set": update_fields})
+
+    # ─── ACTUALIZAR TOTALES DE LA JORNADA ───
+    await db.business_days.update_one(
+        {"id": business_day["id"]},
+        {"$inc": {
+            "total_sales": total,
+            "total_invoices": 1,
+            "total_cash": total if is_cash_payment else 0,
+            "total_card": total if not is_cash_payment and input.payment_method == "card" else 0,
+            "total_transfer": total if input.payment_method == "transfer" else 0
+        }}
+    )
 
     # Update MongoDB shifts (legacy)
     shift = await db.shifts.find_one({"user_id": user["user_id"], "status": "open"}, {"_id": 0})
