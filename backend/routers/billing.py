@@ -90,6 +90,12 @@ class PayBillInput(BaseModel):
     # Nuevo: Información de cambio en moneda extranjera
     change_currency: str = "DOP"  # Moneda en que se da el cambio
     change_amount: float = 0  # Monto del cambio
+    # Datos Fiscales (B01, B14, B15)
+    fiscal_id: Optional[str] = None  # RNC o Cédula
+    fiscal_id_type: Optional[str] = None  # "RNC" o "Cédula"
+    razon_social: Optional[str] = None  # Nombre del cliente fiscal
+    customer_email: Optional[str] = None  # Email para envío de factura
+    send_email: bool = False  # Si enviar factura por email
 
 # ─── PAYMENT METHODS ───
 @router.get("/payment-methods")
