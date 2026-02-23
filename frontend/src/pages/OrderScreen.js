@@ -443,12 +443,12 @@ export default function OrderScreen() {
     try {
       if (!order) {
         const res = await ordersAPI.create({ table_id: tableId, items: [item] });
-        setOrder(res.data); toast.success(`${product.name} agregado`);
+        setOrder(res.data);
       } else {
         const res = await ordersAPI.addItems(order.id, [item]);
-        setOrder(res.data); toast.success(`${product.name} agregado`);
+        setOrder(res.data);
       }
-    } catch { toast.error('Error agregando item'); }
+    } catch { console.warn('Error agregando item'); }
   };
 
   const handleConfirmModifiers = () => {
