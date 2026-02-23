@@ -57,12 +57,7 @@ export function AuthProvider({ children }) {
       const result = await offlineDB.syncWithServer(API_BASE, token);
       setLastSyncTime(new Date());
       
-      if (result.synced > 0) {
-        toast.success(`✓ ${result.synced} operación(es) sincronizada(s)`, {
-          description: result.failed > 0 ? `${result.failed} pendiente(s)` : 'Todo sincronizado',
-          duration: 3000,
-        });
-      }
+      // Removed toast notification - silent sync
       
       await updatePendingCount();
       await offlineDB.cleanupSyncedData();
@@ -95,16 +90,8 @@ export function AuthProvider({ children }) {
       setIsOnline(true);
       processOfflineQueue();
       
-      // Show notification if we were offline
+      // Removed toast notification - silent reconnection
       if (wasOfflineRef.current) {
-        const count = await offlineDB.getSyncQueueCount();
-        toast.success('🌐 Conexión restaurada', {
-          description: count > 0 
-            ? `Sincronizando ${count} operación(es) pendiente(s)...` 
-            : 'Sistema en línea',
-          duration: 4000,
-        });
-        
         // Auto-sync after coming online
         setTimeout(() => {
           syncPendingOperations();
@@ -117,11 +104,7 @@ export function AuthProvider({ children }) {
     const handleOffline = () => {
       setIsOnline(false);
       wasOfflineRef.current = true;
-      
-      toast.warning('📴 Modo Offline Activado', {
-        description: 'Puedes seguir trabajando. Los cambios se sincronizarán automáticamente.',
-        duration: 5000,
-      });
+      // Removed toast notification - silent offline mode
     };
 
     window.addEventListener('online', handleOnline);
