@@ -530,6 +530,35 @@ export default function PaymentScreen() {
       const entries = Object.entries(payAmounts).filter(([_, v]) => parseFloat(v) > 0);
       const mainMethod = entries.length > 0 ? entries.sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))[0][0] : 'Efectivo RD$';
       
+      // ─── CONSTRUIR LISTA DE PAGOS MÚLTIPLES ───
+      const paymentsList = [];
+      for (const [methodName, amount] of entries) {
+        const method = paymentMethods.find(m => m.name === methodName);
+        if (method && parseFloat(amount) > 0) {
+          const amountNum = parseFloat(amount);
+          const exchangeRate = method.exchange_rate || 1;
+          const amountDOP = method.currency !== 'DOP' ? round(amountNum * exchangeRate, 2) : amountNum;
+          
+          paymentsList.push({
+            payment_method_id: method.id,
+            payment_method_name: method.name,
+            amount: amountNum,
+            amount_dop: amountDOP,
+            currency: method.currency || 'DOP',
+            exchange_rate: exchangeRate,
+            brand_icon: method.brand_icon
+          });
+        }
+      }
+      
+      // ─── CALCULAR CAMBIO CON LÓGICA MULTIMONEDA ───
+      // Detectar si hay pago en moneda extranjera
+      let changeCurrency = 'DOP';
+      let changeAmount = change > 0 ? round(change, 2) : 0;
+      
+      // El cambio siempre se da en RD$ (pesos dominicanos)
+      // Si se pagó con moneda extranjera, el cambio es: (total recibido en DOP) - (total a pagar)
+      
       // Generate NCF based on sale type
       let generatedNcf = null;
       if (selectedServiceType?.id) {
@@ -568,7 +597,11 @@ export default function PaymentScreen() {
         itbis: adjustedBill?.itbis ?? bill?.itbis ?? 0,
         propina_legal: adjustedBill?.propina_legal ?? bill?.propina_legal ?? 0,
         total: billTotal,
-        amount_received: totalPaidDOP
+        amount_received: totalPaidDOP,
+        // Nuevos campos para pagos múltiples
+        payments: paymentsList.length > 0 ? paymentsList : null,
+        change_currency: changeCurrency,
+        change_amount: changeAmount
       });
       
       const pts = res.data?.points_earned;
