@@ -351,7 +351,7 @@ export default function TableMap() {
     try {
       await tablesAPI.update(table.id, { x: newX, y: newY });
       setTables(prev => prev.map(t => t.id === table.id ? { ...t, x: newX, y: newY } : t));
-    } catch { toast.error('Error moviendo mesa'); }
+    } catch { console.warn('Error moviendo mesa'); }
   };
 
   const handleTableClick = (table) => {
@@ -367,9 +367,8 @@ export default function TableMap() {
     try {
       await tablesAPI.update(resizeDialog.table.id, { width: resizeDialog.width, height: resizeDialog.height });
       setTables(prev => prev.map(t => t.id === resizeDialog.table.id ? { ...t, width: resizeDialog.width, height: resizeDialog.height } : t));
-      toast.success('Tamano actualizado');
       setResizeDialog({ open: false, table: null, width: 80, height: 80 });
-    } catch { toast.error('Error'); }
+    } catch { console.warn('Error actualizando tamaño'); }
   };
 
   return (
