@@ -1033,8 +1033,7 @@ export default function OrderScreen() {
         .map(i => i.id);
       
       if (itemIds.length === 0) {
-        toast.error('No hay items para facturar');
-        return;
+        return; // Silent - no items to bill
       }
       
       const res = await billsAPI.create({
@@ -1049,7 +1048,7 @@ export default function OrderScreen() {
       // Navigate directly to payment screen with service type and NCF
       navigate(`/payment/${res.data.id}?${queryParams}`);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error creando factura');
+      console.warn(e.response?.data?.detail || 'Error creando factura');
     }
   };
 
@@ -1072,7 +1071,7 @@ export default function OrderScreen() {
   // Enter move items mode
   const enterMoveItemsMode = () => {
     if (selectedSplitItems.length === 0) {
-      toast.info('Selecciona artículos primero');
+      return; // Silent - no items selected
       return;
     }
     setSelectedItemsToMove([...selectedSplitItems]);
