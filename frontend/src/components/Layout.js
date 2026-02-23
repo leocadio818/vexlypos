@@ -28,6 +28,32 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
+  const [businessDayDialogOpen, setBusinessDayDialogOpen] = useState(false);
+  const [businessDay, setBusinessDay] = useState(null);
+  const [businessDayLoading, setBusinessDayLoading] = useState(true);
+
+  // Fetch business day status
+  const fetchBusinessDay = useCallback(async () => {
+    try {
+      const res = await businessDaysAPI.check();
+      setBusinessDay(res.data.has_open_day ? {
+        business_date: res.data.business_date,
+        id: res.data.day_id,
+        opened_at: res.data.opened_at
+      } : null);
+    } catch (err) {
+      console.error('Error checking business day:', err);
+    } finally {
+      setBusinessDayLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBusinessDay();
+    // Poll every 30 seconds
+    const interval = setInterval(fetchBusinessDay, 30000);
+    return () => clearInterval(interval);
+  }, [fetchBusinessDay]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
   
