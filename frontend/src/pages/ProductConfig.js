@@ -56,6 +56,8 @@ export default function ProductConfig() {
     price_e: 0,
     button_bg_color: '',
     button_text_color: '#FFFFFF',
+    image_url: '',  // URL de imagen del producto
+    icon: '',       // Icono de Lucide (ej: 'pizza', 'coffee', 'sandwich')
     track_inventory: false,
     print_channels: [],  // Array of channel codes for multi-channel printing
     tax_exemptions: [],  // Array of tax IDs this product is exempt from
