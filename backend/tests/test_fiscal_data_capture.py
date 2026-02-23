@@ -14,7 +14,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 def auth_token():
     """Get authentication token with admin PIN"""
     response = requests.post(
-        f"{BASE_URL}/api/auth/pin",
+        f"{BASE_URL}/api/auth/login",
         json={"pin": "10000"}
     )
     assert response.status_code == 200, f"Auth failed: {response.text}"
