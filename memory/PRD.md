@@ -496,6 +496,24 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 
 **Verificación:** Logs de consola confirman `Logout: Comanda enviada para orden {id}` y los items cambian de status `pending` a `sent`.
 
+### Mejora: Validación RNC contra DGII (2026-02-23)
+**Feature:** Al ingresar un RNC válido (9 dígitos) en el FiscalDataDrawer, el sistema consulta automáticamente la DGII (via Megaplus API) para autocompletar la Razón Social.
+
+**Beneficios:**
+- Reduce tiempo de captura de datos fiscales
+- Reduce errores de tipeo en nombres de empresas
+- Muestra estado del contribuyente (ACTIVO/INACTIVO)
+
+**Implementación:**
+- Nuevo endpoint: `GET /api/dgii/validate-rnc/{rnc}` en `/app/backend/routers/dgii.py`
+- Cache en memoria para consultas repetidas
+- Timeout de 3 segundos para no bloquear el flujo
+- Auto-búsqueda con debounce de 300ms cuando el RNC es válido
+
+**Tiempos de respuesta:**
+- Cache hit: ~0.2 segundos
+- Nueva consulta: ~1-2 segundos
+
 ---
 
 ## Pendiente
