@@ -178,6 +178,21 @@ export const posSessionsAPI = {
   registerSale: (sessionId, amount, method) => api.put(`/pos-sessions/${sessionId}/register-sale`, null, { params: { amount, payment_method: method } }),
 };
 
+// Business Days (Jornadas de Trabajo)
+export const businessDaysAPI = {
+  // Estado actual
+  check: () => api.get('/business-days/check'),
+  current: () => api.get('/business-days/current'),
+  // Operaciones
+  authorize: (pin, action) => api.post('/business-days/authorize', { pin, action }),
+  open: (data) => api.post('/business-days/open', data),
+  close: (data) => api.post('/business-days/close', data),
+  // Historial
+  history: (params) => api.get('/business-days/history', { params }),
+  get: (id) => api.get(`/business-days/${id}`),
+  getTransactions: (id) => api.get(`/business-days/${id}/transactions`),
+};
+
 // Tax Configuration (Sistema de Impuestos Dinámico)
 export const taxesAPI = {
   // Config
