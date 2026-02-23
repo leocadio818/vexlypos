@@ -235,10 +235,26 @@ export default function PrinterSettings() {
                             ))}
                             className="bg-slate-900 border-slate-600 flex-1"
                           />
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-slate-400 whitespace-nowrap">Copias:</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="5"
+                              value={channel.copies || 1}
+                              onChange={(e) => setChannels(channels.map(c => 
+                                c.id === channel.id ? { ...c, copies: parseInt(e.target.value) || 1 } : c
+                              ))}
+                              className="bg-slate-900 border-slate-600 w-16 text-center"
+                            />
+                          </div>
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => updateChannel(channel.id, { printer_name: channels.find(c => c.id === channel.id)?.printer_name })}
+                            onClick={() => updateChannel(channel.id, { 
+                              printer_name: channels.find(c => c.id === channel.id)?.printer_name,
+                              copies: channels.find(c => c.id === channel.id)?.copies || 1
+                            })}
                           >
                             Guardar
                           </Button>
@@ -253,10 +269,17 @@ export default function PrinterSettings() {
                         </div>
                         
                         {channel.printer_name && (
-                          <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Configurado: {channel.printer_name}
-                          </Badge>
+                          <div className="flex gap-2 flex-wrap">
+                            <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Configurado: {channel.printer_name}
+                            </Badge>
+                            {(channel.copies || 1) > 1 && (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                                {channel.copies} copias
+                              </Badge>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
