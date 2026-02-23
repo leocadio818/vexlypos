@@ -87,6 +87,15 @@ export default function OrderScreen() {
   // Selected Items for Void/Cancel
   const [selectedItems, setSelectedItems] = useState([]);
   
+  // B04 Redirect Dialog - Para cuentas cerradas
+  const [b04RedirectDialog, setB04RedirectDialog] = useState({ 
+    open: false, 
+    transactionNumber: null, 
+    ncf: null, 
+    total: 0,
+    paidAt: null 
+  });
+  
   // Functions Menu Popover
   const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
   
