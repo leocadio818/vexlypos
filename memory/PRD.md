@@ -187,6 +187,47 @@ class PaymentEntry:
 - EUR Euro: 70.00
 - Las tasas se configuran en Configuración → Métodos de Pago
 
+## Menú Funciones de Mesa - Lógica Dual de Anulación (NUEVO - 2026-02-23)
+
+### Descripción
+El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un **acceso directo inteligente** que detecta el estado de la cuenta:
+
+### UI Glassmorphism
+- Modal con fondo desenfocado (`backdrop-blur-xl bg-slate-900/80`)
+- Overlay de gradiente azul/púrpura
+- Botones tipo **píldora** (`rounded-full`) organizados en cuadrícula
+- Cada botón con icono y texto claro
+- Colores contextuales: azul (mover), verde (dividir), rojo (anular)
+
+### Lógica Dual de Anulación
+1. **Cuenta ABIERTA** (sin factura NCF):
+   - Cancela los items sin generar registros fiscales
+   - Muestra diálogo de razones de cancelación
+   - Requiere PIN de gerente
+   - La mesa queda libre
+
+2. **Cuenta CERRADA** (con factura NCF pagada):
+   - Detecta automáticamente que existe un bill pagado
+   - Muestra diálogo informativo con:
+     - Número de Transacción
+     - NCF de la factura
+     - Total
+     - Fecha de pago
+   - Botón "Ir a Crear B04" navega a Caja
+   - Pre-llena el número de transacción en el modal B04
+
+### Flujo Técnico
+```
+[Usuario clic "Anular Cuenta"] 
+    → [billsAPI.list({order_id})]
+    → ¿Existe bill con status="paid"?
+        → SÍ: Mostrar b04RedirectDialog
+              → Navegar a /cash-register?openB04=true
+              → sessionStorage.setItem('pendingB04Transaction', transNum)
+        → NO: Mostrar cancelDialog con razones
+              → Cancelar items sin fiscal
+```
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Datos reales para tendencias de valoración
