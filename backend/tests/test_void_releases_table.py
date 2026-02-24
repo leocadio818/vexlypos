@@ -242,10 +242,12 @@ class TestVoidReleasesTable:
         table_after_create = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_after_create["status"] == "occupied"
         
-        # 3. Get a cancellation reason for single item cancel
+        # 3. Get a cancellation reason for single item cancel (no manager auth required)
         reasons_response = requests.get(f"{BASE_URL}/api/cancellation-reasons")
         reasons = reasons_response.json() if reasons_response.status_code == 200 else []
-        reason_id = reasons[0]["id"] if reasons else None
+        # Find a reason that doesn't require manager auth
+        no_auth_reason = next((r for r in reasons if not r.get("requires_manager_auth", False)), None)
+        reason_id = no_auth_reason["id"] if no_auth_reason else None
         
         # If no reasons exist, create one
         if not reason_id:
