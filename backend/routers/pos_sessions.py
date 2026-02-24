@@ -414,15 +414,18 @@ async def get_terminals():
         terminals_cursor = db.pos_terminals.find({"is_active": True}, {"_id": 0}).sort("code", 1)
         terminals = await terminals_cursor.to_list(100)
         
-        # Si no hay terminales configurados, usar los por defecto
+        # Si no hay terminales configurados, crear los por defecto
         if not terminals:
-            terminals = [
+            default_terminals = [
                 {"id": "term-1", "code": "POS1", "name": "Caja 1", "is_active": True},
                 {"id": "term-2", "code": "POS2", "name": "Caja 2", "is_active": True},
                 {"id": "term-3", "code": "BAR1", "name": "Barra", "is_active": True},
                 {"id": "term-4", "code": "TERR", "name": "Terraza", "is_active": True},
                 {"id": "term-5", "code": "VIP", "name": "VIP", "is_active": True},
             ]
+            # Guardar terminales por defecto en MongoDB
+            await db.pos_terminals.insert_many(default_terminals)
+            terminals = default_terminals
         
         # Obtener turnos abiertos de Supabase para marcar terminales en uso
         open_sessions = sb.table("pos_sessions").select("terminal_name, opened_by_name").eq("status", "open").execute()
@@ -439,6 +442,104 @@ async def get_terminals():
         
         return terminals
         
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/terminals/all")
+async def get_all_terminals():
+    """Obtiene TODOS los terminales (activos e inactivos) para gestión"""
+    try:
+        terminals_cursor = db.pos_terminals.find({}, {"_id": 0}).sort("code", 1)
+        terminals = await terminals_cursor.to_list(100)
+        
+        # Si no hay terminales, crear los por defecto
+        if not terminals:
+            default_terminals = [
+                {"id": "term-1", "code": "POS1", "name": "Caja 1", "is_active": True},
+                {"id": "term-2", "code": "POS2", "name": "Caja 2", "is_active": True},
+                {"id": "term-3", "code": "BAR1", "name": "Barra", "is_active": True},
+                {"id": "term-4", "code": "TERR", "name": "Terraza", "is_active": True},
+                {"id": "term-5", "code": "VIP", "name": "VIP", "is_active": True},
+            ]
+            await db.pos_terminals.insert_many(default_terminals)
+            terminals = default_terminals
+        
+        return terminals
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class TerminalInput(BaseModel):
+    name: str
+    code: Optional[str] = None
+    is_active: bool = True
+
+
+@router.post("/terminals")
+async def create_terminal(input: TerminalInput):
+    """Crea un nuevo terminal"""
+    try:
+        # Verificar que no exista uno con el mismo nombre
+        existing = await db.pos_terminals.find_one({"name": input.name})
+        if existing:
+            raise HTTPException(status_code=400, detail="Ya existe un terminal con ese nombre")
+        
+        terminal = {
+            "id": str(uuid.uuid4()),
+            "name": input.name,
+            "code": input.code or input.name.upper().replace(" ", "")[:6],
+            "is_active": input.is_active,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.pos_terminals.insert_one(terminal)
+        return {k: v for k, v in terminal.items() if k != "_id"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/terminals/{terminal_id}")
+async def update_terminal(terminal_id: str, input: TerminalInput):
+    """Actualiza un terminal existente"""
+    try:
+        # Verificar que el nombre no esté en uso por otro terminal
+        existing = await db.pos_terminals.find_one({"name": input.name, "id": {"$ne": terminal_id}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Ya existe otro terminal con ese nombre")
+        
+        result = await db.pos_terminals.update_one(
+            {"id": terminal_id},
+            {"$set": {
+                "name": input.name,
+                "code": input.code or input.name.upper().replace(" ", "")[:6],
+                "is_active": input.is_active,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Terminal no encontrado")
+        
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/terminals/{terminal_id}")
+async def delete_terminal(terminal_id: str):
+    """Elimina un terminal"""
+    try:
+        result = await db.pos_terminals.delete_one({"id": terminal_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Terminal no encontrado")
+        
+        return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
