@@ -65,8 +65,10 @@ class TestVoidReleasesTable:
         table = self.free_tables[0]
         table_id = table["id"]
         
-        # 1. Verify table is initially free
-        table_before = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        # 1. Verify table is initially free (fetch all tables and filter)
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_before = next((t for t in all_tables if t["id"] == table_id), None)
+        assert table_before is not None, f"Table {table_id} not found"
         assert table_before["status"] == "free", f"Expected table to be free, got {table_before['status']}"
         
         # 2. Create order with 2 items (pending, not sent to kitchen)
@@ -96,8 +98,9 @@ class TestVoidReleasesTable:
         order_id = order["id"]
         item_ids = [item["id"] for item in order["items"]]
         
-        # 3. Verify table is now occupied
-        table_after_create = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        # 3. Verify table is now occupied (fetch all tables and filter)
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_after_create = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_after_create["status"] == "occupied", f"Expected occupied, got {table_after_create['status']}"
         assert table_after_create["active_order_id"] == order_id
         
@@ -118,7 +121,8 @@ class TestVoidReleasesTable:
         assert void_result["status"] == "cancelled", f"Expected order status 'cancelled', got {void_result['status']}"
         
         # 6. VERIFY: Table should be 'free' and active_order_id should be null
-        table_after_void = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_after_void = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_after_void["status"] == "free", f"Expected table status 'free', got {table_after_void['status']}"
         assert table_after_void.get("active_order_id") is None, f"Expected active_order_id=None, got {table_after_void.get('active_order_id')}"
         
