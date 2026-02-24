@@ -181,7 +181,8 @@ class TestVoidReleasesTable:
         assert void_result["status"] != "cancelled", f"Order should NOT be cancelled when items remain active"
         
         # 4. VERIFY: Table should still be occupied
-        table_after = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_after = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_after["status"] == "occupied", f"Table should remain occupied, got {table_after['status']}"
         assert table_after["active_order_id"] == order_id
         
@@ -195,7 +196,8 @@ class TestVoidReleasesTable:
         assert cleanup_response.status_code == 200
         
         # Now table should be free
-        table_final = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_final = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_final["status"] == "free"
         
         print(f"✓ Partial void: Table {table['number']} stayed occupied until all items voided")
@@ -231,7 +233,8 @@ class TestVoidReleasesTable:
         item_id = order["items"][0]["id"]
         
         # 2. Verify table is occupied
-        table_after_create = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_after_create = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_after_create["status"] == "occupied"
         
         # 3. Get a cancellation reason for single item cancel
@@ -259,7 +262,8 @@ class TestVoidReleasesTable:
                 void_result = void_response.json()
                 
                 assert void_result["status"] == "cancelled"
-                table_after = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+                all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+                table_after = next((t for t in all_tables if t["id"] == table_id), None)
                 assert table_after["status"] == "free"
                 print(f"✓ Single item void (via express): Order cancelled, Table {table['number']} released")
                 return
@@ -281,7 +285,8 @@ class TestVoidReleasesTable:
         assert cancel_result["status"] == "cancelled", f"Expected order 'cancelled', got {cancel_result['status']}"
         
         # 6. VERIFY: Table should be 'free'
-        table_after = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_after = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_after["status"] == "free", f"Expected table 'free', got {table_after['status']}"
         assert table_after.get("active_order_id") is None
         
@@ -369,7 +374,8 @@ class TestBulkCancelWithAuditReleasesTable:
         item_ids = [item["id"] for item in order["items"]]
         
         # 2. Verify table occupied
-        table_check = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_check = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_check["status"] == "occupied"
         
         # 3. Bulk cancel with audit protocol (express_void=False)
@@ -391,7 +397,8 @@ class TestBulkCancelWithAuditReleasesTable:
         assert cancel_result["status"] == "cancelled", f"Expected 'cancelled', got {cancel_result['status']}"
         
         # 5. VERIFY: Table released
-        table_after = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_after = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_after["status"] == "free", f"Expected 'free', got {table_after['status']}"
         assert table_after.get("active_order_id") is None
         
@@ -493,7 +500,8 @@ class TestEdgeCases:
         # 5. VERIFY
         assert void_result["status"] == "cancelled"
         
-        table_after = requests.get(f"{BASE_URL}/api/tables/{table_id}").json()
+        all_tables = requests.get(f"{BASE_URL}/api/tables").json()
+        table_after = next((t for t in all_tables if t["id"] == table_id), None)
         assert table_after["status"] == "free"
         assert table_after.get("active_order_id") is None
         
