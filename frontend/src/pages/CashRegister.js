@@ -45,10 +45,11 @@ export default function CashRegister() {
   const [closeDialog, setCloseDialog] = useState(false);
   const [movementDialog, setMovementDialog] = useState(false);
   const [terminals, setTerminals] = useState([]);
+  const [terminalsInUse, setTerminalsInUse] = useState({});
   
   // Form states
   const [selectedTerminal, setSelectedTerminal] = useState('');
-  const [terminalName, setTerminalName] = useState('Caja 1');
+  const [terminalName, setTerminalName] = useState('');
   const [openingAmount, setOpeningAmount] = useState('');
   
   // Closing form with denomination breakdown
