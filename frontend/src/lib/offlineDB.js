@@ -276,18 +276,21 @@ export async function addOfflineItem(orderId, item, isLocalOrder = false) {
 // Get pending items for an order
 export async function getPendingItemsForOrder(orderId) {
   const db = await initDB();
+  if (!db) return []; // IndexedDB not available
   return db.getAllFromIndex(STORES.PENDING_ITEMS, 'orderId', orderId);
 }
 
 // Get all pending orders
 export async function getPendingOrders() {
   const db = await initDB();
+  if (!db) return []; // IndexedDB not available
   return db.getAll(STORES.PENDING_ORDERS);
 }
 
 // Get pending orders for a table
 export async function getPendingOrdersForTable(tableId) {
   const db = await initDB();
+  if (!db) return []; // IndexedDB not available
   return db.getAllFromIndex(STORES.PENDING_ORDERS, 'tableId', tableId);
 }
 
@@ -297,6 +300,9 @@ export async function getPendingOrdersForTable(tableId) {
 
 // Add a generic offline action (split, move items, etc.)
 export async function addOfflineAction(type, data) {
+  const db = await initDB();
+  if (!db) return null; // IndexedDB not available
+  
   const localId = generateLocalId();
   const action = {
     localId,
@@ -306,7 +312,6 @@ export async function addOfflineAction(type, data) {
     synced: false,
   };
   
-  const db = await initDB();
   await db.put(STORES.PENDING_ACTIONS, action);
   
   // Add to sync queue with appropriate priority
