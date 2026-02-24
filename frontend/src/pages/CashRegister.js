@@ -478,16 +478,18 @@ export default function CashRegister() {
                 </div>
               </div>
               
-              {/* Expected Cash */}
-              <div className="px-6 pb-4">
-                <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-yellow-400 font-medium">Efectivo Esperado en Caja</p>
-                    <p className="text-[10px] text-white/50">Apertura + Ventas Efectivo + Ingresos - Retiros</p>
+              {/* Expected Cash - Solo visible para admin, oculto para cajeros para conteo ciego */}
+              {user?.role === 'admin' && (
+                <div className="px-6 pb-4">
+                  <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-yellow-400 font-medium">Efectivo Esperado en Caja</p>
+                      <p className="text-[10px] text-white/50">Apertura + Ventas Efectivo + Ingresos - Retiros</p>
+                    </div>
+                    <p className="font-oswald text-2xl font-bold text-yellow-400">{formatMoney(totalEsperado)}</p>
                   </div>
-                  <p className="font-oswald text-2xl font-bold text-yellow-400">{formatMoney(totalEsperado)}</p>
                 </div>
-              </div>
+              )}
               
               {/* Footer info */}
               <div className="px-6 pb-4 flex items-center justify-between text-xs text-white/50">
