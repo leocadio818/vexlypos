@@ -156,6 +156,52 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Modal Modificadores Touch-Friendly** - Botones más grandes y espaciados para pantallas táctiles
 - [x] **Drawer Fiscal Fullscreen Móvil** - El drawer de datos fiscales ahora ocupa toda la pantalla en móvil
 - [x] **Fix IndexedDB Safari** - Manejo de errores cuando IndexedDB no está disponible (modo privado)
+- [x] **Cajero Requiere Turno Abierto** - Los cajeros deben abrir turno de caja obligatoriamente antes de usar el sistema
+- [x] **Bloqueo de Terminales en Uso** - Al abrir turno, los terminales ya ocupados se muestran deshabilitados
+
+## Bloqueo de Terminales en Uso (2026-02-24)
+
+### Problema
+Cuando múltiples cajeros trabajan simultáneamente, no había control para evitar que dos cajeros abrieran turno en la misma caja/terminal.
+
+### Solución
+1. **Endpoints nuevos:**
+   - `GET /api/pos-sessions/terminals` - Retorna terminales con estado `in_use` y `in_use_by`
+   - `GET /api/pos-sessions/terminals/in-use` - Retorna mapa de terminales ocupados
+
+2. **Frontend (CashRegister.js):**
+   - Terminales en uso se muestran en **rojo** con texto "En uso: [nombre]"
+   - No se puede hacer clic en terminales ocupados (`disabled`)
+   - Mensaje: "Las estaciones en rojo ya tienen un turno activo"
+   - Validación antes de abrir turno
+
+### Archivos Modificados
+- `/app/backend/routers/pos_sessions.py`: Endpoints de terminales
+- `/app/frontend/src/pages/CashRegister.js`: UI de selección de terminal
+- `/app/frontend/src/lib/api.js`: Método `terminalsInUse()`
+
+## Control de Turno Obligatorio para Cajeros (2026-02-24)
+
+### Problema
+Los cajeros podían usar el sistema sin abrir turno de caja, lo que impedía el control de efectivo.
+
+### Solución
+Diálogo **BLOQUEANTE y PERMANENTE** que aparece en TODAS las páginas hasta que el cajero abra turno.
+
+### Lógica
+```javascript
+const isCashierRole = user?.role === 'cashier';
+const isOnCashRegisterPage = location.pathname === '/cash-register';
+const cashierNeedsShift = isCashierRole && !cashierShift && !cashierShiftLoading && !isOnCashRegisterPage;
+```
+
+- Si `cashierNeedsShift` es true → Diálogo bloqueante aparece
+- Excepción: No bloquear en `/cash-register` para permitir abrir turno
+- Polling cada 5 segundos para detectar cuando abre turno
+
+### Archivos Modificados
+- `/app/frontend/src/components/Layout.js`: Diálogo bloqueante
+- `/app/frontend/src/components/ui/dialog.jsx`: Prop `hideCloseButton`
 
 ## Drawer Fiscal Fullscreen para Móvil (2026-02-24)
 
