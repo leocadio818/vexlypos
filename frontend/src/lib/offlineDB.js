@@ -12,45 +12,80 @@ const STORES = {
   SYNC_QUEUE: 'sync_queue',
 };
 
+// Check if IndexedDB is available (not available in Safari private mode)
+function isIndexedDBAvailable() {
+  try {
+    // Check if indexedDB exists
+    if (typeof indexedDB === 'undefined' || indexedDB === null) {
+      return false;
+    }
+    // Try to open a test database
+    return true;
+  } catch (e) {
+    console.warn('IndexedDB not available:', e.message);
+    return false;
+  }
+}
+
+// Flag to track if IndexedDB is available
+let indexedDBAvailable = null;
+
 // Initialize IndexedDB
 async function initDB() {
-  return openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      // Store for pending orders created offline
-      if (!db.objectStoreNames.contains(STORES.PENDING_ORDERS)) {
-        const orderStore = db.createObjectStore(STORES.PENDING_ORDERS, { keyPath: 'localId' });
-        orderStore.createIndex('tableId', 'tableId');
-        orderStore.createIndex('createdAt', 'createdAt');
-      }
-      
-      // Store for pending items to add to orders
-      if (!db.objectStoreNames.contains(STORES.PENDING_ITEMS)) {
-        const itemStore = db.createObjectStore(STORES.PENDING_ITEMS, { keyPath: 'localId' });
-        itemStore.createIndex('orderId', 'orderId');
-        itemStore.createIndex('createdAt', 'createdAt');
-      }
-      
-      // Store for generic pending actions (split, move, etc.)
-      if (!db.objectStoreNames.contains(STORES.PENDING_ACTIONS)) {
-        const actionStore = db.createObjectStore(STORES.PENDING_ACTIONS, { keyPath: 'localId' });
-        actionStore.createIndex('type', 'type');
-        actionStore.createIndex('createdAt', 'createdAt');
-      }
-      
-      // Store for cached data (products, categories, tables, areas)
-      if (!db.objectStoreNames.contains(STORES.CACHED_DATA)) {
-        db.createObjectStore(STORES.CACHED_DATA, { keyPath: 'key' });
-      }
-      
-      // Store for sync queue
-      if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
-        const syncStore = db.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id', autoIncrement: true });
-        syncStore.createIndex('type', 'type');
-        syncStore.createIndex('priority', 'priority');
-        syncStore.createIndex('createdAt', 'createdAt');
-      }
-    },
-  });
+  // Check availability once
+  if (indexedDBAvailable === null) {
+    indexedDBAvailable = isIndexedDBAvailable();
+  }
+  
+  // If IndexedDB is not available, return null
+  if (!indexedDBAvailable) {
+    console.warn('IndexedDB not available - offline features disabled');
+    return null;
+  }
+  
+  try {
+    return await openDB(DB_NAME, DB_VERSION, {
+      upgrade(db) {
+        // Store for pending orders created offline
+        if (!db.objectStoreNames.contains(STORES.PENDING_ORDERS)) {
+          const orderStore = db.createObjectStore(STORES.PENDING_ORDERS, { keyPath: 'localId' });
+          orderStore.createIndex('tableId', 'tableId');
+          orderStore.createIndex('createdAt', 'createdAt');
+        }
+        
+        // Store for pending items to add to orders
+        if (!db.objectStoreNames.contains(STORES.PENDING_ITEMS)) {
+          const itemStore = db.createObjectStore(STORES.PENDING_ITEMS, { keyPath: 'localId' });
+          itemStore.createIndex('orderId', 'orderId');
+          itemStore.createIndex('createdAt', 'createdAt');
+        }
+        
+        // Store for generic pending actions (split, move, etc.)
+        if (!db.objectStoreNames.contains(STORES.PENDING_ACTIONS)) {
+          const actionStore = db.createObjectStore(STORES.PENDING_ACTIONS, { keyPath: 'localId' });
+          actionStore.createIndex('type', 'type');
+          actionStore.createIndex('createdAt', 'createdAt');
+        }
+        
+        // Store for cached data (products, categories, tables, areas)
+        if (!db.objectStoreNames.contains(STORES.CACHED_DATA)) {
+          db.createObjectStore(STORES.CACHED_DATA, { keyPath: 'key' });
+        }
+        
+        // Store for sync queue
+        if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
+          const syncStore = db.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id', autoIncrement: true });
+          syncStore.createIndex('type', 'type');
+          syncStore.createIndex('priority', 'priority');
+          syncStore.createIndex('createdAt', 'createdAt');
+        }
+      },
+    });
+  } catch (e) {
+    console.warn('Failed to initialize IndexedDB:', e.message);
+    indexedDBAvailable = false;
+    return null;
+  }
 }
 
 // Generate local ID
