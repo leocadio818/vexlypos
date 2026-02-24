@@ -433,7 +433,7 @@ async def get_sessions_history(
     status: Optional[str] = None,
     user=Depends(get_current_user)
 ):
-    """Obtiene historial de sesiones"""
+    """Obtiene historial de sesiones con datos de cuadre"""
     try:
         sb = get_supabase()
         
@@ -443,8 +443,24 @@ async def get_sessions_history(
             query = query.eq("status", status)
         
         result = query.execute()
+        sessions = result.data or []
         
-        return result.data or []
+        # Enriquecer sesiones cerradas con datos de cuadre desde MongoDB
+        closed_ids = [s["id"] for s in sessions if s.get("status") in ("closed", "pending_approval")]
+        if closed_ids:
+            reconciliations = await db.session_reconciliations.find(
+                {"session_id": {"$in": closed_ids}}, {"_id": 0}
+            ).to_list(100)
+            recon_map = {r["session_id"]: r for r in reconciliations}
+            
+            for s in sessions:
+                recon = recon_map.get(s["id"])
+                if recon:
+                    s["total_difference"] = recon.get("cash_difference", 0)
+                    s["cash_declared"] = recon.get("cash_declared", 0)
+                    s["expected_cash"] = recon.get("expected_cash", 0)
+        
+        return sessions
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
