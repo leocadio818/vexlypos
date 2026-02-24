@@ -426,6 +426,36 @@ export default function ReportXZ({
                       {formatMoney(report.cash_reconciliation?.total_to_deliver)}
                     </span>
                   </div>
+                  
+                  {/* Comparación Declarado vs Esperado (solo si hay datos de cierre) */}
+                  {(report.cash_reconciliation?.cash_declared > 0 || report.cash_reconciliation?.expected_cash > 0) && (
+                    <div className="mt-4 pt-3 border-t border-white/10 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/60">Efectivo Esperado:</span>
+                        <span className="text-white font-oswald">{formatMoney(report.cash_reconciliation?.expected_cash)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/60">Efectivo Declarado:</span>
+                        <span className="text-white font-oswald">{formatMoney(report.cash_reconciliation?.cash_declared)}</span>
+                      </div>
+                      <div className={`flex justify-between text-sm pt-2 border-t border-white/10 ${
+                        (report.cash_reconciliation?.difference || 0) === 0 ? '' :
+                        report.cash_reconciliation?.difference > 0 ? '' : ''
+                      }`}>
+                        <span className="font-bold text-white">Diferencia:</span>
+                        <span className={`font-oswald font-bold ${
+                          Math.abs(report.cash_reconciliation?.difference || 0) < 1 
+                            ? 'text-green-400' 
+                            : report.cash_reconciliation?.difference > 0 
+                              ? 'text-emerald-400' 
+                              : 'text-red-400'
+                        }`}>
+                          {report.cash_reconciliation?.difference > 0 ? '+' : ''}
+                          {formatMoney(report.cash_reconciliation?.difference)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <p className="text-white/30 text-xs mt-3 text-center">
