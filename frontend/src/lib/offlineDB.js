@@ -186,6 +186,7 @@ export async function removeSyncQueueItem(id) {
 
 export async function updateSyncQueueItem(id, updates) {
   const db = await initDB();
+  if (!db) return; // IndexedDB not available
   const item = await db.get(STORES.SYNC_QUEUE, id);
   if (item) {
     await db.put(STORES.SYNC_QUEUE, { ...item, ...updates });
@@ -194,6 +195,7 @@ export async function updateSyncQueueItem(id, updates) {
 
 export async function clearSyncQueue() {
   const db = await initDB();
+  if (!db) return; // IndexedDB not available
   await db.clear(STORES.SYNC_QUEUE);
 }
 
@@ -203,6 +205,9 @@ export async function clearSyncQueue() {
 
 // Create a new order offline
 export async function createOfflineOrder(tableId, userId, userName) {
+  const db = await initDB();
+  if (!db) return null; // IndexedDB not available
+  
   const localId = generateLocalId();
   const order = {
     localId,
@@ -215,7 +220,6 @@ export async function createOfflineOrder(tableId, userId, userName) {
     synced: false,
   };
   
-  const db = await initDB();
   await db.put(STORES.PENDING_ORDERS, order);
   
   // Add to sync queue
@@ -230,6 +234,9 @@ export async function createOfflineOrder(tableId, userId, userName) {
 
 // Add item to order (works for both online and offline orders)
 export async function addOfflineItem(orderId, item, isLocalOrder = false) {
+  const db = await initDB();
+  if (!db) return null; // IndexedDB not available
+  
   const localId = generateLocalId();
   const pendingItem = {
     localId,
@@ -245,7 +252,6 @@ export async function addOfflineItem(orderId, item, isLocalOrder = false) {
     synced: false,
   };
   
-  const db = await initDB();
   await db.put(STORES.PENDING_ITEMS, pendingItem);
   
   // If it's a local order, also update the order's items
