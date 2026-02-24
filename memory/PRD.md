@@ -158,6 +158,12 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Fix IndexedDB Safari** - Manejo de errores cuando IndexedDB no está disponible (modo privado)
 - [x] **Cajero Requiere Turno Abierto** - Los cajeros deben abrir turno de caja obligatoriamente antes de usar el sistema
 - [x] **Bloqueo de Terminales en Uso** - Al abrir turno, los terminales ya ocupados se muestran deshabilitados
+- [x] **CRUD Terminales** - Gestión completa de terminales/cajas en Configuración > Estación
+- [x] **Protección Eliminación Terminal en Uso** - No permite eliminar terminal con turno activo (retorna error 400)
+- [x] **Bloqueo Cierre Turno con Mesas Abiertas** - El cajero no puede cerrar turno si tiene cuentas/órdenes abiertas. Muestra diálogo dedicado con las mesas pendientes
+- [x] **Conteo Ciego de Caja** - El "Efectivo Esperado" se oculta del cajero durante el arqueo (solo visible para admin). La comparación Esperado vs Declarado aparece solo en el reporte X impreso
+- [x] **Datos de Cuadre en MongoDB** - Al cerrar turno se guardan los datos de reconciliación (declarado, esperado, diferencia) en colección `session_reconciliations`
+- [x] **Historial con Diferencia** - El historial de turnos muestra la diferencia de caja para sesiones cerradas
 
 ## Bloqueo de Terminales en Uso (2026-02-24)
 
