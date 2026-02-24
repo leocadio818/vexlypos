@@ -2000,20 +2000,20 @@ export default function OrderScreen() {
         </div>
       )}
 
-      {/* Product Dialog with Numpad */}
+      {/* Product Dialog with Numpad - TOUCH FRIENDLY */}
       <Dialog open={modDialog.open} onOpenChange={(open) => !open && setModDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-md bg-card border-border p-4" data-testid="modifier-dialog">
-          <DialogHeader><DialogTitle className="font-oswald text-base">{modDialog.product?.name}</DialogTitle></DialogHeader>
-          <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-1 scrollbar-thin">
-            {/* Compact Quantity Section */}
-            <div className="flex items-center gap-3 bg-background rounded-lg border border-border p-2">
-              <span className="text-xs font-semibold text-muted-foreground">Cantidad:</span>
-              <div className="flex items-center gap-1">
+        <DialogContent className="max-w-lg bg-card border-border p-5" data-testid="modifier-dialog">
+          <DialogHeader><DialogTitle className="font-oswald text-lg">{modDialog.product?.name}</DialogTitle></DialogHeader>
+          <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1 scrollbar-thin">
+            {/* Compact Quantity Section - LARGER FOR TOUCH */}
+            <div className="flex items-center gap-4 bg-background rounded-xl border border-border p-3">
+              <span className="text-sm font-semibold text-muted-foreground">Cantidad:</span>
+              <div className="flex items-center gap-2">
                 <button onClick={() => setModDialog(p => ({ ...p, qty: String(Math.max(1, (parseInt(p.qty) || 1) - 1)) }))}
-                  className="h-8 w-8 rounded-lg bg-muted hover:bg-destructive/20 font-bold text-lg">-</button>
-                <span className="font-oswald text-2xl font-bold text-primary w-12 text-center" data-testid="qty-display">{modDialog.qty}</span>
+                  className="h-12 w-12 rounded-xl bg-muted hover:bg-destructive/20 font-bold text-2xl active:scale-95 transition-all">-</button>
+                <span className="font-oswald text-3xl font-bold text-primary w-14 text-center" data-testid="qty-display">{modDialog.qty}</span>
                 <button onClick={() => setModDialog(p => ({ ...p, qty: String((parseInt(p.qty) || 1) + 1) }))}
-                  className="h-8 w-8 rounded-lg bg-muted hover:bg-primary hover:text-white font-bold text-lg">+</button>
+                  className="h-12 w-12 rounded-xl bg-muted hover:bg-primary hover:text-white font-bold text-2xl active:scale-95 transition-all">+</button>
               </div>
             </div>
 
@@ -2031,11 +2031,11 @@ export default function OrderScreen() {
                 
                 return (
               <div key={group.id}>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="text-xs font-semibold">{group.name}</span>
-                  {isRequired && <Badge variant="destructive" className="text-[8px] h-3.5">Requerido</Badge>}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-bold">{group.name}</span>
+                  {isRequired && <Badge variant="destructive" className="text-[10px] h-5 px-2">Requerido</Badge>}
                 </div>
-                <div className="grid grid-cols-2 gap-1">
+                <div className="grid grid-cols-2 gap-2">
                   {group.options.map(opt => {
                     const isSelected = (modDialog.selectedMods[group.id] || []).some(m => m.id === opt.id);
                     return (
@@ -2045,11 +2045,11 @@ export default function OrderScreen() {
                           const updated = maxSelections === 1 ? (isSelected ? [] : [opt]) : (isSelected ? current.filter(m => m.id !== opt.id) : [...current, opt]);
                           return { ...prev, selectedMods: { ...prev.selectedMods, [group.id]: updated } };
                         });
-                      }} className={`p-1.5 rounded-lg text-left text-[11px] transition-all border ${
-                        isSelected ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background hover:border-primary/30'
+                      }} className={`p-3 rounded-xl text-left transition-all border-2 active:scale-95 min-h-[60px] ${
+                        isSelected ? 'border-primary bg-primary/15 text-primary shadow-md' : 'border-border bg-background hover:border-primary/50'
                       }`}>
-                        <span className="block font-medium">{opt.name}</span>
-                        {opt.price > 0 && <span className="text-primary font-oswald text-[10px]">+{formatMoney(opt.price)}</span>}
+                        <span className="block font-semibold text-sm">{opt.name}</span>
+                        {opt.price > 0 && <span className="text-primary font-oswald text-sm mt-1 block">+{formatMoney(opt.price)}</span>}
                       </button>
                     );
                   })}
@@ -2060,10 +2060,10 @@ export default function OrderScreen() {
             })()}
 
             <input value={modDialog.notes} onChange={e => setModDialog(p => ({ ...p, notes: e.target.value }))}
-              placeholder="Notas especiales..." className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs" data-testid="item-notes-input" />
+              placeholder="Notas especiales..." className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm" data-testid="item-notes-input" />
           </div>
           <Button onClick={handleConfirmModifiers} data-testid="confirm-modifiers-btn"
-            className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold tracking-wider active:scale-95 mt-2">
+            className="w-full h-14 bg-primary text-primary-foreground font-oswald font-bold text-lg tracking-wider active:scale-95 mt-3">
             AGREGAR ({formatMoney((modDialog.product?.price || 0) * (parseFloat(modDialog.qty) || 1))})
           </Button>
           
