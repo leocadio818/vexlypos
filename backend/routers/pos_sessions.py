@@ -481,7 +481,7 @@ async def create_terminal(input: TerminalInput):
     """Crea un nuevo terminal"""
     try:
         # Verificar que no exista uno con el mismo nombre
-        existing = await db.pos_terminals.find_one({"name": input.name})
+        existing = await db.pos_terminals.find_one({"name": input.name}, {"_id": 0})
         if existing:
             raise HTTPException(status_code=400, detail="Ya existe un terminal con ese nombre")
         
@@ -494,7 +494,9 @@ async def create_terminal(input: TerminalInput):
         }
         
         await db.pos_terminals.insert_one(terminal)
-        return {k: v for k, v in terminal.items() if k != "_id"}
+        # Return without _id
+        terminal.pop("_id", None)
+        return terminal
     except HTTPException:
         raise
     except Exception as e:
