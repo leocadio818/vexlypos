@@ -495,6 +495,30 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
     
     await db.orders.update_one({"id": order_id}, {"$set": {"updated_at": now_iso()}})
     
+    # ─── VERIFICAR SI TODOS LOS ITEMS FUERON ANULADOS ───
+    # Si todos los items de la orden están cancelados, liberar la mesa
+    updated_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    all_items = updated_order.get("items", [])
+    active_items = [i for i in all_items if i.get("status") != "cancelled"]
+    
+    if len(active_items) == 0 and len(all_items) > 0:
+        # Todos los items están cancelados - marcar orden como cancelled y liberar mesa
+        await db.orders.update_one(
+            {"id": order_id}, 
+            {"$set": {"status": "cancelled", "cancelled_at": now_iso()}}
+        )
+        
+        # Liberar la mesa asociada
+        table_id = updated_order.get("table_id")
+        if table_id:
+            await db.tables.update_one(
+                {"id": table_id},
+                {"$set": {
+                    "status": "free",
+                    "active_order_id": None
+                }}
+            )
+    
     audit_log = {
         "id": gen_id(),
         "order_id": order_id,
