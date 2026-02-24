@@ -241,6 +241,61 @@ Solo los administradores pueden ver y editar los PINs de otros usuarios. Medida 
 3. **Botón ojo**: Solo visible para Admin, permite mostrar/ocultar PIN
 4. **Validación backend**: No permite guardar PIN si no tiene permiso
 
+## Anular Cuenta Completa → Mesa Libre (NUEVO - 2026-02-24)
+
+### Descripción
+Cuando se anulan TODOS los items de una cuenta/orden abierta (no pagada), la mesa vuelve automáticamente a estado "libre" (disponible) para poder usarse nuevamente.
+
+### Flujo
+```
+Mesa ocupada + Orden abierta → Anular TODOS los items → Mesa libre
+```
+
+### Implementación
+Se agregó lógica en 3 endpoints de `/app/backend/routers/orders.py`:
+
+1. **Single Item Cancel** (líneas ~367-389):
+   - `POST /api/orders/{order_id}/cancel-item/{item_id}`
+   - Después de cancelar, verifica si era el último item activo
+
+2. **Express Void** (líneas ~430-451):
+   - `POST /api/orders/{order_id}/cancel-items` con `express_void=true`
+   - Para items pendientes (no enviados a cocina)
+
+3. **Bulk Cancel con Auditoría** (líneas ~544-566):
+   - `POST /api/orders/{order_id}/cancel-items` con razón y posible autorización gerencial
+
+### Lógica Común
+```python
+# Después de cualquier anulación:
+updated_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+all_items = updated_order.get("items", [])
+active_items = [i for i in all_items if i.get("status") != "cancelled"]
+
+if len(active_items) == 0 and len(all_items) > 0:
+    # Todos cancelados → marcar orden y liberar mesa
+    await db.orders.update_one(
+        {"id": order_id}, 
+        {"$set": {"status": "cancelled", "cancelled_at": now_iso()}}
+    )
+    table_id = updated_order.get("table_id")
+    if table_id:
+        await db.tables.update_one(
+            {"id": table_id},
+            {"$set": {"status": "free", "active_order_id": None}}
+        )
+```
+
+### Pruebas (100% pasaron)
+- ✅ Express void de todos los items → mesa libre
+- ✅ Anulación parcial NO libera mesa
+- ✅ Cancelar único item cuando es el último → mesa libre
+- ✅ Bulk cancel con auditoría → mesa libre
+- ✅ Agregar items después, luego anular todos → mesa libre
+
+### Archivo de Tests
+`/app/backend/tests/test_void_releases_table.py`
+
 ## Sincronización de Reportes por Jornada (NUEVO - 2026-02-23)
 
 ### Descripción
