@@ -1053,9 +1053,9 @@ async def generate_x_report(
             "deposits": round(deposits, 2),
             "withdrawals": round(withdrawals, 2),
             "total_to_deliver": round(total_to_deliver, 2),
-            "cash_declared": round(session.get("cash_declared", 0) or 0, 2),
-            "expected_cash": round(session.get("expected_cash", 0) or 0, 2),
-            "difference": round(session.get("total_difference", 0) or 0, 2),
+            "cash_declared": round(cash_declared, 2),
+            "expected_cash": round(expected_cash, 2),
+            "difference": round(difference, 2),
             "formula": "Fondo Inicial + Ventas Efectivo + Depósitos - Retiros = Total a Entregar"
         }
     }
