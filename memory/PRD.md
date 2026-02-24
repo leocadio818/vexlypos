@@ -153,6 +153,77 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Indicador Estado Contribuyente** - Badge visual (ACTIVO/SUSPENDIDO/INACTIVO) en captura fiscal
 - [x] **Fix Impresión Datos Fiscales** - Datos del cliente (RNC/Razón Social) ahora aparecen en facturas B01/B14/B15
 - [x] **Anular Cuenta → Mesa Libre** - Al anular todos los items de una cuenta abierta, la mesa vuelve a estado disponible
+- [x] **Modal Modificadores Touch-Friendly** - Botones más grandes y espaciados para pantallas táctiles
+- [x] **Drawer Fiscal Fullscreen Móvil** - El drawer de datos fiscales ahora ocupa toda la pantalla en móvil
+- [x] **Fix IndexedDB Safari** - Manejo de errores cuando IndexedDB no está disponible (modo privado)
+
+## Drawer Fiscal Fullscreen para Móvil (2026-02-24)
+
+### Problema
+En móvil, el drawer de "Datos Fiscales" solo subía hasta la mitad de la pantalla, cortando los botones "Cancelar" y "Continuar".
+
+### Solución
+Hacer el drawer **fullscreen** (`h-[100vh]`) con estructura flex:
+- Header fijo arriba con título
+- Contenido scrolleable en el medio
+- Footer fijo abajo con botones siempre visibles
+
+### Implementación
+```jsx
+<DrawerContent className="bg-slate-900 border-t border-white/10 h-[100vh] rounded-t-none">
+  <div className="w-full h-full flex flex-col">
+    {/* Header fijo */}
+    <DrawerHeader className="flex-shrink-0 border-b border-white/10">...</DrawerHeader>
+    
+    {/* Contenido scrolleable */}
+    <div className="flex-1 overflow-y-auto px-5 py-4">...</div>
+    
+    {/* Footer fijo con botones */}
+    <DrawerFooter className="flex-shrink-0 border-t border-white/10">...</DrawerFooter>
+  </div>
+</DrawerContent>
+```
+
+### Archivo Modificado
+- `/app/frontend/src/components/FiscalDataDrawer.jsx`
+
+## Fix IndexedDB para Safari Modo Privado (2026-02-24)
+
+### Problema
+Error "Can't find variable: indexedDB" en Safari/Chrome modo privado porque IndexedDB no está disponible.
+
+### Solución
+Agregar verificación de disponibilidad antes de usar IndexedDB:
+```javascript
+function isIndexedDBAvailable() {
+  try {
+    if (typeof indexedDB === 'undefined' || indexedDB === null) {
+      return false;
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+```
+
+Todas las funciones ahora verifican `if (!db) return defaultValue;` para manejar el caso cuando IndexedDB no está disponible.
+
+### Archivo Modificado
+- `/app/frontend/src/lib/offlineDB.js`
+
+## Modal Modificadores Touch-Friendly (2026-02-24)
+
+### Cambios
+| Elemento | Antes | Después |
+|----------|-------|---------|
+| Ancho modal | `max-w-md` | `max-w-lg` |
+| Botones +/- | `h-8 w-8` | `h-12 w-12` |
+| Botones modificadores | `p-1.5` | `p-3 min-h-[60px]` |
+| Botón AGREGAR | `h-11` | `h-14` |
+
+### Archivo Modificado
+- `/app/frontend/src/pages/OrderScreen.js`
 
 ## Fix DEFINITIVO: Datos Fiscales en Factura Impresa (2026-02-23)
 
