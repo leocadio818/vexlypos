@@ -1,17 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="4.797" timestamp="2026-02-24T21:40:03.551429+00:00" hostname="agent-env-5c0bd63f-7bd8-449f-9492-08efd3b734f0"><testcase classname="backend.tests.test_void_releases_table.TestVoidReleasesTable" name="test_01_express_void_all_items_releases_table" time="1.074"><failure message="KeyError: 'status'">backend/tests/test_void_releases_table.py:70: in test_01_express_void_all_items_releases_table
-    assert table_before["status"] == "free", f"Expected table to be free, got {table_before['status']}"
-           ^^^^^^^^^^^^^^^^^^^^^^
-E   KeyError: 'status'</failure></testcase><testcase classname="backend.tests.test_void_releases_table.TestVoidReleasesTable" name="test_02_partial_void_does_NOT_release_table" time="0.941"><failure message="KeyError: 'status'">backend/tests/test_void_releases_table.py:181: in test_02_partial_void_does_NOT_release_table
-    assert table_after["status"] == "occupied", f"Table should remain occupied, got {table_after['status']}"
-           ^^^^^^^^^^^^^^^^^^^^^
-E   KeyError: 'status'</failure></testcase><testcase classname="backend.tests.test_void_releases_table.TestVoidReleasesTable" name="test_03_single_item_cancel_releases_table_when_last_item" time="0.710"><failure message="KeyError: 'status'">backend/tests/test_void_releases_table.py:231: in test_03_single_item_cancel_releases_table_when_last_item
-    assert table_after_create["status"] == "occupied"
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E   KeyError: 'status'</failure></testcase><testcase classname="backend.tests.test_void_releases_table.TestBulkCancelWithAuditReleasesTable" name="test_bulk_cancel_audit_protocol_releases_table" time="1.051"><failure message="KeyError: 'status'">backend/tests/test_void_releases_table.py:369: in test_bulk_cancel_audit_protocol_releases_table
-    assert table_check["status"] == "occupied"
-           ^^^^^^^^^^^^^^^^^^^^^
-E   KeyError: 'status'</failure></testcase><testcase classname="backend.tests.test_void_releases_table.TestEdgeCases" name="test_order_with_items_added_later_then_all_voided" time="0.904"><failure message="AssertionError: Should have at least 2 items&#10;assert 1 &gt;= 2&#10; +  where 1 = len(['8e20b61e-746d-4138-bcca-f20c41b847a0'])">backend/tests/test_void_releases_table.py:474: in test_order_with_items_added_later_then_all_voided
-    assert len(all_item_ids) &gt;= 2, "Should have at least 2 items"
-E   AssertionError: Should have at least 2 items
-E   assert 1 &gt;= 2
-E    +  where 1 = len(['8e20b61e-746d-4138-bcca-f20c41b847a0'])</failure></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="5" time="7.029" timestamp="2026-02-24T21:41:10.122602+00:00" hostname="agent-env-5c0bd63f-7bd8-449f-9492-08efd3b734f0"><testcase classname="backend.tests.test_void_releases_table.TestVoidReleasesTable" name="test_01_express_void_all_items_releases_table" time="1.289" /><testcase classname="backend.tests.test_void_releases_table.TestVoidReleasesTable" name="test_02_partial_void_does_NOT_release_table" time="1.349" /><testcase classname="backend.tests.test_void_releases_table.TestVoidReleasesTable" name="test_03_single_item_cancel_releases_table_when_last_item" time="1.541"><failure message="AssertionError: Single item cancel failed: {&quot;detail&quot;:&quot;Esta anulación requiere autorización de gerente&quot;}&#10;assert 403 == 200&#10; +  where 403 = &lt;Response [403]&gt;.status_code">backend/tests/test_void_releases_table.py:286: in test_03_single_item_cancel_releases_table_when_last_item
+    assert cancel_response.status_code == 200, f"Single item cancel failed: {cancel_response.text}"
+E   AssertionError: Single item cancel failed: {"detail":"Esta anulación requiere autorización de gerente"}
+E   assert 403 == 200
+E    +  where 403 = &lt;Response [403]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_void_releases_table.TestBulkCancelWithAuditReleasesTable" name="test_bulk_cancel_audit_protocol_releases_table" time="1.575"><failure message="AssertionError: Bulk cancel failed: {&quot;detail&quot;:&quot;Esta anulación requiere autorización de gerente&quot;}&#10;assert 403 == 200&#10; +  where 403 = &lt;Response [403]&gt;.status_code">backend/tests/test_void_releases_table.py:398: in test_bulk_cancel_audit_protocol_releases_table
+    assert cancel_response.status_code == 200, f"Bulk cancel failed: {cancel_response.text}"
+E   AssertionError: Bulk cancel failed: {"detail":"Esta anulación requiere autorización de gerente"}
+E   assert 403 == 200
+E    +  where 403 = &lt;Response [403]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_void_releases_table.TestEdgeCases" name="test_order_with_items_added_later_then_all_voided" time="1.182" /></testsuite></testsuites>
