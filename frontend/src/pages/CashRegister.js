@@ -838,10 +838,9 @@ export default function CashRegister() {
                   type="number"
                   value={cardDeclared}
                   onChange={e => setCardDeclared(e.target.value)}
-                  placeholder={formatMoney(currentSession?.card_sales || 0)}
+                  placeholder="0.00"
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald focus:border-blue-400/50 outline-none transition-all"
                 />
-                <p className="text-[10px] text-white/40 mt-1">Sistema: {formatMoney(currentSession?.card_sales || 0)}</p>
               </div>
               <div>
                 <label className="text-sm font-semibold text-white/60 mb-1 block">Transferencias</label>
@@ -849,26 +848,23 @@ export default function CashRegister() {
                   type="number"
                   value={transferDeclared}
                   onChange={e => setTransferDeclared(e.target.value)}
-                  placeholder={formatMoney(currentSession?.transfer_sales || 0)}
+                  placeholder="0.00"
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald focus:border-cyan-400/50 outline-none transition-all"
                 />
-                <p className="text-[10px] text-white/40 mt-1">Sistema: {formatMoney(currentSession?.transfer_sales || 0)}</p>
               </div>
             </div>
 
-            {/* Notes */}
-            {Math.abs(diferenciaCaja) > 0.01 && (
-              <div>
-                <label className="text-sm font-semibold text-white/60 mb-1 block">Notas sobre la diferencia</label>
-                <textarea
-                  value={differenceNotes}
-                  onChange={e => setDifferenceNotes(e.target.value)}
-                  placeholder="Explica la razón de la diferencia..."
-                  rows={2}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
-                />
-              </div>
-            )}
+            {/* Notes - Siempre visible para que el cajero pueda agregar comentarios */}
+            <div>
+              <label className="text-sm font-semibold text-white/60 mb-1 block">Notas del cierre (opcional)</label>
+              <textarea
+                value={differenceNotes}
+                onChange={e => setDifferenceNotes(e.target.value)}
+                placeholder="Agregar comentarios..."
+                rows={2}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
+              />
+            </div>
 
             {/* Close Button */}
             <button onClick={handleCloseSession} data-testid="confirm-close-session"
