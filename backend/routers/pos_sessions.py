@@ -276,13 +276,18 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
         if abs(total_difference) > 50:
             final_status = "pending_approval"
         
-        # Actualizar sesion (solo columnas que existen)
+        # Actualizar sesion con datos de cuadre
         update_data = {
             "closed_at": now,
             "closed_by": user["user_id"],
             "closed_by_name": user["name"],
             "status": final_status,
-            "notes": f"Cierre - Efectivo declarado: {input.cash_declared}, Esperado: {expected_cash}, Diferencia: {round(cash_difference, 2)}"
+            "cash_declared": round(input.cash_declared, 2),
+            "expected_cash": round(expected_cash, 2),
+            "total_difference": round(total_difference, 2),
+            "card_declared": round(input.card_declared, 2) if input.card_declared else 0,
+            "transfer_declared": round(input.transfer_declared, 2) if input.transfer_declared else 0,
+            "notes": input.difference_notes or ""
         }
         
         result = sb.table("pos_sessions").update(update_data).eq("id", session_id).execute()
