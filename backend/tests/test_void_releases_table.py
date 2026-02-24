@@ -330,17 +330,19 @@ class TestBulkCancelWithAuditReleasesTable:
             pytest.skip("No products available")
         self.test_product = products[0]
         
-        # Get or create cancellation reason
+        # Get or create cancellation reason that doesn't require manager auth
         reasons_response = requests.get(f"{BASE_URL}/api/cancellation-reasons")
         reasons = reasons_response.json() if reasons_response.status_code == 200 else []
-        if reasons:
-            self.reason_id = reasons[0]["id"]
+        # Find a reason that doesn't require manager auth
+        no_auth_reason = next((r for r in reasons if not r.get("requires_manager_auth", False)), None)
+        if no_auth_reason:
+            self.reason_id = no_auth_reason["id"]
         else:
-            # Create a test reason
+            # Create a test reason without manager auth
             create_reason = requests.post(
                 f"{BASE_URL}/api/cancellation-reasons",
                 headers=self.headers,
-                json={"name": "TEST_AUDIT_REASON", "requires_manager_auth": False}
+                json={"name": "TEST_AUDIT_REASON_NO_AUTH", "requires_manager_auth": False}
             )
             if create_reason.status_code == 200:
                 self.reason_id = create_reason.json()["id"]
