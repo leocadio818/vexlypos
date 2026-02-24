@@ -364,6 +364,29 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput,
                     }
                     await db.stock_movements.insert_one(movement)
     
+    # ─── VERIFICAR SI TODOS LOS ITEMS FUERON ANULADOS (SINGLE ITEM) ───
+    updated_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    all_items = updated_order.get("items", [])
+    active_items = [i for i in all_items if i.get("status") != "cancelled"]
+    
+    if len(active_items) == 0 and len(all_items) > 0:
+        # Todos los items están cancelados - marcar orden como cancelled y liberar mesa
+        await db.orders.update_one(
+            {"id": order_id}, 
+            {"$set": {"status": "cancelled", "cancelled_at": now_iso()}}
+        )
+        
+        # Liberar la mesa asociada
+        table_id = updated_order.get("table_id")
+        if table_id:
+            await db.tables.update_one(
+                {"id": table_id},
+                {"$set": {
+                    "status": "free",
+                    "active_order_id": None
+                }}
+            )
+    
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
 @router.post("/orders/{order_id}/cancel-items")
