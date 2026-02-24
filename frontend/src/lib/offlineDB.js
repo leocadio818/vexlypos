@@ -155,6 +155,7 @@ export async function cacheEssentialData(apiBase, token) {
 
 export async function addToSyncQueue(action) {
   const db = await initDB();
+  if (!db) return null; // IndexedDB not available
   const item = {
     ...action,
     createdAt: new Date().toISOString(),
@@ -167,16 +168,19 @@ export async function addToSyncQueue(action) {
 
 export async function getSyncQueue() {
   const db = await initDB();
+  if (!db) return []; // IndexedDB not available
   return db.getAllFromIndex(STORES.SYNC_QUEUE, 'createdAt');
 }
 
 export async function getSyncQueueCount() {
   const db = await initDB();
+  if (!db) return 0; // IndexedDB not available
   return db.count(STORES.SYNC_QUEUE);
 }
 
 export async function removeSyncQueueItem(id) {
   const db = await initDB();
+  if (!db) return; // IndexedDB not available
   await db.delete(STORES.SYNC_QUEUE, id);
 }
 
