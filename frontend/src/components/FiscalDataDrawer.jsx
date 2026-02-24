@@ -409,34 +409,34 @@ const FiscalDataDrawer = ({
                   {/* Indicador de validación */}
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     {fiscalId && validation.valid && !validation.warning && (
-                      <Check className="text-green-400" size={18} />
+                      <Check className="text-green-400" size={22} />
                     )}
                     {fiscalId && validation.valid && validation.warning && (
-                      <AlertCircle className="text-amber-400" size={18} />
+                      <AlertCircle className="text-amber-400" size={22} />
                     )}
                     {fiscalId && !validation.valid && validation.cleaned.length >= 9 && (
-                      <AlertCircle className="text-red-400" size={18} />
+                      <AlertCircle className="text-red-400" size={22} />
                     )}
                   </div>
                 </div>
                 <Button
                   onClick={searchCustomer}
                   disabled={!validation.valid || searching}
-                  className="h-12 px-4 bg-cyan-600 hover:bg-cyan-500 text-white"
+                  className="h-14 px-5 bg-cyan-600 hover:bg-cyan-500 text-white"
                   data-testid="search-customer-btn"
                 >
                   {searching ? (
-                    <Loader2 className="animate-spin" size={18} />
+                    <Loader2 className="animate-spin" size={22} />
                   ) : (
-                    <Search size={18} />
+                    <Search size={22} />
                   )}
                 </Button>
               </div>
               
               {/* Mensaje de validación */}
-              <div className="h-5">
+              <div className="min-h-[20px]">
                 {fiscalId && (
-                  <p className={`text-[10px] flex items-center gap-1 ${
+                  <p className={`text-xs flex items-center gap-1 ${
                     validation.valid && !validation.warning ? 'text-green-400' :
                     validation.valid && validation.warning ? 'text-amber-400' :
                     validation.type === 'Incompleto' ? 'text-white/50' : 'text-red-400'
