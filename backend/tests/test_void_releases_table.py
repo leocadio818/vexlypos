@@ -72,6 +72,7 @@ class TestVoidReleasesTable:
         assert table_before["status"] == "free", f"Expected table to be free, got {table_before['status']}"
         
         # 2. Create order with 2 items (pending, not sent to kitchen)
+        # Use different notes to prevent item merging
         create_response = requests.post(
             f"{BASE_URL}/api/orders",
             headers=self.headers,
@@ -82,13 +83,15 @@ class TestVoidReleasesTable:
                         "product_id": self.test_product["id"],
                         "product_name": self.test_product["name"],
                         "quantity": 1,
-                        "unit_price": self.test_product.get("price", 100)
+                        "unit_price": self.test_product.get("price", 100),
+                        "notes": "Item 1 for void test"
                     },
                     {
                         "product_id": self.test_product["id"],
-                        "product_name": self.test_product["name"] + " (2)",
+                        "product_name": self.test_product["name"],
                         "quantity": 2,
-                        "unit_price": self.test_product.get("price", 100)
+                        "unit_price": self.test_product.get("price", 100),
+                        "notes": "Item 2 for void test"
                     }
                 ]
             }
@@ -137,7 +140,7 @@ class TestVoidReleasesTable:
         table = self.free_tables[1]
         table_id = table["id"]
         
-        # 1. Create order with 2 items
+        # 1. Create order with 2 items (using different notes to prevent merge)
         create_response = requests.post(
             f"{BASE_URL}/api/orders",
             headers=self.headers,
@@ -148,13 +151,15 @@ class TestVoidReleasesTable:
                         "product_id": self.test_product["id"],
                         "product_name": self.test_product["name"],
                         "quantity": 1,
-                        "unit_price": self.test_product.get("price", 100)
+                        "unit_price": self.test_product.get("price", 100),
+                        "notes": "Item to void"
                     },
                     {
                         "product_id": self.test_product["id"],
                         "product_name": "Item to keep",
                         "quantity": 1,
-                        "unit_price": 50
+                        "unit_price": 50,
+                        "notes": "Keep this item"
                     }
                 ]
             }
@@ -462,7 +467,7 @@ class TestEdgeCases:
         order = create_response.json()
         order_id = order["id"]
         
-        # 2. Add more items
+        # 2. Add more items (with notes to prevent merge)
         add_response = requests.post(
             f"{BASE_URL}/api/orders/{order_id}/items",
             headers=self.headers,
@@ -472,7 +477,8 @@ class TestEdgeCases:
                         "product_id": self.test_product["id"],
                         "product_name": "Added Item",
                         "quantity": 1,
-                        "unit_price": 75
+                        "unit_price": 75,
+                        "notes": "Added item for void test"
                     }
                 ]
             }
