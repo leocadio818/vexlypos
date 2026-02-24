@@ -10,7 +10,16 @@ from supabase import create_client, Client
 import os
 import uuid
 
+# Import MongoDB db from server
+from motor.motor_asyncio import AsyncIOMotorClient
+
 router = APIRouter(prefix="/pos-sessions", tags=["POS Sessions"])
+
+# MongoDB connection
+MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+DB_NAME = os.environ.get("DB_NAME", "pos_db")
+mongo_client = AsyncIOMotorClient(MONGO_URL)
+db = mongo_client[DB_NAME]
 
 # Supabase client
 supabase_url = os.environ.get("SUPABASE_URL", "")
