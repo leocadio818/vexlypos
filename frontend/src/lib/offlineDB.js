@@ -99,6 +99,7 @@ function generateLocalId() {
 
 export async function cacheData(key, data) {
   const db = await initDB();
+  if (!db) return; // IndexedDB not available
   await db.put(STORES.CACHED_DATA, { 
     key, 
     data, 
@@ -108,6 +109,7 @@ export async function cacheData(key, data) {
 
 export async function getCachedData(key) {
   const db = await initDB();
+  if (!db) return null; // IndexedDB not available
   const result = await db.get(STORES.CACHED_DATA, key);
   return result?.data || null;
 }
