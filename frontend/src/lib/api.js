@@ -171,6 +171,7 @@ export const posSessionsAPI = {
   close: (id, data) => api.put(`/pos-sessions/${id}/close`, data),
   history: (params) => api.get('/pos-sessions/history', { params }),
   terminals: () => api.get('/pos-sessions/terminals'),
+  terminalsInUse: () => api.get('/pos-sessions/terminals/in-use'),
   movementReasons: () => api.get('/pos-sessions/movement-reasons'),
   // Movements
   addMovement: (sessionId, data) => api.post(`/pos-sessions/${sessionId}/movements`, data),
