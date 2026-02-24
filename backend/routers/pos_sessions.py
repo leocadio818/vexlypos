@@ -408,7 +408,9 @@ async def get_sessions_history(
 async def get_terminals():
     """Obtiene lista de terminales POS configurados con estado de ocupación"""
     try:
-        # Obtener terminales de MongoDB
+        sb = get_supabase()
+        
+        # Obtener terminales de MongoDB (o usar por defecto)
         terminals_cursor = db.pos_terminals.find({"is_active": True}, {"_id": 0}).sort("code", 1)
         terminals = await terminals_cursor.to_list(100)
         
@@ -422,10 +424,9 @@ async def get_terminals():
                 {"id": "term-5", "code": "VIP", "name": "VIP", "is_active": True},
             ]
         
-        # Obtener turnos abiertos para marcar terminales en uso
-        open_sessions_cursor = db.pos_sessions.find({"status": "open"}, {"_id": 0, "terminal_name": 1, "opened_by_name": 1})
-        open_sessions = await open_sessions_cursor.to_list(100)
-        open_terminal_names = {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in open_sessions}
+        # Obtener turnos abiertos de Supabase para marcar terminales en uso
+        open_sessions = sb.table("pos_sessions").select("terminal_name, opened_by_name").eq("status", "open").execute()
+        open_terminal_names = {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in (open_sessions.data or [])}
         
         # Marcar terminales en uso
         for terminal in terminals:
@@ -446,11 +447,12 @@ async def get_terminals():
 async def get_terminals_in_use():
     """Obtiene lista de nombres de terminales que tienen turno abierto"""
     try:
-        # Obtener turnos abiertos de MongoDB
-        open_sessions_cursor = db.pos_sessions.find({"status": "open"}, {"_id": 0, "terminal_name": 1, "opened_by_name": 1})
-        open_sessions = await open_sessions_cursor.to_list(100)
+        sb = get_supabase()
         
-        return {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in open_sessions}
+        # Obtener turnos abiertos de Supabase
+        result = sb.table("pos_sessions").select("terminal_name, opened_by_name").eq("status", "open").execute()
+        
+        return {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in (result.data or [])}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
