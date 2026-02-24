@@ -572,13 +572,14 @@ export default function Layout() {
       </main>
       
       {/* ═══════════════════════════════════════════════════════════════════════════════
-          DIALOGO OBLIGATORIO - CAJERO SIN TURNO DE CAJA
+          DIALOGO BLOQUEANTE - CAJERO SIN TURNO DE CAJA
+          Este diálogo es PERMANENTE y aparece en TODAS las páginas hasta que abra turno
           ═══════════════════════════════════════════════════════════════════════════════ */}
-      <Dialog open={showShiftRequiredDialog && isCashierRole && !cashierShift} onOpenChange={() => {}}>
+      <Dialog open={cashierNeedsShift} onOpenChange={() => {}}>
         <DialogContent className="bg-slate-900 border-amber-500/50 max-w-md" hideCloseButton>
           <DialogHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center animate-pulse">
                 <AlertTriangle className="w-8 h-8 text-amber-500" />
               </div>
             </div>
@@ -590,13 +591,19 @@ export default function Layout() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="bg-white/5 rounded-lg p-4 mt-4 border border-white/10">
-            <p className="text-white/60 text-sm text-center">
+          <div className="bg-red-500/10 rounded-lg p-4 mt-4 border border-red-500/30">
+            <p className="text-red-400 text-sm text-center font-medium">
+              ⚠️ No puedes realizar ninguna operación hasta abrir un turno de caja.
+            </p>
+          </div>
+          
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+            <p className="text-white/60 text-xs text-center">
               El turno de caja te permite registrar ventas, recibir pagos y realizar cuadres de efectivo.
             </p>
           </div>
           
-          <div className="flex flex-col gap-3 mt-6">
+          <div className="flex flex-col gap-3 mt-4">
             <Button
               onClick={handleGoToCashRegister}
               className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-semibold"
