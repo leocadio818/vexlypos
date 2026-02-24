@@ -397,13 +397,43 @@ async def get_sessions_history(
 
 @router.get("/terminals")
 async def get_terminals():
-    """Obtiene lista de terminales POS configurados"""
+    """Obtiene lista de terminales POS configurados con estado de ocupación"""
     try:
         sb = get_supabase()
         
+        # Obtener terminales activos
         result = sb.table("pos_terminals").select("*").eq("is_active", True).order("code").execute()
+        terminals = result.data or []
         
-        return result.data or []
+        # Obtener turnos abiertos para marcar terminales en uso
+        open_sessions = sb.table("pos_sessions").select("terminal_name, opened_by_name").eq("status", "open").execute()
+        open_terminal_names = {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in (open_sessions.data or [])}
+        
+        # Marcar terminales en uso
+        for terminal in terminals:
+            if terminal["name"] in open_terminal_names:
+                terminal["in_use"] = True
+                terminal["in_use_by"] = open_terminal_names[terminal["name"]]
+            else:
+                terminal["in_use"] = False
+                terminal["in_use_by"] = None
+        
+        return terminals
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/terminals/in-use")
+async def get_terminals_in_use():
+    """Obtiene lista de nombres de terminales que tienen turno abierto"""
+    try:
+        sb = get_supabase()
+        
+        # Obtener turnos abiertos
+        result = sb.table("pos_sessions").select("terminal_name, opened_by_name").eq("status", "open").execute()
+        
+        return {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in (result.data or [])}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
