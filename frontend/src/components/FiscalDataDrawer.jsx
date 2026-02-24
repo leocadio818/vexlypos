@@ -550,69 +550,63 @@ const FiscalDataDrawer = ({
             )}
             
             {/* Campo Razón Social */}
-            <div className="space-y-2">
-              <Label className="text-white/70 text-sm font-medium">
+            <div className="space-y-1">
+              <Label className="text-white/70 text-xs font-medium">
                 Razón Social *
               </Label>
               <Input
                 value={razonSocial}
                 onChange={(e) => setRazonSocial(e.target.value)}
                 placeholder="Nombre o Razón Social del cliente"
-                className="bg-white/5 border-2 border-white/20 text-white text-base h-14 focus:border-cyan-400"
+                className="bg-white/5 border-2 border-white/20 text-white text-sm h-11 focus:border-cyan-400"
                 disabled={!!customerFound}
                 data-testid="razon-social-input"
               />
             </div>
             
             {/* Campo Email (Opcional) */}
-            <div className="space-y-2">
-              <Label className="text-white/70 text-sm font-medium flex items-center gap-2">
-                <Mail size={14} />
+            <div className="space-y-1">
+              <Label className="text-white/70 text-xs font-medium flex items-center gap-1">
+                <Mail size={12} />
                 Correo Electrónico
-                <span className="text-white/40 text-xs font-normal">(opcional - para envío de factura)</span>
+                <span className="text-white/40 text-[10px] font-normal">(opcional)</span>
               </Label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="correo@ejemplo.com"
-                className="bg-white/5 border-2 border-white/20 text-white text-base h-14 focus:border-cyan-400"
+                className="bg-white/5 border-2 border-white/20 text-white text-sm h-11 focus:border-cyan-400"
                 disabled={!!customerFound && customerFound.email}
                 data-testid="email-input"
               />
-              {email && (
-                <p className="text-xs text-cyan-400/80 flex items-center gap-1">
-                  <Mail size={12} />
-                  La factura digital será enviada a este correo
-                </p>
-              )}
             </div>
           </div>
           
-          {/* Footer fijo con botones */}
-          <DrawerFooter className="pt-2 pb-4 px-6 flex-shrink-0 border-t border-white/10 bg-slate-900/95">
-            <div className="flex gap-3 w-full">
+          {/* Footer fijo con botones - SIEMPRE VISIBLE */}
+          <DrawerFooter className="pt-3 pb-4 px-4 flex-shrink-0 border-t border-white/10 bg-slate-900">
+            <div className="flex gap-2 w-full">
               <DrawerClose asChild>
                 <Button 
                   variant="outline" 
-                  className="flex-1 h-14 text-base border-white/20 text-white hover:bg-white/10"
+                  className="flex-1 h-12 text-sm border-white/20 text-white hover:bg-white/10"
                   data-testid="fiscal-cancel-btn"
                 >
-                  <X size={18} className="mr-2" />
+                  <X size={16} className="mr-1" />
                   Cancelar
                 </Button>
               </DrawerClose>
               <Button
                 onClick={handleConfirm}
                 disabled={!canContinue}
-                className={`flex-1 h-14 text-base font-semibold transition-all ${
+                className={`flex-1 h-12 text-sm font-semibold transition-all ${
                   canContinue 
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white' 
                     : 'bg-white/10 text-white/40 cursor-not-allowed'
                 }`}
                 data-testid="fiscal-confirm-btn"
               >
-                <Check size={18} className="mr-2" />
+                <Check size={16} className="mr-1" />
                 Continuar
               </Button>
             </div>
