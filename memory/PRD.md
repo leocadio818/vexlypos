@@ -152,6 +152,7 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Validación RNC en Tiempo Real** - Consulta API DGII tercero para auto-llenar datos del contribuyente
 - [x] **Indicador Estado Contribuyente** - Badge visual (ACTIVO/SUSPENDIDO/INACTIVO) en captura fiscal
 - [x] **Fix Impresión Datos Fiscales** - Datos del cliente (RNC/Razón Social) ahora aparecen en facturas B01/B14/B15
+- [x] **Anular Cuenta → Mesa Libre** - Al anular todos los items de una cuenta abierta, la mesa vuelve a estado disponible
 
 ## Fix DEFINITIVO: Datos Fiscales en Factura Impresa (2026-02-23)
 
