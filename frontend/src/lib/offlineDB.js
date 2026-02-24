@@ -116,6 +116,7 @@ export async function getCachedData(key) {
 
 export async function clearCachedData(key) {
   const db = await initDB();
+  if (!db) return; // IndexedDB not available
   await db.delete(STORES.CACHED_DATA, key);
 }
 
