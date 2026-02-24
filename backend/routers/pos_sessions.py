@@ -399,15 +399,24 @@ async def get_sessions_history(
 async def get_terminals():
     """Obtiene lista de terminales POS configurados con estado de ocupación"""
     try:
-        sb = get_supabase()
+        # Obtener terminales de MongoDB
+        terminals_cursor = db.pos_terminals.find({"is_active": True}, {"_id": 0}).sort("code", 1)
+        terminals = await terminals_cursor.to_list(100)
         
-        # Obtener terminales activos
-        result = sb.table("pos_terminals").select("*").eq("is_active", True).order("code").execute()
-        terminals = result.data or []
+        # Si no hay terminales configurados, usar los por defecto
+        if not terminals:
+            terminals = [
+                {"id": "term-1", "code": "POS1", "name": "Caja 1", "is_active": True},
+                {"id": "term-2", "code": "POS2", "name": "Caja 2", "is_active": True},
+                {"id": "term-3", "code": "BAR1", "name": "Barra", "is_active": True},
+                {"id": "term-4", "code": "TERR", "name": "Terraza", "is_active": True},
+                {"id": "term-5", "code": "VIP", "name": "VIP", "is_active": True},
+            ]
         
         # Obtener turnos abiertos para marcar terminales en uso
-        open_sessions = sb.table("pos_sessions").select("terminal_name, opened_by_name").eq("status", "open").execute()
-        open_terminal_names = {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in (open_sessions.data or [])}
+        open_sessions_cursor = db.pos_sessions.find({"status": "open"}, {"_id": 0, "terminal_name": 1, "opened_by_name": 1})
+        open_sessions = await open_sessions_cursor.to_list(100)
+        open_terminal_names = {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in open_sessions}
         
         # Marcar terminales en uso
         for terminal in terminals:
@@ -428,12 +437,11 @@ async def get_terminals():
 async def get_terminals_in_use():
     """Obtiene lista de nombres de terminales que tienen turno abierto"""
     try:
-        sb = get_supabase()
+        # Obtener turnos abiertos de MongoDB
+        open_sessions_cursor = db.pos_sessions.find({"status": "open"}, {"_id": 0, "terminal_name": 1, "opened_by_name": 1})
+        open_sessions = await open_sessions_cursor.to_list(100)
         
-        # Obtener turnos abiertos
-        result = sb.table("pos_sessions").select("terminal_name, opened_by_name").eq("status", "open").execute()
-        
-        return {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in (result.data or [])}
+        return {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in open_sessions}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
