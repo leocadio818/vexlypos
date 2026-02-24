@@ -655,13 +655,45 @@ export default function CashRegister() {
             <div>
               <label className="text-sm font-semibold text-white/60 mb-2 block">Estación / Terminal</label>
               <div className="grid grid-cols-2 gap-2">
-                {terminals.map(t => (
-                  <button key={t.code} onClick={() => { setSelectedTerminal(t.id); setTerminalName(t.name); }}
-                    className={`p-2.5 rounded-lg text-sm font-medium transition-all border ${
-                      terminalName === t.name ? 'border-orange-400 bg-orange-400/20 text-orange-400' : 'border-white/10 bg-white/5 text-white/70'
-                    }`}>{t.name}</button>
-                ))}
+                {terminals.map(t => {
+                  const isInUse = t.in_use || terminalsInUse[t.name];
+                  const inUseBy = t.in_use_by || terminalsInUse[t.name];
+                  const isSelected = terminalName === t.name;
+                  
+                  return (
+                    <button 
+                      key={t.code} 
+                      onClick={() => { 
+                        if (!isInUse) {
+                          setSelectedTerminal(t.id); 
+                          setTerminalName(t.name); 
+                        }
+                      }}
+                      disabled={isInUse}
+                      className={`p-2.5 rounded-lg text-sm font-medium transition-all border relative ${
+                        isInUse 
+                          ? 'border-red-500/30 bg-red-500/10 text-red-400/60 cursor-not-allowed'
+                          : isSelected 
+                            ? 'border-orange-400 bg-orange-400/20 text-orange-400' 
+                            : 'border-white/10 bg-white/5 text-white/70 hover:border-white/30'
+                      }`}
+                    >
+                      <span className="block">{t.name}</span>
+                      {isInUse && (
+                        <span className="text-[10px] block text-red-400/80 mt-0.5">
+                          En uso: {inUseBy}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+              {Object.keys(terminalsInUse).length > 0 && (
+                <p className="text-[10px] text-amber-400/70 mt-2 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-red-500/50"></span>
+                  Las estaciones en rojo ya tienen un turno activo
+                </p>
+              )}
             </div>
             <div>
               <label className="text-sm font-semibold text-white/60 mb-1 block">Monto de Apertura (RD$)</label>
