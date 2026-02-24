@@ -979,6 +979,33 @@ export default function CashRegister() {
         initialTransactionNumber={pendingB04Transaction}
       />
 
+      {/* Diálogo de Error: Mesas Abiertas */}
+      <Dialog open={openTablesError.show} onOpenChange={(v) => !v && setOpenTablesError({ show: false, message: '' })}>
+        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-red-500/30" data-testid="open-tables-error-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-red-400 flex items-center gap-2">
+              <AlertTriangle size={20} />
+              No puedes cerrar turno
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+              <p className="text-white text-sm">{openTablesError.message}</p>
+            </div>
+            <p className="text-white/60 text-xs">
+              Debes cerrar o transferir todas tus cuentas abiertas antes de poder cerrar tu turno.
+            </p>
+            <button 
+              onClick={() => setOpenTablesError({ show: false, message: '' })}
+              data-testid="close-open-tables-error"
+              className="w-full h-11 rounded-xl bg-white/10 border border-white/20 text-white font-oswald font-bold hover:bg-white/20 transition-all"
+            >
+              ENTENDIDO
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Botón Flotante de Re-impresión */}
       {selectedMovement && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300">
