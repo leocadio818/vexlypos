@@ -287,6 +287,27 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
         
         result = sb.table("pos_sessions").update(update_data).eq("id", session_id).execute()
         
+        # Guardar datos de cuadre en MongoDB (Supabase no tiene estas columnas)
+        reconciliation_doc = {
+            "session_id": session_id,
+            "cash_declared": round(input.cash_declared, 2),
+            "expected_cash": round(expected_cash, 2),
+            "cash_difference": round(cash_difference, 2),
+            "card_declared": round(input.card_declared, 2) if input.card_declared else 0,
+            "transfer_declared": round(input.transfer_declared, 2) if input.transfer_declared else 0,
+            "total_difference": round(total_difference, 2),
+            "cash_breakdown": input.cash_breakdown,
+            "difference_notes": input.difference_notes or "",
+            "closed_by": user["user_id"],
+            "closed_by_name": user["name"],
+            "closed_at": now
+        }
+        await db.session_reconciliations.update_one(
+            {"session_id": session_id},
+            {"$set": reconciliation_doc},
+            upsert=True
+        )
+        
         # Si hay diferencia, registrar movimiento de ajuste
         if abs(cash_difference) > 0.01:
             adjustment_data = {
