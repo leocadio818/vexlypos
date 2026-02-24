@@ -573,6 +573,53 @@ export default function Layout() {
       <main className={`flex-1 overflow-auto relative z-10 ${isMobile && !shouldHideNav ? 'pb-20' : ''}`}>
         <Outlet />
       </main>
+      
+      {/* ═══════════════════════════════════════════════════════════════════════════════
+          DIALOGO OBLIGATORIO - CAJERO SIN TURNO DE CAJA
+          ═══════════════════════════════════════════════════════════════════════════════ */}
+      <Dialog open={showShiftRequiredDialog && isCashierRole && !cashierShift} onOpenChange={() => {}}>
+        <DialogContent className="bg-slate-900 border-amber-500/50 max-w-md" hideCloseButton>
+          <DialogHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-amber-500" />
+              </div>
+            </div>
+            <DialogTitle className="text-xl font-oswald text-white text-center">
+              Turno de Caja Requerido
+            </DialogTitle>
+            <DialogDescription className="text-white/70 text-center mt-2">
+              Como <span className="text-amber-400 font-semibold">Cajero</span>, debes abrir un turno de caja antes de poder usar el sistema.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="bg-white/5 rounded-lg p-4 mt-4 border border-white/10">
+            <p className="text-white/60 text-sm text-center">
+              El turno de caja te permite registrar ventas, recibir pagos y realizar cuadres de efectivo.
+            </p>
+          </div>
+          
+          <div className="flex flex-col gap-3 mt-6">
+            <Button
+              onClick={handleGoToCashRegister}
+              className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-semibold"
+              data-testid="open-shift-btn"
+            >
+              <CircleDollarSign size={20} className="mr-2" />
+              Ir a Abrir Turno
+            </Button>
+            <Button
+              onClick={handleLogoutWithoutShift}
+              variant="outline"
+              className="w-full h-10 border-white/20 text-white/70 hover:bg-white/10"
+              data-testid="logout-without-shift-btn"
+            >
+              <LogOut size={16} className="mr-2" />
+              Cerrar Sesión
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
