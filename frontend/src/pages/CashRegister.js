@@ -743,22 +743,12 @@ export default function CashRegister() {
           </DialogHeader>
           
           <div className="space-y-6">
-            {/* Expected Summary */}
-            {currentSession && (
-              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-white/70 mb-3">Resumen del Sistema</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex justify-between"><span className="text-white/60">Apertura</span><span className="font-oswald text-white">{formatMoney(currentSession.opening_amount)}</span></div>
-                  <div className="flex justify-between"><span className="text-white/60">Ventas Efectivo</span><span className="font-oswald text-green-400">{formatMoney(currentSession.cash_sales)}</span></div>
-                  <div className="flex justify-between"><span className="text-white/60">Ingresos Caja</span><span className="font-oswald text-emerald-400">+{formatMoney(currentSession.cash_in)}</span></div>
-                  <div className="flex justify-between"><span className="text-white/60">Retiros Caja</span><span className="font-oswald text-red-400">-{formatMoney(currentSession.cash_out)}</span></div>
-                  <div className="col-span-2 flex justify-between font-bold border-t border-white/10 pt-2 mt-2">
-                    <span className="text-yellow-400">EFECTIVO ESPERADO</span>
-                    <span className="font-oswald text-xl text-yellow-400">{formatMoney(totalEsperado)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Nota informativa - El cajero NO debe ver el total esperado */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+              <p className="text-blue-400 text-sm text-center">
+                Cuenta cuidadosamente todo el efectivo en tu caja
+              </p>
+            </div>
 
             {/* Denomination Counter */}
             <div>
