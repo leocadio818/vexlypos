@@ -287,9 +287,15 @@ export default function CashRegister() {
       resetClosingForm();
       fetchData();
     } catch (err) {
-      toast.error('Error cerrando turno', {
-        description: err.response?.data?.detail || 'Intenta de nuevo'
-      });
+      const detail = err.response?.data?.detail || '';
+      // Si el error es por mesas abiertas, mostrar diálogo dedicado
+      if (err.response?.status === 400 && detail.includes('cuentas abiertas')) {
+        setOpenTablesError({ show: true, message: detail });
+      } else {
+        toast.error('Error cerrando turno', {
+          description: detail || 'Intenta de nuevo'
+        });
+      }
     }
   };
 
