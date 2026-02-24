@@ -1,43 +1,64 @@
 <analysis>**original_problem_statement:**
-The user initially requested a Fiscal Data Capture component for their Point of Sale system, which should appear for specific fiscal types (B01, B14, B15), validate the RNC/Cédula, search for existing clients, and persist new ones.
+The user initially requested a Fiscal Data Capture component, which led to several follow-up requests and bug reports during the session.
 
-Subsequently, the user requested a major architectural change to implement a Business Date (Jornada de Trabajo) system. This system decouples the accounting date from the calendar date. Key requirements include:
-1.  **Manual Day Open/Close:** The business date is set upon Apertura de Día and remains fixed until a Cierre de Día is performed by an authorized user. Transactions are recorded against this business date.
-2.  **Dual Timestamps:** Every transaction must store both the real timestamp and the active business date.
-3.  **Workflow Enforcement:** The system must block sales if no business day is open. The flow is: Open Day -> Open Shift -> Sales -> Close Shift (Report X) -> Close Day (Report Z).
-4.  **Detailed Reporting (X/Z):** Generate reports with breakdowns by payment method, category, discounts, and a final cash summary.
-5.  **Report Synchronization:** All administrative reports must be filterable by the Business Date.
-6.  **Audit Security:** Restrict visibility of user PINs to only the 'Admin' role.
-7.  **DGII Reports:** Clarified requirements for fiscal reports 607 (including B04 Notes of Credit affecting other invoices) and 608 (annulled NCFs). Implementation of 608 is currently on hold per user request.
+**Initial Problem (from previous fork):**
+*   A critical bug where captured fiscal data (RNC/Cédula and Razón Social) was not being printed on the final customer invoice.
+
+**New requirements and issues raised during this session:**
+1.  After a fix was deployed, the user reported the fiscal data was *still* not printing, revealing a deeper issue with multiple, conflicting print endpoints.
+2.  **Feature Request:** When a table's entire open order is voided, the table should automatically become available again.
+3.  **UI/UX Feedback:** The product modifiers modal is too small and difficult to use on touch screens.
+4.  **UI/UX Bug (Mobile):** On the payment screen, the fiscal data drawer's action buttons (Cancel, Confirm) are cut off and not visible on mobile devices.
+5.  **Security/Logic Flaw:** A cashier can close an order and process payments without having an active cash shift (turno de caja).
+6.  **Security/Logic Flaw:** After implementing a fix for the above, the user found a loophole where the cashier could bypass the Open Shift modal by navigating to other parts of the app.
+7.  **Feature Request:** Implement a system to prevent multiple cashiers from opening a shift on the same cash box/terminal simultaneously.
+8.  **Feature Request:** Add a section in the settings to manage (CRUD) the cash boxes/terminals.
+9.  **Security/Logic Flaw (3 parts):**
+    *   Prevent the deletion of a terminal if it has an active shift.
+    *   Prevent a cashier from closing their shift if they have open tables under their name.
+    *   For honesty, hide the Expected Total from the cashier during the cash count process; it should only appear on the final printed report.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-A full-stack POS application with a React frontend, FastAPI backend, and MongoDB. The application now includes a complete Fiscal Data Capture drawer and a robust Business Date (Jornada de Trabajo) system. This system correctly blocks transactions when a business day isn't open and associates all sales with the active business date. The application can generate detailed X and Z reports. Administrative reports are now filterable by business date. A security enhancement has been implemented to restrict user PIN visibility to administrators only.
+A full-stack POS application (React + FastAPI + MongoDB/Supabase) that now correctly prints customer fiscal data on invoices. It includes a feature to automatically free up tables when orders are fully voided. The cashier workflow has been significantly hardened: cashiers are now forced into a system-wide, non-bypassable lock until they open a cash shift, and they cannot select a terminal that is already in use by another cashier. A full CRUD interface for managing terminals has been added to the settings page. Several UI/UX issues have been fixed, including a larger, touch-friendly modifiers modal and a full-screen fiscal data drawer on mobile. The system also handles browser private mode gracefully by checking for IndexedDB availability.
 
 **Last working item**:
--   **Last item agent was working:** Debugging an error reported by the user. The user gets an error when clicking the Continuar (Continue) button in the  component after filling in the fiscal information. The agent has confirmed the backend logs show no errors and was about to investigate the frontend component.
+-   **Last item agent was working:** Implementing a three-part security and usability improvement:
+    1.  Preventing the deletion of terminals that are currently in use.
+    2.  Blocking cashiers from closing their shift if they have open tables.
+    3.  Hiding the Expected Total during the end-of-shift cash count to ensure honest declarations.
 -   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
 -   **Which testing method agent to use?**: both
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Error on Continuar button in FiscalDataDrawer (P0)**
-    -   **Attempted fixes:** The agent checked backend logs () and found no errors, indicating the issue is likely on the client side.
+-   **Issue 1: Complete and test the three critical security/usability features. (P0)**
+    -   **Attempted fixes:** The agent started implementing backend and frontend changes for all three items but did not complete or test them.
+        -   **No terminal deletion while in use:** The agent identified the need for this but did not show a completed implementation in the  endpoint.
+        -   **No shift closure with open tables:** A backend check was added to the  function in . However, the frontend has not been updated to handle the error response and inform the user.
+        -   **Hide expected total:** Multiple UI elements were removed from . The final printed report logic needs to be checked to ensure it *does* contain the expected vs. declared comparison.
     -   **Next debug checklist:**
-        1.  Examine the  function within  to understand the logic executed on click.
-        2.  Use the browser's developer console to check for any JavaScript errors when the Continuar button is clicked.
-        3.  Add  statements to trace the , , and  state variables right before the  and  functions are called.
-        4.  Verify the payload structure being sent to the backend against the expected format in the  endpoint in .
-    -   **Why fix this issue and what will be achieved with the fix?** This is a critical bug blocking the core workflow for generating fiscal invoices for new or existing clients. Fixing it will restore a key feature.
+        1.  **Terminal Deletion:**
+            -   Review and complete the logic in the  endpoint in  to check for active shifts on that terminal before deleting.
+            -   If in use, return a  error.
+            -   Update the frontend in  to show a toast/alert on error and prevent deletion.
+        2.  **Shift Closure:**
+            -   Write a test to confirm the backend correctly blocks shift closure and returns a list of open tables.
+            -   Modify  to catch the error from the  API call, and display a modal/alert to the user listing the tables they must close first.
+        3.  **Hide Expected Total:**
+            -   Verify visually that all expected totals are hidden from the cash counting UI.
+            -   Review the backend endpoint that generates the final shift closure report () to ensure it correctly calculates and includes Total Expected, Total Declared, and Difference.
+            -   Perform a full end-to-end test: open a shift, make sales, close the shift (declaring an incorrect amount), and verify the printed report shows the correct discrepancy.
+    -   **Why fix this issue and what will be achieved with the fix?** These are critical security and operational integrity features. They prevent data corruption (deleting in-use terminals), revenue loss (cashiers forgetting open tables), and improve accountability (blind cash counting).
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** both
     -   **Blocked on other issue**: No
 
 **In progress Task List**:
--   None. The current focus is entirely on the bug fix.
+-   None.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
@@ -50,12 +71,14 @@ A full-stack POS application with a React frontend, FastAPI backend, and MongoDB
     -   P3: Export Audit Trail to Excel/CSV.
 
 **Completed work in this session**
--   **Feature: Fiscal Data Capture:** Completed the fiscal data drawer () with flexible RNC/Cédula validation, client search, and new client persistence.
--   **Feature: Business Date (Jornada de Trabajo):** Implemented the entire business date lifecycle, including backend logic (), frontend management UI (), and blocking of payments when no day is open.
--   **Feature: Reports X and Z:** Created backend endpoints and frontend UI to generate and display detailed end-of-shift (X) and end-of-day (Z) reports.
--   **Feature: Report Synchronization:** Integrated a Business Date filter into the main reports page () to allow filtering all historical data by the accounting date.
--   **Enhancement: Audit Security:** Restricted user PIN visibility and editing capabilities to Admin users only in the user management section ().
--   **Fix:** Corrected the client search endpoint in  to support searching by .
+-   **Critical Bug Fix:** Resolved the fiscal data printing issue by correcting logic in the final, correct print endpoint () in .
+-   **Feature:** Implemented logic to automatically free a table () when all items on its open order are voided.
+-   **Feature:** Implemented a mandatory, non-bypassable system lock for cashiers who log in without an open shift. The lock persists across all pages until a shift is opened.
+-   **Feature:** Implemented logic to prevent multiple cashiers from opening shifts on the same terminal simultaneously, with a clear In use UI indicator.
+-   **Feature:** Created a full CRUD interface for managing terminals/cash boxes in .
+-   **UI/UX Improvement:** Redesigned the product modifiers modal () to be larger and more touch-friendly.
+-   **UI/UX Bug Fix:** Fixed the fiscal data drawer on mobile by making it full-screen (), ensuring buttons are always visible.
+-   **Bug Fix:** Prevented  errors in browser private modes by adding availability checks in .
 
 **Earlier issues found/mentioned but not fixed**
 -   None.
@@ -67,75 +90,74 @@ A full-stack POS application with a React frontend, FastAPI backend, and MongoDB
 
 
 **Key Technical Concepts**
--   **Business Date Logic:** Decoupling the accounting date from the system's calendar date. Transactions are tied to a manually managed .
--   **Role-Based UI Rendering (RBAC):** Conditionally rendering UI elements (like the PIN field in ) based on the current user's role.
--   **Stateful API-driven UI:** The frontend heavily relies on API calls to determine its state (e.g., if a business day is open, which reports to show).
--   **Client-Side Validation:** Performing RNC/Cédula validation directly in the frontend for immediate user feedback.
+-   **Role-Based Access Control (RBAC):** Differentiating behavior for 'cashier' vs. other roles, specifically the mandatory shift-opening requirement.
+-   **Stateful Resource Locking:** Preventing concurrent use of a shared resource (terminals) by fetching active shifts and disabling occupied options in the UI.
+-   **System-Wide UI Blocking:** Using a persistent modal in the root  component, controlled by user role and shift status, to block all app interaction until a condition is met.
+-   **Defensive Browser Feature Detection:** Checking for  before attempting to use it to prevent crashes in restricted environments (e.g., Safari private mode).
+-   **Hybrid Data Persistence:** Using MongoDB for core application data (bills, tables, terminals) while simultaneously using Supabase for user shifts ( table). This requires careful data synchronization.
 
 **key DB schema**
--   ****: Added  (String, ISO format) to associate each bill with a business day.
--   ****: New collection to store business day sessions.
-    -   
--   ****: Contains user data including  ('Admin', 'Cashier', etc.) used for RBAC.
+-   ** (MongoDB):**  - Manages the available cash boxes/stations.
+-   ** (Supabase):**  - Tracks user shifts. The  is used to lock terminals.
+-   ** (MongoDB):** Contains , , and a reference to the  who owns the bill.
 
 **changes in tech stack**
--   None.
+-   The project uses a hybrid database approach: most data resides in MongoDB, but user shifts are managed in a Supabase table. This was a point of confusion and required code changes to query both sources correctly.
 
 **All files of reference**
--   **/app/frontend/src/components/drawers/FiscalDataDrawer.js**: Component with the user-reported bug.
--   **/app/backend/routers/business_days.py**: Core backend logic for the Business Date feature.
--   **/app/backend/routers/billing.py**: Where payment processing is blocked if a business day is not open.
--   **/app/frontend/src/pages/PaymentScreen.js**: Integrates the  and the business day check.
--   **/app/frontend/src/pages/settings/UserEdit.jsx**: Where PIN visibility rules were implemented.
--   **/app/frontend/src/pages/Reports.jsx**: Where the business day filter was added.
--   **/app/frontend/src/components/BusinessDayManager.jsx**: The main UI for managing business days.
+-   : The core backend file, modified for print fixes, shift validation, and terminal management.
+-   : Contains the critical logic for blocking cashiers without an open shift.
+-   : Contains the UI for opening/closing shifts, selecting terminals, and counting cash.
+-   : The new UI for managing terminals (CRUD).
+-   : File for the fiscal data capture UI, now full-screen on mobile.
+-   : Contains the fix for the IndexedDB crash.
 
 **Areas that need refactoring**:
--   None at the moment. The focus is on the critical bug.
+-   The multiple, partially overlapping printing endpoints in  (, , etc.) could be consolidated into a single, unified printing service to avoid future bugs.
 
 **key api endpoints**
--   : Opens a new business day.
--   : Closes the current business day.
--   : Gets the status of the current business day.
--   : Generates the Z report for the current open day.
--   : Searches for a customer by RNC.
+-   : Lists all terminals and their current usage status (fetches from both MongoDB and Supabase).
+-   , , : CRUD endpoints for managing terminals.
+-   : Opens a new shift for a cashier.
+-   : Closes a shift. **(Logic to block on open tables was added here).**
+-   : New endpoint to get open bills for a specific user.
+-   : Checks if the logged-in user has an active shift.
 
 **Critical Info for New Agent**
 -   **Respond in Spanish.**
--   **P0 Priority:** Your first and only task is to fix the bug reported by the user in the  component. The user cannot proceed with fiscal invoices, which is a critical workflow. Follow the debug checklist provided in the All Pending/In progress Issue list section.
--   **Business Day Context:** Remember that all financial transactions are now tied to a Jornada de Trabajo (Business Day). The payment screen will be blocked if a day is not manually opened via the  component.
+-   Your **highest priority (P0)** is to complete and thoroughly test the three-part security feature request (prevent terminal deletion, block shift closure, hide expected total). Follow the Next debug checklist for Issue 1.
+-   Be aware of the **hybrid database setup**: most data is in MongoDB, but user  are in Supabase. When dealing with terminals and shifts, you will likely need to query both databases. The endpoint  already does this.
 
 **documents and test reports created in this job**
--    (updated with all completed features and backlog)
--    (last successful test run for report sync)
--    (last successful test run for reports X/Z)
--    (last successful test run for business day logic)
+-    (Continuously updated with completed features and fixes).
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User Request:** Implement synchronization of reports with the new Business Date filter. **Status: Completed.**
-2.  **User Query:** Asked for clarification on the DGII 608 report. **Status: Answered.**
-3.  **User Query:** Asked for clarification on how B04 Notes of Credit are handled in reports 607 and 608. **Status: Answered.**
-4.  **User Decision:** Confirmed that the  field was correctly implemented for B04 notes. Put the 608 report on hold. **Status: Acknowledged.**
-5.  **User Request:** Prioritized implementing the audit rule: only Admins can see/edit PINs. **Status: Completed.**
-6.  **User Bug Report:** me da error al momento de darle a continuar (I get an error when I click continue) with a screenshot of the . **Status: In Progress.**
+1.  **User:** Asks for the second part of the terminal management feature (the CRUD UI). **Status: Completed.**
+2.  **User:** Proposes 3 new security/usability requirements: 1) Don't allow deleting terminals in use. 2) Don't let cashiers close shifts with open tables. 3) Hide expected cash during cash count for honesty. **Status: In Progress.**
+3.  **Agent:** Confirms understanding of the 3 requirements.
+4.  **User:** Agrees and asks the agent to proceed. **Status: In Progress.**
+5.  **Agent:** Begins implementation of the 3 features.
 
 **Project Health Check:**
--   **Broken:** The Continuar button in the  component is not working, blocking a critical user workflow.
--   **Mocked:** None.
+-   **Broken:** The operational integrity of the cashier workflow is partially compromised until the three pending security features are fully implemented and tested. For example, a user can still delete a terminal that is actively in use.
 
 **3rd Party Integrations**
 -   MongoDB
+-   Supabase (specifically for the  table)
 -   React
 -   FastAPI
+-   : An external, unofficial API used for RNC validation.
 
 **Testing status**
 -   **Testing agent used after significant changes**: YES
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
--   **Known regressions**: The  functionality appears to have regressed or has a bug.
+-   **Known regressions**: None.
 
 **Credentials to test flow:**
--   **PINs:** Admin (), Cashier (), Waitress ().
+-   **PINs:** Admin (), Luis (Cajero, ), Carlos (Mesero, ), María (Mesera, ).
 
 **What agent forgot to execute**
--   The agent was actively working on the user's latest request (the bug fix) and had not forgotten any tasks. The user has explicitly put the Report 608 task on hold.</analysis>
+-   The agent started implementing the three security/usability features requested by the user but did not fully complete or test any of them before the session ended. The implementation is left in a half-finished state.</analysis>
