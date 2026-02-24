@@ -197,6 +197,22 @@ export default function CashRegister() {
   };
 
   const handleOpenSession = async () => {
+    // Validar que haya un terminal seleccionado
+    if (!terminalName) {
+      toast.error('Selecciona una estación', {
+        description: 'Debes seleccionar una estación disponible'
+      });
+      return;
+    }
+    
+    // Validar que el terminal no esté en uso
+    if (terminalsInUse[terminalName]) {
+      toast.error('Estación no disponible', {
+        description: `${terminalName} ya está en uso por ${terminalsInUse[terminalName]}`
+      });
+      return;
+    }
+    
     try {
       const res = await posSessionsAPI.open({
         terminal_id: selectedTerminal || null,
