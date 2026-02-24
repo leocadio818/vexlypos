@@ -126,9 +126,33 @@ export default function CashRegister() {
       
       try {
         const termRes = await posSessionsAPI.terminals();
-        setTerminals(termRes.data?.length > 0 ? termRes.data : defaultTerminals);
+        const terminalsData = termRes.data?.length > 0 ? termRes.data : defaultTerminals;
+        setTerminals(terminalsData);
+        
+        // Obtener terminales en uso desde el endpoint
+        try {
+          const inUseRes = await posSessionsAPI.terminalsInUse();
+          setTerminalsInUse(inUseRes.data || {});
+        } catch {
+          // Si falla, intentar extraer de los datos de terminales
+          const inUse = {};
+          terminalsData.forEach(t => {
+            if (t.in_use) {
+              inUse[t.name] = t.in_use_by || 'En uso';
+            }
+          });
+          setTerminalsInUse(inUse);
+        }
+        
+        // Auto-seleccionar el primer terminal disponible
+        const availableTerminal = terminalsData.find(t => !t.in_use);
+        if (availableTerminal && !terminalName) {
+          setSelectedTerminal(availableTerminal.id);
+          setTerminalName(availableTerminal.name);
+        }
       } catch {
         setTerminals(defaultTerminals);
+        setTerminalsInUse({});
       }
       
     } catch (err) {
