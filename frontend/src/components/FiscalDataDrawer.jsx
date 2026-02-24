@@ -368,20 +368,20 @@ const FiscalDataDrawer = ({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-slate-900/95 backdrop-blur-xl border-t border-white/10 max-h-[90vh]">
-        <div className="mx-auto w-full max-w-lg flex flex-col max-h-[85vh]">
+      <DrawerContent className="bg-slate-900/95 backdrop-blur-xl border-t border-white/10">
+        <div className="mx-auto w-full max-w-lg flex flex-col" style={{ maxHeight: 'calc(100vh - 120px)' }}>
           <DrawerHeader className="text-center pb-2 flex-shrink-0">
-            <DrawerTitle className="text-xl font-oswald text-white flex items-center justify-center gap-2">
-              <Building2 className="text-cyan-400" size={24} />
+            <DrawerTitle className="text-lg font-oswald text-white flex items-center justify-center gap-2">
+              <Building2 className="text-cyan-400" size={20} />
               Datos Fiscales - {fiscalType}
             </DrawerTitle>
-            <DrawerDescription className="text-white/60">
+            <DrawerDescription className="text-white/60 text-sm">
               {getFiscalTypeName()} requiere RNC o Cédula del cliente
             </DrawerDescription>
           </DrawerHeader>
           
-          {/* Contenido scrolleable */}
-          <div className="px-6 pb-4 space-y-5 overflow-y-auto flex-1 min-h-0">
+          {/* Contenido scrolleable - altura calculada para dejar espacio a los botones */}
+          <div className="px-4 pb-2 space-y-3 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 280px)' }}>
             {/* Campo RNC/Cédula con validación */}
             <div className="space-y-2">
               <Label className="text-white/70 text-sm font-medium">
