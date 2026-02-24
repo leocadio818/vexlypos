@@ -230,6 +230,31 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
         if session["status"] != "open":
             raise HTTPException(status_code=400, detail="La sesion no esta abierta")
         
+        # ═══════════════════════════════════════════════════════════════════════════════
+        # VALIDACIÓN: El cajero no puede cerrar turno con mesas/cuentas abiertas
+        # ═══════════════════════════════════════════════════════════════════════════════
+        user_id = user["user_id"]
+        
+        # Buscar órdenes activas asignadas a este usuario (mesero o cajero)
+        open_orders_cursor = db.orders.find({
+            "status": {"$in": ["active", "pending"]},
+            "$or": [
+                {"waiter_id": user_id},
+                {"created_by": user_id}
+            ]
+        }, {"_id": 0, "table_number": 1, "id": 1})
+        open_orders = await open_orders_cursor.to_list(100)
+        
+        if open_orders:
+            table_numbers = list(set([o.get("table_number", "?") for o in open_orders]))
+            tables_str = ", ".join([f"Mesa {t}" for t in table_numbers[:5]])
+            if len(table_numbers) > 5:
+                tables_str += f" y {len(table_numbers) - 5} más"
+            raise HTTPException(
+                status_code=400, 
+                detail=f"No puedes cerrar turno. Tienes cuentas abiertas: {tables_str}. Cierra o transfiere estas cuentas primero."
+            )
+        
         # Calcular efectivo esperado
         expected_cash = (
             session.get("opening_amount", 0) + 
