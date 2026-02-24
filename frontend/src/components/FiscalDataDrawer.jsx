@@ -394,7 +394,7 @@ const FiscalDataDrawer = ({
                     value={fiscalId}
                     onChange={(e) => setFiscalId(e.target.value.replace(/[^0-9-]/g, ''))}
                     placeholder="Ej: 123456789 o 00112345678"
-                    className={`bg-white/5 border-2 text-white text-base h-12 pr-10 font-mono tracking-wider transition-all ${
+                    className={`bg-white/5 border-2 text-white text-lg h-14 pr-12 font-mono tracking-wider transition-all ${
                       fiscalId && validation.valid && !validation.warning
                         ? 'border-green-500/50 focus:border-green-400' 
                         : fiscalId && validation.valid && validation.warning
