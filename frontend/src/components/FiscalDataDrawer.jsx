@@ -383,8 +383,8 @@ const FiscalDataDrawer = ({
           {/* Contenido scrolleable - altura calculada para dejar espacio a los botones */}
           <div className="px-4 pb-2 space-y-3 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 280px)' }}>
             {/* Campo RNC/Cédula con validación */}
-            <div className="space-y-2">
-              <Label className="text-white/70 text-sm font-medium">
+            <div className="space-y-1">
+              <Label className="text-white/70 text-xs font-medium">
                 RNC o Cédula *
               </Label>
               <div className="flex gap-2">
@@ -393,7 +393,7 @@ const FiscalDataDrawer = ({
                     value={fiscalId}
                     onChange={(e) => setFiscalId(e.target.value.replace(/[^0-9-]/g, ''))}
                     placeholder="Ej: 123456789 o 00112345678"
-                    className={`bg-white/5 border-2 text-white text-lg h-14 pr-12 font-mono tracking-wider transition-all ${
+                    className={`bg-white/5 border-2 text-white text-base h-12 pr-10 font-mono tracking-wider transition-all ${
                       fiscalId && validation.valid && !validation.warning
                         ? 'border-green-500/50 focus:border-green-400' 
                         : fiscalId && validation.valid && validation.warning
@@ -408,34 +408,34 @@ const FiscalDataDrawer = ({
                   {/* Indicador de validación */}
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     {fiscalId && validation.valid && !validation.warning && (
-                      <Check className="text-green-400" size={20} />
+                      <Check className="text-green-400" size={18} />
                     )}
                     {fiscalId && validation.valid && validation.warning && (
-                      <AlertCircle className="text-amber-400" size={20} />
+                      <AlertCircle className="text-amber-400" size={18} />
                     )}
                     {fiscalId && !validation.valid && validation.cleaned.length >= 9 && (
-                      <AlertCircle className="text-red-400" size={20} />
+                      <AlertCircle className="text-red-400" size={18} />
                     )}
                   </div>
                 </div>
                 <Button
                   onClick={searchCustomer}
                   disabled={!validation.valid || searching}
-                  className="h-14 px-5 bg-cyan-600 hover:bg-cyan-500 text-white"
+                  className="h-12 px-4 bg-cyan-600 hover:bg-cyan-500 text-white"
                   data-testid="search-customer-btn"
                 >
                   {searching ? (
-                    <Loader2 className="animate-spin" size={20} />
+                    <Loader2 className="animate-spin" size={18} />
                   ) : (
-                    <Search size={20} />
+                    <Search size={18} />
                   )}
                 </Button>
               </div>
               
               {/* Mensaje de validación */}
-              <div className="h-6">
+              <div className="h-5">
                 {fiscalId && (
-                  <p className={`text-xs flex items-center gap-1 ${
+                  <p className={`text-[10px] flex items-center gap-1 ${
                     validation.valid && !validation.warning ? 'text-green-400' :
                     validation.valid && validation.warning ? 'text-amber-400' :
                     validation.type === 'Incompleto' ? 'text-white/50' : 'text-red-400'
