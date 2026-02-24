@@ -31,6 +31,60 @@ export default function Layout() {
   const [businessDayDialogOpen, setBusinessDayDialogOpen] = useState(false);
   const [businessDay, setBusinessDay] = useState(null);
   const [businessDayLoading, setBusinessDayLoading] = useState(true);
+  
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // CONTROL DE TURNO DE CAJA PARA CAJEROS
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const [cashierShift, setCashierShift] = useState(null);
+  const [cashierShiftLoading, setCashierShiftLoading] = useState(true);
+  const [showShiftRequiredDialog, setShowShiftRequiredDialog] = useState(false);
+  
+  // Verificar si el usuario es cajero y necesita turno abierto
+  const isCashierRole = user?.role === 'cashier';
+  
+  // Fetch cashier shift status
+  const fetchCashierShift = useCallback(async () => {
+    if (!isCashierRole) {
+      setCashierShiftLoading(false);
+      return;
+    }
+    
+    try {
+      const res = await api.get('/shifts/current');
+      const shift = res.data;
+      setCashierShift(shift?.id ? shift : null);
+      
+      // Si es cajero y no tiene turno abierto, mostrar diálogo obligatorio
+      if (!shift?.id) {
+        setShowShiftRequiredDialog(true);
+      }
+    } catch (err) {
+      console.error('Error checking cashier shift:', err);
+      setCashierShift(null);
+      if (isCashierRole) {
+        setShowShiftRequiredDialog(true);
+      }
+    } finally {
+      setCashierShiftLoading(false);
+    }
+  }, [isCashierRole]);
+  
+  useEffect(() => {
+    fetchCashierShift();
+  }, [fetchCashierShift]);
+  
+  // Redirigir a Caja cuando el cajero necesita abrir turno
+  const handleGoToCashRegister = () => {
+    setShowShiftRequiredDialog(false);
+    navigate('/cash-register');
+  };
+  
+  // Logout si el cajero no quiere abrir turno
+  const handleLogoutWithoutShift = () => {
+    setShowShiftRequiredDialog(false);
+    logout();
+    navigate('/login');
+  };
 
   // Fetch business day status
   const fetchBusinessDay = useCallback(async () => {
