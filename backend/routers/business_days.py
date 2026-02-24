@@ -1006,6 +1006,14 @@ async def generate_x_report(
     # ═══ 4. CÁLCULO DE CAJA ═══
     total_to_deliver = initial_fund + cash_total + deposits - withdrawals
     
+    # Obtener datos de cuadre desde MongoDB (si la sesión fue cerrada)
+    reconciliation = await db.session_reconciliations.find_one(
+        {"session_id": session_id}, {"_id": 0}
+    )
+    cash_declared = reconciliation.get("cash_declared", 0) if reconciliation else 0
+    expected_cash = reconciliation.get("expected_cash", 0) if reconciliation else 0
+    difference = reconciliation.get("cash_difference", 0) if reconciliation else 0
+    
     report = {
         "report_type": "X",
         "report_name": "REPORTE X - CIERRE DE TURNO",
