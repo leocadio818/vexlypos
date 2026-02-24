@@ -534,14 +534,33 @@ async def update_terminal(terminal_id: str, input: TerminalInput):
 
 @router.delete("/terminals/{terminal_id}")
 async def delete_terminal(terminal_id: str):
-    """Elimina un terminal"""
+    """Elimina un terminal (solo si no está en uso)"""
     try:
+        # Primero obtener el terminal para saber su nombre
+        terminal = await db.pos_terminals.find_one({"id": terminal_id}, {"_id": 0})
+        if not terminal:
+            raise HTTPException(status_code=404, detail="Terminal no encontrado")
+        
+        # Verificar si el terminal tiene un turno activo (en uso)
+        sb = get_supabase()
+        open_sessions = sb.table("pos_sessions").select("id, opened_by_name").eq("terminal_name", terminal["name"]).eq("status", "open").execute()
+        
+        if open_sessions.data and len(open_sessions.data) > 0:
+            session = open_sessions.data[0]
+            raise HTTPException(
+                status_code=400, 
+                detail=f"No se puede eliminar. Terminal en uso por {session.get('opened_by_name', 'un cajero')}"
+            )
+        
+        # Si no está en uso, eliminar
         result = await db.pos_terminals.delete_one({"id": terminal_id})
         
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Terminal no encontrado")
         
         return {"ok": True}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
