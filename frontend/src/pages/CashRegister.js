@@ -77,6 +77,7 @@ export default function CashRegister() {
   const [openTablesError, setOpenTablesError] = useState({ show: false, message: '' });
   const [selectedMovement, setSelectedMovement] = useState(null);
   const [reprintLoading, setReprintLoading] = useState(false);
+  const [movementSearch, setMovementSearch] = useState('');
   
   // Check URL params for B04 redirect
   useEffect(() => {
