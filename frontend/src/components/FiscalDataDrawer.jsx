@@ -589,7 +589,8 @@ const FiscalDataDrawer = ({
             </div>
           </div>
           
-          <DrawerFooter className="pt-2 pb-6 px-6">
+          {/* Footer fijo con botones */}
+          <DrawerFooter className="pt-2 pb-4 px-6 flex-shrink-0 border-t border-white/10 bg-slate-900/95">
             <div className="flex gap-3 w-full">
               <DrawerClose asChild>
                 <Button 
