@@ -522,13 +522,10 @@ async def calculate_day_stats(day_id: str) -> dict:
             total_other += amount
     
     # Anulaciones
-    voids = await db.bills.count_documents({
-        "business_date": business_date,
-        "status": "cancelled"
-    })
+    voids = await db.bills.count_documents(day_match_cancelled)
     
     void_amount_pipeline = [
-        {"$match": {"business_date": business_date, "status": "cancelled"}},
+        {"$match": day_match_cancelled},
         {"$group": {"_id": None, "total": {"$sum": "$total"}}}
     ]
     void_result = await db.bills.aggregate(void_amount_pipeline).to_list(1)
