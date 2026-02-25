@@ -1802,8 +1802,8 @@ export default function OrderScreen() {
               {filteredProducts.map(product => {
                 const effectiveCols = Math.min(gridSettings.productColumns, 3);
                 const heightClass = largeMode 
-                  ? (effectiveCols > 2 ? 'h-32' : 'h-36')
-                  : (effectiveCols > 2 ? 'h-28' : 'h-32');
+                  ? (effectiveCols > 2 ? 'h-44' : 'h-48')
+                  : (effectiveCols > 2 ? 'h-40' : 'h-44');
                 // Check modifiers from both old and new systems
                 const assignmentIds = (product.modifier_assignments || []).map(a => a.group_id);
                 const legacyIds = product.modifier_group_ids || [];
