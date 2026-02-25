@@ -1174,7 +1174,14 @@ export default function CashRegister() {
         type="X"
         sessionId={reprintSessionId}
         open={!!reprintSessionId}
-        onClose={() => setReprintSessionId(null)}
+        onClose={() => {
+          const shouldLogout = logoutAfterReport;
+          setReprintSessionId(null);
+          setLogoutAfterReport(false);
+          if (shouldLogout) {
+            logout();
+          }
+        }}
       />
     </div>
   );
