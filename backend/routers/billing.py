@@ -457,8 +457,16 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         update_fields["amount_received"] = input.amount_received
     await db.bills.update_one({"id": bill_id}, {"$set": update_fields})
 
-    # ─── ACTUALIZAR TOTALES DE LA JORNADA ───
-    await db.business_days.update_one(
+    # ─── MODO ENTRENAMIENTO: No afectar totales reales ───
+    is_training_bill = bill.get("training_mode", False) or user.get("training_mode", False)
+    
+    if is_training_bill:
+        # Marcar el bill como entrenamiento si no lo estaba
+        await db.bills.update_one({"id": bill_id}, {"$set": {"training_mode": True}})
+    
+    if not is_training_bill:
+        # ─── ACTUALIZAR TOTALES DE LA JORNADA (solo ventas reales) ───
+        await db.business_days.update_one(
         {"id": business_day["id"]},
         {"$inc": {
             "total_sales": total,
