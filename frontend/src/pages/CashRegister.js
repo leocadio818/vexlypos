@@ -398,6 +398,48 @@ export default function CashRegister() {
     }));
   };
 
+  // Cierre de Día
+  const handleCloseDay = async () => {
+    if (!closeDayPin) {
+      toast.error('Ingresa el PIN de autorización');
+      return;
+    }
+    setCloseDayLoading(true);
+    try {
+      const res = await businessDaysAPI.close({
+        authorizer_pin: closeDayPin,
+        closing_notes: closeDayNotes || '',
+        force_close: false
+      });
+      toast.success('Jornada cerrada exitosamente', {
+        description: res.data?.message || 'Cierre de día completado'
+      });
+      setCloseDayDialog(false);
+      setCloseDayPin('');
+      setCloseDayNotes('');
+      fetchData();
+    } catch (err) {
+      const detail = err.response?.data?.detail || 'Error al cerrar jornada';
+      toast.error('No se puede cerrar la jornada', {
+        description: detail,
+        duration: 8000
+      });
+    } finally {
+      setCloseDayLoading(false);
+    }
+  };
+
+  // Re-imprimir Reporte X de un turno cerrado
+  const handleReprintReport = async (sessionId) => {
+    try {
+      toast.info('Generando reporte...');
+      setReprintSessionId(sessionId);
+      // El reporte se abre en el componente ReportXZ
+    } catch (err) {
+      toast.error('Error generando reporte');
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
