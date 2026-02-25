@@ -186,7 +186,7 @@ export default function UsersTab() {
                     user.role === 'waiter' ? 'bg-blue-500/10 text-blue-500' :
                     user.role === 'cashier' ? 'bg-green-500/10 text-green-500' :
                     user.role === 'kitchen' ? 'bg-orange-500/10 text-orange-500' : ''
-                  }`}>{user.role}</Badge>
+                  }`}>{ROLE_LABELS[user.role] || user.role}</Badge>
                   {user.training_mode && <Badge variant="outline" className="ml-1 text-[9px] border-yellow-500 text-yellow-400">Entrenamiento</Badge>}
                 </div>
               </div>
