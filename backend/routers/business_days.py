@@ -649,12 +649,14 @@ async def generate_z_report_internal(
     
     # Construir filtro de facturas robusto para el día
     # Intentar por business_date primero, luego por business_day_id
-    date_count = await db.bills.count_documents({"business_date": business_date, "status": "paid"})
+    # EXCLUIR facturas de entrenamiento
+    training_exclude = {"training_mode": {"$ne": True}}
+    date_count = await db.bills.count_documents({"business_date": business_date, "status": "paid", **training_exclude})
     if date_count > 0:
-        day_filter = {"business_date": business_date, "status": "paid"}
+        day_filter = {"business_date": business_date, "status": "paid", **training_exclude}
     else:
         # Fallback: buscar por business_day_id
-        day_id_count = await db.bills.count_documents({"business_day_id": day_id, "status": "paid"})
+        day_id_count = await db.bills.count_documents({"business_day_id": day_id, "status": "paid", **training_exclude})
         if day_id_count > 0:
             day_filter = {"business_day_id": day_id, "status": "paid"}
             print(f"[ReportZ] Fallback: usando business_day_id en lugar de business_date ({day_id_count} bills)")
