@@ -71,7 +71,7 @@ export default function App() {
       <ThemeProvider>
         <BrowserRouter>
           <AppRoutes />
-          <Toaster position="top-right" richColors duration={500} />
+          <Toaster position="top-right" richColors duration={4000} visibleToasts={1} />
         </BrowserRouter>
       </ThemeProvider>
     </AuthProvider>
