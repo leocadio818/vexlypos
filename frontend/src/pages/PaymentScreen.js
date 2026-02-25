@@ -587,6 +587,21 @@ export default function PaymentScreen() {
       toast.error('No se puede procesar un pago con valor $0.00. La DGII no permite asignar NCF a facturas sin valor.');
       return;
     }
+    
+    // Validar que el usuario tenga turno abierto para cobrar
+    try {
+      const shiftCheck = await posSessionsAPI.check();
+      if (!shiftCheck.data?.has_open_session) {
+        toast.error('Debes abrir un turno de caja', {
+          description: 'Ve a Caja / Turnos para abrir tu turno antes de cobrar.',
+          duration: 6000
+        });
+        return;
+      }
+    } catch {
+      // Si falla la verificación, permitir continuar para no bloquear ventas
+    }
+    
     setProcessing(true);
     try {
       const entries = Object.entries(payAmounts).filter(([_, v]) => parseFloat(v) > 0);
