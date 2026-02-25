@@ -2855,6 +2855,12 @@ def build_comanda(data):
     channel = data.get("channel_name", "COMANDA")
     trans_num = data.get("transaction_number") or data.get("internal_transaction_number")
     
+    # ─── MODO ENTRENAMIENTO ───
+    if data.get("training_mode"):
+        commands.append({{"type": "text", "text": "*** ENTRENAMIENTO ***", "align": "center", "bold": True, "size": 2}})
+        commands.append({{"type": "text", "text": "NO ES VENTA REAL", "align": "center", "bold": True}})
+        commands.append({{"type": "divider"}})
+    
     # Encabezado con ORDEN #XXXX arriba en negrita
     commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True}})
     if trans_num:
