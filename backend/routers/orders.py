@@ -173,11 +173,16 @@ async def create_order(input: CreateOrderInput, user=Depends(get_current_user)):
     transaction_number = await get_next_transaction_number()
     
     order_id = gen_id()
+    
+    # ─── MODO ENTRENAMIENTO ───
+    is_training = user.get("training_mode", False)
+    
     order = {
         "id": order_id, "table_id": input.table_id, "table_number": table["number"],
         "waiter_id": user["user_id"], "waiter_name": user["name"],
         "transaction_number": transaction_number,
         "status": "active", "items": items,
+        "training_mode": is_training,
         "created_at": now_iso(), "updated_at": now_iso()
     }
     await db.orders.insert_one(order)
