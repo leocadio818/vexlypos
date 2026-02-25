@@ -980,6 +980,7 @@ async def generate_x_report(
     payment_breakdown = []
     cash_total = 0
     card_total = 0
+    transfer_total = 0
     
     for p in payment_result:
         method_name = p.get("_id") or "Otro"
@@ -993,8 +994,66 @@ async def generate_x_report(
         name_lower = (method_name or "").lower()
         if "efectivo" in name_lower or "cash" in name_lower:
             cash_total += amount
-        elif "tarjeta" in name_lower or "card" in name_lower:
+        elif "tarjeta" in name_lower or "card" in name_lower or "visa" in name_lower or "master" in name_lower:
             card_total += amount
+        elif "transferencia" in name_lower or "transfer" in name_lower:
+            transfer_total += amount
+    
+    # ═══ 2b. VENTAS POR CATEGORÍA ═══
+    category_pipeline = [
+        {"$match": {
+            **time_filter,
+            "status": "paid",
+            "paid_by_id": session.get("opened_by_id")
+        }},
+        {"$unwind": "$items"},
+        {"$group": {
+            "_id": "$items.category_name",
+            "quantity": {"$sum": "$items.quantity"},
+            "subtotal": {"$sum": {"$multiply": ["$items.price", "$items.quantity"]}}
+        }},
+        {"$sort": {"subtotal": -1}}
+    ]
+    category_result = await db.bills.aggregate(category_pipeline).to_list(50)
+    sales_by_category = [
+        {
+            "category": c.get("_id") or "Sin categoría",
+            "quantity": c.get("quantity", 0),
+            "subtotal": round(c.get("subtotal", 0), 2)
+        }
+        for c in category_result
+    ]
+    
+    # ═══ 2c. ANULACIONES DEL TURNO ═══
+    void_filter = {"created_at": {"$gte": opened_at}}
+    if closed_at:
+        void_filter["created_at"]["$lte"] = closed_at
+    
+    voids_pipeline = [
+        {"$match": {
+            **void_filter,
+            "status": "cancelled",
+            "$or": [
+                {"paid_by_id": session.get("opened_by_id")},
+                {"created_by": session.get("opened_by_id")}
+            ]
+        }},
+        {"$group": {
+            "_id": {"$ifNull": ["$cancellation_reason", "No especificada"]},
+            "count": {"$sum": 1},
+            "total": {"$sum": "$total"}
+        }}
+    ]
+    voids_result = await db.bills.aggregate(voids_pipeline).to_list(20)
+    voids_list = [
+        {
+            "reason": v.get("_id", "No especificada"),
+            "count": v.get("count", 0),
+            "total": round(v.get("total", 0), 2)
+        }
+        for v in voids_result
+    ]
+    voids_total = sum(v["total"] for v in voids_list)
     
     # ═══ 3. MOVIMIENTOS DE LA SESIÓN ═══
     initial_fund = session.get("initial_cash", 0) or 0
