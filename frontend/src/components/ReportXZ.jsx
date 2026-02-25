@@ -179,114 +179,114 @@ export default function ReportXZ({
                 <p className="text-white/60 text-xs">{report.session?.ref}</p>
               </div>
 
-              <Separator />
+              <RptSep />
 
               <div className="space-y-1 mb-1">
-                <Row label="Cajero:" value={report.session?.opened_by} />
-                <Row label="Terminal:" value={report.session?.terminal || '-'} />
-                <Row label="Fecha:" value={report.business_date} />
-                <Row label="Apertura:" value={fmtDate(report.session?.opened_at)} />
-                {report.session?.closed_at && <Row label="Cierre:" value={fmtDate(report.session?.closed_at)} />}
+                <RptRow label="Cajero:" value={report.session?.opened_by} />
+                <RptRow label="Terminal:" value={report.session?.terminal || '-'} />
+                <RptRow label="Fecha:" value={report.business_date} />
+                <RptRow label="Apertura:" value={fmtDate(report.session?.opened_at)} />
+                {report.session?.closed_at && <RptRow label="Cierre:" value={fmtDate(report.session?.closed_at)} />}
               </div>
 
-              <Separator />
+              <RptSep />
 
               {/* ═══ PRODUCTOS (si hay) ═══ */}
               {isDetailed && report.sales_by_category?.length > 0 && (
                 <>
-                  <SectionTitle>PRODUCTOS</SectionTitle>
+                  <RptTitle>PRODUCTOS</RptTitle>
                   {report.sales_by_category.map((c, i) => (
-                    <Row key={i} label={`${c.category} (${c.quantity})`} value={formatMoney(c.subtotal)} />
+                    <RptRow key={i} label={`${c.category} (${c.quantity})`} value={formatMoney(c.subtotal)} />
                   ))}
-                  <Row label="Total Productos:" value={formatMoney(report.sales_by_category.reduce((s, c) => s + c.subtotal, 0))} bold highlight />
-                  <Separator />
+                  <RptRow label="Total Productos:" value={formatMoney(report.sales_by_category.reduce((s, c) => s + c.subtotal, 0))} bold highlight />
+                  <RptSep />
                 </>
               )}
 
               {/* ═══ DEVOLUCIONES (si hay) ═══ */}
               {report.voids?.count > 0 && (
                 <>
-                  <SectionTitle>DEVOLUCIONES</SectionTitle>
+                  <RptTitle>DEVOLUCIONES</RptTitle>
                   {isDetailed ? (
                     report.voids.list.map((v, i) => (
-                      <Row key={i} label={`${v.reason} (${v.count})`} value={`-${formatMoney(v.total)}`} className="text-red-400" />
+                      <RptRow key={i} label={`${v.reason} (${v.count})`} value={`-${formatMoney(v.total)}`} className="text-red-400" />
                     ))
                   ) : (
-                    <Row label={`Total (${report.voids.count})`} value={`-${formatMoney(report.voids.total)}`} className="text-red-400" />
+                    <RptRow label={`Total (${report.voids.count})`} value={`-${formatMoney(report.voids.total)}`} className="text-red-400" />
                   )}
-                  <Separator />
+                  <RptSep />
                 </>
               )}
 
               {/* ═══ VENTAS ═══ */}
               {isDetailed ? (
                 <>
-                  <SectionTitle>VENTAS</SectionTitle>
-                  <Row label="Subtotal:" value={formatMoney(report.sales_summary?.subtotal)} />
-                  <Row label="ITBIS:" value={formatMoney(report.sales_summary?.itbis)} />
-                  <Row label="Propina Legal:" value={formatMoney(report.sales_summary?.propina)} />
-                  <Row label="TOTAL:" value={formatMoney(report.sales_summary?.total)} bold highlight />
-                  <Row label="Facturas:" value={report.sales_summary?.invoices_count || 0} />
+                  <RptTitle>VENTAS</RptTitle>
+                  <RptRow label="Subtotal:" value={formatMoney(report.sales_summary?.subtotal)} />
+                  <RptRow label="ITBIS:" value={formatMoney(report.sales_summary?.itbis)} />
+                  <RptRow label="Propina Legal:" value={formatMoney(report.sales_summary?.propina)} />
+                  <RptRow label="TOTAL:" value={formatMoney(report.sales_summary?.total)} bold highlight />
+                  <RptRow label="Facturas:" value={report.sales_summary?.invoices_count || 0} />
                   {report.sales_summary?.avg_per_invoice > 0 && (
-                    <Row label="Promedio/Factura:" value={formatMoney(report.sales_summary?.avg_per_invoice)} />
+                    <RptRow label="Promedio/Factura:" value={formatMoney(report.sales_summary?.avg_per_invoice)} />
                   )}
                 </>
               ) : (
                 <>
-                  <Row label="Facturas:" value={report.sales_summary?.invoices_count || 0} />
-                  <Row label="Total Ventas:" value={formatMoney(report.sales_summary?.total)} bold highlight />
+                  <RptRow label="Facturas:" value={report.sales_summary?.invoices_count || 0} />
+                  <RptRow label="Total Ventas:" value={formatMoney(report.sales_summary?.total)} bold highlight />
                 </>
               )}
 
-              <Separator />
+              <RptSep />
 
               {/* ═══ FORMAS DE PAGO ═══ */}
-              <SectionTitle>FORMAS DE PAGO</SectionTitle>
+              <RptTitle>FORMAS DE PAGO</RptTitle>
               {isDetailed && report.payment_breakdown?.length > 0 ? (
                 report.payment_breakdown.map((p, i) => (
-                  <Row key={i} label={`${p.method} (${p.count}):`} value={formatMoney(p.amount)} />
+                  <RptRow key={i} label={`${p.method} (${p.count}):`} value={formatMoney(p.amount)} />
                 ))
               ) : (
                 <>
-                  <Row label="Efectivo:" value={formatMoney(report.payment_totals?.efectivo)} />
-                  <Row label="Tarjeta:" value={formatMoney(report.payment_totals?.tarjeta)} />
-                  <Row label="Transferencia:" value={formatMoney(report.payment_totals?.transferencia)} />
+                  <RptRow label="Efectivo:" value={formatMoney(report.payment_totals?.efectivo)} />
+                  <RptRow label="Tarjeta:" value={formatMoney(report.payment_totals?.tarjeta)} />
+                  <RptRow label="Transferencia:" value={formatMoney(report.payment_totals?.transferencia)} />
                 </>
               )}
 
-              <Separator />
+              <RptSep />
 
               {/* ═══ FLUJO DE CAJA (solo detallado) ═══ */}
               {isDetailed && (
                 <>
-                  <SectionTitle>FLUJO DE CAJA</SectionTitle>
-                  <Row label="Fondo Inicial:" value={formatMoney(report.cash_reconciliation?.initial_fund)} />
-                  <Row label="+ Ventas Efectivo:" value={formatMoney(report.cash_reconciliation?.cash_sales)} />
-                  <Row label="+ Depositos:" value={formatMoney(report.cash_reconciliation?.deposits)} />
-                  <Row label="- Retiros:" value={`-${formatMoney(report.cash_reconciliation?.withdrawals)}`} />
-                  <Row label="TOTAL A ENTREGAR:" value={formatMoney(report.cash_reconciliation?.total_to_deliver)} bold highlight />
-                  <Separator />
+                  <RptTitle>FLUJO DE CAJA</RptTitle>
+                  <RptRow label="Fondo Inicial:" value={formatMoney(report.cash_reconciliation?.initial_fund)} />
+                  <RptRow label="+ Ventas Efectivo:" value={formatMoney(report.cash_reconciliation?.cash_sales)} />
+                  <RptRow label="+ Depositos:" value={formatMoney(report.cash_reconciliation?.deposits)} />
+                  <RptRow label="- Retiros:" value={`-${formatMoney(report.cash_reconciliation?.withdrawals)}`} />
+                  <RptRow label="TOTAL A ENTREGAR:" value={formatMoney(report.cash_reconciliation?.total_to_deliver)} bold highlight />
+                  <RptSep />
                 </>
               )}
 
               {/* ═══ DECLARACION ═══ */}
               {(report.cash_reconciliation?.cash_declared > 0 || report.cash_reconciliation?.expected_cash > 0) && (
                 <>
-                  <SectionTitle>DECLARACION</SectionTitle>
-                  <Row label="Esperado:" value={formatMoney(report.cash_reconciliation?.expected_cash)} />
-                  <Row label="Declarado:" value={formatMoney(report.cash_reconciliation?.cash_declared)} />
-                  <Row 
+                  <RptTitle>DECLARACION</RptTitle>
+                  <RptRow label="Esperado:" value={formatMoney(report.cash_reconciliation?.expected_cash)} />
+                  <RptRow label="Declarado:" value={formatMoney(report.cash_reconciliation?.cash_declared)} />
+                  <RptRow 
                     label="Diferencia:" 
                     value={`${report.cash_reconciliation?.difference > 0 ? '+' : ''}${formatMoney(report.cash_reconciliation?.difference)}`}
                     bold
                     className={Math.abs(report.cash_reconciliation?.difference || 0) < 1 ? 'text-green-400' : report.cash_reconciliation?.difference > 0 ? 'text-green-400' : 'text-red-400'}
                   />
-                  <Separator />
+                  <RptSep />
                 </>
               )}
 
               {/* ═══ TOTAL GENERAL ═══ */}
-              <Row label="TOTAL GENERAL:" value={formatMoney(report.sales_summary?.total)} bold highlight />
+              <RptRow label="TOTAL GENERAL:" value={formatMoney(report.sales_summary?.total)} bold highlight />
 
               <p className="text-center text-white/30 text-xs mt-4">--- Fin de Reporte ---</p>
 
