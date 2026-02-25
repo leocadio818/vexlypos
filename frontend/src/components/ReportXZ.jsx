@@ -6,6 +6,25 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
+function RptRow({ label, value, bold, highlight, className = '' }) {
+  return (
+    <div className={`flex justify-between py-[2px] ${className}`}>
+      <span className={`font-bold ${bold ? 'text-white' : 'text-white/80'}`}>{label}</span>
+      <span className={`font-oswald font-bold ${highlight ? 'text-cyan-400 text-base' : 'text-white'}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function RptSep() {
+  return <div className="border-t border-dashed border-white/30 my-3" />;
+}
+
+function RptTitle({ children }) {
+  return <p className="font-oswald font-bold text-white text-sm tracking-wide mb-2">{children}</p>;
+}
+
 export default function ReportXZ({ 
   type = "Z", 
   dayId, 
