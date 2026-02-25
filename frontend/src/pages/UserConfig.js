@@ -184,7 +184,8 @@ export default function UserConfig() {
   const isNew = userId === 'new';
 
   const isAdmin = currentUser?.role === 'admin';
-  const canEditPin = isAdmin || (!isNew && currentUser?.id === userId) || isNew;
+  const isSystemAdmin = (currentUser?.role_level || 0) >= 100;
+  const canEditPin = isSystemAdmin || isAdmin || (!isNew && currentUser?.id === userId) || isNew;
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
