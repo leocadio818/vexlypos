@@ -844,6 +844,7 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
             "waiter_name": order.get("waiter_name", ""),
             "order_number": order.get("id", "")[:8],
             "transaction_number": transaction_number,
+            "training_mode": order.get("training_mode", False),
             "date": now_iso()[:19].replace("T", " "),
             "items_count": len(items),
             "items": [
