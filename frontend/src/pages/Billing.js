@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ordersAPI, billsAPI } from '@/lib/api';
+import { ordersAPI, billsAPI, posSessionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { ArrowLeft, Receipt, CreditCard, Banknote, SplitSquareHorizontal, Check, Tag, Plus, Printer } from 'lucide-react';
 import { toast } from 'sonner';
