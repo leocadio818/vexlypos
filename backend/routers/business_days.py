@@ -938,25 +938,81 @@ async def generate_x_report(
     if not session:
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
     
-    # Obtener jornada activa para contexto
-    business_day = await get_current_business_day()
-    business_date = business_day.get("business_date") if business_day else session.get("business_date")
-    
-    opened_at = session.get("opened_at")
+    # ─── Determinar business_date correctamente ───
+    # No depender de get_current_business_day() que puede ser otro día
+    opened_at = session.get("opened_at", "")
     closed_at = session.get("closed_at")
+    user_id = session.get("opened_by")  # User ID del cajero
     
-    # Filtrar por rango de tiempo de la sesión
-    time_filter = {"paid_at": {"$gte": opened_at}}
-    if closed_at:
-        time_filter["paid_at"]["$lte"] = closed_at
+    # Buscar la jornada que estaba activa durante esta sesión
+    business_date = None
+    if opened_at:
+        session_day = await db.business_days.find_one(
+            {"opened_at": {"$lte": opened_at}, "$or": [
+                {"closed_at": {"$gte": opened_at}},
+                {"closed_at": None},
+                {"status": "open"}
+            ]},
+            {"_id": 0, "business_date": 1}
+        )
+        if session_day:
+            business_date = session_day.get("business_date")
+    
+    # Fallback: jornada actual o fecha de la sesión
+    if not business_date:
+        current_day = await get_current_business_day()
+        if current_day:
+            business_date = current_day.get("business_date")
+        else:
+            business_date = opened_at[:10] if opened_at else today_str()
+    
+    # ─── Construir filtro de facturas robusto ───
+    # Usar business_date como filtro principal (más confiable que timestamps)
+    # + user filter + time range como filtro secundario
+    user_match = {"$or": [
+        {"paid_by_id": user_id},
+        {"cashier_id": user_id}
+    ]}
+    
+    # Filtro primario: business_date + usuario + time range
+    base_filter = {"status": "paid", **user_match}
+    
+    # Agregar business_date si está disponible
+    if business_date:
+        base_filter["business_date"] = business_date
+    
+    # Agregar time range filter
+    if opened_at:
+        base_filter["paid_at"] = {"$gte": opened_at}
+        if closed_at:
+            base_filter["paid_at"]["$lte"] = closed_at
+    
+    # Verificar si el filtro completo retorna resultados
+    match_count = await db.bills.count_documents({k: v for k, v in base_filter.items() if k != "_id"})
+    
+    # Si no hay resultados, intentar sin time range (solo business_date + user)
+    if match_count == 0 and business_date:
+        fallback_filter = {"status": "paid", "business_date": business_date, **user_match}
+        fallback_count = await db.bills.count_documents({k: v for k, v in fallback_filter.items() if k != "_id"})
+        if fallback_count > 0:
+            base_filter = fallback_filter
+            print(f"[ReportX] Fallback: usando business_date sin time_range ({fallback_count} bills)")
+    
+    # Si aún no hay resultados, intentar solo con time range (sin user filter)
+    if match_count == 0 and opened_at:
+        time_only = {"status": "paid", "paid_at": {"$gte": opened_at}}
+        if closed_at:
+            time_only["paid_at"]["$lte"] = closed_at
+        time_count = await db.bills.count_documents(time_only)
+        if time_count > 0:
+            base_filter = time_only
+            print(f"[ReportX] Fallback: usando solo time_range ({time_count} bills)")
+    
+    print(f"[ReportX] session_id={session_id}, user_id={user_id}, business_date={business_date}, opened_at={opened_at}, closed_at={closed_at}")
     
     # ═══ 1. VENTAS DE LA SESIÓN ═══
     sales_pipeline = [
-        {"$match": {
-            **time_filter,
-            "status": "paid",
-            "paid_by_id": session.get("opened_by_id") or session.get("opened_by")
-        }},
+        {"$match": base_filter},
         {"$group": {
             "_id": None,
             "subtotal": {"$sum": "$subtotal"},
@@ -973,11 +1029,7 @@ async def generate_x_report(
     
     # ═══ 2. DESGLOSE POR FORMA DE PAGO ═══
     payment_pipeline = [
-        {"$match": {
-            **time_filter,
-            "status": "paid",
-            "paid_by_id": session.get("opened_by_id") or session.get("opened_by")
-        }},
+        {"$match": base_filter},
         {"$unwind": {"path": "$payments", "preserveNullAndEmptyArrays": True}},
         {"$group": {
             "_id": {"$ifNull": ["$payments.payment_method_name", "$payment_method_name"]},
@@ -1012,11 +1064,7 @@ async def generate_x_report(
     
     # ═══ 2b. VENTAS POR CATEGORÍA ═══
     category_pipeline = [
-        {"$match": {
-            **time_filter,
-            "status": "paid",
-            "paid_by_id": session.get("opened_by_id") or session.get("opened_by")
-        }},
+        {"$match": base_filter},
         {"$unwind": "$items"},
         {"$group": {
             "_id": "$items.category_name",
@@ -1036,19 +1084,21 @@ async def generate_x_report(
     ]
     
     # ═══ 2c. ANULACIONES DEL TURNO ═══
-    void_filter = {"created_at": {"$gte": opened_at}}
-    if closed_at:
-        void_filter["created_at"]["$lte"] = closed_at
+    void_user_match = {"$or": [
+        {"paid_by_id": user_id},
+        {"cashier_id": user_id},
+        {"created_by": user_id}
+    ]}
+    void_filter = {"status": "cancelled", **void_user_match}
+    if business_date:
+        void_filter["business_date"] = business_date
+    elif opened_at:
+        void_filter["created_at"] = {"$gte": opened_at}
+        if closed_at:
+            void_filter["created_at"]["$lte"] = closed_at
     
     voids_pipeline = [
-        {"$match": {
-            **void_filter,
-            "status": "cancelled",
-            "$or": [
-                {"paid_by_id": session.get("opened_by_id") or session.get("opened_by")},
-                {"created_by": session.get("opened_by_id") or session.get("opened_by")}
-            ]
-        }},
+        {"$match": void_filter},
         {"$group": {
             "_id": {"$ifNull": ["$cancellation_reason", "No especificada"]},
             "count": {"$sum": 1},
