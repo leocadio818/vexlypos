@@ -163,7 +163,6 @@ async def open_session(input: OpenSessionInput, user=Depends(get_current_user)):
             "ref": session_ref,
             "terminal_id": None,
             "terminal_name": input.terminal_name,
-            "terminal_code": input.terminal_id or None,
             "opening_amount": input.opening_amount,
             "opened_at": now,
             "opened_by": user["user_id"],
