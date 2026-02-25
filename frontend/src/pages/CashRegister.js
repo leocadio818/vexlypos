@@ -37,7 +37,7 @@ const COLORES_DENOMINACION = {
 };
 
 export default function CashRegister() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [currentSession, setCurrentSession] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [movements, setMovements] = useState([]);
