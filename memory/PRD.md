@@ -727,6 +727,24 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 
 ## Bugs Corregidos
 
+### Reportes X/Z mostraban $0.00 en ventas (2026-02-25) [P0]
+**Bug:** Los reportes X (cierre de turno) y Z (cierre de día) mostraban $0.00 en todas las cifras de ventas a pesar de tener facturas pagadas.
+
+**Causas identificadas:**
+1. Facturas antiguas (166 de 193) no tenían los campos `business_date` ni `paid_by_id` (solo `cashier_id`)
+2. Reporte X buscaba `opened_by_id` en sesiones Supabase (el campo correcto es `opened_by`)
+3. No existía lógica de fallback para facturas sin los nuevos campos
+4. `business_date` se obtenía de la jornada ACTUAL en vez de la jornada de la sesión
+5. `calculate_day_stats` usaba filtros rígidos sin alternativas
+
+**Solución en `/app/backend/routers/business_days.py`:**
+- Filtrado multi-estrategia con fallbacks: business_date → business_day_id → rango de tiempo
+- Matching de usuario robusto: `$or` con `paid_by_id` Y `cashier_id`
+- Obtención correcta de `business_date` desde la jornada activa durante la sesión
+- Mismo patrón aplicado a `generate_x_report`, `generate_z_report_internal` y `calculate_day_stats`
+
+**Verificación:** Testing agent confirmó 100% (6/6 tests pasados). Datos reales: X Report Admin $1,696.40, X Report Luis $782.76, Z Report $11,849.09 de 25 facturas.
+
 ### FiscalDataDrawer - Error al crear cliente nuevo (2026-02-23)
 **Bug:** Al hacer clic en "Continuar" en el drawer de datos fiscales (B01, B14, B15) con un cliente nuevo, se producía un error HTTP 422.
 
