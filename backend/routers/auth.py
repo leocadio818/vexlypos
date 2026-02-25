@@ -398,6 +398,77 @@ async def check_tax_override_permission(user=Depends(get_current_user)):
     }
 
 
+# ─── TRAINING STATS ───
+
+@router.get("/users/{user_id}/training-stats")
+async def get_training_stats(user_id: str, user=Depends(get_current_user)):
+    """Estadísticas de entrenamiento de un empleado"""
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "training_mode": 1})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    # Orders
+    orders_pipeline = [
+        {"$match": {"training_mode": True, "$or": [{"waiter_id": user_id}, {"cashier_id": user_id}]}},
+        {"$group": {
+            "_id": None,
+            "total_orders": {"$sum": 1},
+            "total_items": {"$sum": {"$size": {"$ifNull": ["$items", []]}}},
+            "first_activity": {"$min": "$created_at"},
+            "last_activity": {"$max": "$created_at"},
+        }}
+    ]
+    orders_result = await db.orders.aggregate(orders_pipeline).to_list(1)
+    orders_stats = orders_result[0] if orders_result else {}
+
+    # Bills
+    bills_pipeline = [
+        {"$match": {"training_mode": True, "$or": [{"cashier_id": user_id}, {"paid_by_id": user_id}]}},
+        {"$group": {
+            "_id": None,
+            "total_bills": {"$sum": 1},
+            "total_amount": {"$sum": "$total"},
+            "paid_count": {"$sum": {"$cond": [{"$eq": ["$status", "paid"]}, 1, 0]}},
+            "last_bill": {"$max": "$paid_at"},
+        }}
+    ]
+    bills_result = await db.bills.aggregate(bills_pipeline).to_list(1)
+    bills_stats = bills_result[0] if bills_result else {}
+
+    # Recent training activity (last 10 bills)
+    recent_bills = await db.bills.find(
+        {"training_mode": True, "$or": [{"cashier_id": user_id}, {"paid_by_id": user_id}]},
+        {"_id": 0, "id": 1, "total": 1, "status": 1, "created_at": 1, "paid_at": 1, "items": 1}
+    ).sort("created_at", -1).limit(10).to_list(10)
+
+    recent = []
+    for b in recent_bills:
+        recent.append({
+            "id": b["id"],
+            "total": b.get("total", 0),
+            "status": b.get("status", "?"),
+            "date": b.get("paid_at") or b.get("created_at", ""),
+            "items_count": len(b.get("items", [])),
+        })
+
+    last_activity = orders_stats.get("last_activity") or bills_stats.get("last_bill")
+    first_activity = orders_stats.get("first_activity")
+
+    return {
+        "user_id": user_id,
+        "user_name": target_user.get("name", ""),
+        "training_active": target_user.get("training_mode", False),
+        "orders_count": orders_stats.get("total_orders", 0),
+        "items_practiced": orders_stats.get("total_items", 0),
+        "bills_count": bills_stats.get("total_bills", 0),
+        "bills_paid": bills_stats.get("paid_count", 0),
+        "total_amount_practiced": round(bills_stats.get("total_amount", 0), 2),
+        "first_activity": first_activity,
+        "last_activity": last_activity,
+        "recent_activity": recent,
+    }
+
+
 # ─── CUSTOM ROLES ───
 
 @router.get("/roles")
