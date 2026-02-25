@@ -533,7 +533,7 @@ async def calculate_day_stats(day_id: str) -> dict:
     
     # Notas de crédito B04
     b04_pipeline = [
-        {"$match": {"business_date": business_date}},
+        {"$match": day_match_base},
         {"$group": {
             "_id": None,
             "count": {"$sum": 1},
