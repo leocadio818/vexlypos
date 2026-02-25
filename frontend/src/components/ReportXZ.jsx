@@ -19,6 +19,15 @@ export default function ReportXZ({
   const [error, setError] = useState(null);
   const printRef = useRef(null);
 
+  const Row = ({ label, value, bold, highlight, className = '' }) => (
+    <div className={`flex justify-between py-[2px] ${className}`}>
+      <span className={`${bold ? 'font-bold text-white' : 'text-white/60'}`}>{label}</span>
+      <span className={`font-oswald ${bold ? 'font-bold' : ''} ${highlight ? 'text-cyan-400 text-base' : 'text-white'}`}>
+        {value}
+      </span>
+    </div>
+  );
+
   const fetchReport = useCallback(async () => {
     setLoading(true);
     setError(null);
