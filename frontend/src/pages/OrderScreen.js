@@ -1072,6 +1072,18 @@ export default function OrderScreen() {
   // Direct billing - create bill and go to payment
   const handleDirectBilling = async () => {
     try {
+      // Validar turno abierto antes de cobrar
+      try {
+        const shiftCheck = await posSessionsAPI.check();
+        if (!shiftCheck.data?.has_open_session) {
+          toast.error('Debes abrir un turno de caja', {
+            description: 'Ve a Caja / Turnos para abrir tu turno antes de cobrar.',
+            duration: 6000
+          });
+          return;
+        }
+      } catch { /* Si falla, permitir continuar */ }
+      
       // Check for existing open bills for this order
       const existingBills = await billsAPI.list({ order_id: order.id, status: 'open' });
       
