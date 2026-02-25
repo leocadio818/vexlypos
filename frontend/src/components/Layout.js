@@ -60,9 +60,9 @@ export default function Layout() {
     }
     
     try {
-      const res = await api.get('/shifts/current');
-      const shift = res.data;
-      setCashierShift(shift?.id ? shift : null);
+      const res = await api.get('/pos-sessions/check');
+      const data = res.data;
+      setCashierShift(data?.has_open_session ? data.session : null);
     } catch (err) {
       console.error('Error checking shift:', err);
       setCashierShift(null);
