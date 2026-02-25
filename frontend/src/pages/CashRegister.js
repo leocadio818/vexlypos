@@ -302,6 +302,7 @@ export default function CashRegister() {
       // Abrir automáticamente el Reporte X para imprimir
       if (res.data?.session_id) {
         setReprintSessionId(res.data.session_id);
+        setLogoutAfterReport(true);
       }
     } catch (err) {
       const detail = err.response?.data?.detail || '';
