@@ -172,28 +172,29 @@ export default function ReportXZ({
               </div>
 
               {/* ═══ RESUMEN DE VENTAS ═══ */}
-              <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl p-4 border border-green-500/20">
-                <h3 className="font-oswald font-bold text-white mb-3 flex items-center gap-2">
-                  <TrendingUp size={18} className="text-green-400" />
-                  RESUMEN DE VENTAS
-                </h3>
-                <div className="grid grid-cols-2 gap-y-2 text-sm">
-                  <span className="text-white/60">Subtotal:</span>
-                  <span className="text-white text-right">{formatMoney(report.sales_summary?.subtotal)}</span>
-                  
-                  <span className="text-white/60">ITBIS:</span>
-                  <span className="text-white text-right">{formatMoney(report.sales_summary?.itbis)}</span>
-                  
-                  <span className="text-white/60">Propina Legal:</span>
-                  <span className="text-white text-right">{formatMoney(report.sales_summary?.propina)}</span>
-                  
-                  <span className="text-white/60 font-bold pt-2 border-t border-white/10">TOTAL VENTAS:</span>
-                  <span className="text-green-400 font-oswald font-bold text-lg text-right pt-2 border-t border-white/10">
-                    {formatMoney(report.sales_summary?.total)}
-                  </span>
-                  
-                  <span className="text-white/60">Facturas:</span>
-                  <span className="text-cyan-400 text-right">{report.sales_summary?.invoices_count || 0}</span>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h3 className="font-oswald font-bold text-white mb-3">RESUMEN DE VENTAS</h3>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/60">Subtotal:</span>
+                    <span className="font-oswald text-white">{formatMoney(report.sales_summary?.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/60">ITBIS:</span>
+                    <span className="font-oswald text-white">{formatMoney(report.sales_summary?.itbis)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/60">Propina Legal:</span>
+                    <span className="font-oswald text-white">{formatMoney(report.sales_summary?.propina)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm pt-2 mt-2 border-t border-white/10">
+                    <span className="text-white font-bold">TOTAL VENTAS:</span>
+                    <span className="font-oswald font-bold text-lg text-green-400">{formatMoney(report.sales_summary?.total)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/60">Facturas:</span>
+                    <span className="font-oswald text-cyan-400">{report.sales_summary?.invoices_count || 0}</span>
+                  </div>
                 </div>
               </div>
 
