@@ -712,15 +712,27 @@ export default function CashRegister() {
                     {session.ref} | {new Date(session.opened_at).toLocaleString('es-DO')} → {session.closed_at ? new Date(session.closed_at).toLocaleTimeString('es-DO') : '-'}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="font-oswald text-base font-bold text-orange-400">
-                    {formatMoney((session.cash_sales || 0) + (session.card_sales || 0) + (session.transfer_sales || 0))}
-                  </p>
-                  {session.total_difference && Math.abs(session.total_difference) > 0.01 && (
-                    <p className={`text-[10px] ${session.total_difference > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      Dif: {formatMoney(session.total_difference)}
-                    </p>
+                <div className="text-right flex items-center gap-2">
+                  {session.status === 'closed' && (
+                    <button 
+                      onClick={() => setReprintSessionId(session.id)}
+                      data-testid={`reprint-report-${session.id}`}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-white/40 hover:text-cyan-400 transition-all"
+                      title="Re-imprimir Reporte X"
+                    >
+                      <Printer size={14} />
+                    </button>
                   )}
+                  <div>
+                    <p className="font-oswald text-base font-bold text-orange-400">
+                      {formatMoney((session.cash_sales || 0) + (session.card_sales || 0) + (session.transfer_sales || 0))}
+                    </p>
+                    {session.total_difference && Math.abs(session.total_difference) > 0.01 && (
+                      <p className={`text-[10px] ${session.total_difference > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        Dif: {formatMoney(session.total_difference)}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
