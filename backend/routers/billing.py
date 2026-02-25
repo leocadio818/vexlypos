@@ -337,6 +337,7 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
         "cashier_id": user["user_id"], "cashier_name": user["name"],
         "waiter_id": order.get("waiter_id", ""),
         "waiter_name": order.get("waiter_name", ""),
+        "training_mode": is_training,
         "status": "open", "created_at": now_iso(), "paid_at": None
     }
     await db.bills.insert_one(bill)
