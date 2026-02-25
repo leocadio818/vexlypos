@@ -232,12 +232,13 @@ async def get_me(user=Depends(get_current_user)):
 async def list_users(user=Depends(get_current_user)):
     caller_level = await get_role_level_async(user.get("role", "waiter"))
     
-    # Build role level lookup for all custom roles
+    # Build role level lookup: custom roles first, then builtins OVERRIDE
     custom_roles = await db.custom_roles.find({}, {"_id": 0}).to_list(100)
-    role_level_map = {**BUILTIN_ROLE_LEVELS}
+    role_level_map = {}
     for cr in custom_roles:
         code = cr.get("code") or cr.get("id")
         role_level_map[code] = cr.get("level", 0)
+    role_level_map.update(BUILTIN_ROLE_LEVELS)  # Builtins always take precedence
     
     import logging
     logging.info(f"[SECURITY] caller_level={caller_level}, role_level_map={role_level_map}")
