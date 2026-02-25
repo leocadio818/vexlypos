@@ -444,7 +444,9 @@ async def calculate_day_stats(day_id: str) -> dict:
     business_date = business_day["business_date"]
     
     # Determinar filtro robusto
-    date_count = await db.bills.count_documents({"business_date": business_date, "status": "paid"})
+    # EXCLUIR facturas de entrenamiento
+    training_exclude = {"training_mode": {"$ne": True}}
+    date_count = await db.bills.count_documents({"business_date": business_date, "status": "paid", **training_exclude})
     if date_count > 0:
         day_match = {"business_date": business_date, "status": "paid"}
         day_match_cancelled = {"business_date": business_date, "status": "cancelled"}
