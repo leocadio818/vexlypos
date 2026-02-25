@@ -252,11 +252,20 @@ async def list_users(user=Depends(get_current_user)):
 
 
 @router.get("/users/{user_id}")
-async def get_user(user_id: str):
+async def get_user(user_id: str, caller=Depends(get_current_user)):
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "pin_hash": 0})
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
+    target_level = await get_role_level_async(user.get("role", "waiter"))
+    
+    # Allow viewing own profile, or users with lower level
+    if caller["user_id"] != user_id and target_level >= caller_level:
+        raise HTTPException(status_code=403, detail="No tienes permiso para ver este usuario")
+    
     user["permissions"] = get_permissions(user.get("role", "waiter"), user.get("permissions"))
+    user["role_level"] = target_level
     return user
 
 
