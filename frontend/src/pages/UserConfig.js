@@ -193,6 +193,7 @@ export default function UserConfig() {
   const [expandedCats, setExpandedCats] = useState({ ventas: true });
   const [createRoleDialog, setCreateRoleDialog] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleLevel, setNewRoleLevel] = useState(20);
   const [trainingStats, setTrainingStats] = useState(null);
 
   const [user, setUser] = useState({
