@@ -17,16 +17,24 @@ export default function ReportXZ({
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [printMode, setPrintMode] = useState(null); // null = ask, 'detailed', 'summary'
+  const [printMode, setPrintMode] = useState(null);
   const printRef = useRef(null);
 
   const Row = ({ label, value, bold, highlight, className = '' }) => (
     <div className={`flex justify-between py-[2px] ${className}`}>
-      <span className={`${bold ? 'font-bold text-white' : 'text-white/60'}`}>{label}</span>
-      <span className={`font-oswald ${bold ? 'font-bold' : ''} ${highlight ? 'text-cyan-400 text-base' : 'text-white'}`}>
+      <span className={`font-bold ${bold ? 'text-white' : 'text-white/80'}`}>{label}</span>
+      <span className={`font-oswald font-bold ${highlight ? 'text-cyan-400 text-base' : 'text-white'}`}>
         {value}
       </span>
     </div>
+  );
+
+  const Separator = () => (
+    <div className="border-t border-dashed border-white/30 my-3" />
+  );
+
+  const SectionTitle = ({ children }) => (
+    <p className="font-oswald font-bold text-white text-sm tracking-wide mb-2">{children}</p>
   );
 
   const fetchReport = useCallback(async () => {
@@ -63,14 +71,14 @@ export default function ReportXZ({
       <html><head><title>${report?.session?.ref || 'Reporte'}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Courier New', monospace; font-size: 12px; width: 80mm; padding: 4mm; color: #000; }
+        body { font-family: 'Courier New', monospace; font-size: 12px; width: 80mm; padding: 3mm; color: #000; font-weight: bold; }
         .center { text-align: center; }
-        .bold { font-weight: bold; }
-        .line { border-top: 1px dashed #000; margin: 4px 0; }
-        .double-line { border-top: 2px solid #000; margin: 4px 0; }
-        .row { display: flex; justify-content: space-between; padding: 1px 0; }
-        .section-title { font-weight: bold; font-size: 13px; margin: 6px 0 3px; }
-        .big { font-size: 14px; font-weight: bold; }
+        .sep { border-top: 1px dashed #000; margin: 5px 0; }
+        .sep-double { border-top: 2px solid #000; margin: 5px 0; }
+        .row { display: flex; justify-content: space-between; padding: 1px 0; font-weight: bold; }
+        .title { font-size: 13px; font-weight: bold; margin-bottom: 3px; }
+        .big { font-size: 15px; font-weight: bold; }
+        .ref { font-size: 11px; }
       </style></head><body>
       ${printRef.current.innerHTML}
       </body></html>
@@ -130,18 +138,20 @@ export default function ReportXZ({
     );
   }
 
-  // ═══ REPORTE (DETALLADO o RESUMIDO) ═══
+  const isDetailed = printMode === 'detailed';
+
+  // ═══ REPORTE ═══
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-lg max-h-[85vh] flex flex-col p-0" data-testid="report-xz-dialog">
         <DialogHeader className="shrink-0 px-5 pt-5 pb-2">
           <DialogTitle className="font-oswald text-white flex items-center gap-2">
             <FileText className="text-cyan-400" size={18} />
-            {type === "Z" ? "CIERRE DE DIA (Z)" : "CIERRE DE TURNO (X)"}
-            {printMode === 'summary' && <span className="text-xs text-amber-400 font-normal ml-1">- Resumido</span>}
+            CIERRE DE TURNO (X)
+            {!isDetailed && <span className="text-xs text-amber-400 font-normal ml-1">- Resumido</span>}
           </DialogTitle>
           <DialogDescription className="text-white/50 text-xs">
-            {report?.session?.ref || report?.business_date || ''}
+            {report?.session?.ref || ''}
           </DialogDescription>
         </DialogHeader>
 
@@ -157,155 +167,124 @@ export default function ReportXZ({
               <Button onClick={fetchReport} className="mt-3" variant="outline" size="sm">Reintentar</Button>
             </div>
           ) : report ? (
-            <div ref={printRef} className="text-sm pb-4">
+            <div ref={printRef} className="text-sm pb-4 font-bold">
               
               {/* ═══ ENCABEZADO ═══ */}
-              <div className="text-center mb-3 pb-3 border-b border-dashed border-white/20">
+              <div className="text-center mb-2">
                 <p className="font-oswald font-bold text-white text-base">
-                  {printMode === 'summary' ? 'SUMARIO CIERRE DE CAJA' : 'CIERRE DE TURNO'}
+                  {isDetailed ? 'CIERRE DE TURNO' : 'CIERRE DE CAJA'}
                 </p>
-                <p className="text-white/50 text-xs mt-1">{report.session?.ref}</p>
+                <p className="text-white/60 text-xs">{report.session?.ref}</p>
               </div>
 
-              <div className="space-y-1 mb-3 pb-3 border-b border-dashed border-white/20">
+              <Separator />
+
+              <div className="space-y-1 mb-1">
                 <Row label="Cajero:" value={report.session?.opened_by} />
                 <Row label="Terminal:" value={report.session?.terminal || '-'} />
                 <Row label="Fecha:" value={report.business_date} />
                 <Row label="Apertura:" value={fmtDate(report.session?.opened_at)} />
-                {report.session?.closed_at && (
-                  <Row label="Cierre:" value={fmtDate(report.session?.closed_at)} />
-                )}
+                {report.session?.closed_at && <Row label="Cierre:" value={fmtDate(report.session?.closed_at)} />}
               </div>
 
-              {/* ═══ PRODUCTOS POR CATEGORÍA ═══ */}
-              {report.sales_by_category?.length > 0 && (
-                <div className="mb-3 pb-3 border-b border-dashed border-white/20">
-                  <p className="font-oswald font-bold text-white mb-2">PRODUCTOS</p>
+              <Separator />
+
+              {/* ═══ PRODUCTOS (si hay) ═══ */}
+              {isDetailed && report.sales_by_category?.length > 0 && (
+                <>
+                  <SectionTitle>PRODUCTOS</SectionTitle>
                   {report.sales_by_category.map((c, i) => (
                     <Row key={i} label={`${c.category} (${c.quantity})`} value={formatMoney(c.subtotal)} />
                   ))}
-                  <div className="border-t border-white/10 mt-1 pt-1">
-                    <Row label="Producto Total:" value={formatMoney(report.sales_by_category.reduce((s, c) => s + c.subtotal, 0))} bold />
-                  </div>
-                </div>
+                  <Row label="Total Productos:" value={formatMoney(report.sales_by_category.reduce((s, c) => s + c.subtotal, 0))} bold highlight />
+                  <Separator />
+                </>
               )}
 
-              {/* ═══ DEVOLUCIONES ═══ */}
+              {/* ═══ DEVOLUCIONES (si hay) ═══ */}
               {report.voids?.count > 0 && (
-                <div className="mb-3 pb-3 border-b border-dashed border-white/20">
-                  <p className="font-oswald font-bold text-white mb-2">DEVOLUCIONES</p>
-                  {printMode === 'detailed' ? (
+                <>
+                  <SectionTitle>DEVOLUCIONES</SectionTitle>
+                  {isDetailed ? (
                     report.voids.list.map((v, i) => (
                       <Row key={i} label={`${v.reason} (${v.count})`} value={`-${formatMoney(v.total)}`} className="text-red-400" />
                     ))
                   ) : (
                     <Row label={`Total (${report.voids.count})`} value={`-${formatMoney(report.voids.total)}`} className="text-red-400" />
                   )}
-                  <div className="border-t border-white/10 mt-1 pt-1">
-                    <Row label="Devoluciones Total:" value={`-${formatMoney(report.voids.total)}`} bold className="text-red-400" />
-                  </div>
-                </div>
+                  <Separator />
+                </>
               )}
 
-              {/* ═══ ESTADÍSTICAS (ambos modos) ═══ */}
-              <div className="mb-3 pb-3 border-b border-dashed border-white/20">
-                <Row label="Facturas:" value={report.sales_summary?.invoices_count || 0} />
-                <Row label="Total Neto:" value={formatMoney((report.sales_summary?.total || 0) - (report.voids?.total || 0))} bold />
-                {report.sales_summary?.avg_per_invoice > 0 && (
-                  <Row label="Promedio/Factura:" value={formatMoney(report.sales_summary?.avg_per_invoice)} />
-                )}
-              </div>
-
-              {/* ═══ DETALLADO: Resumen de Ventas completo ═══ */}
-              {printMode === 'detailed' && (
-                <div className="mb-3 pb-3 border-b border-dashed border-white/20">
-                  <p className="font-oswald font-bold text-white mb-2">RESUMEN DE VENTAS</p>
+              {/* ═══ VENTAS ═══ */}
+              {isDetailed ? (
+                <>
+                  <SectionTitle>VENTAS</SectionTitle>
                   <Row label="Subtotal:" value={formatMoney(report.sales_summary?.subtotal)} />
                   <Row label="ITBIS:" value={formatMoney(report.sales_summary?.itbis)} />
                   <Row label="Propina Legal:" value={formatMoney(report.sales_summary?.propina)} />
-                  <div className="border-t border-white/10 mt-1 pt-1">
-                    <Row label="TOTAL VENTAS:" value={formatMoney(report.sales_summary?.total)} bold highlight />
-                  </div>
-                </div>
+                  <Row label="TOTAL:" value={formatMoney(report.sales_summary?.total)} bold highlight />
+                  <Row label="Facturas:" value={report.sales_summary?.invoices_count || 0} />
+                  {report.sales_summary?.avg_per_invoice > 0 && (
+                    <Row label="Promedio/Factura:" value={formatMoney(report.sales_summary?.avg_per_invoice)} />
+                  )}
+                </>
+              ) : (
+                <>
+                  <Row label="Facturas:" value={report.sales_summary?.invoices_count || 0} />
+                  <Row label="Total Ventas:" value={formatMoney(report.sales_summary?.total)} bold highlight />
+                </>
               )}
 
-              {/* ═══ VENTAS POR FORMA DE PAGO ═══ */}
-              <div className="mb-3 pb-3 border-b border-dashed border-white/20">
-                {printMode === 'detailed' && report.payment_breakdown?.length > 0 ? (
-                  <>
-                    {report.payment_breakdown.map((p, i) => (
-                      <div key={i} className="mb-2 pb-2 border-b border-white/5 last:border-0 last:mb-0 last:pb-0">
-                        <p className="font-oswald font-bold text-white">{p.method}</p>
-                        <Row label="  Venta en POS:" value={formatMoney(p.amount)} />
-                        <div className="border-t border-white/10 mt-1 pt-1">
-                          <Row label="  Calculado/Declarado:" value={formatMoney(p.amount)} bold />
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    <p className="font-oswald font-bold text-white mb-2">FORMAS DE PAGO</p>
-                    <Row label="Efectivo:" value={formatMoney(report.payment_totals?.efectivo)} />
-                    <Row label="Tarjeta:" value={formatMoney(report.payment_totals?.tarjeta)} />
-                    <Row label="Transferencia:" value={formatMoney(report.payment_totals?.transferencia)} />
-                  </>
-                )}
-              </div>
+              <Separator />
 
-              {/* ═══ DETALLADO: Cuadre de Caja completo ═══ */}
-              {printMode === 'detailed' && (
-                <div className="mb-3 pb-3 border-b border-dashed border-white/20">
-                  <p className="font-oswald font-bold text-white mb-2">CUADRE DE CAJA</p>
+              {/* ═══ FORMAS DE PAGO ═══ */}
+              <SectionTitle>FORMAS DE PAGO</SectionTitle>
+              {isDetailed && report.payment_breakdown?.length > 0 ? (
+                report.payment_breakdown.map((p, i) => (
+                  <Row key={i} label={`${p.method} (${p.count}):`} value={formatMoney(p.amount)} />
+                ))
+              ) : (
+                <>
+                  <Row label="Efectivo:" value={formatMoney(report.payment_totals?.efectivo)} />
+                  <Row label="Tarjeta:" value={formatMoney(report.payment_totals?.tarjeta)} />
+                  <Row label="Transferencia:" value={formatMoney(report.payment_totals?.transferencia)} />
+                </>
+              )}
+
+              <Separator />
+
+              {/* ═══ FLUJO DE CAJA (solo detallado) ═══ */}
+              {isDetailed && (
+                <>
+                  <SectionTitle>FLUJO DE CAJA</SectionTitle>
                   <Row label="Fondo Inicial:" value={formatMoney(report.cash_reconciliation?.initial_fund)} />
                   <Row label="+ Ventas Efectivo:" value={formatMoney(report.cash_reconciliation?.cash_sales)} />
                   <Row label="+ Depositos:" value={formatMoney(report.cash_reconciliation?.deposits)} />
                   <Row label="- Retiros:" value={`-${formatMoney(report.cash_reconciliation?.withdrawals)}`} />
-                  <div className="border-t border-white/10 mt-1 pt-1">
-                    <Row label="TOTAL A ENTREGAR:" value={formatMoney(report.cash_reconciliation?.total_to_deliver)} bold highlight />
-                  </div>
-                </div>
+                  <Row label="TOTAL A ENTREGAR:" value={formatMoney(report.cash_reconciliation?.total_to_deliver)} bold highlight />
+                  <Separator />
+                </>
               )}
 
-              {/* ═══ DECLARACIÓN (ambos modos, si hay datos) ═══ */}
+              {/* ═══ DECLARACION ═══ */}
               {(report.cash_reconciliation?.cash_declared > 0 || report.cash_reconciliation?.expected_cash > 0) && (
-                <div className="mb-3 pb-3 border-b border-dashed border-white/20">
-                  {printMode === 'detailed' && (
-                    <p className="font-oswald font-bold text-white mb-2">DECLARACION DE CAJA</p>
-                  )}
-                  <Row label="Efectivo Esperado:" value={formatMoney(report.cash_reconciliation?.expected_cash)} />
-                  <Row label="Efectivo Declarado:" value={formatMoney(report.cash_reconciliation?.cash_declared)} />
-                  <div className="border-t border-white/10 mt-1 pt-1">
-                    <Row 
-                      label="Diferencia:" 
-                      value={`${report.cash_reconciliation?.difference > 0 ? '+' : ''}${formatMoney(report.cash_reconciliation?.difference)}`}
-                      bold
-                      className={Math.abs(report.cash_reconciliation?.difference || 0) < 1 ? 'text-green-400' : report.cash_reconciliation?.difference > 0 ? 'text-green-400' : 'text-red-400'}
-                    />
-                  </div>
-                </div>
+                <>
+                  <SectionTitle>DECLARACION</SectionTitle>
+                  <Row label="Esperado:" value={formatMoney(report.cash_reconciliation?.expected_cash)} />
+                  <Row label="Declarado:" value={formatMoney(report.cash_reconciliation?.cash_declared)} />
+                  <Row 
+                    label="Diferencia:" 
+                    value={`${report.cash_reconciliation?.difference > 0 ? '+' : ''}${formatMoney(report.cash_reconciliation?.difference)}`}
+                    bold
+                    className={Math.abs(report.cash_reconciliation?.difference || 0) < 1 ? 'text-green-400' : report.cash_reconciliation?.difference > 0 ? 'text-green-400' : 'text-red-400'}
+                  />
+                  <Separator />
+                </>
               )}
 
-              {/* ═══ RESUMEN FINAL (ambos modos) ═══ */}
-              <div className="mb-2">
-                <p className="font-oswald font-bold text-white mb-2">RESUMEN</p>
-                <Row label="Efectivo:" value={formatMoney(report.payment_totals?.efectivo)} />
-                <Row label="Tarjetas:" value={formatMoney(report.payment_totals?.tarjeta)} />
-                <Row label="Transferencias:" value={formatMoney(report.payment_totals?.transferencia)} />
-                <div className="border-t border-white/10 mt-1 pt-1">
-                  <Row label="VENTA TOTAL:" value={formatMoney(report.sales_summary?.total)} bold highlight />
-                </div>
-                {report.voids?.total > 0 && (
-                  <Row label="Devoluciones:" value={`-${formatMoney(report.voids.total)}`} className="text-red-400" />
-                )}
-                <div className="border-t border-white/10 mt-1 pt-1">
-                  <Row 
-                    label="VENTA NETA:" 
-                    value={formatMoney((report.sales_summary?.total || 0) - (report.voids?.total || 0))} 
-                    bold highlight 
-                  />
-                </div>
-              </div>
+              {/* ═══ TOTAL GENERAL ═══ */}
+              <Row label="TOTAL GENERAL:" value={formatMoney(report.sales_summary?.total)} bold highlight />
 
               <p className="text-center text-white/30 text-xs mt-4">--- Fin de Reporte ---</p>
 
@@ -324,12 +303,7 @@ export default function ReportXZ({
             <Printer size={16} className="mr-2" />
             Imprimir
           </Button>
-          <Button
-            onClick={() => setPrintMode(null)}
-            variant="outline"
-            className="border-white/20 text-white/70"
-            data-testid="change-mode-btn"
-          >
+          <Button onClick={() => setPrintMode(null)} variant="outline" className="border-white/20 text-white/70" data-testid="change-mode-btn">
             Cambiar
           </Button>
           <Button onClick={handleClose} variant="outline" className="border-white/20 text-white/70" data-testid="close-report-btn">
