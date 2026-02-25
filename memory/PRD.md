@@ -817,7 +817,6 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 
 ## Pendiente
 ### P1 - Alta Prioridad
-- [ ] Modo Entrenamiento (Fase 2): Registros no afectan ventas reales, comandas impresas con aviso "ENTRENAMIENTO"
 - [ ] Reloj de entrada/salida empleados
 - [ ] Envio automatico de facturas por email (requiere integracion con servicio de email)
 
