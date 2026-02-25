@@ -817,17 +817,18 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 
 ## Pendiente
 ### P1 - Alta Prioridad
-- [ ] Reporte DGII 608 (pendiente confirmación del usuario)
+- [ ] Modo Entrenamiento (Fase 2): Registros no afectan ventas reales, comandas impresas con aviso "ENTRENAMIENTO"
 - [ ] Reloj de entrada/salida empleados
-- [ ] Envío automático de facturas por email (requiere integración con servicio de email)
+- [ ] Envio automatico de facturas por email (requiere integracion con servicio de email)
 
 ### P2 - Media Prioridad
+- [ ] Reporte DGII 608
 - [ ] Compilar agente como .exe (PyInstaller)
-- [ ] Cache offline de imágenes
+- [ ] Cache offline de imagenes
 
 ### P3 - Baja Prioridad
-- [ ] Drag-and-drop métodos de pago
-- [ ] Exportar auditoría Excel/CSV
+- [ ] Drag-and-drop metodos de pago
+- [ ] Exportar auditoria Excel/CSV
 - [ ] Duplicar productos
 
 ## Credenciales de Prueba
