@@ -165,6 +165,13 @@ Las notas de crédito aparecen en el 607 con:
 - [x] **Datos de Cuadre en MongoDB** - Al cerrar turno se guardan los datos de reconciliación (declarado, esperado, diferencia) en colección `session_reconciliations`
 - [x] **Historial con Diferencia** - El historial de turnos muestra la diferencia de caja para sesiones cerradas
 
+## Completado (2026-02-25)
+- [x] **Bug Fix: Admin No Podía Abrir Turno** - Error UUID en Supabase al enviar terminal_id de MongoDB. Corregido enviando terminal_id=None
+- [x] **Turno Obligatorio para Admin y Cajero** - La restricción de turno ahora aplica a roles admin y cashier (waiter y kitchen exentos)
+- [x] **Cierre de Día (Z) en Caja** - Botón CIERRE Z disponible para admin (sin turno activo) en la pantalla de Caja. Valida que no haya turnos ni mesas abiertas antes de cerrar
+- [x] **Validación de Mesas Abiertas en Cierre de Día** - El cierre de día no procede si hay órdenes activas/pendientes
+- [x] **Re-imprimir Reporte X** - Botón de impresora en cada turno cerrado del historial. Abre el componente ReportXZ
+
 ## Bloqueo de Terminales en Uso (2026-02-24)
 
 ### Problema
