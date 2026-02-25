@@ -283,7 +283,8 @@ async def create_user(input: dict):
 
 @router.put("/users/{user_id}")
 async def update_user(user_id: str, input: dict):
-    if "_id" in input: del input["_id"]
+    if "_id" in input:
+        del input["_id"]
     
     # Validate and update PIN if provided
     if "pin" in input and input["pin"]:
@@ -493,7 +494,8 @@ async def create_role(input: dict):
 
 @router.put("/roles/{rid}")
 async def update_role(rid: str, input: dict):
-    if "_id" in input: del input["_id"]
+    if "_id" in input:
+        del input["_id"]
     await db.custom_roles.update_one({"id": rid}, {"$set": input})
     return {"ok": True}
 
