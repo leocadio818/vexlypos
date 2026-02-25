@@ -270,7 +270,7 @@ async def get_user(user_id: str, caller=Depends(get_current_user)):
 
 
 @router.post("/users")
-async def create_user(input: dict):
+async def create_user(input: dict, caller=Depends(get_current_user)):
     pin = input.get("pin", "")
     
     # Validate PIN
@@ -283,20 +283,35 @@ async def create_user(input: dict):
     if pin.startswith("0"):
         raise HTTPException(status_code=400, detail="El PIN no puede iniciar con 0")
     
+    # Hierarchy check: caller can only assign roles with level < their own
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
+    target_role = input.get("role", "waiter")
+    target_level = await get_role_level_async(target_role)
+    if target_level >= caller_level:
+        raise HTTPException(status_code=403, detail="No puedes asignar un puesto igual o superior al tuyo")
+    
+    # Only system admin (level 100) can customize permissions
+    permissions_input = input.get("permissions", {})
+    if caller_level < 100:
+        # Non-system-admin: use default role permissions, no customization
+        permissions_input = {}
+    
     hashed = hash_pin(pin)
     existing = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Ya existe un usuario con ese PIN")
     
+    new_id = gen_id()
     doc = {
-        "id": gen_id(),
+        "id": new_id,
         "name": input.get("name", ""),
         "last_name": input.get("last_name", ""),
         "pos_name": input.get("pos_name", input.get("name", "")),
         "pin_hash": hashed,
-        "role": input.get("role", "waiter"),
+        "role": target_role,
         "active": True,
-        "permissions": input.get("permissions", {}),
+        "permissions": permissions_input,
+        "role_level": target_level,
         "address_line1": input.get("address_line1", ""),
         "address_line2": input.get("address_line2", ""),
         "city": input.get("city", ""),
@@ -329,6 +344,20 @@ async def create_user(input: dict):
         "photo_url": input.get("photo_url", ""),
     }
     await db.users.insert_one(doc)
+    
+    # Audit: user created
+    await db.role_audit_logs.insert_one({
+        "id": gen_id(),
+        "action": "user_created",
+        "target_user_id": new_id,
+        "target_user_name": f"{doc['name']} {doc.get('last_name', '')}".strip(),
+        "role_assigned": target_role,
+        "role_level": target_level,
+        "performed_by_id": caller["user_id"],
+        "performed_by_name": caller.get("name", ""),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
     perms = get_permissions(doc["role"], doc["permissions"])
     result = {k: v for k, v in doc.items() if k not in ["_id", "pin_hash"]}
     result["permissions"] = perms
