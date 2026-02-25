@@ -46,9 +46,9 @@ export default function Layout() {
   const isOnCashRegisterPage = location.pathname === '/cash-register';
   const cashierNeedsShift = requiresShift && !cashierShift && !cashierShiftLoading && !isOnCashRegisterPage;
   
-  // Fetch cashier shift status
+  // Fetch shift status for users that require it
   const fetchCashierShift = useCallback(async () => {
-    if (!isCashierRole) {
+    if (!requiresShift) {
       setCashierShiftLoading(false);
       return;
     }
@@ -58,12 +58,12 @@ export default function Layout() {
       const shift = res.data;
       setCashierShift(shift?.id ? shift : null);
     } catch (err) {
-      console.error('Error checking cashier shift:', err);
+      console.error('Error checking shift:', err);
       setCashierShift(null);
     } finally {
       setCashierShiftLoading(false);
     }
-  }, [isCashierRole]);
+  }, [requiresShift]);
   
   // Verificar turno al cargar y cada 5 segundos (para detectar cuando abre turno)
   useEffect(() => {
