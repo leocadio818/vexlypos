@@ -823,7 +823,15 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 - Al desactivar switch, el usuario opera normalmente; registros de entrenamiento quedan ocultos de reportes
 - Training mode verificado desde JWT + DB (soporta cambio en caliente)
 
-**Verificacion:** Testing agent 100% (14/14 backend, 8/8 frontend).
+**Dashboard de Entrenamiento:**
+- Endpoint `GET /api/users/{user_id}/training-stats` con estadisticas completas
+- Seccion colapsable en perfil del empleado: ordenes, cobros, items, monto practicado
+- Timeline con fecha inicio y ultima actividad
+- Lista de actividad reciente (ultimas 10 transacciones de entrenamiento)
+- Solo visible si el empleado tiene modo entrenamiento activo o tiene historial
+
+**Verificacion:** Testing agent 100% (14/14 backend, 8/8 frontend) para modo entrenamiento.
+Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento.
 
 
 
