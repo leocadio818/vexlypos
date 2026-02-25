@@ -658,13 +658,13 @@ async def generate_z_report_internal(
         # Fallback: buscar por business_day_id
         day_id_count = await db.bills.count_documents({"business_day_id": day_id, "status": "paid", **training_exclude})
         if day_id_count > 0:
-            day_filter = {"business_day_id": day_id, "status": "paid"}
+            day_filter = {"business_day_id": day_id, "status": "paid", **training_exclude}
             print(f"[ReportZ] Fallback: usando business_day_id en lugar de business_date ({day_id_count} bills)")
         else:
             # Último fallback: buscar por rango de tiempo del día
             opened_at = business_day.get("opened_at", "")
             closed_at = business_day.get("closed_at")
-            time_filter_z = {"paid_at": {"$gte": opened_at}, "status": "paid"}
+            time_filter_z = {"paid_at": {"$gte": opened_at}, "status": "paid", **training_exclude}
             if closed_at:
                 time_filter_z["paid_at"]["$lte"] = closed_at
             time_count = await db.bills.count_documents(time_filter_z)
@@ -672,7 +672,7 @@ async def generate_z_report_internal(
                 day_filter = time_filter_z
                 print(f"[ReportZ] Fallback: usando time_range ({time_count} bills)")
             else:
-                day_filter = {"business_date": business_date, "status": "paid"}
+                day_filter = {"business_date": business_date, "status": "paid", **training_exclude}
                 print(f"[ReportZ] No se encontraron facturas para jornada {day_id}, business_date={business_date}")
     
     # Filtros para anulaciones y otros (sin status "paid")
