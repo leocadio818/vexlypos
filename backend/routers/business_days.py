@@ -624,9 +624,40 @@ async def generate_z_report_internal(
     
     business_date = business_day["business_date"]
     
+    # Construir filtro de facturas robusto para el día
+    # Intentar por business_date primero, luego por business_day_id
+    date_count = await db.bills.count_documents({"business_date": business_date, "status": "paid"})
+    if date_count > 0:
+        day_filter = {"business_date": business_date, "status": "paid"}
+    else:
+        # Fallback: buscar por business_day_id
+        day_id_count = await db.bills.count_documents({"business_day_id": day_id, "status": "paid"})
+        if day_id_count > 0:
+            day_filter = {"business_day_id": day_id, "status": "paid"}
+            print(f"[ReportZ] Fallback: usando business_day_id en lugar de business_date ({day_id_count} bills)")
+        else:
+            # Último fallback: buscar por rango de tiempo del día
+            opened_at = business_day.get("opened_at", "")
+            closed_at = business_day.get("closed_at")
+            time_filter_z = {"paid_at": {"$gte": opened_at}, "status": "paid"}
+            if closed_at:
+                time_filter_z["paid_at"]["$lte"] = closed_at
+            time_count = await db.bills.count_documents(time_filter_z)
+            if time_count > 0:
+                day_filter = time_filter_z
+                print(f"[ReportZ] Fallback: usando time_range ({time_count} bills)")
+            else:
+                day_filter = {"business_date": business_date, "status": "paid"}
+                print(f"[ReportZ] No se encontraron facturas para jornada {day_id}, business_date={business_date}")
+    
+    # Filtros para anulaciones y otros (sin status "paid")
+    day_filter_cancelled = {k: v for k, v in day_filter.items() if k != "status"}
+    day_filter_cancelled["status"] = "cancelled"
+    day_filter_all = {k: v for k, v in day_filter.items() if k != "status"}
+    
     # ═══ 1. VENTAS TOTALES ═══
     sales_pipeline = [
-        {"$match": {"business_date": business_date, "status": "paid"}},
+        {"$match": day_filter},
         {"$group": {
             "_id": None,
             "subtotal": {"$sum": "$subtotal"},
