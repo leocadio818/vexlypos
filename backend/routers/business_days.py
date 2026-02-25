@@ -738,7 +738,7 @@ async def generate_z_report_internal(
     
     # ═══ 3. VENTAS POR CATEGORÍA ═══
     category_pipeline = [
-        {"$match": {"business_date": business_date, "status": "paid"}},
+        {"$match": day_filter},
         {"$unwind": "$items"},
         {"$lookup": {
             "from": "products",
@@ -778,8 +778,9 @@ async def generate_z_report_internal(
         })
     
     # ═══ 4. NOTAS DE CRÉDITO (B04) ═══
+    b04_filter = {"business_date": business_date} if "business_date" in day_filter else {k: v for k, v in day_filter_all.items()}
     b04_pipeline = [
-        {"$match": {"business_date": business_date}},
+        {"$match": b04_filter},
         {"$project": {
             "_id": 0,
             "ncf": 1,
@@ -796,7 +797,7 @@ async def generate_z_report_internal(
     
     # ═══ 5. ANULACIONES Y DESCUENTOS ═══
     voids_pipeline = [
-        {"$match": {"business_date": business_date, "status": "cancelled"}},
+        {"$match": day_filter_cancelled},
         {"$project": {
             "_id": 0,
             "id": 1,
@@ -812,8 +813,9 @@ async def generate_z_report_internal(
     voids_total = sum(v.get("total", 0) for v in voids)
     
     # Descuentos aplicados (si existe campo discount en bills)
+    day_filter_discounts = {**day_filter, "discount": {"$gt": 0}}
     discounts_pipeline = [
-        {"$match": {"business_date": business_date, "status": "paid", "discount": {"$gt": 0}}},
+        {"$match": day_filter_discounts},
         {"$group": {
             "_id": None,
             "total_discount": {"$sum": "$discount"},
