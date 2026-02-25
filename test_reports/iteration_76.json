@@ -1,0 +1,82 @@
+{
+  "summary": "Training Dashboard feature fully verified. Backend: GET /api/users/{user_id}/training-stats returns correct data. Frontend: Carlos profile shows 'Progreso de Entrenamiento' section with stats (4 orders, 1 bill paid, $640). Admin profile correctly hides training section. Training mode banner shows when logged as Carlos.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_training_dashboard.py",
+    "/app/test_reports/pytest/training_dashboard_results.xml"
+  ],
+  "passed_tests": {
+    "backend": [
+      "test_01_training_stats_endpoint_exists - Training stats endpoint returns 200 with valid structure",
+      "test_02_carlos_has_training_data - Carlos has 4 orders, 1 bill paid, $640 total",
+      "test_03_carlos_training_stats_fields - All required fields present (user_id, orders_count, items_practiced, etc)",
+      "test_04_admin_has_no_training_data - Admin returns zeros (no training data)",
+      "test_05_training_stats_requires_auth - Endpoint returns 401 without auth",
+      "test_06_nonexistent_user_returns_404 - Returns 404 for non-existent user ID",
+      "test_07_carlos_recent_activity_structure - Recent activity has id, total, status, date, items_count",
+      "test_01_carlos_login_has_training_mode_true - Carlos JWT has training_mode=true",
+      "test_02_admin_login_has_training_mode_false - Admin JWT has training_mode=false"
+    ],
+    "frontend": [
+      "Carlos profile page loads at /user/{carlos_id}",
+      "Carlos profile shows 'ENTRENAMIENTO' badge in header",
+      "Carlos profile shows 'Progreso de Entrenamiento' collapsible section",
+      "Training stats display: 4 Ordenes, 1 Cobros Practicados, 1 Items Procesados, $640 Monto Practicado",
+      "Training timeline shows: Inicio (25 feb 2026), Ultima actividad (25-feb, 10:43 p.m.)",
+      "Recent activity shows: 1 item - Cobrado - $640",
+      "Admin profile does NOT show training section (correctly hidden)",
+      "Admin profile has no ENTRENAMIENTO badge",
+      "Training mode banner shows for Carlos: 'MODO ENTRENAMIENTO — Las transacciones NO se registran como ventas reales'",
+      "Training banner persists across pages (tables page verified)"
+    ]
+  },
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_training_dashboard.py - Created new test file"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (10/10 checks passed)"
+  },
+  "test_credentials_used": {
+    "admin_pin": "10000",
+    "admin_id": "6e81e037-e495-45b2-af64-e0ff8ba39396",
+    "carlos_pin": "1234",
+    "carlos_id": "79f86d60-4e61-4890-b467-4f14097c57a4"
+  },
+  "seed_data_creation": "None - used existing users. Carlos has training_mode=true with 4 training orders and 1 paid training bill ($640).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Training Dashboard verified. GET /api/users/{user_id}/training-stats returns orders_count, bills_paid, items_practiced, total_amount_practiced, first_activity, last_activity, recent_activity. Frontend UserConfig.js shows 'Progreso de Entrenamiento' section for users with training_mode=true OR orders_count>0. Section is collapsible with defaultOpen=user.training_mode.",
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  },
+  "api_responses_verified": {
+    "carlos_training_stats": {
+      "orders_count": 4,
+      "items_practiced": 1,
+      "bills_paid": 1,
+      "total_amount_practiced": 640,
+      "training_active": true,
+      "recent_activity": [{"id": "fc70a65b-c49c-48e3-b88f-c187f4fd972f", "total": 640, "status": "paid", "items_count": 1}]
+    },
+    "admin_training_stats": {
+      "orders_count": 0,
+      "items_practiced": 0,
+      "bills_paid": 0,
+      "total_amount_practiced": 0,
+      "training_active": false,
+      "recent_activity": []
+    }
+  }
+}
