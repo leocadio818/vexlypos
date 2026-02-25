@@ -229,11 +229,26 @@ async def get_me(user=Depends(get_current_user)):
 
 
 @router.get("/users")
-async def list_users():
-    users = await db.users.find({}, {"_id": 0, "pin_hash": 0}).to_list(100)
-    for u in users:
-        u["permissions"] = get_permissions(u["role"], u.get("permissions"))
-    return users
+async def list_users(user=Depends(get_current_user)):
+    caller_level = await get_role_level_async(user.get("role", "waiter"))
+    
+    # Build role level lookup for all custom roles
+    custom_roles = await db.custom_roles.find({}, {"_id": 0}).to_list(100)
+    role_level_map = {**BUILTIN_ROLE_LEVELS}
+    for cr in custom_roles:
+        code = cr.get("code") or cr.get("id")
+        role_level_map[code] = cr.get("level", 0)
+    
+    all_users = await db.users.find({}, {"_id": 0, "pin_hash": 0}).to_list(500)
+    filtered = []
+    for u in all_users:
+        u_level = role_level_map.get(u.get("role", "waiter"), 0)
+        u["role_level"] = u_level
+        # Only show users with LOWER level than caller
+        if u_level < caller_level:
+            u["permissions"] = get_permissions(u["role"], u.get("permissions"))
+            filtered.append(u)
+    return filtered
 
 
 @router.get("/users/{user_id}")
