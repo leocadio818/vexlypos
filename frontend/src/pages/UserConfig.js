@@ -1,40 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Briefcase, Plus, Trash2, Camera, Settings, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock } from 'lucide-react';
+import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Trash2, Camera, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock, GraduationCap, Briefcase, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
 
-const DAYS = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
-const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const h = i % 12 || 12;
-  const ampm = i < 12 ? 'AM' : 'PM';
-  return `${h}${ampm}`;
-});
-
-const SYSTEM_INTERFACES = [
-  { code: 'restaurant', label: 'Capacidad Restaurante' },
-  { code: 'quick_order', label: 'Orden Rápida (Bar/Comida Rápida)' },
-  { code: 'host', label: 'Host/Hostess' },
-  { code: 'delivery', label: 'Repartidor' },
-  { code: 'delivery_mode', label: 'Modo Reparto' },
-  { code: 'clock_only', label: 'Solo Marca Entrada/Salida' },
-];
-
-// Permission categories with their permissions
+// ─── Permission categories ───
 const PERMISSION_CATEGORIES = {
   ventas: {
     label: 'Ventas',
-    icon: '💰',
+    icon: 'DollarSign',
     permissions: {
       open_table: 'Abrir Mesa',
       add_products: 'Agregar Productos',
@@ -50,32 +32,35 @@ const PERMISSION_CATEGORIES = {
   },
   mesas: {
     label: 'Mesas',
-    icon: '🪑',
+    icon: 'LayoutGrid',
     permissions: {
       move_tables: 'Mover Mesas',
       resize_tables: 'Redimensionar Mesas',
       transfer_table: 'Transferir Mesa',
       merge_tables: 'Unir Mesas',
       release_reserved_table: 'Desbloquear Mesa Reservada',
+      access_all_tables: 'Acceder a Todas las Mesas',
     }
   },
   administracion: {
-    label: 'Administración',
-    icon: '📋',
+    label: 'Administracion',
+    icon: 'ClipboardList',
     permissions: {
       view_dashboard: 'Ver Dashboard',
       open_shift: 'Abrir Turno',
       close_shift: 'Cerrar Turno',
-      close_day: 'Cierre de Día',
+      close_day: 'Cierre de Dia',
       view_reports: 'Ver Reportes',
       export_dgii: 'Exportar DGII',
       manage_reservations: 'Gestionar Reservaciones',
+      manage_customers: 'Gestionar Clientes',
       manager_on_duty: 'Gerente en Turno',
+      can_manage_tax_override: 'Exencion de Impuestos',
     }
   },
   inventario: {
     label: 'Inventario',
-    icon: '📦',
+    icon: 'Package',
     permissions: {
       manage_inventory: 'Gestionar Inventario',
       manage_suppliers: 'Gestionar Proveedores',
@@ -83,272 +68,154 @@ const PERMISSION_CATEGORIES = {
       receive_orders: 'Recibir Pedidos',
     }
   },
-  clientes: {
-    label: 'Clientes',
-    icon: '👥',
-    permissions: {
-      manage_customers: 'Gestionar Clientes',
-      view_customer_history: 'Ver Historial Cliente',
-      apply_loyalty: 'Aplicar Puntos Lealtad',
-    }
-  },
   configuracion: {
-    label: 'Configuración',
-    icon: '⚙️',
+    label: 'Configuracion',
+    icon: 'Settings',
     permissions: {
       manage_users: 'Gestionar Usuarios',
-      manage_areas: 'Gestionar Áreas',
+      manage_areas: 'Gestionar Areas',
       manage_tables: 'Gestionar Mesas',
-      manage_payment_methods: 'Gestionar Métodos de Pago',
-      manage_cancellation_reasons: 'Gestionar Razones Anulación',
+      manage_payment_methods: 'Metodos de Pago',
+      manage_cancellation_reasons: 'Razones Anulacion',
       manage_products: 'Gestionar Productos',
-      manage_sale_types: 'Gestionar Tipos de Venta',
-      manage_print_channels: 'Gestionar Impresión',
-      manage_station_config: 'Configurar Estación',
+      manage_sale_types: 'Tipos de Venta',
+      manage_print_channels: 'Gestion Impresion',
+      manage_station_config: 'Config Estacion',
     }
   },
 };
 
-// Default permissions by role
-const ROLE_PERMISSIONS = {
-  admin: {
-    // Admin has ALL permissions
-    ...Object.values(PERMISSION_CATEGORIES).reduce((acc, cat) => {
-      Object.keys(cat.permissions).forEach(p => acc[p] = true);
-      return acc;
-    }, {})
-  },
+// Default permissions by builtin role
+const ROLE_DEFAULTS = {
+  admin: Object.values(PERMISSION_CATEGORIES).reduce((acc, cat) => {
+    Object.keys(cat.permissions).forEach(p => acc[p] = true);
+    return acc;
+  }, {}),
   waiter: {
-    open_table: true,
-    add_products: true,
-    send_kitchen: true,
-    create_bill: true,
-    split_bill: true,
-    view_dashboard: true,
-    manage_reservations: true,
-    view_customer_history: true,
+    open_table: true, add_products: true, send_kitchen: true, create_bill: true,
+    split_bill: true, view_dashboard: true, manage_reservations: true,
   },
   cashier: {
-    open_table: true,
-    add_products: true,
-    void_items: true,
-    send_kitchen: true,
-    create_bill: true,
-    collect_payment: true,
-    split_bill: true,
-    apply_discount: true,
-    reprint_receipt: true,
-    view_dashboard: true,
-    open_shift: true,
-    close_shift: true,
-    view_reports: true,
-    manage_customers: true,
-    view_customer_history: true,
-    apply_loyalty: true,
+    open_table: true, add_products: true, void_items: true, send_kitchen: true,
+    create_bill: true, collect_payment: true, split_bill: true, apply_discount: true,
+    reprint_receipt: true, view_dashboard: true, open_shift: true, close_shift: true,
+    view_reports: true, manage_customers: true, access_all_tables: true,
   },
-  kitchen: {
-    view_dashboard: true,
-    send_kitchen: true,
+  supervisor: {
+    open_table: true, add_products: true, void_items: true, send_kitchen: true,
+    create_bill: true, collect_payment: true, split_bill: true, apply_discount: true,
+    move_tables: true, transfer_table: true, merge_tables: true, release_reserved_table: true,
+    view_dashboard: true, open_shift: true, close_shift: true, view_reports: true,
+    manage_reservations: true, manage_customers: true, reprint_receipt: true,
+    access_all_tables: true,
   },
-  captain: {
-    open_table: true,
-    add_products: true,
-    void_items: true,
-    send_kitchen: true,
-    create_bill: true,
-    collect_payment: true,
-    split_bill: true,
-    apply_discount: true,
-    move_tables: true,
-    transfer_table: true,
-    merge_tables: true,
-    release_reserved_table: true,
-    view_dashboard: true,
-    open_shift: true,
-    close_shift: true,
-    view_reports: true,
-    manage_reservations: true,
-    manage_customers: true,
-    view_customer_history: true,
-    apply_loyalty: true,
-  },
-  host: {
-    view_dashboard: true,
-    manage_reservations: true,
-    release_reserved_table: true,
-  },
+  kitchen: { view_dashboard: true, send_kitchen: true },
 };
 
-// Get all permission keys
-const ALL_PERMISSIONS = Object.values(PERMISSION_CATEGORIES).reduce((acc, cat) => {
-  Object.keys(cat.permissions).forEach(p => acc.push(p));
-  return acc;
-}, []);
+// Role display info  
+const ROLE_DISPLAY = {
+  admin: { label: 'Administrador', color: 'bg-red-500', short: 'ADM' },
+  waiter: { label: 'Mesero', color: 'bg-blue-500', short: 'MES' },
+  cashier: { label: 'Cajero', color: 'bg-emerald-500', short: 'CAJ' },
+  supervisor: { label: 'Supervisor', color: 'bg-purple-500', short: 'SUP' },
+  kitchen: { label: 'Cocina', color: 'bg-amber-500', short: 'COC' },
+};
 
-// Legacy permission labels for backward compatibility
-const PERM_LABELS = Object.values(PERMISSION_CATEGORIES).reduce((acc, cat) => {
-  Object.entries(cat.permissions).forEach(([key, label]) => {
-    acc[key] = label;
-  });
-  return acc;
-}, {});
+function getRoleCode(role) {
+  return role.code || role.id;
+}
+
+function getRoleDefaults(roleCode, roles) {
+  if (ROLE_DEFAULTS[roleCode]) return { ...ROLE_DEFAULTS[roleCode] };
+  const customRole = roles.find(r => getRoleCode(r) === roleCode);
+  if (customRole?.permissions) return { ...customRole.permissions };
+  return {};
+}
+
+function getRoleLabel(roleCode, roles) {
+  if (ROLE_DISPLAY[roleCode]) return ROLE_DISPLAY[roleCode].label;
+  const customRole = roles.find(r => getRoleCode(r) === roleCode);
+  return customRole?.name || roleCode;
+}
+
+function getRoleColor(roleCode) {
+  return ROLE_DISPLAY[roleCode]?.color || 'bg-zinc-600';
+}
+
+// ─── Collapsible section component ───
+function Section({ title, icon: Icon, defaultOpen = false, children, badge }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-border rounded-xl overflow-hidden bg-card">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon size={14} className="text-primary" />}
+          <span className="font-oswald text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</span>
+          {badge}
+        </div>
+        {open ? <ChevronDown size={14} className="text-muted-foreground" /> : <ChevronRight size={14} className="text-muted-foreground" />}
+      </button>
+      {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
+    </div>
+  );
+}
+
+function Input({ label, value, onChange, type = 'text', placeholder, className = '', readOnly, icon: Icon, required, ...props }) {
+  return (
+    <div className={className}>
+      {label && (
+        <label className="text-[11px] text-muted-foreground mb-1 block flex items-center gap-1">
+          {Icon && <Icon size={10} />} {label} {required && <span className="text-red-400">*</span>}
+        </label>
+      )}
+      <input
+        type={type} value={value} onChange={onChange} placeholder={placeholder} readOnly={readOnly}
+        className={`w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:border-primary/50 focus:outline-none transition-colors ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
+        {...props}
+      />
+    </div>
+  );
+}
 
 export default function UserConfig() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const isNew = userId === 'new';
-  
-  // Verificar si el usuario actual puede editar PINs
-  // Solo Admin puede ver/editar PINs de otros usuarios
-  // Cualquiera puede editar su propio PIN
-  const isAdmin = currentUser?.role === 'admin';
-  const isEditingSelf = !isNew && currentUser?.id === userId;
-  const canEditPin = isAdmin || isEditingSelf || isNew;
-  
-  // State para mostrar/ocultar PIN (solo para admin)
-  const [showPin, setShowPin] = useState(false);
 
+  const isAdmin = currentUser?.role === 'admin';
+  const canEditPin = isAdmin || (!isNew && currentUser?.id === userId) || isNew;
+  const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('info');
   const [roles, setRoles] = useState([]);
-  const [revenueCenters, setRevenueCenters] = useState([]);
-  
-  // Permission categories collapse state
-  const [expandedCategories, setExpandedCategories] = useState({
-    ventas: true,
-    mesas: false,
-    administracion: false,
-    inventario: false,
-    clientes: false,
-    configuracion: false,
-  });
+  const [expandedCats, setExpandedCats] = useState({ ventas: true });
+  const [createRoleDialog, setCreateRoleDialog] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
 
-  // Position assignment dialog
-  const [posDialog, setPosDialog] = useState({
-    open: false,
-    position_id: '',
-    hourly_rate: 0,
-    is_primary: false,
-    editIndex: null
-  });
-
-  // Schedule dialog
-  const [scheduleDialog, setScheduleDialog] = useState(false);
-
-  // User form state
   const [user, setUser] = useState({
-    // Basic info
-    name: '',
-    last_name: '',
-    pos_name: '',
-    pin: '',
-    role: 'waiter',
-    active: true,
-    
-    // Contact info
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    state: '',
-    postal_code: '',
-    phone_home: '',
-    phone_work: '',
-    phone_mobile: '',
-    email: '',
-    birth_date: '',
-    social_security: '', // IMSS/Cedula
-    
-    // Employment
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: '',
+    name: '', last_name: '', pos_name: '', pin: '', role: 'waiter', active: true,
+    address_line1: '', address_line2: '', city: '', state: '', postal_code: '',
+    phone_home: '', phone_work: '', phone_mobile: '', email: '', birth_date: '',
+    social_security: '', start_date: new Date().toISOString().split('T')[0], end_date: '',
+    card_number: '', training_mode: false, system_interface: 'restaurant',
+    positions: [], permissions: {}, photo_url: '',
+    // keep other fields for backward compat
+    web_access: false, web_password: '', reference_number: '', shift_rules: '',
+    ignore_hours: false, manager_on_duty: false, till_employee: false,
+    annual_salary: 0, schedule: [], preferred_hours: 0, skill_level: 1,
     revenue_center_id: '',
-    card_number: '',
-    training_mode: false,
-    
-    // Advanced settings
-    system_interface: 'restaurant',
-    web_access: false,
-    web_password: '',
-    reference_number: '',
-    shift_rules: '',
-    ignore_hours: false,
-    manager_on_duty: false,
-    till_employee: false,
-    
-    // Positions/salarios
-    positions: [],
-    annual_salary: 0,
-    
-    // Schedule (7 days x 24 hours)
-    schedule: DAYS.map(() => HOURS.map(() => 'available')), // 'available', 'required', 'unavailable'
-    preferred_hours: 0,
-    skill_level: 1,
-    
-    // Permissions
-    permissions: {},
-    
-    // Photo
-    photo_url: '',
   });
 
   const fetchData = useCallback(async () => {
     try {
-      const [rolesRes] = await Promise.all([
-        axios.get(`${API}/roles`, { headers: hdrs() }),
-      ]);
+      const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
       setRoles(rolesRes.data);
-      
-      // Default revenue centers
-      setRevenueCenters([
-        { id: 'default', name: 'Default Revenue Center' },
-        { id: 'bar', name: 'Bar' },
-        { id: 'restaurant', name: 'Restaurante' },
-        { id: 'terrace', name: 'Terraza' },
-      ]);
 
       if (!isNew) {
         const userRes = await axios.get(`${API}/users/${userId}`, { headers: hdrs() });
         const u = userRes.data;
-        setUser(prev => ({
-          ...prev,
-          name: u.name || '',
-          last_name: u.last_name || '',
-          pos_name: u.pos_name || u.name || '',
-          role: u.role || 'waiter',
-          active: u.active !== false,
-          address_line1: u.address_line1 || '',
-          address_line2: u.address_line2 || '',
-          city: u.city || '',
-          state: u.state || '',
-          postal_code: u.postal_code || '',
-          phone_home: u.phone_home || '',
-          phone_work: u.phone_work || '',
-          phone_mobile: u.phone_mobile || '',
-          email: u.email || '',
-          birth_date: u.birth_date || '',
-          social_security: u.social_security || '',
-          start_date: u.start_date || '',
-          end_date: u.end_date || '',
-          revenue_center_id: u.revenue_center_id || '',
-          card_number: u.card_number || '',
-          training_mode: u.training_mode || false,
-          system_interface: u.system_interface || 'restaurant',
-          web_access: u.web_access || false,
-          reference_number: u.reference_number || '',
-          shift_rules: u.shift_rules || '',
-          ignore_hours: u.ignore_hours || false,
-          manager_on_duty: u.manager_on_duty || false,
-          till_employee: u.till_employee || false,
-          positions: u.positions || [],
-          annual_salary: u.annual_salary || 0,
-          schedule: u.schedule || DAYS.map(() => HOURS.map(() => 'available')),
-          preferred_hours: u.preferred_hours || 0,
-          skill_level: u.skill_level || 1,
-          permissions: u.permissions || {},
-          photo_url: u.photo_url || '',
-        }));
+        setUser(prev => ({ ...prev, ...u, pin: '' }));
       }
     } catch (e) {
       console.error(e);
@@ -358,1144 +225,378 @@ export default function UserConfig() {
     }
   }, [userId, isNew]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // State for duplicate PIN warning modal
-  const [pinDuplicateModal, setPinDuplicateModal] = useState({ open: false, message: '' });
-  
-  // State for card assignment modal
-  const [cardModal, setCardModal] = useState({ open: false, cardInput: '', error: '' });
+  // Derived: current role defaults & special permissions count
+  const roleDefaults = getRoleDefaults(user.role, roles);
+  const specialCount = Object.keys(user.permissions).filter(p => {
+    const userHas = user.permissions[p];
+    const roleHas = roleDefaults[p] || false;
+    return userHas !== roleHas && userHas !== undefined;
+  }).length;
 
-  // Validate PIN format (1-8 digits, cannot start with 0)
   const validatePin = (pin) => {
-    if (!pin) return { valid: true, error: '' }; // Empty is OK for editing
-    
-    // Must be numeric
-    if (!/^\d+$/.test(pin)) {
-      return { valid: false, error: 'El PIN debe contener solo números' };
-    }
-    
-    // Length 1-8
-    if (pin.length < 1 || pin.length > 8) {
-      return { valid: false, error: 'El PIN debe tener entre 1 y 8 dígitos' };
-    }
-    
-    // Cannot start with 0
-    if (pin.startsWith('0')) {
-      return { valid: false, error: 'El PIN no puede iniciar con 0' };
-    }
-    
+    if (!pin) return { valid: true, error: '' };
+    if (!/^\d+$/.test(pin)) return { valid: false, error: 'Solo numeros' };
+    if (pin.length > 8) return { valid: false, error: 'Max 8 digitos' };
+    if (pin.startsWith('0')) return { valid: false, error: 'No puede iniciar con 0' };
     return { valid: true, error: '' };
   };
 
-  // Validate card number (must start with '11', max 8 digits)
-  const validateCardNumber = (card) => {
-    if (!card) return { valid: false, error: 'Ingrese el número de tarjeta' };
-    
-    // Must be numeric
-    if (!/^\d+$/.test(card)) {
-      return { valid: false, error: 'El número de tarjeta debe ser numérico' };
-    }
-    
-    // Must start with '11'
-    if (!card.startsWith('11')) {
-      return { valid: false, error: 'El número de tarjeta debe iniciar con el prefijo "11"' };
-    }
-    
-    // Max 8 digits
-    if (card.length > 8) {
-      return { valid: false, error: 'El número de tarjeta no puede exceder 8 dígitos' };
-    }
-    
-    return { valid: true, error: '' };
+  const handleSelectRole = (role) => {
+    const code = getRoleCode(role);
+    const defaults = role.builtin ? (ROLE_DEFAULTS[code] || {}) : (role.permissions || {});
+    setUser(p => ({ ...p, role: code, permissions: { ...defaults } }));
+    toast.success(`Puesto: ${role.name}`, { duration: 1500 });
   };
 
   const handleSave = async () => {
-    if (!user.name.trim()) {
-      toast.error('El nombre es requerido');
-      return;
-    }
-    
-    // Validate PIN if provided
+    if (!user.name.trim()) { toast.error('El nombre es requerido'); return; }
+    if (isNew && !user.pin) { toast.error('El PIN es requerido'); return; }
     if (user.pin && canEditPin) {
-      const pinValidation = validatePin(user.pin);
-      if (!pinValidation.valid) {
-        toast.error(pinValidation.error);
-        return;
-      }
-    } else if (isNew) {
-      toast.error('El PIN es requerido para nuevos usuarios');
-      return;
-    }
-    
-    // Si no tiene permiso para editar PIN, asegurarse de no enviarlo
-    if (!canEditPin && user.pin) {
-      toast.error('No tiene permiso para modificar el PIN de este usuario');
-      return;
+      const v = validatePin(user.pin);
+      if (!v.valid) { toast.error(v.error); return; }
     }
 
     setSaving(true);
     try {
-      // Check for duplicate PIN before saving (only if can edit and has pin)
       if (user.pin && canEditPin) {
-        const checkRes = await axios.post(`${API}/users/check-pin`, { 
-          pin: user.pin, 
-          exclude_user_id: isNew ? null : userId 
+        const checkRes = await axios.post(`${API}/users/check-pin`, {
+          pin: user.pin, exclude_user_id: isNew ? null : userId
         }, { headers: hdrs() });
-        
         if (checkRes.data.exists) {
           setSaving(false);
-          setPinDuplicateModal({ 
-            open: true, 
-            message: 'Este PIN ya está asignado a otro usuario activo. Por favor, elija un PIN diferente.' 
-          });
+          toast.error('Este PIN ya esta asignado a otro usuario activo');
           return;
         }
       }
 
-      const data = {
-        ...user,
-        pos_name: user.pos_name || `${user.name} ${user.last_name}`.trim(),
-      };
-      
-      // Remove pin if editing and user can't edit pin, or if pin is empty
-      if (!isNew && (!data.pin || !canEditPin)) {
-        delete data.pin;
-      }
+      const data = { ...user, pos_name: user.pos_name || `${user.name} ${user.last_name}`.trim() };
+      if (!isNew && (!data.pin || !canEditPin)) delete data.pin;
 
       if (isNew) {
         await axios.post(`${API}/users`, data, { headers: hdrs() });
-        toast.success('Usuario creado exitosamente');
+        toast.success('Empleado creado');
       } else {
         await axios.put(`${API}/users/${userId}`, data, { headers: hdrs() });
-        toast.success('Usuario actualizado exitosamente');
+        toast.success('Empleado actualizado');
       }
       navigate('/settings');
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error guardando usuario');
-    } finally {
-      setSaving(false);
-    }
+      toast.error(e.response?.data?.detail || 'Error guardando');
+    } finally { setSaving(false); }
   };
 
-  const handleAssignCard = () => {
-    const validation = validateCardNumber(cardModal.cardInput);
-    if (!validation.valid) {
-      setCardModal(prev => ({ ...prev, error: validation.error }));
-      return;
-    }
-    
-    setUser(prev => ({ ...prev, card_number: cardModal.cardInput }));
-    setCardModal({ open: false, cardInput: '', error: '' });
-    toast.success('Tarjeta asignada correctamente');
-  };
-
-  const handleAddPosition = () => {
-    const { position_id, hourly_rate, is_primary, editIndex } = posDialog;
-    if (!position_id) {
-      toast.error('Seleccione un puesto');
-      return;
-    }
-
-    const position = {
-      position_id,
-      position_name: roles.find(r => r.id === position_id)?.name || position_id,
-      hourly_rate: parseFloat(hourly_rate) || 0,
-      is_primary,
-    };
-
-    if (editIndex !== null) {
-      setUser(prev => ({
-        ...prev,
-        positions: prev.positions.map((p, i) => i === editIndex ? position : (is_primary ? { ...p, is_primary: false } : p))
-      }));
-    } else {
-      setUser(prev => ({
-        ...prev,
-        positions: is_primary 
-          ? [...prev.positions.map(p => ({ ...p, is_primary: false })), position]
-          : [...prev.positions, position]
-      }));
-    }
-
-    setPosDialog({ open: false, position_id: '', hourly_rate: 0, is_primary: false, editIndex: null });
-  };
-
-  const handleRemovePosition = (index) => {
-    setUser(prev => ({
-      ...prev,
-      positions: prev.positions.filter((_, i) => i !== index)
-    }));
-  };
-
-  const toggleScheduleCell = (dayIdx, hourIdx) => {
-    setUser(prev => {
-      const newSchedule = prev.schedule.map((day, di) =>
-        day.map((hour, hi) => {
-          if (di === dayIdx && hi === hourIdx) {
-            // Cycle: available -> required -> unavailable -> available
-            if (hour === 'available') return 'required';
-            if (hour === 'required') return 'unavailable';
-            return 'available';
-          }
-          return hour;
-        })
-      );
-      return { ...prev, schedule: newSchedule };
-    });
-  };
-
-  const getScheduleCellColor = (status) => {
-    switch (status) {
-      case 'required': return 'bg-green-500';
-      case 'unavailable': return 'bg-zinc-900';
-      default: return 'bg-red-500/30';
-    }
+  const handleCreateRole = async () => {
+    if (!newRoleName.trim()) { toast.error('Nombre del puesto requerido'); return; }
+    try {
+      const code = newRoleName.trim().toLowerCase().replace(/\s+/g, '_');
+      await axios.post(`${API}/roles`, { name: newRoleName.trim(), code, permissions: {} }, { headers: hdrs() });
+      toast.success(`Puesto "${newRoleName}" creado`);
+      setNewRoleName('');
+      setCreateRoleDialog(false);
+      const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
+      setRoles(rolesRes.data);
+    } catch (e) { toast.error('Error creando puesto'); }
   };
 
   if (loading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
+    return <div className="h-full flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
   }
+
+  const currentRoleLabel = getRoleLabel(user.role, roles);
 
   return (
     <div className="h-full flex flex-col" data-testid="user-config-page">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
+      {/* ═══ HEADER ═══ */}
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50 flex-shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} data-testid="back-btn">
             <ArrowLeft size={20} />
           </Button>
-          <User size={22} className="text-primary" />
-          <h1 className="font-oswald text-xl font-bold tracking-wide">
-            {isNew ? 'NUEVO EMPLEADO' : 'EDITAR EMPLEADO'}
-          </h1>
-          {!isNew && (
-            <Badge variant={user.active ? 'default' : 'destructive'} className="ml-2">
-              {user.active ? 'Activo' : 'Inactivo'}
+          <User size={20} className="text-primary" />
+          <h1 className="font-oswald text-lg font-bold tracking-wide">{isNew ? 'NUEVO EMPLEADO' : 'EDITAR EMPLEADO'}</h1>
+          {!isNew && <Badge variant={user.active ? 'default' : 'destructive'}>{user.active ? 'Activo' : 'Inactivo'}</Badge>}
+          {user.training_mode && (
+            <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse">
+              <GraduationCap size={12} className="mr-1" /> ENTRENAMIENTO
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 mr-4">
-            <span className="text-xs text-muted-foreground">Está Activo?</span>
-            <Switch 
-              checked={user.active}
-              onCheckedChange={v => setUser(p => ({ ...p, active: v }))}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground">Activo</span>
+            <Switch checked={user.active} onCheckedChange={v => setUser(p => ({ ...p, active: v }))} />
+          </div>
+          <div className="h-5 w-px bg-border" />
+          <div className="flex items-center gap-2">
+            <GraduationCap size={14} className={user.training_mode ? 'text-amber-400' : 'text-muted-foreground'} />
+            <span className="text-[11px] text-muted-foreground">Entrenamiento</span>
+            <Switch
+              checked={user.training_mode}
+              onCheckedChange={v => setUser(p => ({ ...p, training_mode: v }))}
+              data-testid="training-mode-switch"
+              className={user.training_mode ? 'data-[state=checked]:bg-amber-500' : ''}
             />
           </div>
-          <Button 
-            onClick={handleSave} 
-            disabled={saving}
-            className="bg-primary text-primary-foreground font-oswald font-bold active:scale-95"
-            data-testid="save-user-btn"
-          >
-            <Save size={16} className="mr-2" />
-            {saving ? 'GUARDANDO...' : 'GUARDAR'}
+          <div className="h-5 w-px bg-border" />
+          <Button onClick={handleSave} disabled={saving} className="bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="save-user-btn">
+            <Save size={16} className="mr-2" /> {saving ? 'GUARDANDO...' : 'GUARDAR'}
           </Button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 p-4 overflow-auto">
-        <div className="max-w-4xl mx-auto">
-          {/* User name header */}
-          <div className="mb-4 pb-3 border-b border-border">
-            <h2 className="text-2xl font-bold text-primary font-oswald">
-              {user.name || 'Nuevo'} {user.last_name}
-            </h2>
+      {/* ═══ MAIN CONTENT ═══ */}
+      <div className="flex-1 overflow-auto p-4">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+          {/* ═══ LEFT COLUMN: Employee Data ═══ */}
+          <div className="lg:col-span-5 space-y-4">
+            {/* Essential Info */}
+            <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+              <h3 className="font-oswald text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <User size={14} className="text-primary" /> Datos del Empleado
+              </h3>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Nombre" value={user.name} required onChange={e => setUser(p => ({ ...p, name: e.target.value }))} data-testid="user-name-input" />
+                <Input label="Apellido" value={user.last_name} onChange={e => setUser(p => ({ ...p, last_name: e.target.value }))} data-testid="user-lastname-input" />
+              </div>
+
+              <Input label="Nombre P.O.S." value={user.pos_name} onChange={e => setUser(p => ({ ...p, pos_name: e.target.value }))} placeholder={`${user.name} ${user.last_name}`.trim()} />
+
+              {/* PIN */}
+              <div>
+                <label className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
+                  <Lock size={10} /> PIN de Acceso {isNew && <span className="text-red-400">*</span>}
+                  {!canEditPin && <Badge variant="outline" className="text-[9px] border-amber-500 text-amber-400 ml-1">Solo Admin</Badge>}
+                </label>
+                {canEditPin ? (
+                  <div className="relative">
+                    <input
+                      type={showPin ? 'text' : 'password'} value={user.pin} maxLength={8}
+                      onChange={e => setUser(p => ({ ...p, pin: e.target.value.replace(/\D/g, '') }))}
+                      placeholder={isNew ? '1-8 digitos' : 'Vacio = no cambiar'}
+                      className={`w-full bg-background border rounded-lg px-3 py-2 pr-10 text-sm font-mono tracking-widest ${user.pin && !validatePin(user.pin).valid ? 'border-red-500' : 'border-border'}`}
+                      data-testid="user-pin-input"
+                    />
+                    {isAdmin && (
+                      <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    )}
+                    {user.pin && !validatePin(user.pin).valid && <p className="text-[10px] text-red-500 mt-1">{validatePin(user.pin).error}</p>}
+                  </div>
+                ) : (
+                  <div className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-sm font-mono text-muted-foreground">
+                    ???????? <span className="text-xs ml-2 text-amber-400">(Contacte al admin)</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Photo */}
+              <div className="flex items-center gap-3 pt-1">
+                <div className="w-16 h-16 rounded-xl bg-background border-2 border-dashed border-border flex items-center justify-center flex-shrink-0">
+                  {user.photo_url ? <img src={user.photo_url} alt="" className="w-full h-full object-cover rounded-xl" /> : <Camera size={24} className="text-muted-foreground/30" />}
+                </div>
+                <div className="flex-1 text-sm">
+                  <p className="font-oswald font-bold text-lg">{user.name || 'Nuevo'} {user.last_name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge className={`${getRoleColor(user.role)} text-white text-[10px]`}>{currentRoleLabel}</Badge>
+                    {user.training_mode && <Badge className="bg-amber-500/20 text-amber-400 text-[10px]">Entrenamiento</Badge>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Info - Collapsible */}
+            <Section title="Contacto" icon={Phone}>
+              <div className="grid grid-cols-3 gap-2">
+                <Input label="Tel. Casa" value={user.phone_home} onChange={e => setUser(p => ({ ...p, phone_home: e.target.value }))} />
+                <Input label="Tel. Trabajo" value={user.phone_work} onChange={e => setUser(p => ({ ...p, phone_work: e.target.value }))} />
+                <Input label="Tel. Movil" value={user.phone_mobile} onChange={e => setUser(p => ({ ...p, phone_mobile: e.target.value }))} />
+              </div>
+              <Input label="Email" type="email" icon={Mail} value={user.email} onChange={e => setUser(p => ({ ...p, email: e.target.value }))} />
+              <Input label="Direccion" value={user.address_line1} onChange={e => setUser(p => ({ ...p, address_line1: e.target.value }))} />
+              <div className="grid grid-cols-3 gap-2">
+                <Input label="Ciudad" value={user.city} onChange={e => setUser(p => ({ ...p, city: e.target.value }))} />
+                <Input label="Estado" value={user.state} onChange={e => setUser(p => ({ ...p, state: e.target.value }))} />
+                <Input label="Cod.Postal" value={user.postal_code} onChange={e => setUser(p => ({ ...p, postal_code: e.target.value }))} />
+              </div>
+            </Section>
+
+            {/* Employment - Collapsible */}
+            <Section title="Empleo" icon={Briefcase}>
+              <Input label="Cedula / IMSS" value={user.social_security} onChange={e => setUser(p => ({ ...p, social_security: e.target.value }))} />
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Fecha Inicio" type="date" value={user.start_date} onChange={e => setUser(p => ({ ...p, start_date: e.target.value }))} />
+                <Input label="Fecha Fin" type="date" value={user.end_date} onChange={e => setUser(p => ({ ...p, end_date: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Fecha Nacimiento" type="date" icon={Calendar} value={user.birth_date} onChange={e => setUser(p => ({ ...p, birth_date: e.target.value }))} />
+                <Input label="Tarjeta #" value={user.card_number} readOnly placeholder="Sin asignar" />
+              </div>
+            </Section>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-card border border-border mb-4 w-full justify-start gap-1 p-1">
-              <TabsTrigger 
-                value="info" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald"
-                data-testid="tab-info"
-              >
-                <User size={14} className="mr-1" /> Informc.Empleado
-              </TabsTrigger>
-              <TabsTrigger 
-                value="advanced" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald"
-                data-testid="tab-advanced"
-              >
-                <Settings size={14} className="mr-1" /> Avanzado
-              </TabsTrigger>
-              <TabsTrigger 
-                value="positions" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald"
-                data-testid="tab-positions"
-              >
-                <Briefcase size={14} className="mr-1" /> Empleador
-              </TabsTrigger>
-            </TabsList>
+          {/* ═══ RIGHT COLUMN: Puesto + Permissions ═══ */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Puesto Selector */}
+            <div className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-oswald text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Briefcase size={14} className="text-primary" /> Seleccionar Puesto
+                </h3>
+                <Button size="sm" variant="outline" onClick={() => setCreateRoleDialog(true)} className="h-7 text-xs" data-testid="create-role-btn">
+                  <Plus size={12} className="mr-1" /> Crear Puesto
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-3">
+                Al seleccionar un puesto se cargan los permisos por defecto. Luego puedes personalizarlos abajo.
+              </p>
+              <div className="flex flex-wrap gap-2" data-testid="role-selector">
+                {roles.map(role => {
+                  const code = getRoleCode(role);
+                  const isSelected = user.role === code;
+                  const permCount = role.builtin
+                    ? Object.values(ROLE_DEFAULTS[code] || {}).filter(Boolean).length
+                    : Object.values(role.permissions || {}).filter(Boolean).length;
 
-            {/* INFO TAB */}
-            <TabsContent value="info" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Left column - Basic Info */}
-                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                  <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                    Información Personal
-                  </h3>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Nombre Empleado *</label>
-                      <input 
-                        value={user.name}
-                        onChange={e => setUser(p => ({ ...p, name: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                        data-testid="user-name-input"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Apellido</label>
-                      <input 
-                        value={user.last_name}
-                        onChange={e => setUser(p => ({ ...p, last_name: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                        data-testid="user-lastname-input"
-                      />
-                    </div>
-                  </div>
+                  return (
+                    <button
+                      key={role.id}
+                      onClick={() => handleSelectRole(role)}
+                      data-testid={`role-option-${code}`}
+                      className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                        isSelected
+                          ? `${getRoleColor(code)} text-white shadow-lg shadow-primary/20 scale-105`
+                          : 'bg-background border border-border hover:border-primary/50 hover:bg-muted/30'
+                      }`}
+                    >
+                      {isSelected && <Check size={14} />}
+                      <span className="font-oswald">{role.name}</span>
+                      <span className={`text-[10px] ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
+                        {permCount}p
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Nombre P.O.S.</label>
-                    <input 
-                      value={user.pos_name}
-                      onChange={e => setUser(p => ({ ...p, pos_name: e.target.value }))}
-                      placeholder={`${user.name} ${user.last_name}`.trim() || 'Nombre para el POS'}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Dirección Línea 1</label>
-                    <input 
-                      value={user.address_line1}
-                      onChange={e => setUser(p => ({ ...p, address_line1: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Dirección Línea 2</label>
-                    <input 
-                      value={user.address_line2}
-                      onChange={e => setUser(p => ({ ...p, address_line2: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Ciudad</label>
-                      <input 
-                        value={user.city}
-                        onChange={e => setUser(p => ({ ...p, city: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Estado</label>
-                      <input 
-                        value={user.state}
-                        onChange={e => setUser(p => ({ ...p, state: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Cód.Postal</label>
-                      <input 
-                        value={user.postal_code}
-                        onChange={e => setUser(p => ({ ...p, postal_code: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Cédula / IMSS</label>
-                    <input 
-                      value={user.social_security}
-                      onChange={e => setUser(p => ({ ...p, social_security: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                        <Phone size={10} /> Tel. Casa
-                      </label>
-                      <input 
-                        value={user.phone_home}
-                        onChange={e => setUser(p => ({ ...p, phone_home: e.target.value }))}
-                        placeholder="(   )"
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                        <Phone size={10} /> Tel. Trabajo
-                      </label>
-                      <input 
-                        value={user.phone_work}
-                        onChange={e => setUser(p => ({ ...p, phone_work: e.target.value }))}
-                        placeholder="(   )"
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                        <Phone size={10} /> Tel. Móvil
-                      </label>
-                      <input 
-                        value={user.phone_mobile}
-                        onChange={e => setUser(p => ({ ...p, phone_mobile: e.target.value }))}
-                        placeholder="(   )"
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Mail size={10} /> Email
-                    </label>
-                    <input 
-                      type="email"
-                      value={user.email}
-                      onChange={e => setUser(p => ({ ...p, email: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                        <Calendar size={10} /> Fecha Nacimiento
-                      </label>
-                      <input 
-                        type="date"
-                        value={user.birth_date}
-                        onChange={e => setUser(p => ({ ...p, birth_date: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div className="text-center pt-5">
-                      <span className="text-xs text-muted-foreground">Edad</span>
-                      <p className="font-oswald font-bold text-primary">
-                        {user.birth_date ? Math.floor((new Date() - new Date(user.birth_date)) / 31557600000) : '-'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-                    <div>
-                      <span className="text-sm font-semibold">Md. Entrenamiento</span>
-                      <p className="text-[10px] text-muted-foreground">Usuario en modo de capacitación</p>
-                    </div>
-                    <Switch 
-                      checked={user.training_mode}
-                      onCheckedChange={v => setUser(p => ({ ...p, training_mode: v }))}
-                    />
-                  </div>
+            {/* Permissions Grid */}
+            <div className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-oswald text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Shield size={14} className="text-primary" /> Permisos de {currentRoleLabel}
+                </h3>
+                <div className="flex items-center gap-2">
+                  {specialCount > 0 && (
+                    <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px]">
+                      <AlertTriangle size={10} className="mr-1" /> {specialCount} especial(es)
+                    </Badge>
+                  )}
+                  <Button variant="outline" size="sm" className="h-7 text-xs" data-testid="reset-permissions-btn"
+                    onClick={() => { setUser(p => ({ ...p, permissions: getRoleDefaults(p.role, roles) })); toast.success('Permisos restablecidos'); }}>
+                    <RotateCcw size={12} className="mr-1" /> Restablecer
+                  </Button>
                 </div>
+              </div>
 
-                {/* Right column - POS & Employment */}
-                <div className="space-y-4">
-                  {/* POS Functions */}
-                  <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                    <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                      Configuración POS
-                    </h3>
+              <div className="space-y-2 max-h-[calc(100vh-360px)] overflow-y-auto pr-1" data-testid="permissions-grid">
+                {Object.entries(PERMISSION_CATEGORIES).map(([catKey, cat]) => {
+                  const isExpanded = expandedCats[catKey];
+                  const catPerms = Object.keys(cat.permissions);
+                  const activeCount = catPerms.filter(p => user.permissions[p]).length;
+                  const specialInCat = catPerms.filter(p => {
+                    const has = user.permissions[p];
+                    const def = roleDefaults[p] || false;
+                    return has !== def && has !== undefined;
+                  }).length;
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Inicio Día</label>
-                        <input 
-                          type="date"
-                          value={user.start_date}
-                          onChange={e => setUser(p => ({ ...p, start_date: e.target.value }))}
-                          className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Fin de Día</label>
-                        <input 
-                          type="date"
-                          value={user.end_date}
-                          onChange={e => setUser(p => ({ ...p, end_date: e.target.value }))}
-                          placeholder="01/01/6000"
-                          className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Tarjeta #</label>
-                        <input 
-                          value={user.card_number}
-                          readOnly
-                          placeholder="Sin asignar"
-                          className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono cursor-not-allowed opacity-70"
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button 
-                          variant="outline" 
-                          className="w-full" 
-                          size="sm"
-                          onClick={() => setCardModal({ open: true, cardInput: '', error: '' })}
-                        >
-                          Asignar Tarjeta
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-2">
-                        PIN de Acceso {isNew && '*'}
-                        {!canEditPin && (
-                          <Badge variant="outline" className="text-[9px] border-amber-500 text-amber-400">
-                            <Lock size={10} className="mr-1" />
-                            Solo Admin
-                          </Badge>
-                        )}
-                      </label>
-                      
-                      {canEditPin ? (
-                        <div className="relative">
-                          <input 
-                            type={showPin ? "text" : "password"}
-                            value={user.pin}
-                            onChange={e => {
-                              const val = e.target.value.replace(/\D/g, ''); // Solo números
-                              setUser(p => ({ ...p, pin: val }));
-                            }}
-                            placeholder={isNew ? '1-8 dígitos (no inicia con 0)' : 'Vacío = no cambiar'}
-                            maxLength={8}
-                            className={`w-full bg-background border rounded-lg px-3 py-2 pr-10 text-sm font-mono tracking-widest ${
-                              user.pin && !validatePin(user.pin).valid 
-                                ? 'border-red-500 focus:border-red-500' 
-                                : 'border-border'
-                            }`}
-                            data-testid="user-pin-input"
-                          />
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => setShowPin(!showPin)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                              title={showPin ? 'Ocultar PIN' : 'Mostrar PIN'}
-                            >
-                              {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
+                  return (
+                    <div key={catKey} className="border border-border rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setExpandedCats(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
+                        className="w-full flex items-center justify-between px-4 py-2.5 bg-background hover:bg-muted/30 transition-colors"
+                        data-testid={`perm-category-${catKey}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-oswald font-bold text-sm">{cat.label}</span>
+                          <Badge variant="secondary" className="text-[10px]">{activeCount}/{catPerms.length}</Badge>
+                          {specialInCat > 0 && (
+                            <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px]">{specialInCat} especial</Badge>
                           )}
                         </div>
-                      ) : (
-                        <div className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-sm font-mono tracking-widest text-muted-foreground">
-                          ••••••••
-                          <span className="text-xs ml-2 text-amber-400">(Contacte al administrador)</span>
-                        </div>
-                      )}
-                      
-                      {canEditPin && user.pin && !validatePin(user.pin).valid && (
-                        <p className="text-[10px] text-red-500 mt-1">{validatePin(user.pin).error}</p>
-                      )}
-                      {canEditPin && user.pin && validatePin(user.pin).valid && (
-                        <p className="text-[10px] text-green-500 mt-1">✓ PIN válido ({user.pin.length} dígitos)</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Photo & Actions */}
-                  <div className="bg-card border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-24 h-24 rounded-xl bg-background border-2 border-dashed border-border flex items-center justify-center">
-                        {user.photo_url ? (
-                          <img src={user.photo_url} alt="Foto" className="w-full h-full object-cover rounded-xl" />
-                        ) : (
-                          <Camera size={32} className="text-muted-foreground/30" />
-                        )}
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <Button variant="outline" className="w-full justify-start" size="sm">
-                          <Camera size={14} className="mr-2" /> Foto
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start" 
-                          size="sm"
-                          onClick={() => setScheduleDialog(true)}
-                        >
-                          <Clock size={14} className="mr-2" /> Horarios
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Permissions - New Advanced Panel */}
-                  <div className="bg-card border border-border rounded-xl p-4 col-span-full">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                        <Shield size={14} /> Sistema de Permisos
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        {/* Count special permissions */}
-                        {(() => {
-                          const rolePerms = ROLE_PERMISSIONS[user.role] || {};
-                          const specialCount = Object.keys(user.permissions).filter(p => {
-                            const userHas = user.permissions[p];
-                            const roleHas = rolePerms[p] || false;
-                            return userHas !== roleHas && userHas !== undefined;
-                          }).length;
-                          return specialCount > 0 && (
-                            <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/30 text-[10px]">
-                              <AlertTriangle size={10} className="mr-1" />
-                              {specialCount} permiso(s) especial(es)
-                            </Badge>
-                          );
-                        })()}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const rolePerms = ROLE_PERMISSIONS[user.role] || {};
-                            setUser(p => ({ ...p, permissions: { ...rolePerms } }));
-                            toast.success('Permisos restablecidos al rol base');
-                          }}
-                          className="text-xs h-7"
-                        >
-                          <RotateCcw size={12} className="mr-1" /> Restablecer a Rol
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Role info banner */}
-                    <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-xs text-muted-foreground">Rol actual:</span>
-                          <Badge className={`ml-2 ${
-                            user.role === 'admin' ? 'bg-red-500' :
-                            user.role === 'waiter' ? 'bg-blue-500' :
-                            user.role === 'cashier' ? 'bg-green-500' :
-                            user.role === 'kitchen' ? 'bg-orange-500' :
-                            user.role === 'captain' ? 'bg-purple-500' :
-                            'bg-gray-500'
-                          }`}>
-                            {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
-                          </Badge>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {Object.values(user.permissions).filter(Boolean).length} permisos activos
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Permission Categories */}
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                      {Object.entries(PERMISSION_CATEGORIES).map(([catKey, category]) => {
-                        const isExpanded = expandedCategories[catKey];
-                        const rolePerms = ROLE_PERMISSIONS[user.role] || {};
-                        const catPermissions = Object.keys(category.permissions);
-                        const activeInCat = catPermissions.filter(p => user.permissions[p]).length;
-                        const specialInCat = catPermissions.filter(p => {
-                          const userHas = user.permissions[p];
-                          const roleHas = rolePerms[p] || false;
-                          return userHas !== roleHas && userHas !== undefined;
-                        }).length;
-                        
-                        return (
-                          <div key={catKey} className="border border-border rounded-lg overflow-hidden">
-                            {/* Category Header */}
-                            <button
-                              onClick={() => setExpandedCategories(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
-                              className="w-full flex items-center justify-between p-3 bg-background hover:bg-muted/50 transition-colors"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">{category.icon}</span>
-                                <span className="font-oswald font-bold text-sm">{category.label}</span>
-                                <Badge variant="secondary" className="text-[10px] ml-1">
-                                  {activeInCat}/{catPermissions.length}
-                                </Badge>
-                                {specialInCat > 0 && (
-                                  <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px]">
-                                    {specialInCat} especial
-                                  </Badge>
-                                )}
-                              </div>
-                              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            
-                            {/* Category Permissions */}
-                            {isExpanded && (
-                              <div className="p-3 bg-card/50 border-t border-border space-y-1">
-                                {Object.entries(category.permissions).map(([permKey, permLabel]) => {
-                                  const userHas = user.permissions[permKey] || false;
-                                  const roleHas = rolePerms[permKey] || false;
-                                  const isSpecial = userHas !== roleHas;
-                                  
-                                  return (
-                                    <div 
-                                      key={permKey} 
-                                      className={`flex items-center justify-between p-2 rounded-lg transition-all ${
-                                        isSpecial 
-                                          ? 'bg-orange-500/5 border-2 border-orange-500/40' 
-                                          : 'bg-background border border-border'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm">{permLabel}</span>
-                                        {isSpecial && (
-                                          <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[9px] py-0">
-                                            Especial
-                                          </Badge>
-                                        )}
-                                        {!isSpecial && roleHas && (
-                                          <span className="text-[9px] text-muted-foreground">(por rol)</span>
-                                        )}
-                                      </div>
-                                      <Switch 
-                                        checked={userHas} 
-                                        onCheckedChange={(v) => setUser(p => ({ 
-                                          ...p, 
-                                          permissions: { ...p.permissions, [permKey]: v } 
-                                        }))}
-                                        className={isSpecial ? 'data-[state=checked]:bg-orange-500' : ''}
-                                      />
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Legend */}
-                    <div className="mt-4 pt-3 border-t border-border flex items-center gap-4 text-[10px] text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded border-2 border-orange-500/40 bg-orange-500/10"></div>
-                        <span>Permiso Especial (fuera del rol)</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded border border-border bg-background"></div>
-                        <span>Permiso del Rol</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* ADVANCED TAB */}
-            <TabsContent value="advanced" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* System Interface */}
-                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                  <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                    Interfase Sistema
-                  </h3>
-                  <div className="space-y-2">
-                    {SYSTEM_INTERFACES.map(si => (
-                      <label key={si.code} className="flex items-center gap-3 p-2 rounded-lg bg-background border border-border hover:border-primary/50 cursor-pointer">
-                        <input 
-                          type="radio"
-                          name="system_interface"
-                          value={si.code}
-                          checked={user.system_interface === si.code}
-                          onChange={e => setUser(p => ({ ...p, system_interface: e.target.value }))}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <span className="text-sm">{si.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Other Options */}
-                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                  <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                    Opciones Adicionales
-                  </h3>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2 rounded bg-background border border-border">
-                      <span className="text-sm">Despreciar Horas del Empleado</span>
-                      <Switch 
-                        checked={user.ignore_hours}
-                        onCheckedChange={v => setUser(p => ({ ...p, ignore_hours: v }))}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-background border border-border">
-                      <span className="text-sm">Gerente en Servicio</span>
-                      <Switch 
-                        checked={user.manager_on_duty}
-                        onCheckedChange={v => setUser(p => ({ ...p, manager_on_duty: v }))}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between p-2 rounded bg-background border border-border">
-                      <span className="text-sm">Till Employee/Card</span>
-                      <Switch 
-                        checked={user.till_employee}
-                        onCheckedChange={v => setUser(p => ({ ...p, till_employee: v }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* POSITIONS TAB */}
-            <TabsContent value="positions" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Config. Puesto */}
-                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                      Config. Puesto
-                    </h3>
-                    <Button 
-                      size="sm"
-                      onClick={() => setPosDialog({ open: true, position_id: roles[0]?.id || '', hourly_rate: 0, is_primary: user.positions.length === 0, editIndex: null })}
-                      className="bg-primary text-primary-foreground font-bold active:scale-95"
-                    >
-                      <Plus size={14} className="mr-1" /> Agregar
-                    </Button>
-                  </div>
-
-                  {/* Positions table */}
-                  <div className="border border-border rounded-lg overflow-hidden">
-                    <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-muted/30 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                      <div className="col-span-5">Puesto</div>
-                      <div className="col-span-3 text-right">Pagar Tarifa/H</div>
-                      <div className="col-span-2 text-center">Primaria</div>
-                      <div className="col-span-2"></div>
-                    </div>
-                    <div className="divide-y divide-border">
-                      {user.positions.length === 0 ? (
-                        <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                          Sin puestos asignados
-                        </div>
-                      ) : (
-                        user.positions.map((pos, idx) => (
-                          <div key={idx} className={`grid grid-cols-12 gap-2 px-3 py-2 items-center ${pos.is_primary ? 'bg-primary/10' : ''}`}>
-                            <div className="col-span-5 text-sm font-medium">
-                              {pos.position_name}
-                            </div>
-                            <div className="col-span-3 text-right font-oswald text-sm">
-                              {pos.hourly_rate?.toFixed(2) || '0.00'}
-                            </div>
-                            <div className="col-span-2 text-center">
-                              <input 
-                                type="checkbox" 
-                                checked={pos.is_primary} 
-                                onChange={() => {
-                                  setUser(prev => ({
-                                    ...prev,
-                                    positions: prev.positions.map((p, i) => ({
-                                      ...p,
-                                      is_primary: i === idx
-                                    }))
-                                  }));
-                                }}
-                                className="w-4 h-4"
-                              />
-                            </div>
-                            <div className="col-span-2 flex justify-end">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6 text-destructive/60 hover:text-destructive"
-                                onClick={() => handleRemovePosition(idx)}
-                              >
-                                <Trash2 size={12} />
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Role Selection */}
-                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                  <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                    Selecc. Puesto Labores
-                  </h3>
-                  <p className="text-[10px] text-muted-foreground">
-                    Al cambiar el puesto, los permisos se cargarán automáticamente según el rol.
-                  </p>
-                  
-                  <div className="space-y-1">
-                    {roles.map(role => (
-                      <button
-                        key={role.id}
-                        onClick={() => {
-                          const newRole = role.code;
-                          const defaultPerms = ROLE_PERMISSIONS[newRole] || {};
-                          setUser(p => ({ 
-                            ...p, 
-                            role: newRole,
-                            permissions: { ...defaultPerms }
-                          }));
-                          toast.info(`Permisos cargados para ${role.name}`);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
-                          user.role === role.code 
-                            ? 'bg-primary text-primary-foreground font-semibold' 
-                            : 'bg-background border border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <span className="font-oswald mr-2 text-xs opacity-60">{role.level || '00'}</span>
-                        {role.name}
-                        <span className="float-right text-[9px] opacity-60">
-                          {Object.values(ROLE_PERMISSIONS[role.code] || {}).filter(Boolean).length} permisos
-                        </span>
+                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </button>
-                    ))}
-                  </div>
+
+                      {isExpanded && (
+                        <div className="px-3 pb-3 pt-1 bg-card/50 border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-1">
+                          {Object.entries(cat.permissions).map(([permKey, permLabel]) => {
+                            const userHas = user.permissions[permKey] || false;
+                            const roleHas = roleDefaults[permKey] || false;
+                            const isSpecial = userHas !== roleHas;
+
+                            return (
+                              <div
+                                key={permKey}
+                                className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
+                                  isSpecial ? 'bg-orange-500/5 border border-orange-500/30' : 'bg-background border border-transparent'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-sm truncate">{permLabel}</span>
+                                  {isSpecial && <span className="text-[9px] text-orange-400 flex-shrink-0">especial</span>}
+                                </div>
+                                <Switch
+                                  checked={userHas}
+                                  onCheckedChange={v => setUser(p => ({ ...p, permissions: { ...p.permissions, [permKey]: v } }))}
+                                  className={`flex-shrink-0 ${isSpecial ? 'data-[state=checked]:bg-orange-500' : ''}`}
+                                  data-testid={`perm-${permKey}`}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="mt-3 pt-3 border-t border-border flex items-center gap-4 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded border border-orange-500/40 bg-orange-500/10" />
+                  <span>Permiso Especial (fuera del puesto)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded border border-border bg-background" />
+                  <span>Permiso del Puesto</span>
                 </div>
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Position Dialog */}
-      <Dialog open={posDialog.open} onOpenChange={(o) => !o && setPosDialog(p => ({ ...p, open: false }))}>
+      {/* ═══ Create Role Dialog ═══ */}
+      <Dialog open={createRoleDialog} onOpenChange={setCreateRoleDialog}>
         <DialogContent className="max-w-sm bg-card border-border">
           <DialogHeader>
             <DialogTitle className="font-oswald flex items-center gap-2">
-              <Briefcase size={18} className="text-primary" />
-              {posDialog.editIndex !== null ? 'Editar' : 'Agregar'} Puesto
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Puesto</label>
-              <select 
-                value={posDialog.position_id}
-                onChange={e => setPosDialog(p => ({ ...p, position_id: e.target.value }))}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
-              >
-                <option value="">Seleccionar...</option>
-                {roles.map(role => (
-                  <option key={role.id} value={role.id}>{role.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Pagar Tarifa/Hora</label>
-              <input 
-                type="number"
-                step="0.01"
-                value={posDialog.hourly_rate}
-                onChange={e => setPosDialog(p => ({ ...p, hourly_rate: parseFloat(e.target.value) || 0 }))}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm font-oswald"
-              />
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-              <span className="text-sm">Primaria</span>
-              <Switch 
-                checked={posDialog.is_primary}
-                onCheckedChange={v => setPosDialog(p => ({ ...p, is_primary: v }))}
-              />
-            </div>
-            <Button onClick={handleAddPosition} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
-              {posDialog.editIndex !== null ? 'GUARDAR' : 'AGREGAR'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Schedule Dialog */}
-      <Dialog open={scheduleDialog} onOpenChange={setScheduleDialog}>
-        <DialogContent className="max-w-4xl bg-card border-border" data-testid="schedule-dialog">
-          <DialogHeader>
-            <DialogTitle className="font-oswald flex items-center gap-2">
-              <Clock size={18} className="text-primary" />
-              Formato Horarios de Empleado
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Schedule Grid */}
-            <div className="lg:col-span-2 overflow-auto">
-              <div className="min-w-[500px]">
-                {/* Header */}
-                <div className="grid grid-cols-8 gap-px mb-px">
-                  <div className="text-[10px] text-muted-foreground p-1"></div>
-                  {DAYS.map(day => (
-                    <div key={day} className="text-[10px] text-center font-semibold text-muted-foreground p-1">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-                {/* Grid */}
-                <div className="border border-border rounded overflow-hidden">
-                  {HOURS.map((hour, hourIdx) => (
-                    <div key={hour} className="grid grid-cols-8 gap-px bg-border">
-                      <div className="bg-card text-[9px] text-muted-foreground p-1 flex items-center">
-                        {hour}
-                      </div>
-                      {DAYS.map((_, dayIdx) => (
-                        <button
-                          key={dayIdx}
-                          onClick={() => toggleScheduleCell(dayIdx, hourIdx)}
-                          className={`h-5 ${getScheduleCellColor(user.schedule[dayIdx]?.[hourIdx])} hover:opacity-80 transition-opacity`}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Legend & Info */}
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-oswald text-sm mb-2">Horario de:</h4>
-                <p className="text-lg font-semibold">{user.name} {user.last_name}</p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-red-500/30 rounded" />
-                  <span className="text-sm">No Requerido</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-500 rounded" />
-                  <span className="text-sm">Requerido</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-zinc-900 rounded border border-border" />
-                  <span className="text-sm">No puede trabajar</span>
-                </div>
-              </div>
-
-              <div className="pt-4 space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Horas Preferidas</label>
-                  <input 
-                    type="number"
-                    value={user.preferred_hours}
-                    onChange={e => setUser(p => ({ ...p, preferred_hours: parseInt(e.target.value) || 0 }))}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Nivel Habilidad 1-10</label>
-                  <input 
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={user.skill_level}
-                    onChange={e => setUser(p => ({ ...p, skill_level: Math.min(10, Math.max(1, parseInt(e.target.value) || 1)) }))}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 space-y-2">
-                <Button onClick={() => setScheduleDialog(false)} className="w-full bg-green-600 hover:bg-green-700 text-white font-oswald">
-                  ✓ Salvar Cambios
-                </Button>
-                <Button variant="outline" onClick={() => setScheduleDialog(false)} className="w-full font-oswald text-destructive border-destructive/30">
-                  ✕ Cancelar
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* PIN Duplicate Warning Modal */}
-      <Dialog open={pinDuplicateModal.open} onOpenChange={(open) => setPinDuplicateModal({ open, message: '' })}>
-        <DialogContent className="max-w-sm bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-yellow-500">
-              <AlertTriangle size={20} />
-              PIN Duplicado
+              <Plus size={18} className="text-primary" /> Crear Puesto Nuevo
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {pinDuplicateModal.message}
+              Crea un puesto personalizado. Luego podras asignarle permisos al seleccionarlo.
             </p>
-            <Button 
-              className="w-full" 
-              onClick={() => setPinDuplicateModal({ open: false, message: '' })}
-            >
-              Entendido
+            <Input label="Nombre del Puesto" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="Ej: Bartender, Host..." required />
+            <Button onClick={handleCreateRole} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-create-role-btn">
+              CREAR PUESTO
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Card Assignment Modal */}
-      <Dialog open={cardModal.open} onOpenChange={(open) => setCardModal({ open, cardInput: '', error: '' })}>
-        <DialogContent className="max-w-sm bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings size={20} className="text-primary" />
-              Asignar Tarjeta Magnética
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Pase la tarjeta por el lector o ingrese el número manualmente.
-            </p>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Número de Tarjeta</label>
-              <input 
-                type="text"
-                value={cardModal.cardInput}
-                onChange={e => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 8);
-                  setCardModal(prev => ({ ...prev, cardInput: val, error: '' }));
-                }}
-                placeholder="11XXXXXX (prefijo 11 obligatorio)"
-                maxLength={8}
-                autoFocus
-                className={`w-full bg-background border rounded-lg px-3 py-2 text-sm font-mono ${
-                  cardModal.error ? 'border-red-500' : 'border-border'
-                }`}
-              />
-              {cardModal.error && (
-                <p className="text-[10px] text-red-500 mt-1">{cardModal.error}</p>
-              )}
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Formato: Debe iniciar con "11" y tener máximo 8 dígitos
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => setCardModal({ open: false, cardInput: '', error: '' })}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                className="flex-1"
-                onClick={handleAssignCard}
-              >
-                Asignar
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
