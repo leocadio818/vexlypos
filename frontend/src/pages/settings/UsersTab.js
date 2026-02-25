@@ -3,6 +3,8 @@ import { useSettings, PERM_LABELS } from './SettingsContext';
 import { Users, Search, X, Plus, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
+const ROLE_LABELS = { admin: 'Admin', waiter: 'Mesero', cashier: 'Cajero', supervisor: 'Supervisor', kitchen: 'Cocina' };
+
 export default function UsersTab() {
   const { users } = useSettings();
   const [userSearch, setUserSearch] = useState('');
