@@ -589,7 +589,7 @@ export default function Layout() {
               Turno de Caja Requerido
             </DialogTitle>
             <DialogDescription className="text-white/70 text-center mt-2">
-              Como <span className="text-amber-400 font-semibold">Cajero</span>, debes abrir un turno de caja antes de poder usar el sistema.
+              Debes abrir un turno de caja antes de poder usar el sistema.
             </DialogDescription>
           </DialogHeader>
           
