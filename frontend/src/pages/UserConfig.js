@@ -699,9 +699,27 @@ export default function UserConfig() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Crea un puesto personalizado. Luego podras asignarle permisos al seleccionarlo.
+              Crea un puesto personalizado con un nivel jerarquico. Luego podras asignarle permisos al seleccionarlo.
             </p>
-            <Input label="Nombre del Puesto" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="Ej: Bartender, Host..." required />
+            <Input label="Nombre del Puesto" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="Ej: Propietario, Bartender, Host..." required />
+            <div>
+              <label className="text-[11px] text-muted-foreground mb-1 block">Nivel Jerarquico</label>
+              <select
+                value={newRoleLevel}
+                onChange={e => setNewRoleLevel(Number(e.target.value))}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:border-primary/50 focus:outline-none"
+                data-testid="new-role-level-select"
+              >
+                <option value={80}>80 - Propietario</option>
+                <option value={60}>60 - Gerente</option>
+                <option value={40}>40 - Supervisor</option>
+                <option value={20}>20 - Operativo (Cajero/Mesero)</option>
+                <option value={10}>10 - Cocina/Apoyo</option>
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Solo podra ver y gestionar usuarios con nivel inferior al suyo.
+              </p>
+            </div>
             <Button onClick={handleCreateRole} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-create-role-btn">
               CREAR PUESTO
             </Button>
