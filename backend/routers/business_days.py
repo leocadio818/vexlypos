@@ -1031,7 +1031,8 @@ async def generate_x_report(
     ]}
     
     # Filtro primario: business_date + usuario + time range
-    base_filter = {"status": "paid", **user_match}
+    # EXCLUIR facturas de entrenamiento de los reportes
+    base_filter = {"status": "paid", "training_mode": {"$ne": True}, **user_match}
     
     # Agregar business_date si está disponible
     if business_date:
