@@ -835,6 +835,15 @@ async def generate_z_report_internal(
     report = {
         "report_type": "Z",
         "report_name": "REPORTE Z - CIERRE DE DÍA",
+        "session": {
+            "id": day_id,
+            "ref": business_day.get("ref"),
+            "terminal": "TODAS",
+            "opened_at": business_day.get("opened_at"),
+            "opened_by": business_day.get("opened_by_name"),
+            "closed_at": business_day.get("closed_at"),
+            "status": business_day.get("status")
+        },
         "business_day": {
             "ref": business_day.get("ref"),
             "business_date": business_date,
