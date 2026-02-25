@@ -2267,6 +2267,13 @@ async def send_receipt_to_printer(bill_id: str):
     printer_ip = receipt_channel.get("ip", "") if receipt_channel else ""
     
     commands = []
+    
+    # ─── MODO ENTRENAMIENTO ───
+    if bill.get("training_mode"):
+        commands.append({"type": "text", "text": "*** ENTRENAMIENTO ***", "align": "center", "bold": True, "size": 2})
+        commands.append({"type": "text", "text": "NO ES VENTA REAL", "align": "center", "bold": True})
+        commands.append({"type": "divider"})
+    
     commands.append({"type": "text", "text": biz_name, "align": "center", "bold": True, "size": 2})
     commands.append({"type": "text", "text": f"RNC: {biz_rnc}", "align": "center", "bold": True})
     if biz_addr:
