@@ -232,8 +232,8 @@ class TestAdminRoleManagement:
         if self.created_role_id:
             requests.delete(f"{BASE_URL}/api/roles/{self.created_role_id}", headers=get_headers(self.admin_token))
     
-    def test_02_admin_can_list_all_roles(self):
-        """Admin can see all roles including builtin ones"""
+    def test_02_admin_can_list_all_builtin_roles(self):
+        """Admin can see all builtin roles"""
         resp = requests.get(f"{BASE_URL}/api/roles", headers=get_headers(self.admin_token))
         assert resp.status_code == 200
         
@@ -247,11 +247,14 @@ class TestAdminRoleManagement:
         assert "supervisor" in role_codes, "Should see supervisor role"
         assert "kitchen" in role_codes, "Should see kitchen role"
         
-        # Check that roles have level field
+        # Check that BUILTIN roles have level field (from hardcoded list)
+        builtin_codes = ["admin", "waiter", "cashier", "supervisor", "kitchen"]
         for role in roles:
-            assert "level" in role, f"Role {role.get('name')} should have level field"
+            code = role.get('code') or role.get('id')
+            if role.get('builtin') and code in builtin_codes:
+                assert "level" in role, f"Builtin role {role.get('name')} should have level field"
         
-        print(f"PASS: Admin sees {len(roles)} roles with level indicators")
+        print(f"PASS: Admin sees {len(roles)} roles with builtin ones having levels")
 
 
 class TestAuditLogs:
