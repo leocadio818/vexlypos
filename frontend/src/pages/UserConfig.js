@@ -444,6 +444,74 @@ export default function UserConfig() {
                 <Input label="Tarjeta #" value={user.card_number} readOnly placeholder="Sin asignar" />
               </div>
             </Section>
+
+            {/* Training Dashboard - Only shows if user has/had training */}
+            {!isNew && (user.training_mode || (trainingStats && trainingStats.orders_count > 0)) && (
+              <Section title="Progreso de Entrenamiento" icon={GraduationCap} defaultOpen={user.training_mode}
+                badge={user.training_mode ? <Badge className="bg-amber-500/20 text-amber-400 text-[9px] ml-2">Activo</Badge> : <Badge variant="secondary" className="text-[9px] ml-2">Historial</Badge>}
+              >
+                {trainingStats ? (
+                  <div className="space-y-3" data-testid="training-stats">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-background rounded-lg p-3 text-center border border-border">
+                        <p className="text-2xl font-oswald font-bold text-primary">{trainingStats.orders_count}</p>
+                        <p className="text-[10px] text-muted-foreground">Ordenes</p>
+                      </div>
+                      <div className="bg-background rounded-lg p-3 text-center border border-border">
+                        <p className="text-2xl font-oswald font-bold text-emerald-400">{trainingStats.bills_paid}</p>
+                        <p className="text-[10px] text-muted-foreground">Cobros Practicados</p>
+                      </div>
+                      <div className="bg-background rounded-lg p-3 text-center border border-border">
+                        <p className="text-2xl font-oswald font-bold text-blue-400">{trainingStats.items_practiced}</p>
+                        <p className="text-[10px] text-muted-foreground">Items Procesados</p>
+                      </div>
+                      <div className="bg-background rounded-lg p-3 text-center border border-border">
+                        <p className="text-2xl font-oswald font-bold text-amber-400">${trainingStats.total_amount_practiced.toLocaleString()}</p>
+                        <p className="text-[10px] text-muted-foreground">Monto Practicado</p>
+                      </div>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="text-[11px] text-muted-foreground space-y-1">
+                      {trainingStats.first_activity && (
+                        <p>Inicio: <span className="text-foreground">{new Date(trainingStats.first_activity).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}</span></p>
+                      )}
+                      {trainingStats.last_activity && (
+                        <p>Ultima actividad: <span className="text-foreground">{new Date(trainingStats.last_activity).toLocaleString('es-DO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></p>
+                      )}
+                    </div>
+
+                    {/* Recent Activity */}
+                    {trainingStats.recent_activity?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground mb-1.5 font-bold uppercase">Actividad Reciente</p>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                          {trainingStats.recent_activity.map((a, i) => (
+                            <div key={i} className="flex items-center justify-between bg-background rounded px-2 py-1.5 text-xs border border-border">
+                              <span className="text-muted-foreground">{a.date ? new Date(a.date).toLocaleString('es-DO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+                              <span>{a.items_count} items</span>
+                              <Badge variant={a.status === 'paid' ? 'default' : 'secondary'} className="text-[9px]">
+                                {a.status === 'paid' ? 'Cobrado' : a.status === 'open' ? 'Abierto' : a.status}
+                              </Badge>
+                              <span className="font-mono font-bold">${a.total.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {trainingStats.orders_count === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Aun no hay actividad de entrenamiento
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">Cargando estadisticas...</p>
+                )}
+              </Section>
+            )}
           </div>
 
           {/* ═══ RIGHT COLUMN: Puesto + Permissions ═══ */}
