@@ -282,9 +282,6 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
             "closed_by": user["user_id"],
             "closed_by_name": user["name"],
             "status": final_status,
-            "cash_declared": round(input.cash_declared, 2),
-            "expected_cash": round(expected_cash, 2),
-            "total_difference": round(total_difference, 2),
             "notes": input.difference_notes or ""
         }
         
