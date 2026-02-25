@@ -175,7 +175,9 @@ async def create_order(input: CreateOrderInput, user=Depends(get_current_user)):
     order_id = gen_id()
     
     # ─── MODO ENTRENAMIENTO ───
-    is_training = user.get("training_mode", False)
+    # Check both JWT and fresh DB value (in case training was toggled after login)
+    user_doc = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "training_mode": 1})
+    is_training = user.get("training_mode", False) or (user_doc.get("training_mode", False) if user_doc else False)
     
     order = {
         "id": order_id, "table_id": input.table_id, "table_number": table["number"],
