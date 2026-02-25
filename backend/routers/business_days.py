@@ -1045,8 +1045,8 @@ async def generate_x_report(
             **void_filter,
             "status": "cancelled",
             "$or": [
-                {"paid_by_id": session.get("opened_by_id")},
-                {"created_by": session.get("opened_by_id")}
+                {"paid_by_id": session.get("opened_by_id") or session.get("opened_by")},
+                {"created_by": session.get("opened_by_id") or session.get("opened_by")}
             ]
         }},
         {"$group": {
