@@ -455,7 +455,17 @@ export default function UserConfig() {
                 Al seleccionar un puesto se cargan los permisos por defecto. Luego puedes personalizarlos abajo.
               </p>
               <div className="flex flex-wrap gap-2" data-testid="role-selector">
-                {roles.map(role => {
+                {roles
+                  // Deduplicate: prefer builtin roles, skip custom roles with same code as builtins
+                  .filter((role, idx, arr) => {
+                    if (role.builtin) return true;
+                    const code = getRoleCode(role);
+                    const builtinCodes = ['admin', 'waiter', 'cashier', 'supervisor', 'kitchen'];
+                    if (builtinCodes.includes(code)) return false; // Skip custom dupes
+                    // Also skip if another custom role with same code exists earlier
+                    return arr.findIndex(r => getRoleCode(r) === code) === idx;
+                  })
+                  .map(role => {
                   const code = getRoleCode(role);
                   const isSelected = user.role === code;
                   const permCount = role.builtin
