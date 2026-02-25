@@ -263,14 +263,3 @@ export default function ReportXZ({
     </Dialog>
   );
 }
-
-function Row({ label, value, bold, highlight, className = '' }) {
-  return (
-    <div className={`flex justify-between py-[2px] ${className}`}>
-      <span className={`${bold ? 'font-bold text-white' : 'text-white/60'}`}>{label}</span>
-      <span className={`font-oswald ${bold ? 'font-bold' : ''} ${highlight ? 'text-cyan-400 text-base' : 'text-white'}`}>
-        {value}
-      </span>
-    </div>
-  );
-}
