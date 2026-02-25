@@ -523,12 +523,16 @@ export default function UserConfig() {
                 <h3 className="font-oswald text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <Briefcase size={14} className="text-primary" /> Seleccionar Puesto
                 </h3>
-                <Button size="sm" variant="outline" onClick={() => setCreateRoleDialog(true)} className="h-7 text-xs" data-testid="create-role-btn">
-                  <Plus size={12} className="mr-1" /> Crear Puesto
-                </Button>
+                {isSystemAdmin && (
+                  <Button size="sm" variant="outline" onClick={() => setCreateRoleDialog(true)} className="h-7 text-xs" data-testid="create-role-btn">
+                    <Plus size={12} className="mr-1" /> Crear Puesto
+                  </Button>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground mb-3">
-                Al seleccionar un puesto se cargan los permisos por defecto. Luego puedes personalizarlos abajo.
+                {isSystemAdmin
+                  ? 'Al seleccionar un puesto se cargan los permisos por defecto. Luego puedes personalizarlos abajo.'
+                  : 'Selecciona un puesto predeterminado para este empleado.'}
               </p>
               <div className="flex flex-wrap gap-2" data-testid="role-selector">
                 {roles
