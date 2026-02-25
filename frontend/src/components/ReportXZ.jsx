@@ -20,23 +20,6 @@ export default function ReportXZ({
   const [printMode, setPrintMode] = useState(null);
   const printRef = useRef(null);
 
-  const Row = ({ label, value, bold, highlight, className = '' }) => (
-    <div className={`flex justify-between py-[2px] ${className}`}>
-      <span className={`font-bold ${bold ? 'text-white' : 'text-white/80'}`}>{label}</span>
-      <span className={`font-oswald font-bold ${highlight ? 'text-cyan-400 text-base' : 'text-white'}`}>
-        {value}
-      </span>
-    </div>
-  );
-
-  const Separator = () => (
-    <div className="border-t border-dashed border-white/30 my-3" />
-  );
-
-  const SectionTitle = ({ children }) => (
-    <p className="font-oswald font-bold text-white text-sm tracking-wide mb-2">{children}</p>
-  );
-
   const fetchReport = useCallback(async () => {
     setLoading(true);
     setError(null);
