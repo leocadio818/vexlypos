@@ -460,7 +460,8 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     await db.bills.update_one({"id": bill_id}, {"$set": update_fields})
 
     # ─── MODO ENTRENAMIENTO: No afectar totales reales ───
-    is_training_bill = bill.get("training_mode", False) or user.get("training_mode", False)
+    user_doc_pay = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "training_mode": 1})
+    is_training_bill = bill.get("training_mode", False) or user.get("training_mode", False) or (user_doc_pay.get("training_mode", False) if user_doc_pay else False)
     
     if is_training_bill:
         # Marcar el bill como entrenamiento si no lo estaba
