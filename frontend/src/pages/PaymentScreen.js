@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { billsAPI, businessDaysAPI } from '@/lib/api';
+import { billsAPI, businessDaysAPI, posSessionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, X, Check, Wallet, Coins, CircleDollarSign, BadgeDollarSign, ChevronUp, ChevronDown, Receipt, Sparkles, Heart, FileText, Truck, Store, UtensilsCrossed, Printer, Globe, Briefcase, Shield, Lock, AlertTriangle, Bell, Plus, Phone, Mail, Moon, Sun } from 'lucide-react';
 import { toast } from 'sonner';
