@@ -239,11 +239,16 @@ async def list_users(user=Depends(get_current_user)):
         code = cr.get("code") or cr.get("id")
         role_level_map[code] = cr.get("level", 0)
     
+    import logging
+    logging.info(f"[SECURITY] caller_level={caller_level}, role_level_map={role_level_map}")
+    
     all_users = await db.users.find({}, {"_id": 0, "pin_hash": 0}).to_list(500)
     filtered = []
     for u in all_users:
-        u_level = role_level_map.get(u.get("role", "waiter"), 0)
+        u_role = u.get("role", "waiter")
+        u_level = role_level_map.get(u_role, 0)
         u["role_level"] = u_level
+        logging.info(f"[SECURITY] user={u.get('name')}, role={u_role}, computed_level={u_level}, passes_filter={u_level < caller_level}")
         # Only show users with LOWER level than caller
         if u_level < caller_level:
             u["permissions"] = get_permissions(u["role"], u.get("permissions"))
