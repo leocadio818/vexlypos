@@ -608,37 +608,115 @@ async def get_training_stats(user_id: str, user=Depends(get_current_user)):
 # ─── CUSTOM ROLES ───
 
 @router.get("/roles")
-async def list_roles():
+async def list_roles(caller=Depends(get_current_user)):
     roles = await db.custom_roles.find({}, {"_id": 0}).to_list(100)
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
     builtin = [
-        {"id": "admin", "code": "admin", "name": "Administrador", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("admin", {})},
-        {"id": "waiter", "code": "waiter", "name": "Mesero", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("waiter", {})},
-        {"id": "cashier", "code": "cashier", "name": "Cajero", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("cashier", {})},
-        {"id": "supervisor", "code": "supervisor", "name": "Supervisor", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("supervisor", {})},
-        {"id": "kitchen", "code": "kitchen", "name": "Cocina", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("kitchen", {})},
+        {"id": "admin", "code": "admin", "name": "Administrador", "builtin": True, "level": 100, "permissions": DEFAULT_PERMISSIONS.get("admin", {})},
+        {"id": "waiter", "code": "waiter", "name": "Mesero", "builtin": True, "level": 20, "permissions": DEFAULT_PERMISSIONS.get("waiter", {})},
+        {"id": "cashier", "code": "cashier", "name": "Cajero", "builtin": True, "level": 20, "permissions": DEFAULT_PERMISSIONS.get("cashier", {})},
+        {"id": "supervisor", "code": "supervisor", "name": "Supervisor", "builtin": True, "level": 40, "permissions": DEFAULT_PERMISSIONS.get("supervisor", {})},
+        {"id": "kitchen", "code": "kitchen", "name": "Cocina", "builtin": True, "level": 10, "permissions": DEFAULT_PERMISSIONS.get("kitchen", {})},
     ]
-    return builtin + roles
+    all_roles = builtin + roles
+    # Filter: only show roles with level < caller's level (so they can only assign inferior roles)
+    # System admin (100) sees all except their own level if they want
+    # But admin should see all roles to manage them
+    if caller_level >= 100:
+        return all_roles
+    return [r for r in all_roles if r.get("level", 0) < caller_level]
 
 
 @router.post("/roles")
-async def create_role(input: dict):
-    doc = {"id": gen_id(), **input, "builtin": False}
+async def create_role(input: dict, caller=Depends(get_current_user)):
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
+    if caller_level < 100:
+        raise HTTPException(status_code=403, detail="Solo el Administrador del Sistema puede crear puestos")
+    
+    level = input.get("level", 0)
+    if level >= 100:
+        raise HTTPException(status_code=400, detail="No puedes crear un puesto con nivel igual o superior al administrador del sistema")
+    
+    doc = {"id": gen_id(), **input, "builtin": False, "level": level}
     await db.custom_roles.insert_one(doc)
+    
+    # Audit
+    await db.role_audit_logs.insert_one({
+        "id": gen_id(),
+        "action": "role_created",
+        "role_name": input.get("name", ""),
+        "role_code": input.get("code", ""),
+        "role_level": level,
+        "performed_by_id": caller["user_id"],
+        "performed_by_name": caller.get("name", ""),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
     return {k: v for k, v in doc.items() if k != "_id"}
 
 
 @router.put("/roles/{rid}")
-async def update_role(rid: str, input: dict):
+async def update_role(rid: str, input: dict, caller=Depends(get_current_user)):
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
+    if caller_level < 100:
+        raise HTTPException(status_code=403, detail="Solo el Administrador del Sistema puede editar puestos")
     if "_id" in input:
         del input["_id"]
+    
+    if "level" in input and input["level"] >= 100:
+        raise HTTPException(status_code=400, detail="No puedes asignar nivel igual o superior al administrador del sistema")
+    
+    old_role = await db.custom_roles.find_one({"id": rid}, {"_id": 0})
     await db.custom_roles.update_one({"id": rid}, {"$set": input})
+    
+    # Audit
+    await db.role_audit_logs.insert_one({
+        "id": gen_id(),
+        "action": "role_updated",
+        "role_id": rid,
+        "role_name": input.get("name", old_role.get("name", "") if old_role else ""),
+        "changes": str(input),
+        "performed_by_id": caller["user_id"],
+        "performed_by_name": caller.get("name", ""),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
     return {"ok": True}
 
 
 @router.delete("/roles/{rid}")
-async def delete_role(rid: str):
+async def delete_role(rid: str, caller=Depends(get_current_user)):
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
+    if caller_level < 100:
+        raise HTTPException(status_code=403, detail="Solo el Administrador del Sistema puede eliminar puestos")
+    
+    old_role = await db.custom_roles.find_one({"id": rid}, {"_id": 0})
     await db.custom_roles.delete_one({"id": rid})
+    
+    # Audit
+    await db.role_audit_logs.insert_one({
+        "id": gen_id(),
+        "action": "role_deleted",
+        "role_id": rid,
+        "role_name": old_role.get("name", "") if old_role else "",
+        "performed_by_id": caller["user_id"],
+        "performed_by_name": caller.get("name", ""),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
     return {"ok": True}
+
+
+# ─── ROLE AUDIT LOG ───
+
+@router.get("/role-audit-logs")
+async def list_role_audit_logs(limit: int = 50, caller=Depends(get_current_user)):
+    """List audit logs for role/permission changes - only system admin"""
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
+    if caller_level < 100:
+        raise HTTPException(status_code=403, detail="Solo el Administrador del Sistema puede ver los logs de auditoría de roles")
+    logs = await db.role_audit_logs.find({}, {"_id": 0}).sort("created_at", -1).to_list(limit)
+    return logs
 
 
 # ─── MANAGER VERIFICATION ───
