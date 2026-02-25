@@ -115,8 +115,8 @@ export default function ReportXZ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="shrink-0">
+      <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-2xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="shrink-0 px-6 pt-6 pb-2">
           <DialogTitle className="font-oswald text-white flex items-center gap-2">
             <FileText className="text-cyan-400" size={20} />
             {type === "Z" ? "REPORTE Z - CIERRE DE DÍA" : "REPORTE X - CIERRE DE TURNO"}
@@ -126,7 +126,7 @@ export default function ReportXZ({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 overflow-y-auto px-6 min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <RefreshCw className="animate-spin text-cyan-400" size={32} />
