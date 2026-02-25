@@ -297,14 +297,20 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
     
     total = round(subtotal + total_taxes, 2)
 
-    ncf_doc = await db.ncf_sequences.find_one_and_update(
-        {"prefix": "B01"},
-        {"$inc": {"current_number": 1}},
-        return_document=ReturnDocument.AFTER,
-        upsert=True
-    )
-    ncf_num = ncf_doc.get("current_number", 1)
-    ncf = f"B01{ncf_num:08d}"
+    # ─── MODO ENTRENAMIENTO: No consumir NCF real ───
+    is_training = user.get("training_mode", False) or order.get("training_mode", False)
+    
+    if is_training:
+        ncf = "ENTRENAMIENTO"
+    else:
+        ncf_doc = await db.ncf_sequences.find_one_and_update(
+            {"prefix": "B01"},
+            {"$inc": {"current_number": 1}},
+            return_document=ReturnDocument.AFTER,
+            upsert=True
+        )
+        ncf_num = ncf_doc.get("current_number", 1)
+        ncf = f"B01{ncf_num:08d}"
 
     # Copiar transaction_number de la orden (ID de Venta persistente)
     transaction_number = order.get("transaction_number")
