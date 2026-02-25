@@ -92,7 +92,7 @@ export default function UsersTab() {
               }`}
               data-testid="filter-waiter"
             >
-              Waiter
+              Mesero
             </button>
             <button
               onClick={() => setUserRoleFilter('cashier')}
@@ -103,7 +103,7 @@ export default function UsersTab() {
               }`}
               data-testid="filter-cashier"
             >
-              Cashier
+              Cajero
             </button>
             <button
               onClick={() => setUserRoleFilter('kitchen')}
@@ -114,7 +114,7 @@ export default function UsersTab() {
               }`}
               data-testid="filter-kitchen"
             >
-              Kitchen
+              Cocina
             </button>
           </div>
           
