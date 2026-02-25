@@ -853,7 +853,8 @@ async def generate_z_report_internal(
             "itbis": round(sales_totals.get("itbis", 0), 2),
             "propina": round(sales_totals.get("propina", 0), 2),
             "total": round(sales_totals.get("total", 0), 2),
-            "invoices_count": sales_totals.get("count", 0)
+            "invoices_count": sales_totals.get("count", 0),
+            "avg_per_invoice": round(sales_totals.get("total", 0) / sales_totals.get("count", 1), 2) if sales_totals.get("count", 0) > 0 else 0
         },
         
         # Desglose por Forma de Pago
