@@ -365,15 +365,52 @@ async def create_user(input: dict, caller=Depends(get_current_user)):
 
 
 @router.put("/users/{user_id}")
-async def update_user(user_id: str, input: dict):
+async def update_user(user_id: str, input: dict, caller=Depends(get_current_user)):
     if "_id" in input:
         del input["_id"]
+    
+    # Get target user to check hierarchy
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
+    target_current_level = await get_role_level_async(target_user.get("role", "waiter"))
+    
+    # Allow editing own profile for basic fields, but not for users at same or higher level
+    is_self = caller["user_id"] == user_id
+    if not is_self and target_current_level >= caller_level:
+        raise HTTPException(status_code=403, detail="No puedes editar un usuario con puesto igual o superior al tuyo")
+    
+    # If changing role, validate the new role level
+    changes_log = []
+    if "role" in input and input["role"] != target_user.get("role"):
+        new_role_level = await get_role_level_async(input["role"])
+        if new_role_level >= caller_level:
+            raise HTTPException(status_code=403, detail="No puedes asignar un puesto igual o superior al tuyo")
+        input["role_level"] = new_role_level
+        changes_log.append(f"Puesto: {target_user.get('role')} -> {input['role']}")
+    
+    # Only system admin (level 100) can customize permissions
+    if "permissions" in input and caller_level < 100:
+        del input["permissions"]  # Strip permission changes from non-system-admin
+    elif "permissions" in input:
+        old_perms = target_user.get("permissions", {})
+        new_perms = input["permissions"]
+        perm_changes = []
+        all_keys = set(list(old_perms.keys()) + list(new_perms.keys()))
+        for k in all_keys:
+            old_v = old_perms.get(k)
+            new_v = new_perms.get(k)
+            if old_v != new_v:
+                perm_changes.append(f"{k}: {old_v} -> {new_v}")
+        if perm_changes:
+            changes_log.append(f"Permisos: {', '.join(perm_changes)}")
     
     # Validate and update PIN if provided
     if "pin" in input and input["pin"]:
         pin = input["pin"]
         
-        # Validate PIN format
         if not pin.isdigit():
             raise HTTPException(status_code=400, detail="El PIN debe ser numérico")
         if len(pin) < 1 or len(pin) > 8:
@@ -386,11 +423,26 @@ async def update_user(user_id: str, input: dict):
         if existing:
             raise HTTPException(status_code=400, detail="Ya existe un usuario con ese PIN")
         input["pin_hash"] = hashed
+        changes_log.append("PIN actualizado")
     
     if "pin" in input:
         del input["pin"]
     
     await db.users.update_one({"id": user_id}, {"$set": input})
+    
+    # Audit: user updated (only if meaningful changes)
+    if changes_log:
+        await db.role_audit_logs.insert_one({
+            "id": gen_id(),
+            "action": "user_updated",
+            "target_user_id": user_id,
+            "target_user_name": f"{target_user.get('name', '')} {target_user.get('last_name', '')}".strip(),
+            "changes": changes_log,
+            "performed_by_id": caller["user_id"],
+            "performed_by_name": caller.get("name", ""),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+    
     return {"ok": True}
 
 
