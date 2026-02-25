@@ -38,8 +38,8 @@ export default function Layout() {
   const [cashierShift, setCashierShift] = useState(null);
   const [cashierShiftLoading, setCashierShiftLoading] = useState(true);
   
-  // Roles que requieren turno abierto para operar (todos excepto meseros y cocina)
-  const requiresShift = user?.role === 'cashier' || user?.role === 'admin';
+  // Roles que requieren turno abierto para operar (solo cajeros)
+  const requiresShift = user?.role === 'cashier';
   
   // El usuario necesita turno si: requiere turno Y no tiene turno abierto Y ya terminó de cargar
   // EXCEPCIÓN: No bloquear si está en la página de Caja (para poder abrir turno)
