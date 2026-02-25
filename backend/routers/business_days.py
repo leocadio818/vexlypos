@@ -855,6 +855,7 @@ async def generate_z_report_internal(
         },
         "generated_at": now_iso(),
         "generated_by": user.get("name"),
+        "business_date": business_date,
         
         # Resumen de Ventas
         "sales_summary": {
