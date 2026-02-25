@@ -488,7 +488,7 @@ async def calculate_day_stats(day_id: str) -> dict:
     
     # Desglose por forma de pago
     payment_pipeline = [
-        {"$match": {"business_date": business_date, "status": "paid"}},
+        {"$match": day_match},
         {"$unwind": {"path": "$payments", "preserveNullAndEmptyArrays": True}},
         {"$group": {
             "_id": "$payments.payment_method_name",
