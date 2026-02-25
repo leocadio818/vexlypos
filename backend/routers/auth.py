@@ -210,9 +210,11 @@ async def login(input: LoginInput):
     if not user:
         raise HTTPException(status_code=401, detail="PIN incorrecto")
     perms = get_permissions(user["role"], user.get("permissions"))
-    token = jwt.encode({"user_id": user["id"], "name": user["name"], "role": user["role"], "training_mode": user.get("training_mode", False)}, JWT_SECRET, algorithm="HS256")
+    role_level = await get_role_level_async(user["role"])
+    token = jwt.encode({"user_id": user["id"], "name": user["name"], "role": user["role"], "role_level": role_level, "training_mode": user.get("training_mode", False)}, JWT_SECRET, algorithm="HS256")
     user_data = {k: v for k, v in user.items() if k != "pin_hash"}
     user_data["permissions"] = perms
+    user_data["role_level"] = role_level
     return {"token": token, "user": user_data}
 
 
