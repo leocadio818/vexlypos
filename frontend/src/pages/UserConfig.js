@@ -217,6 +217,12 @@ export default function UserConfig() {
         const userRes = await axios.get(`${API}/users/${userId}`, { headers: hdrs() });
         const u = userRes.data;
         setUser(prev => ({ ...prev, ...u, pin: '' }));
+
+        // Fetch training stats
+        try {
+          const statsRes = await axios.get(`${API}/users/${userId}/training-stats`, { headers: hdrs() });
+          setTrainingStats(statsRes.data);
+        } catch { /* ignore if no training data */ }
       }
     } catch (e) {
       console.error(e);
