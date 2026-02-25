@@ -839,9 +839,26 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 ---
 
 ## Completado Recientemente
-- [x] **Imágenes de productos ampliadas** (Feb 2026) - Se reestructuró el layout de las tarjetas de productos en `OrderScreen.js` para que las imágenes ocupen al menos la mitad de la tarjeta. Se aumentó la altura de las tarjetas (`h-40`/`h-44`) y se reorganizó el flexbox para dar prioridad a la imagen.
+- [x] **Seguridad Jerárquica por Niveles** (Feb 2026) - Sistema completo de control de acceso por niveles de puesto. Admin Sistema (nivel 100) puede ver/editar todo. Propietario (80) solo ve niveles inferiores. Permisos y creación de puestos bloqueados para no-system-admin. Auditoría completa de cambios de roles/permisos.
+- [x] **Imágenes de productos ampliadas** (Feb 2026) - Se reestructuró el layout de las tarjetas de productos en `OrderScreen.js` para que las imágenes ocupen al menos la mitad de la tarjeta.
 - [x] **Training Mode completo** - Modo entrenamiento con dashboard de progreso
 - [x] **Gestión Unificada de Empleados** - Pantalla única `UserConfig.js` para roles y permisos
+
+## Seguridad Jerárquica - Niveles de Puesto
+| Puesto | Nivel | Descripción |
+|---|---|---|
+| Administrador (Sistema) | 100 | Ve/edita todo. Crea puestos y permisos |
+| ADMINISTRADOR (Custom) | 80 | Propietario - gestiona usuarios pero no permisos |
+| GERENTE | 60 | Gerencia operativa |
+| Supervisor | 40 | Supervisión de turno |
+| Cajero/Mesero | 20 | Operativos |
+| Cocina | 10 | Solo cocina |
+
+### Reglas:
+- Solo ves usuarios con nivel INFERIOR al tuyo
+- Solo Admin Sistema (100) puede crear/editar puestos y personalizar permisos
+- Cambios de roles/permisos se registran en `role_audit_logs`
+- Endpoints: `GET /api/role-audit-logs` (solo admin sistema)
 
 ## Pendiente
 ### P1 - Alta Prioridad
