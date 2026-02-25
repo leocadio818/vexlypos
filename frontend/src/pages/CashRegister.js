@@ -407,6 +407,9 @@ export default function CashRegister() {
   };
 
   // Cierre de Día
+  // Cierre de Día - estados adicionales
+  const [closedDayId, setClosedDayId] = useState(null);
+  
   const handleCloseDay = async () => {
     if (!closeDayPin) {
       toast.error('Ingresa el PIN de autorización');
@@ -419,18 +422,19 @@ export default function CashRegister() {
         closing_notes: closeDayNotes || '',
         force_close: false
       });
-      toast.success('Jornada cerrada exitosamente', {
-        description: res.data?.message || 'Cierre de día completado'
-      });
+      toast.success('Jornada cerrada exitosamente');
       setCloseDayDialog(false);
       setCloseDayPin('');
       setCloseDayNotes('');
       fetchData();
+      // Abrir reporte Z para imprimir
+      if (res.data?.day_id || res.data?.id) {
+        setClosedDayId(res.data.day_id || res.data.id);
+      }
     } catch (err) {
       const detail = err.response?.data?.detail || 'Error al cerrar jornada';
       toast.error('No se puede cerrar la jornada', {
-        description: detail,
-        duration: 5000
+        description: detail
       });
     } finally {
       setCloseDayLoading(false);
