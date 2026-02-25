@@ -4,10 +4,10 @@
 Sistema POS completo para restaurantes/bares con soporte para impresión térmica automática, KDS (Kitchen Display System), gestión de órdenes, y cumplimiento fiscal DGII (República Dominicana).
 
 ## URLs del Sistema
-- **App:** https://cashier-shift-guard.preview.emergentagent.com
-- **API:** https://cashier-shift-guard.preview.emergentagent.com/api
-- **Agente Python:** https://cashier-shift-guard.preview.emergentagent.com/api/download/print-agent?printer_name=RECIBO
-- **Instalador Servicio:** https://cashier-shift-guard.preview.emergentagent.com/api/download/print-agent-installer?printer_name=RECIBO
+- **App:** https://zero-sales-debug.preview.emergentagent.com
+- **API:** https://zero-sales-debug.preview.emergentagent.com/api
+- **Agente Python:** https://zero-sales-debug.preview.emergentagent.com/api/download/print-agent?printer_name=RECIBO
+- **Instalador Servicio:** https://zero-sales-debug.preview.emergentagent.com/api/download/print-agent-installer?printer_name=RECIBO
 
 ## Arquitectura de Impresión (v2.1)
 
