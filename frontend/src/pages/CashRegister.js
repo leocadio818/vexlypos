@@ -88,6 +88,7 @@ export default function CashRegister() {
   
   // Re-imprimir reporte
   const [reprintSessionId, setReprintSessionId] = useState(null);
+  const [logoutAfterReport, setLogoutAfterReport] = useState(false);
   
   // Check URL params for B04 redirect
   useEffect(() => {
