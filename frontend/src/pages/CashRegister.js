@@ -471,6 +471,17 @@ export default function CashRegister() {
               <FileX size={16} /> B04
             </button>
           )}
+          {/* Botón Cierre de Día - Solo para Admin */}
+          {user?.role === 'admin' && !currentSession && (
+            <button 
+              onClick={() => setCloseDayDialog(true)} 
+              data-testid="close-day-btn"
+              className="px-3 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 hover:bg-amber-500/30 text-amber-400 font-medium text-sm flex items-center gap-2 transition-all"
+              title="Cierre de Día (Z)"
+            >
+              <Calendar size={16} /> CIERRE Z
+            </button>
+          )}
           {currentSession && (
             <button onClick={() => setMovementDialog(true)} data-testid="add-movement-btn"
               className="px-3 py-2 rounded-xl bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30 text-blue-400 font-medium text-sm flex items-center gap-2 transition-all">
