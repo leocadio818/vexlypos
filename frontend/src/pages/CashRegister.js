@@ -1110,6 +1110,65 @@ export default function CashRegister() {
           </div>
         </div>
       )}
+
+      {/* Diálogo Cierre de Día (Z) */}
+      <Dialog open={closeDayDialog} onOpenChange={setCloseDayDialog}>
+        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-amber-500/30" data-testid="close-day-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-amber-400 flex items-center gap-2">
+              <Calendar size={20} />
+              Cierre de Día (Z)
+            </DialogTitle>
+            <DialogDescription className="text-white/60 text-sm">
+              Esto cerrará la jornada de trabajo. Todos los turnos deben estar cerrados y no debe haber cuentas abiertas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-white/60 text-xs mb-1 block">PIN de Autorización (Admin)</label>
+              <div className="relative">
+                <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                <input
+                  type="password"
+                  value={closeDayPin}
+                  onChange={(e) => setCloseDayPin(e.target.value)}
+                  placeholder="PIN del administrador"
+                  data-testid="close-day-pin"
+                  className="w-full h-11 pl-10 pr-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 text-center font-oswald text-lg tracking-widest focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-white/60 text-xs mb-1 block">Notas de cierre (opcional)</label>
+              <textarea
+                value={closeDayNotes}
+                onChange={(e) => setCloseDayNotes(e.target.value)}
+                placeholder="Observaciones del día..."
+                data-testid="close-day-notes"
+                rows={2}
+                className="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 text-sm focus:ring-2 focus:ring-amber-500/50 outline-none resize-none"
+              />
+            </div>
+            <button
+              onClick={handleCloseDay}
+              disabled={closeDayLoading || !closeDayPin}
+              data-testid="confirm-close-day"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 disabled:opacity-50 text-white font-oswald font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <Lock size={18} />
+              {closeDayLoading ? 'CERRANDO...' : 'CERRAR JORNADA'}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ReportXZ Modal para re-impresión */}
+      {reprintSessionId && (
+        <ReportXZ 
+          sessionId={reprintSessionId}
+          onClose={() => setReprintSessionId(null)}
+        />
+      )}
     </div>
   );
 }
