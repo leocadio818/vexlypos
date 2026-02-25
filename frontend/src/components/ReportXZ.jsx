@@ -197,83 +197,35 @@ export default function ReportXZ({
                 </div>
               </div>
 
-              {/* ═══ DESGLOSE POR FORMA DE PAGO ═══ */}
-              <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
-                <button 
-                  onClick={() => toggleSection('payments')}
-                  className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
-                >
-                  <h3 className="font-oswald font-bold text-white flex items-center gap-2">
-                    <Banknote size={18} className="text-amber-400" />
-                    DESGLOSE POR FORMA DE PAGO
-                  </h3>
-                  {expandedSections.payments ? <ChevronUp size={18} className="text-white/50" /> : <ChevronDown size={18} className="text-white/50" />}
-                </button>
-                
-                {expandedSections.payments && (
-                  <div className="px-4 pb-4 space-y-3">
-                    {/* Totales por tipo */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-green-500/10 rounded-lg p-3 text-center">
-                        <Banknote size={20} className="text-green-400 mx-auto mb-1" />
-                        <p className="text-white/50 text-xs">Efectivo</p>
-                        <p className="font-oswald font-bold text-green-400">
-                          {formatMoney(report.payment_totals?.efectivo)}
-                        </p>
-                      </div>
-                      <div className="bg-blue-500/10 rounded-lg p-3 text-center">
-                        <CreditCard size={20} className="text-blue-400 mx-auto mb-1" />
-                        <p className="text-white/50 text-xs">Tarjeta</p>
-                        <p className="font-oswald font-bold text-blue-400">
-                          {formatMoney(report.payment_totals?.tarjeta)}
-                        </p>
-                      </div>
-                      <div className="bg-purple-500/10 rounded-lg p-3 text-center">
-                        <Building2 size={20} className="text-purple-400 mx-auto mb-1" />
-                        <p className="text-white/50 text-xs">Transferencia</p>
-                        <p className="font-oswald font-bold text-purple-400">
-                          {formatMoney(report.payment_totals?.transferencia)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {(report.payment_totals?.dolar > 0 || report.payment_totals?.euro > 0) && (
-                      <div className="grid grid-cols-2 gap-2">
-                        {report.payment_totals?.dolar > 0 && (
-                          <div className="bg-emerald-500/10 rounded-lg p-3 text-center">
-                            <DollarSign size={20} className="text-emerald-400 mx-auto mb-1" />
-                            <p className="text-white/50 text-xs">Dólar (equiv.)</p>
-                            <p className="font-oswald font-bold text-emerald-400">
-                              {formatMoney(report.payment_totals?.dolar)}
-                            </p>
-                          </div>
-                        )}
-                        {report.payment_totals?.euro > 0 && (
-                          <div className="bg-cyan-500/10 rounded-lg p-3 text-center">
-                            <Euro size={20} className="text-cyan-400 mx-auto mb-1" />
-                            <p className="text-white/50 text-xs">Euro (equiv.)</p>
-                            <p className="font-oswald font-bold text-cyan-400">
-                              {formatMoney(report.payment_totals?.euro)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Detalle por método */}
-                    {report.payment_breakdown?.length > 0 && (
-                      <div className="border-t border-white/10 pt-3 mt-3">
-                        <p className="text-white/50 text-xs mb-2">Detalle por método:</p>
-                        {report.payment_breakdown.map((p, i) => (
-                          <div key={i} className="flex justify-between text-sm py-1">
-                            <span className="text-white/70">{p.method} ({p.count})</span>
-                            <span className="text-white">{formatMoney(p.amount)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+              {/* ═══ VENTAS POR FORMA DE PAGO ═══ */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h3 className="font-oswald font-bold text-white mb-3">VENTAS POR FORMA DE PAGO</h3>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/70">Efectivo:</span>
+                    <span className="font-oswald text-white">{formatMoney(report.payment_totals?.efectivo)}</span>
                   </div>
-                )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/70">Tarjeta:</span>
+                    <span className="font-oswald text-white">{formatMoney(report.payment_totals?.tarjeta)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/70">Transferencia:</span>
+                    <span className="font-oswald text-white">{formatMoney(report.payment_totals?.transferencia)}</span>
+                  </div>
+                  {report.payment_totals?.dolar > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-white/70">Dólar (equiv.):</span>
+                      <span className="font-oswald text-white">{formatMoney(report.payment_totals?.dolar)}</span>
+                    </div>
+                  )}
+                  {report.payment_totals?.euro > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-white/70">Euro (equiv.):</span>
+                      <span className="font-oswald text-white">{formatMoney(report.payment_totals?.euro)}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* ═══ VENTAS POR CATEGORÍA ═══ */}
