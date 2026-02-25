@@ -1173,7 +1173,7 @@ export default function CashRegister() {
         </DialogContent>
       </Dialog>
 
-      {/* ReportXZ Modal para re-impresión */}
+      {/* ReportXZ Modal para re-impresión de turno (X) */}
       <ReportXZ 
         type="X"
         sessionId={reprintSessionId}
@@ -1186,6 +1186,14 @@ export default function CashRegister() {
             logout();
           }
         }}
+      />
+      
+      {/* ReportXZ Modal para cierre de día (Z) */}
+      <ReportXZ 
+        type="Z"
+        dayId={closedDayId}
+        open={!!closedDayId}
+        onClose={() => setClosedDayId(null)}
       />
     </div>
   );
