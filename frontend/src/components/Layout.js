@@ -33,6 +33,11 @@ export default function Layout() {
   const [businessDay, setBusinessDay] = useState(null);
   const [businessDayLoading, setBusinessDayLoading] = useState(true);
   
+  // Limpiar toasts al cambiar de ruta
+  useEffect(() => {
+    toast.dismiss();
+  }, [location.pathname]);
+  
   // ═══════════════════════════════════════════════════════════════════════════════
   // CONTROL DE TURNO DE CAJA PARA CAJEROS - BLOQUEO TOTAL
   // ═══════════════════════════════════════════════════════════════════════════════
