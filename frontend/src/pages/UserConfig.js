@@ -574,7 +574,8 @@ export default function UserConfig() {
               </div>
             </div>
 
-            {/* Permissions Grid */}
+            {/* Permissions Grid - Only visible for System Admin */}
+            {isSystemAdmin && (
             <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-oswald text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
