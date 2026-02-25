@@ -331,70 +331,46 @@ export default function ReportXZ({
               )}
 
               {/* ═══ CUADRE DE CAJA ═══ */}
-              <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-xl p-4 border border-cyan-500/20">
-                <h3 className="font-oswald font-bold text-white mb-3 flex items-center gap-2">
-                  <Calculator size={18} className="text-cyan-400" />
-                  CUADRE DE CAJA
-                </h3>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h3 className="font-oswald font-bold text-white mb-3">CUADRE DE CAJA</h3>
                 
-                <div className="space-y-2 text-sm">
+                <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-white/60 flex items-center gap-2">
-                      <ArrowDown size={14} className="text-blue-400" />
-                      Fondo Inicial:
-                    </span>
-                    <span className="text-white">{formatMoney(report.cash_reconciliation?.initial_fund)}</span>
+                    <span className="text-white/60">Fondo Inicial:</span>
+                    <span className="font-oswald text-white">{formatMoney(report.cash_reconciliation?.initial_fund)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">+ Ventas Efectivo:</span>
+                    <span className="font-oswald text-white">{formatMoney(report.cash_reconciliation?.cash_sales)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">+ Depósitos:</span>
+                    <span className="font-oswald text-white">{formatMoney(report.cash_reconciliation?.deposits)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">- Retiros:</span>
+                    <span className="font-oswald text-white">-{formatMoney(report.cash_reconciliation?.withdrawals)}</span>
                   </div>
                   
-                  <div className="flex justify-between">
-                    <span className="text-white/60 flex items-center gap-2">
-                      <TrendingUp size={14} className="text-green-400" />
-                      + Ventas Efectivo:
-                    </span>
-                    <span className="text-green-400">{formatMoney(report.cash_reconciliation?.cash_sales)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-white/60 flex items-center gap-2">
-                      <ArrowDown size={14} className="text-emerald-400" />
-                      + Depósitos:
-                    </span>
-                    <span className="text-emerald-400">{formatMoney(report.cash_reconciliation?.deposits)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-white/60 flex items-center gap-2">
-                      <ArrowUp size={14} className="text-red-400" />
-                      - Retiros:
-                    </span>
-                    <span className="text-red-400">-{formatMoney(report.cash_reconciliation?.withdrawals)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between pt-3 mt-2 border-t border-cyan-500/30">
-                    <span className="font-bold text-white flex items-center gap-2">
-                      <CheckCircle2 size={16} className="text-cyan-400" />
-                      TOTAL A ENTREGAR:
-                    </span>
-                    <span className="font-oswald font-bold text-2xl text-cyan-400">
+                  <div className="flex justify-between pt-2 mt-2 border-t border-white/20">
+                    <span className="font-bold text-white">TOTAL A ENTREGAR:</span>
+                    <span className="font-oswald font-bold text-lg text-cyan-400">
                       {formatMoney(report.cash_reconciliation?.total_to_deliver)}
                     </span>
                   </div>
                   
                   {/* Comparación Declarado vs Esperado (solo si hay datos de cierre) */}
                   {(report.cash_reconciliation?.cash_declared > 0 || report.cash_reconciliation?.expected_cash > 0) && (
-                    <div className="mt-4 pt-3 border-t border-white/10 space-y-2">
-                      <div className="flex justify-between text-sm">
+                    <>
+                      <div className="flex justify-between pt-2 mt-2 border-t border-white/10">
                         <span className="text-white/60">Efectivo Esperado:</span>
-                        <span className="text-white font-oswald">{formatMoney(report.cash_reconciliation?.expected_cash)}</span>
+                        <span className="font-oswald text-white">{formatMoney(report.cash_reconciliation?.expected_cash)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between">
                         <span className="text-white/60">Efectivo Declarado:</span>
-                        <span className="text-white font-oswald">{formatMoney(report.cash_reconciliation?.cash_declared)}</span>
+                        <span className="font-oswald text-white">{formatMoney(report.cash_reconciliation?.cash_declared)}</span>
                       </div>
-                      <div className={`flex justify-between text-sm pt-2 border-t border-white/10 ${
-                        (report.cash_reconciliation?.difference || 0) === 0 ? '' :
-                        report.cash_reconciliation?.difference > 0 ? '' : ''
-                      }`}>
+                      <div className="flex justify-between pt-2 border-t border-white/10">
                         <span className="font-bold text-white">Diferencia:</span>
                         <span className={`font-oswald font-bold ${
                           Math.abs(report.cash_reconciliation?.difference || 0) < 1 
@@ -407,7 +383,7 @@ export default function ReportXZ({
                           {formatMoney(report.cash_reconciliation?.difference)}
                         </span>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
                 
