@@ -568,7 +568,7 @@ export default function UserConfig() {
                       {isSelected && <Check size={14} />}
                       <span className="font-oswald">{role.name}</span>
                       <span className={`text-[10px] ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
-                        {permCount}p
+                        {permCount}p {role.level != null ? `· N${role.level}` : ''}
                       </span>
                     </button>
                   );
