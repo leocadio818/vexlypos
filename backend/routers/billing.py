@@ -298,7 +298,9 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
     total = round(subtotal + total_taxes, 2)
 
     # ─── MODO ENTRENAMIENTO: No consumir NCF real ───
-    is_training = user.get("training_mode", False) or order.get("training_mode", False)
+    # Check both JWT and fresh DB value
+    user_doc = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "training_mode": 1})
+    is_training = user.get("training_mode", False) or (user_doc.get("training_mode", False) if user_doc else False) or order.get("training_mode", False)
     
     if is_training:
         ncf = "ENTRENAMIENTO"
