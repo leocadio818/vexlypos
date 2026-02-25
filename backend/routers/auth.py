@@ -90,6 +90,33 @@ ALL_PERMISSIONS = {
     "release_reserved_table": "Desbloquear Mesa Reservada",
 }
 
+# ─── ROLE LEVELS (Hierarchical Security) ───
+BUILTIN_ROLE_LEVELS = {
+    "admin": 100,       # Administrador del Sistema
+    "supervisor": 40,   # Supervisor
+    "cashier": 20,      # Cajero
+    "waiter": 20,       # Mesero
+    "kitchen": 10,      # Cocina
+}
+
+def get_role_level(role_code: str, custom_roles_cache=None) -> int:
+    """Get the numeric level for a role code"""
+    if role_code in BUILTIN_ROLE_LEVELS:
+        return BUILTIN_ROLE_LEVELS[role_code]
+    return 0  # Unknown roles get lowest level
+
+async def get_role_level_async(role_code: str) -> int:
+    """Get level for a role, checking custom roles in DB"""
+    if role_code in BUILTIN_ROLE_LEVELS:
+        return BUILTIN_ROLE_LEVELS[role_code]
+    custom = await db.custom_roles.find_one({"code": role_code}, {"_id": 0, "level": 1})
+    if custom and "level" in custom:
+        return custom["level"]
+    custom_by_id = await db.custom_roles.find_one({"id": role_code}, {"_id": 0, "level": 1})
+    if custom_by_id and "level" in custom_by_id:
+        return custom_by_id["level"]
+    return 0
+
 
 def get_permissions(role, custom=None):
     base = {}
