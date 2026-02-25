@@ -423,7 +423,7 @@ export default function CashRegister() {
       const detail = err.response?.data?.detail || 'Error al cerrar jornada';
       toast.error('No se puede cerrar la jornada', {
         description: detail,
-        duration: 8000
+        duration: 5000
       });
     } finally {
       setCloseDayLoading(false);

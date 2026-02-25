@@ -594,7 +594,7 @@ export default function PaymentScreen() {
       if (!shiftCheck.data?.has_open_session) {
         toast.error('Debes abrir un turno de caja', {
           description: 'Ve a Caja / Turnos para abrir tu turno antes de cobrar.',
-          duration: 6000
+          duration: 4000
         });
         return;
       }
