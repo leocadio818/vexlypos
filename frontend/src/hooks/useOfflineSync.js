@@ -104,7 +104,7 @@ export function useOfflineSync() {
       
       toast.warning('📴 Sin conexión', {
         description: 'El sistema funciona offline. Los cambios se sincronizarán automáticamente.',
-        duration: 5000,
+        duration: 4000,
       });
     };
 
