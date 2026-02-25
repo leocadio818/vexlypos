@@ -1851,12 +1851,12 @@ export default function OrderScreen() {
                   >
                     {/* Imagen o Icono del producto */}
                     {(product.image_url || product.icon) && (
-                      <div className="flex-1 flex items-center justify-center min-h-0">
+                      <div className={`flex items-center justify-center ${largeMode ? 'h-[70px]' : 'h-[55px]'} mb-1`}>
                         {product.image_url ? (
                           <img 
                             src={product.image_url} 
                             alt="" 
-                            className="max-h-full max-w-full rounded-lg object-contain"
+                            className={`${largeMode ? 'max-h-[70px]' : 'max-h-[55px]'} max-w-full rounded-lg object-contain`}
                             onError={(e) => { e.target.style.display = 'none'; }}
                           />
                         ) : product.icon && PRODUCT_ICON_MAP[product.icon] ? (
