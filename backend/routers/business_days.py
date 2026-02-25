@@ -1085,13 +1085,18 @@ async def generate_x_report(
     expected_cash = reconciliation.get("expected_cash", 0) if reconciliation else 0
     difference = reconciliation.get("cash_difference", 0) if reconciliation else 0
     
+    # Estadísticas
+    invoice_count = sales_totals.get("count", 0)
+    total_sales = sales_totals.get("total", 0)
+    avg_per_invoice = round(total_sales / invoice_count, 2) if invoice_count > 0 else 0
+    
     report = {
         "report_type": "X",
         "report_name": "REPORTE X - CIERRE DE TURNO",
         "session": {
             "id": session.get("id"),
             "ref": session.get("ref"),
-            "terminal": session.get("terminal_code"),
+            "terminal": session.get("terminal_name") or session.get("terminal_code"),
             "opened_at": session.get("opened_at"),
             "opened_by": session.get("opened_by_name"),
             "closed_at": session.get("closed_at"),
@@ -1101,20 +1106,32 @@ async def generate_x_report(
         "generated_at": now_iso(),
         "generated_by": user.get("name"),
         
+        # Ventas por Categoría
+        "sales_by_category": sales_by_category,
+        
         # Resumen de Ventas
         "sales_summary": {
             "subtotal": round(sales_totals.get("subtotal", 0), 2),
             "itbis": round(sales_totals.get("itbis", 0), 2),
             "propina": round(sales_totals.get("propina", 0), 2),
-            "total": round(sales_totals.get("total", 0), 2),
-            "invoices_count": sales_totals.get("count", 0)
+            "total": round(total_sales, 2),
+            "invoices_count": invoice_count,
+            "avg_per_invoice": avg_per_invoice
+        },
+        
+        # Anulaciones
+        "voids": {
+            "list": voids_list,
+            "total": round(voids_total, 2),
+            "count": sum(v["count"] for v in voids_list)
         },
         
         # Desglose por Forma de Pago
         "payment_breakdown": payment_breakdown,
         "payment_totals": {
             "efectivo": round(cash_total, 2),
-            "tarjeta": round(card_total, 2)
+            "tarjeta": round(card_total, 2),
+            "transferencia": round(transfer_total, 2)
         },
         
         # Cuadre de Caja
