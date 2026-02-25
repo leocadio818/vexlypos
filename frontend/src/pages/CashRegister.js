@@ -297,6 +297,11 @@ export default function CashRegister() {
       setCloseDialog(false);
       resetClosingForm();
       fetchData();
+      
+      // Abrir automáticamente el Reporte X para imprimir
+      if (res.data?.session_id) {
+        setReprintSessionId(res.data.session_id);
+      }
     } catch (err) {
       const detail = err.response?.data?.detail || '';
       // Si el error es por mesas abiertas, mostrar diálogo dedicado
