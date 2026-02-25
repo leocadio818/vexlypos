@@ -812,6 +812,21 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 **Solucion:** Filtrado multi-estrategia con fallbacks en business_days.py.
 **Verificacion:** Testing agent 100% (6/6 tests).
 
+### Modo Entrenamiento - Fase 2 (2026-02-25) [COMPLETADO]
+**Funcionalidad:** Switch en perfil del empleado que activa modo entrenamiento:
+- Ordenes marcadas con `training_mode: true`
+- Facturas reciben NCF "ENTRENAMIENTO" en vez de NCF fiscal real (no consume secuencia)
+- Pagos NO incrementan totales de jornada ni sesion POS
+- Reportes X/Z excluyen facturas de entrenamiento (`training_mode: {$ne: True}`)
+- Comandas y recibos impresos incluyen header "*** ENTRENAMIENTO *** NO ES VENTA REAL"
+- Banner persistente amber en el frontend: "MODO ENTRENAMIENTO — Las transacciones NO se registran como ventas reales"
+- Al desactivar switch, el usuario opera normalmente; registros de entrenamiento quedan ocultos de reportes
+- Training mode verificado desde JWT + DB (soporta cambio en caliente)
+
+**Verificacion:** Testing agent 100% (14/14 backend, 8/8 frontend).
+
+
+
 
 ---
 
