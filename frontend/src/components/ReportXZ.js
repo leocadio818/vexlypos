@@ -1,28 +1,137 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { businessDaysAPI, formatMoney } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { FileText, Printer, AlertTriangle, RefreshCw } from 'lucide-react';
+import { FileText, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-function RptRow({ label, value, bold, highlight, className = '' }) {
-  return (
-    <div className={`flex justify-between py-[2px] ${className}`}>
-      <span className={`font-bold ${bold ? 'text-white' : 'text-white/80'}`}>{label}</span>
-      <span className={`font-oswald font-bold ${highlight ? 'text-cyan-400 text-base' : 'text-white'}`}>
-        {value}
-      </span>
-    </div>
-  );
+function buildPrintHTML(report, isDetailed, reportType) {
+  const fmtDate = (d) => d ? new Date(d).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+  const fmtMoney = (v) => formatMoney(v);
+  const row = (label, value) => `<div class="row"><span>${label}</span><span>${value}</span></div>`;
+  const sep = () => '<div class="sep"></div>';
+  const title = (t) => `<div class="title">${t}</div>`;
+
+  let html = '';
+
+  // ENCABEZADO
+  html += `<div class="center big">${isDetailed ? (reportType === 'Z' ? 'CIERRE DE DIA' : 'CIERRE DE TURNO') : 'CIERRE DE CAJA'}</div>`;
+  html += `<div class="center ref">${report.session?.ref || ''}</div>`;
+  html += sep();
+  html += row('Cajero:', report.session?.opened_by || '-');
+  html += row('Terminal:', report.session?.terminal || '-');
+  html += row('Fecha:', report.business_date || '-');
+  html += row('Apertura:', fmtDate(report.session?.opened_at));
+  if (report.session?.closed_at) html += row('Cierre:', fmtDate(report.session?.closed_at));
+  html += sep();
+
+  // PRODUCTOS (solo detallado)
+  if (isDetailed && report.sales_by_category?.length > 0) {
+    html += title('PRODUCTOS');
+    for (const c of report.sales_by_category) {
+      html += row(`${c.category || c.category_name} (${c.quantity})`, fmtMoney(c.subtotal));
+    }
+    const prodTotal = report.sales_by_category.reduce((s, c) => s + c.subtotal, 0);
+    html += `<div class="row big"><span>Total Productos:</span><span>${fmtMoney(prodTotal)}</span></div>`;
+    html += sep();
+  }
+
+  // DEVOLUCIONES
+  if (report.voids?.count > 0) {
+    html += title('DEVOLUCIONES');
+    if (isDetailed && report.voids.list) {
+      for (const v of report.voids.list) {
+        const reason = v.reason || v.cancellation_reason || 'Sin razon';
+        html += row(`${reason} (${v.count || 1})`, `-${fmtMoney(v.total)}`);
+      }
+    } else {
+      html += row(`Total (${report.voids.count})`, `-${fmtMoney(report.voids.total)}`);
+    }
+    html += sep();
+  }
+
+  // VENTAS
+  if (isDetailed) {
+    html += title('VENTAS');
+    html += row('Subtotal:', fmtMoney(report.sales_summary?.subtotal));
+    html += row('ITBIS:', fmtMoney(report.sales_summary?.itbis));
+    html += row('Propina Legal:', fmtMoney(report.sales_summary?.propina));
+    html += `<div class="row big"><span>TOTAL:</span><span>${fmtMoney(report.sales_summary?.total)}</span></div>`;
+    html += row('Facturas:', report.sales_summary?.invoices_count || 0);
+    if (report.sales_summary?.avg_per_invoice > 0) {
+      html += row('Promedio/Factura:', fmtMoney(report.sales_summary?.avg_per_invoice));
+    }
+  } else {
+    html += row('Facturas:', report.sales_summary?.invoices_count || 0);
+    html += `<div class="row big"><span>Total Ventas:</span><span>${fmtMoney(report.sales_summary?.total)}</span></div>`;
+  }
+  html += sep();
+
+  // FORMAS DE PAGO
+  html += title('FORMAS DE PAGO');
+  if (isDetailed && report.payment_breakdown?.length > 0) {
+    for (const p of report.payment_breakdown) {
+      html += row(`${p.method} (${p.count}):`, fmtMoney(p.amount));
+    }
+  } else {
+    html += row('Efectivo:', fmtMoney(report.payment_totals?.efectivo));
+    html += row('Tarjeta:', fmtMoney(report.payment_totals?.tarjeta));
+    html += row('Transferencia:', fmtMoney(report.payment_totals?.transferencia));
+  }
+  html += sep();
+
+  // FLUJO DE CAJA (solo detallado)
+  if (isDetailed) {
+    html += title('FLUJO DE CAJA');
+    html += row('Fondo Inicial:', fmtMoney(report.cash_reconciliation?.initial_fund));
+    html += row('+ Ventas Efectivo:', fmtMoney(report.cash_reconciliation?.cash_sales));
+    html += row('+ Depositos:', fmtMoney(report.cash_reconciliation?.deposits));
+    html += row('- Retiros:', `-${fmtMoney(report.cash_reconciliation?.withdrawals)}`);
+    html += `<div class="row big"><span>TOTAL A ENTREGAR:</span><span>${fmtMoney(report.cash_reconciliation?.total_to_deliver)}</span></div>`;
+    html += sep();
+  }
+
+  // DECLARACION
+  if (report.cash_reconciliation?.cash_declared > 0 || report.cash_reconciliation?.expected_cash > 0) {
+    html += title('DECLARACION');
+    html += row('Esperado:', fmtMoney(report.cash_reconciliation?.expected_cash));
+    html += row('Declarado:', fmtMoney(report.cash_reconciliation?.cash_declared));
+    html += `<div class="row big"><span>Diferencia:</span><span>${report.cash_reconciliation?.difference > 0 ? '+' : ''}${fmtMoney(report.cash_reconciliation?.difference)}</span></div>`;
+    html += sep();
+  }
+
+  // TOTAL GENERAL
+  html += `<div class="row big"><span>TOTAL GENERAL:</span><span>${fmtMoney(report.sales_summary?.total)}</span></div>`;
+  html += '<div class="center ref" style="margin-top:8px">--- Fin de Reporte ---</div>';
+
+  return html;
 }
 
-function RptSep() {
-  return <div className="border-t border-dashed border-white/30 my-3" />;
-}
-
-function RptTitle({ children }) {
-  return <p className="font-oswald font-bold text-white text-sm tracking-wide mb-2">{children}</p>;
+function printReport(report, isDetailed, reportType) {
+  const content = buildPrintHTML(report, isDetailed, reportType);
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    toast.error('Habilita ventanas emergentes para imprimir');
+    return;
+  }
+  printWindow.document.write(`
+    <html><head><title>${report?.session?.ref || 'Reporte'}</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Courier New', monospace; font-size: 12px; width: 80mm; padding: 3mm; color: #000; font-weight: bold; }
+      .center { text-align: center; }
+      .sep { border-top: 1px dashed #000; margin: 5px 0; }
+      .row { display: flex; justify-content: space-between; padding: 1px 0; font-weight: bold; }
+      .title { font-size: 13px; font-weight: bold; margin-bottom: 3px; margin-top: 2px; }
+      .big { font-size: 14px; font-weight: bold; }
+      .ref { font-size: 11px; }
+    </style></head><body>
+    ${content}
+    </body></html>
+  `);
+  printWindow.document.close();
+  printWindow.print();
 }
 
 export default function ReportXZ({ 
@@ -36,8 +145,6 @@ export default function ReportXZ({
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [printMode, setPrintMode] = useState(null);
-  const printRef = useRef(null);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -59,258 +166,71 @@ export default function ReportXZ({
   }, [type, dayId, sessionId]);
 
   useEffect(() => {
-    if (open && (sessionId || dayId)) {
-      setPrintMode(null);
-      fetchReport();
-    }
+    if (open && (sessionId || dayId)) fetchReport();
   }, [open, fetchReport, sessionId, dayId]);
 
-  const handlePrint = () => {
-    if (!printRef.current) return;
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) { toast.error('Habilita ventanas emergentes'); return; }
-    printWindow.document.write(`
-      <html><head><title>${report?.session?.ref || 'Reporte'}</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Courier New', monospace; font-size: 12px; width: 80mm; padding: 3mm; color: #000; font-weight: bold; }
-        .center { text-align: center; }
-        .sep { border-top: 1px dashed #000; margin: 5px 0; }
-        .sep-double { border-top: 2px solid #000; margin: 5px 0; }
-        .row { display: flex; justify-content: space-between; padding: 1px 0; font-weight: bold; }
-        .title { font-size: 13px; font-weight: bold; margin-bottom: 3px; }
-        .big { font-size: 15px; font-weight: bold; }
-        .ref { font-size: 11px; }
-      </style></head><body>
-      ${printRef.current.innerHTML}
-      </body></html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+  const handleSelect = (mode) => {
+    if (!report) return;
+    const isDetailed = mode === 'detailed';
+    printReport(report, isDetailed, type);
+    onClose?.();
   };
 
-  const fmtDate = (d) => d ? new Date(d).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' }) : '-';
-
   const handleClose = () => {
-    setPrintMode(null);
     onClose?.();
   };
 
   if (!open) return null;
 
-  // ═══ PANTALLA DE PREGUNTA ═══
-  if (!loading && !error && report && printMode === null) {
-    return (
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-sm p-0" data-testid="report-mode-dialog">
-          <div className="p-6 text-center">
-            <FileText className="text-cyan-400 mx-auto mb-4" size={36} />
-            <p className="font-oswald font-bold text-white text-lg mb-1">
-              Reporte Detallado?
-            </p>
-            <p className="text-white/50 text-sm mb-6">
-              {report.session?.opened_by || user?.name}
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setPrintMode('detailed')}
-                data-testid="report-mode-detailed"
-                className="flex-1 h-14 rounded-xl bg-cyan-500/20 border border-cyan-500/30 hover:bg-cyan-500/30 text-cyan-300 font-oswald font-bold text-lg transition-all active:scale-95"
-              >
-                SI
-              </button>
-              <button
-                onClick={() => setPrintMode('summary')}
-                data-testid="report-mode-summary"
-                className="flex-1 h-14 rounded-xl bg-amber-500/20 border border-amber-500/30 hover:bg-amber-500/30 text-amber-300 font-oswald font-bold text-lg transition-all active:scale-95"
-              >
-                NO
-              </button>
-              <button
-                onClick={handleClose}
-                data-testid="report-mode-cancel"
-                className="flex-1 h-14 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 text-white/70 font-oswald font-bold text-lg transition-all active:scale-95"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  const isDetailed = printMode === 'detailed';
-
-  // ═══ REPORTE ═══
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-lg max-h-[85vh] flex flex-col p-0" data-testid="report-xz-dialog">
-        <DialogHeader className="shrink-0 px-5 pt-5 pb-2">
-          <DialogTitle className="font-oswald text-white flex items-center gap-2">
-            <FileText className="text-cyan-400" size={18} />
-            CIERRE DE TURNO (X)
-            {!isDetailed && <span className="text-xs text-amber-400 font-normal ml-1">- Resumido</span>}
-          </DialogTitle>
-          <DialogDescription className="text-white/50 text-xs">
-            {report?.session?.ref || ''}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto px-5 min-h-0">
+      <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-sm p-0" data-testid="report-mode-dialog">
+        <div className="p-6 text-center">
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <RefreshCw className="animate-spin text-cyan-400" size={28} />
+            <div className="py-8">
+              <RefreshCw className="animate-spin text-cyan-400 mx-auto" size={32} />
+              <p className="text-white/50 text-sm mt-3">Preparando reporte...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-16">
+            <div className="py-8">
               <AlertTriangle className="text-red-400 mx-auto mb-3" size={36} />
               <p className="text-white/70 text-sm">{error}</p>
               <Button onClick={fetchReport} className="mt-3" variant="outline" size="sm">Reintentar</Button>
             </div>
-          ) : report ? (
-            <div ref={printRef} className="text-sm pb-4 font-bold">
-              
-              {/* ═══ ENCABEZADO ═══ */}
-              <div className="text-center mb-2">
-                <p className="font-oswald font-bold text-white text-base">
-                  {isDetailed ? 'CIERRE DE TURNO' : 'CIERRE DE CAJA'}
-                </p>
-                <p className="text-white/60 text-xs">{report.session?.ref}</p>
+          ) : (
+            <>
+              <FileText className="text-cyan-400 mx-auto mb-4" size={36} />
+              <p className="font-oswald font-bold text-white text-lg mb-1">
+                Reporte Detallado?
+              </p>
+              <p className="text-white/50 text-sm mb-6">
+                {report?.session?.opened_by || user?.name}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleSelect('detailed')}
+                  data-testid="report-mode-detailed"
+                  className="flex-1 h-14 rounded-xl bg-cyan-500/20 border border-cyan-500/30 hover:bg-cyan-500/30 text-cyan-300 font-oswald font-bold text-lg transition-all active:scale-95"
+                >
+                  SI
+                </button>
+                <button
+                  onClick={() => handleSelect('summary')}
+                  data-testid="report-mode-summary"
+                  className="flex-1 h-14 rounded-xl bg-amber-500/20 border border-amber-500/30 hover:bg-amber-500/30 text-amber-300 font-oswald font-bold text-lg transition-all active:scale-95"
+                >
+                  NO
+                </button>
+                <button
+                  onClick={handleClose}
+                  data-testid="report-mode-cancel"
+                  className="flex-1 h-14 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 text-white/70 font-oswald font-bold text-lg transition-all active:scale-95"
+                >
+                  Cancelar
+                </button>
               </div>
-
-              <RptSep />
-
-              <div className="space-y-1 mb-1">
-                <RptRow label="Cajero:" value={report.session?.opened_by} />
-                <RptRow label="Terminal:" value={report.session?.terminal || '-'} />
-                <RptRow label="Fecha:" value={report.business_date} />
-                <RptRow label="Apertura:" value={fmtDate(report.session?.opened_at)} />
-                {report.session?.closed_at && <RptRow label="Cierre:" value={fmtDate(report.session?.closed_at)} />}
-              </div>
-
-              <RptSep />
-
-              {/* ═══ PRODUCTOS (si hay) ═══ */}
-              {isDetailed && report.sales_by_category?.length > 0 && (
-                <>
-                  <RptTitle>PRODUCTOS</RptTitle>
-                  {report.sales_by_category.map((c, i) => (
-                    <RptRow key={i} label={`${c.category} (${c.quantity})`} value={formatMoney(c.subtotal)} />
-                  ))}
-                  <RptRow label="Total Productos:" value={formatMoney(report.sales_by_category.reduce((s, c) => s + c.subtotal, 0))} bold highlight />
-                  <RptSep />
-                </>
-              )}
-
-              {/* ═══ DEVOLUCIONES (si hay) ═══ */}
-              {report.voids?.count > 0 && (
-                <>
-                  <RptTitle>DEVOLUCIONES</RptTitle>
-                  {isDetailed ? (
-                    report.voids.list.map((v, i) => (
-                      <RptRow key={i} label={`${v.reason} (${v.count})`} value={`-${formatMoney(v.total)}`} className="text-red-400" />
-                    ))
-                  ) : (
-                    <RptRow label={`Total (${report.voids.count})`} value={`-${formatMoney(report.voids.total)}`} className="text-red-400" />
-                  )}
-                  <RptSep />
-                </>
-              )}
-
-              {/* ═══ VENTAS ═══ */}
-              {isDetailed ? (
-                <>
-                  <RptTitle>VENTAS</RptTitle>
-                  <RptRow label="Subtotal:" value={formatMoney(report.sales_summary?.subtotal)} />
-                  <RptRow label="ITBIS:" value={formatMoney(report.sales_summary?.itbis)} />
-                  <RptRow label="Propina Legal:" value={formatMoney(report.sales_summary?.propina)} />
-                  <RptRow label="TOTAL:" value={formatMoney(report.sales_summary?.total)} bold highlight />
-                  <RptRow label="Facturas:" value={report.sales_summary?.invoices_count || 0} />
-                  {report.sales_summary?.avg_per_invoice > 0 && (
-                    <RptRow label="Promedio/Factura:" value={formatMoney(report.sales_summary?.avg_per_invoice)} />
-                  )}
-                </>
-              ) : (
-                <>
-                  <RptRow label="Facturas:" value={report.sales_summary?.invoices_count || 0} />
-                  <RptRow label="Total Ventas:" value={formatMoney(report.sales_summary?.total)} bold highlight />
-                </>
-              )}
-
-              <RptSep />
-
-              {/* ═══ FORMAS DE PAGO ═══ */}
-              <RptTitle>FORMAS DE PAGO</RptTitle>
-              {isDetailed && report.payment_breakdown?.length > 0 ? (
-                report.payment_breakdown.map((p, i) => (
-                  <RptRow key={i} label={`${p.method} (${p.count}):`} value={formatMoney(p.amount)} />
-                ))
-              ) : (
-                <>
-                  <RptRow label="Efectivo:" value={formatMoney(report.payment_totals?.efectivo)} />
-                  <RptRow label="Tarjeta:" value={formatMoney(report.payment_totals?.tarjeta)} />
-                  <RptRow label="Transferencia:" value={formatMoney(report.payment_totals?.transferencia)} />
-                </>
-              )}
-
-              <RptSep />
-
-              {/* ═══ FLUJO DE CAJA (solo detallado) ═══ */}
-              {isDetailed && (
-                <>
-                  <RptTitle>FLUJO DE CAJA</RptTitle>
-                  <RptRow label="Fondo Inicial:" value={formatMoney(report.cash_reconciliation?.initial_fund)} />
-                  <RptRow label="+ Ventas Efectivo:" value={formatMoney(report.cash_reconciliation?.cash_sales)} />
-                  <RptRow label="+ Depositos:" value={formatMoney(report.cash_reconciliation?.deposits)} />
-                  <RptRow label="- Retiros:" value={`-${formatMoney(report.cash_reconciliation?.withdrawals)}`} />
-                  <RptRow label="TOTAL A ENTREGAR:" value={formatMoney(report.cash_reconciliation?.total_to_deliver)} bold highlight />
-                  <RptSep />
-                </>
-              )}
-
-              {/* ═══ DECLARACION ═══ */}
-              {(report.cash_reconciliation?.cash_declared > 0 || report.cash_reconciliation?.expected_cash > 0) && (
-                <>
-                  <RptTitle>DECLARACION</RptTitle>
-                  <RptRow label="Esperado:" value={formatMoney(report.cash_reconciliation?.expected_cash)} />
-                  <RptRow label="Declarado:" value={formatMoney(report.cash_reconciliation?.cash_declared)} />
-                  <RptRow 
-                    label="Diferencia:" 
-                    value={`${report.cash_reconciliation?.difference > 0 ? '+' : ''}${formatMoney(report.cash_reconciliation?.difference)}`}
-                    bold
-                    className={Math.abs(report.cash_reconciliation?.difference || 0) < 1 ? 'text-green-400' : report.cash_reconciliation?.difference > 0 ? 'text-green-400' : 'text-red-400'}
-                  />
-                  <RptSep />
-                </>
-              )}
-
-              {/* ═══ TOTAL GENERAL ═══ */}
-              <RptRow label="TOTAL GENERAL:" value={formatMoney(report.sales_summary?.total)} bold highlight />
-
-              <p className="text-center text-white/30 text-xs mt-4">--- Fin de Reporte ---</p>
-
-            </div>
-          ) : null}
-        </div>
-
-        {/* Footer */}
-        <div className="shrink-0 flex gap-2 px-5 pb-5 pt-3 border-t border-white/10">
-          <Button
-            onClick={handlePrint}
-            disabled={loading || !report}
-            data-testid="print-report-btn"
-            className="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30"
-          >
-            <Printer size={16} className="mr-2" />
-            Imprimir
-          </Button>
-          <Button onClick={() => setPrintMode(null)} variant="outline" className="border-white/20 text-white/70" data-testid="change-mode-btn">
-            Cambiar
-          </Button>
-          <Button onClick={handleClose} variant="outline" className="border-white/20 text-white/70" data-testid="close-report-btn">
-            Cerrar
-          </Button>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
