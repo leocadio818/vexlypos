@@ -443,9 +443,35 @@ async def calculate_day_stats(day_id: str) -> dict:
     
     business_date = business_day["business_date"]
     
+    # Determinar filtro robusto
+    date_count = await db.bills.count_documents({"business_date": business_date, "status": "paid"})
+    if date_count > 0:
+        day_match = {"business_date": business_date, "status": "paid"}
+        day_match_cancelled = {"business_date": business_date, "status": "cancelled"}
+        day_match_base = {"business_date": business_date}
+    else:
+        bd_count = await db.bills.count_documents({"business_day_id": day_id, "status": "paid"})
+        if bd_count > 0:
+            day_match = {"business_day_id": day_id, "status": "paid"}
+            day_match_cancelled = {"business_day_id": day_id, "status": "cancelled"}
+            day_match_base = {"business_day_id": day_id}
+        else:
+            opened_at = business_day.get("opened_at", "")
+            closed_at = business_day.get("closed_at")
+            time_f = {"paid_at": {"$gte": opened_at}}
+            if closed_at:
+                time_f["paid_at"]["$lte"] = closed_at
+            day_match = {**time_f, "status": "paid"}
+            day_match_cancelled = {"status": "cancelled"}
+            if opened_at:
+                day_match_cancelled["created_at"] = {"$gte": opened_at}
+                if closed_at:
+                    day_match_cancelled["created_at"]["$lte"] = closed_at
+            day_match_base = time_f if opened_at else {"business_date": business_date}
+    
     # Ventas por forma de pago
     pipeline = [
-        {"$match": {"business_date": business_date, "status": "paid"}},
+        {"$match": day_match},
         {"$group": {
             "_id": None,
             "total_sales": {"$sum": "$total"},
