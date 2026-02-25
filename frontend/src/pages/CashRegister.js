@@ -79,6 +79,15 @@ export default function CashRegister() {
   const [reprintLoading, setReprintLoading] = useState(false);
   const [movementSearch, setMovementSearch] = useState('');
   
+  // Cierre de Día
+  const [closeDayDialog, setCloseDayDialog] = useState(false);
+  const [closeDayPin, setCloseDayPin] = useState('');
+  const [closeDayNotes, setCloseDayNotes] = useState('');
+  const [closeDayLoading, setCloseDayLoading] = useState(false);
+  
+  // Re-imprimir reporte
+  const [reprintSessionId, setReprintSessionId] = useState(null);
+  
   // Check URL params for B04 redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
