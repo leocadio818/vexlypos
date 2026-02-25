@@ -38,13 +38,13 @@ export default function Layout() {
   const [cashierShift, setCashierShift] = useState(null);
   const [cashierShiftLoading, setCashierShiftLoading] = useState(true);
   
-  // Verificar si el usuario es cajero y necesita turno abierto
-  const isCashierRole = user?.role === 'cashier';
+  // Roles que requieren turno abierto para operar (todos excepto meseros y cocina)
+  const requiresShift = user?.role === 'cashier' || user?.role === 'admin';
   
-  // El cajero necesita turno si: es cajero Y no tiene turno abierto Y ya terminó de cargar
+  // El usuario necesita turno si: requiere turno Y no tiene turno abierto Y ya terminó de cargar
   // EXCEPCIÓN: No bloquear si está en la página de Caja (para poder abrir turno)
   const isOnCashRegisterPage = location.pathname === '/cash-register';
-  const cashierNeedsShift = isCashierRole && !cashierShift && !cashierShiftLoading && !isOnCashRegisterPage;
+  const cashierNeedsShift = requiresShift && !cashierShift && !cashierShiftLoading && !isOnCashRegisterPage;
   
   // Fetch cashier shift status
   const fetchCashierShift = useCallback(async () => {
