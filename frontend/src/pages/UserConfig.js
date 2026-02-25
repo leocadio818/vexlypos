@@ -300,13 +300,14 @@ export default function UserConfig() {
     if (!newRoleName.trim()) { toast.error('Nombre del puesto requerido'); return; }
     try {
       const code = newRoleName.trim().toLowerCase().replace(/\s+/g, '_');
-      await axios.post(`${API}/roles`, { name: newRoleName.trim(), code, permissions: {} }, { headers: hdrs() });
-      toast.success(`Puesto "${newRoleName}" creado`);
+      await axios.post(`${API}/roles`, { name: newRoleName.trim(), code, permissions: {}, level: newRoleLevel }, { headers: hdrs() });
+      toast.success(`Puesto "${newRoleName}" creado (nivel ${newRoleLevel})`);
       setNewRoleName('');
+      setNewRoleLevel(20);
       setCreateRoleDialog(false);
       const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
       setRoles(rolesRes.data);
-    } catch (e) { toast.error('Error creando puesto'); }
+    } catch (e) { toast.error(e.response?.data?.detail || 'Error creando puesto'); }
   };
 
   if (loading) {
