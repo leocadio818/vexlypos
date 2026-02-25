@@ -838,6 +838,11 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 
 ---
 
+## Completado Recientemente
+- [x] **Imágenes de productos ampliadas** (Feb 2026) - Se reestructuró el layout de las tarjetas de productos en `OrderScreen.js` para que las imágenes ocupen al menos la mitad de la tarjeta. Se aumentó la altura de las tarjetas (`h-40`/`h-44`) y se reorganizó el flexbox para dar prioridad a la imagen.
+- [x] **Training Mode completo** - Modo entrenamiento con dashboard de progreso
+- [x] **Gestión Unificada de Empleados** - Pantalla única `UserConfig.js` para roles y permisos
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
