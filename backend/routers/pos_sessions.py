@@ -433,14 +433,25 @@ async def get_sessions_history(
     status: Optional[str] = None,
     user=Depends(get_current_user)
 ):
-    """Obtiene historial de sesiones con datos de cuadre"""
+    """Historial de sesiones: cajeros ven solo las suyas, admin ve todas. Solo jornada actual."""
     try:
         sb = get_supabase()
+        
+        # Obtener jornada actual para filtrar por fecha
+        business_day = await db.business_days.find_one({"status": "open"}, {"_id": 0, "opened_at": 1})
         
         query = sb.table("pos_sessions").select("*").order("opened_at", desc=True).limit(limit)
         
         if status:
             query = query.eq("status", status)
+        
+        # Filtrar por jornada actual (solo turnos abiertos desde el inicio de la jornada)
+        if business_day and business_day.get("opened_at"):
+            query = query.gte("opened_at", business_day["opened_at"])
+        
+        # Cajeros solo ven sus propios turnos
+        if user.get("role") != "admin":
+            query = query.eq("opened_by", user["user_id"])
         
         result = query.execute()
         sessions = result.data or []
