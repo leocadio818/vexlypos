@@ -577,6 +577,14 @@ export default function Layout() {
 
       {/* Main content */}
       <main className={`flex-1 overflow-auto relative z-10 ${isMobile && !shouldHideNav ? 'pb-20' : ''}`}>
+        {/* ─── Training Mode Banner ─── */}
+        {user?.training_mode && (
+          <div className="bg-amber-500 text-black px-4 py-1.5 flex items-center justify-center gap-2 text-sm font-bold font-oswald tracking-wider z-50" data-testid="training-mode-banner">
+            <GraduationCap size={16} />
+            MODO ENTRENAMIENTO — Las transacciones NO se registran como ventas reales
+            <GraduationCap size={16} />
+          </div>
+        )}
         <Outlet />
       </main>
       
