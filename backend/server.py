@@ -1659,6 +1659,173 @@ async def clear_print_queue():
     return {"deleted": result.deleted_count}
 
 
+
+@api.post("/print/report-shift")
+async def print_shift_report(input: dict, user=Depends(get_current_user)):
+    """Imprime el reporte X o Z directamente en la impresora térmica"""
+    report = input.get("report")
+    detailed = input.get("detailed", True)
+    report_type = input.get("type", "X")  # X = turno, Z = dia
+    
+    if not report:
+        raise HTTPException(status_code=400, detail="Faltan datos del reporte")
+    
+    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    biz_name = config.get("business_name", "")
+    
+    # Construir comandos ESC/POS
+    commands = []
+    
+    def add_text(text, align="left", bold=False, size=1):
+        commands.append({"type": "text", "text": text, "align": align, "bold": bold, "size": size})
+    
+    def add_cols(left, right, bold=False):
+        commands.append({"type": "columns", "left": left, "right": right, "bold": bold})
+    
+    def add_divider():
+        commands.append({"type": "divider"})
+    
+    def add_feed(lines=1):
+        commands.append({"type": "feed", "lines": lines})
+    
+    def fmt(val):
+        try:
+            return f"RD$ {float(val or 0):,.2f}"
+        except:
+            return "RD$ 0.00"
+    
+    session = report.get("session", {})
+    sales = report.get("sales_summary", {})
+    payments = report.get("payment_totals", {})
+    breakdown = report.get("payment_breakdown", [])
+    cash_rec = report.get("cash_reconciliation", {})
+    voids = report.get("voids", {})
+    categories = report.get("sales_by_category", [])
+    
+    # ═══ ENCABEZADO ═══
+    if biz_name:
+        add_text(biz_name, "center", True, 2)
+    title = "CIERRE DE TURNO" if report_type == "X" else "CIERRE DE DIA"
+    if not detailed:
+        title = "CIERRE DE CAJA"
+    add_text(title, "center", True, 2)
+    add_text(session.get("ref", ""), "center")
+    add_divider()
+    add_cols("Cajero:", session.get("opened_by", "-"))
+    add_cols("Terminal:", session.get("terminal", "-"))
+    add_cols("Fecha:", report.get("business_date", "-"))
+    
+    from datetime import datetime as dt_parse
+    def fmt_dt(d):
+        if not d: return "-"
+        try:
+            parsed = dt_parse.fromisoformat(d.replace("Z", "+00:00"))
+            return parsed.strftime("%d/%m/%Y %I:%M %p")
+        except:
+            return str(d)[:19]
+    
+    add_cols("Apertura:", fmt_dt(session.get("opened_at")))
+    if session.get("closed_at"):
+        add_cols("Cierre:", fmt_dt(session.get("closed_at")))
+    add_divider()
+    
+    # ═══ PRODUCTOS (solo detallado) ═══
+    if detailed and categories:
+        add_text("PRODUCTOS", "left", True)
+        for c in categories:
+            cat_name = c.get("category") or c.get("category_name") or "Otros"
+            add_cols(f"{cat_name} ({c.get('quantity', 0)})", fmt(c.get("subtotal", 0)))
+        prod_total = sum(c.get("subtotal", 0) for c in categories)
+        add_cols("Total Productos:", fmt(prod_total), True)
+        add_divider()
+    
+    # ═══ DEVOLUCIONES ═══
+    if voids.get("count", 0) > 0:
+        add_text("DEVOLUCIONES", "left", True)
+        if detailed and voids.get("list"):
+            for v in voids["list"]:
+                reason = v.get("reason") or "Sin razon"
+                add_cols(f"{reason} ({v.get('count', 1)})", f"-{fmt(v.get('total', 0))}")
+        else:
+            add_cols(f"Total ({voids['count']})", f"-{fmt(voids.get('total', 0))}")
+        add_divider()
+    
+    # ═══ VENTAS ═══
+    if detailed:
+        add_text("VENTAS", "left", True)
+        add_cols("Subtotal:", fmt(sales.get("subtotal")))
+        add_cols("ITBIS:", fmt(sales.get("itbis")))
+        add_cols("Propina Legal:", fmt(sales.get("propina")))
+        add_cols("TOTAL:", fmt(sales.get("total")), True)
+        add_cols("Facturas:", str(sales.get("invoices_count", 0)))
+        if sales.get("avg_per_invoice", 0) > 0:
+            add_cols("Promedio/Factura:", fmt(sales.get("avg_per_invoice")))
+    else:
+        add_cols("Facturas:", str(sales.get("invoices_count", 0)))
+        add_cols("Total Ventas:", fmt(sales.get("total")), True)
+    add_divider()
+    
+    # ═══ FORMAS DE PAGO ═══
+    add_text("FORMAS DE PAGO", "left", True)
+    if detailed and breakdown:
+        for p in breakdown:
+            add_cols(f"{p['method']} ({p.get('count', 0)}):", fmt(p.get("amount")))
+    else:
+        add_cols("Efectivo:", fmt(payments.get("efectivo")))
+        add_cols("Tarjeta:", fmt(payments.get("tarjeta")))
+        add_cols("Transferencia:", fmt(payments.get("transferencia")))
+    add_divider()
+    
+    # ═══ FLUJO DE CAJA (solo detallado) ═══
+    if detailed:
+        add_text("FLUJO DE CAJA", "left", True)
+        add_cols("Fondo Inicial:", fmt(cash_rec.get("initial_fund")))
+        add_cols("+ Ventas Efectivo:", fmt(cash_rec.get("cash_sales")))
+        add_cols("+ Depositos:", fmt(cash_rec.get("deposits")))
+        add_cols("- Retiros:", f"-{fmt(cash_rec.get('withdrawals'))}")
+        add_cols("TOTAL A ENTREGAR:", fmt(cash_rec.get("total_to_deliver")), True)
+        add_divider()
+    
+    # ═══ DECLARACION ═══
+    if (cash_rec.get("cash_declared") or 0) > 0 or (cash_rec.get("expected_cash") or 0) > 0:
+        add_text("DECLARACION", "left", True)
+        add_cols("Esperado:", fmt(cash_rec.get("expected_cash")))
+        add_cols("Declarado:", fmt(cash_rec.get("cash_declared")))
+        diff = cash_rec.get("difference", 0) or 0
+        sign = "+" if diff > 0 else ""
+        add_cols("Diferencia:", f"{sign}{fmt(diff)}", True)
+        add_divider()
+    
+    # ═══ TOTAL GENERAL ═══
+    add_cols("TOTAL GENERAL:", fmt(sales.get("total")), True)
+    add_feed(1)
+    add_text("--- Fin de Reporte ---", "center")
+    add_feed(3)
+    commands.append({"type": "cut"})
+    
+    # Enviar a cola de impresión
+    receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+    printer_name = receipt_channel.get("printer_name", "") if receipt_channel else ""
+    
+    job = {
+        "id": gen_id(),
+        "type": "report",
+        "channel": "receipt",
+        "printer_name": printer_name,
+        "data": {
+            "type": "report",
+            "paper_width": 80,
+            "commands": commands
+        },
+        "commands": commands,
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    await db.print_queue.insert_one(job)
+    
+    return {"ok": True, "job_id": job["id"]}
+
+
 # ─── PRINT QUEUE ENDPOINTS FOR AGENT ───
 @api.get("/print/queue")
 async def get_print_queue():
