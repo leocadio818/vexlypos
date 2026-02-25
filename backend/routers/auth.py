@@ -224,6 +224,7 @@ async def get_me(user=Depends(get_current_user)):
     if not u:
         raise HTTPException(status_code=404, detail="User not found")
     u["permissions"] = get_permissions(u["role"], u.get("permissions"))
+    u["role_level"] = await get_role_level_async(u["role"])
     return u
 
 
