@@ -467,26 +467,26 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     if not is_training_bill:
         # ─── ACTUALIZAR TOTALES DE LA JORNADA (solo ventas reales) ───
         await db.business_days.update_one(
-        {"id": business_day["id"]},
-        {"$inc": {
-            "total_sales": total,
-            "total_invoices": 1,
-            "total_cash": total if is_cash_payment else 0,
-            "total_card": total if not is_cash_payment and input.payment_method == "card" else 0,
-            "total_transfer": total if input.payment_method == "transfer" else 0
-        }}
-    )
+            {"id": business_day["id"]},
+            {"$inc": {
+                "total_sales": total,
+                "total_invoices": 1,
+                "total_cash": total if is_cash_payment else 0,
+                "total_card": total if not is_cash_payment and input.payment_method == "card" else 0,
+                "total_transfer": total if input.payment_method == "transfer" else 0
+            }}
+        )
 
-    # Update MongoDB shifts (legacy)
-    shift = await db.shifts.find_one({"user_id": user["user_id"], "status": "open"}, {"_id": 0})
-    if shift:
-        field = "cash_sales" if input.payment_method == "cash" else "card_sales"
-        await db.shifts.update_one({"id": shift["id"]}, {
-            "$inc": {field: total, "total_sales": total, "total_tips": propina}
-        })
+        # Update MongoDB shifts (legacy)
+        shift = await db.shifts.find_one({"user_id": user["user_id"], "status": "open"}, {"_id": 0})
+        if shift:
+            field = "cash_sales" if input.payment_method == "cash" else "card_sales"
+            await db.shifts.update_one({"id": shift["id"]}, {
+                "$inc": {field: total, "total_sales": total, "total_tips": propina}
+            })
 
-    # ─── SUPABASE: Update pos_sessions ───
-    if supabase_client:
+        # ─── SUPABASE: Update pos_sessions ───
+        if supabase_client:
         try:
             # Find active session for this user
             session_result = supabase_client.table("pos_sessions").select("*").eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
