@@ -674,7 +674,7 @@ async def generate_z_report_internal(
     
     # ═══ 2. DESGLOSE POR FORMA DE PAGO ═══
     payment_pipeline = [
-        {"$match": {"business_date": business_date, "status": "paid"}},
+        {"$match": day_filter},
         {"$unwind": {"path": "$payments", "preserveNullAndEmptyArrays": True}},
         {"$group": {
             "_id": {
@@ -692,7 +692,7 @@ async def generate_z_report_internal(
     # Fallback: agrupar desde bills si no hay colección payments
     if not payment_result:
         payment_pipeline = [
-            {"$match": {"business_date": business_date, "status": "paid"}},
+            {"$match": day_filter},
             {"$unwind": {"path": "$payments", "preserveNullAndEmptyArrays": True}},
             {"$group": {
                 "_id": {"$ifNull": ["$payments.payment_method_name", "$payment_method_name"]},
