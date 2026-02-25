@@ -448,13 +448,13 @@ async def calculate_day_stats(day_id: str) -> dict:
     training_exclude = {"training_mode": {"$ne": True}}
     date_count = await db.bills.count_documents({"business_date": business_date, "status": "paid", **training_exclude})
     if date_count > 0:
-        day_match = {"business_date": business_date, "status": "paid"}
+        day_match = {"business_date": business_date, "status": "paid", **training_exclude}
         day_match_cancelled = {"business_date": business_date, "status": "cancelled"}
         day_match_base = {"business_date": business_date}
     else:
-        bd_count = await db.bills.count_documents({"business_day_id": day_id, "status": "paid"})
+        bd_count = await db.bills.count_documents({"business_day_id": day_id, "status": "paid", **training_exclude})
         if bd_count > 0:
-            day_match = {"business_day_id": day_id, "status": "paid"}
+            day_match = {"business_day_id": day_id, "status": "paid", **training_exclude}
             day_match_cancelled = {"business_day_id": day_id, "status": "cancelled"}
             day_match_base = {"business_day_id": day_id}
         else:
@@ -463,7 +463,7 @@ async def calculate_day_stats(day_id: str) -> dict:
             time_f = {"paid_at": {"$gte": opened_at}}
             if closed_at:
                 time_f["paid_at"]["$lte"] = closed_at
-            day_match = {**time_f, "status": "paid"}
+            day_match = {**time_f, "status": "paid", **training_exclude}
             day_match_cancelled = {"status": "cancelled"}
             if opened_at:
                 day_match_cancelled["created_at"] = {"$gte": opened_at}
