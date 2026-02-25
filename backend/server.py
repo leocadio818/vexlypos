@@ -2895,6 +2895,12 @@ def build_receipt(data):
     """Construye comandos ESC/POS para un recibo/factura"""
     commands = []
     
+    # ─── MODO ENTRENAMIENTO ───
+    if data.get("training_mode"):
+        commands.append({{"type": "text", "text": "*** ENTRENAMIENTO ***", "align": "center", "bold": True, "size": 2}})
+        commands.append({{"type": "text", "text": "NO ES VENTA REAL", "align": "center", "bold": True}})
+        commands.append({{"type": "divider"}})
+    
     # Encabezado con nombre del negocio
     commands.append({{"type": "text", "text": data.get("business_name", "MESA POS RD"), "align": "center", "bold": True, "size": 2}})
     commands.append({{"type": "text", "text": data.get("business_address", ""), "align": "center"}})
