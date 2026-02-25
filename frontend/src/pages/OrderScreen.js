@@ -1841,7 +1841,7 @@ export default function OrderScreen() {
                     onMouseLeave={handleTouchEnd}
                     disabled={isOutOfStock}
                     data-testid={`product-${product.id}`}
-                    className={`group relative overflow-hidden border-2 transition-all rounded-xl flex flex-col justify-between ${largeMode ? 'p-4' : 'p-3'} ${heightClass} text-left ${
+                    className={`group relative overflow-hidden border-2 transition-all rounded-xl flex flex-col ${largeMode ? 'p-3' : 'p-2'} ${heightClass} text-left ${
                       isOutOfStock 
                         ? 'bg-card/50 border-red-500/50 opacity-60 cursor-not-allowed' 
                         : isLowStock
@@ -1849,26 +1849,31 @@ export default function OrderScreen() {
                           : 'bg-card border-border hover:border-primary/50 active:scale-[0.97]'
                     }`}
                   >
-                    {/* Imagen o Icono del producto */}
-                    {(product.image_url || product.icon) && (
-                      <div className={`flex items-center justify-center ${largeMode ? 'h-[70px]' : 'h-[55px]'} mb-1`}>
+                    {/* Imagen o Icono del producto - ocupa la mayor parte de la tarjeta */}
+                    {(product.image_url || product.icon) ? (
+                      <div className="flex-1 flex items-center justify-center overflow-hidden min-h-0 mb-1">
                         {product.image_url ? (
                           <img 
                             src={product.image_url} 
                             alt="" 
-                            className={`${largeMode ? 'max-h-[70px]' : 'max-h-[55px]'} max-w-full rounded-lg object-contain`}
+                            className="w-full h-full rounded-lg object-contain"
                             onError={(e) => { e.target.style.display = 'none'; }}
                           />
                         ) : product.icon && PRODUCT_ICON_MAP[product.icon] ? (
                           (() => {
                             const IconComponent = PRODUCT_ICON_MAP[product.icon];
-                            return <IconComponent size={largeMode ? 28 : 20} className="text-primary/80" />;
+                            return <IconComponent size={largeMode ? 36 : 28} className="text-primary/80" />;
                           })()
                         ) : null}
                       </div>
+                    ) : (
+                      <div className="flex-1" />
                     )}
-                    <span className={`font-semibold leading-tight line-clamp-2 ${largeMode ? 'text-base' : 'text-sm'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
-                    <span className={`font-oswald font-bold ${largeMode ? 'text-xl' : 'text-lg'} ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>{formatMoney(product.price)}</span>
+                    {/* Nombre y precio compactos en la parte inferior */}
+                    <div className="flex-shrink-0 mt-auto">
+                      <span className={`font-semibold leading-tight line-clamp-1 block ${largeMode ? 'text-sm' : 'text-xs'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
+                      <span className={`font-oswald font-bold block ${largeMode ? 'text-lg' : 'text-base'} ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>{formatMoney(product.price)}</span>
+                    </div>
                     {hasModifiers && !isOutOfStock && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
                     
                     {/* Out of Stock Badge */}
