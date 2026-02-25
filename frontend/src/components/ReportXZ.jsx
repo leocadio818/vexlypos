@@ -464,10 +464,10 @@ export default function ReportXZ({
               </div>
             </div>
           ) : null}
-        </ScrollArea>
+        </div>
 
         {/* Footer con acciones */}
-        <div className="shrink-0 flex gap-2 pt-4 border-t border-white/10">
+        <div className="shrink-0 flex gap-2 px-6 pb-6 pt-4 border-t border-white/10">
           <Button
             onClick={handlePrint}
             disabled={loading || !report}
