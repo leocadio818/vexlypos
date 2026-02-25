@@ -955,7 +955,7 @@ async def generate_x_report(
         {"$match": {
             **time_filter,
             "status": "paid",
-            "paid_by_id": session.get("opened_by_id")
+            "paid_by_id": session.get("opened_by_id") or session.get("opened_by")
         }},
         {"$group": {
             "_id": None,
@@ -976,7 +976,7 @@ async def generate_x_report(
         {"$match": {
             **time_filter,
             "status": "paid",
-            "paid_by_id": session.get("opened_by_id")
+            "paid_by_id": session.get("opened_by_id") or session.get("opened_by")
         }},
         {"$unwind": {"path": "$payments", "preserveNullAndEmptyArrays": True}},
         {"$group": {
@@ -1015,7 +1015,7 @@ async def generate_x_report(
         {"$match": {
             **time_filter,
             "status": "paid",
-            "paid_by_id": session.get("opened_by_id")
+            "paid_by_id": session.get("opened_by_id") or session.get("opened_by")
         }},
         {"$unwind": "$items"},
         {"$group": {
