@@ -792,6 +792,27 @@ El botón "Anular Cuenta Entera" en el menú de Funciones ahora actúa como un *
 - Cache hit: ~0.2 segundos
 - Nueva consulta: ~1-2 segundos
 
+
+### Rediseno Gestion de Empleados (2026-02-25)
+**Problema:** Gestion de empleados con 3 pestanas confusas. Sistemas desconectados "Rol" vs "Puesto": Carlos mostraba "Cajero" en una pestana y "Mesero" en otra.
+
+**Solucion:** Rediseno completo a pantalla unica unificada (UserConfig.js reescrito):
+- Columna izq: Datos empleado (nombre, PIN, foto, contacto, empleo colapsable)
+- Columna der: Selector de Puesto (pills) + Grid de Permisos (toggles por categoria)
+- Permisos por defecto se cargan al seleccionar puesto
+- Permisos individuales personalizables sin cambiar de puesto (marcados "especial" en naranja)
+- Creacion de puestos personalizados, Boton "Restablecer", Switch Modo Entrenamiento
+- Bug fix: campo `code` agregado a roles builtin en backend API
+- Filtrado de roles custom duplicados, Etiquetas en espanol
+
+**Verificacion:** Testing agent 100% (12/12 backend, 13/13 frontend).
+
+### Reportes X/Z mostraban $0.00 en ventas (2026-02-25) [P0 - CORREGIDO]
+**Bug:** Reportes X/Z mostraban $0.00 porque filtros buscaban campos inexistentes en facturas antiguas.
+**Solucion:** Filtrado multi-estrategia con fallbacks en business_days.py.
+**Verificacion:** Testing agent 100% (6/6 tests).
+
+
 ---
 
 ## Pendiente
