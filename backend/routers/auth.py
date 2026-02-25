@@ -404,11 +404,11 @@ async def check_tax_override_permission(user=Depends(get_current_user)):
 async def list_roles():
     roles = await db.custom_roles.find({}, {"_id": 0}).to_list(100)
     builtin = [
-        {"id": "admin", "name": "Administrador", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("admin", {})},
-        {"id": "waiter", "name": "Mesero", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("waiter", {})},
-        {"id": "cashier", "name": "Cajero", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("cashier", {})},
-        {"id": "supervisor", "name": "Supervisor", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("supervisor", {})},
-        {"id": "kitchen", "name": "Cocina", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("kitchen", {})},
+        {"id": "admin", "code": "admin", "name": "Administrador", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("admin", {})},
+        {"id": "waiter", "code": "waiter", "name": "Mesero", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("waiter", {})},
+        {"id": "cashier", "code": "cashier", "name": "Cajero", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("cashier", {})},
+        {"id": "supervisor", "code": "supervisor", "name": "Supervisor", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("supervisor", {})},
+        {"id": "kitchen", "code": "kitchen", "name": "Cocina", "builtin": True, "permissions": DEFAULT_PERMISSIONS.get("kitchen", {})},
     ]
     return builtin + roles
 
