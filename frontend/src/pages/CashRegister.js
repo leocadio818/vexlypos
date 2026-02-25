@@ -1163,12 +1163,12 @@ export default function CashRegister() {
       </Dialog>
 
       {/* ReportXZ Modal para re-impresión */}
-      {reprintSessionId && (
-        <ReportXZ 
-          sessionId={reprintSessionId}
-          onClose={() => setReprintSessionId(null)}
-        />
-      )}
+      <ReportXZ 
+        type="X"
+        sessionId={reprintSessionId}
+        open={!!reprintSessionId}
+        onClose={() => setReprintSessionId(null)}
+      />
     </div>
   );
 }
