@@ -839,14 +839,38 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 ---
 
 ## Completado Recientemente
+- [x] **Valorizacion de Inventario corregida** (Feb 2026) - Endpoint leia de `warehouse_stock` (vacio) en vez de `stock`. Ahora usa `dispatch_unit_cost` para calculo correcto. Resultado: 48 botellas × RD$83.33 = RD$4,000.00.
 - [x] **Correccion calculo de margen en recetas** (Feb 2026) - El calculateRecipeCost ahora usa dispatch_unit_cost (costo por unidad de despacho) en vez de avg_cost (costo de compra). Ej: Cerveza comprada por Caja (2000) pero vendida por Botella (83.33), margen correcto 44.4% en vez de -1233%.
-- [x] **Reportes corregidos** (Feb 2026) - Creados 3 endpoints faltantes (daily-sales, sales-by-category, sales-by-waiter). Recetas renderiza tabla formateada.
-- [x] **Reset del Sistema** (Feb 2026) - Boton en Config > Sistema (solo Admin Sistema). Limpia ordenes, facturas, turnos, auditorias, inventario. Permite seleccionar usuarios a mantener. Requiere confirmacion "RESETEAR_SISTEMA".
-- [x] **Reporte de Auditoría Unificado** (Feb 2026) - 9 fuentes de datos integradas con filtro por tipo de evento.
-- [x] **Seguridad Jerárquica por Niveles v2** (Feb 2026) - Nivel 100 ve TODOS. Cajero=30, Mesero=20. DELETE protegido.
-- [x] **Imágenes de productos ampliadas** (Feb 2026) - Tarjetas de productos reestructuradas.
+- [x] **Reportes corregidos** (Feb 2026) - Creados 3 endpoints faltantes (daily-sales, sales-by-category, sales-by-waiter). Recetas renderiza tabla formateada en vez de JSON crudo.
+- [x] **Reset del Sistema** (Feb 2026) - Boton en Config > Sistema (solo Admin Sistema). Limpia ordenes, facturas, turnos, auditorias, inventario, productos, categorias, recetas, ingredientes. Permite seleccionar usuarios a mantener. Requiere confirmacion "RESETEAR_SISTEMA".
+- [x] **Reporte de Auditoria Unificado** (Feb 2026) - 9 fuentes de datos integradas con filtro por tipo de evento: anulaciones, stock, compras, inventario, turnos, roles/permisos/usuarios, notas de credito, exenciones de impuesto, ingredientes.
+- [x] **Seguridad Jerarquica por Niveles v2** (Feb 2026) - Nivel 100 ve TODOS. Cajero=30, Mesero=20. DELETE protegido. Nivel 80 puede crear otro 80 pero no verlo despues. Solo Admin Sistema personaliza permisos y crea puestos.
+- [x] **Imagenes de productos ampliadas** (Feb 2026) - Tarjetas de productos en OrderScreen reestructuradas con flex-1 para imagenes.
 - [x] **Training Mode completo** - Modo entrenamiento con dashboard de progreso
-- [x] **Gestión Unificada de Empleados** - Pantalla unica `UserConfig.js` para roles y permisos
+- [x] **Gestion Unificada de Empleados** - Pantalla unica `UserConfig.js` para roles y permisos
+
+## Conceptos Clave del Negocio
+### Unidades de Compra vs Despacho
+- Los insumos se COMPRAN en una unidad (Caja, Saco, Galon) y se DESPACHAN/VENDEN en otra (Botella, Libra, Onza)
+- `avg_cost` = costo por unidad de COMPRA (ej: RD$2,000 por Caja)
+- `dispatch_unit_cost` = costo por unidad de DESPACHO (ej: RD$83.33 por Botella)
+- `conversion_factor` = cuantas unidades de despacho tiene una unidad de compra (ej: 24 botellas por caja)
+- **SIEMPRE** usar `dispatch_unit_cost` para: margenes, valorizacion, costos de receta, reportes de inventario
+- Formula: `dispatch_unit_cost = avg_cost / conversion_factor`
+
+### Valorizacion de Inventario
+- Lee stock de la coleccion `stock` (NO de `warehouse_stock`)
+- Stock se almacena en unidades de DESPACHO
+- Valor = stock × dispatch_unit_cost
+
+### Asistente de Compras
+- Genera sugerencias cuando `current_stock < min_stock`
+- Si stock esta por encima del minimo, no muestra sugerencias (es correcto)
+
+### Calculo de Margen en Recetas
+- `calculateRecipeCost()` en InventoryManager.js usa `dispatch_unit_cost`
+- Margen = (PVP - Costo) / PVP × 100
+- Ej: (150 - 83.33) / 150 = 44.4%
 
 ## Seguridad Jerárquica - Niveles de Puesto
 | Puesto | Nivel | Ve Config | Puede ver/editar | Crear |
