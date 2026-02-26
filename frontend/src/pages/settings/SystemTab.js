@@ -295,6 +295,97 @@ export default function SystemTab() {
           )}
         </div>
       </div>
+
+      {/* System Reset - Only for System Admin */}
+      {isSystemAdmin && (
+        <div className="mt-8 pt-6 border-t border-red-500/30">
+          <div className="bg-red-500/5 border-2 border-red-500/30 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                <RotateCcw size={20} className="text-red-500" />
+              </div>
+              <div>
+                <h2 className="font-oswald text-base font-bold text-red-400">Resetear Sistema</h2>
+                <p className="text-xs text-muted-foreground">Elimina TODOS los datos operativos y empieza desde cero</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Esta accion eliminara: ordenes, facturas, turnos, auditorias, movimientos de inventario, reservaciones y mas.
+              Se mantendra la configuracion del sistema (productos, categorias, mesas, impuestos) y los usuarios seleccionados.
+            </p>
+            <Button variant="destructive" className="font-oswald font-bold" onClick={() => setResetDialog(true)} data-testid="system-reset-btn">
+              <AlertTriangle size={16} className="mr-2" /> RESETEAR SISTEMA
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Confirmation Dialog */}
+      <Dialog open={resetDialog} onOpenChange={setResetDialog}>
+        <DialogContent className="max-w-md bg-card border-red-500/30">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-red-400 flex items-center gap-2">
+              <AlertTriangle size={20} /> Confirmar Reset del Sistema
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+              <p className="text-sm text-red-300 font-semibold mb-1">ATENCION: Esta accion es irreversible</p>
+              <p className="text-xs text-muted-foreground">Se eliminaran todas las ordenes, facturas, turnos, auditorias y datos operativos.</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-2 block">Usuarios a mantener activos:</label>
+              <div className="max-h-[180px] overflow-y-auto space-y-1">
+                {(users || []).map(u => {
+                  const isCurrentUser = u.id === currentUser?.id;
+                  const isKept = keepUsers.includes(u.id);
+                  return (
+                    <label key={u.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${isKept ? 'bg-green-500/10 border border-green-500/30' : 'bg-background border border-border/50'} ${isCurrentUser ? 'opacity-80' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={isKept}
+                        onChange={() => toggleKeepUser(u.id)}
+                        disabled={isCurrentUser}
+                        className="rounded"
+                      />
+                      <span className="text-sm font-medium">{u.name} {u.last_name || ''}</span>
+                      <span className="text-[10px] text-muted-foreground ml-auto">{u.role} (N{u.role_level || '?'})</span>
+                      {isCurrentUser && <span className="text-[9px] text-green-400">(Tu)</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Escribe RESETEAR_SISTEMA para confirmar:</label>
+              <input
+                value={resetConfirmText}
+                onChange={e => setResetConfirmText(e.target.value)}
+                placeholder="RESETEAR_SISTEMA"
+                className="w-full bg-background border border-red-500/30 rounded-lg px-3 py-2 text-sm font-mono uppercase"
+                data-testid="reset-confirm-input"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setResetDialog(false); setResetConfirmText(''); }}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1 font-oswald font-bold"
+                onClick={handleSystemReset}
+                disabled={resetConfirmText !== 'RESETEAR_SISTEMA' || resetLoading}
+                data-testid="confirm-reset-btn"
+              >
+                {resetLoading ? 'Reseteando...' : 'CONFIRMAR RESET'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
