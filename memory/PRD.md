@@ -839,6 +839,12 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 ---
 
 ## Completado Recientemente
+- [x] **Ajustes de Stock** (Feb 2026) - Tres funcionalidades nuevas:
+  - **Endpoint `POST /api/inventory/adjust`**: Modifica stock, registra en `stock_movements` (movement_type: "adjustment") y en nueva colección `stock_adjustment_logs` con detalle completo (stock_before, stock_after, monetary_value, razón, usuario).
+  - **Reporte separado `GET /api/reports/stock-adjustments`**: Muestra estadísticas (total ajustes, unidades +/-, impacto neto), desglose por razón y por insumo, tabla de detalle completa.
+  - **Auditoría general corregida**: Query usaba campo `type` en vez de `movement_type` — corregido.
+  - **Búsqueda y filtros en pestaña Stock**: Campo de búsqueda inteligente + filtros por almacén y categoría.
+  - Testing: 100% (19/19 backend, 18/18 frontend).
 - [x] **Valorizacion de Inventario + Tendencias CORREGIDO** (Feb 2026) - Dos endpoints corregidos:
   - `/reports/inventory-valuation`: Ahora devuelve campos correctos (current_stock, unit_cost, stock_value, warehouse_name, is_dead_stock, is_low_stock, recent_movement, by_warehouse, dead_stock). Incluye desglose por almacen y categoria.
   - `/reports/valuation-trends`: Leia de `warehouse_stock` (vacio) en vez de `stock`, usaba `cost_per_unit` (no existe) en vez de `dispatch_unit_cost`, buscaba movimientos por `timestamp` en vez de `created_at`. Todo corregido.
