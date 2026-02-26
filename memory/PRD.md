@@ -872,7 +872,7 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 - Margen = (PVP - Costo) / PVP × 100
 - Ej: (150 - 83.33) / 150 = 44.4%
 
-## Seguridad Jerárquica - Niveles de Puesto
+## Seguridad Jerarquica - Niveles de Puesto
 | Puesto | Nivel | Ve Config | Puede ver/editar | Crear |
 |---|---|---|---|---|
 | Admin Sistema | 100 | Si | TODOS (incluyendo otros 100 y si mismo) | Cualquier nivel |
@@ -892,6 +892,23 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 - Eliminar usuario protegido por jerarquia (no puedes eliminar nivel >= al tuyo)
 - Cambios de roles/permisos/usuarios se registran en `role_audit_logs`
 - Endpoints: `GET /api/role-audit-logs` (solo admin sistema)
+
+## Reset del Sistema
+- Endpoint: `POST /api/system-reset`
+- Solo Admin Sistema (nivel 100)
+- Requiere `confirm: "RESETEAR_SISTEMA"` y `keep_user_ids: [...]`
+- Borra: ordenes, facturas, turnos, auditorias, stock, productos, categorias, recetas, ingredientes, compras, reservaciones
+- Mantiene: mesas, impuestos, metodos de pago, custom_roles, usuarios seleccionados
+- UI: Config > Sistema > scroll abajo > boton rojo "RESETEAR SISTEMA"
+
+## Archivos Clave Modificados en esta Sesion
+- `/app/backend/routers/auth.py` - Seguridad jerarquica, BUILTIN_ROLE_LEVELS, system-reset, role-audit-logs
+- `/app/backend/routers/reports.py` - daily-sales, sales-by-category, sales-by-waiter, inventory-valuation corregido, system-audit con 9 fuentes
+- `/app/frontend/src/pages/UserConfig.js` - isSystemAdmin, permisos ocultos para no-admin
+- `/app/frontend/src/pages/settings/SystemTab.js` - Boton Reset Sistema con dialogo
+- `/app/frontend/src/pages/InventoryManager.js` - calculateRecipeCost usa dispatch_unit_cost
+- `/app/frontend/src/pages/Reports.js` - renderRecipesReport, auditEventFilter, renderSystemAuditReport mejorado
+- `/app/frontend/src/pages/OrderScreen.js` - Imagenes de productos ampliadas
 
 ## Pendiente
 ### P1 - Alta Prioridad
