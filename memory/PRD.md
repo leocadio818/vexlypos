@@ -839,10 +839,11 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 ---
 
 ## Completado Recientemente
-- [x] **Seguridad Jerárquica por Niveles** (Feb 2026) - Sistema completo de control de acceso por niveles de puesto. Admin Sistema (nivel 100) puede ver/editar todo. Propietario (80) solo ve niveles inferiores. Permisos y creación de puestos bloqueados para no-system-admin. Auditoría completa de cambios de roles/permisos.
-- [x] **Imágenes de productos ampliadas** (Feb 2026) - Se reestructuró el layout de las tarjetas de productos en `OrderScreen.js` para que las imágenes ocupen al menos la mitad de la tarjeta.
+- [x] **Reporte de Auditoría Unificado** (Feb 2026) - Integrados TODOS los eventos del sistema en el reporte de Auditoría General: anulaciones, movimientos de stock, compras, diferencias de inventario, turnos, cambios de roles/permisos/usuarios, notas de crédito, exenciones de impuesto, movimientos de ingredientes. Filtro por tipo de evento incluido. 9 fuentes de datos, badges con colores por tipo.
+- [x] **Seguridad Jerárquica por Niveles v2** (Feb 2026) - Nivel 100 ve TODOS. Cajero=30, Mesero=20. DELETE protegido. Nivel 80 puede crear otro 80 pero no verlo despues.
+- [x] **Imágenes de productos ampliadas** (Feb 2026) - Tarjetas de productos reestructuradas.
 - [x] **Training Mode completo** - Modo entrenamiento con dashboard de progreso
-- [x] **Gestión Unificada de Empleados** - Pantalla única `UserConfig.js` para roles y permisos
+- [x] **Gestión Unificada de Empleados** - Pantalla unica `UserConfig.js` para roles y permisos
 
 ## Seguridad Jerárquica - Niveles de Puesto
 | Puesto | Nivel | Ve Config | Puede ver/editar | Crear |
