@@ -327,11 +327,13 @@ export default function InventoryManager() {
       .reduce((sum, s) => sum + (s.current_stock || 0), 0);
   };
 
-  // Calculate recipe cost
+  // Calculate recipe cost using dispatch unit cost (cost per serving unit)
   const calculateRecipeCost = (recipe) => {
     return recipe.ingredients?.reduce((sum, ing) => {
       const ingredient = ingredients.find(i => i.id === ing.ingredient_id);
-      const cost = (ingredient?.avg_cost || 0) * (ing.quantity || 0);
+      // Use dispatch_unit_cost (cost per bottle/unit) not avg_cost (cost per box/purchase unit)
+      const unitCost = ingredient?.dispatch_unit_cost || (ingredient?.avg_cost || 0) / (ingredient?.conversion_factor || 1);
+      const cost = unitCost * (ing.quantity || 0);
       const waste = cost * ((ing.waste_percentage || 0) / 100);
       return sum + cost + waste;
     }, 0) || 0;
