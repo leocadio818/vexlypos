@@ -758,6 +758,90 @@ async def delete_role(rid: str, caller=Depends(get_current_user)):
     return {"ok": True}
 
 
+# ─── SYSTEM RESET ───
+
+@router.post("/system-reset")
+async def system_reset(input: dict, caller=Depends(get_current_user)):
+    """Reset the entire system - ONLY for System Admin (level 100).
+    Keeps specified users (admin, one waiter, one cashier) and clears all data."""
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
+    if caller_level < 100:
+        raise HTTPException(status_code=403, detail="Solo el Administrador del Sistema puede resetear el sistema")
+    
+    confirm = input.get("confirm", "")
+    if confirm != "RESETEAR_SISTEMA":
+        raise HTTPException(status_code=400, detail="Debes confirmar escribiendo RESETEAR_SISTEMA")
+    
+    keep_user_ids = input.get("keep_user_ids", [])
+    if not keep_user_ids:
+        raise HTTPException(status_code=400, detail="Debes especificar al menos un usuario a mantener")
+    
+    # Collections to clear completely (transactional/operational data)
+    collections_to_clear = [
+        "orders", "bills", "shifts", "credit_notes",
+        "void_audit_logs", "audit_logs", "role_audit_logs", "tax_override_audit",
+        "stock_movements", "stock_difference_logs", "ingredient_audit_logs",
+        "purchase_orders", "print_queue", "unit_audit_logs",
+        "reservations", "table_notifications",
+    ]
+    
+    # Collections to clear partially or preserve config
+    cleared = {}
+    for coll_name in collections_to_clear:
+        coll = db[coll_name]
+        count = await coll.count_documents({})
+        if count > 0:
+            await coll.delete_many({})
+            cleared[coll_name] = count
+    
+    # Reset stock to 0
+    stock_count = await db.stock.count_documents({})
+    if stock_count > 0:
+        await db.stock.update_many({}, {"$set": {"current_stock": 0}})
+        cleared["stock (reset to 0)"] = stock_count
+    
+    # Reset tables to available
+    table_count = await db.tables.count_documents({})
+    if table_count > 0:
+        await db.tables.update_many({}, {"$set": {"status": "available", "order_id": None, "waiter_id": None, "waiter_name": None}})
+        cleared["tables (reset)"] = table_count
+    
+    # Deactivate all users EXCEPT the ones to keep
+    deactivated = await db.users.update_many(
+        {"id": {"$nin": keep_user_ids}, "active": True},
+        {"$set": {"active": False}}
+    )
+    cleared["users deactivated"] = deactivated.modified_count
+    
+    # Reset sequences/counters if any
+    await db.sequences.delete_many({})
+    
+    # Reset loyalty points
+    await db.loyalty_customers.update_many({}, {"$set": {"points": 0, "total_visits": 0, "total_spent": 0}})
+    
+    # Clear NCF sequences
+    await db.ncf_sequences.delete_many({})
+    
+    # Log the reset
+    await db.role_audit_logs.insert_one({
+        "id": gen_id(),
+        "action": "system_reset",
+        "target_user_name": "SISTEMA COMPLETO",
+        "changes": [f"Colecciones limpiadas: {', '.join(cleared.keys())}"],
+        "performed_by_id": caller["user_id"],
+        "performed_by_name": caller.get("name", ""),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
+    return {
+        "ok": True,
+        "message": "Sistema reseteado exitosamente",
+        "cleared": cleared,
+        "kept_users": keep_user_ids
+    }
+
+
+
 # ─── ROLE AUDIT LOG ───
 
 @router.get("/role-audit-logs")
