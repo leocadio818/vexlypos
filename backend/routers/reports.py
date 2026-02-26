@@ -1410,6 +1410,72 @@ async def system_audit_report(
     }
 
 
+# ─── STOCK ADJUSTMENTS REPORT ───
+@router.get("/stock-adjustments")
+async def stock_adjustments_report(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    warehouse_id: Optional[str] = Query(None),
+    ingredient_id: Optional[str] = Query(None),
+    limit: int = Query(500)
+):
+    """Dedicated report for stock adjustments"""
+    query = {}
+    if warehouse_id:
+        query["warehouse_id"] = warehouse_id
+    if ingredient_id:
+        query["ingredient_id"] = ingredient_id
+    if date_from or date_to:
+        date_q = {}
+        if date_from:
+            date_q["$gte"] = date_from
+        if date_to:
+            date_q["$lte"] = date_to + "T23:59:59"
+        if date_q:
+            query["timestamp"] = date_q
+
+    logs = await db.stock_adjustment_logs.find(query, {"_id": 0}).sort("timestamp", -1).to_list(limit)
+
+    # Summary stats
+    total_positive = sum(l.get("quantity", 0) for l in logs if l.get("quantity", 0) > 0)
+    total_negative = sum(abs(l.get("quantity", 0)) for l in logs if l.get("quantity", 0) < 0)
+    total_value_positive = sum(l.get("monetary_value", 0) for l in logs if l.get("quantity", 0) > 0)
+    total_value_negative = sum(l.get("monetary_value", 0) for l in logs if l.get("quantity", 0) < 0)
+
+    # By reason
+    by_reason = {}
+    for l in logs:
+        r = l.get("reason", "Sin razón")
+        if r not in by_reason:
+            by_reason[r] = {"reason": r, "count": 0, "total_value": 0}
+        by_reason[r]["count"] += 1
+        by_reason[r]["total_value"] += l.get("monetary_value", 0)
+
+    # By ingredient
+    by_ingredient = {}
+    for l in logs:
+        iid = l.get("ingredient_id")
+        if iid not in by_ingredient:
+            by_ingredient[iid] = {"ingredient_id": iid, "name": l.get("ingredient_name", "?"), "adjustments": 0, "net_quantity": 0, "total_value": 0}
+        by_ingredient[iid]["adjustments"] += 1
+        by_ingredient[iid]["net_quantity"] += l.get("quantity", 0)
+        by_ingredient[iid]["total_value"] += l.get("monetary_value", 0)
+
+    return {
+        "logs": logs,
+        "stats": {
+            "total_adjustments": len(logs),
+            "total_positive_units": round(total_positive, 2),
+            "total_negative_units": round(total_negative, 2),
+            "total_value_added": round(total_value_positive, 2),
+            "total_value_removed": round(total_value_negative, 2),
+            "net_value_impact": round(total_value_positive - total_value_negative, 2)
+        },
+        "by_reason": sorted(by_reason.values(), key=lambda x: -x["count"]),
+        "by_ingredient": sorted(by_ingredient.values(), key=lambda x: -x["total_value"])
+    }
+
+
 # ─── INVENTORY VALUATION ───
 @router.get("/inventory-valuation")
 async def inventory_valuation(
