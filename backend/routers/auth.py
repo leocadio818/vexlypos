@@ -246,8 +246,13 @@ async def list_users(user=Depends(get_current_user)):
         u_role = u.get("role", "waiter")
         u_level = role_level_map.get(u_role, 0)
         u["role_level"] = u_level
-        # Only show users with LOWER level than caller
-        if u_level < caller_level:
+        
+        if caller_level >= 100:
+            # Level 100 (Admin Sistema): sees ALL users including themselves
+            u["permissions"] = get_permissions(u["role"], u.get("permissions"))
+            filtered.append(u)
+        elif u_level < caller_level:
+            # Others: only see users with STRICTLY lower level
             u["permissions"] = get_permissions(u["role"], u.get("permissions"))
             filtered.append(u)
     return filtered
