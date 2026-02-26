@@ -470,8 +470,37 @@ async def update_user(user_id: str, input: dict, caller=Depends(get_current_user
 
 
 @router.delete("/users/{user_id}")
-async def delete_user(user_id: str):
+async def delete_user(user_id: str, caller=Depends(get_current_user)):
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    caller_level = await get_role_level_async(caller.get("role", "waiter"))
+    target_level = await get_role_level_async(target_user.get("role", "waiter"))
+    
+    # Level 100: can delete anyone except themselves
+    # Others: can only delete users with strictly lower level
+    if caller["user_id"] == user_id:
+        raise HTTPException(status_code=403, detail="No puedes eliminarte a ti mismo")
+    if caller_level >= 100:
+        pass  # Full access
+    elif target_level >= caller_level:
+        raise HTTPException(status_code=403, detail="No puedes eliminar un usuario con puesto igual o superior al tuyo")
+    
     await db.users.update_one({"id": user_id}, {"$set": {"active": False}})
+    
+    # Audit
+    await db.role_audit_logs.insert_one({
+        "id": gen_id(),
+        "action": "user_deleted",
+        "target_user_id": user_id,
+        "target_user_name": f"{target_user.get('name', '')} {target_user.get('last_name', '')}".strip(),
+        "target_role": target_user.get("role", ""),
+        "performed_by_id": caller["user_id"],
+        "performed_by_name": caller.get("name", ""),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
     return {"ok": True}
 
 
