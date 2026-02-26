@@ -255,20 +255,16 @@ async def sales_by_waiter_report(
     
     result = []
     for w in waiters.values():
+        w["name"] = w.pop("waiter_name")
         w["total"] = round(w["total"], 2)
         w["tips"] = round(w["tips"], 2)
-        w["avg_ticket"] = round(w["total"] / w["bills_count"], 2) if w["bills_count"] > 0 else 0
+        w["bills"] = w.pop("bills_count")
+        w["avg_ticket"] = round(w["total"] / w["bills"], 2) if w["bills"] > 0 else 0
         result.append(w)
     
     result.sort(key=lambda x: -x["total"])
-    grand_total = sum(w["total"] for w in result)
     
-    return {
-        "date_from": d_from,
-        "date_to": d_to,
-        "grand_total": round(grand_total, 2),
-        "waiters": result
-    }
+    return result
 
 
 # ─── SHIFT CLOSE REPORT ───
