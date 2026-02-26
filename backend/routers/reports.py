@@ -177,10 +177,11 @@ async def daily_sales_report(
         "total_tips": round(total_tips, 2),
         "total_discount": round(total_discount, 2),
         "subtotal": round(total_sales - total_itbis, 2),
+        "total_bills": bills_count,
         "bills_count": bills_count,
         "avg_ticket": avg_ticket,
-        "cash_total": round(cash_total, 2),
-        "card_total": round(card_total, 2),
+        "cash_sales": round(cash_total, 2),
+        "card_sales": round(card_total, 2),
         "hourly": list(hourly.values()),
     }
 
