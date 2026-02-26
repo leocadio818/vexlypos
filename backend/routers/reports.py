@@ -1549,29 +1549,29 @@ async def valuation_trends(
     else:
         days = 30
     
-    # Get current inventory value
+    # Get all ingredients and stock from the CORRECT collection
     ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(5000)
-    warehouse_stock = await db.warehouse_stock.find({}, {"_id": 0}).to_list(10000)
+    stock_records = await db.stock.find({}, {"_id": 0}).to_list(10000)
     
-    # Create ingredient lookup map with cost
     ing_map = {ing.get("id"): ing for ing in ingredients}
     
-    # Calculate current total and by category
+    # Calculate current total and by category using dispatch_unit_cost
     stock_map = {}
-    for ws in warehouse_stock:
-        ing_id = ws.get("ingredient_id")
-        stock_map[ing_id] = stock_map.get(ing_id, 0) + ws.get("quantity", 0)
+    for sr in stock_records:
+        ing_id = sr.get("ingredient_id")
+        stock_map[ing_id] = stock_map.get(ing_id, 0) + sr.get("current_stock", 0)
     
     current_value = 0
     by_category = {}
     
     for ing in ingredients:
-        stock = stock_map.get(ing.get("id"), 0)
-        cost = ing.get("cost_per_unit", 0)
+        ing_id = ing.get("id")
+        stock = stock_map.get(ing_id, 0)
+        conversion = ing.get("conversion_factor", 1) or 1
+        cost = ing.get("dispatch_unit_cost", ing.get("avg_cost", 0) / conversion)
         item_value = stock * cost
         current_value += item_value
         
-        # Aggregate by category
         category = ing.get("category", "general")
         if category not in by_category:
             by_category[category] = {"category": category, "value": 0}
@@ -1600,7 +1600,6 @@ async def valuation_trends(
     # DATOS HISTÓRICOS REALES basados en movimientos de inventario
     # ═══════════════════════════════════════════════════════════════════════════
     
-    # Obtener todos los movimientos de inventario del período
     if period == "year" and year:
         start_date = datetime(year, 1, 1, tzinfo=timezone.utc)
         end_date = datetime(year, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
@@ -1608,73 +1607,44 @@ async def valuation_trends(
         start_date = now - timedelta(days=days - 1)
         end_date = now
     
-    # Obtener movimientos de stock (entradas/salidas)
+    # Get stock movements using the correct field: created_at
     stock_movements = await db.stock_movements.find({
-        "timestamp": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
-    }, {"_id": 0}).sort("timestamp", 1).to_list(50000)
+        "created_at": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
+    }, {"_id": 0}).sort("created_at", 1).to_list(50000)
     
-    # También obtener órdenes para calcular consumo de ingredientes
-    orders = await db.orders.find({
-        "created_at": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()},
-        "status": {"$in": ["completed", "paid"]}
-    }, {"_id": 0, "created_at": 1, "items": 1}).to_list(50000)
-    
-    # Obtener recetas para calcular consumo
-    recipes = await db.recipes.find({}, {"_id": 0}).to_list(5000)
-    recipe_map = {r.get("product_id"): r.get("ingredients", []) for r in recipes}
-    
-    # Calcular valor por día trabajando hacia atrás desde el valor actual
+    # Build daily valuations working backward from current value
     daily_valuations = []
     
     if period == "year" and year:
-        # Datos mensuales para el año fiscal
         for month in range(1, 13):
             month_date = datetime(year, month, 1, tzinfo=timezone.utc)
+            month_end = datetime(year, month, 28, tzinfo=timezone.utc)
             
-            # Calcular movimientos hasta este mes
-            movements_until = [m for m in stock_movements 
-                             if datetime.fromisoformat(m.get("timestamp", "").replace('Z', '+00:00')) <= datetime(year, month, 28, tzinfo=timezone.utc)]
+            movements_after = [m for m in stock_movements
+                             if m.get("created_at", "") > month_end.isoformat()]
             
-            # Calcular órdenes hasta este mes (consumo)
-            orders_until = [o for o in orders 
-                          if datetime.fromisoformat(o.get("created_at", "").replace('Z', '+00:00')) <= datetime(year, month, 28, tzinfo=timezone.utc)]
-            
-            # Reconstruir valor del inventario para ese mes
-            month_value = calculate_inventory_value_at_point(
-                current_value, stock_movements, movements_until, 
-                orders, orders_until, recipe_map, ing_map
-            )
-            
+            val = _adjust_value_for_movements(current_value, movements_after, ing_map)
             daily_valuations.append({
                 "date": month_date.isoformat(),
-                "total_value": round(month_value, 2)
+                "total_value": round(val, 2)
             })
     else:
-        # Datos diarios
         for i in range(days):
             date = now - timedelta(days=days - 1 - i)
+            date_iso = date.isoformat()
             
-            # Filtrar movimientos hasta esta fecha
-            movements_until = [m for m in stock_movements 
-                             if datetime.fromisoformat(m.get("timestamp", "").replace('Z', '+00:00')) <= date]
+            movements_after = [m for m in stock_movements
+                             if m.get("created_at", "") > date_iso]
             
-            orders_until = [o for o in orders 
-                          if datetime.fromisoformat(o.get("created_at", "").replace('Z', '+00:00')) <= date]
-            
-            day_value = calculate_inventory_value_at_point(
-                current_value, stock_movements, movements_until,
-                orders, orders_until, recipe_map, ing_map
-            )
-            
+            val = _adjust_value_for_movements(current_value, movements_after, ing_map)
             daily_valuations.append({
-                "date": date.isoformat(),
-                "total_value": round(day_value, 2)
+                "date": date_iso,
+                "total_value": round(val, 2)
             })
     
-    # Si no hay suficientes datos históricos, usar el valor actual para todos
-    if not stock_movements and not orders:
-        # Sin datos de movimientos, mantener valor estable
-        for i, dv in enumerate(daily_valuations):
+    # If no movements at all, set all days to current value
+    if not stock_movements:
+        for i in range(len(daily_valuations)):
             daily_valuations[i]["total_value"] = round(current_value, 2)
     
     # Calculate change metrics
@@ -1702,58 +1672,23 @@ async def valuation_trends(
             "change": round(change, 2),
             "change_pct": round(change_pct, 1)
         },
-        "data_source": "real" if (stock_movements or orders) else "current_snapshot"
+        "data_source": "real" if stock_movements else "current_snapshot"
     }
 
 
-def calculate_inventory_value_at_point(
-    current_value: float,
-    all_movements: list,
-    movements_until: list,
-    all_orders: list,
-    orders_until: list,
-    recipe_map: dict,
-    ing_map: dict
-) -> float:
+def _adjust_value_for_movements(current_value: float, movements_after: list, ing_map: dict) -> float:
     """
-    Calcula el valor del inventario en un punto específico del tiempo
-    trabajando hacia atrás desde el valor actual.
+    Adjust inventory value backward by reversing movements that happened after the target date.
+    Positive quantity = stock went up (purchase/entry) → value was lower before
+    Negative quantity = stock went down (sale/waste) → value was higher before
     """
-    # Calcular diferencia de movimientos de stock
-    movements_after = [m for m in all_movements if m not in movements_until]
-    
-    value_adjustment = 0
-    
-    # Revertir movimientos posteriores al punto de cálculo
+    adjustment = 0
     for mov in movements_after:
         ing_id = mov.get("ingredient_id")
         ing = ing_map.get(ing_id, {})
-        cost = ing.get("cost_per_unit", 0)
+        conversion = ing.get("conversion_factor", 1) or 1
+        cost = ing.get("dispatch_unit_cost", ing.get("avg_cost", 0) / conversion)
         qty = mov.get("quantity", 0)
-        mov_type = mov.get("type", "")
-        
-        if mov_type in ["entrada", "compra", "ajuste_positivo"]:
-            # Si hubo una entrada después, el valor era menor antes
-            value_adjustment -= qty * cost
-        elif mov_type in ["salida", "consumo", "ajuste_negativo", "merma"]:
-            # Si hubo una salida después, el valor era mayor antes
-            value_adjustment += qty * cost
-    
-    # Calcular consumo por órdenes posteriores
-    orders_after = [o for o in all_orders if o not in orders_until]
-    
-    for order in orders_after:
-        for item in order.get("items", []):
-            product_id = item.get("product_id")
-            qty = item.get("quantity", 1)
-            recipe_ingredients = recipe_map.get(product_id, [])
-            
-            for ri in recipe_ingredients:
-                ing_id = ri.get("ingredient_id")
-                ing = ing_map.get(ing_id, {})
-                cost = ing.get("cost_per_unit", 0)
-                amount = ri.get("quantity", 0) * qty
-                # Si se consumió después, el valor era mayor antes
-                value_adjustment += amount * cost
-    
-    return max(0, current_value + value_adjustment)
+        # Reverse the movement: subtract what was added, add what was removed
+        adjustment -= qty * cost
+    return max(0, current_value + adjustment)
