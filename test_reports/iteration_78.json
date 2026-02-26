@@ -1,0 +1,76 @@
+{
+  "summary": "Updated Hierarchical Security Model v2 testing completed. Backend: 12/12 tests passed. Frontend: All critical features verified. Changes validated: (1) Cashier level now 30 (was 20), (2) Admin (level 100) now sees ALL users including themselves, (3) DELETE user has hierarchy protection, (4) Audit logs working. Admin sees 6 users in settings including themselves.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_hierarchical_security_v2.py",
+    "/app/test_reports/pytest/hierarchical_security_v2_results.xml"
+  ],
+  "passed_tests": {
+    "backend": [
+      "test_admin_login_returns_level_100 - Admin login returns role_level: 100",
+      "test_luis_login_returns_level_30 - Luis (Cajero) login returns role_level: 30 (CHANGED from 20)",
+      "test_carlos_login_returns_level_20 - Carlos (Mesero) login returns role_level: 20",
+      "test_roles_cashier_level_30_mesero_level_20 - GET /api/roles returns Cajero=30, Mesero=20",
+      "test_admin_sees_all_6_users_including_self - Admin sees ALL users including themselves (NEW BEHAVIOR)",
+      "test_carlos_sees_only_chef_pedro - Carlos (level 20) only sees Chef Pedro (level 10)",
+      "test_luis_sees_meseros_and_kitchen - Luis (level 30) sees Carlos, Maria (20), Chef Pedro (10) - NOT Admin or self",
+      "test_carlos_cannot_post_roles - Carlos (level 20) gets 403 on POST /api/roles",
+      "test_carlos_cannot_delete_user_same_level_or_higher - Carlos cannot delete users with level >= 20",
+      "test_admin_can_delete_lower_level_user - Admin can delete users with lower level",
+      "test_admin_cannot_delete_themselves - Admin gets 403 when trying to delete themselves",
+      "test_audit_logs_exist - Audit logs endpoint accessible and returns data"
+    ],
+    "frontend": [
+      "Admin login successful - redirected to /dashboard",
+      "Admin Settings page shows ALL 6 users including themselves: Admin, Carlos, Maria, Luis, Chef Pedro",
+      "Admin UserConfig shows 'Crear Puesto' button",
+      "Admin UserConfig shows permissions grid (PERMISOS DE MESERO section)",
+      "Admin role selector shows level indicators: N100, N30, N20, N40, N10, N80, N60"
+    ]
+  },
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_hierarchical_security_v2.py - Created new test suite for updated security model"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% (5/5 checks passed)"
+  },
+  "test_credentials_used": {
+    "admin_pin": "10000",
+    "admin_role_level": 100,
+    "carlos_pin": "1234",
+    "carlos_role_level": 20,
+    "luis_pin": "4321",
+    "luis_role_level": 30,
+    "maria_pin": "5678",
+    "maria_role_level": 20,
+    "chef_pedro_pin": "9999",
+    "chef_pedro_role_level": 10
+  },
+  "seed_data_creation": "None - used existing users from seed data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Hierarchical security model v2 tested. Key changes from v1: (1) Cashier level changed from 20 to 30, (2) Level 100 now sees ALL users including self, (3) DELETE /api/users has hierarchy protection. BUILTIN_ROLE_LEVELS: admin=100, supervisor=40, cashier=30, waiter=20, kitchen=10. Level 80 (Propietario) and Level 60 (Gerente) are custom roles. Level 40 and below have no access to Config (managed by frontend isSystemAdmin check >= 100).",
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  },
+  "features_verified": {
+    "admin_sees_all_users_including_self": true,
+    "cashier_level_changed_to_30": true,
+    "delete_user_hierarchy_protection": true,
+    "audit_logs_working": true,
+    "frontend_permissions_panel_for_admin_only": true,
+    "frontend_crear_puesto_button_for_admin": true
+  }
+}
