@@ -55,6 +55,7 @@ const REPORT_CATEGORIES = [
       { id: 'waste', name: 'Mermas', description: 'Pérdidas y desperdicios' },
       { id: 'recipes', name: 'Recetas', description: 'Análisis de costos de recetas' },
       { id: 'purchase-orders', name: 'Órdenes de Compras', description: 'Historial y estado de compras' },
+      { id: 'stock-adjustments', name: 'Ajustes de Stock', description: 'Historial de ajustes manuales de inventario' },
     ]
   },
   {
@@ -546,6 +547,7 @@ export default function Reports() {
       'table-movements': '/reports/table-movements',
       'by-waiter': '/reports/sales-by-waiter',
       'system-audit': '/reports/system-audit',
+      'stock-adjustments': '/reports/stock-adjustments',
     };
     
     const endpoint = endpoints[reportId];
@@ -696,6 +698,8 @@ export default function Reports() {
         return renderSystemAuditReport();
       case 'recipes':
         return renderRecipesReport();
+      case 'stock-adjustments':
+        return renderStockAdjustmentsReport();
       default:
         return <pre className="text-xs overflow-auto">{JSON.stringify(reportData, null, 2)}</pre>;
     }
