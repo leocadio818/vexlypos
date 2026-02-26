@@ -1418,67 +1418,115 @@ async def inventory_valuation(
 ):
     """Get current inventory valuation by warehouse and category"""
     # Get all ingredients
-    query = {}
+    ing_query = {}
     if category:
-        query["category"] = category
-    
-    ingredients = await db.ingredients.find(query, {"_id": 0}).to_list(5000)
-    
+        ing_query["category"] = category
+    ingredients = await db.ingredients.find(ing_query, {"_id": 0}).to_list(5000)
+    ing_map = {i["id"]: i for i in ingredients}
+    ing_ids = set(ing_map.keys())
+
+    # Get warehouses
+    warehouses = await db.warehouses.find({}, {"_id": 0}).to_list(50)
+    wh_map = {w["id"]: w["name"] for w in warehouses}
+
     # Get stock from the stock collection (primary source)
     stock_query = {}
     if warehouse_id:
         stock_query["warehouse_id"] = warehouse_id
     stock_records = await db.stock.find(stock_query, {"_id": 0}).to_list(10000)
-    
-    # Create stock map: ingredient_id -> total quantity
-    stock_map = {}
+
+    # Get recent movements (last 30 days) for activity detection
+    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    recent_movements = await db.stock_movements.find(
+        {"created_at": {"$gte": thirty_days_ago}},
+        {"_id": 0, "ingredient_id": 1, "quantity": 1}
+    ).to_list(50000)
+
+    # Build movement map: ingredient_id -> total absolute movement
+    movement_map = {}
+    for m in recent_movements:
+        iid = m.get("ingredient_id")
+        movement_map[iid] = movement_map.get(iid, 0) + abs(m.get("quantity", 0))
+
+    # Calculate valuation per stock record (one row per ingredient per warehouse)
+    total_value = 0
+    by_category = {}  # dict keyed by category
+    by_warehouse = {}  # dict keyed by warehouse_id
+    items = []
+    unique_ingredients = set()
+
     for sr in stock_records:
         ing_id = sr.get("ingredient_id")
-        if ing_id not in stock_map:
-            stock_map[ing_id] = 0
-        stock_map[ing_id] += sr.get("current_stock", sr.get("quantity", 0))
-    
-    # Calculate valuation
-    total_value = 0
-    by_category = {}
-    items = []
-    
-    for ing in ingredients:
-        ing_id = ing.get("id")
-        # Use dispatch_unit_cost (cost per serving unit), fallback to avg_cost/conversion
+        if ing_id not in ing_ids:
+            continue
+        if category and ing_map[ing_id].get("category") != category:
+            continue
+
+        ing = ing_map[ing_id]
+        unique_ingredients.add(ing_id)
         conversion = ing.get("conversion_factor", 1) or 1
         dispatch_cost = ing.get("dispatch_unit_cost", ing.get("avg_cost", 0) / conversion)
         cat = ing.get("category", "general")
-        
-        # Get stock (in dispatch units)
-        total_stock = stock_map.get(ing_id, 0)
-        item_value = total_stock * dispatch_cost
+        wh_id = sr.get("warehouse_id", "")
+        wh_name = wh_map.get(wh_id, "Desconocido")
+        current_stock = sr.get("current_stock", 0)
+        item_value = current_stock * dispatch_cost
         total_value += item_value
-        
+        recent_mov = round(movement_map.get(ing_id, 0), 2)
+        min_stock = sr.get("min_stock", ing.get("min_stock", 0))
+        is_low = current_stock <= min_stock and min_stock > 0
+        is_dead = item_value > 100 and recent_mov == 0
+
+        # by_category
         if cat not in by_category:
-            by_category[cat] = {"category": cat, "value": 0, "items": 0}
+            by_category[cat] = {"value": 0, "items": 0, "stock_units": 0}
         by_category[cat]["value"] += item_value
         by_category[cat]["items"] += 1
-        
+        by_category[cat]["stock_units"] += current_stock
+
+        # by_warehouse
+        if wh_id not in by_warehouse:
+            by_warehouse[wh_id] = {"name": wh_name, "value": 0, "items": 0}
+        by_warehouse[wh_id]["value"] += item_value
+        by_warehouse[wh_id]["items"] += 1
+
         items.append({
-            "id": ing_id,
+            "ingredient_id": ing_id,
             "name": ing.get("name", ""),
             "category": cat,
-            "stock": total_stock,
-            "unit": ing.get("dispatch_unit", ing.get("unit", "")),
-            "cost_per_unit": round(dispatch_cost, 2),
-            "total_value": round(item_value, 2)
+            "warehouse_id": wh_id,
+            "warehouse_name": wh_name,
+            "current_stock": current_stock,
+            "unit": ing.get("unit", ""),
+            "unit_cost": round(dispatch_cost, 2),
+            "stock_value": round(item_value, 2),
+            "recent_movement": recent_mov,
+            "is_dead_stock": is_dead,
+            "is_low_stock": is_low,
         })
-    
+
     # Sort items by value descending
-    items.sort(key=lambda x: -x["total_value"])
-    
+    items.sort(key=lambda x: -x["stock_value"])
+
+    # Dead stock summary
+    dead_items = [i for i in items if i["is_dead_stock"]]
+    dead_stock = {
+        "count": len(dead_items),
+        "total_value": round(sum(i["stock_value"] for i in dead_items), 2),
+        "items": dead_items[:10],
+    }
+
+    # by_warehouse as list
+    by_warehouse_list = [{"name": v["name"], "value": round(v["value"], 2), "items": v["items"]} for v in by_warehouse.values()]
+
     return {
         "total_value": round(total_value, 2),
-        "by_category": sorted(by_category.values(), key=lambda x: -x["value"]),
-        "items": items[:100],
-        "warehouse_id": warehouse_id,
-        "category": category
+        "total_items": len(items),
+        "total_ingredients": len(unique_ingredients),
+        "by_category": {cat: {"value": round(d["value"], 2), "items": d["items"], "stock_units": round(d["stock_units"], 2)} for cat, d in by_category.items()},
+        "by_warehouse": by_warehouse_list,
+        "dead_stock": dead_stock,
+        "items": items[:200],
     }
 
 
