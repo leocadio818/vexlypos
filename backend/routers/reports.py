@@ -1218,7 +1218,7 @@ async def system_audit_report(
     
     # 2. Stock movements (adjustments, waste, transfers)
     movements = await db.stock_movements.find({
-        "type": {"$in": ["adjustment", "waste", "transfer_in", "transfer_out"]}
+        "movement_type": {"$in": ["adjustment", "waste", "transfer_in", "transfer_out", "difference"]}
     }, {"_id": 0}).to_list(2000)
     for mov in movements:
         created = mov.get("created_at", "")
@@ -1227,12 +1227,13 @@ async def system_audit_report(
                 "adjustment": "Ajuste de Stock",
                 "waste": "Merma",
                 "transfer_in": "Entrada por Transferencia",
-                "transfer_out": "Salida por Transferencia"
+                "transfer_out": "Salida por Transferencia",
+                "difference": "Diferencia de Inventario"
             }
             activities.append({
                 "timestamp": created,
-                "type": type_names.get(mov.get("type"), mov.get("type")),
-                "description": f"{mov.get('ingredient_name', '?')}: {mov.get('quantity', 0)} {mov.get('reason', '')}",
+                "type": type_names.get(mov.get("movement_type"), mov.get("movement_type")),
+                "description": f"{mov.get('ingredient_name', '?')}: {mov.get('quantity', 0)} - {mov.get('notes', '')}",
                 "user": mov.get("user_name", "Sistema"),
                 "authorizer": "-",
                 "value": 0
