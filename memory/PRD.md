@@ -845,19 +845,24 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 - [x] **Gestión Unificada de Empleados** - Pantalla única `UserConfig.js` para roles y permisos
 
 ## Seguridad Jerárquica - Niveles de Puesto
-| Puesto | Nivel | Descripción |
-|---|---|---|
-| Administrador (Sistema) | 100 | Ve/edita todo. Crea puestos y permisos |
-| ADMINISTRADOR (Custom) | 80 | Propietario - gestiona usuarios pero no permisos |
-| GERENTE | 60 | Gerencia operativa |
-| Supervisor | 40 | Supervisión de turno |
-| Cajero/Mesero | 20 | Operativos |
-| Cocina | 10 | Solo cocina |
+| Puesto | Nivel | Ve Config | Puede ver/editar | Crear |
+|---|---|---|---|---|
+| Admin Sistema | 100 | Si | TODOS (incluyendo otros 100 y si mismo) | Cualquier nivel |
+| Propietario (custom) | 80 | Si | Solo < 80 | Hasta nivel 80 (no lo ve despues) |
+| Gerente (custom) | 60 | Si (con permiso) | Solo < 60 | Solo < 60 |
+| Supervisor | 40 | NO | N/A | N/A |
+| Cajero | 30 | NO | N/A | N/A |
+| Mesero | 20 | NO | N/A | N/A |
+| Cocina | 10 | NO | N/A | N/A |
 
 ### Reglas:
-- Solo ves usuarios con nivel INFERIOR al tuyo
+- Nivel 100 ve y gestiona TODOS los usuarios (incluyendose a si mismo)
+- Otros niveles solo ven usuarios con nivel ESTRICTAMENTE inferior
+- Nivel 80 puede crear otro nivel 80, pero no lo vera despues de creado
 - Solo Admin Sistema (100) puede crear/editar puestos y personalizar permisos
-- Cambios de roles/permisos se registran en `role_audit_logs`
+- Niveles 40 y menores no acceden a Configuracion
+- Eliminar usuario protegido por jerarquia (no puedes eliminar nivel >= al tuyo)
+- Cambios de roles/permisos/usuarios se registran en `role_audit_logs`
 - Endpoints: `GET /api/role-audit-logs` (solo admin sistema)
 
 ## Pendiente
