@@ -122,6 +122,160 @@ async def dashboard():
     }
 
 
+
+# ─── DAILY SALES REPORT ───
+@router.get("/daily-sales")
+async def daily_sales_report(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    date: Optional[str] = Query(None)
+):
+    """Complete daily sales summary"""
+    d_from = date or date_from or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    d_to = date_to or d_from
+    
+    bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(10000)
+    filtered = [b for b in bills if d_from <= b.get("paid_at", "")[:10] <= d_to]
+    
+    payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
+    pm_map = {pm["id"]: pm for pm in payment_methods}
+    
+    total_sales = sum(b.get("total", 0) for b in filtered)
+    total_itbis = sum(b.get("itbis", 0) for b in filtered)
+    total_tips = sum(b.get("propina_legal", 0) for b in filtered)
+    total_discount = sum(b.get("discount_amount", 0) for b in filtered)
+    bills_count = len(filtered)
+    avg_ticket = round(total_sales / bills_count, 2) if bills_count else 0
+    
+    cash_total = 0
+    card_total = 0
+    for bill in filtered:
+        pm_id = bill.get("payment_method_id", bill.get("payment_method", "cash"))
+        pm = pm_map.get(pm_id, {})
+        if pm.get("is_cash", pm_id == "cash"):
+            cash_total += bill.get("total", 0)
+        else:
+            card_total += bill.get("total", 0)
+    
+    # Hourly breakdown
+    hourly = {}
+    for h in range(24):
+        hourly[f"{h:02d}"] = {"hour": f"{h:02d}:00", "sales": 0, "count": 0}
+    for bill in filtered:
+        paid_at = bill.get("paid_at", "")
+        if "T" in paid_at:
+            hour = paid_at.split("T")[1][:2]
+            if hour in hourly:
+                hourly[hour]["sales"] += bill.get("total", 0)
+                hourly[hour]["count"] += 1
+    
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "total_sales": round(total_sales, 2),
+        "total_itbis": round(total_itbis, 2),
+        "total_tips": round(total_tips, 2),
+        "total_discount": round(total_discount, 2),
+        "subtotal": round(total_sales - total_itbis, 2),
+        "bills_count": bills_count,
+        "avg_ticket": avg_ticket,
+        "cash_total": round(cash_total, 2),
+        "card_total": round(card_total, 2),
+        "hourly": list(hourly.values()),
+    }
+
+
+# ─── SALES BY CATEGORY ───
+@router.get("/sales-by-category")
+async def sales_by_category_report(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    date: Optional[str] = Query(None)
+):
+    """Sales breakdown by product category"""
+    d_from = date or date_from or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    d_to = date_to or d_from
+    
+    bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(10000)
+    filtered = [b for b in bills if d_from <= b.get("paid_at", "")[:10] <= d_to]
+    
+    # Get all products for category mapping
+    products = await db.products.find({}, {"_id": 0}).to_list(5000)
+    prod_map = {p["id"]: p for p in products}
+    
+    categories = {}
+    for bill in filtered:
+        for item in bill.get("items", []):
+            prod = prod_map.get(item.get("product_id"), {})
+            cat = prod.get("category_id", item.get("category", "Sin Categoría"))
+            if cat not in categories:
+                categories[cat] = {"category": cat, "total": 0, "quantity": 0, "items": []}
+            categories[cat]["total"] += item.get("subtotal", item.get("price", 0) * item.get("quantity", 1))
+            categories[cat]["quantity"] += item.get("quantity", 1)
+    
+    # Get category names
+    cats_db = await db.categories.find({}, {"_id": 0}).to_list(200)
+    cat_name_map = {c["id"]: c.get("name", c["id"]) for c in cats_db}
+    
+    result = []
+    for cat_id, data in categories.items():
+        data["category_name"] = cat_name_map.get(cat_id, cat_id)
+        data["total"] = round(data["total"], 2)
+        result.append(data)
+    
+    result.sort(key=lambda x: -x["total"])
+    grand_total = sum(c["total"] for c in result)
+    
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "grand_total": round(grand_total, 2),
+        "categories": result
+    }
+
+
+# ─── SALES BY WAITER ───
+@router.get("/sales-by-waiter")
+async def sales_by_waiter_report(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    date: Optional[str] = Query(None)
+):
+    """Sales breakdown by waiter/server"""
+    d_from = date or date_from or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    d_to = date_to or d_from
+    
+    bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(10000)
+    filtered = [b for b in bills if d_from <= b.get("paid_at", "")[:10] <= d_to]
+    
+    waiters = {}
+    for bill in filtered:
+        waiter_id = bill.get("waiter_id", bill.get("created_by_id", "unknown"))
+        waiter_name = bill.get("waiter_name", bill.get("created_by_name", "Desconocido"))
+        if waiter_id not in waiters:
+            waiters[waiter_id] = {"waiter_id": waiter_id, "waiter_name": waiter_name, "total": 0, "bills_count": 0, "avg_ticket": 0, "tips": 0}
+        waiters[waiter_id]["total"] += bill.get("total", 0)
+        waiters[waiter_id]["bills_count"] += 1
+        waiters[waiter_id]["tips"] += bill.get("propina_legal", 0)
+    
+    result = []
+    for w in waiters.values():
+        w["total"] = round(w["total"], 2)
+        w["tips"] = round(w["tips"], 2)
+        w["avg_ticket"] = round(w["total"] / w["bills_count"], 2) if w["bills_count"] > 0 else 0
+        result.append(w)
+    
+    result.sort(key=lambda x: -x["total"])
+    grand_total = sum(w["total"] for w in result)
+    
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "grand_total": round(grand_total, 2),
+        "waiters": result
+    }
+
+
 # ─── SHIFT CLOSE REPORT ───
 @router.get("/shift-close")
 async def shift_close_report(
