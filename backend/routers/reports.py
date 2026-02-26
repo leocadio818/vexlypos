@@ -1424,22 +1424,19 @@ async def inventory_valuation(
     
     ingredients = await db.ingredients.find(query, {"_id": 0}).to_list(5000)
     
-    # Get warehouse stock
-    warehouses = await db.warehouses.find({}, {"_id": 0}).to_list(100)
-    warehouse_stock = await db.warehouse_stock.find({}, {"_id": 0}).to_list(10000)
-    
-    # Filter by warehouse if specified
+    # Get stock from the stock collection (primary source)
+    stock_query = {}
     if warehouse_id:
-        warehouse_stock = [ws for ws in warehouse_stock if ws.get("warehouse_id") == warehouse_id]
+        stock_query["warehouse_id"] = warehouse_id
+    stock_records = await db.stock.find(stock_query, {"_id": 0}).to_list(10000)
     
-    # Create stock map: ingredient_id -> {warehouse_id: quantity}
+    # Create stock map: ingredient_id -> total quantity
     stock_map = {}
-    for ws in warehouse_stock:
-        ing_id = ws.get("ingredient_id")
-        wh_id = ws.get("warehouse_id")
+    for sr in stock_records:
+        ing_id = sr.get("ingredient_id")
         if ing_id not in stock_map:
-            stock_map[ing_id] = {}
-        stock_map[ing_id][wh_id] = ws.get("quantity", 0)
+            stock_map[ing_id] = 0
+        stock_map[ing_id] += sr.get("current_stock", sr.get("quantity", 0))
     
     # Calculate valuation
     total_value = 0
@@ -1448,12 +1445,14 @@ async def inventory_valuation(
     
     for ing in ingredients:
         ing_id = ing.get("id")
-        cost = ing.get("cost_per_unit", 0)
+        # Use dispatch_unit_cost (cost per serving unit), fallback to avg_cost/conversion
+        conversion = ing.get("conversion_factor", 1) or 1
+        dispatch_cost = ing.get("dispatch_unit_cost", ing.get("avg_cost", 0) / conversion)
         cat = ing.get("category", "general")
         
-        # Sum stock across warehouses
-        total_stock = sum(stock_map.get(ing_id, {}).values())
-        item_value = total_stock * cost
+        # Get stock (in dispatch units)
+        total_stock = stock_map.get(ing_id, 0)
+        item_value = total_stock * dispatch_cost
         total_value += item_value
         
         if cat not in by_category:
@@ -1466,8 +1465,8 @@ async def inventory_valuation(
             "name": ing.get("name", ""),
             "category": cat,
             "stock": total_stock,
-            "unit": ing.get("unit", ""),
-            "cost_per_unit": cost,
+            "unit": ing.get("dispatch_unit", ing.get("unit", "")),
+            "cost_per_unit": round(dispatch_cost, 2),
             "total_value": round(item_value, 2)
         })
     
@@ -1477,7 +1476,7 @@ async def inventory_valuation(
     return {
         "total_value": round(total_value, 2),
         "by_category": sorted(by_category.values(), key=lambda x: -x["value"]),
-        "items": items[:100],  # Top 100 items
+        "items": items[:100],
         "warehouse_id": warehouse_id,
         "category": category
     }
