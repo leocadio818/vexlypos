@@ -120,6 +120,117 @@ async def update_inventory_settings(input: dict):
     )
     return {"ok": True}
 
+@router.get("/inventory/products-stock")
+async def get_products_stock_status(warehouse_id: Optional[str] = Query(None)):
+    """
+    Get stock status for all products (for OrderScreen stock validation).
+    Returns list of products with their stock availability based on recipes.
+    """
+    products = await db.products.find({"active": True}, {"_id": 0}).to_list(500)
+    settings = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+    allow_sale_without_stock = settings.get("allow_sale_without_stock", True) if settings else True
+    
+    result = []
+    for product in products:
+        product_id = product.get("id")
+        recipe = await db.recipes.find_one({"product_id": product_id}, {"_id": 0})
+        
+        # If no recipe, assume always in stock
+        if not recipe:
+            result.append({
+                "product_id": product_id,
+                "product_name": product.get("name", ""),
+                "in_stock": True,
+                "available_quantity": 999,
+                "is_low_stock": False,
+                "has_recipe": False
+            })
+            continue
+        
+        # Check if all ingredients are in stock
+        min_available = 999
+        is_available = True
+        
+        for ing in recipe.get("ingredients", []):
+            ing_id = ing.get("ingredient_id")
+            required_qty = ing.get("quantity", 0)
+            
+            # Get stock for this ingredient
+            stock_query = {"ingredient_id": ing_id}
+            if warehouse_id:
+                stock_query["warehouse_id"] = warehouse_id
+            
+            stock_docs = await db.stock.find(stock_query, {"_id": 0}).to_list(50)
+            total_stock = sum(s.get("current_stock", 0) for s in stock_docs)
+            
+            if required_qty > 0:
+                available_servings = int(total_stock / required_qty)
+                min_available = min(min_available, available_servings)
+                if total_stock < required_qty:
+                    is_available = False
+        
+        result.append({
+            "product_id": product_id,
+            "product_name": product.get("name", ""),
+            "in_stock": is_available or allow_sale_without_stock,
+            "available_quantity": min_available if min_available < 999 else 0,
+            "is_low_stock": min_available < 5 and min_available > 0,
+            "has_recipe": True
+        })
+    
+    return result
+
+@router.get("/inventory/product-stock/{product_id}")
+async def get_single_product_stock_status(product_id: str, warehouse_id: Optional[str] = Query(None)):
+    """Get stock status for a single product"""
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(404, "Producto no encontrado")
+    
+    recipe = await db.recipes.find_one({"product_id": product_id}, {"_id": 0})
+    settings = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+    allow_sale_without_stock = settings.get("allow_sale_without_stock", True) if settings else True
+    
+    if not recipe:
+        return {
+            "product_id": product_id,
+            "product_name": product.get("name", ""),
+            "in_stock": True,
+            "available_quantity": 999,
+            "is_low_stock": False,
+            "has_recipe": False
+        }
+    
+    # Check if all ingredients are in stock
+    min_available = 999
+    is_available = True
+    
+    for ing in recipe.get("ingredients", []):
+        ing_id = ing.get("ingredient_id")
+        required_qty = ing.get("quantity", 0)
+        
+        stock_query = {"ingredient_id": ing_id}
+        if warehouse_id:
+            stock_query["warehouse_id"] = warehouse_id
+        
+        stock_docs = await db.stock.find(stock_query, {"_id": 0}).to_list(50)
+        total_stock = sum(s.get("current_stock", 0) for s in stock_docs)
+        
+        if required_qty > 0:
+            available_servings = int(total_stock / required_qty)
+            min_available = min(min_available, available_servings)
+            if total_stock < required_qty:
+                is_available = False
+    
+    return {
+        "product_id": product_id,
+        "product_name": product.get("name", ""),
+        "in_stock": is_available or allow_sale_without_stock,
+        "available_quantity": min_available if min_available < 999 else 0,
+        "is_low_stock": min_available < 5 and min_available > 0,
+        "has_recipe": True
+    }
+
 # ─── CATEGORIES ───
 @router.get("/categories")
 async def list_categories():
