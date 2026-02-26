@@ -13,7 +13,7 @@ const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')
 
 export default function SystemTab() {
   const { systemConfig, setSystemConfig, timezones, users } = useSettings();
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const [showTicketPreview, setShowTicketPreview] = useState(false);
   const [resetDialog, setResetDialog] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
