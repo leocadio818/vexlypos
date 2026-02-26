@@ -310,8 +310,8 @@ export default function SystemTab() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Esta accion eliminara: ordenes, facturas, turnos, auditorias, movimientos de inventario, reservaciones y mas.
-              Se mantendra la configuracion del sistema (productos, categorias, mesas, impuestos) y los usuarios seleccionados.
+              Esta accion eliminara: ordenes, facturas, turnos, auditorias, inventario, productos, categorias, recetas, ingredientes, reservaciones y mas.
+              Se mantendra la configuracion de mesas, impuestos, metodos de pago y los usuarios seleccionados.
             </p>
             <Button variant="destructive" className="font-oswald font-bold" onClick={() => setResetDialog(true)} data-testid="system-reset-btn">
               <AlertTriangle size={16} className="mr-2" /> RESETEAR SISTEMA
