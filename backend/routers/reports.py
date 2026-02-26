@@ -203,15 +203,20 @@ async def sales_by_category_report(
     # Get all products for category mapping
     products = await db.products.find({}, {"_id": 0}).to_list(5000)
     prod_map = {p["id"]: p for p in products}
+    prod_name_map = {p.get("name", "").lower(): p for p in products}
     
     categories = {}
     for bill in filtered:
         for item in bill.get("items", []):
-            prod = prod_map.get(item.get("product_id"), {})
-            cat = prod.get("category_id", item.get("category", "Sin Categoría"))
+            # Find product by item_id or product_name
+            prod = prod_map.get(item.get("product_id"), prod_map.get(item.get("item_id"), {}))
+            if not prod:
+                prod = prod_name_map.get(item.get("product_name", "").lower(), {})
+            cat = prod.get("category_id", "sin_categoria")
             if cat not in categories:
-                categories[cat] = {"category": cat, "total": 0, "quantity": 0, "items": []}
-            categories[cat]["total"] += item.get("subtotal", item.get("price", 0) * item.get("quantity", 1))
+                categories[cat] = {"category": cat, "total": 0, "quantity": 0}
+            item_total = item.get("total", item.get("subtotal", item.get("unit_price", 0) * item.get("quantity", 1)))
+            categories[cat]["total"] += item_total
             categories[cat]["quantity"] += item.get("quantity", 1)
     
     # Get category names
