@@ -694,6 +694,8 @@ export default function Reports() {
         return renderByWaiterReport();
       case 'system-audit':
         return renderSystemAuditReport();
+      case 'recipes':
+        return renderRecipesReport();
       default:
         return <pre className="text-xs overflow-auto">{JSON.stringify(reportData, null, 2)}</pre>;
     }
