@@ -637,17 +637,16 @@ async def list_roles(caller=Depends(get_current_user)):
     builtin = [
         {"id": "admin", "code": "admin", "name": "Administrador", "builtin": True, "level": 100, "permissions": DEFAULT_PERMISSIONS.get("admin", {})},
         {"id": "waiter", "code": "waiter", "name": "Mesero", "builtin": True, "level": 20, "permissions": DEFAULT_PERMISSIONS.get("waiter", {})},
-        {"id": "cashier", "code": "cashier", "name": "Cajero", "builtin": True, "level": 20, "permissions": DEFAULT_PERMISSIONS.get("cashier", {})},
+        {"id": "cashier", "code": "cashier", "name": "Cajero", "builtin": True, "level": 30, "permissions": DEFAULT_PERMISSIONS.get("cashier", {})},
         {"id": "supervisor", "code": "supervisor", "name": "Supervisor", "builtin": True, "level": 40, "permissions": DEFAULT_PERMISSIONS.get("supervisor", {})},
         {"id": "kitchen", "code": "kitchen", "name": "Cocina", "builtin": True, "level": 10, "permissions": DEFAULT_PERMISSIONS.get("kitchen", {})},
     ]
     all_roles = builtin + roles
-    # Filter: only show roles with level < caller's level (so they can only assign inferior roles)
-    # System admin (100) sees all except their own level if they want
-    # But admin should see all roles to manage them
     if caller_level >= 100:
+        # Level 100: sees ALL roles
         return all_roles
-    return [r for r in all_roles if r.get("level", 0) < caller_level]
+    # Others: see roles with level <= their own (can assign up to their own level)
+    return [r for r in all_roles if r.get("level", 0) <= caller_level]
 
 
 @router.post("/roles")
