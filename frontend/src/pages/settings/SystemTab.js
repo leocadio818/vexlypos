@@ -12,8 +12,50 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
 
 export default function SystemTab() {
-  const { systemConfig, setSystemConfig, timezones } = useSettings();
+  const { systemConfig, setSystemConfig, timezones, users } = useSettings();
+  const { currentUser } = useAuth();
   const [showTicketPreview, setShowTicketPreview] = useState(false);
+  const [resetDialog, setResetDialog] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [keepUsers, setKeepUsers] = useState([]);
+  const isSystemAdmin = (currentUser?.role_level || 0) >= 100;
+
+  // Initialize keepUsers with current admin
+  useEffect(() => {
+    if (currentUser?.id && keepUsers.length === 0) {
+      setKeepUsers([currentUser.id]);
+    }
+  }, [currentUser]);
+  
+  const toggleKeepUser = (uid) => {
+    // Don't allow removing the current admin user
+    if (uid === currentUser?.id) return;
+    setKeepUsers(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+  };
+
+  const handleSystemReset = async () => {
+    if (resetConfirmText !== 'RESETEAR_SISTEMA') {
+      toast.error('Escribe RESETEAR_SISTEMA para confirmar');
+      return;
+    }
+    if (keepUsers.length === 0) {
+      toast.error('Selecciona al menos un usuario a mantener');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const res = await axios.post(`${API}/system-reset`, { confirm: 'RESETEAR_SISTEMA', keep_user_ids: keepUsers }, { headers: hdrs() });
+      toast.success(res.data.message || 'Sistema reseteado');
+      setResetDialog(false);
+      setResetConfirmText('');
+      // Redirect to login after reset
+      setTimeout(() => { localStorage.removeItem('pos_token'); window.location.href = '/'; }, 2000);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error al resetear');
+    }
+    setResetLoading(false);
+  };
 
   const handleSaveSystemConfig = async () => {
     try { 
