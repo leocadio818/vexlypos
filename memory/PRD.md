@@ -839,7 +839,10 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 ---
 
 ## Completado Recientemente
-- [x] **Valorizacion de Inventario corregida** (Feb 2026) - Endpoint leia de `warehouse_stock` (vacio) en vez de `stock`. Ahora usa `dispatch_unit_cost` para calculo correcto. Resultado: 48 botellas × RD$83.33 = RD$4,000.00.
+- [x] **Valorizacion de Inventario + Tendencias CORREGIDO** (Feb 2026) - Dos endpoints corregidos:
+  - `/reports/inventory-valuation`: Ahora devuelve campos correctos (current_stock, unit_cost, stock_value, warehouse_name, is_dead_stock, is_low_stock, recent_movement, by_warehouse, dead_stock). Incluye desglose por almacen y categoria.
+  - `/reports/valuation-trends`: Leia de `warehouse_stock` (vacio) en vez de `stock`, usaba `cost_per_unit` (no existe) en vez de `dispatch_unit_cost`, buscaba movimientos por `timestamp` en vez de `created_at`. Todo corregido.
+  - Testing: 100% (17/17 backend, 11/11 frontend). Resultado: 48 botellas × RD$83.33 = RD$4,000.00.
 - [x] **Correccion calculo de margen en recetas** (Feb 2026) - El calculateRecipeCost ahora usa dispatch_unit_cost (costo por unidad de despacho) en vez de avg_cost (costo de compra). Ej: Cerveza comprada por Caja (2000) pero vendida por Botella (83.33), margen correcto 44.4% en vez de -1233%.
 - [x] **Reportes corregidos** (Feb 2026) - Creados 3 endpoints faltantes (daily-sales, sales-by-category, sales-by-waiter). Recetas renderiza tabla formateada en vez de JSON crudo.
 - [x] **Reset del Sistema** (Feb 2026) - Boton en Config > Sistema (solo Admin Sistema). Limpia ordenes, facturas, turnos, auditorias, inventario, productos, categorias, recetas, ingredientes. Permite seleccionar usuarios a mantener. Requiere confirmacion "RESETEAR_SISTEMA".
