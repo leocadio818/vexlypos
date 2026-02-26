@@ -352,3 +352,29 @@ async def update_theme(input: dict):
     if "_id" in input: del input["_id"]
     await db.theme_config.update_one({}, {"$set": input}, upsert=True)
     return {"ok": True}
+
+# ─── THEME CONFIG (Frontend compatible alias) ───
+# Frontend ThemeContext.js calls /api/theme-config but backend had /api/theme
+@router.get("/theme-config")
+async def get_theme_config():
+    """Alias for /theme - Frontend compatible endpoint"""
+    theme = await db.theme_config.find_one({}, {"_id": 0})
+    return theme or {
+        "gradientStart": "#0f0f23",
+        "gradientMid1": "#1a1a3e",
+        "gradientMid2": "#2d1b4e",
+        "gradientEnd": "#1e3a5f",
+        "accentColor": "#ff6600",
+        "glassOpacity": 0.1,
+        "glassBlur": 12,
+        "orbColor1": "rgba(168, 85, 247, 0.3)",
+        "orbColor2": "rgba(59, 130, 246, 0.2)",
+        "orbColor3": "rgba(6, 182, 212, 0.2)"
+    }
+
+@router.put("/theme-config")
+async def update_theme_config(input: dict):
+    """Alias for /theme - Frontend compatible endpoint"""
+    if "_id" in input: del input["_id"]
+    await db.theme_config.update_one({}, {"$set": input}, upsert=True)
+    return {"ok": True}
