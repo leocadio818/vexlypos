@@ -783,6 +783,7 @@ async def system_reset(input: dict, caller=Depends(get_current_user)):
         "stock_movements", "stock_difference_logs", "ingredient_audit_logs",
         "purchase_orders", "print_queue", "unit_audit_logs",
         "reservations", "table_notifications",
+        "products", "categories", "recipes", "ingredients", "stock",
     ]
     
     # Collections to clear partially or preserve config
