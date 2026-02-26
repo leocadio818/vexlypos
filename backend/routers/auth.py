@@ -407,8 +407,10 @@ async def update_user(user_id: str, input: dict, caller=Depends(get_current_user
     changes_log = []
     if "role" in input and input["role"] != target_user.get("role"):
         new_role_level = await get_role_level_async(input["role"])
-        if new_role_level >= caller_level:
-            raise HTTPException(status_code=403, detail="No puedes asignar un puesto igual o superior al tuyo")
+        if caller_level >= 100:
+            pass  # Level 100 can assign any role
+        elif new_role_level > caller_level:
+            raise HTTPException(status_code=403, detail="No puedes asignar un puesto superior al tuyo")
         input["role_level"] = new_role_level
         changes_log.append(f"Puesto: {target_user.get('role')} -> {input['role']}")
     
