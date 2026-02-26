@@ -795,12 +795,6 @@ async def system_reset(input: dict, caller=Depends(get_current_user)):
             await coll.delete_many({})
             cleared[coll_name] = count
     
-    # Reset stock to 0
-    stock_count = await db.stock.count_documents({})
-    if stock_count > 0:
-        await db.stock.update_many({}, {"$set": {"current_stock": 0}})
-        cleared["stock (reset to 0)"] = stock_count
-    
     # Reset tables to available
     table_count = await db.tables.count_documents({})
     if table_count > 0:
