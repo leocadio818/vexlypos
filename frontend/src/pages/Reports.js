@@ -447,6 +447,7 @@ export default function Reports() {
   const [loadingBusinessDays, setLoadingBusinessDays] = useState(false);
   const [reportZOpen, setReportZOpen] = useState(false);
   const [reportZDayId, setReportZDayId] = useState(null);
+  const [auditEventFilter, setAuditEventFilter] = useState('Todos');
   
   // Quick date presets
   const datePresets = [
