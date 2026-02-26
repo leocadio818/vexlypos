@@ -267,8 +267,13 @@ async def get_user(user_id: str, caller=Depends(get_current_user)):
     caller_level = await get_role_level_async(caller.get("role", "waiter"))
     target_level = await get_role_level_async(user.get("role", "waiter"))
     
-    # Allow viewing own profile, or users with lower level
-    if caller["user_id"] != user_id and target_level >= caller_level:
+    # Level 100: can view anyone
+    # Others: can view own profile or users with strictly lower level
+    if caller_level >= 100:
+        pass  # Full access
+    elif caller["user_id"] == user_id:
+        pass  # Own profile
+    elif target_level >= caller_level:
         raise HTTPException(status_code=403, detail="No tienes permiso para ver este usuario")
     
     user["permissions"] = get_permissions(user.get("role", "waiter"), user.get("permissions"))
