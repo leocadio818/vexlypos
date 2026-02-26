@@ -1040,7 +1040,8 @@ async def hourly_sales_report(
 @router.get("/system-audit")
 async def system_audit_report(
     date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None)
+    date_to: Optional[str] = Query(None),
+    event_type: Optional[str] = Query(None, description="Filter by event type")
 ):
     """General system audit log - all significant activities"""
     if not date_from:
@@ -1052,14 +1053,14 @@ async def system_audit_report(
     activities = []
     
     # 1. Void/Cancellation audit logs
-    void_logs = await db.void_audit_logs.find({}, {"_id": 0}).to_list(1000)
+    void_logs = await db.void_audit_logs.find({}, {"_id": 0}).to_list(2000)
     for log in void_logs:
         created = log.get("created_at", "")
         if created[:10] >= date_from and created[:10] <= date_to:
             activities.append({
                 "timestamp": created,
-                "type": "Anulación",
-                "description": f"Anulación: {log.get('product_name', 'Item')} - {log.get('reason', 'Sin razón')}",
+                "type": "Anulacion",
+                "description": f"Anulacion: {log.get('product_name', 'Item')} - {log.get('reason', 'Sin razon')}",
                 "user": log.get("requested_by_name", log.get("user_name", "?")),
                 "authorizer": log.get("authorized_by_name", "-"),
                 "value": log.get("total_value", 0)
@@ -1068,7 +1069,7 @@ async def system_audit_report(
     # 2. Stock movements (adjustments, waste, transfers)
     movements = await db.stock_movements.find({
         "type": {"$in": ["adjustment", "waste", "transfer_in", "transfer_out"]}
-    }, {"_id": 0}).to_list(1000)
+    }, {"_id": 0}).to_list(2000)
     for mov in movements:
         created = mov.get("created_at", "")
         if created[:10] >= date_from and created[:10] <= date_to:
@@ -1088,7 +1089,7 @@ async def system_audit_report(
             })
     
     # 3. Purchase order status changes
-    pos = await db.purchase_orders.find({}, {"_id": 0}).to_list(1000)
+    pos = await db.purchase_orders.find({}, {"_id": 0}).to_list(2000)
     for po in pos:
         created = po.get("created_at", "")
         if created[:10] >= date_from and created[:10] <= date_to:
@@ -1141,10 +1142,97 @@ async def system_audit_report(
                 "value": shift.get("total_sales", 0)
             })
     
+    # 6. Role/Permission/User audit logs (NEW)
+    role_logs = await db.role_audit_logs.find({}, {"_id": 0}).to_list(2000)
+    action_type_map = {
+        "user_created": "Usuario Creado",
+        "user_updated": "Usuario Editado",
+        "user_deleted": "Usuario Eliminado",
+        "role_created": "Puesto Creado",
+        "role_updated": "Puesto Editado",
+        "role_deleted": "Puesto Eliminado",
+    }
+    for log in role_logs:
+        created = log.get("created_at", "")
+        if created[:10] >= date_from and created[:10] <= date_to:
+            action = log.get("action", "")
+            audit_type = action_type_map.get(action, "Cambio de Rol/Permisos")
+            
+            # Build description
+            desc_parts = []
+            if log.get("target_user_name"):
+                desc_parts.append(log["target_user_name"])
+            if log.get("role_assigned"):
+                desc_parts.append(f"Puesto: {log['role_assigned']}")
+            if log.get("role_name"):
+                desc_parts.append(f"Puesto: {log['role_name']}")
+            if log.get("changes"):
+                if isinstance(log["changes"], list):
+                    desc_parts.append(", ".join(log["changes"]))
+                else:
+                    desc_parts.append(str(log["changes"]))
+            
+            activities.append({
+                "timestamp": created,
+                "type": audit_type,
+                "description": " | ".join(desc_parts) if desc_parts else action,
+                "user": log.get("performed_by_name", "?"),
+                "authorizer": "-",
+                "value": 0
+            })
+    
+    # 7. Credit note audit logs (NEW)
+    credit_logs = await db.audit_logs.find({}, {"_id": 0}).to_list(1000)
+    for log in credit_logs:
+        created = log.get("created_at", "")
+        if created[:10] >= date_from and created[:10] <= date_to:
+            activities.append({
+                "timestamp": created,
+                "type": "Nota de Credito",
+                "description": f"NC {log.get('credit_note_ncf', '?')} | Factura: {log.get('original_ncf', '?')} | {log.get('reason', '')}",
+                "user": log.get("user_name", "?"),
+                "authorizer": "-",
+                "value": log.get("total_reversed", 0)
+            })
+    
+    # 8. Tax override audit logs (NEW)
+    tax_logs = await db.tax_override_audit.find({}, {"_id": 0}).to_list(500)
+    for log in tax_logs:
+        created = log.get("created_at", "")
+        if created[:10] >= date_from and created[:10] <= date_to:
+            taxes = ", ".join(log.get("taxes_removed", []))
+            activities.append({
+                "timestamp": created,
+                "type": "Exencion de Impuesto",
+                "description": f"Factura {log.get('bill_id', '?')} | Impuestos: {taxes} | Ref: {log.get('reference_document', '')}",
+                "user": log.get("requested_by_name", "?"),
+                "authorizer": log.get("authorized_by_name", "-"),
+                "value": 0
+            })
+    
+    # 9. Ingredient audit logs (NEW)
+    ingr_logs = await db.ingredient_audit_logs.find({}, {"_id": 0}).to_list(2000)
+    for log in ingr_logs:
+        ts = log.get("timestamp", log.get("created_at", ""))
+        if ts[:10] >= date_from and ts[:10] <= date_to:
+            change_type = log.get("change_type", log.get("type", "cambio"))
+            activities.append({
+                "timestamp": ts,
+                "type": "Movimiento de Ingrediente",
+                "description": f"{log.get('ingredient_name', '?')}: {change_type} | {log.get('field', '')} {log.get('old_value', '')} -> {log.get('new_value', '')}",
+                "user": log.get("user_name", log.get("changed_by", "Sistema")),
+                "authorizer": "-",
+                "value": 0
+            })
+    
+    # Apply event type filter if specified
+    if event_type and event_type != "Todos":
+        activities = [a for a in activities if a["type"] == event_type]
+    
     # Sort by timestamp descending
     activities.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
     
-    # Group by type for summary
+    # Group by type for summary (before limiting)
     by_type = {}
     total_value = 0
     for act in activities:
@@ -1155,15 +1243,20 @@ async def system_audit_report(
         by_type[t]["value"] += act.get("value", 0)
         total_value += act.get("value", 0)
     
+    # Collect all available event types for filter
+    all_event_types = sorted(by_type.keys())
+    
     return {
         "date_from": date_from,
         "date_to": date_to,
+        "event_type_filter": event_type,
+        "available_event_types": all_event_types,
         "summary": {
             "total_activities": len(activities),
             "total_value": round(total_value, 2)
         },
         "by_type": sorted(by_type.values(), key=lambda x: -x["count"]),
-        "activities": activities[:100]  # Limit to last 100 for performance
+        "activities": activities[:200]  # Limit to last 200 for performance
     }
 
 
