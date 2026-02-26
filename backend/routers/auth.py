@@ -393,9 +393,14 @@ async def update_user(user_id: str, input: dict, caller=Depends(get_current_user
     caller_level = await get_role_level_async(caller.get("role", "waiter"))
     target_current_level = await get_role_level_async(target_user.get("role", "waiter"))
     
-    # Allow editing own profile for basic fields, but not for users at same or higher level
+    # Level 100: can edit anyone (including other 100s and themselves)
+    # Others: can edit own profile or users with strictly lower level
     is_self = caller["user_id"] == user_id
-    if not is_self and target_current_level >= caller_level:
+    if caller_level >= 100:
+        pass  # Full access
+    elif is_self:
+        pass  # Own profile
+    elif target_current_level >= caller_level:
         raise HTTPException(status_code=403, detail="No puedes editar un usuario con puesto igual o superior al tuyo")
     
     # If changing role, validate the new role level
