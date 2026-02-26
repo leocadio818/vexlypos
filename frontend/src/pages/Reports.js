@@ -1575,20 +1575,53 @@ export default function Reports() {
     const data = reportData;
     if (!data?.summary) return null;
     
-    const typeIcons = {
-      'Anulación': '🚫',
-      'Ajuste de Stock': '📦',
-      'Merma': '📉',
-      'Entrada por Transferencia': '📥',
-      'Salida por Transferencia': '📤',
-      'Orden de Compra': '🛒',
-      'Diferencia Inventario': '⚠️',
-      'Apertura de Turno': '🔓',
-      'Cierre de Turno': '🔒'
+    const typeColors = {
+      'Anulacion': 'text-red-400 bg-red-500/10 border-red-500/30',
+      'Ajuste de Stock': 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+      'Merma': 'text-orange-400 bg-orange-500/10 border-orange-500/30',
+      'Entrada por Transferencia': 'text-green-400 bg-green-500/10 border-green-500/30',
+      'Salida por Transferencia': 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+      'Orden de Compra': 'text-purple-400 bg-purple-500/10 border-purple-500/30',
+      'Diferencia Inventario': 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+      'Apertura de Turno': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+      'Cierre de Turno': 'text-slate-400 bg-slate-500/10 border-slate-500/30',
+      'Usuario Creado': 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
+      'Usuario Editado': 'text-sky-400 bg-sky-500/10 border-sky-500/30',
+      'Usuario Eliminado': 'text-rose-400 bg-rose-500/10 border-rose-500/30',
+      'Puesto Creado': 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
+      'Puesto Editado': 'text-violet-400 bg-violet-500/10 border-violet-500/30',
+      'Puesto Eliminado': 'text-pink-400 bg-pink-500/10 border-pink-500/30',
+      'Nota de Credito': 'text-red-300 bg-red-500/10 border-red-500/30',
+      'Exencion de Impuesto': 'text-yellow-300 bg-yellow-500/10 border-yellow-500/30',
+      'Movimiento de Ingrediente': 'text-teal-400 bg-teal-500/10 border-teal-500/30',
     };
+    
+    // Collect all available event types for filter
+    const availableTypes = data.available_event_types || data.by_type?.map(t => t.type) || [];
     
     return (
       <div className="space-y-4">
+        {/* Filter by event type */}
+        <div className="bg-card border border-border rounded-xl p-3 flex items-center gap-3 flex-wrap">
+          <span className="text-xs font-semibold text-muted-foreground uppercase">Filtrar por evento:</span>
+          <select
+            value={auditEventFilter}
+            onChange={e => { setAuditEventFilter(e.target.value); loadReport('system-audit'); }}
+            className="bg-background border border-border rounded-lg px-3 py-1.5 text-sm focus:border-primary/50 focus:outline-none min-w-[200px]"
+            data-testid="audit-event-filter"
+          >
+            <option value="Todos">Todos los eventos</option>
+            {availableTypes.map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          {auditEventFilter !== 'Todos' && (
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setAuditEventFilter('Todos'); loadReport('system-audit'); }}>
+              Limpiar filtro
+            </Button>
+          )}
+        </div>
+        
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-gradient-to-br from-amber-500/20 to-orange-600/10 border border-amber-500/30 rounded-xl p-4 text-center">
             <p className="text-[10px] text-amber-400 uppercase">Total Actividades</p>
@@ -1605,22 +1638,28 @@ export default function Reports() {
           <div className="bg-card border border-border rounded-xl p-4">
             <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Resumen por Tipo de Actividad</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {data.by_type.map((t, i) => (
-                <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-background border border-border/50">
-                  <div className="flex items-center gap-2">
-                    <span>{typeIcons[t.type] || '📋'}</span>
+              {data.by_type.map((t, i) => {
+                const colorClass = typeColors[t.type] || 'text-muted-foreground bg-muted/10 border-border';
+                return (
+                  <button
+                    key={i}
+                    onClick={() => { setAuditEventFilter(t.type); loadReport('system-audit'); }}
+                    className={`flex items-center justify-between p-2 rounded-lg border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${colorClass}`}
+                  >
                     <span className="text-sm font-medium truncate">{t.type}</span>
-                  </div>
-                  <Badge variant="secondary">{t.count}</Badge>
-                </div>
-              ))}
+                    <Badge variant="secondary">{t.count}</Badge>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
         
         {/* Activity log */}
         <div className="bg-card border border-border rounded-xl p-4">
-          <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Historial de Actividades</h4>
+          <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">
+            Historial de Actividades {auditEventFilter !== 'Todos' && `(${auditEventFilter})`}
+          </h4>
           {data.activities?.length > 0 ? (
             <div className="overflow-x-auto max-h-[400px]">
               <table className="w-full text-xs">
@@ -1628,39 +1667,42 @@ export default function Reports() {
                   <tr className="border-b border-border text-muted-foreground">
                     <th className="text-left py-2 px-1">Hora</th>
                     <th className="text-left py-2">Tipo</th>
-                    <th className="text-left py-2">Descripción</th>
+                    <th className="text-left py-2">Descripcion</th>
                     <th className="text-left py-2">Usuario</th>
                     <th className="text-left py-2">Autorizado por</th>
                     <th className="text-right py-2">Valor</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.activities.map((act, i) => (
-                    <tr key={i} className="border-b border-border/30 hover:bg-background/50">
-                      <td className="py-2 px-1 font-mono text-muted-foreground whitespace-nowrap">
-                        <Clock size={10} className="inline mr-1" />
-                        {act.timestamp?.split('T')[0]} {act.timestamp?.split('T')[1]?.slice(0, 5) || ''}
-                      </td>
-                      <td className="py-2">
-                        <Badge variant="outline" className="text-[9px] whitespace-nowrap">
-                          {typeIcons[act.type] || ''} {act.type}
-                        </Badge>
-                      </td>
-                      <td className="py-2 max-w-[200px] truncate" title={act.description}>
-                        {act.description}
-                      </td>
-                      <td className="py-2 font-medium">{act.user}</td>
-                      <td className="py-2 text-muted-foreground">{act.authorizer}</td>
-                      <td className="py-2 text-right font-oswald">
-                        {act.value > 0 ? formatMoney(act.value) : '-'}
-                      </td>
-                    </tr>
-                  ))}
+                  {data.activities.map((act, i) => {
+                    const colorClass = typeColors[act.type] || 'text-muted-foreground bg-muted/10 border-border';
+                    return (
+                      <tr key={i} className="border-b border-border/30 hover:bg-background/50">
+                        <td className="py-2 px-1 font-mono text-muted-foreground whitespace-nowrap">
+                          <Clock size={10} className="inline mr-1" />
+                          {act.timestamp?.split('T')[0]} {act.timestamp?.split('T')[1]?.slice(0, 5) || ''}
+                        </td>
+                        <td className="py-2">
+                          <Badge variant="outline" className={`text-[9px] whitespace-nowrap ${colorClass}`}>
+                            {act.type}
+                          </Badge>
+                        </td>
+                        <td className="py-2 max-w-[250px] truncate" title={act.description}>
+                          {act.description}
+                        </td>
+                        <td className="py-2 font-medium">{act.user}</td>
+                        <td className="py-2 text-muted-foreground">{act.authorizer}</td>
+                        <td className="py-2 text-right font-oswald">
+                          {act.value > 0 ? formatMoney(act.value) : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">Sin actividades en el período</p>
+            <p className="text-sm text-muted-foreground text-center py-8">Sin actividades en el periodo</p>
           )}
         </div>
       </div>
