@@ -220,19 +220,13 @@ async def sales_by_category_report(
     
     result = []
     for cat_id, data in categories.items():
-        data["category_name"] = cat_name_map.get(cat_id, cat_id)
+        data["category"] = cat_name_map.get(cat_id, cat_id)
         data["total"] = round(data["total"], 2)
         result.append(data)
     
     result.sort(key=lambda x: -x["total"])
-    grand_total = sum(c["total"] for c in result)
     
-    return {
-        "date_from": d_from,
-        "date_to": d_to,
-        "grand_total": round(grand_total, 2),
-        "categories": result
-    }
+    return result
 
 
 # ─── SALES BY WAITER ───
