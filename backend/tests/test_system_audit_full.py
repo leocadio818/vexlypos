@@ -24,20 +24,22 @@ class TestSystemAuditCore:
         yield
         self.session.close()
 
-    # ─── KNOWN BUGS TO TEST ───
-    def test_known_bug_theme_config_404(self):
-        """KNOWN BUG: GET /api/theme-config returns 404 - Frontend calls this but backend has /api/theme"""
+    # ─── PREVIOUSLY KNOWN BUGS - NOW FIXED ───
+    def test_theme_config_endpoint_fixed(self):
+        """FIXED: GET /api/theme-config now returns 200 - Bug was fixed by adding endpoint alias"""
         response = self.session.get(f"{BASE_URL}/api/theme-config")
-        # This SHOULD be 200 but is 404 - documenting the bug
-        assert response.status_code == 404, "Bug may be fixed - /api/theme-config returning something other than 404"
-        print(f"✓ BUG CONFIRMED: GET /api/theme-config returns 404 (expected behavior currently)")
+        assert response.status_code == 200, f"Theme-config endpoint should work now: {response.text}"
+        data = response.json()
+        assert isinstance(data, dict)
+        print(f"✓ BUG FIXED: GET /api/theme-config now returns 200")
     
-    def test_known_bug_inventory_products_stock_404(self):
-        """KNOWN BUG: GET /api/inventory/products-stock returns 404 - OrderScreen.js calls this"""
+    def test_inventory_products_stock_endpoint_fixed(self):
+        """FIXED: GET /api/inventory/products-stock now returns 200 - Bug was fixed by adding endpoint"""
         response = self.session.get(f"{BASE_URL}/api/inventory/products-stock")
-        # This SHOULD be 200 but is 404 - documenting the bug
-        assert response.status_code == 404, "Bug may be fixed - /api/inventory/products-stock returning something other than 404"
-        print(f"✓ BUG CONFIRMED: GET /api/inventory/products-stock returns 404 (expected behavior currently)")
+        assert response.status_code == 200, f"Products-stock endpoint should work now: {response.text}"
+        data = response.json()
+        assert isinstance(data, list)
+        print(f"✓ BUG FIXED: GET /api/inventory/products-stock now returns 200 ({len(data)} products)")
     
     # ─── WORKING THEME ENDPOINT ───
     def test_theme_endpoint_works(self):
