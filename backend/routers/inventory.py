@@ -710,6 +710,114 @@ async def list_stock_differences(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# ─── STOCK ADJUSTMENT ───
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/inventory/adjust")
+async def adjust_stock(input: dict, request: Request):
+    """
+    Manual stock adjustment. Modifies stock, logs to stock_movements,
+    and creates an entry in stock_adjustment_logs for the dedicated report.
+    """
+    ingredient_id = input.get("ingredient_id")
+    warehouse_id = input.get("warehouse_id")
+    quantity = input.get("quantity")
+    reason = input.get("reason", "Ajuste manual")
+
+    if not ingredient_id or not warehouse_id or quantity is None:
+        raise HTTPException(400, "ingredient_id, warehouse_id y quantity son requeridos")
+
+    try:
+        quantity = float(quantity)
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Cantidad debe ser un número")
+
+    if quantity == 0:
+        raise HTTPException(400, "La cantidad no puede ser cero")
+
+    # Get ingredient info
+    ingredient = await db.ingredients.find_one({"id": ingredient_id}, {"_id": 0})
+    if not ingredient:
+        raise HTTPException(404, "Ingrediente no encontrado")
+
+    # Get warehouse info
+    warehouse = await db.warehouses.find_one({"id": warehouse_id}, {"_id": 0})
+    wh_name = warehouse.get("name", "?") if warehouse else "?"
+
+    # Get user from token
+    user_id, user_name = get_user_from_request(request)
+
+    # Get current stock before adjustment
+    stock_doc = await db.stock.find_one(
+        {"ingredient_id": ingredient_id, "warehouse_id": warehouse_id},
+        {"_id": 0}
+    )
+    stock_before = stock_doc.get("current_stock", 0) if stock_doc else 0
+    stock_after = stock_before + quantity
+
+    # Update stock
+    await db.stock.update_one(
+        {"ingredient_id": ingredient_id, "warehouse_id": warehouse_id},
+        {"$inc": {"current_stock": quantity}, "$set": {"last_updated": now_iso()}},
+        upsert=True
+    )
+
+    # Calculate monetary value
+    conversion = ingredient.get("conversion_factor", 1) or 1
+    dispatch_cost = ingredient.get("dispatch_unit_cost", ingredient.get("avg_cost", 0) / conversion)
+    monetary_value = round(abs(quantity) * dispatch_cost, 2)
+
+    # Log to stock_movements
+    movement_id = gen_id()
+    movement = {
+        "id": movement_id,
+        "ingredient_id": ingredient_id,
+        "ingredient_name": ingredient.get("name", "?"),
+        "warehouse_id": warehouse_id,
+        "quantity": quantity,
+        "movement_type": "adjustment",
+        "reference_id": "",
+        "notes": reason,
+        "user_id": user_id,
+        "user_name": user_name,
+        "created_at": now_iso()
+    }
+    await db.stock_movements.insert_one(movement)
+
+    # Log to dedicated stock_adjustment_logs collection for the separate report
+    adjustment_log = {
+        "id": gen_id(),
+        "movement_id": movement_id,
+        "ingredient_id": ingredient_id,
+        "ingredient_name": ingredient.get("name", "?"),
+        "category": ingredient.get("category", "general"),
+        "warehouse_id": warehouse_id,
+        "warehouse_name": wh_name,
+        "quantity": quantity,
+        "unit": ingredient.get("unit", ""),
+        "stock_before": round(stock_before, 4),
+        "stock_after": round(stock_after, 4),
+        "dispatch_unit_cost": round(dispatch_cost, 4),
+        "monetary_value": monetary_value,
+        "reason": reason,
+        "adjusted_by_id": user_id,
+        "adjusted_by_name": user_name,
+        "timestamp": now_iso()
+    }
+    await db.stock_adjustment_logs.insert_one(adjustment_log)
+
+    return {
+        "ok": True,
+        "adjustment_id": adjustment_log["id"],
+        "ingredient_name": ingredient.get("name", "?"),
+        "quantity": quantity,
+        "stock_before": round(stock_before, 4),
+        "stock_after": round(stock_after, 4),
+        "monetary_value": monetary_value
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # ─── STOCK MOVEMENTS ───
 # ═══════════════════════════════════════════════════════════════════════════════
 
