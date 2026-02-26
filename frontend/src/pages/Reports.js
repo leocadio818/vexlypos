@@ -578,7 +578,7 @@ export default function Reports() {
       setReportData(null);
     }
     setLoading(false);
-  }, [dateRange, topLimit]);
+  }, [dateRange, topLimit, auditEventFilter]);
 
   // Toggle category expansion
   const toggleCategory = (categoryId) => {
