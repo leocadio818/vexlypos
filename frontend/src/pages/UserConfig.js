@@ -713,7 +713,8 @@ export default function UserConfig() {
                 <option value={80}>80 - Propietario</option>
                 <option value={60}>60 - Gerente</option>
                 <option value={40}>40 - Supervisor</option>
-                <option value={20}>20 - Operativo (Cajero/Mesero)</option>
+                <option value={30}>30 - Cajero</option>
+                <option value={20}>20 - Mesero</option>
                 <option value={10}>10 - Cocina/Apoyo</option>
               </select>
               <p className="text-[10px] text-muted-foreground mt-1">
