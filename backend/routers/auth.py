@@ -295,12 +295,16 @@ async def create_user(input: dict, caller=Depends(get_current_user)):
     if pin.startswith("0"):
         raise HTTPException(status_code=400, detail="El PIN no puede iniciar con 0")
     
-    # Hierarchy check: caller can only assign roles with level < their own
+    # Hierarchy check for role assignment
     caller_level = await get_role_level_async(caller.get("role", "waiter"))
     target_role = input.get("role", "waiter")
     target_level = await get_role_level_async(target_role)
-    if target_level >= caller_level:
-        raise HTTPException(status_code=403, detail="No puedes asignar un puesto igual o superior al tuyo")
+    
+    if caller_level >= 100:
+        pass  # Level 100: can assign any role
+    elif target_level > caller_level:
+        raise HTTPException(status_code=403, detail="No puedes asignar un puesto superior al tuyo")
+    # Level 80 CAN create another level 80 (but won't see them after)
     
     # Only system admin (level 100) can customize permissions
     permissions_input = input.get("permissions", {})
