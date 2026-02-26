@@ -94,7 +94,7 @@ ALL_PERMISSIONS = {
 BUILTIN_ROLE_LEVELS = {
     "admin": 100,       # Administrador del Sistema
     "supervisor": 40,   # Supervisor
-    "cashier": 20,      # Cajero
+    "cashier": 30,      # Cajero
     "waiter": 20,       # Mesero
     "kitchen": 10,      # Cocina
 }
