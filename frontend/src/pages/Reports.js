@@ -564,6 +564,9 @@ export default function Reports() {
       if (reportId === 'top-products') {
         params.limit = topLimit;
       }
+      if (reportId === 'system-audit' && auditEventFilter && auditEventFilter !== 'Todos') {
+        params.event_type = auditEventFilter;
+      }
       
       const res = await axios.get(`${API}${endpoint}`, { 
         params, 
