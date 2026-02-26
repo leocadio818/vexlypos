@@ -225,7 +225,7 @@ async def sales_by_category_report(
     
     result = []
     for cat_id, data in categories.items():
-        data["category"] = cat_name_map.get(cat_id, cat_id)
+        data["category"] = cat_name_map.get(cat_id, cat_id if len(cat_id) < 30 else "Sin Categoria")
         data["total"] = round(data["total"], 2)
         result.append(data)
     
