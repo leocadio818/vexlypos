@@ -375,6 +375,7 @@ export const reportsAPI = {
   inventory: () => api.get('/reports/inventory'),
   profit: (date) => api.get('/reports/profit', { params: date ? { date } : {} }),
   voids: (params) => api.get('/reports/voids', { params }),
+  stockAdjustments: (params) => api.get('/reports/stock-adjustments', { params }),
 };
 
 export default api;
