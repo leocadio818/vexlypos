@@ -839,6 +839,12 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 ---
 
 ## Completado Recientemente
+- [x] **Auditoría Profunda del Sistema** (Feb 2026) - Revisión completa de todas las páginas, endpoints y flujos:
+  - **Bug Fix: `/api/theme-config` 404** — Frontend (ThemeContext.js) llamaba `/api/theme-config` pero backend tenía `/api/theme`. Se creó alias. Ocurría en CADA carga de página.
+  - **Bug Fix: `/api/inventory/products-stock` 404** — OrderScreen.js línea 243 validaba stock de productos pero el endpoint no existía. Se creó endpoint completo.
+  - **Auditoría Backend:** 37/37 endpoints verificados OK (200). Sin leaks de `_id`.
+  - **Auditoría Frontend:** 11 páginas principales + 11 tabs de inventario + 14 tabs de configuración + 4 categorías de reportes — todo funcional.
+  - Testing: 100% (37/37 backend, 11/11 frontend).
 - [x] **Ajustes de Stock** (Feb 2026) - Tres funcionalidades nuevas:
   - **Endpoint `POST /api/inventory/adjust`**: Modifica stock, registra en `stock_movements` (movement_type: "adjustment") y en nueva colección `stock_adjustment_logs` con detalle completo (stock_before, stock_after, monetary_value, razón, usuario).
   - **Reporte separado `GET /api/reports/stock-adjustments`**: Muestra estadísticas (total ajustes, unidades +/-, impacto neto), desglose por razón y por insumo, tabla de detalle completa.
