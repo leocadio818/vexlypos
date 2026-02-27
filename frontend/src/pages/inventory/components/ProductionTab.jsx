@@ -235,11 +235,15 @@ export default function ProductionTab({
         const recipeMap = {};
         for (const r of res.data) {
           if (r.produces_ingredient_id) {
-            // Calculate real cost per unit from recipe
+            // Calculate real cost per unit from recipe using dispatch_unit_cost
             let totalCost = 0;
             for (const ri of (r.ingredients || [])) {
               const baseIng = ingredients.find(i => i.id === ri.ingredient_id);
-              if (baseIng) totalCost += (baseIng.avg_cost || 0) * (ri.quantity || 0);
+              if (baseIng) {
+                // Use dispatch_unit_cost which already converts purchase→dispatch units
+                const unitCost = baseIng.dispatch_unit_cost || (baseIng.avg_cost / (baseIng.conversion_factor || 1));
+                totalCost += unitCost * (ri.quantity || 0);
+              }
             }
             const costPerUnit = r.yield_quantity > 0 ? totalCost / r.yield_quantity : 0;
             recipeMap[r.produces_ingredient_id] = { ...r, totalCost, costPerUnit };
