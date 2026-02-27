@@ -311,7 +311,7 @@ export default function ProductionTab({
                   </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">Costo aprox: </span>
-                    <span className="font-oswald font-bold">{formatMoney(sr.avg_cost * sr.suggestedProduction)}</span>
+                    <span className="font-oswald font-bold">{formatMoney(getSubrecipeCostEstimate(sr))}</span>
                   </div>
                 </div>
                 
