@@ -685,7 +685,7 @@ async def inventory_by_warehouse_report(warehouse_id: Optional[str] = Query(None
         }
         by_warehouse[wh_name]["items"].append(item)
         by_warehouse[wh_name]["total_value"] += value
-        if current <= min_stock:
+        if current < min_stock:
             by_warehouse[wh_name]["low_stock_count"] += 1
     
     result = []
