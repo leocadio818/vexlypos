@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { 
   FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, 
