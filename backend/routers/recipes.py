@@ -47,9 +47,15 @@ async def create_recipe(input: RecipeInput):
     doc = {
         "id": gen_id(), "product_id": input.product_id, "product_name": input.product_name,
         "ingredients": ingredients, "yield_quantity": input.yield_quantity,
-        "notes": input.notes, "created_at": now_iso()
+        "notes": input.notes, "is_subrecipe": input.is_subrecipe,
+        "produces_ingredient_id": input.produces_ingredient_id,
+        "created_at": now_iso()
     }
-    existing = await db.recipes.find_one({"product_id": input.product_id})
+    # For sub-recipes, check by produces_ingredient_id; for products, by product_id
+    if input.produces_ingredient_id:
+        existing = await db.recipes.find_one({"produces_ingredient_id": input.produces_ingredient_id})
+    else:
+        existing = await db.recipes.find_one({"product_id": input.product_id})
     if existing:
         await db.recipes.update_one(
             {"product_id": input.product_id}, 
