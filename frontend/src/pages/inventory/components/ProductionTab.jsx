@@ -243,6 +243,15 @@ export default function ProductionTab({
                 >
                   <Play size={14} className="mr-1" /> Producir Ahora
                 </Button>
+                <Button 
+                  variant="outline"
+                  className="w-full mt-1"
+                  onClick={() => handleOpenRecipeDialog(sr)}
+                  disabled={loadingRecipe}
+                  data-testid={`recipe-urgent-${sr.id}`}
+                >
+                  <BookOpen size={14} className="mr-1" /> Definir / Editar Receta
+                </Button>
               </div>
             ))}
           </div>
