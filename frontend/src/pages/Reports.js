@@ -20,11 +20,10 @@ import {
   BySupplierReport, TaxesReport, ProfitLossReport, TableMovementsReport,
   ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport
 } from './reports';
+import { COLORS } from './reports/reportUtils';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
-
-const COLORS = ['#FF6600', '#E53935', '#1E88E5', '#43A047', '#FFB300', '#E91E63', '#8E24AA', '#00BCD4', '#FF5722', '#607D8B'];
 
 // Report categories configuration - Reorganized for better navigation
 const REPORT_CATEGORIES = [
