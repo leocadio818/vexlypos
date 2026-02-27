@@ -360,6 +360,8 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
         "ok": True,
         "message": f"Jornada {business_day['ref']} cerrada exitosamente",
         "business_date": business_day["business_date"],
+        "day_id": business_day["id"],
+        "force_logout": True,
         "stats": stats
     }
 
