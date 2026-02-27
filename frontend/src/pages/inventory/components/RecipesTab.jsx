@@ -10,6 +10,61 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { recipesAPI, formatMoney } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 
+// Searchable ingredient selector component
+function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const inputRef = useRef(null);
+
+  const selected = ingredients.find(i => i.id === value);
+  const filtered = search
+    ? ingredients.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+    : ingredients;
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative flex-1" data-testid={testId}>
+      <input
+        ref={inputRef}
+        type="text"
+        value={open ? search : (selected?.name || '')}
+        onChange={e => { setSearch(e.target.value); if (!open) setOpen(true); }}
+        onFocus={() => { setOpen(true); setSearch(''); }}
+        placeholder="Buscar insumo..."
+        className="w-full px-2 py-1 bg-card border border-border rounded text-sm"
+      />
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-xl">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-muted-foreground">Sin resultados</div>
+          ) : (
+            filtered.map(i => (
+              <button
+                key={i.id}
+                type="button"
+                onClick={() => { onChange(i.id); setOpen(false); setSearch(''); }}
+                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-primary/20 transition-colors ${i.id === value ? 'bg-primary/10 text-primary font-medium' : ''}`}
+                data-testid={`ingredient-option-${i.id}`}
+              >
+                {i.name}
+                <span className="text-[10px] text-muted-foreground ml-2">{i.unit}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Menu category configuration
 const MENU_CATEGORIES = [
   { id: 'all', label: 'Todas', icon: Package, color: 'bg-muted' },
