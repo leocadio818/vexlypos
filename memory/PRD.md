@@ -877,6 +877,7 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 - [x] **Imagenes de productos ampliadas** (Feb 2026) - Tarjetas de productos en OrderScreen reestructuradas con flex-1 para imagenes.
 - [x] **Grid auto-fill en desktop** (Feb 2026) - Botones de categorias y productos usan CSS auto-fill en pantallas >= 1024px. Selectores de columnas (2,3,4,5) ocultos en desktop con `lg:hidden`. En movil, layout configurable por usuario con selectores visibles. CSS class `.auto-fill-grid` en index.css con `!important` para sobreescribir inline styles.
 - [x] **Teclado numerico en dialogo de producto** (Feb 2026) - Reemplazado selector +/- lento por teclado numerico 3x4 (1-9, CLR, 0, borrar) en el modifier-dialog. Logica: primer toque reemplaza valor, siguientes toques concatenan. Boton AGREGAR deshabilitado si qty=0.
+- [x] **Botones de producto con altura dinamica** (Feb 2026) - Cambiado `h-20 md:h-12` (altura fija) por `min-h-[5rem] md:min-h-[3rem]` (altura minima). Nombre de producto permite hasta 3 lineas (`line-clamp-3` en vez de `line-clamp-1`). Precio siempre visible. Removido `overflow-hidden` de los botones.
 - [x] **Training Mode completo** - Modo entrenamiento con dashboard de progreso
 - [x] **Gestion Unificada de Empleados** - Pantalla unica `UserConfig.js` para roles y permisos
 
