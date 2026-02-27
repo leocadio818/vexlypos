@@ -11,13 +11,15 @@ import {
   Filter, RefreshCw, X, Loader2, FileSpreadsheet, File, Sun
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area,
-  CartesianGrid, Legend
-} from 'recharts';
 import axios from 'axios';
 import ReportXZ from '@/components/ReportXZ';
+import {
+  DailySalesReport, CashCloseReport, ByCategoryReport, TopProductsReport,
+  ByTypeReport, PaymentMethodsReport, VoidAuditReport, InventoryLevelsReport,
+  TransfersReport, DifferencesReport, WasteReport, PurchaseOrdersReport,
+  BySupplierReport, TaxesReport, ProfitLossReport, TableMovementsReport,
+  ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport
+} from './reports';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
