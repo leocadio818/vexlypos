@@ -674,7 +674,6 @@ export default function Reports() {
   };
 
   return (
-  const renderDailySalesReport = () => {
     const data = reportData;
     const sparkData = sparklineData.map(d => d.total);
     const trend = sparkData.length > 1 ? ((sparkData[sparkData.length - 1] - sparkData[0]) / (sparkData[0] || 1) * 100) : 0;
