@@ -648,7 +648,7 @@ export default function RecipesTab({
                           </Badge>
                         </h3>
                         <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                          <span>Rinde: {rec.yield_quantity} porción(es)</span>
+                          <span>Rinde: {rec.yield_quantity} {rec.yield_unit || 'unidades'}</span>
                           <span>•</span>
                           <span>Costo: {formatMoney(rec.cost)}</span>
                           <span>•</span>
@@ -765,7 +765,7 @@ export default function RecipesTab({
             </div>
             
             <div>
-              <label className="text-sm font-medium">Rinde (porciones)</label>
+              <label className="text-sm font-medium">Rendimiento (en unidad de despacho, ej: Onzas)</label>
               <input
                 type="number"
                 value={recipeDialog.data?.yield_quantity || 1}

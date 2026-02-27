@@ -587,7 +587,7 @@ export default function ProductionTab({
 
             {/* Yield */}
             <div>
-              <label className="text-sm font-medium">Rendimiento (cuántas unidades produce esta receta)</label>
+              <label className="text-sm font-medium">Rendimiento (en unidad de despacho, ej: Onzas)</label>
               <input
                 type="number"
                 step="0.1"
