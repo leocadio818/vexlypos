@@ -2136,8 +2136,9 @@ export default function OrderScreen() {
               placeholder="Notas especiales..." className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm" data-testid="item-notes-input" />
           </div>
           <Button onClick={handleConfirmModifiers} data-testid="confirm-modifiers-btn"
-            className="w-full h-14 bg-primary text-primary-foreground font-oswald font-bold text-lg tracking-wider active:scale-95 mt-3">
-            AGREGAR ({formatMoney((modDialog.product?.price || 0) * (parseFloat(modDialog.qty) || 1))})
+            disabled={!modDialog.qty || modDialog.qty === '0'}
+            className="w-full h-14 bg-primary text-primary-foreground font-oswald font-bold text-lg tracking-wider active:scale-95 mt-3 disabled:opacity-40">
+            AGREGAR ({formatMoney((modDialog.product?.price || 0) * (parseInt(modDialog.qty) || 0))})
           </Button>
           
           {/* Required Modifiers Alert - Inside Dialog */}
