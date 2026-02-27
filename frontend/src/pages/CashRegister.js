@@ -426,10 +426,18 @@ export default function CashRegister() {
       setCloseDayDialog(false);
       setCloseDayPin('');
       setCloseDayNotes('');
-      fetchData();
-      // Abrir reporte Z para imprimir
+      
+      // Show Z report then force logout
       if (res.data?.day_id || res.data?.id) {
         setClosedDayId(res.data.day_id || res.data.id);
+      }
+      
+      // Force logout after Cierre Z - brief delay to let user see the toast
+      if (res.data?.force_logout) {
+        setTimeout(() => {
+          logout();
+          toast.info('Jornada cerrada. Se requiere nuevo login para iniciar la próxima jornada.');
+        }, 2000);
       }
     } catch (err) {
       const detail = err.response?.data?.detail || 'Error al cerrar jornada';
