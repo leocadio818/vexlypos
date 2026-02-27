@@ -1811,7 +1811,7 @@ export default function OrderScreen() {
                 const effectiveCols = Math.min(gridSettings.productColumns, 3);
                 // Responsive: compact on desktop (md), normal on mobile
                 const heightClass = largeMode 
-                  ? (effectiveCols > 2 ? 'h-24 md:h-16' : 'h-28 md:h-18')
+                  ? (effectiveCols > 2 ? 'h-24 md:h-16' : 'h-28 md:h-20')
                   : (effectiveCols > 2 ? 'h-20 md:h-14' : 'h-24 md:h-16');
                 // Check modifiers from both old and new systems
                 const assignmentIds = (product.modifier_assignments || []).map(a => a.group_id);
