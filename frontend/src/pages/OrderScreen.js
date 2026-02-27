@@ -482,6 +482,11 @@ export default function OrderScreen() {
   const filteredProducts = activeCat ? products.filter(p => p.category_id === activeCat) : [];
 
   const handleProductClick = (product) => {
+    // Block if no active business day
+    if (!hasActiveDay) {
+      toast.error('No hay jornada activa', { description: 'Se requiere iniciar una nueva jornada. Cierra sesión y vuelve a entrar.' });
+      return;
+    }
     // Check if product has any modifiers (from either old or new system)
     const assignmentIds = (product.modifier_assignments || []).map(a => a.group_id);
     const legacyIds = product.modifier_group_ids || [];
