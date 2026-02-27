@@ -882,8 +882,10 @@ async def calculate_recipe_cost(recipe: dict, depth: int = 0) -> float:
                 sub_cost = await calculate_recipe_cost(sub_recipe, depth + 1)
                 total_cost += sub_cost * effective_quantity
         else:
-            # Base ingredient - use avg_cost
-            total_cost += ingredient.get("avg_cost", 0) * effective_quantity
+            # Base ingredient - use dispatch_unit_cost (converts purchase unit → dispatch unit)
+            conversion_factor = ingredient.get("conversion_factor", 1) or 1
+            dispatch_unit_cost = ingredient.get("avg_cost", 0) / conversion_factor
+            total_cost += dispatch_unit_cost * effective_quantity
     
     yield_qty = recipe.get("yield_quantity", 1) or 1
     return total_cost / yield_qty
