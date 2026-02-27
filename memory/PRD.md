@@ -879,6 +879,7 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 - [x] **Teclado numerico en dialogo de producto** (Feb 2026) - Reemplazado selector +/- lento por teclado numerico 3x4 (1-9, CLR, 0, borrar) en el modifier-dialog. Logica: primer toque reemplaza valor, siguientes toques concatenan. Boton AGREGAR deshabilitado si qty=0.
 - [x] **Botones de producto con altura dinamica** (Feb 2026) - Cambiado `h-20 md:h-12` (altura fija) por `min-h-[5rem] md:min-h-[3rem]` (altura minima). Nombre de producto permite hasta 3 lineas (`line-clamp-3` en vez de `line-clamp-1`). Precio siempre visible. Removido `overflow-hidden` de los botones.
 - [x] **Bug fix: Proveedor no se guardaba al crear insumo** (Feb 2026) - El endpoint `POST /api/ingredients` no incluia `default_supplier_id` ni `margin_threshold` en el documento a guardar. Solo se guardaban en la segunda edicion (PUT) porque ese endpoint usa `input` como dict completo. Corregido agregando ambos campos al doc de creacion.
+- [x] **Buscador inteligente en selector de ingredientes de recetas** (Feb 2026) - Reemplazado `<select>` basico por componente `IngredientSearchSelect` con filtro por nombre. Usa React Portal (`createPortal`) para renderizar el dropdown fuera del dialogo y evitar recorte por overflow. Resultados muestran nombre + unidad.
 - [x] **Training Mode completo** - Modo entrenamiento con dashboard de progreso
 - [x] **Gestion Unificada de Empleados** - Pantalla unica `UserConfig.js` para roles y permisos
 
