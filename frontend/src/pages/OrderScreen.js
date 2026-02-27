@@ -1849,20 +1849,20 @@ export default function OrderScreen() {
                           : 'bg-card border-border hover:border-primary/50 active:scale-[0.97]'
                     }`}
                   >
-                    {/* Imagen o Icono del producto - ocupa la mayor parte de la tarjeta */}
+                    {/* Imagen o Icono del producto */}
                     {(product.image_url || product.icon) ? (
-                      <div className="flex-1 flex items-center justify-center overflow-hidden min-h-0 mb-1">
+                      <div className="flex items-center justify-center overflow-hidden mb-1" style={{ height: largeMode ? '48px' : '36px' }}>
                         {product.image_url ? (
                           <img 
                             src={product.image_url} 
                             alt="" 
-                            className="w-full h-full rounded-lg object-contain"
+                            className="h-full rounded-lg object-contain"
                             onError={(e) => { e.target.style.display = 'none'; }}
                           />
                         ) : product.icon && PRODUCT_ICON_MAP[product.icon] ? (
                           (() => {
                             const IconComponent = PRODUCT_ICON_MAP[product.icon];
-                            return <IconComponent size={largeMode ? 36 : 28} className="text-primary/80" />;
+                            return <IconComponent size={largeMode ? 28 : 22} className="text-primary/80" />;
                           })()
                         ) : null}
                       </div>
