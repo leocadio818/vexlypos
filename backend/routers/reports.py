@@ -76,7 +76,7 @@ async def dashboard():
         ing = ing_map.get(stock.get("ingredient_id"), {})
         min_stock = ing.get("min_stock", 0)
         current = stock.get("current_stock", 0)
-        if current <= min_stock and min_stock > 0:
+        if current < min_stock and min_stock > 0:
             inventory_alerts += 1
     
     # Loyalty customers
@@ -681,7 +681,7 @@ async def inventory_by_warehouse_report(warehouse_id: Optional[str] = Query(None
             "min_stock": min_stock,
             "avg_cost": round(avg_cost, 2),
             "value": round(value, 2),
-            "is_low": current <= min_stock
+            "is_low": current < min_stock
         }
         by_warehouse[wh_name]["items"].append(item)
         by_warehouse[wh_name]["total_value"] += value

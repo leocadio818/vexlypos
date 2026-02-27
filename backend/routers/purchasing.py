@@ -435,7 +435,7 @@ async def _get_purchase_suggestions_internal(
         current_stock = sum(s.get("current_stock", 0) for s in stock_docs)
         
         min_stock = ing.get("min_stock", 0)
-        is_low = current_stock <= min_stock
+        is_low = current_stock < min_stock
         
         if not include_ok_stock and not is_low:
             continue
