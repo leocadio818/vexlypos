@@ -839,6 +839,11 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 ---
 
 ## Completado Recientemente
+- [x] **Refactorización Reports.js** (Feb 2026) - Archivo monolítico de 2,143 líneas dividido en 20 componentes individuales:
+  - `Reports.js` reducido a 906 líneas (shell + lógica)
+  - 20 componentes en `/pages/reports/`: DailySalesReport, CashCloseReport, ByCategoryReport, TopProductsReport, ByTypeReport, PaymentMethodsReport, VoidAuditReport, InventoryLevelsReport, TransfersReport, DifferencesReport, WasteReport, PurchaseOrdersReport, BySupplierReport, TaxesReport, ProfitLossReport, TableMovementsReport, ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport
+  - `reportUtils.js` con utilidades compartidas (COLORS, Sparkline, CustomTooltip)
+  - Testing: 100% (8/8 backend, 10/10 frontend)
 - [x] **Auditoría Profunda del Sistema** (Feb 2026) - Revisión completa de todas las páginas, endpoints y flujos:
   - **Bug Fix: `/api/theme-config` 404** — Frontend (ThemeContext.js) llamaba `/api/theme-config` pero backend tenía `/api/theme`. Se creó alias. Ocurría en CADA carga de página.
   - **Bug Fix: `/api/inventory/products-stock` 404** — OrderScreen.js línea 243 validaba stock de productos pero el endpoint no existía. Se creó endpoint completo.
