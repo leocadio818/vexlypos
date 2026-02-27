@@ -64,6 +64,31 @@ async def delete_recipe(rid: str):
     await db.recipes.delete_one({"id": rid})
     return {"ok": True}
 
+@router.put("/recipes/{rid}")
+async def update_recipe(rid: str, input: RecipeInput):
+    existing = await db.recipes.find_one({"id": rid}, {"_id": 0})
+    if not existing:
+        raise HTTPException(404, "Receta no encontrada")
+    ingredients = []
+    for i in input.ingredients:
+        ing_data = i.model_dump()
+        ing_data["id"] = ing_data.get("id") or gen_id()
+        if not ing_data.get("ingredient_name"):
+            ing = await db.ingredients.find_one({"id": ing_data["ingredient_id"]}, {"_id": 0})
+            ing_data["ingredient_name"] = ing["name"] if ing else "?"
+        ingredients.append(ing_data)
+    await db.recipes.update_one(
+        {"id": rid},
+        {"$set": {
+            "product_id": input.product_id,
+            "product_name": input.product_name,
+            "ingredients": ingredients,
+            "yield_quantity": input.yield_quantity,
+            "notes": input.notes
+        }}
+    )
+    return await db.recipes.find_one({"id": rid}, {"_id": 0})
+
 @router.delete("/recipes/product/{product_id}")
 async def delete_recipe_by_product(product_id: str):
     await db.recipes.delete_one({"product_id": product_id})
