@@ -212,16 +212,54 @@ export default function ProductionTab({
   };
 
   // Calculate sub-recipes needing production
-  const subrecipesNeedingProduction = ingredients
-    .filter(ing => ing.is_subrecipe)
-    .map(ing => {
-      const totalStock = getTotalStock(ing.id);
-      const isLow = totalStock <= ing.min_stock;
-      const deficit = ing.min_stock - totalStock;
-      const suggestedProduction = Math.max(0, Math.ceil(deficit));
-      return { ...ing, totalStock, isLow, deficit, suggestedProduction };
-    })
-    .sort((a, b) => b.deficit - a.deficit);
+  // Also calculate recipe-based cost if available
+  const subrecipesNeedingProduction = useMemo(() => {
+    return ingredients
+      .filter(ing => ing.is_subrecipe)
+      .map(ing => {
+        const totalStock = getTotalStock(ing.id);
+        const isLow = totalStock <= ing.min_stock;
+        const deficit = ing.min_stock - totalStock;
+        const suggestedProduction = Math.max(0, Math.ceil(deficit));
+        return { ...ing, totalStock, isLow, deficit, suggestedProduction };
+      })
+      .sort((a, b) => b.deficit - a.deficit);
+  }, [ingredients, getTotalStock]);
+
+  // Load recipes for sub-recipes to calculate real costs
+  const [subrecipeRecipes, setSubrecipeRecipes] = useState({});
+  useEffect(() => {
+    const loadRecipes = async () => {
+      try {
+        const res = await recipesAPI.list();
+        const recipeMap = {};
+        for (const r of res.data) {
+          if (r.produces_ingredient_id) {
+            // Calculate real cost per unit from recipe
+            let totalCost = 0;
+            for (const ri of (r.ingredients || [])) {
+              const baseIng = ingredients.find(i => i.id === ri.ingredient_id);
+              if (baseIng) totalCost += (baseIng.avg_cost || 0) * (ri.quantity || 0);
+            }
+            const costPerUnit = r.yield_quantity > 0 ? totalCost / r.yield_quantity : 0;
+            recipeMap[r.produces_ingredient_id] = { ...r, totalCost, costPerUnit };
+          }
+        }
+        setSubrecipeRecipes(recipeMap);
+      } catch (e) {
+        console.error('Error loading sub-recipe recipes', e);
+      }
+    };
+    if (ingredients.length > 0) loadRecipes();
+  }, [ingredients]);
+
+  const getSubrecipeCostEstimate = (sr) => {
+    const recipe = subrecipeRecipes[sr.id];
+    if (recipe && recipe.costPerUnit > 0) {
+      return recipe.costPerUnit * sr.suggestedProduction;
+    }
+    return sr.avg_cost * sr.suggestedProduction;
+  };
 
   const urgentItems = subrecipesNeedingProduction.filter(s => s.isLow);
   const okItems = subrecipesNeedingProduction.filter(s => !s.isLow);
