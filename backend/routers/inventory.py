@@ -898,10 +898,16 @@ async def update_subrecipe_costs():
         recipe = await get_recipe_for_ingredient(ing["id"])
         if recipe:
             new_cost = await calculate_recipe_cost(recipe)
-            if new_cost != ing.get("avg_cost", 0):
+            conversion_factor = ing.get("conversion_factor", 1) or 1
+            dispatch_unit_cost = new_cost  # cost per dispatch unit (already divided by yield in calculate_recipe_cost)
+            if abs(new_cost - ing.get("avg_cost", 0)) > 0.001:
                 await db.ingredients.update_one(
                     {"id": ing["id"]},
-                    {"$set": {"avg_cost": round(new_cost, 2), "cost_updated_at": now_iso()}}
+                    {"$set": {
+                        "avg_cost": round(new_cost, 4),
+                        "dispatch_unit_cost": round(dispatch_unit_cost, 4),
+                        "cost_updated_at": now_iso()
+                    }}
                 )
 
 async def explode_and_deduct_recipe(
