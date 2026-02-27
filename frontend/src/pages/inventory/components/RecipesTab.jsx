@@ -32,11 +32,15 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const openDropdown = () => {
+  const updatePos = () => {
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
     }
+  };
+
+  const openDropdown = () => {
+    updatePos();
     setOpen(true);
     setSearch('');
   };
@@ -47,12 +51,12 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
         ref={inputRef}
         type="text"
         value={open ? search : (selected?.name || '')}
-        onChange={e => { setSearch(e.target.value); if (!open) openDropdown(); }}
+        onChange={e => { setSearch(e.target.value); if (!open) openDropdown(); else updatePos(); }}
         onFocus={openDropdown}
         placeholder="Buscar insumo..."
         className="w-full px-2 py-1 bg-card border border-border rounded text-sm"
       />
-      {open && (
+      {open && createPortal(
         <div
           className="fixed z-[9999] max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-xl"
           style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
@@ -73,7 +77,8 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
               </button>
             ))
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
