@@ -674,7 +674,6 @@ export default function Reports() {
   };
 
   return (
-  return (
     <div className="h-full flex flex-col" data-testid="reports-page">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-3 bg-card/50">
