@@ -1541,7 +1541,7 @@ async def inventory_valuation(
         total_value += item_value
         recent_mov = round(movement_map.get(ing_id, 0), 2)
         min_stock = sr.get("min_stock", ing.get("min_stock", 0))
-        is_low = current_stock <= min_stock and min_stock > 0
+        is_low = current_stock < min_stock and min_stock > 0
         is_dead = item_value > 100 and recent_mov == 0
 
         # by_category
