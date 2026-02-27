@@ -169,6 +169,18 @@ export function AuthProvider({ children }) {
     setUser(res.data.user);
     // Cache data after login
     setTimeout(cacheForOffline, 1000);
+    
+    // Notify if business day was auto-opened
+    if (res.data.business_day_opened) {
+      // Use a small delay so the login completes first
+      setTimeout(() => {
+        const { toast } = require('sonner');
+        toast.success('Nueva jornada de trabajo iniciada', {
+          description: `Abierta automáticamente al hacer login como ${res.data.user.name}`
+        });
+      }, 500);
+    }
+    
     return res.data.user;
   };
 
