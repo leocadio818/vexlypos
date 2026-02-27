@@ -2066,8 +2066,8 @@ export default function OrderScreen() {
               <div className="grid grid-cols-3 gap-1.5">
                 {[1,2,3,4,5,6,7,8,9].map(n => (
                   <button key={n} onClick={() => setModDialog(p => {
-                    const current = p.qty === '0' || p.qty === '1' && !p._qtyTouched ? String(n) : p.qty + String(n);
-                    return { ...p, qty: current, _qtyTouched: true };
+                    const newQty = !p._qtyTouched || p.qty === '0' ? String(n) : p.qty + String(n);
+                    return { ...p, qty: newQty, _qtyTouched: true };
                   })}
                     data-testid={`qty-key-${n}`}
                     className="h-11 rounded-lg bg-muted hover:bg-primary/20 font-oswald font-bold text-lg active:scale-95 transition-all">{n}</button>
@@ -2076,8 +2076,8 @@ export default function OrderScreen() {
                   data-testid="qty-key-clear"
                   className="h-11 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 font-bold text-sm active:scale-95 transition-all">CLR</button>
                 <button onClick={() => setModDialog(p => {
-                  const current = p.qty === '0' ? '0' : '0' + String(0);
-                  return { ...p, qty: p._qtyTouched ? (p.qty + '0') : '0', _qtyTouched: true };
+                  if (!p._qtyTouched || p.qty === '0') return { ...p, qty: '0', _qtyTouched: true };
+                  return { ...p, qty: p.qty + '0', _qtyTouched: true };
                 })}
                   data-testid="qty-key-0"
                   className="h-11 rounded-lg bg-muted hover:bg-primary/20 font-oswald font-bold text-lg active:scale-95 transition-all">0</button>
