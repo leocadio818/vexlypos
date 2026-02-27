@@ -839,6 +839,15 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 ---
 
 ## Completado Recientemente
+- [x] **Lógica de Jornada de Trabajo** (Feb 2026):
+  - **Auto-apertura**: Al hacer login sin jornada activa, se abre automáticamente una nueva jornada con toast "Nueva jornada de trabajo iniciada"
+  - **Cierre Z fuerza logout**: Después del Cierre Z, todos los usuarios son deslogueados y redirigidos al login. La próxima persona que haga login inicia la nueva jornada.
+  - **Bloqueo de operaciones**: No se pueden agregar productos a órdenes si no hay jornada activa (toast de error).
+  - Testing: 100% backend + frontend
+- [x] **Botones de productos responsivos** (Feb 2026):
+  - Desktop: Botones compactos (h-14/h-16/h-20) para categorías y productos
+  - Móvil: Tamaño normal para buen toque (h-20/h-24/h-28)
+  - Protección anti-scroll: Detección de movimiento del dedo (>10px) cancela el click al hacer scroll
 - [x] **Refactorización Reports.js** (Feb 2026) - Archivo monolítico de 2,143 líneas dividido en 20 componentes individuales:
   - `Reports.js` reducido a 906 líneas (shell + lógica)
   - 20 componentes en `/pages/reports/`: DailySalesReport, CashCloseReport, ByCategoryReport, TopProductsReport, ByTypeReport, PaymentMethodsReport, VoidAuditReport, InventoryLevelsReport, TransfersReport, DifferencesReport, WasteReport, PurchaseOrdersReport, BySupplierReport, TaxesReport, ProfitLossReport, TableMovementsReport, ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport
