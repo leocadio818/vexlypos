@@ -1801,9 +1801,10 @@ export default function OrderScreen() {
             >
               {filteredProducts.map(product => {
                 const effectiveCols = Math.min(gridSettings.productColumns, 3);
+                // Responsive: compact on desktop (md), normal on mobile
                 const heightClass = largeMode 
-                  ? (effectiveCols > 2 ? 'h-28' : 'h-32')
-                  : (effectiveCols > 2 ? 'h-24' : 'h-28');
+                  ? (effectiveCols > 2 ? 'h-24 md:h-16' : 'h-28 md:h-18')
+                  : (effectiveCols > 2 ? 'h-20 md:h-14' : 'h-24 md:h-16');
                 // Check modifiers from both old and new systems
                 const assignmentIds = (product.modifier_assignments || []).map(a => a.group_id);
                 const legacyIds = product.modifier_group_ids || [];
@@ -1815,33 +1816,51 @@ export default function OrderScreen() {
                 const isOutOfStock = !allowSaleWithoutStock && productStock && !productStock.in_stock;
                 const isLowStock = productStock?.is_low_stock && !isOutOfStock;
                 
-                const handleTouchStart = () => {
-                  if (isOutOfStock) return; // Don't allow long press on out of stock items
+                // Touch scroll protection: track if finger moved during touch
+                let touchStartY = 0;
+                let touchMoved = false;
+
+                const handleTouchStart = (e) => {
+                  if (isOutOfStock) return;
+                  touchStartY = e.touches?.[0]?.clientY || 0;
+                  touchMoved = false;
                   pressTimer = setTimeout(() => {
-                    handleProductLongPress(product);
-                  }, 500); // 500ms for long press
+                    if (!touchMoved) handleProductLongPress(product);
+                  }, 500);
+                };
+
+                const handleTouchMove = (e) => {
+                  const y = e.touches?.[0]?.clientY || 0;
+                  if (Math.abs(y - touchStartY) > 10) {
+                    touchMoved = true;
+                    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+                  }
                 };
                 
                 const handleTouchEnd = () => {
-                  if (pressTimer) {
-                    clearTimeout(pressTimer);
-                    pressTimer = null;
-                  }
+                  if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+                };
+
+                const handleClick = (e) => {
+                  // On touch devices, only fire if finger didn't move (not a scroll)
+                  if (touchMoved) { e.preventDefault(); return; }
+                  if (!isOutOfStock) handleProductClick(product);
                 };
                 
                 return (
                   <button 
                     key={product.id} 
-                    onClick={() => !isOutOfStock && handleProductClick(product)} 
+                    onClick={handleClick}
                     onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                     onTouchCancel={handleTouchEnd}
-                    onMouseDown={handleTouchStart}
+                    onMouseDown={() => { if (!isOutOfStock) pressTimer = setTimeout(() => handleProductLongPress(product), 500); }}
                     onMouseUp={handleTouchEnd}
                     onMouseLeave={handleTouchEnd}
                     disabled={isOutOfStock}
                     data-testid={`product-${product.id}`}
-                    className={`group relative overflow-hidden border-2 transition-all rounded-xl flex flex-col ${largeMode ? 'p-3' : 'p-2'} ${heightClass} text-left ${
+                    className={`group relative overflow-hidden border-2 transition-all rounded-xl flex flex-col ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} ${heightClass} text-left ${
                       isOutOfStock 
                         ? 'bg-card/50 border-red-500/50 opacity-60 cursor-not-allowed' 
                         : isLowStock
@@ -1851,28 +1870,26 @@ export default function OrderScreen() {
                   >
                     {/* Imagen o Icono del producto */}
                     {(product.image_url || product.icon) ? (
-                      <div className="flex items-center justify-center overflow-hidden mb-1" style={{ height: largeMode ? '48px' : '36px' }}>
+                      <div className="flex items-center justify-center overflow-hidden mb-1 h-8 md:h-6">
                         {product.image_url ? (
                           <img 
                             src={product.image_url} 
                             alt="" 
                             className="h-full rounded-lg object-contain"
-                            onError={(e) => { e.target.style.display = 'none'; }}
+                            onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                           />
                         ) : product.icon && PRODUCT_ICON_MAP[product.icon] ? (
                           (() => {
                             const IconComponent = PRODUCT_ICON_MAP[product.icon];
-                            return <IconComponent size={largeMode ? 28 : 22} className="text-primary/80" />;
+                            return <IconComponent size={largeMode ? 22 : 18} className="text-primary/80" />;
                           })()
                         ) : null}
                       </div>
-                    ) : (
-                      <div className="flex-1" />
-                    )}
-                    {/* Nombre y precio compactos en la parte inferior */}
+                    ) : null}
+                    {/* Nombre y precio */}
                     <div className="flex-shrink-0 mt-auto">
-                      <span className={`font-semibold leading-tight line-clamp-1 block ${largeMode ? 'text-sm' : 'text-xs'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
-                      <span className={`font-oswald font-bold block ${largeMode ? 'text-lg' : 'text-base'} ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>{formatMoney(product.price)}</span>
+                      <span className={`font-semibold leading-tight line-clamp-1 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
+                      <span className={`font-oswald font-bold block ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>{formatMoney(product.price)}</span>
                     </div>
                     {hasModifiers && !isOutOfStock && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
                     
