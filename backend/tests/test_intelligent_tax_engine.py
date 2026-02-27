@@ -11,7 +11,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://inventory-fix-51.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://billing-grid-desktop.preview.emergentagent.com').rstrip('/')
 ADMIN_PIN = "10000"
 
 # Sale Type IDs provided
