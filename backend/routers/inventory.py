@@ -91,6 +91,8 @@ async def create_ingredient(input: IngredientInput):
         "dispatch_quantity": input.dispatch_quantity,
         "conversion_factor": input.conversion_factor,
         "dispatch_unit_cost": round(dispatch_unit_cost, 4),
+        "default_supplier_id": input.default_supplier_id,
+        "margin_threshold": input.margin_threshold,
         "created_at": now_iso()
     }
     await db.ingredients.insert_one(doc)
