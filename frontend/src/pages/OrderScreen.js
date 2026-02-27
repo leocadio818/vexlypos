@@ -139,6 +139,9 @@ export default function OrderScreen() {
   const [allowSaleWithoutStock, setAllowSaleWithoutStock] = useState(true); // Default to true (no restrictions)
   const [stockLoading, setStockLoading] = useState(false);
   
+  // Business Day State - block operations when no active day
+  const [hasActiveDay, setHasActiveDay] = useState(true); // Assume true until checked
+  
   const orderRef = useRef(null);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
