@@ -12,76 +12,46 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { recipesAPI, formatMoney } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 
-// Searchable ingredient selector component
+// Searchable ingredient selector using Shadcn Combobox pattern
 function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
-  const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const inputRef = useRef(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
-
   const selected = ingredients.find(i => i.id === value);
-  const filtered = search
-    ? ingredients.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
-    : ingredients;
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const updatePos = () => {
-    if (inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
-    }
-  };
-
-  const openDropdown = () => {
-    updatePos();
-    setOpen(true);
-    setSearch('');
-  };
 
   return (
-    <div ref={ref} className="relative flex-1" data-testid={testId}>
-      <input
-        ref={inputRef}
-        type="text"
-        value={open ? search : (selected?.name || '')}
-        onChange={e => { setSearch(e.target.value); if (!open) openDropdown(); else updatePos(); }}
-        onFocus={openDropdown}
-        placeholder="Buscar insumo..."
-        className="w-full px-2 py-1 bg-card border border-border rounded text-sm"
-      />
-      {open && createPortal(
-        <div
-          className="fixed z-[9999] max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-xl"
-          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={open}
+          data-testid={testId}
+          className="flex-1 text-left px-2 py-1 bg-card border border-border rounded text-sm truncate"
         >
-          {filtered.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-muted-foreground">Sin resultados</div>
-          ) : (
-            filtered.map(i => (
-              <button
-                key={i.id}
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); onChange(i.id); setOpen(false); setSearch(''); }}
-                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-primary/20 transition-colors ${i.id === value ? 'bg-primary/10 text-primary font-medium' : ''}`}
-                data-testid={`ingredient-option-${i.id}`}
-              >
-                {i.name}
-                <span className="text-[10px] text-muted-foreground ml-2">{i.unit}</span>
-              </button>
-            ))
-          )}
-        </div>,
-        document.body
-      )}
-    </div>
+          {selected ? selected.name : <span className="text-muted-foreground">Buscar insumo...</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[280px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Buscar insumo..." />
+          <CommandList>
+            <CommandEmpty>Sin resultados</CommandEmpty>
+            <CommandGroup>
+              {ingredients.map(i => (
+                <CommandItem
+                  key={i.id}
+                  value={i.name}
+                  onSelect={() => { onChange(i.id); setOpen(false); }}
+                  data-testid={`ingredient-option-${i.id}`}
+                >
+                  {i.name}
+                  <span className="ml-auto text-[10px] text-muted-foreground">{i.unit}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
