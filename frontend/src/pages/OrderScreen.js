@@ -1740,7 +1740,7 @@ export default function OrderScreen() {
                 {presetQty > 0 && <span className="ml-0.5">{presetQty}</span>}
               </button>
             )}
-            <span className={`text-white/50 mx-1 ${largeMode ? 'text-xs' : 'text-[10px]'}`}>Col:</span>
+            <span className={`text-white/50 mx-1 lg:hidden ${largeMode ? 'text-xs' : 'text-[10px]'}`}>Col:</span>
             {[2, 3, 4, 5].map(num => (
               <button
                 key={num}
@@ -1751,7 +1751,7 @@ export default function OrderScreen() {
                   setGridSettings(newSettings);
                   localStorage.setItem('pos_grid_settings', JSON.stringify(newSettings));
                 }}
-                className={`${largeMode ? 'w-8 h-8 text-sm' : 'w-7 h-7 text-xs'} rounded-lg font-bold transition-colors ${
+                className={`lg:hidden ${largeMode ? 'w-8 h-8 text-sm' : 'w-7 h-7 text-xs'} rounded-lg font-bold transition-colors ${
                   (activeCat ? gridSettings.productColumns : gridSettings.categoryColumns) === num
                     ? 'bg-orange-500 text-white'
                     : 'bg-white/10 hover:bg-white/20 text-white/60'
