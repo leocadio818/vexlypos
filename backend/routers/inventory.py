@@ -507,7 +507,7 @@ async def list_stock_multilevel(warehouse_id: Optional[str] = Query(None)):
             "stock_remainder_dispatch": dispatch_remainder,
             "dispatch_unit_cost": round(dispatch_unit_cost, 4),
             "stock_value": round(stock_value, 2),
-            "is_low_stock": current_stock <= stock.get("min_stock", ingredient.get("min_stock", 0)),
+            "is_low_stock": current_stock < stock.get("min_stock", ingredient.get("min_stock", 0)),
             "last_updated": stock.get("last_updated")
         })
     
