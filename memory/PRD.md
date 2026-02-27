@@ -880,6 +880,7 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 - [x] **Botones de producto con altura dinamica** (Feb 2026) - Cambiado `h-20 md:h-12` (altura fija) por `min-h-[5rem] md:min-h-[3rem]` (altura minima). Nombre de producto permite hasta 3 lineas (`line-clamp-3` en vez de `line-clamp-1`). Precio siempre visible. Removido `overflow-hidden` de los botones.
 - [x] **Bug fix: Proveedor no se guardaba al crear insumo** (Feb 2026) - El endpoint `POST /api/ingredients` no incluia `default_supplier_id` ni `margin_threshold` en el documento a guardar. Solo se guardaban en la segunda edicion (PUT) porque ese endpoint usa `input` como dict completo. Corregido agregando ambos campos al doc de creacion.
 - [x] **Buscador inteligente en selector de ingredientes de recetas** (Feb 2026) - Reemplazado `<select>` basico por Shadcn Combobox (Popover + Command/cmdk). Busqueda por nombre en tiempo real. Usa portal nativo de Radix que funciona correctamente dentro de Dialogs. Muestra nombre + unidad de cada ingrediente.
+- [x] **Bug fix: Guardar receta fallaba al editar** (Feb 2026) - No existia endpoint PUT para actualizar recetas. El backend solo tenia POST (crear) y DELETE. Agregado `PUT /api/recipes/{rid}` en `recipes.py` y metodo `update` en `recipesAPI` del frontend (`api.js`). Ahora crear y editar recetas funciona correctamente.
 - [x] **Training Mode completo** - Modo entrenamiento con dashboard de progreso
 - [x] **Gestion Unificada de Empleados** - Pantalla unica `UserConfig.js` para roles y permisos
 
