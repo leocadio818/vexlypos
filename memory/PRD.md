@@ -876,6 +876,7 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 - [x] **Seguridad Jerarquica por Niveles v2** (Feb 2026) - Nivel 100 ve TODOS. Cajero=30, Mesero=20. DELETE protegido. Nivel 80 puede crear otro 80 pero no verlo despues. Solo Admin Sistema personaliza permisos y crea puestos.
 - [x] **Imagenes de productos ampliadas** (Feb 2026) - Tarjetas de productos en OrderScreen reestructuradas con flex-1 para imagenes.
 - [x] **Grid auto-fill en desktop** (Feb 2026) - Botones de categorias y productos usan CSS auto-fill en pantallas >= 1024px. Selectores de columnas (2,3,4,5) ocultos en desktop con `lg:hidden`. En movil, layout configurable por usuario con selectores visibles. CSS class `.auto-fill-grid` en index.css con `!important` para sobreescribir inline styles.
+- [x] **Teclado numerico en dialogo de producto** (Feb 2026) - Reemplazado selector +/- lento por teclado numerico 3x4 (1-9, CLR, 0, borrar) en el modifier-dialog. Logica: primer toque reemplaza valor, siguientes toques concatenan. Boton AGREGAR deshabilitado si qty=0.
 - [x] **Training Mode completo** - Modo entrenamiento con dashboard de progreso
 - [x] **Gestion Unificada de Empleados** - Pantalla unica `UserConfig.js` para roles y permisos
 
