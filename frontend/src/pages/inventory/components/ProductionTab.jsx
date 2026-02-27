@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { 
-  Factory, AlertTriangle, Check, History, Play, Search, X, RefreshCw
+  Factory, AlertTriangle, Check, History, Play, Search, X, RefreshCw, BookOpen, Plus, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { productionAPI } from '@/lib/api';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { productionAPI, recipesAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 
 export default function ProductionTab({ 
