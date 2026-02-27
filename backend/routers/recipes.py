@@ -73,6 +73,10 @@ async def create_recipe(input: RecipeInput):
 
 @router.delete("/recipes/{rid}")
 async def delete_recipe(rid: str):
+    # Log which recipe is being deleted for debugging
+    recipe = await db.recipes.find_one({"id": rid}, {"_id": 0})
+    if recipe:
+        print(f"[RECIPE DELETE] Deleting recipe: {recipe.get('product_name','')} (id={rid}, produces={recipe.get('produces_ingredient_id','')})")
     await db.recipes.delete_one({"id": rid})
     return {"ok": True}
 
