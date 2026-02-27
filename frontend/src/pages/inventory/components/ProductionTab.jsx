@@ -218,7 +218,7 @@ export default function ProductionTab({
       .filter(ing => ing.is_subrecipe)
       .map(ing => {
         const totalStock = getTotalStock(ing.id);
-        const isLow = totalStock <= ing.min_stock;
+        const isLow = totalStock < ing.min_stock;
         const deficit = ing.min_stock - totalStock;
         const suggestedProduction = Math.max(0, Math.ceil(deficit));
         return { ...ing, totalStock, isLow, deficit, suggestedProduction };
