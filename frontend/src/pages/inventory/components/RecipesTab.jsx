@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { Popover, PopoverTrigger, PopoverContent } from '../../../components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '../../../components/ui/command';
 import { toast } from 'sonner';
 import { 
   FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, 
