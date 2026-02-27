@@ -490,6 +490,121 @@ export default function ProductionTab({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ─── SUB-RECIPE RECIPE DIALOG ─── */}
+      <Dialog open={recipeDialog.open} onOpenChange={(o) => !o && setRecipeDialog({ open: false, subrecipeId: null, subrecipeName: '', recipeId: null, ingredients: [], yield_quantity: 1, notes: '' })}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <BookOpen size={20} className="text-purple-500" /> 
+              Receta de: {recipeDialog.subrecipeName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Define los ingredientes base que se necesitan para producir <strong>{recipeDialog.subrecipeName}</strong>. 
+              Al hacer clic en "Producir", el sistema descontará estos ingredientes del almacén.
+            </p>
+
+            {/* Yield */}
+            <div>
+              <label className="text-sm font-medium">Rendimiento (cuántas unidades produce esta receta)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                value={recipeDialog.yield_quantity}
+                onChange={e => setRecipeDialog(p => ({ ...p, yield_quantity: e.target.value }))}
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                data-testid="subrecipe-yield-input"
+              />
+            </div>
+
+            {/* Ingredients */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Ingredientes Base</label>
+              <div className="space-y-2">
+                {recipeDialog.ingredients.map((ing, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border" data-testid={`subrecipe-ing-${idx}`}>
+                    <SubrecipeIngredientSelect
+                      ingredients={baseIngredients}
+                      value={ing.ingredient_id}
+                      onChange={(ingredientId) => {
+                        const ingredient = baseIngredients.find(i => i.id === ingredientId);
+                        setRecipeDialog(p => ({
+                          ...p,
+                          ingredients: p.ingredients.map((i, j) => j === idx ? {
+                            ...i,
+                            ingredient_id: ingredientId,
+                            ingredient_name: ingredient?.name || '',
+                            unit: ingredient?.unit || i.unit
+                          } : i)
+                        }));
+                      }}
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={ing.quantity}
+                      onChange={e => setRecipeDialog(p => ({
+                        ...p,
+                        ingredients: p.ingredients.map((i, j) => j === idx ? { ...i, quantity: parseFloat(e.target.value) || 0 } : i)
+                      }))}
+                      className="w-20 px-2 py-1 bg-card border border-border rounded text-sm text-center"
+                      placeholder="Cant."
+                    />
+                    <span className="text-xs text-muted-foreground w-14">{ing.unit || '-'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setRecipeDialog(p => ({
+                        ...p,
+                        ingredients: p.ingredients.filter((_, j) => j !== idx)
+                      }))}
+                      className="p-1 text-destructive hover:bg-destructive/10 rounded"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => setRecipeDialog(p => ({
+                  ...p,
+                  ingredients: [...p.ingredients, { ingredient_id: '', ingredient_name: '', quantity: 1, unit: '', waste_percentage: 0 }]
+                }))}
+                data-testid="subrecipe-add-ing-btn"
+              >
+                <Plus size={14} className="mr-1" /> Agregar Ingrediente
+              </Button>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="text-sm font-medium">Notas</label>
+              <input
+                type="text"
+                value={recipeDialog.notes}
+                onChange={e => setRecipeDialog(p => ({ ...p, notes: e.target.value }))}
+                className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                placeholder="Notas opcionales..."
+              />
+            </div>
+
+            <Button 
+              className="w-full font-oswald"
+              onClick={handleSaveSubrecipeRecipe}
+              data-testid="save-subrecipe-recipe-btn"
+            >
+              {recipeDialog.recipeId ? 'Actualizar Receta' : 'Guardar Receta'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
