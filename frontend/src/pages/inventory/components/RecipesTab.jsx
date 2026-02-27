@@ -873,28 +873,26 @@ export default function RecipesTab({
               <div className="space-y-2">
                 {(recipeDialog.data?.ingredients || []).map((ing, idx) => (
                   <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border" data-testid={`recipe-ingredient-${idx}`}>
-                    <select
+                    <IngredientSearchSelect
+                      ingredients={ingredients}
                       value={ing.ingredient_id}
-                      onChange={e => {
-                        const ingredient = ingredients.find(i => i.id === e.target.value);
+                      onChange={(ingredientId) => {
+                        const ingredient = ingredients.find(i => i.id === ingredientId);
                         setRecipeDialog(p => ({
                           ...p,
                           data: {
                             ...p.data,
                             ingredients: p.data.ingredients.map((i, j) => j === idx ? { 
                               ...i, 
-                              ingredient_id: e.target.value,
+                              ingredient_id: ingredientId,
                               ingredient_name: ingredient?.name || '',
                               unit: ingredient?.unit || i.unit
                             } : i)
                           }
                         }));
                       }}
-                      className="flex-1 px-2 py-1 bg-card border border-border rounded text-sm"
-                    >
-                      <option value="">Seleccionar...</option>
-                      {ingredients.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
-                    </select>
+                      testId={`ingredient-search-${idx}`}
+                    />
                     <input
                       type="number"
                       value={ing.quantity}
