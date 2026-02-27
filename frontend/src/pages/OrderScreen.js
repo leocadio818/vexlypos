@@ -1774,7 +1774,7 @@ export default function OrderScreen() {
                 const catProductCount = products.filter(p => p.category_id === cat.id).length;
                 const effectiveCols = Math.min(gridSettings.categoryColumns, 3);
                 const heightClass = largeMode 
-                  ? (effectiveCols > 2 ? 'h-24 md:h-16' : 'h-28 md:h-18')
+                  ? (effectiveCols > 2 ? 'h-24 md:h-16' : 'h-28 md:h-20')
                   : (effectiveCols > 2 ? 'h-20 md:h-14' : 'h-24 md:h-16');
                 
                 let catTouchStartY = 0;
