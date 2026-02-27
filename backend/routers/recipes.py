@@ -52,16 +52,22 @@ async def create_recipe(input: RecipeInput):
         "created_at": now_iso()
     }
     # For sub-recipes, check by produces_ingredient_id; for products, by product_id
+    existing = None
     if input.produces_ingredient_id:
-        existing = await db.recipes.find_one({"produces_ingredient_id": input.produces_ingredient_id})
-    else:
-        existing = await db.recipes.find_one({"product_id": input.product_id})
+        existing = await db.recipes.find_one({"produces_ingredient_id": input.produces_ingredient_id}, {"_id": 0})
+    elif input.product_id:
+        existing = await db.recipes.find_one({"product_id": input.product_id}, {"_id": 0})
     if existing:
         await db.recipes.update_one(
-            {"product_id": input.product_id}, 
-            {"$set": {"ingredients": ingredients, "yield_quantity": input.yield_quantity, "notes": input.notes}}
+            {"id": existing["id"]}, 
+            {"$set": {
+                "product_id": input.product_id, "product_name": input.product_name,
+                "ingredients": ingredients, "yield_quantity": input.yield_quantity, 
+                "notes": input.notes, "is_subrecipe": input.is_subrecipe,
+                "produces_ingredient_id": input.produces_ingredient_id
+            }}
         )
-        return await db.recipes.find_one({"product_id": input.product_id}, {"_id": 0})
+        return await db.recipes.find_one({"id": existing["id"]}, {"_id": 0})
     await db.recipes.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
