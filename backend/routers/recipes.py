@@ -90,7 +90,9 @@ async def update_recipe(rid: str, input: RecipeInput):
             "product_name": input.product_name,
             "ingredients": ingredients,
             "yield_quantity": input.yield_quantity,
-            "notes": input.notes
+            "notes": input.notes,
+            "is_subrecipe": input.is_subrecipe,
+            "produces_ingredient_id": input.produces_ingredient_id
         }}
     )
     return await db.recipes.find_one({"id": rid}, {"_id": 0})
