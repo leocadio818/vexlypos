@@ -319,6 +319,7 @@ export const recipesAPI = {
   list: () => api.get('/recipes'),
   get: (productId) => api.get(`/recipes/product/${productId}`),
   create: (data) => api.post('/recipes', data),
+  update: (id, data) => api.put(`/recipes/${id}`, data),
   delete: (id) => api.delete(`/recipes/${id}`),
   deleteByProduct: (productId) => api.delete(`/recipes/product/${productId}`),
   getCost: (productId) => api.get(`/inventory/recipe-cost/${productId}`),
