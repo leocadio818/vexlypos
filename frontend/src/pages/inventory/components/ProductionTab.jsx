@@ -300,7 +300,7 @@ export default function ProductionTab({
                       <h4 className="font-oswald font-bold">{sr.name}</h4>
                       <div className="text-xs text-muted-foreground flex items-center gap-1">
                         <span className="text-red-500 font-bold">{sr.totalStock.toFixed(1)}</span>
-                        <span>/</span>
+                        <span>/ Mín.</span>
                         <span>{sr.min_stock} {sr.unit}</span>
                       </div>
                     </div>
