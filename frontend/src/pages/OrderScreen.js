@@ -229,6 +229,14 @@ export default function OrderScreen() {
       } catch {}
     };
     fetchAll(); fetchOrder();
+    // Check if there's an active business day
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/business-days/current`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+        const data = await res.json();
+        setHasActiveDay(data && data.status === 'open');
+      } catch { setHasActiveDay(false); }
+    })();
   }, [fetchOrder, API_BASE]);
 
   // Load inventory settings and stock status
