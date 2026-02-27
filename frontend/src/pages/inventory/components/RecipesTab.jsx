@@ -16,6 +16,7 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const inputRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
   const selected = ingredients.find(i => i.id === value);
   const filtered = search
@@ -30,19 +31,31 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const openDropdown = () => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setOpen(true);
+    setSearch('');
+  };
+
   return (
     <div ref={ref} className="relative flex-1" data-testid={testId}>
       <input
         ref={inputRef}
         type="text"
         value={open ? search : (selected?.name || '')}
-        onChange={e => { setSearch(e.target.value); if (!open) setOpen(true); }}
-        onFocus={() => { setOpen(true); setSearch(''); }}
+        onChange={e => { setSearch(e.target.value); if (!open) openDropdown(); }}
+        onFocus={openDropdown}
         placeholder="Buscar insumo..."
         className="w-full px-2 py-1 bg-card border border-border rounded text-sm"
       />
       {open && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-xl">
+        <div
+          className="fixed z-[9999] max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-xl"
+          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+        >
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-xs text-muted-foreground">Sin resultados</div>
           ) : (
@@ -50,7 +63,7 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
               <button
                 key={i.id}
                 type="button"
-                onClick={() => { onChange(i.id); setOpen(false); setSearch(''); }}
+                onMouseDown={(e) => { e.preventDefault(); onChange(i.id); setOpen(false); setSearch(''); }}
                 className={`w-full text-left px-3 py-1.5 text-sm hover:bg-primary/20 transition-colors ${i.id === value ? 'bg-primary/10 text-primary font-medium' : ''}`}
                 data-testid={`ingredient-option-${i.id}`}
               >
