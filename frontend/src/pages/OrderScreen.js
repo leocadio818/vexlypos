@@ -1774,16 +1774,24 @@ export default function OrderScreen() {
                 const catProductCount = products.filter(p => p.category_id === cat.id).length;
                 const effectiveCols = Math.min(gridSettings.categoryColumns, 3);
                 const heightClass = largeMode 
-                  ? (effectiveCols > 2 ? 'h-28' : 'h-32')
-                  : (effectiveCols > 2 ? 'h-24' : 'h-28');
+                  ? (effectiveCols > 2 ? 'h-24 md:h-16' : 'h-28 md:h-18')
+                  : (effectiveCols > 2 ? 'h-20 md:h-14' : 'h-24 md:h-16');
+                
+                let catTouchStartY = 0;
+                let catTouchMoved = false;
+
                 return (
-                  <button key={cat.id} onClick={() => setActiveCat(cat.id)} data-testid={`cat-card-${cat.id}`}
-                    className={`relative overflow-hidden rounded-xl border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] p-3 ${heightClass} text-left flex flex-col justify-between`}
+                  <button key={cat.id}
+                    onClick={(e) => { if (catTouchMoved) { e.preventDefault(); return; } setActiveCat(cat.id); }}
+                    onTouchStart={(e) => { catTouchStartY = e.touches?.[0]?.clientY || 0; catTouchMoved = false; }}
+                    onTouchMove={(e) => { if (Math.abs((e.touches?.[0]?.clientY || 0) - catTouchStartY) > 10) catTouchMoved = true; }}
+                    data-testid={`cat-card-${cat.id}`}
+                    className={`relative overflow-hidden rounded-xl border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} ${heightClass} text-left flex flex-col justify-between`}
                     style={{ backgroundColor: cat.color + '15', borderColor: cat.color + '40' }}>
-                    <span className={`font-bold leading-tight ${largeMode ? 'text-lg' : 'text-base'}`} style={{ color: cat.color }}>{cat.name}</span>
-                    <span className={`text-muted-foreground ${largeMode ? 'text-sm' : 'text-xs'}`}>{catProductCount} productos</span>
-                    <div className={`absolute top-2 right-2 ${largeMode ? 'w-9 h-9' : 'w-8 h-8'} rounded-full flex items-center justify-center`} style={{ backgroundColor: cat.color + '20' }}>
-                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm' : 'text-xs'}`} style={{ color: cat.color }}>{catProductCount}</span>
+                    <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`} style={{ color: cat.color }}>{cat.name}</span>
+                    <span className={`text-muted-foreground ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`}>{catProductCount} productos</span>
+                    <div className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`} style={{ backgroundColor: cat.color + '20' }}>
+                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-[10px]' : 'text-xs md:text-[9px]'}`} style={{ color: cat.color }}>{catProductCount}</span>
                     </div>
                   </button>
                 );
