@@ -85,27 +85,6 @@ const REPORT_CATEGORIES = [
   },
 ];
 
-// Sparkline mini chart component
-const Sparkline = ({ data, color = '#FF6600', height = 24 }) => {
-  if (!data || data.length === 0) return null;
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  
-  return (
-    <svg width="60" height={height} className="inline-block ml-2">
-      <polyline
-        points={data.map((v, i) => `${i * (60 / (data.length - 1))},${height - ((v - min) / range) * (height - 4) - 2}`).join(' ')}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-};
-
 // Business info for letterhead (updated dynamically from settings)
 let BUSINESS_INFO = {
   name: 'Mesa POS RD',
