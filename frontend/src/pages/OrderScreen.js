@@ -235,7 +235,7 @@ export default function OrderScreen() {
       try {
         const res = await fetch(`${API_BASE}/api/business-days/current`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
         const data = await res.json();
-        setHasActiveDay(data && data.status === 'open');
+        setHasActiveDay(!!data?.has_open_day);
       } catch { setHasActiveDay(false); }
     })();
   }, [fetchOrder, API_BASE]);
