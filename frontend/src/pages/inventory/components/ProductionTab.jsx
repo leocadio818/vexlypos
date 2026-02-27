@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
   Factory, AlertTriangle, Check, History, Play, Search, X, RefreshCw, BookOpen, Plus, Trash2
