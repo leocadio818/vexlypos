@@ -285,14 +285,25 @@ export default function ProductionTab({
                   <Badge variant="secondary" className="text-[10px] bg-green-500/20 text-green-500">OK</Badge>
                 </div>
                 
-                <Button 
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => handleOpenProduction(sr)}
-                  data-testid={`produce-ok-${sr.id}`}
-                >
-                  <Factory size={14} className="mr-1" /> Producir Más
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleOpenProduction(sr)}
+                    data-testid={`produce-ok-${sr.id}`}
+                  >
+                    <Factory size={14} className="mr-1" /> Producir
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleOpenRecipeDialog(sr)}
+                    disabled={loadingRecipe}
+                    data-testid={`recipe-ok-${sr.id}`}
+                  >
+                    <BookOpen size={14} className="mr-1" /> Receta
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
