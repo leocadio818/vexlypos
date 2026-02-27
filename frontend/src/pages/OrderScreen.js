@@ -1817,16 +1817,12 @@ export default function OrderScreen() {
           {/* Dynamic columns: max 3 on wider panel to avoid cramping */}
           {activeCat && (
             <div 
-              className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'}`}
+              className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
               style={{ gridTemplateColumns: `repeat(${Math.min(gridSettings.productColumns, 3)}, minmax(0, 1fr))` }}
               data-testid="product-grid"
             >
               {filteredProducts.map(product => {
-                const effectiveCols = Math.min(gridSettings.productColumns, 3);
-                // Responsive: compact on desktop (md), normal on mobile
-                const heightClass = largeMode 
-                  ? (effectiveCols > 2 ? 'h-24 md:h-16' : 'h-28 md:h-20')
-                  : (effectiveCols > 2 ? 'h-20 md:h-14' : 'h-24 md:h-16');
+                const heightClass = 'h-20 md:h-12';
                 // Check modifiers from both old and new systems
                 const assignmentIds = (product.modifier_assignments || []).map(a => a.group_id);
                 const legacyIds = product.modifier_group_ids || [];
