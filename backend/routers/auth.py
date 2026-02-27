@@ -215,7 +215,43 @@ async def login(input: LoginInput):
     user_data = {k: v for k, v in user.items() if k != "pin_hash"}
     user_data["permissions"] = perms
     user_data["role_level"] = role_level
-    return {"token": token, "user": user_data}
+
+    # Auto-open business day if none is active
+    business_day_opened = False
+    try:
+        active_day = await db.business_days.find_one({"status": "open"}, {"_id": 0})
+        if not active_day:
+            from datetime import datetime, timezone
+            import uuid
+            now = datetime.now(timezone.utc).isoformat()
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            # Count existing days for ref
+            count = await db.business_days.count_documents({})
+            day_ref = f"JT-{count + 1:04d}"
+            new_day = {
+                "id": str(uuid.uuid4()),
+                "ref": day_ref,
+                "business_date": today,
+                "status": "open",
+                "opened_at": now,
+                "opened_by_id": user["id"],
+                "opened_by_name": user["name"],
+                "authorized_by_id": user["id"],
+                "authorized_by_name": user["name"],
+                "total_sales": 0, "total_cash": 0, "total_card": 0,
+                "total_transfer": 0, "total_other": 0, "total_invoices": 0,
+                "total_voids": 0, "void_amount": 0, "total_b04": 0, "b04_amount": 0,
+                "sessions": [],
+                "opening_notes": "Apertura automática al primer login",
+                "closing_notes": None, "closed_at": None,
+                "closed_by_id": None, "closed_by_name": None
+            }
+            await db.business_days.insert_one(new_day)
+            business_day_opened = True
+    except Exception as e:
+        print(f"Warning: Could not auto-open business day: {e}")
+
+    return {"token": token, "user": user_data, "business_day_opened": business_day_opened}
 
 
 @router.get("/auth/me")
