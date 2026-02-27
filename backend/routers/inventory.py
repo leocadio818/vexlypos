@@ -141,6 +141,10 @@ async def update_ingredient(ingredient_id: str, input: dict, request: Request):
     if audit_logs:
         await db.ingredient_audit_logs.insert_many(audit_logs)
     
+    # If cost or conversion changed, recalculate sub-recipe costs
+    if "conversion_factor" in input or "avg_cost" in input:
+        await update_subrecipe_costs()
+    
     return {"ok": True, "audit_logs_created": len(audit_logs)}
 
 @router.get("/ingredients/{ingredient_id}/affected-recipes")
