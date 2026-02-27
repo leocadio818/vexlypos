@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
   FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, 
