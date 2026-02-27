@@ -21,6 +21,78 @@ export default function ProductionTab({
   const [productionDialog, setProductionDialog] = useState({ open: false, data: null, checking: false, checkResult: null });
   const [productionHistory, setProductionHistory] = useState([]);
   const [producingItem, setProducingItem] = useState(false);
+  
+  // Sub-recipe recipe dialog state
+  const [recipeDialog, setRecipeDialog] = useState({ open: false, subrecipeId: null, subrecipeName: '', recipeId: null, ingredients: [], yield_quantity: 1, notes: '' });
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
+
+  // Get non-sub-recipe ingredients (base ingredients only)
+  const baseIngredients = useMemo(() => ingredients.filter(i => !i.is_subrecipe), [ingredients]);
+
+  // ─── SUB-RECIPE RECIPE HANDLERS ───
+  const handleOpenRecipeDialog = async (subrecipe) => {
+    setLoadingRecipe(true);
+    try {
+      // Check if a recipe already exists for this sub-recipe
+      const allRecipes = await recipesAPI.list();
+      const existing = allRecipes.data.find(r => r.produces_ingredient_id === subrecipe.id);
+      
+      if (existing) {
+        setRecipeDialog({
+          open: true,
+          subrecipeId: subrecipe.id,
+          subrecipeName: subrecipe.name,
+          recipeId: existing.id,
+          ingredients: existing.ingredients || [],
+          yield_quantity: existing.yield_quantity || 1,
+          notes: existing.notes || ''
+        });
+      } else {
+        setRecipeDialog({
+          open: true,
+          subrecipeId: subrecipe.id,
+          subrecipeName: subrecipe.name,
+          recipeId: null,
+          ingredients: [{ ingredient_id: '', ingredient_name: '', quantity: 1, unit: '', waste_percentage: 0 }],
+          yield_quantity: 1,
+          notes: ''
+        });
+      }
+    } catch (e) {
+      toast.error('Error al cargar receta');
+    }
+    setLoadingRecipe(false);
+  };
+
+  const handleSaveSubrecipeRecipe = async () => {
+    const validIngredients = recipeDialog.ingredients.filter(i => i.ingredient_id);
+    if (validIngredients.length === 0) {
+      toast.error('Agrega al menos un ingrediente base');
+      return;
+    }
+    try {
+      const payload = {
+        product_id: '',
+        product_name: recipeDialog.subrecipeName,
+        ingredients: validIngredients,
+        yield_quantity: parseFloat(recipeDialog.yield_quantity) || 1,
+        notes: recipeDialog.notes,
+        is_subrecipe: true,
+        produces_ingredient_id: recipeDialog.subrecipeId
+      };
+      
+      if (recipeDialog.recipeId) {
+        await recipesAPI.update(recipeDialog.recipeId, payload);
+        toast.success('Receta de sub-receta actualizada');
+      } else {
+        await recipesAPI.create(payload);
+        toast.success('Receta de sub-receta creada');
+      }
+      setRecipeDialog({ open: false, subrecipeId: null, subrecipeName: '', recipeId: null, ingredients: [], yield_quantity: 1, notes: '' });
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error al guardar receta');
+    }
+  };
 
   // ─── PRODUCTION HANDLERS ───
   const handleOpenProduction = (ingredient) => {
