@@ -11,6 +11,47 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { productionAPI, recipesAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 
+// Searchable ingredient selector for sub-recipe recipes
+function SubrecipeIngredientSelect({ ingredients, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const selected = ingredients.find(i => i.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={open}
+          className="flex-1 text-left px-2 py-1 bg-card border border-border rounded text-sm truncate min-w-0"
+        >
+          {selected ? selected.name : <span className="text-muted-foreground">Buscar insumo...</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[250px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Buscar insumo..." />
+          <CommandList>
+            <CommandEmpty>Sin resultados</CommandEmpty>
+            <CommandGroup>
+              {ingredients.map(i => (
+                <CommandItem
+                  key={i.id}
+                  value={i.name}
+                  onSelect={() => { onChange(i.id); setOpen(false); }}
+                >
+                  {i.name}
+                  <span className="ml-auto text-[10px] text-muted-foreground">{i.unit}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function ProductionTab({ 
   ingredients, 
   warehouses,
