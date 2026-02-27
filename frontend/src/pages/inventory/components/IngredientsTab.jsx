@@ -330,7 +330,7 @@ export default function IngredientsTab({
       <div className="space-y-2">
         {filteredIngredients.map(ing => {
           const totalStock = getTotalStock(ing.id);
-          const isLow = totalStock <= ing.min_stock;
+          const isLow = totalStock < ing.min_stock;
           return (
             <div 
               key={ing.id} 

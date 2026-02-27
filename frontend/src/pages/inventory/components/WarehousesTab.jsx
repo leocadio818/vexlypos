@@ -68,7 +68,7 @@ export default function WarehousesTab({
           const itemCount = whStock.length;
           const lowStockCount = whStock.filter(s => {
             const ing = ingredients.find(i => i.id === s.ingredient_id);
-            return ing && s.current_stock <= ing.min_stock;
+            return ing && s.current_stock < ing.min_stock;
           }).length;
           
           return (
