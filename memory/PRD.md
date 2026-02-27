@@ -883,6 +883,12 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 - [x] **Bug fix: Guardar receta fallaba al editar** (Feb 2026) - No existia endpoint PUT para actualizar recetas. El backend solo tenia POST (crear) y DELETE. Agregado `PUT /api/recipes/{rid}` en `recipes.py` y metodo `update` en `recipesAPI` del frontend (`api.js`). Ahora crear y editar recetas funciona correctamente.
 - [x] **Flujo completo de Sub-Recetas en Produccion** (Feb 2026) - Agregado boton "Definir / Editar Receta" en tarjetas de sub-recetas del tab Produccion. Dialogo completo con buscador de ingredientes base (Shadcn Combobox), rendimiento, y notas. Backend corregido: create/update recipe ahora guarda `produces_ingredient_id` y `is_subrecipe` correctamente. El flujo completo funciona: definir receta → verificar disponibilidad → producir (descuenta ingredientes base, agrega stock de sub-receta).
 - [x] **Bug fix: Costo de produccion usaba avg_cost manual** (Feb 2026) - La tarjeta de produccion usaba `avg_cost * suggestedProduction` del insumo. Ahora calcula el costo real desde la receta vinculada (suma de ingredientes base / rendimiento). Tambien corregido bug critico en `create_recipe`: filtro `{"product_id": ""}` matcheaba recetas de sub-recetas, sobreescribiendolas. Ahora usa `{"id": existing["id"]}` como filtro y no matchea product_id vacio.
+- [x] **Correccion integral modulo Inventario/Recetas** (Feb 2026):
+  1. Rendimiento: Label cambiado a "Rendimiento (en unidad de despacho, ej: Onzas)" en RecipesTab y ProductionTab
+  2. Costo unitario: Formula usa dispatch_unit_cost (convierte compra→despacho automaticamente). Resultado SALSA: RD$3.75/oz (antes era RD$0.49)
+  3. Sincronizacion: update_subrecipe_costs() ahora actualiza avg_cost Y dispatch_unit_cost del ingrediente sub-receta. Se llama despues de: update ingredient, stock deduction, y recalculate-costs manual
+  4. Alerta stock: Cambiado de <= a < (estrictamente menor). 500/500 ahora es "Stock Adecuado"
+  5. Unidades compra/despacho: calculate_recipe_cost usa conversion_factor para convertir avg_cost (compra) a dispatch_unit_cost (despacho) antes de multiplicar por cantidad
 - [x] **Training Mode completo** - Modo entrenamiento con dashboard de progreso
 - [x] **Gestion Unificada de Empleados** - Pantalla unica `UserConfig.js` para roles y permisos
 
