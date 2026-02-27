@@ -599,18 +599,9 @@ export default function Reports() {
     exportToPDF(selectedReport, reportData, dateRange);
   };
 
-  // Custom tooltip for charts
-  const CustomTooltip = ({ active, payload }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div className="bg-card border border-border rounded-lg px-3 py-2 text-xs shadow-xl">
-        <p className="font-semibold">{payload[0]?.payload?.name || payload[0]?.payload?.category || payload[0]?.payload?.date}</p>
-        <p className="font-oswald text-primary">{formatMoney(payload[0]?.value)}</p>
-      </div>
-    );
-  };
-
-  // Render specific report content
+  // ═══════════════════════════════════════════════════════════════
+  // Render report content using extracted components
+  // ═══════════════════════════════════════════════════════════════
   const renderReportContent = () => {
     if (!selectedReport) {
       return (
@@ -620,7 +611,6 @@ export default function Reports() {
         </div>
       );
     }
-    
     if (loading) {
       return (
         <div className="flex items-center justify-center h-64">
@@ -628,7 +618,6 @@ export default function Reports() {
         </div>
       );
     }
-    
     if (!reportData) {
       return (
         <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -638,54 +627,53 @@ export default function Reports() {
       );
     }
 
-    // Render based on report type
     switch (selectedReport) {
       case 'daily-close':
-        return renderDailySalesReport();
+        return <DailySalesReport data={reportData} sparklineData={sparklineData} />;
       case 'cash-close':
-        return renderCashCloseReport();
+        return <CashCloseReport data={reportData} />;
       case 'by-category':
-        return renderByCategoryReport();
+        return <ByCategoryReport data={reportData} />;
       case 'top-products':
-        return renderTopProductsReport();
+        return <TopProductsReport data={reportData} topLimit={topLimit} onChangeLimit={(n) => { setTopLimit(n); loadReport('top-products'); }} />;
       case 'by-type':
-        return renderByTypeReport();
+        return <ByTypeReport data={reportData} />;
       case 'payment-methods':
-        return renderPaymentMethodsReport();
+        return <PaymentMethodsReport data={reportData} />;
       case 'void-audit':
-        return renderVoidAuditReport();
+        return <VoidAuditReport data={reportData} />;
       case 'inventory-levels':
-        return renderInventoryLevelsReport();
+        return <InventoryLevelsReport data={reportData} />;
       case 'transfers':
-        return renderTransfersReport();
+        return <TransfersReport data={reportData} />;
       case 'differences':
-        return renderDifferencesReport();
+        return <DifferencesReport data={reportData} />;
       case 'waste':
-        return renderWasteReport();
+        return <WasteReport data={reportData} />;
       case 'purchase-orders':
-        return renderPurchaseOrdersReport();
+        return <PurchaseOrdersReport data={reportData} />;
       case 'by-supplier':
-        return renderBySupplierReport();
+        return <BySupplierReport data={reportData} />;
       case 'taxes':
-        return renderTaxesReport();
+        return <TaxesReport data={reportData} />;
       case 'profit-loss':
-        return renderProfitLossReport();
+        return <ProfitLossReport data={reportData} />;
       case 'table-movements':
-        return renderTableMovementsReport();
+        return <TableMovementsReport data={reportData} />;
       case 'by-waiter':
-        return renderByWaiterReport();
-      case 'system-audit':
-        return renderSystemAuditReport();
+        return <ByWaiterReport data={reportData} />;
       case 'recipes':
-        return renderRecipesReport();
+        return <RecipesReport data={reportData} />;
       case 'stock-adjustments':
-        return renderStockAdjustmentsReport();
+        return <StockAdjustmentsReport data={reportData} />;
+      case 'system-audit':
+        return <SystemAuditReport data={reportData} auditEventFilter={auditEventFilter} onFilterChange={setAuditEventFilter} onReload={() => loadReport('system-audit')} />;
       default:
         return <pre className="text-xs overflow-auto">{JSON.stringify(reportData, null, 2)}</pre>;
     }
   };
 
-  // Report renderers
+  return (
   const renderDailySalesReport = () => {
     const data = reportData;
     const sparkData = sparklineData.map(d => d.total);
