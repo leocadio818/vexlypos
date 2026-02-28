@@ -128,6 +128,30 @@ def format_qty(q) -> str:
         return str(int(q))
     return str(q)
 
+# ─── TIMEZONE CONFIGURATION ───
+@api.get("/timezone")
+async def get_timezone_config():
+    """Get the current system timezone configuration."""
+    tz_name = await get_system_timezone_name()
+    return {"timezone": tz_name}
+
+@api.put("/timezone")
+async def set_timezone_config(body: dict):
+    """Update the system timezone. Requires a valid IANA timezone name."""
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    tz_name = body.get("timezone", "")
+    try:
+        ZoneInfo(tz_name)
+    except (ZoneInfoNotFoundError, KeyError):
+        raise HTTPException(status_code=400, detail=f"Timezone invalido: {tz_name}")
+    await db.system_config.update_one(
+        {"id": "timezone"},
+        {"$set": {"id": "timezone", "timezone": tz_name}},
+        upsert=True
+    )
+    tz_invalidate_cache()
+    return {"timezone": tz_name, "message": "Timezone actualizado"}
+
 # ─── IMPRESIÓN DIRECTA A RED ───
 NETWORK_PRINTER_PORT = 9100
 
