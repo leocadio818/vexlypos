@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Delete, LogIn } from 'lucide-react';
-import { toast } from 'sonner';
+
+// Neon glow colors for PIN dots (pink → magenta → purple → blue → cyan → blue → purple → magenta)
+const DOT_COLORS = [
+  '#ff69b4', '#ff00ff', '#c840e9', '#8a2be2',
+  '#4169e1', '#00bfff', '#1e90ff', '#9370db'
+];
 
 export default function Login() {
   const [pin, setPin] = useState('');
@@ -26,15 +31,13 @@ export default function Login() {
   const handleClear = () => setPin('');
 
   const handleSubmit = async () => {
-    if (pin.length < 1) return; // Allow any PIN length from 1-8 digits
+    if (pin.length < 1) return;
     setLoading(true);
     try {
       const u = await login(pin);
-      // Removed toast - direct navigation
       const canDash = u.permissions?.view_dashboard;
       navigate(canDash ? '/dashboard' : '/tables');
     } catch {
-      // Keep error feedback but remove toast - just clear pin
       setPin('');
     }
     setLoading(false);
@@ -59,133 +62,208 @@ export default function Login() {
 
   const digits = [1,2,3,4,5,6,7,8,9];
 
-  // Glassmorphism background style
-  const bgStyle = {
-    background: `linear-gradient(135deg, ${theme.gradientStart} 0%, ${theme.gradientMid1} 25%, ${theme.gradientMid2} 50%, ${theme.gradientEnd} 100%)`,
-  };
-
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={bgStyle}
+      style={{
+        background: `linear-gradient(135deg, ${theme.gradientStart} 0%, ${theme.gradientMid1} 25%, ${theme.gradientMid2} 50%, ${theme.gradientEnd} 100%)`,
+      }}
       data-testid="login-page"
     >
-      {/* Animated background orbs */}
+      {/* Animated neon orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute -top-40 -left-40 w-80 h-80 rounded-full blur-[100px] animate-pulse"
-          style={{ backgroundColor: theme.orbColor1 }}
-        />
-        <div 
-          className="absolute top-1/2 -right-20 w-60 h-60 rounded-full blur-[80px] animate-pulse"
-          style={{ backgroundColor: theme.orbColor2, animationDelay: '1s' }}
-        />
-        <div 
-          className="absolute -bottom-20 left-1/3 w-72 h-72 rounded-full blur-[90px] animate-pulse"
-          style={{ backgroundColor: theme.orbColor3, animationDelay: '2s' }}
-        />
-        <div 
-          className="absolute top-20 right-1/4 w-40 h-40 rounded-full blur-[60px] animate-pulse"
-          style={{ backgroundColor: theme.orbColor1, animationDelay: '0.5s', opacity: 0.6 }}
-        />
+        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full blur-[100px] neon-orb-pulse" style={{ backgroundColor: 'rgba(255,0,255,0.15)' }} />
+        <div className="absolute top-1/2 -right-20 w-60 h-60 rounded-full blur-[80px] neon-orb-pulse" style={{ backgroundColor: 'rgba(0,191,255,0.12)', animationDelay: '1s' }} />
+        <div className="absolute -bottom-20 left-1/3 w-72 h-72 rounded-full blur-[90px] neon-orb-pulse" style={{ backgroundColor: 'rgba(138,43,226,0.12)', animationDelay: '2s' }} />
+        <div className="absolute top-20 right-1/4 w-40 h-40 rounded-full blur-[60px] neon-orb-pulse" style={{ backgroundColor: 'rgba(255,105,180,0.1)', animationDelay: '0.5s' }} />
       </div>
 
+      {/* Main glass card */}
       <div className="w-full max-w-sm relative z-10">
-        {/* Brand - Glass effect */}
-        <div className="text-center mb-10">
-          <div 
-            className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-[0_4px_24px_0_rgba(255,100,0,0.4)] backdrop-blur-xl border border-white/20"
-            style={{ backgroundColor: theme.accentColor }}
-          >
-            <span className="font-oswald text-3xl font-bold text-white">RD</span>
-          </div>
-          <h1 className="font-oswald text-3xl font-bold tracking-wide text-white">MESA POS</h1>
-          <p className="text-sm text-white/60 mt-1">Sistema de Punto de Venta</p>
-        </div>
-
-        {/* PIN Display - Glass effect (supports 1-8 digits) */}
-        <div className="flex justify-center gap-2 mb-8" data-testid="pin-display">
-          {[0,1,2,3,4,5,6,7].map(i => (
-            <div
-              key={i}
-              className={`w-3 h-3 rounded-full border-2 transition-all ${
-                i < pin.length
-                  ? 'scale-110'
-                  : 'border-white/40'
-              }`}
-              style={{
-                backgroundColor: i < pin.length ? theme.accentColor : 'transparent',
-                borderColor: i < pin.length ? theme.accentColor : 'rgba(255,255,255,0.4)',
-                boxShadow: i < pin.length ? `0 0 12px ${theme.accentColor}` : 'none'
-              }}
-            />
-          ))}
-        </div>
-
-        {/* PIN Pad - Glassmorphism */}
-        <div className="grid grid-cols-3 gap-3 max-w-[280px] mx-auto" data-testid="pin-pad">
-          {digits.map(d => (
-            <button
-              key={d}
-              onClick={() => handleDigit(String(d))}
-              data-testid={`pin-key-${d}`}
-              className="h-16 w-full rounded-2xl text-2xl font-oswald font-bold backdrop-blur-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all active:scale-95 shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
-            >
-              {d}
-            </button>
-          ))}
-          <button
-            onClick={handleClear}
-            data-testid="pin-key-clear"
-            className="h-16 w-full rounded-2xl text-sm font-semibold backdrop-blur-xl bg-white/5 border border-white/10 text-white/60 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all active:scale-95"
-          >
-            CLR
-          </button>
-          <button
-            onClick={() => handleDigit('0')}
-            data-testid="pin-key-0"
-            className="h-16 w-full rounded-2xl text-2xl font-oswald font-bold backdrop-blur-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all active:scale-95 shadow-[0_4px_16px_rgba(0,0,0,0.2)]"
-          >
-            0
-          </button>
-          <button
-            onClick={handleDelete}
-            data-testid="pin-key-delete"
-            className="h-16 w-full rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 text-white/60 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all active:scale-95 flex items-center justify-center"
-          >
-            <Delete size={22} />
-          </button>
-        </div>
-
-        {/* Submit - Gradient button */}
-        <button
-          onClick={handleSubmit}
-          disabled={pin.length < 1 || loading}
-          data-testid="pin-submit"
-          className="w-full max-w-[280px] mx-auto mt-6 h-14 rounded-xl font-oswald font-bold text-lg tracking-widest uppercase flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all block text-white shadow-[0_4px_20px_rgba(255,100,0,0.4)]"
-          style={{ 
-            background: `linear-gradient(135deg, ${theme.accentColor} 0%, ${theme.accentColor}dd 100%)`,
+        <div
+          className="rounded-3xl p-8 relative overflow-hidden"
+          style={{
+            background: 'rgba(10, 10, 20, 0.75)',
+            backdropFilter: 'blur(24px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 0 40px rgba(138,43,226,0.08), 0 0 80px rgba(0,191,255,0.05), 0 20px 60px rgba(0,0,0,0.4)',
           }}
         >
-          {loading ? (
-            <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <LogIn size={20} />
-              ENTRAR
-            </>
-          )}
-        </button>
+          {/* Glass reflection overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none rounded-3xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.02) 100%)',
+            }}
+          />
 
-        {/* Demo PINs - Glass card */}
-        <div className="mt-8 text-center">
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-3 max-w-[280px] mx-auto">
-            <p className="text-[10px] text-white/40 mb-1">PINs de Demo:</p>
-            <p className="text-[11px] text-white/60">Admin: 10000 | Carlos: 1234 | Maria: 5678</p>
-            <p className="text-[11px] text-white/60">Luis (Cajero): 4321 | Chef Pedro: 9999</p>
+          {/* Brand */}
+          <div className="text-center mb-8 relative z-10">
+            <div
+              className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 neon-logo-glow"
+              style={{
+                backgroundColor: theme.accentColor,
+                boxShadow: `0 0 20px ${theme.accentColor}80, 0 0 40px ${theme.accentColor}40`,
+              }}
+            >
+              <span className="font-oswald text-3xl font-bold text-white">RD</span>
+            </div>
+            <h1 className="font-oswald text-3xl font-bold tracking-wide text-white">MESA POS</h1>
+            <p className="text-sm text-white/50 mt-1">Sistema de Punto de Venta</p>
+          </div>
+
+          {/* PIN Dots with neon gradient colors */}
+          <div className="flex justify-center gap-2.5 mb-8 relative z-10" data-testid="pin-display">
+            {[0,1,2,3,4,5,6,7].map(i => {
+              const active = i < pin.length;
+              const color = DOT_COLORS[i];
+              return (
+                <div
+                  key={i}
+                  className="w-3.5 h-3.5 rounded-full transition-all duration-300"
+                  style={{
+                    backgroundColor: active ? color : 'transparent',
+                    border: `2px solid ${active ? color : 'rgba(255,255,255,0.2)'}`,
+                    boxShadow: active ? `0 0 8px ${color}, 0 0 16px ${color}60` : 'none',
+                    transform: active ? 'scale(1.15)' : 'scale(1)',
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {/* PIN Pad - Neon glass buttons */}
+          <div className="grid grid-cols-3 gap-3 max-w-[280px] mx-auto relative z-10" data-testid="pin-pad">
+            {digits.map(d => (
+              <button
+                key={d}
+                onClick={() => handleDigit(String(d))}
+                data-testid={`pin-key-${d}`}
+                className="h-16 w-full rounded-2xl text-2xl font-oswald font-bold text-white/90 transition-all duration-200 active:scale-90 neon-key"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                }}
+              >
+                {d}
+              </button>
+            ))}
+            <button
+              onClick={handleClear}
+              data-testid="pin-key-clear"
+              className="h-16 w-full rounded-2xl text-sm font-semibold text-white/40 transition-all duration-200 active:scale-90 neon-key-danger"
+              style={{
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
+              CLR
+            </button>
+            <button
+              onClick={() => handleDigit('0')}
+              data-testid="pin-key-0"
+              className="h-16 w-full rounded-2xl text-2xl font-oswald font-bold text-white/90 transition-all duration-200 active:scale-90 neon-key"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              }}
+            >
+              0
+            </button>
+            <button
+              onClick={handleDelete}
+              data-testid="pin-key-delete"
+              className="h-16 w-full rounded-2xl text-white/40 transition-all duration-200 active:scale-90 flex items-center justify-center neon-key-danger"
+              style={{
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
+              <Delete size={22} />
+            </button>
+          </div>
+
+          {/* Submit - Pill-shaped with orange neon glow */}
+          <button
+            onClick={handleSubmit}
+            disabled={pin.length < 1 || loading}
+            data-testid="pin-submit"
+            className="w-full max-w-[280px] mx-auto mt-7 h-14 rounded-full font-oswald font-bold text-lg tracking-widest uppercase flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-200 block text-white relative z-10 neon-submit-btn"
+            style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: `2px solid ${theme.accentColor}80`,
+              boxShadow: pin.length > 0 ? `0 0 15px ${theme.accentColor}40, 0 0 30px ${theme.accentColor}20, inset 0 0 15px ${theme.accentColor}10` : 'none',
+            }}
+          >
+            {loading ? (
+              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <LogIn size={20} style={{ color: theme.accentColor }} />
+                <span style={{ color: pin.length > 0 ? '#fff' : 'rgba(255,255,255,0.4)' }}>ENTRAR</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Demo PINs - outside card */}
+        <div className="mt-6 text-center relative z-10">
+          <div
+            className="rounded-2xl p-3 max-w-[280px] mx-auto"
+            style={{
+              background: 'rgba(10, 10, 20, 0.5)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}
+          >
+            <p className="text-[10px] text-white/30 mb-1">PINs de Demo:</p>
+            <p className="text-[11px] text-white/50">Admin: 10000 | Carlos: 1234 | Maria: 5678</p>
+            <p className="text-[11px] text-white/50">Luis (Cajero): 4321 | Chef Pedro: 9999</p>
           </div>
         </div>
       </div>
+
+      {/* Inline styles for neon animations */}
+      <style>{`
+        .neon-orb-pulse {
+          animation: orbPulse 4s ease-in-out infinite alternate;
+        }
+        @keyframes orbPulse {
+          0% { opacity: 0.6; transform: scale(1); }
+          100% { opacity: 1; transform: scale(1.1); }
+        }
+        .neon-logo-glow {
+          animation: logoGlow 3s ease-in-out infinite alternate;
+        }
+        @keyframes logoGlow {
+          0% { box-shadow: 0 0 20px rgba(255,102,0,0.5), 0 0 40px rgba(255,102,0,0.25); }
+          100% { box-shadow: 0 0 30px rgba(255,102,0,0.7), 0 0 60px rgba(255,102,0,0.35); }
+        }
+        .neon-key:hover {
+          background: rgba(255,255,255,0.08) !important;
+          border-color: rgba(138,43,226,0.4) !important;
+          box-shadow: 0 0 12px rgba(138,43,226,0.2), 0 0 24px rgba(0,191,255,0.1), 0 2px 8px rgba(0,0,0,0.2) !important;
+        }
+        .neon-key:active {
+          border-color: rgba(255,0,255,0.5) !important;
+          box-shadow: 0 0 16px rgba(255,0,255,0.3), 0 0 32px rgba(138,43,226,0.15) !important;
+        }
+        .neon-key-danger:hover {
+          background: rgba(239,68,68,0.08) !important;
+          border-color: rgba(239,68,68,0.3) !important;
+          box-shadow: 0 0 10px rgba(239,68,68,0.15) !important;
+          color: rgba(248,113,113,0.8) !important;
+        }
+        .neon-submit-btn:hover:not(:disabled) {
+          box-shadow: 0 0 20px rgba(255,102,0,0.5), 0 0 40px rgba(255,102,0,0.25), inset 0 0 20px rgba(255,102,0,0.15) !important;
+          border-color: rgba(255,102,0,0.7) !important;
+          background: rgba(255,102,0,0.08) !important;
+        }
+      `}</style>
     </div>
   );
 }
