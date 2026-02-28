@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
-   TEMA MINIMALISTA NEUMÓRFICO
+   TEMA MINIMALISTA NEUMÓRFICO — FULL SYSTEM
+   Efecto 3D táctil con luces LED en TODOS los elementos
    Aislado bajo body.theme-minimalist
-   NO modifica el tema original
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Shadcn CSS Variable Overrides (Light Mode) ── */
@@ -26,12 +26,15 @@ body.theme-minimalist {
   --input: 210 18% 91%;
   --ring: 25 100% 50%;
 
-  /* Neo Custom Props (defaults, overridden by JS) */
+  /* Neo Base Props (defaults, overridden by JS) */
   --neo-bg: #f0f5f9;
   --neo-shadow-dark: #c8cfd8;
   --neo-shadow-light: #ffffff;
-  --neo-glow: rgba(167, 139, 250, 0.25);
+  --neo-glow: rgba(167, 139, 250, 0.40);
   --neo-glow-solid: #a78bfa;
+  --neo-glow-strong: rgba(167, 139, 250, 0.70);
+  --neo-glow-medium: rgba(167, 139, 250, 0.50);
+  --neo-glow-soft: rgba(167, 139, 250, 0.28);
   --neo-accent: #1e293b;
 
   background-color: var(--neo-bg) !important;
@@ -40,94 +43,300 @@ body.theme-minimalist {
 
 /* ── Scrollbar Light ── */
 body.theme-minimalist ::-webkit-scrollbar-track { background: #e6eaef; }
-body.theme-minimalist ::-webkit-scrollbar-thumb { background: #c0c8d2; border-radius: 3px; }
+body.theme-minimalist ::-webkit-scrollbar-thumb {
+  background: #c0c8d2; border-radius: 3px;
+  box-shadow: inset 1px 1px 2px var(--neo-shadow-dark);
+}
 body.theme-minimalist ::-webkit-scrollbar-thumb:hover { background: hsl(25 100% 50%); }
 
-/* ═══════════════════════════════════════
-   NEUMORPHIC UTILITY CLASSES
-   ═══════════════════════════════════════ */
 
-/* Raised surface (buttons, cards) */
-body.theme-minimalist .neo-raised {
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL NEUMORPHIC BUTTONS
+   Todos los botones "sobresalen" del fondo con luces LED
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-minimalist button:not([disabled]),
+body.theme-minimalist [role="button"]:not([disabled]) {
+  box-shadow:
+    4px 4px 8px var(--neo-shadow-dark),
+    -4px -4px 8px var(--neo-shadow-light),
+    0 8px 20px -8px var(--neo-glow-medium) !important;
+  border-color: transparent !important;
+  transition: box-shadow 0.2s ease, transform 0.15s ease !important;
+}
+
+body.theme-minimalist button:not([disabled]):hover,
+body.theme-minimalist [role="button"]:not([disabled]):hover {
+  box-shadow:
+    5px 5px 10px var(--neo-shadow-dark),
+    -5px -5px 10px var(--neo-shadow-light),
+    0 12px 28px -6px var(--neo-glow-strong) !important;
+  transform: translateY(-1px);
+}
+
+body.theme-minimalist button:not([disabled]):active,
+body.theme-minimalist [role="button"]:not([disabled]):active {
+  box-shadow:
+    inset 4px 4px 8px var(--neo-shadow-dark),
+    inset -4px -4px 8px var(--neo-shadow-light),
+    0 2px 8px -2px var(--neo-glow-soft) !important;
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Colored buttons (bg-primary, bg-green, etc.) keep color + glow in their color */
+body.theme-minimalist button[class*="bg-primary"]:not([disabled]),
+body.theme-minimalist button[class*="bg-green"]:not([disabled]),
+body.theme-minimalist button[class*="bg-gradient"]:not([disabled]) {
+  box-shadow:
+    4px 4px 8px var(--neo-shadow-dark),
+    -4px -4px 8px var(--neo-shadow-light),
+    0 10px 25px -6px var(--neo-glow-strong) !important;
+}
+
+/* Disabled buttons - flat, no glow */
+body.theme-minimalist button[disabled],
+body.theme-minimalist [role="button"][disabled] {
+  box-shadow: none !important;
+  opacity: 0.5;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL NEUMORPHIC CARDS & PANELS
+   Tarjetas con sombra profunda + LED glow debajo
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-minimalist .bg-card {
+  background: var(--neo-bg) !important;
+  box-shadow:
+    8px 8px 16px var(--neo-shadow-dark),
+    -8px -8px 16px var(--neo-shadow-light),
+    0 14px 35px -10px var(--neo-glow-strong),
+    0 20px 50px -15px var(--neo-glow-medium) !important;
+  border-color: transparent !important;
+  border-radius: 16px;
+}
+
+/* Panels with explicit rounded + border patterns */
+body.theme-minimalist div[class*="rounded-xl"][class*="border"],
+body.theme-minimalist div[class*="rounded-2xl"][class*="border"],
+body.theme-minimalist div[class*="rounded-lg"][class*="border"][class*="p-"] {
+  box-shadow:
+    6px 6px 14px var(--neo-shadow-dark),
+    -6px -6px 14px var(--neo-shadow-light),
+    0 12px 30px -8px var(--neo-glow-medium),
+    0 18px 45px -12px var(--neo-glow-soft) !important;
+  border-color: transparent !important;
   background: var(--neo-bg);
-  box-shadow: 6px 6px 12px var(--neo-shadow-dark),
-              -6px -6px 12px var(--neo-shadow-light);
+}
+
+/* Settings page containers */
+body.theme-minimalist .bg-gradient-to-br {
+  background: var(--neo-bg) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   INPUTS — Sunken / Inset Effect
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-minimalist input:not([type="color"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body.theme-minimalist select,
+body.theme-minimalist textarea {
+  background: var(--neo-bg) !important;
+  box-shadow:
+    inset 3px 3px 6px var(--neo-shadow-dark),
+    inset -3px -3px 6px var(--neo-shadow-light) !important;
+  border-color: transparent !important;
+  border-radius: 12px;
+  transition: box-shadow 0.2s ease !important;
+}
+
+body.theme-minimalist input:focus,
+body.theme-minimalist select:focus,
+body.theme-minimalist textarea:focus {
+  box-shadow:
+    inset 3px 3px 6px var(--neo-shadow-dark),
+    inset -3px -3px 6px var(--neo-shadow-light),
+    0 0 0 3px var(--neo-glow-soft) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR NAVIGATION — Neumorphic Panel
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-minimalist [data-testid="sidebar"] {
+  background: var(--neo-bg) !important;
+  border-right: none !important;
+  box-shadow:
+    4px 0 12px var(--neo-shadow-dark),
+    0 0 30px -10px var(--neo-glow-soft) !important;
+}
+
+body.theme-minimalist [data-testid="mobile-nav"] {
+  background: var(--neo-bg) !important;
+  border-top: none !important;
+  box-shadow:
+    0 -4px 12px var(--neo-shadow-dark),
+    0 -8px 25px -10px var(--neo-glow-soft) !important;
+}
+
+/* Nav links — raised 3D */
+body.theme-minimalist [data-testid="sidebar"] nav a,
+body.theme-minimalist [data-testid="mobile-nav"] nav a {
+  background: var(--neo-bg) !important;
+  box-shadow:
+    3px 3px 6px var(--neo-shadow-dark),
+    -3px -3px 6px var(--neo-shadow-light),
+    0 5px 12px -6px var(--neo-glow-soft) !important;
   border: none !important;
-  transition: box-shadow 0.15s ease, transform 0.1s ease;
-}
-body.theme-minimalist .neo-raised:active:not([disabled]) {
-  box-shadow: inset 4px 4px 8px var(--neo-shadow-dark),
-              inset -4px -4px 8px var(--neo-shadow-light);
-  transform: scale(0.98);
+  transition: all 0.2s ease !important;
 }
 
-/* Pressed/inset surface */
-body.theme-minimalist .neo-pressed {
+body.theme-minimalist [data-testid="sidebar"] nav a:hover,
+body.theme-minimalist [data-testid="mobile-nav"] nav a:hover {
+  box-shadow:
+    4px 4px 8px var(--neo-shadow-dark),
+    -4px -4px 8px var(--neo-shadow-light),
+    0 8px 20px -6px var(--neo-glow-medium) !important;
+  transform: translateY(-1px);
+}
+
+/* Active nav — inset + colored glow */
+body.theme-minimalist [data-testid="sidebar"] nav a[class*="bg-primary"],
+body.theme-minimalist [data-testid="mobile-nav"] nav a[class*="bg-primary"] {
+  box-shadow:
+    inset 3px 3px 6px rgba(0,0,0,0.15),
+    inset -3px -3px 6px rgba(255,255,255,0.5),
+    0 8px 25px -5px var(--neo-glow-strong) !important;
+}
+
+/* Logo button */
+body.theme-minimalist [data-testid="logo-logout-btn"] {
+  box-shadow:
+    4px 4px 8px var(--neo-shadow-dark),
+    -4px -4px 8px var(--neo-shadow-light),
+    0 6px 18px -5px var(--neo-glow-medium) !important;
+}
+
+/* Business day button */
+body.theme-minimalist [data-testid="business-day-sidebar-btn"] {
+  box-shadow:
+    3px 3px 6px var(--neo-shadow-dark),
+    -3px -3px 6px var(--neo-shadow-light) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   TABS — Raised / Inset States
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-minimalist [role="tablist"] {
   background: var(--neo-bg);
-  box-shadow: inset 4px 4px 8px var(--neo-shadow-dark),
-              inset -4px -4px 8px var(--neo-shadow-light);
+  box-shadow:
+    inset 2px 2px 5px var(--neo-shadow-dark),
+    inset -2px -2px 5px var(--neo-shadow-light);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+body.theme-minimalist [role="tab"] {
+  box-shadow:
+    3px 3px 6px var(--neo-shadow-dark),
+    -3px -3px 6px var(--neo-shadow-light),
+    0 4px 10px -5px var(--neo-glow-soft) !important;
   border: none !important;
+  transition: all 0.2s ease !important;
 }
 
-/* Soft raised (smaller shadow) */
-body.theme-minimalist .neo-soft {
-  background: var(--neo-bg);
-  box-shadow: 3px 3px 6px var(--neo-shadow-dark),
-              -3px -3px 6px var(--neo-shadow-light);
-  border: none !important;
+body.theme-minimalist [role="tab"][data-state="active"] {
+  box-shadow:
+    inset 3px 3px 6px var(--neo-shadow-dark),
+    inset -3px -3px 6px var(--neo-shadow-light),
+    0 6px 18px -5px var(--neo-glow-strong) !important;
 }
 
-/* Glow panel - LED backlight effect */
-body.theme-minimalist .neo-glow-panel {
-  background: var(--neo-bg);
-  box-shadow: 0 0 30px var(--neo-glow),
-              0 0 60px var(--neo-glow),
-              6px 6px 12px var(--neo-shadow-dark),
-              -6px -6px 12px var(--neo-shadow-light);
-  border: none !important;
+body.theme-minimalist [role="tab"]:hover:not([data-state="active"]) {
+  box-shadow:
+    4px 4px 8px var(--neo-shadow-dark),
+    -4px -4px 8px var(--neo-shadow-light),
+    0 8px 20px -6px var(--neo-glow-medium) !important;
+  transform: translateY(-1px);
 }
 
-/* Flat (no shadow, for minimal elements) */
-body.theme-minimalist .neo-flat {
-  background: var(--neo-bg);
-  box-shadow: none;
-  border: 1px solid hsl(210 14% 87%);
-}
 
-/* ═══════════════════════════════════════
-   AUTO-APPLY TO COMMON SHADCN PATTERNS
-   ═══════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   DIALOGS & MODALS — Deep Shadow + Prominent Glow
+   ═══════════════════════════════════════════════════════════════ */
 
-/* Dialog/Popover content */
-body.theme-minimalist [role="dialog"] [class*="DialogContent"],
+body.theme-minimalist [role="dialog"] > div,
 body.theme-minimalist [data-radix-popper-content-wrapper] > div {
   background: var(--neo-bg) !important;
-  box-shadow: 8px 8px 20px var(--neo-shadow-dark),
-              -8px -8px 20px var(--neo-shadow-light) !important;
+  box-shadow:
+    12px 12px 24px var(--neo-shadow-dark),
+    -12px -12px 24px var(--neo-shadow-light),
+    0 20px 50px -10px var(--neo-glow-strong),
+    0 30px 70px -15px var(--neo-glow-medium) !important;
   border: none !important;
+  border-radius: 20px;
 }
 
-/* Tabs active state → inset */
-body.theme-minimalist [role="tab"][data-state="active"] {
-  box-shadow: inset 2px 2px 5px var(--neo-shadow-dark),
-              inset -2px -2px 5px var(--neo-shadow-light);
+
+/* ═══════════════════════════════════════════════════════════════
+   BADGES & SMALL ELEMENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-minimalist [class*="rounded-full"][class*="bg-"][class*="text-"] {
+  box-shadow:
+    2px 2px 4px var(--neo-shadow-dark),
+    -2px -2px 4px var(--neo-shadow-light) !important;
 }
 
-/* Toast/Sonner */
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLE MAP — Neumorphic Tables
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-minimalist .table-node-free,
+body.theme-minimalist .table-node-occupied,
+body.theme-minimalist .table-node-billed {
+  box-shadow:
+    6px 6px 12px var(--neo-shadow-dark),
+    -6px -6px 12px var(--neo-shadow-light),
+    0 10px 25px -8px var(--neo-glow-medium) !important;
+}
+
+body.theme-minimalist .table-node-free:hover,
+body.theme-minimalist .table-node-occupied:hover,
+body.theme-minimalist .table-node-billed:hover {
+  box-shadow:
+    8px 8px 16px var(--neo-shadow-dark),
+    -8px -8px 16px var(--neo-shadow-light),
+    0 14px 35px -8px var(--neo-glow-strong) !important;
+  transform: translateY(-2px);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   TOAST / SONNER
+   ═══════════════════════════════════════════════════════════════ */
+
 body.theme-minimalist [data-sonner-toaster] [data-sonner-toast] {
   background: var(--neo-bg) !important;
-  box-shadow: 4px 4px 10px var(--neo-shadow-dark),
-              -4px -4px 10px var(--neo-shadow-light) !important;
+  box-shadow:
+    6px 6px 12px var(--neo-shadow-dark),
+    -6px -6px 12px var(--neo-shadow-light),
+    0 10px 30px -8px var(--neo-glow-medium) !important;
   border: none !important;
   color: hsl(217 33% 17%) !important;
 }
 
-/* ═══════════════════════════════════════
-   TEXT CONTRAST FIX FOR LIGHT THEME
-   Override hard-coded white text classes
-   ═══════════════════════════════════════ */
 
-/* Core white text → dark */
+/* ═══════════════════════════════════════════════════════════════
+   TEXT CONTRAST FIX FOR LIGHT THEME
+   ═══════════════════════════════════════════════════════════════ */
+
 body.theme-minimalist .text-white { color: hsl(var(--foreground)) !important; }
 body.theme-minimalist .text-white\/90 { color: hsl(var(--foreground) / 0.9) !important; }
 body.theme-minimalist .text-white\/80 { color: hsl(var(--foreground) / 0.8) !important; }
@@ -156,27 +365,70 @@ body.theme-minimalist [class*="bg-slate-9"] .text-white,
 body.theme-minimalist [class*="bg-slate-8"] .text-white,
 body.theme-minimalist .text-primary-foreground { color: hsl(var(--primary-foreground)) !important; }
 
-/* Border white → subtle gray */
+/* Border white → subtle */
 body.theme-minimalist .border-white\/10,
 body.theme-minimalist .border-white\/20,
-body.theme-minimalist .border-white\/30 { border-color: hsl(var(--border)) !important; }
+body.theme-minimalist .border-white\/30 { border-color: transparent !important; }
 
-/* Glass backgrounds → solid neo backgrounds */
+/* Glass backgrounds → solid neo */
 body.theme-minimalist .bg-white\/5,
 body.theme-minimalist .bg-white\/10,
 body.theme-minimalist .bg-white\/15,
-body.theme-minimalist .bg-white\/20 { background-color: hsl(var(--muted)) !important; }
+body.theme-minimalist .bg-white\/20 { background-color: var(--neo-bg) !important; }
 body.theme-minimalist .backdrop-blur-xl,
 body.theme-minimalist .backdrop-blur-md { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 
-/* ═══════════════════════════════════════
-   ANIMATIONS
-   ═══════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITY CLASSES (for manual use)
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-minimalist .neo-raised {
+  background: var(--neo-bg);
+  box-shadow: 6px 6px 12px var(--neo-shadow-dark), -6px -6px 12px var(--neo-shadow-light), 0 8px 20px -8px var(--neo-glow-medium);
+  border: none !important;
+}
+
+body.theme-minimalist .neo-pressed {
+  background: var(--neo-bg);
+  box-shadow: inset 4px 4px 8px var(--neo-shadow-dark), inset -4px -4px 8px var(--neo-shadow-light);
+  border: none !important;
+}
+
+body.theme-minimalist .neo-glow-panel {
+  background: var(--neo-bg);
+  box-shadow: 0 0 40px var(--neo-glow-strong), 0 0 70px var(--neo-glow-medium), 8px 8px 16px var(--neo-shadow-dark), -8px -8px 16px var(--neo-shadow-light);
+  border: none !important;
+}
+
+body.theme-minimalist .neo-flat {
+  box-shadow: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATIONS — Breathing Glow
+   ═══════════════════════════════════════════════════════════════ */
+
 @keyframes neo-glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px var(--neo-glow), 0 0 40px var(--neo-glow); }
-  50% { box-shadow: 0 0 30px var(--neo-glow), 0 0 60px var(--neo-glow); }
+  0%, 100% {
+    box-shadow: 0 0 20px var(--neo-glow-soft), 0 0 40px var(--neo-glow-soft);
+  }
+  50% {
+    box-shadow: 0 0 30px var(--neo-glow-medium), 0 0 60px var(--neo-glow-soft);
+  }
+}
+
+@keyframes neo-glow-breathe {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
 }
 
 body.theme-minimalist .neo-glow-animate {
   animation: neo-glow-pulse 3s ease-in-out infinite;
+}
+
+/* Subtle breathing glow on the main background orbs */
+body.theme-minimalist .neo-bg-orb {
+  animation: neo-glow-breathe 4s ease-in-out infinite;
 }
