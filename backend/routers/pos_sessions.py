@@ -740,29 +740,32 @@ async def sync_session_sales(session_id: str, user=Depends(get_current_user)):
         for bill in bills:
             total_invoices += 1
             bill_total = bill.get("total", 0) or 0
-            main_method = (bill.get("payment_method", "") or "").lower()
+            bill_payments = bill.get("payments", [])
             
-            # Use main payment_method field as primary classifier
-            if "tarjeta" in main_method or "card" in main_method:
-                card_sales += bill_total
-            elif "transferencia" in main_method or "transfer" in main_method:
-                transfer_sales += bill_total
-            elif "efectivo" in main_method or "rd$" in main_method or "dolar" in main_method or "euro" in main_method or "cash" in main_method:
-                cash_sales += bill_total
-            elif main_method == "" or main_method == "?":
-                # Fallback: check individual payments
-                payments = bill.get("payments", [])
-                for pay in payments:
-                    label = (pay.get("label", "") or pay.get("method", "") or "").lower()
-                    amount = pay.get("amount_dop", pay.get("amount", 0)) or 0
-                    if "tarjeta" in label or "card" in label:
-                        card_sales += amount
-                    elif "transferencia" in label or "transfer" in label:
-                        transfer_sales += amount
+            # Si hay pagos individuales, distribuir por cada uno (pagos mixtos)
+            if bill_payments and len(bill_payments) > 0:
+                for pay in bill_payments:
+                    amt = pay.get("amount_dop", pay.get("amount", 0)) or 0
+                    name_lower = (pay.get("payment_method_name", "") or "").lower()
+                    if pay.get("is_cash", False) or "efectivo" in name_lower or "cash" in name_lower or "dolar" in name_lower or "euro" in name_lower:
+                        cash_sales += amt
+                    elif "tarjeta" in name_lower or "card" in name_lower:
+                        card_sales += amt
+                    elif "transfer" in name_lower:
+                        transfer_sales += amt
                     else:
-                        cash_sales += amount
+                        other_sales += amt
             else:
-                other_sales += bill_total
+                # Fallback: usar payment_method principal
+                main_method = (bill.get("payment_method", "") or "").lower()
+                if "tarjeta" in main_method or "card" in main_method:
+                    card_sales += bill_total
+                elif "transferencia" in main_method or "transfer" in main_method:
+                    transfer_sales += bill_total
+                elif "efectivo" in main_method or "rd$" in main_method or "dolar" in main_method or "euro" in main_method or "cash" in main_method:
+                    cash_sales += bill_total
+                else:
+                    other_sales += bill_total
         
         update_data = {
             "cash_sales": cash_sales,
