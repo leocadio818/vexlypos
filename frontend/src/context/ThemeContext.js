@@ -233,6 +233,7 @@ export function ThemeProvider({ children }) {
   };
 
   const isMinimalist = activeThemeMode === 'minimalist';
+  const isNeoDark = isMinimalist && neoMode === 'dark';
 
   return (
     <ThemeContext.Provider value={{
@@ -240,9 +241,10 @@ export function ThemeProvider({ children }) {
       saveTheme, resetTheme,
       activeThemeMode, setActiveThemeMode,
       neoColors, setNeoColors, updateNeoColor,
+      neoMode, setNeoMode,
       saveAllThemeSettings,
       loading, cssVariables, glassStyles, defaultTheme,
-      isMinimalist,
+      isMinimalist, isNeoDark,
       refetchTheme: fetchTheme,
     }}>
       {children}
