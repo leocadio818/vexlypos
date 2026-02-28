@@ -326,6 +326,108 @@ export default function PaymentScreen() {
     }
   };
 
+  // ─── DISCOUNT ENGINE ───
+  const loadActiveDiscounts = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/discounts/active`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+      });
+      if (res.ok) setAvailableDiscounts(await res.json());
+    } catch {}
+  };
+
+  const applyDiscount = async (discount) => {
+    if (!bill) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/discounts/calculate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('pos_token')}`
+        },
+        body: JSON.stringify({ discount_id: discount.id, bill_id: bill.id })
+      });
+      if (!res.ok) { toast.error('Error al calcular descuento'); return; }
+      const calc = await res.json();
+      if (calc.discount_amount <= 0) {
+        toast.warning(calc.message || 'Este descuento no aplica a ningun item');
+        return;
+      }
+      setAppliedDiscount(calc);
+      // Update adjustedBill with discounted values
+      setAdjustedBill(prev => ({
+        ...prev,
+        subtotal: calc.new_subtotal,
+        itbis: calc.new_itbis,
+        propina_legal: calc.new_propina,
+        total: calc.new_total,
+        tax_breakdown: calc.new_tax_breakdown || prev?.tax_breakdown,
+        discount_applied: {
+          id: calc.discount_id,
+          name: calc.discount_name,
+          type: calc.discount_type,
+          value: calc.discount_value,
+          amount: calc.discount_amount,
+          affected_items: calc.affected_items,
+          original_subtotal: calc.original_subtotal
+        }
+      }));
+      toast.success(`Descuento "${calc.discount_name}" aplicado: -RD$ ${calc.discount_amount.toLocaleString()}`);
+      setDiscountDialog(false);
+    } catch (e) {
+      toast.error('Error al aplicar descuento');
+    }
+  };
+
+  const handleDiscountSelect = (discount) => {
+    if (discount.authorization_level === 'MANAGER_PIN_REQUIRED') {
+      setDiscountPinDialog({ open: true, discount });
+      setDiscountPin('');
+    } else {
+      applyDiscount(discount);
+    }
+  };
+
+  const verifyDiscountPin = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/verify-pin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+        body: JSON.stringify({ pin: discountPin })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.role === 'admin' || data.role === 'manager') {
+          setDiscountPinDialog({ open: false, discount: null });
+          applyDiscount(discountPinDialog.discount);
+        } else {
+          toast.error('Se requiere PIN de Gerente o Administrador');
+        }
+      } else {
+        toast.error('PIN incorrecto');
+      }
+    } catch {
+      toast.error('Error verificando PIN');
+    }
+  };
+
+  const removeDiscount = () => {
+    setAppliedDiscount(null);
+    // Restore original bill values
+    if (bill) {
+      setAdjustedBill(prev => ({
+        ...prev,
+        subtotal: bill.subtotal,
+        itbis: bill.itbis,
+        propina_legal: bill.propina_legal,
+        total: bill.total,
+        tax_breakdown: bill.tax_breakdown,
+        discount_applied: null
+      }));
+    }
+    toast.info('Descuento removido');
+  };
+
   // Handle tax override button click
   const handleTaxOverrideClick = () => {
     if (userHasTaxPermission) {
