@@ -2426,6 +2426,11 @@ async def send_receipt_to_printer(bill_id: str):
     commands.append({"type": "divider"})
     commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
     
+    # Discount line (if applied)
+    discount_nc = bill.get("discount_applied")
+    if discount_nc and discount_nc.get("amount", 0) > 0:
+        commands.append({"type": "columns", "left": f"Desc: {discount_nc['name']}", "right": f"-RD$ {discount_nc['amount']:,.2f}"})
+    
     # Tax breakdown
     tax_breakdown = bill.get("tax_breakdown", [])
     if tax_breakdown:
