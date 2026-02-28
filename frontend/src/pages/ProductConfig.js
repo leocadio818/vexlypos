@@ -1192,51 +1192,88 @@ export default function ProductConfig() {
               />
             </div>
 
-            {/* Options list with editable prices */}
+            {/* Options list - fully editable: name, price, add, delete */}
             {modAssignDialog.group_id && (() => {
               const selectedGroup = modifierGroups.find(g => g.id === modAssignDialog.group_id);
               const options = selectedGroup?.options || [];
-              if (options.length === 0) return null;
+              const API_BASE = process.env.REACT_APP_BACKEND_URL;
+              
+              const updateOption = (idx, field, value) => {
+                setModifierGroups(prev => prev.map(g => {
+                  if (g.id !== modAssignDialog.group_id) return g;
+                  return { ...g, options: g.options.map((o, i) => i === idx ? { ...o, [field]: value } : o) };
+                }));
+              };
+              
+              const persistOption = (opt) => {
+                if (!opt.id) return;
+                fetch(`${API_BASE}/api/modifiers/${opt.id}`, {
+                  method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: opt.name, price: opt.price || 0, group_id: opt.group_id || modAssignDialog.group_id })
+                });
+              };
+              
+              const addNewOption = async () => {
+                try {
+                  const res = await fetch(`${API_BASE}/api/modifiers`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ group_id: modAssignDialog.group_id, name: 'Nueva Opcion', price: 0 })
+                  });
+                  const newOpt = await res.json();
+                  setModifierGroups(prev => prev.map(g => {
+                    if (g.id !== modAssignDialog.group_id) return g;
+                    return { ...g, options: [...(g.options || []), newOpt] };
+                  }));
+                } catch {}
+              };
+              
+              const deleteOption = async (opt, idx) => {
+                if (!opt.id) return;
+                await fetch(`${API_BASE}/api/modifiers/${opt.id}`, { method: 'DELETE' });
+                setModifierGroups(prev => prev.map(g => {
+                  if (g.id !== modAssignDialog.group_id) return g;
+                  return { ...g, options: g.options.filter((_, i) => i !== idx) };
+                }));
+              };
+              
               return (
                 <div>
-                  <label className="text-xs text-muted-foreground mb-2 block">
-                    Opciones del Grupo ({options.length})
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs text-muted-foreground">Opciones ({options.length})</label>
+                    <button onClick={addNewOption} className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium" data-testid="add-group-option-btn">
+                      <Plus size={12} /> Agregar Opcion
+                    </button>
+                  </div>
+                  <div className="space-y-2 max-h-52 overflow-y-auto">
                     {options.map((opt, idx) => (
                       <div key={opt.id || idx} className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border" data-testid={`option-row-${idx}`}>
-                        <span className="flex-1 text-sm truncate">{opt.name}</span>
-                        <div className="flex items-center gap-1">
+                        <input
+                          value={opt.name}
+                          onChange={e => updateOption(idx, 'name', e.target.value)}
+                          onBlur={() => persistOption(options[idx])}
+                          className="flex-1 bg-transparent border-none text-sm outline-none min-w-0"
+                          placeholder="Nombre opcion"
+                          data-testid={`option-name-${idx}`}
+                        />
+                        <div className="flex items-center gap-1 shrink-0">
                           <span className="text-[10px] text-muted-foreground">RD$</span>
                           <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="number" min="0" step="0.01"
                             value={opt.price || 0}
-                            onChange={e => {
-                              const newPrice = parseFloat(e.target.value) || 0;
-                              setModifierGroups(prev => prev.map(g => {
-                                if (g.id !== modAssignDialog.group_id) return g;
-                                return {
-                                  ...g,
-                                  options: g.options.map((o, i) => i === idx ? { ...o, price: newPrice } : o)
-                                };
-                              }));
-                              // Persist to backend
-                              if (opt.id) {
-                                fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifiers/${opt.id}`, {
-                                  method: 'PUT',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ name: opt.name, price: newPrice, group_id: opt.group_id || '' })
-                                });
-                              }
-                            }}
-                            className="w-20 bg-card border border-border rounded px-2 py-1 text-sm text-right font-mono"
+                            onChange={e => updateOption(idx, 'price', parseFloat(e.target.value) || 0)}
+                            onBlur={() => persistOption(options[idx])}
+                            className="w-16 bg-card border border-border rounded px-2 py-1 text-sm text-right font-mono"
                             data-testid={`option-price-${idx}`}
                           />
                         </div>
+                        <button onClick={() => deleteOption(opt, idx)} className="text-red-400 hover:text-red-300 shrink-0 p-1" data-testid={`option-delete-${idx}`}>
+                          <X size={14} />
+                        </button>
                       </div>
                     ))}
+                    {options.length === 0 && (
+                      <p className="text-center text-xs text-muted-foreground py-4">Sin opciones. Haz clic en "Agregar Opcion".</p>
+                    )}
                   </div>
                 </div>
               );
