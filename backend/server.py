@@ -97,6 +97,7 @@ api.include_router(ncf_router)
 api.include_router(credit_notes_router)
 api.include_router(business_days_router)
 api.include_router(dgii_router)
+api.include_router(discounts_router)
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()
