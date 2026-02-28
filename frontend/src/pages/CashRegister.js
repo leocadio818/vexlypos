@@ -323,8 +323,8 @@ export default function CashRegister() {
       }
     } catch (err) {
       const detail = err.response?.data?.detail || '';
-      // Si el error es por mesas abiertas, mostrar diálogo dedicado
-      if (err.response?.status === 400 && detail.includes('cuentas abiertas')) {
+      // Si el error es por mesas abiertas o turnos activos, mostrar dialogo dedicado
+      if (err.response?.status === 400 && (detail.includes('cuenta') || detail.includes('turno') || detail.includes('No se puede cerrar'))) {
         setOpenTablesError({ show: true, message: detail });
       } else {
         toast.error('Error cerrando turno', {
