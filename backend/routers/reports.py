@@ -150,7 +150,8 @@ async def dashboard():
             opened_at = None
             for order in table_orders:
                 for item in order.get("items", []):
-                    consumption += item.get("price", 0) * item.get("quantity", 1)
+                    item_price = item.get("unit_price", 0) or item.get("price", 0)
+                    consumption += item_price * item.get("quantity", 1)
                     items_count += item.get("quantity", 1)
                 oa = order.get("created_at", "")
                 if oa and (not opened_at or oa < opened_at):
