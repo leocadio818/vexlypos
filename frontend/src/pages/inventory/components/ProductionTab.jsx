@@ -67,6 +67,7 @@ export default function ProductionTab({
   // Sub-recipe recipe dialog state
   const [recipeDialog, setRecipeDialog] = useState({ open: false, subrecipeId: null, subrecipeName: '', recipeId: null, ingredients: [], yield_quantity: 1, notes: '' });
   const [loadingRecipe, setLoadingRecipe] = useState(false);
+  const [historyDialog, setHistoryDialog] = useState({ open: false, recipeId: null, recipeName: '' });
 
   // Get non-sub-recipe ingredients (base ingredients only)
   const baseIngredients = useMemo(() => ingredients.filter(i => !i.is_subrecipe), [ingredients]);
