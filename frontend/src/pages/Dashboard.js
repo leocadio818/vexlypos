@@ -56,7 +56,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs animate-pulse border-orange-400 text-orange-400 bg-orange-400/10">EN VIVO</Badge>
-          <span className="text-xs text-white/60 font-mono">{new Date().toLocaleDateString('es-DO')}</span>
+          <span className="text-xs text-white/60 font-mono">{formatSystemDate(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
         </div>
       </div>
 
