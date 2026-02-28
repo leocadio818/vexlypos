@@ -135,6 +135,52 @@ async def dashboard():
     
     hourly_sales = [{"hour": v["hour"], "total": round(v["total"], 2)} for v in hourly_data.values()]
     
+    # Open tables with consumption
+    open_tables_list = []
+    occupied = [t for t in tables if t.get("status") == "occupied"]
+    if occupied:
+        all_orders = await db.orders.find({"status": {"$nin": ["cancelled", "paid"]}}, {"_id": 0}).to_list(500)
+        for t in occupied:
+            t_id = t.get("id", "")
+            t_num = t.get("number", "?")
+            # Find active orders for this table
+            table_orders = [o for o in all_orders if o.get("table_id") == t_id]
+            consumption = 0
+            items_count = 0
+            opened_at = None
+            for order in table_orders:
+                for item in order.get("items", []):
+                    consumption += item.get("price", 0) * item.get("quantity", 1)
+                    items_count += item.get("quantity", 1)
+                oa = order.get("created_at", "")
+                if oa and (not opened_at or oa < opened_at):
+                    opened_at = oa
+            open_tables_list.append({
+                "table_number": t_num,
+                "table_id": t_id,
+                "consumption": round(consumption, 2),
+                "items_count": items_count,
+                "opened_at": opened_at or "",
+                "waiter": table_orders[0].get("waiter_name", "") if table_orders else ""
+            })
+    open_tables_list.sort(key=lambda x: x.get("table_number", 0))
+
+    # Closed tables today (from paid bills)
+    closed_tables_map = {}
+    for bill in today_bills:
+        t_num = bill.get("table_number", "?")
+        key = str(t_num)
+        if key not in closed_tables_map:
+            closed_tables_map[key] = {"table_number": t_num, "total": 0, "bills_count": 0, "last_paid": ""}
+        closed_tables_map[key]["total"] += bill.get("total", 0)
+        closed_tables_map[key]["bills_count"] += 1
+        paid_at = bill.get("paid_at", "")
+        if paid_at > closed_tables_map[key]["last_paid"]:
+            closed_tables_map[key]["last_paid"] = paid_at
+    closed_tables_list = sorted(closed_tables_map.values(), key=lambda x: x.get("last_paid", ""), reverse=True)
+    for ct in closed_tables_list:
+        ct["total"] = round(ct["total"], 2)
+
     return {
         "today": {
             "total_sales": round(total_sales, 2),
@@ -156,7 +202,9 @@ async def dashboard():
         "loyalty": {
             "total_customers": total_customers
         },
-        "hourly_sales": hourly_sales
+        "hourly_sales": hourly_sales,
+        "open_tables": open_tables_list,
+        "closed_tables": closed_tables_list
     }
 
 
