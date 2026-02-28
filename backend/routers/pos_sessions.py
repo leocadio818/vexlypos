@@ -826,7 +826,7 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
             bill_payments = bill.get("payments", [])
             
             # Descuentos
-            disc_amt = (bill.get("discount_applied", {}).get("amount", 0) or 0)
+            disc_amt = ((bill.get("discount_applied") or {}).get("amount", 0) or 0)
             if disc_amt > 0:
                 discounts_total += disc_amt
                 discounts_count += 1
