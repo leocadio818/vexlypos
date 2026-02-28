@@ -1223,6 +1223,10 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     
     # Build tax lines from tax_breakdown (dynamic names)
     tax_html = ""
+    # Discount line in HTML receipt
+    discount_info_html = bill.get("discount_applied")
+    if discount_info_html and discount_info_html.get("amount", 0) > 0:
+        tax_html += f"<tr style='color:#059669'><td>Desc: {discount_info_html['name']}</td><td style='text-align:right'>-RD$ {discount_info_html['amount']:,.2f}</td></tr>"
     tax_breakdown = bill.get("tax_breakdown", [])
     if tax_breakdown:
         for tax in tax_breakdown:
