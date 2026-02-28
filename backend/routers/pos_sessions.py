@@ -237,7 +237,7 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
         user_id = session.get("opened_by") or user["user_id"]
         
         open_orders_cursor = db.orders.find({
-            "status": {"$in": ["active", "pending"]},
+            "status": {"$nin": ["closed", "paid", "cancelled"]},
             "$or": [
                 {"waiter_id": user_id},
                 {"created_by": user_id}
