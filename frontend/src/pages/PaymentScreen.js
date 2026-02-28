@@ -116,6 +116,9 @@ export default function PaymentScreen() {
   const { largeMode, device, user } = useAuth();
   const { isMinimalist, isNeoDark, neoColors } = useTheme();
   const ticketRef = useRef(null);
+
+  // Neumorphic background
+  const neoBg = isMinimalist ? (isNeoDark ? neoColors.neoDarkBg : neoColors.neoBgColor) : null;
   const [bill, setBill] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [payAmounts, setPayAmounts] = useState({});
