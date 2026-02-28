@@ -240,13 +240,13 @@ export default function Reservations() {
               <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-white/5 rounded-lg border border-white/10">
                 {dialog.area_id && (
                   <button onClick={() => {
-                    const areaTables = tables.filter(t => t.area_id === dialog.area_id && t.status === 'free');
+                    const areaTables = tables.filter(t => t.area_id === dialog.area_id && (t.status === 'free' || t.status === 'available'));
                     setDialog(p => ({ ...p, table_ids: areaTables.map(t => t.id) }));
                   }} className="px-2 py-1 rounded bg-orange-500/20 text-orange-400 text-[10px] font-bold">
                     Seleccionar toda el area
                   </button>
                 )}
-                {tables.filter(t => t.status === 'free' && (!dialog.area_id || t.area_id === dialog.area_id)).map(t => {
+                {tables.filter(t => (t.status === 'free' || t.status === 'available') && (!dialog.area_id || t.area_id === dialog.area_id)).map(t => {
                   const selected = dialog.table_ids.includes(t.id);
                   return (
                     <button key={t.id} onClick={() => {
