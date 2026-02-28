@@ -1132,20 +1132,58 @@ export default function ProductConfig() {
             {/* Group selector */}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Grupo de Preguntas *</label>
-              <select 
-                value={modAssignDialog.group_id}
-                onChange={e => setModAssignDialog(p => ({ ...p, group_id: e.target.value }))}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
-                disabled={modAssignDialog.editIndex !== null}
-                data-testid="modifier-group-select"
-              >
-                <option value="">Seleccionar...</option>
-                {modifierGroups.map(group => (
-                  <option key={group.id} value={group.id}>
-                    {group.name} ({group.options?.length || 0} opciones)
-                  </option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select 
+                  value={modAssignDialog.group_id}
+                  onChange={e => setModAssignDialog(p => ({ ...p, group_id: e.target.value }))}
+                  className="flex-1 bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
+                  disabled={modAssignDialog.editIndex !== null}
+                  data-testid="modifier-group-select"
+                >
+                  <option value="">Seleccionar...</option>
+                  {modifierGroups.map(group => (
+                    <option key={group.id} value={group.id}>
+                      {group.name} ({group.options?.length || 0} opciones)
+                    </option>
+                  ))}
+                </select>
+                {/* Edit & Delete group buttons */}
+                {modAssignDialog.group_id && (
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={async () => {
+                        const g = modifierGroups.find(g => g.id === modAssignDialog.group_id);
+                        const newName = window.prompt('Nuevo nombre del grupo:', g?.name || '');
+                        if (!newName || !newName.trim() || newName === g?.name) return;
+                        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifier-groups/${modAssignDialog.group_id}`, {
+                          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ name: newName.trim() })
+                        });
+                        setModifierGroups(prev => prev.map(g => g.id === modAssignDialog.group_id ? { ...g, name: newName.trim() } : g));
+                      }}
+                      className="p-2 rounded-lg border border-border hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                      title="Renombrar grupo"
+                      data-testid="rename-group-btn"
+                    >
+                      <ListChecks size={16} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const g = modifierGroups.find(g => g.id === modAssignDialog.group_id);
+                        if (!window.confirm(`Eliminar grupo "${g?.name}" y todas sus opciones?`)) return;
+                        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifier-groups/${modAssignDialog.group_id}`, { method: 'DELETE' });
+                        setModifierGroups(prev => prev.filter(g => g.id !== modAssignDialog.group_id));
+                        setModAssignDialog(p => ({ ...p, group_id: '' }));
+                      }}
+                      className="p-2 rounded-lg border border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
+                      title="Eliminar grupo"
+                      data-testid="delete-group-btn"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
               {modAssignDialog.editIndex === null && (
                 <button 
                   onClick={async () => {
