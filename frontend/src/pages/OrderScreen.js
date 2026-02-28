@@ -705,14 +705,23 @@ export default function OrderScreen() {
         authorized_by_name: authorizedBy?.name || null
       };
       
+      // Check if this is a partial void from the partial void dialog
+      if (cancelDialog.partialVoid && cancelDialog.partialQty && itemId) {
+        const pvRes = await fetch(`${API_BASE}/api/orders/${order.id}/partial-void/${itemId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+          body: JSON.stringify({ ...cancelData, qty_to_void: cancelDialog.partialQty })
+        });
+        if (pvRes.ok) { setOrder(await pvRes.json()); setSelectedItems([]); resetCancelDialog(); }
+        return;
+      }
+      
       if (mode === 'multiple' && itemIds.length > 0) {
-        // Bulk cancellation
         res = await ordersAPI.cancelItems(order.id, {
           ...cancelData,
           item_ids: itemIds
         });
       } else {
-        // Single item cancellation
         res = await ordersAPI.cancelItem(order.id, itemId, cancelData);
       }
       setOrder(res.data);
