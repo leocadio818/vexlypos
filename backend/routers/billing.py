@@ -473,14 +473,30 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     
     if not is_training_bill:
         # ─── ACTUALIZAR TOTALES DE LA JORNADA (solo ventas reales) ───
+        # Distribuir por método de pago individual (pagos mixtos)
+        day_cash = 0
+        day_card = 0
+        day_transfer = 0
+        for pmt in payments_list:
+            amt = pmt.get("amount_dop", 0) or 0
+            name_lower = (pmt.get("payment_method_name", "") or "").lower()
+            if pmt.get("is_cash", False):
+                day_cash += amt
+            elif "tarjeta" in name_lower or "card" in name_lower:
+                day_card += amt
+            elif "transfer" in name_lower:
+                day_transfer += amt
+            else:
+                day_card += amt  # Default: treat as card
+        
         await db.business_days.update_one(
             {"id": business_day["id"]},
             {"$inc": {
                 "total_sales": total,
                 "total_invoices": 1,
-                "total_cash": total if is_cash_payment else 0,
-                "total_card": total if not is_cash_payment and input.payment_method == "card" else 0,
-                "total_transfer": total if input.payment_method == "transfer" else 0
+                "total_cash": round(day_cash, 2),
+                "total_card": round(day_card, 2),
+                "total_transfer": round(day_transfer, 2)
             }}
         )
 
