@@ -156,6 +156,35 @@ def print_raw_to_windows(printer_name, data):
     except Exception as e:
         raise Exception(f"Error imprimiendo: {str(e)}")
 
+def data_to_commands(data, job_type):
+    """Convert structured data (comanda/cancel_comanda) to ESC-POS commands"""
+    commands = []
+    if job_type in ("comanda", "cancel_comanda"):
+        header = "*** CANCELACION ***" if job_type == "cancel_comanda" else f"*** {data.get('channel_name', 'COCINA')} ***"
+        commands.append({"type": "center", "bold": True, "size": "large", "text": header})
+        commands.append({"type": "center", "bold": True, "size": "large", "text": f"MESA {data.get('table_number', '?')}"})
+        commands.append({"type": "divider"})
+        commands.append({"type": "left", "text": f"Mesero: {data.get('waiter_name', '')}"})
+        trans = data.get('transaction_number', '')
+        if trans:
+            commands.append({"type": "left", "text": f"Trans: #{trans}"})
+        commands.append({"type": "left", "text": f"Hora: {data.get('date', '')[-8:]}"})
+        commands.append({"type": "divider"})
+        for item in data.get("items", []):
+            qty = item.get('quantity', 1)
+            name = item.get('name', '')
+            commands.append({"type": "left", "bold": True, "size": "large", "text": f"{qty}x {name}"})
+            for mod in item.get('modifiers', []):
+                if mod:
+                    commands.append({"type": "left", "text": f"   + {mod}"})
+            if item.get('notes'):
+                commands.append({"type": "left", "bold": True, "text": f"   NOTA: {item.get('notes')}"})
+        commands.append({"type": "divider"})
+        commands.append({"type": "center", "text": f"Orden: {data.get('order_number', '')[:8]}"})
+        commands.append({"type": "feed", "lines": 3})
+        commands.append({"type": "cut"})
+    return commands
+
 def build_escpos_data(commands):
     """Construye datos ESC/POS desde los comandos"""
     ESC = b'\x1b'
