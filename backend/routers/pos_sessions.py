@@ -811,7 +811,7 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
         if closed_at:
             query["paid_at"]["$lte"] = closed_at
         
-        bills = await db.bills.find(query, {"_id": 0, "payments": 1, "total": 1, "payment_method": 1}).to_list(1000)
+        bills = await db.bills.find(query, {"_id": 0, "payments": 1, "total": 1, "payment_method": 1, "discount_applied": 1}).to_list(1000)
         
         cash_rd = 0.0
         card = 0.0
