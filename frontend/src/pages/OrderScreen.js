@@ -198,7 +198,21 @@ export default function OrderScreen() {
         categoriesAPI.list(), productsAPI.list(), modifiersAPI.list(), reasonsAPI.list()
       ]);
       setCategories(catRes.data); setProducts(prodRes.data);
-      setModifierGroups(modRes.data); setCancelReasons(reasonRes.data);
+      setCancelReasons(reasonRes.data);
+      // Merge old modifier system with new modifier_groups system
+      const oldGroups = modRes.data.filter(m => m.options && m.options.length > 0);
+      try {
+        const newRes = await fetch(`${API_BASE}/api/modifier-groups-with-options`);
+        const newGroups = await newRes.json();
+        // Normalize new groups to match old format (options field)
+        const normalizedNew = newGroups.filter(g => g.options && g.options.length > 0).map(g => ({
+          ...g, required: g.required || (g.min_selection > 0), max_selections: g.max_selections || g.max_selection || 1
+        }));
+        // Merge: old groups + new groups (avoid duplicates by id)
+        const oldIds = new Set(oldGroups.map(g => g.id));
+        const merged = [...oldGroups, ...normalizedNew.filter(g => !oldIds.has(g.id))];
+        setModifierGroups(merged);
+      } catch { setModifierGroups(oldGroups); }
       // Fetch tax config
       try {
         const taxRes = await fetch(`${API_BASE}/api/tax-config`);
