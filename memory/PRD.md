@@ -972,6 +972,25 @@ Las recetas de sub-recetas (is_subrecipe=true, product_id="") aparecian en el Re
 - `/app/frontend/src/pages/inventory/components/RecipesTab.jsx` - Filtro is_subrecipe en marginReport
 - `/app/frontend/src/lib/api.js` - Nuevo metodo deleteForce en recipesAPI
 
+## Historial de Versiones de Recetas (28 Feb 2026)
+### Descripcion
+Cada operacion de crear, editar o eliminar una receta genera un registro de auditoria detallado que incluye quien hizo el cambio, que se modifico, cuando, y snapshots del estado anterior/posterior.
+
+### Implementacion
+- **Backend**: Funcion `log_recipe_audit()` y `diff_ingredients()` en `recipes.py` que registran cada cambio en la coleccion `recipe_audit_logs`
+- **Endpoints nuevos**:
+  - `GET /api/recipes/{id}/history` - Historial de una receta especifica
+  - `GET /api/recipes/history/all` - Historial global con filtros (nombre, accion, usuario)
+- **Frontend**: Componente `RecipeHistoryDialog.jsx` con timeline visual integrado en RecipesTab y ProductionTab
+- **Cambios detectados automaticamente**: Ingredientes agregados/removidos/modificados, cantidades, merma, rendimiento, nombre, notas
+
+### Archivos Creados/Modificados
+- `/app/frontend/src/pages/inventory/components/RecipeHistoryDialog.jsx` - NUEVO componente de historial
+- `/app/backend/routers/recipes.py` - Auditoria en create, update, delete + endpoints de historial
+- `/app/frontend/src/pages/inventory/components/RecipesTab.jsx` - Boton historial integrado
+- `/app/frontend/src/pages/inventory/components/ProductionTab.jsx` - Boton historial para sub-recetas
+- `/app/frontend/src/lib/api.js` - Metodos getHistory y getAllHistory
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
