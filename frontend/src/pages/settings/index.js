@@ -78,7 +78,7 @@ function SettingsContent() {
               <FileText size={14} className="mr-1" /> NCF
             </TabsTrigger>
             <TabsTrigger value="theme" className="flex items-center gap-1 px-3 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs" data-testid="tab-theme">
-              <Palette size={14} className="mr-1" /> Paleta
+              <Palette size={14} className="mr-1" /> Apariencia
             </TabsTrigger>
             <TabsTrigger value="system" className="flex items-center gap-1 px-3 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs" data-testid="tab-system">
               <Cog size={14} className="mr-1" /> Sistema
