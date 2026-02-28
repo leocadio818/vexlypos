@@ -85,8 +85,8 @@ class TestRecipeAuditHistory:
             ],
             "yield_quantity": 1,
             "notes": "Test recipe for audit",
-            "is_subrecipe": True,
-            "produces_ingredient_id": None
+            "is_subrecipe": False,
+            "produces_ingredient_id": ""
         }
         
         create_res = self.session.post(f"{BASE_URL}/api/recipes", json=recipe_data)
@@ -138,8 +138,8 @@ class TestRecipeAuditHistory:
             ],
             "yield_quantity": 1,
             "notes": "Original notes",
-            "is_subrecipe": True,
-            "produces_ingredient_id": None
+            "is_subrecipe": False,
+            "produces_ingredient_id": ""
         }
         
         create_res = self.session.post(f"{BASE_URL}/api/recipes", json=recipe_data)
@@ -213,8 +213,8 @@ class TestRecipeAuditHistory:
             ],
             "yield_quantity": 1,
             "notes": "Recipe to be deleted",
-            "is_subrecipe": True,
-            "produces_ingredient_id": None
+            "is_subrecipe": False,
+            "produces_ingredient_id": ""
         }
         
         create_res = self.session.post(f"{BASE_URL}/api/recipes", json=recipe_data)
@@ -320,8 +320,8 @@ class TestRecipeAuditHistory:
             ],
             "yield_quantity": 1,
             "notes": "V1",
-            "is_subrecipe": True,
-            "produces_ingredient_id": None
+            "is_subrecipe": False,
+            "produces_ingredient_id": ""
         }
         
         # Create
@@ -398,8 +398,8 @@ class TestRecipeAuditHistory:
             ],
             "yield_quantity": 1,
             "notes": "",
-            "is_subrecipe": True,
-            "produces_ingredient_id": None
+            "is_subrecipe": False,
+            "produces_ingredient_id": ""
         }
         
         # Create
