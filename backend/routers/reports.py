@@ -169,13 +169,31 @@ async def daily_sales_report(
     
     cash_total = 0
     card_total = 0
+    pm_name_map = {pm.get("name", "").lower(): pm for pm in payment_methods}
     for bill in filtered:
-        pm_id = bill.get("payment_method_id", bill.get("payment_method", "cash"))
-        pm = pm_map.get(pm_id, {})
-        if pm.get("is_cash", pm_id == "cash"):
-            cash_total += bill.get("total", 0)
+        bill_total = bill.get("total", 0)
+        payments = bill.get("payments", [])
+        if payments:
+            for payment in payments:
+                p_id = payment.get("payment_method_id", "")
+                pm = pm_map.get(p_id, {})
+                is_cash = pm.get("is_cash", False)
+                amt = payment.get("amount_dop", payment.get("amount", 0))
+                if is_cash:
+                    cash_total += amt
+                else:
+                    card_total += amt
         else:
-            card_total += bill.get("total", 0)
+            p_id = bill.get("payment_method_id", "")
+            p_name = bill.get("payment_method", "")
+            pm = pm_map.get(p_id, {})
+            if not pm and p_name:
+                pm = pm_name_map.get(p_name.lower(), {})
+            is_cash = pm.get("is_cash", p_id == "cash" or "efectivo" in p_name.lower())
+            if is_cash:
+                cash_total += bill_total
+            else:
+                card_total += bill_total
     
     # Hourly breakdown
     hourly = {}
