@@ -156,6 +156,9 @@ export function ThemeProvider({ children }) {
       root.style.setProperty('--neo-shadow-light', lt);
       root.style.setProperty('--neo-glow', neoColors.neoGlowColor + '40');
       root.style.setProperty('--neo-glow-solid', neoColors.neoGlowColor);
+      root.style.setProperty('--neo-glow-strong', neoColors.neoGlowColor + '70');
+      root.style.setProperty('--neo-glow-medium', neoColors.neoGlowColor + '50');
+      root.style.setProperty('--neo-glow-soft', neoColors.neoGlowColor + '28');
       root.style.setProperty('--neo-accent', neoColors.neoAccentColor);
 
       // Dynamic Shadcn overrides from neo bg / accent
@@ -179,7 +182,7 @@ export function ThemeProvider({ children }) {
       root.style.setProperty('--popover', '240 10% 8%');
       root.style.setProperty('--popover-foreground', '0 0% 95%');
 
-      ['--neo-bg','--neo-shadow-dark','--neo-shadow-light','--neo-glow','--neo-glow-solid','--neo-accent'].forEach(p => root.style.removeProperty(p));
+      ['--neo-bg','--neo-shadow-dark','--neo-shadow-light','--neo-glow','--neo-glow-solid','--neo-glow-strong','--neo-glow-medium','--neo-glow-soft','--neo-accent'].forEach(p => root.style.removeProperty(p));
     }
   }, [activeThemeMode, neoColors]);
 
