@@ -1121,7 +1121,7 @@ export default function ProductConfig() {
 
       {/* Modifier Assignment Dialog */}
       <Dialog open={modAssignDialog.open} onOpenChange={(o) => !o && setModAssignDialog(p => ({ ...p, open: false }))}>
-        <DialogContent className="max-w-sm bg-card border-border" data-testid="modifier-assignment-dialog">
+        <DialogContent className="max-w-md bg-card border-border" data-testid="modifier-assignment-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald flex items-center gap-2">
               <ListChecks size={18} className="text-primary" />
