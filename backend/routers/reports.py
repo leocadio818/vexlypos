@@ -176,7 +176,7 @@ async def daily_sales_report(
     filtered = [b for b in bills if d_from <= b.get("paid_at", "")[:10] <= d_to]
     
     payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
-    pm_map = {pm["id"]: pm for pm in payment_methods}
+    pm_map, pm_name_map = build_pm_maps(payment_methods)
     
     total_sales = sum(b.get("total", 0) for b in filtered)
     total_itbis = sum(b.get("itbis", 0) for b in filtered)
@@ -187,7 +187,6 @@ async def daily_sales_report(
     
     cash_total = 0
     card_total = 0
-    pm_name_map = {pm.get("name", "").lower(): pm for pm in payment_methods}
     for bill in filtered:
         bill_total = bill.get("total", 0)
         payments = bill.get("payments", [])
@@ -195,7 +194,10 @@ async def daily_sales_report(
             for payment in payments:
                 p_id = payment.get("payment_method_id", "")
                 pm = pm_map.get(p_id, {})
-                is_cash = pm.get("is_cash", False)
+                if not pm:
+                    p_name = payment.get("payment_method_name", "")
+                    pm = pm_name_map.get(p_name.lower(), {})
+                is_cash = resolve_is_cash(pm) if pm else ("efectivo" in payment.get("payment_method_name", "").lower())
                 amt = payment.get("amount_dop", payment.get("amount", 0))
                 if is_cash:
                     cash_total += amt
@@ -207,7 +209,7 @@ async def daily_sales_report(
             pm = pm_map.get(p_id, {})
             if not pm and p_name:
                 pm = pm_name_map.get(p_name.lower(), {})
-            is_cash = pm.get("is_cash", p_id == "cash" or "efectivo" in p_name.lower())
+            is_cash = resolve_is_cash(pm) if pm else ("efectivo" in p_name.lower())
             if is_cash:
                 cash_total += bill_total
             else:
