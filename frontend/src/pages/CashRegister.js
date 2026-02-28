@@ -128,6 +128,19 @@ export default function CashRegister() {
         const currentRes = await posSessionsAPI.current();
         setCurrentSession(currentRes.data);
         
+        // Auto-sync sales totals on load
+        if (currentRes.data?.id) {
+          try {
+            const syncRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/pos-sessions/${currentRes.data.id}/sync-sales`, {
+              method: 'PUT', headers: { 'Authorization': `Bearer ${localStorage.getItem('pos_token')}` }
+            });
+            if (syncRes.ok) {
+              const refreshRes = await posSessionsAPI.current();
+              setCurrentSession(refreshRes.data);
+            }
+          } catch {}
+        }
+        
         if (currentRes.data?.id) {
           const movRes = await posSessionsAPI.getMovements(currentRes.data.id);
           setMovements(movRes.data || []);
