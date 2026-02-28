@@ -3417,6 +3417,11 @@ async def startup_event():
     scheduler.start()
     await update_scheduler_from_config()
     logger.info("Scheduler started and configured")
+    # Seed timezone config if not present
+    existing_tz = await db.system_config.find_one({"id": "timezone"})
+    if not existing_tz:
+        await db.system_config.insert_one({"id": "timezone", "timezone": "America/Santo_Domingo"})
+        logger.info("Timezone config seeded: America/Santo_Domingo")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
