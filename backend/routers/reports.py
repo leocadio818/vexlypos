@@ -53,7 +53,7 @@ async def dashboard():
     
     # Payment methods for cash/card breakdown
     payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
-    pm_map = {pm["id"]: pm for pm in payment_methods}
+    pm_map, pm_name_map = build_pm_maps(payment_methods)
     
     # Calculate today's stats
     total_sales = sum(b.get("total", 0) for b in today_bills)
