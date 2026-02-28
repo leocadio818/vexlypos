@@ -27,6 +27,7 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 
 ### Completed (2026-02-28 - Current Session)
 - **Discount Report Frontend**: Created `DiscountsReport.jsx` component with formatted table showing Fecha, NCF, Mesa, Mesero, Descuento (badge), Subtotal, Monto Descuento, Total Final. Added summary cards for total discounts and count. Integrated into Reports.js switch statement.
+- **Modifier Routes Cleanup**: Removed duplicate modifier CRUD routes from `server.py` (lines 480-507) that were shadowed by `config.py` routes. Zero behavior change.
 
 ## Architecture
 ```
