@@ -706,9 +706,139 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
     }
     await db.void_audit_logs.insert_one(audit_log)
     
+    # Send cancellation ticket to production printers for sent items
+    sent_cancelled = [ic for ic in items_cancelled if ic.get("was_sent")]
+    if sent_cancelled:
+        try:
+            await send_cancel_ticket_to_print_queue(order_id, sent_cancelled)
+        except Exception as e:
+            print(f"Error enviando ticket de cancelacion: {e}")
+    
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
-# ─── VOID AUDIT LOGS ───
+@router.post("/orders/{order_id}/partial-void/{item_id}")
+async def partial_void_item(order_id: str, item_id: str, input: PartialVoidInput, user: dict = Depends(get_current_user)):
+    """Partial void: reduce quantity of an item instead of cancelling entirely"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    
+    item = next((i for i in order["items"] if i["id"] == item_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item no encontrado")
+    
+    current_qty = item.get("quantity", 1)
+    if input.qty_to_void < 1 or input.qty_to_void > current_qty:
+        raise HTTPException(status_code=400, detail=f"Cantidad a anular debe ser entre 1 y {current_qty}")
+    
+    # If voiding ALL, delegate to full cancel
+    if input.qty_to_void == current_qty:
+        cancel_input = CancelItemInput(
+            reason_id=input.reason_id or "",
+            return_to_inventory=input.return_to_inventory,
+            comments=input.comments,
+            authorized_by_id=input.authorized_by_id,
+            authorized_by_name=input.authorized_by_name
+        )
+        return await cancel_order_item(order_id, item_id, cancel_input, user)
+    
+    item_was_sent = item.get("status") == "sent" or item.get("sent_to_kitchen", False)
+    
+    # For sent items: validate reason and auth
+    if item_was_sent and not input.express_void:
+        if input.reason_id:
+            reason = await db.cancellation_reasons.find_one({"id": input.reason_id}, {"_id": 0})
+            reason_name = reason.get("name", "Sin razon") if reason else "Sin razon"
+            requires_manager = reason.get("requires_manager_auth", False) if reason else False
+            if requires_manager and not input.authorized_by_id:
+                raise HTTPException(status_code=403, detail="Esta anulacion requiere autorizacion de gerente")
+        else:
+            reason_name = "Sin razon"
+    else:
+        reason_name = "Anulacion Express parcial"
+    
+    new_qty = current_qty - input.qty_to_void
+    
+    # Update item quantity
+    await db.orders.update_one(
+        {"id": order_id, "items.id": item_id},
+        {"$set": {
+            "items.$.quantity": new_qty,
+            "items.$.partial_void_history": item.get("partial_void_history", []) + [{
+                "qty_voided": input.qty_to_void,
+                "previous_qty": current_qty,
+                "new_qty": new_qty,
+                "reason": reason_name,
+                "voided_by_id": user["user_id"],
+                "voided_by_name": user["name"],
+                "authorized_by_id": input.authorized_by_id,
+                "authorized_by_name": input.authorized_by_name,
+                "voided_at": now_iso()
+            }],
+            "updated_at": now_iso()
+        }}
+    )
+    
+    # Restore inventory for voided quantity
+    inventory_was_deducted = item.get("inventory_deducted", False) or item_was_sent
+    if input.return_to_inventory and inventory_was_deducted:
+        inventory_config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
+        default_warehouse = inventory_config.get("default_warehouse_id", "") if inventory_config else ""
+        if not default_warehouse:
+            wh = await db.warehouses.find_one({}, {"_id": 0})
+            default_warehouse = wh["id"] if wh else ""
+        if default_warehouse:
+            await restore_inventory_partial(
+                product_id=item["product_id"],
+                qty=input.qty_to_void,
+                warehouse_id=default_warehouse,
+                user_id=user["user_id"],
+                user_name=user["name"],
+                order_id=order_id
+            )
+    
+    # Audit log
+    audit_log = {
+        "id": gen_id(),
+        "order_id": order_id,
+        "item_id": item_id,
+        "item_ids": [item_id],
+        "product_id": item.get("product_id"),
+        "product_name": item.get("product_name", "?"),
+        "quantity": input.qty_to_void,
+        "original_quantity": current_qty,
+        "new_quantity": new_qty,
+        "unit_price": item.get("unit_price", 0),
+        "total_value": item.get("unit_price", 0) * input.qty_to_void,
+        "requested_by_id": user["user_id"],
+        "requested_by_name": user["name"],
+        "authorized_by_id": input.authorized_by_id,
+        "authorized_by_name": input.authorized_by_name,
+        "reason_id": input.reason_id,
+        "reason": reason_name,
+        "restored_to_inventory": input.return_to_inventory and inventory_was_deducted,
+        "comments": input.comments,
+        "void_type": "partial_void",
+        "created_at": now_iso()
+    }
+    await db.void_audit_logs.insert_one(audit_log)
+    
+    # Send cancellation ticket if item was sent to kitchen
+    if item_was_sent:
+        try:
+            cancel_item = {
+                "product_id": item.get("product_id"),
+                "product_name": item.get("product_name", "?"),
+                "qty_voided": input.qty_to_void,
+                "modifiers": item.get("modifiers", []),
+                "notes": item.get("notes", ""),
+                "was_sent": True
+            }
+            await send_cancel_ticket_to_print_queue(order_id, [cancel_item])
+        except Exception as e:
+            print(f"Error enviando ticket de cancelacion parcial: {e}")
+    
+    return await db.orders.find_one({"id": order_id}, {"_id": 0})
 @router.get("/void-audit-logs")
 async def list_void_audit_logs(
     order_id: Optional[str] = Query(None),
