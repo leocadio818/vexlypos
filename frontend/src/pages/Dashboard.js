@@ -14,6 +14,7 @@ export default function Dashboard() {
 
   const fetchDashboard = useCallback(async () => {
     try {
+      await getSystemTimezone(); // ensure timezone is cached
       const res = await axios.get(`${API}/reports/dashboard`, { headers: headers() });
       setData(res.data);
     } catch {}
