@@ -1121,6 +1121,19 @@ El panel "Anulaciones" del Dashboard mostraba datos inconsistentes: "Hoy (Tiempo
 
 ### Verificacion: Testing agent 100% (20/20 backend, frontend OK) - iteration_90
 
+## Bug Fix: Modificadores redirigian al Dashboard (28 Feb 2026) [CORREGIDO]
+### Problema
+Al hacer click en "Abrir Modificadores" en Config > Inventario > Modificadores, el enlace iba a `/modifiers` que no existia como ruta en App.js, causando redireccion al Dashboard.
+
+### Solucion (Quirurgica - solo InventarioTab.js)
+- Reemplazo del enlace muerto por un CRUD funcional inline
+- Usa la API existente: `modifier-groups` (grupos) + `modifiers` (opciones individuales) de config.py
+- Modal con nombre, min/max selecciones, y lista de opciones con precio
+- Crear, editar, eliminar grupos con sus opciones
+
+### Archivos Modificados
+- `/app/frontend/src/pages/settings/InventarioTab.js` - Reemplazo placeholder por CRUD funcional
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
