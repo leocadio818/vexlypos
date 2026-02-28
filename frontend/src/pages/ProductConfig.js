@@ -1146,6 +1146,28 @@ export default function ProductConfig() {
                   </option>
                 ))}
               </select>
+              {modAssignDialog.editIndex === null && (
+                <button 
+                  onClick={async () => {
+                    const name = window.prompt('Nombre del nuevo grupo de preguntas:');
+                    if (!name || !name.trim()) return;
+                    try {
+                      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifier-groups`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: name.trim(), min_selection: 0, max_selection: 0 })
+                      });
+                      const newGroup = await res.json();
+                      newGroup.options = [];
+                      setModifierGroups(prev => [...prev, newGroup]);
+                      setModAssignDialog(p => ({ ...p, group_id: newGroup.id }));
+                    } catch {}
+                  }}
+                  className="mt-2 flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium"
+                  data-testid="create-new-group-btn"
+                >
+                  <Plus size={12} /> Crear Nuevo Grupo
+                </button>
+              )}
             </div>
 
             {/* Min selections */}
