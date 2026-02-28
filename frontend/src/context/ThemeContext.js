@@ -146,36 +146,58 @@ export function ThemeProvider({ children }) {
   // ── Apply / remove theme class + CSS variables ──
   useEffect(() => {
     const root = document.documentElement;
+    const isDark = neoMode === 'dark';
 
     if (activeThemeMode === 'minimalist') {
       document.body.classList.add('theme-minimalist');
       document.body.classList.remove('theme-original');
 
-      // Compute shadows from bg color
-      const dk = adjustBrightness(neoColors.neoBgColor, -40);
-      const lt = adjustBrightness(neoColors.neoBgColor, 15);
+      // Choose bg based on light/dark mode
+      const activeBg = isDark ? neoColors.neoDarkBg : neoColors.neoBgColor;
 
-      root.style.setProperty('--neo-bg', neoColors.neoBgColor);
+      // Toggle dark class
+      if (isDark) {
+        document.body.classList.add('neo-dark');
+      } else {
+        document.body.classList.remove('neo-dark');
+      }
+
+      // Compute shadows from active bg
+      const dk = adjustBrightness(activeBg, isDark ? -20 : -40);
+      const lt = adjustBrightness(activeBg, isDark ? 20 : 15);
+
+      root.style.setProperty('--neo-bg', activeBg);
       root.style.setProperty('--neo-shadow-dark', dk);
       root.style.setProperty('--neo-shadow-light', lt);
       root.style.setProperty('--neo-glow', neoColors.neoGlowColor + '40');
       root.style.setProperty('--neo-glow-solid', neoColors.neoGlowColor);
-      root.style.setProperty('--neo-glow-strong', neoColors.neoGlowColor + '70');
-      root.style.setProperty('--neo-glow-medium', neoColors.neoGlowColor + '50');
-      root.style.setProperty('--neo-glow-soft', neoColors.neoGlowColor + '28');
+      // Glow is MORE visible on dark backgrounds
+      root.style.setProperty('--neo-glow-strong', neoColors.neoGlowColor + (isDark ? '90' : '70'));
+      root.style.setProperty('--neo-glow-medium', neoColors.neoGlowColor + (isDark ? '65' : '50'));
+      root.style.setProperty('--neo-glow-soft', neoColors.neoGlowColor + (isDark ? '40' : '28'));
       root.style.setProperty('--neo-accent', neoColors.neoAccentColor);
 
-      // Dynamic Shadcn overrides from neo bg / accent
-      const bgHsl = hexToHslParts(neoColors.neoBgColor);
-      const fgHsl = hexToHslParts(neoColors.neoAccentColor);
-      root.style.setProperty('--background', bgHsl);
-      root.style.setProperty('--card', bgHsl);
-      root.style.setProperty('--popover', bgHsl);
-      root.style.setProperty('--foreground', fgHsl);
-      root.style.setProperty('--card-foreground', fgHsl);
-      root.style.setProperty('--popover-foreground', fgHsl);
+      // Dynamic Shadcn overrides
+      const bgHsl = hexToHslParts(activeBg);
+      if (isDark) {
+        root.style.setProperty('--background', bgHsl);
+        root.style.setProperty('--card', bgHsl);
+        root.style.setProperty('--popover', bgHsl);
+        root.style.setProperty('--foreground', '210 40% 96%');
+        root.style.setProperty('--card-foreground', '210 40% 96%');
+        root.style.setProperty('--popover-foreground', '210 40% 96%');
+      } else {
+        const fgHsl = hexToHslParts(neoColors.neoAccentColor);
+        root.style.setProperty('--background', bgHsl);
+        root.style.setProperty('--card', bgHsl);
+        root.style.setProperty('--popover', bgHsl);
+        root.style.setProperty('--foreground', fgHsl);
+        root.style.setProperty('--card-foreground', fgHsl);
+        root.style.setProperty('--popover-foreground', fgHsl);
+      }
     } else {
       document.body.classList.remove('theme-minimalist');
+      document.body.classList.remove('neo-dark');
       document.body.classList.add('theme-original');
 
       // Restore original dark variables
@@ -188,7 +210,7 @@ export function ThemeProvider({ children }) {
 
       ['--neo-bg','--neo-shadow-dark','--neo-shadow-light','--neo-glow','--neo-glow-solid','--neo-glow-strong','--neo-glow-medium','--neo-glow-soft','--neo-accent'].forEach(p => root.style.removeProperty(p));
     }
-  }, [activeThemeMode, neoColors]);
+  }, [activeThemeMode, neoColors, neoMode]);
 
   // ── CSS variable map for glass theme (used by Layout/Login) ──
   const cssVariables = {
