@@ -37,7 +37,9 @@ def now_iso() -> str:
 def now_local_print() -> str:
     """Fecha/hora local DR para impresion de comandas."""
     from zoneinfo import ZoneInfo
-    return datetime.now(ZoneInfo("America/Santo_Domingo")).strftime("%Y-%m-%d %I:%M:%S %p")() -> int:
+    return datetime.now(ZoneInfo("America/Santo_Domingo")).strftime("%Y-%m-%d %I:%M:%S %p")
+
+async def get_next_transaction_number() -> int:
     """
     Genera el siguiente número de transacción interno secuencial.
     Usa find_one_and_update con upsert para garantizar atomicidad.
