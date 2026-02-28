@@ -139,19 +139,42 @@ export default function SystemTab() {
           />
         </div>
 
-        {/* Timezone */}
+        {/* Timezone - IANA Selector */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">
-          <h3 className="text-sm font-semibold mb-2">Zona Horaria</h3>
-          <p className="text-xs text-muted-foreground mb-3">Selecciona la zona horaria de tu restaurante.</p>
+          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <Globe size={14} className="text-blue-400" /> Zona Horaria del Sistema
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Todas las fechas, reportes y jornadas usan esta zona horaria. Cambiar reinicia los calculos de "hoy" en el Dashboard.
+          </p>
           <select 
-            value={systemConfig.timezone_offset} 
-            onChange={e => setSystemConfig(p => ({ ...p, timezone_offset: parseInt(e.target.value) }))}
+            value={systemTimezone} 
+            onChange={e => setSystemTimezone(e.target.value)}
             className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+            data-testid="timezone-selector"
           >
-            {timezones.map(tz => (
+            {IANA_TIMEZONES.map(tz => (
               <option key={tz.value} value={tz.value}>{tz.label}</option>
             ))}
           </select>
+          <Button 
+            onClick={async () => {
+              setTzSaving(true);
+              try {
+                await axios.put(`${API}/timezone`, { timezone: systemTimezone }, { headers: hdrs() });
+                invalidateTimezoneCache();
+                toast.success(`Zona horaria actualizada: ${systemTimezone}`);
+              } catch (e) {
+                toast.error(e.response?.data?.detail || 'Error al guardar timezone');
+              }
+              setTzSaving(false);
+            }}
+            disabled={tzSaving}
+            className="w-full mt-3 h-10 bg-blue-600 hover:bg-blue-700 text-white font-oswald font-bold"
+            data-testid="save-timezone-btn"
+          >
+            {tzSaving ? 'Guardando...' : 'GUARDAR ZONA HORARIA'}
+          </Button>
         </div>
 
         {/* Currency */}
