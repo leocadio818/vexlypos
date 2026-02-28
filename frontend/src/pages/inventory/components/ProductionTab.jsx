@@ -10,6 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { productionAPI, recipesAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
+import RecipeHistoryDialog from './RecipeHistoryDialog';
 
 // Searchable ingredient selector for sub-recipe recipes
 function SubrecipeIngredientSelect({ ingredients, value, onChange }) {
