@@ -1121,18 +1121,20 @@ El panel "Anulaciones" del Dashboard mostraba datos inconsistentes: "Hoy (Tiempo
 
 ### Verificacion: Testing agent 100% (20/20 backend, frontend OK) - iteration_90
 
-## Bug Fix: Modificadores redirigian al Dashboard (28 Feb 2026) [CORREGIDO]
+## Bug Fix: Modificadores - Persistencia y Vinculacion (28 Feb 2026) [CORREGIDO]
 ### Problema
-1. Al hacer click en "Abrir Modificadores" en Config > Inventario, redirige al Dashboard (ruta /modifiers no existia)
-2. El dropdown "Grupo de Preguntas" en Editar Producto mostraba opciones individuales (Caliente, Frio, CEBOLLA) como si fueran grupos
+1. Opciones de modificadores (SALSA ROJA, etc.) no persistian visualmente tras toast de exito
+2. Dropdown "Grupo de Preguntas" en Editar Producto estaba vacio
+
+### Causa Raiz
+El endpoint combinado GET /modifiers interceptaba todas las llamadas y retornaba GRUPOS 
+cuando InventarioTab esperaba OPCIONES PLANAS, rompiendo ambos flujos.
 
 ### Solucion
-1. **InventarioTab.js**: Reemplazo enlace muerto por CRUD funcional inline (modifier-groups + modifiers)
-2. **server.py**: Nuevo GET /modifiers combinado que:
-   - Filtra opciones individuales (group_id no vacio) del listado
-   - Combina grupos old-style (embedded options) + new-style (modifier_groups con opciones enriquecidas)
-   - Deduplica por nombre (new-style tiene prioridad)
-   - Soporta ?group_id= para cargar opciones de un grupo especifico
+1. **Nuevo endpoint**: `GET /api/modifier-groups-with-options` - retorna grupos con opciones enriquecidas (para ProductConfig)
+2. **Devuelto** `GET /api/modifiers` a config.py (opciones planas para InventarioTab)
+3. **ProductConfig**: Cambiado a usar `/modifier-groups-with-options` para el dropdown
+4. **InventarioTab**: Filtra opciones planas por `group_id` no vacio para mostrar bajo cada grupo
 
 ## Pendiente
 ### P1 - Alta Prioridad
