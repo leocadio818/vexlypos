@@ -1828,6 +1828,13 @@ async def print_shift_report(input: dict, user=Depends(get_current_user)):
             add_cols(f"Total ({voids['count']})", f"-{fmt(voids.get('total', 0))}")
         add_divider()
     
+    # ═══ DESCUENTOS ═══
+    discounts = report.get("discounts", {})
+    if discounts.get("count", 0) > 0:
+        add_text("DESCUENTOS", "left", True)
+        add_cols(f"Total ({discounts['count']})", f"-{fmt(discounts.get('total', 0))}")
+        add_divider()
+    
     # ═══ VENTAS ═══
     if detailed:
         add_text("VENTAS", "left", True)
