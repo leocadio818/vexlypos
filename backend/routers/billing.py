@@ -500,12 +500,19 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
             }}
         )
 
-        # Update MongoDB shifts (legacy)
+        # Update MongoDB shifts (legacy) - distribuir por método de pago
         shift = await db.shifts.find_one({"user_id": user["user_id"], "status": "open"}, {"_id": 0})
         if shift:
-            field = "cash_sales" if input.payment_method == "cash" else "card_sales"
+            shift_cash = 0
+            shift_card = 0
+            for pmt in payments_list:
+                amt = pmt.get("amount_dop", 0) or 0
+                if pmt.get("is_cash", False):
+                    shift_cash += amt
+                else:
+                    shift_card += amt
             await db.shifts.update_one({"id": shift["id"]}, {
-                "$inc": {field: total, "total_sales": total, "total_tips": propina}
+                "$inc": {"cash_sales": round(shift_cash, 2), "card_sales": round(shift_card, 2), "total_sales": total, "total_tips": propina}
             })
 
         # ─── SUPABASE: Update pos_sessions ───
