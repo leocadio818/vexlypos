@@ -19,6 +19,7 @@ const defaultTheme = {
 // ── Default Neumorphic Colors ──
 const defaultNeoColors = {
   neoBgColor: '#f0f5f9',
+  neoDarkBg: '#0f172a',
   neoGlowColor: '#a78bfa',
   neoAccentColor: '#1e293b',
 };
@@ -53,6 +54,7 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(defaultTheme);
   const [activeThemeMode, setActiveThemeMode] = useState('original');
   const [neoColors, setNeoColors] = useState(defaultNeoColors);
+  const [neoMode, setNeoMode] = useState('light'); // 'light' | 'dark'
   const [loading, setLoading] = useState(true);
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
@@ -66,9 +68,11 @@ export function ThemeProvider({ children }) {
         if (data && Object.keys(data).length > 0) {
           setTheme(prev => ({ ...defaultTheme, ...data }));
           if (data.activeThemeMode) setActiveThemeMode(data.activeThemeMode);
+          if (data.neoMode) setNeoMode(data.neoMode);
           if (data.neoBgColor || data.neoGlowColor || data.neoAccentColor) {
             setNeoColors({
               neoBgColor: data.neoBgColor || defaultNeoColors.neoBgColor,
+              neoDarkBg: data.neoDarkBg || defaultNeoColors.neoDarkBg,
               neoGlowColor: data.neoGlowColor || defaultNeoColors.neoGlowColor,
               neoAccentColor: data.neoAccentColor || defaultNeoColors.neoAccentColor,
             });
@@ -87,7 +91,7 @@ export function ThemeProvider({ children }) {
     try {
       const token = localStorage.getItem('pos_token');
       if (!token) return false;
-      const payload = { ...theme, activeThemeMode, ...neoColors };
+      const payload = { ...theme, activeThemeMode, neoMode, ...neoColors };
       const res = await fetch(`${API_BASE}/api/theme-config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
