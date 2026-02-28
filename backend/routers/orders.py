@@ -79,6 +79,15 @@ class BulkCancelInput(BaseModel):
     authorized_by_name: Optional[str] = None
     express_void: bool = False  # Flag for express void (pending items only)
 
+class PartialVoidInput(BaseModel):
+    qty_to_void: int
+    reason_id: Optional[str] = None
+    return_to_inventory: bool = True
+    comments: str = ""
+    authorized_by_id: Optional[str] = None
+    authorized_by_name: Optional[str] = None
+    express_void: bool = False
+
 # Import auth dependency
 from routers.auth import get_current_user, can_access_table_orders, get_table_owner_name
 
