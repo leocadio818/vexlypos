@@ -35,24 +35,16 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Architecture Resolution: Polyglot Persistence frozen by user directive
 
 ### Completed (2026-02-28 - Current Session)
-- **Multi-Theme Engine**: Implemented complete multi-theme architecture with two isolated themes:
-  - **Tema Original**: Dark glassmorphism with neon effects (preserved exactly as-was)
-  - **Tema Minimalista**: Light neumorphic with 3D buttons, off-white backgrounds, LED glow panels
-- **Global Neumorphic 3D**: Extended CSS to apply neumorphic effects to ALL system elements:
-  - Buttons: Raised 3D with LED glow underneath, sink on press (:active inset shadows)
-  - Cards/Panels: Deep neumorphic shadows with prominent colored glow bleeding from beneath
-  - Sidebar nav: 3D raised items, active state shows pressed/inset effect
-  - Tabs: Raised inactive, inset active with glow
-  - Inputs: Sunken/inset shadow effect
-  - Dialogs: Deep shadow + intense glow
-  - Table map elements: Neumorphic depth with glow
-  - Animated glow orbs in page backgrounds
-- **ThemeContext.js**: Extended with `activeThemeMode`, `neoColors`, glow intensity variables (strong/medium/soft)
-- **Apariencia Tab**: Theme toggle + color pickers for bg, glow, accent
-- **Login.js**: Conditional dual rendering (glass vs neumorphic 3D PIN pad)
-- **Layout.js**: Conditional sidebar + animated glow orbs for minimalist
-- **Persistence**: Theme saved to MongoDB via `/api/theme-config`
-- **Testing**: 12/12 frontend test scenarios passed (100% success rate) - iteration_96
+- **Multi-Theme Engine**: Implemented complete multi-theme architecture with three visual modes:
+  - **Tema Original**: Dark glassmorphism with neon effects (preserved exactly)
+  - **Tema Minimalista Claro**: Light neumorphic (off-white, 3D buttons, subtle LED glow)
+  - **Tema Minimalista Oscuro**: Dark navy neumorphic (dramatic LED glow, 3D depth)
+- **Global Neumorphic 3D**: CSS auto-applies to ALL elements: buttons, cards, inputs, sidebar, tabs, dialogs, toasts, table map
+- **Dark/Light Toggle**: Within minimalist theme, users choose between Claro/Oscuro backgrounds. Glow is dramatically more visible on dark bg
+- **Color Customizer**: Separate bg colors for light/dark, shared glow + accent. Persists to MongoDB
+- **Modal Contrast Fix**: Payment keypad numbers now clearly visible in both modes
+- **ThemeContext.js**: neoMode ('light'|'dark'), neoDarkBg, body.style CSS vars, neo-dark class
+- **Testing**: 10/10 scenarios passed (iteration_97) + 12/12 (iteration_96) + 11/11 (iteration_95)
 
 ## File Structure
 ```
