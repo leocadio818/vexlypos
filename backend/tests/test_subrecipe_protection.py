@@ -246,18 +246,29 @@ class TestSubrecipeProtection:
         
         print(f"Testing delete by product protection for sub-recipe with product_id='{subrecipe_product_id}'")
         
-        # Try to delete by empty product_id - should fail or not affect sub-recipe
-        if subrecipe_product_id == "":
-            # Per API design, empty product_id should return 400
-            response = self.session.delete(f"{BASE_URL}/api/recipes/product/")
-            # Either 400 (validation error) or 404 (not found) is acceptable
-            assert response.status_code in [400, 404, 405], f"Expected error status for empty product_id, got {response.status_code}"
+        # The safety filter in delete_recipe_by_product should prevent deletion of sub-recipes
+        # even if matched by product_id - it explicitly checks is_subrecipe and blocks
         
-        # Verify sub-recipe still exists
+        # Store count before
+        recipes_before = len(recipes)
+        subrecipes_before = len(subrecipes)
+        
+        # Try to delete - the endpoint may succeed but should NOT delete the sub-recipe
+        # because of the safety filter: {"product_id": product_id, "is_subrecipe": {"$ne": True}}
+        if subrecipe_product_id:
+            response = self.session.delete(f"{BASE_URL}/api/recipes/product/{subrecipe_product_id}")
+            # May return 200 OK but sub-recipe should not be deleted due to safety filter
+        
+        # Verify sub-recipe still exists regardless of endpoint response
         verify_response = self.session.get(f"{BASE_URL}/api/recipes")
         verify_recipes = verify_response.json()
         remaining_ids = [r.get("id") for r in verify_recipes]
         assert subrecipe_id in remaining_ids, "Sub-recipe should still exist after delete by product attempt"
+        
+        # Verify count of sub-recipes is same
+        subrecipes_after = [r for r in verify_recipes if r.get("is_subrecipe")]
+        assert len(subrecipes_after) == subrecipes_before, \
+            f"Sub-recipe count should be preserved: {subrecipes_before} -> {len(subrecipes_after)}"
         
         print("Sub-recipe protected from delete by product endpoint")
     
