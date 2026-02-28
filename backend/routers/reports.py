@@ -57,11 +57,11 @@ def build_pm_maps(payment_methods: list) -> tuple:
 @router.get("/dashboard")
 async def dashboard():
     """Main dashboard data for KPIs and real-time stats"""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_start, today_end = get_local_today_utc_range()
     
-    # Get today's paid bills
+    # Get today's paid bills (using local timezone range)
     bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
-    today_bills = [b for b in bills if b.get("paid_at", "").startswith(today)]
+    today_bills = [b for b in bills if today_start <= b.get("paid_at", "") < today_end]
     
     # Payment methods for cash/card breakdown
     payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
