@@ -38,14 +38,19 @@ export default function InventarioTab() {
   const [categoryDialog, setCategoryDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '', tax_ids: [] });
   const [warehouseDialog, setWarehouseDialog] = useState({ open: false, name: '', location: '', editId: null });
 
-  // Modifier state
+  // Modifier state - uses modifier-groups API (config.py)
+  const [modGroups, setModGroups] = useState([]);
   const [modifiers, setModifiers] = useState([]);
-  const [modDialog, setModDialog] = useState({ open: false, editId: null, name: '', required: false, max_selections: 0, options: [] });
+  const [modDialog, setModDialog] = useState({ open: false, editId: null, name: '', min_selection: 0, max_selection: 0, options: [] });
 
   const loadModifiers = async () => {
     try {
-      const res = await axios.get(`${API}/modifiers`, { headers: hdrs() });
-      setModifiers(res.data);
+      const [gRes, mRes] = await Promise.all([
+        axios.get(`${API}/modifier-groups`, { headers: hdrs() }),
+        axios.get(`${API}/modifiers`, { headers: hdrs() })
+      ]);
+      setModGroups(gRes.data);
+      setModifiers(mRes.data);
     } catch {}
   };
 
