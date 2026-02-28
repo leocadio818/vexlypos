@@ -1235,8 +1235,8 @@ export default function PaymentScreen() {
                     </>
                   )}
                   
-                  {/* Botón Impuesto - Tax Override */}
-                  <div className="flex justify-center pt-2">
+                  {/* Botón Impuesto - Tax Override + Botón Descuento */}
+                  <div className="flex justify-center gap-2 pt-2">
                     <button
                       onClick={handleTaxOverrideClick}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
@@ -1250,6 +1250,21 @@ export default function PaymentScreen() {
                       Impuesto
                       {adjustedBill?.tax_override_applied && (
                         <Badge className="ml-1 text-[8px] bg-amber-500/30">Ajustado</Badge>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => { loadActiveDiscounts(); setDiscountDialog(true); }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                        ${appliedDiscount 
+                          ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300' 
+                          : 'bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white/70'
+                        }`}
+                      data-testid="discount-btn"
+                    >
+                      <Tag size={12} />
+                      Descuento
+                      {appliedDiscount && (
+                        <Badge className="ml-1 text-[8px] bg-emerald-500/30">-{formatMoney(appliedDiscount.discount_amount)}</Badge>
                       )}
                     </button>
                   </div>
