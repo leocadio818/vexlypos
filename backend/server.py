@@ -138,6 +138,23 @@ def gen_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+def utc_to_local_str(utc_iso_str: str, fmt: str = "%d/%m/%Y %I:%M:%S %p") -> str:
+    """Convierte un string ISO UTC a hora local de Republica Dominicana para impresion."""
+    try:
+        from zoneinfo import ZoneInfo
+        dt = datetime.fromisoformat(utc_iso_str.replace('Z', '+00:00'))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        local_dt = dt.astimezone(ZoneInfo("America/Santo_Domingo"))
+        return local_dt.strftime(fmt)
+    except:
+        return utc_iso_str[:19]
+
+def now_local_str(fmt: str = "%I:%M %p") -> str:
+    """Hora local actual de DR para impresion."""
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo("America/Santo_Domingo")).strftime(fmt)
+
 async def get_next_transaction_number() -> int:
     """
     Genera el siguiente número de transacción interno secuencial.
