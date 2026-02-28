@@ -42,6 +42,7 @@ export default function ThemeTab() {
   const {
     theme, setTheme, activeThemeMode, setActiveThemeMode,
     neoColors, updateNeoColor, saveAllThemeSettings, isMinimalist,
+    neoMode, setNeoMode, isNeoDark,
   } = useTheme();
 
   const [saving, setSaving] = useState(false);
