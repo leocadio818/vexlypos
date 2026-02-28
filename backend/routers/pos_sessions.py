@@ -231,56 +231,28 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
             raise HTTPException(status_code=400, detail="La sesion no esta abierta")
         
         # ═══════════════════════════════════════════════════════════════════════════════
-        # VALIDACIÓN: No se puede cerrar turno si hay cuentas abiertas o turnos activos
+        # VALIDACIÓN: El cajero solo puede cerrar si NO tiene cuentas abiertas propias
+        # (Las cuentas de otros cajeros NO le afectan)
         # ═══════════════════════════════════════════════════════════════════════════════
-        blocking_reasons = []
+        user_id = session.get("opened_by") or user["user_id"]
         
-        # 1. Verificar TODAS las ordenes/mesas abiertas (de cualquier usuario)
-        open_orders_cursor = db.orders.find(
-            {"status": {"$in": ["active", "pending"]}},
-            {"_id": 0, "table_number": 1, "id": 1, "waiter_name": 1}
-        )
+        open_orders_cursor = db.orders.find({
+            "status": {"$in": ["active", "pending"]},
+            "$or": [
+                {"waiter_id": user_id},
+                {"created_by": user_id}
+            ]
+        }, {"_id": 0, "table_number": 1, "id": 1})
         open_orders = await open_orders_cursor.to_list(100)
         
         if open_orders:
-            tables_by_user = {}
-            for o in open_orders:
-                responsible = o.get("waiter_name") or "Sin asignar"
-                table_num = o.get("table_number", "?")
-                if responsible not in tables_by_user:
-                    tables_by_user[responsible] = []
-                tables_by_user[responsible].append(str(table_num))
-            
-            details = []
-            for name, tables in tables_by_user.items():
-                tables_list = ", ".join([f"Mesa {t}" for t in tables[:5]])
-                if len(tables) > 5:
-                    tables_list += f" y {len(tables) - 5} mas"
-                details.append(f"{name}: {tables_list}")
-            
-            blocking_reasons.append(f"Hay {len(open_orders)} cuenta(s) abierta(s) - {'; '.join(details)}")
-        
-        # 2. Verificar otros turnos activos de otros cajeros
-        try:
-            other_sessions = sb.table("pos_sessions").select(
-                "id, ref, opened_by_name, terminal_name"
-            ).eq("status", "open").neq("id", session_id).execute()
-            
-            if other_sessions.data and len(other_sessions.data) > 0:
-                session_details = [
-                    f"{s['opened_by_name']} ({s.get('terminal_name', '')})"
-                    for s in other_sessions.data
-                ]
-                blocking_reasons.append(
-                    f"Hay {len(other_sessions.data)} turno(s) activo(s): {', '.join(session_details)}"
-                )
-        except Exception as e:
-            print(f"Warning: Could not check other sessions: {e}")
-        
-        if blocking_reasons:
+            table_numbers = list(set([str(o.get("table_number", "?")) for o in open_orders]))
+            tables_str = ", ".join([f"Mesa {t}" for t in table_numbers[:5]])
+            if len(table_numbers) > 5:
+                tables_str += f" y {len(table_numbers) - 5} mas"
             raise HTTPException(
                 status_code=400,
-                detail="No se puede cerrar turno. " + " | ".join(blocking_reasons) + ". Cierra todas las cuentas abiertas y turnos primero."
+                detail=f"No puedes cerrar turno. Tienes {len(open_orders)} cuenta(s) abierta(s): {tables_str}. Cierra o transfiere estas cuentas primero."
             )
         
         # Calcular efectivo esperado
