@@ -440,14 +440,19 @@ async def list_modifiers():
     New-style: stored in 'modifier_groups' collection with separate options in 'modifiers' collection.
     Individual options (with non-empty group_id) are excluded.
     """
-    # Old-style groups (no group_id = they ARE groups)
+    # Old-style groups (no group_id or empty group_id = they ARE groups)
     old_query = {"$or": [{"group_id": {"$exists": False}}, {"group_id": ""}, {"group_id": None}]}
     old_groups = await db.modifiers.find(old_query, {"_id": 0}).to_list(100)
     
     # New-style groups from modifier_groups collection
     new_groups = await db.modifier_groups.find({}, {"_id": 0}).to_list(100)
+    # Get individual options (those with a non-empty group_id)
+    all_options = []
+    async for doc in db.modifiers.find({}, {"_id": 0}):
+        gid = doc.get("group_id", "")
+        if gid and gid.strip():  # Has a real group_id = it's an option, not a group
+            all_options.append(doc)
     # Enrich new groups with their options
-    all_options = await db.modifiers.find({"group_id": {"$ne": "", "$exists": True, "$ne": None}}, {"_id": 0}).to_list(500)
     for g in new_groups:
         g["options"] = [o for o in all_options if o.get("group_id") == g["id"]]
     
