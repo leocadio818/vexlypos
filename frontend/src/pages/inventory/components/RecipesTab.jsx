@@ -85,6 +85,7 @@ export default function RecipesTab({
   const [marginMode, setMarginMode] = useState('price');
   const [targetMargin, setTargetMargin] = useState(30);
   const [customPrice, setCustomPrice] = useState(0);
+  const [historyDialog, setHistoryDialog] = useState({ open: false, recipeId: null, recipeName: '' });
   
   // View state
   const [viewMode, setViewMode] = useState('list');
