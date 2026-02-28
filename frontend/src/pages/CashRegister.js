@@ -94,6 +94,9 @@ export default function CashRegister() {
   // Teclado flotante para campos de monto
   const [floatingKeypad, setFloatingKeypad] = useState({ open: false, field: null, value: '' });
   
+  // Desglose detallado de ventas por forma de pago
+  const [salesBreakdown, setSalesBreakdown] = useState(null);
+  
   // Check URL params for B04 redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
