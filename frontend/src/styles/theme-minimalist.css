@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════
    TEMA MINIMALISTA NEUMÓRFICO — FULL SYSTEM
    Efecto 3D táctil con luces LED en TODOS los elementos
-   Aislado bajo body.theme-minimalist
+   Soporta modo CLARO y OSCURO
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Shadcn CSS Variable Overrides (Light Mode) ── */
+/* ── Shadcn CSS Variable Overrides (Light Mode Base) ── */
 body.theme-minimalist {
   --background: 210 29% 95%;
   --foreground: 217 33% 17%;
@@ -26,7 +26,6 @@ body.theme-minimalist {
   --input: 210 18% 91%;
   --ring: 25 100% 50%;
 
-  /* Neo Base Props (defaults, overridden by JS) */
   --neo-bg: #f0f5f9;
   --neo-shadow-dark: #c8cfd8;
   --neo-shadow-light: #ffffff;
@@ -38,21 +37,62 @@ body.theme-minimalist {
   --neo-accent: #1e293b;
 
   background-color: var(--neo-bg) !important;
-  color: hsl(217 33% 17%);
 }
 
-/* ── Scrollbar Light ── */
-body.theme-minimalist ::-webkit-scrollbar-track { background: #e6eaef; }
-body.theme-minimalist ::-webkit-scrollbar-thumb {
-  background: #c0c8d2; border-radius: 3px;
-  box-shadow: inset 1px 1px 2px var(--neo-shadow-dark);
+
+/* ═══════════════════════════════════════════════════════════════
+   DARK NEUMORPHIC MODE
+   body.theme-minimalist.neo-dark
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-minimalist.neo-dark {
+  --secondary: 222 40% 18%;
+  --secondary-foreground: 210 40% 96%;
+  --muted: 222 40% 16%;
+  --muted-foreground: 215 20% 60%;
+  --accent: 222 40% 18%;
+  --accent-foreground: 210 40% 96%;
+  --border: 222 30% 22%;
+  --input: 222 40% 15%;
+
+  color: hsl(210 40% 96%);
 }
-body.theme-minimalist ::-webkit-scrollbar-thumb:hover { background: hsl(25 100% 50%); }
+
+/* Dark: scrollbar */
+body.theme-minimalist.neo-dark ::-webkit-scrollbar-track { background: #0a1020; }
+body.theme-minimalist.neo-dark ::-webkit-scrollbar-thumb { background: #1e2d4a; border-radius: 3px; }
+body.theme-minimalist.neo-dark ::-webkit-scrollbar-thumb:hover { background: hsl(25 100% 50%); }
+
+/* Dark: KEEP text-white as white (undo light mode override) */
+body.theme-minimalist.neo-dark .text-white { color: white !important; }
+body.theme-minimalist.neo-dark .text-white\/90 { color: rgba(255,255,255,0.9) !important; }
+body.theme-minimalist.neo-dark .text-white\/80 { color: rgba(255,255,255,0.8) !important; }
+body.theme-minimalist.neo-dark .text-white\/70 { color: rgba(255,255,255,0.7) !important; }
+body.theme-minimalist.neo-dark .text-white\/60 { color: rgba(255,255,255,0.6) !important; }
+body.theme-minimalist.neo-dark .text-white\/50 { color: rgba(255,255,255,0.5) !important; }
+body.theme-minimalist.neo-dark .text-white\/40 { color: rgba(255,255,255,0.4) !important; }
+body.theme-minimalist.neo-dark .text-white\/30 { color: rgba(255,255,255,0.3) !important; }
+
+/* Dark: borders can be subtle */
+body.theme-minimalist.neo-dark .border-white\/10,
+body.theme-minimalist.neo-dark .border-white\/20,
+body.theme-minimalist.neo-dark .border-white\/30 { border-color: rgba(255,255,255,0.08) !important; }
+
+/* Dark: glass backgrounds → dark neo bg */
+body.theme-minimalist.neo-dark .bg-white\/5,
+body.theme-minimalist.neo-dark .bg-white\/10,
+body.theme-minimalist.neo-dark .bg-white\/15,
+body.theme-minimalist.neo-dark .bg-white\/20 { background-color: var(--neo-bg) !important; }
+
+
+/* ── Light Mode: Scrollbar ── */
+body.theme-minimalist:not(.neo-dark) ::-webkit-scrollbar-track { background: #e6eaef; }
+body.theme-minimalist:not(.neo-dark) ::-webkit-scrollbar-thumb { background: #c0c8d2; border-radius: 3px; }
+body.theme-minimalist:not(.neo-dark) ::-webkit-scrollbar-thumb:hover { background: hsl(25 100% 50%); }
 
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL NEUMORPHIC BUTTONS
-   Todos los botones "sobresalen" del fondo con luces LED
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist button:not([disabled]),
@@ -83,17 +123,6 @@ body.theme-minimalist [role="button"]:not([disabled]):active {
   transform: translateY(1px) scale(0.98);
 }
 
-/* Colored buttons (bg-primary, bg-green, etc.) keep color + glow in their color */
-body.theme-minimalist button[class*="bg-primary"]:not([disabled]),
-body.theme-minimalist button[class*="bg-green"]:not([disabled]),
-body.theme-minimalist button[class*="bg-gradient"]:not([disabled]) {
-  box-shadow:
-    4px 4px 8px var(--neo-shadow-dark),
-    -4px -4px 8px var(--neo-shadow-light),
-    0 10px 25px -6px var(--neo-glow-strong) !important;
-}
-
-/* Disabled buttons - flat, no glow */
 body.theme-minimalist button[disabled],
 body.theme-minimalist [role="button"][disabled] {
   box-shadow: none !important;
@@ -103,7 +132,6 @@ body.theme-minimalist [role="button"][disabled] {
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL NEUMORPHIC CARDS & PANELS
-   Tarjetas con sombra profunda + LED glow debajo
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist .bg-card {
@@ -117,7 +145,6 @@ body.theme-minimalist .bg-card {
   border-radius: 16px;
 }
 
-/* Panels with explicit rounded + border patterns */
 body.theme-minimalist div[class*="rounded-xl"][class*="border"],
 body.theme-minimalist div[class*="rounded-2xl"][class*="border"],
 body.theme-minimalist div[class*="rounded-lg"][class*="border"][class*="p-"] {
@@ -130,14 +157,19 @@ body.theme-minimalist div[class*="rounded-lg"][class*="border"][class*="p-"] {
   background: var(--neo-bg);
 }
 
-/* Settings page containers */
+/* Override dark slate backgrounds used in modals/panels to neo-bg */
+body.theme-minimalist [class*="bg-slate-9"],
+body.theme-minimalist [class*="bg-slate-8"] {
+  background-color: var(--neo-bg) !important;
+}
+
 body.theme-minimalist .bg-gradient-to-br {
   background: var(--neo-bg) !important;
 }
 
 
 /* ═══════════════════════════════════════════════════════════════
-   INPUTS — Sunken / Inset Effect
+   INPUTS — Sunken / Inset
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist input:not([type="color"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
@@ -149,6 +181,7 @@ body.theme-minimalist textarea {
     inset -3px -3px 6px var(--neo-shadow-light) !important;
   border-color: transparent !important;
   border-radius: 12px;
+  color: hsl(var(--foreground)) !important;
   transition: box-shadow 0.2s ease !important;
 }
 
@@ -163,7 +196,7 @@ body.theme-minimalist textarea:focus {
 
 
 /* ═══════════════════════════════════════════════════════════════
-   SIDEBAR NAVIGATION — Neumorphic Panel
+   SIDEBAR NAVIGATION
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist [data-testid="sidebar"] {
@@ -182,7 +215,6 @@ body.theme-minimalist [data-testid="mobile-nav"] {
     0 -8px 25px -10px var(--neo-glow-soft) !important;
 }
 
-/* Nav links — raised 3D */
 body.theme-minimalist [data-testid="sidebar"] nav a,
 body.theme-minimalist [data-testid="mobile-nav"] nav a {
   background: var(--neo-bg) !important;
@@ -203,16 +235,14 @@ body.theme-minimalist [data-testid="mobile-nav"] nav a:hover {
   transform: translateY(-1px);
 }
 
-/* Active nav — inset + colored glow */
 body.theme-minimalist [data-testid="sidebar"] nav a[class*="bg-primary"],
 body.theme-minimalist [data-testid="mobile-nav"] nav a[class*="bg-primary"] {
   box-shadow:
     inset 3px 3px 6px rgba(0,0,0,0.15),
-    inset -3px -3px 6px rgba(255,255,255,0.5),
+    inset -3px -3px 6px rgba(255,255,255,0.15),
     0 8px 25px -5px var(--neo-glow-strong) !important;
 }
 
-/* Logo button */
 body.theme-minimalist [data-testid="logo-logout-btn"] {
   box-shadow:
     4px 4px 8px var(--neo-shadow-dark),
@@ -220,16 +250,9 @@ body.theme-minimalist [data-testid="logo-logout-btn"] {
     0 6px 18px -5px var(--neo-glow-medium) !important;
 }
 
-/* Business day button */
-body.theme-minimalist [data-testid="business-day-sidebar-btn"] {
-  box-shadow:
-    3px 3px 6px var(--neo-shadow-dark),
-    -3px -3px 6px var(--neo-shadow-light) !important;
-}
-
 
 /* ═══════════════════════════════════════════════════════════════
-   TABS — Raised / Inset States
+   TABS
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist [role="tablist"] {
@@ -257,17 +280,9 @@ body.theme-minimalist [role="tab"][data-state="active"] {
     0 6px 18px -5px var(--neo-glow-strong) !important;
 }
 
-body.theme-minimalist [role="tab"]:hover:not([data-state="active"]) {
-  box-shadow:
-    4px 4px 8px var(--neo-shadow-dark),
-    -4px -4px 8px var(--neo-shadow-light),
-    0 8px 20px -6px var(--neo-glow-medium) !important;
-  transform: translateY(-1px);
-}
-
 
 /* ═══════════════════════════════════════════════════════════════
-   DIALOGS & MODALS — Deep Shadow + Prominent Glow
+   DIALOGS & MODALS
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist [role="dialog"] > div,
@@ -284,18 +299,7 @@ body.theme-minimalist [data-radix-popper-content-wrapper] > div {
 
 
 /* ═══════════════════════════════════════════════════════════════
-   BADGES & SMALL ELEMENTS
-   ═══════════════════════════════════════════════════════════════ */
-
-body.theme-minimalist [class*="rounded-full"][class*="bg-"][class*="text-"] {
-  box-shadow:
-    2px 2px 4px var(--neo-shadow-dark),
-    -2px -2px 4px var(--neo-shadow-light) !important;
-}
-
-
-/* ═══════════════════════════════════════════════════════════════
-   TABLE MAP — Neumorphic Tables
+   TABLE MAP
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist .table-node-free,
@@ -329,58 +333,58 @@ body.theme-minimalist [data-sonner-toaster] [data-sonner-toast] {
     -6px -6px 12px var(--neo-shadow-light),
     0 10px 30px -8px var(--neo-glow-medium) !important;
   border: none !important;
-  color: hsl(217 33% 17%) !important;
+  color: hsl(var(--foreground)) !important;
 }
 
 
 /* ═══════════════════════════════════════════════════════════════
-   TEXT CONTRAST FIX FOR LIGHT THEME
+   TEXT CONTRAST — LIGHT MODE ONLY
    ═══════════════════════════════════════════════════════════════ */
 
-body.theme-minimalist .text-white { color: hsl(var(--foreground)) !important; }
-body.theme-minimalist .text-white\/90 { color: hsl(var(--foreground) / 0.9) !important; }
-body.theme-minimalist .text-white\/80 { color: hsl(var(--foreground) / 0.8) !important; }
-body.theme-minimalist .text-white\/70 { color: hsl(var(--foreground) / 0.7) !important; }
-body.theme-minimalist .text-white\/60 { color: hsl(var(--foreground) / 0.6) !important; }
-body.theme-minimalist .text-white\/50 { color: hsl(var(--foreground) / 0.5) !important; }
-body.theme-minimalist .text-white\/40 { color: hsl(var(--foreground) / 0.4) !important; }
-body.theme-minimalist .text-white\/30 { color: hsl(var(--foreground) / 0.3) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white { color: hsl(var(--foreground)) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/90 { color: hsl(var(--foreground) / 0.9) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/80 { color: hsl(var(--foreground) / 0.8) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/70 { color: hsl(var(--foreground) / 0.7) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/60 { color: hsl(var(--foreground) / 0.6) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/50 { color: hsl(var(--foreground) / 0.5) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/40 { color: hsl(var(--foreground) / 0.4) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/30 { color: hsl(var(--foreground) / 0.3) !important; }
 
-/* Preserve white text inside colored containers */
-body.theme-minimalist [class*="bg-primary"] > .text-white,
-body.theme-minimalist [class*="bg-primary"].text-white,
-body.theme-minimalist [class*="bg-green-"] > .text-white,
-body.theme-minimalist [class*="bg-green-"].text-white,
-body.theme-minimalist [class*="bg-red-"] > .text-white,
-body.theme-minimalist [class*="bg-red-"].text-white,
-body.theme-minimalist [class*="bg-blue-"] > .text-white,
-body.theme-minimalist [class*="bg-blue-"].text-white,
-body.theme-minimalist [class*="bg-amber-"] > .text-white,
-body.theme-minimalist [class*="bg-amber-"].text-white,
-body.theme-minimalist [class*="bg-orange-"] > .text-white,
-body.theme-minimalist [class*="bg-orange-"].text-white,
-body.theme-minimalist [class*="bg-gradient"] .text-white,
-body.theme-minimalist [class*="bg-gradient"].text-white,
-body.theme-minimalist [class*="bg-slate-9"] .text-white,
-body.theme-minimalist [class*="bg-slate-8"] .text-white,
-body.theme-minimalist .text-primary-foreground { color: hsl(var(--primary-foreground)) !important; }
+/* Preserve white text inside colored containers (light mode) */
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] > .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"].text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-"] > .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-"].text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-red-"] > .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-red-"].text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-blue-"] > .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-blue-"].text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-amber-"] > .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-amber-"].text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-orange-"] > .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-orange-"].text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-gradient"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-gradient"].text-white,
+body.theme-minimalist:not(.neo-dark) .text-primary-foreground { color: hsl(var(--primary-foreground)) !important; }
 
-/* Border white → subtle */
-body.theme-minimalist .border-white\/10,
-body.theme-minimalist .border-white\/20,
-body.theme-minimalist .border-white\/30 { border-color: transparent !important; }
+/* Light mode: borders white → transparent */
+body.theme-minimalist:not(.neo-dark) .border-white\/10,
+body.theme-minimalist:not(.neo-dark) .border-white\/20,
+body.theme-minimalist:not(.neo-dark) .border-white\/30 { border-color: transparent !important; }
 
-/* Glass backgrounds → solid neo */
-body.theme-minimalist .bg-white\/5,
-body.theme-minimalist .bg-white\/10,
-body.theme-minimalist .bg-white\/15,
-body.theme-minimalist .bg-white\/20 { background-color: var(--neo-bg) !important; }
+/* Light mode: glass bg → neo bg */
+body.theme-minimalist:not(.neo-dark) .bg-white\/5,
+body.theme-minimalist:not(.neo-dark) .bg-white\/10,
+body.theme-minimalist:not(.neo-dark) .bg-white\/15,
+body.theme-minimalist:not(.neo-dark) .bg-white\/20 { background-color: var(--neo-bg) !important; }
+
+/* Both modes: kill backdrop blur */
 body.theme-minimalist .backdrop-blur-xl,
 body.theme-minimalist .backdrop-blur-md { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 
 
 /* ═══════════════════════════════════════════════════════════════
-   UTILITY CLASSES (for manual use)
+   UTILITY CLASSES
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist .neo-raised {
@@ -407,16 +411,12 @@ body.theme-minimalist .neo-flat {
 
 
 /* ═══════════════════════════════════════════════════════════════
-   ANIMATIONS — Breathing Glow
+   ANIMATIONS
    ═══════════════════════════════════════════════════════════════ */
 
 @keyframes neo-glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 20px var(--neo-glow-soft), 0 0 40px var(--neo-glow-soft);
-  }
-  50% {
-    box-shadow: 0 0 30px var(--neo-glow-medium), 0 0 60px var(--neo-glow-soft);
-  }
+  0%, 100% { box-shadow: 0 0 20px var(--neo-glow-soft), 0 0 40px var(--neo-glow-soft); }
+  50% { box-shadow: 0 0 30px var(--neo-glow-medium), 0 0 60px var(--neo-glow-soft); }
 }
 
 @keyframes neo-glow-breathe {
@@ -428,7 +428,6 @@ body.theme-minimalist .neo-glow-animate {
   animation: neo-glow-pulse 3s ease-in-out infinite;
 }
 
-/* Subtle breathing glow on the main background orbs */
 body.theme-minimalist .neo-bg-orb {
   animation: neo-glow-breathe 4s ease-in-out infinite;
 }
