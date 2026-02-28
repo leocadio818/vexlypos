@@ -18,3 +18,4 @@ export { default as ByWaiterReport } from './ByWaiterReport';
 export { default as RecipesReport } from './RecipesReport';
 export { default as StockAdjustmentsReport } from './StockAdjustmentsReport';
 export { default as SystemAuditReport } from './SystemAuditReport';
+export { default as DiscountsReport } from './DiscountsReport';

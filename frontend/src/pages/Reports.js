@@ -18,7 +18,8 @@ import {
   ByTypeReport, PaymentMethodsReport, VoidAuditReport, InventoryLevelsReport,
   TransfersReport, DifferencesReport, WasteReport, PurchaseOrdersReport,
   BySupplierReport, TaxesReport, ProfitLossReport, TableMovementsReport,
-  ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport
+  ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport,
+  DiscountsReport
 } from './reports';
 import { COLORS } from './reports/reportUtils';
 
@@ -677,6 +678,8 @@ export default function Reports() {
         return <StockAdjustmentsReport data={reportData} />;
       case 'system-audit':
         return <SystemAuditReport data={reportData} auditEventFilter={auditEventFilter} onFilterChange={setAuditEventFilter} onReload={() => loadReport('system-audit')} />;
+      case 'discounts':
+        return <DiscountsReport data={reportData} />;
       default:
         return <pre className="text-xs overflow-auto">{JSON.stringify(reportData, null, 2)}</pre>;
     }
