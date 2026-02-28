@@ -1002,7 +1002,7 @@ export default function PaymentScreen() {
 
   if (!bill) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className={`h-full flex items-center justify-center ${isMinimalist ? '' : 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'}`} style={isMinimalist ? { background: neoBg } : {}}>
         <div className="relative">
           <div className="animate-spin w-12 h-12 border-4 border-white/20 border-t-white rounded-full" />
           <div className="absolute inset-0 animate-ping w-12 h-12 border-2 border-white/20 rounded-full" />
