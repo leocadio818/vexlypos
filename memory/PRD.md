@@ -1088,6 +1088,7 @@ El panel "Anulaciones" del Dashboard mostraba datos inconsistentes: "Hoy (Tiempo
 - `/app/frontend/src/lib/timezone.js` - NUEVO: utilidad frontend
 - `/app/backend/server.py` - Endpoints GET/PUT /api/timezone + seed en startup
 - `/app/backend/routers/reports.py` - Dashboard usa funciones centralizadas
+- `/app/frontend/src/pages/settings/SystemTab.js` - Selector IANA de timezone en Config > Sistema
 
 ### Verificacion: Testing agent 100% (12/12 backend, frontend OK) - iteration_89
 
