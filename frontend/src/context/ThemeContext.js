@@ -102,7 +102,7 @@ export function ThemeProvider({ children }) {
       console.error('Error saving theme:', err);
       return false;
     }
-  }, [API_BASE, theme, activeThemeMode, neoColors]);
+  }, [API_BASE, theme, activeThemeMode, neoColors, neoMode]);
 
   // ── Save glass theme only (backward compat) ──
   const saveTheme = useCallback(async (newTheme) => {
