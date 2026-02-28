@@ -180,64 +180,67 @@ async def send_cancel_ticket_to_print_queue(order_id: str, items_cancelled: list
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         return
+    
+    # Generate ESC-POS commands (texto plano, sin acentos, 72mm)
+    commands = []
+    commands.append({"type": "center", "bold": True, "size": "large", "text": "*** CANCELACION DE ORDEN ***"})
+    commands.append({"type": "divider"})
+    commands.append({"type": "left", "bold": True, "size": "large", "text": f"Mesa: {order.get('table_number', '?')}"})
+    commands.append({"type": "left", "text": f"Mozo: {order.get('waiter_name', '')}"})
+    trans = order.get("transaction_number", "")
+    if trans:
+        commands.append({"type": "left", "text": f"Trans: #{trans}"})
+    commands.append({"type": "left", "text": f"Hora: {now_iso()[11:16]}"})
+    commands.append({"type": "divider"})
+    
+    for item in items_cancelled:
+        qty = item.get("qty_voided", item.get("quantity", 1))
+        name = item.get("product_name", "?")
+        commands.append({"type": "left", "bold": True, "size": "large", "text": f"ANULAR: {qty} x {name}"})
+        for mod in item.get("modifiers", []):
+            mod_name = mod.get("name", "") if isinstance(mod, dict) else str(mod)
+            if mod_name:
+                commands.append({"type": "left", "text": f"  + {mod_name}"})
+        if item.get("notes"):
+            commands.append({"type": "left", "text": f"  NOTA: {item['notes']}"})
+    
+    commands.append({"type": "divider"})
+    commands.append({"type": "feed", "lines": 2})
+    commands.append({"type": "cut"})
+    
+    # Route to same printer channel as original comanda
     channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
     category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
     cat_to_channel = {m["category_id"]: m["channel_code"] for m in category_mappings}
     products_db = await db.products.find({}, {"_id": 0, "id": 1, "category_id": 1, "print_channels": 1}).to_list(500)
     prod_map = {p["id"]: p for p in products_db}
     
-    items_by_channel = {}
+    target_channels_set = set()
     for item in items_cancelled:
         prod_id = item.get("product_id", "")
         product = prod_map.get(prod_id, {})
         product_channels = product.get("print_channels", [])
-        if product_channels and len(product_channels) > 0:
-            target_channels = product_channels
+        if product_channels:
+            for ch in product_channels:
+                if ch != "receipt":
+                    target_channels_set.add(ch)
         else:
             cat_id = product.get("category_id", "")
-            channel_code = cat_to_channel.get(cat_id, "kitchen")
-            target_channels = [channel_code]
-        for channel_code in target_channels:
-            if channel_code == "receipt":
-                continue
-            if channel_code not in items_by_channel:
-                items_by_channel[channel_code] = []
-            items_by_channel[channel_code].append(item)
+            ch = cat_to_channel.get(cat_id, "kitchen")
+            if ch != "receipt":
+                target_channels_set.add(ch)
     
-    for channel_code, items in items_by_channel.items():
-        if not items:
-            continue
+    if not target_channels_set:
+        target_channels_set = {"kitchen"}
+    
+    for channel_code in target_channels_set:
         channel = next((c for c in channels if c.get("code") == channel_code), None)
-        printer_name = channel.get("printer_name", "") if channel else ""
-        printer_target = channel.get("target", "usb") if channel else "usb"
-        printer_ip = channel.get("ip", "") if channel else ""
-        
-        cancel_data = {
-            "type": "cancel_comanda",
-            "paper_width": 80,
-            "table_number": order.get("table_number", "?"),
-            "waiter_name": order.get("waiter_name", ""),
-            "order_number": order.get("id", "")[:8],
-            "transaction_number": order.get("transaction_number", ""),
-            "date": now_iso()[:19].replace("T", " "),
-            "items": [
-                {
-                    "name": i.get("product_name", ""),
-                    "quantity": i.get("qty_voided", i.get("quantity", 1)),
-                    "modifiers": [m.get("name", "") for m in i.get("modifiers", [])],
-                    "notes": i.get("notes", "")
-                }
-                for i in items
-            ]
-        }
         job = {
             "id": str(uuid.uuid4()),
             "type": "cancel_comanda",
             "channel": channel_code,
-            "printer_name": printer_name,
-            "printer_target": printer_target,
-            "printer_ip": printer_ip,
-            "data": cancel_data,
+            "reference_id": order_id,
+            "commands": commands,
             "status": "pending",
             "created_at": now_iso()
         }
