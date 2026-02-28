@@ -229,7 +229,7 @@ export default function Layout() {
       {isMobile && !shouldHideNav ? (
         // Mobile Bottom Navigation - Glassmorphism
         <aside 
-          className={`fixed bottom-0 left-0 right-0 z-50 safe-area-bottom ${isGlassPage ? 'backdrop-blur-xl bg-white/10 border-t border-white/20' : 'bg-card border-t border-border'}`}
+          className={`fixed bottom-0 left-0 right-0 z-50 safe-area-bottom ${useGlassStyle ? 'backdrop-blur-xl bg-white/10 border-t border-white/20' : 'bg-card border-t border-border'}`}
           data-testid="mobile-nav"
         >
           {/* Offline banner for mobile */}
@@ -272,10 +272,10 @@ export default function Layout() {
                 className={({ isActive }) =>
                   `flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl transition-all min-w-[50px] ${
                     isActive
-                      ? isGlassPage 
+                      ? useGlassStyle 
                         ? 'bg-white/20 text-white shadow-lg'
                         : 'bg-primary text-primary-foreground'
-                      : isGlassPage
+                      : useGlassStyle
                         ? 'text-white/60 hover:text-white'
                         : 'text-muted-foreground'
                   }`
@@ -288,7 +288,7 @@ export default function Layout() {
             <button
               onClick={handleLogout}
               className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl min-w-[50px] ${
-                isGlassPage ? 'text-white/60 hover:text-red-400' : 'text-muted-foreground hover:text-destructive'
+                useGlassStyle ? 'text-white/60 hover:text-red-400' : 'text-muted-foreground hover:text-destructive'
               }`}
             >
               <LogOut size={20} />
@@ -300,7 +300,7 @@ export default function Layout() {
         // Tablet/Desktop Side Navigation - Glassmorphism
         <aside 
           className={`${isTablet ? 'w-16' : largeMode ? 'w-20 lg:w-24' : 'w-16 lg:w-20'} flex flex-col items-center py-3 lg:py-4 shrink-0 relative z-20 ${
-            isGlassPage 
+            useGlassStyle 
               ? 'backdrop-blur-xl bg-white/5 border-r border-white/10' 
               : 'bg-card border-r border-border'
           }`} 
@@ -312,11 +312,11 @@ export default function Layout() {
             data-testid="logo-logout-btn"
             title="Salir del sistema"
             className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-lg flex items-center justify-center mb-2 transition-all hover:opacity-80 active:scale-95 ${
-              isGlassPage ? 'backdrop-blur-xl bg-white/10 border border-white/20 hover:bg-white/20' : 'hover:ring-2 hover:ring-primary/50'
+              useGlassStyle ? 'backdrop-blur-xl bg-white/10 border border-white/20 hover:bg-white/20' : 'hover:ring-2 hover:ring-primary/50'
             }`}
-            style={{ backgroundColor: isGlassPage ? 'transparent' : theme.accentColor }}
+            style={{ backgroundColor: useGlassStyle ? 'transparent' : theme.accentColor }}
           >
-            <span className={`font-oswald font-bold ${isGlassPage ? 'text-white' : 'text-primary-foreground'} ${isTablet ? 'text-base' : largeMode ? 'text-xl' : 'text-lg'}`}>RD</span>
+            <span className={`font-oswald font-bold ${useGlassStyle ? 'text-white' : 'text-primary-foreground'} ${isTablet ? 'text-base' : largeMode ? 'text-xl' : 'text-lg'}`}>RD</span>
           </button>
           
           {/* Business Day Indicator - Jornada de Trabajo */}
@@ -328,10 +328,10 @@ export default function Layout() {
               businessDayLoading ? 'animate-pulse' : ''
             } ${
               businessDay 
-                ? isGlassPage 
+                ? useGlassStyle 
                   ? 'bg-green-500/20 border border-green-500/30 hover:bg-green-500/30' 
                   : 'bg-green-500/20 hover:bg-green-500/30'
-                : isGlassPage
+                : useGlassStyle
                   ? 'bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 animate-pulse'
                   : 'bg-red-500/20 hover:bg-red-500/30 animate-pulse'
             }`}
