@@ -17,7 +17,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://subrecipe-critical.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://pos-data-sync-1.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_PIN = "10000"

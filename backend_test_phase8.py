@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 class Phase8POSAPITester:
-    def __init__(self, base_url="https://subrecipe-critical.preview.emergentagent.com"):
+    def __init__(self, base_url="https://pos-data-sync-1.preview.emergentagent.com"):
         self.base_url = f"{base_url}/api"
         self.token = None
         self.tests_run = 0
