@@ -270,7 +270,7 @@ export default function Reservations() {
                 <div>
                   <label className="text-[10px] text-white/50 mb-1 block">Activar (min antes)</label>
                   <select value={dialog.activation_minutes} onChange={e => setDialog(p => ({ ...p, activation_minutes: parseInt(e.target.value) }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-white/30 outline-none">
+                    className="w-full bg-slate-800 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-white/30 outline-none" style={{ colorScheme: 'dark' }}>
                     <option value={15}>15 minutos</option>
                     <option value={30}>30 minutos</option>
                     <option value={45}>45 minutos</option>
