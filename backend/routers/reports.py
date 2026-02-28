@@ -1950,8 +1950,7 @@ def _adjust_value_for_movements(current_value: float, movements_after: list, ing
 @router.get("/discounts")
 async def get_discounts_report(
     date_from: str = None,
-    date_to: str = None,
-    user=Depends(get_current_user)
+    date_to: str = None
 ):
     """Reporte detallado de descuentos aplicados"""
     query = {"status": "paid", "discount_applied.amount": {"$gt": 0}}
