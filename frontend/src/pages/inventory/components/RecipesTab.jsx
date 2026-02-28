@@ -1021,6 +1021,13 @@ export default function RecipesTab({
           </div>
         </DialogContent>
       </Dialog>
+      {/* ─── RECIPE HISTORY DIALOG ─── */}
+      <RecipeHistoryDialog
+        open={historyDialog.open}
+        onOpenChange={(o) => !o && setHistoryDialog({ open: false, recipeId: null, recipeName: '' })}
+        recipeId={historyDialog.recipeId}
+        recipeName={historyDialog.recipeName}
+      />
     </div>
   );
 }
