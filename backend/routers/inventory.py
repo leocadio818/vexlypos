@@ -657,6 +657,7 @@ async def register_difference(input: StockDifferenceInput, request: Request):
     await db.stock_movements.insert_one({
         "id": gen_id(),
         "ingredient_id": input.ingredient_id,
+        "ingredient_name": ingredient.get("name", "?"),
         "warehouse_id": input.warehouse_id,
         "quantity": stock_change,
         "movement_type": "difference",
