@@ -220,8 +220,10 @@ export default function Layout() {
       {/* Subtle glow orbs for minimalist */}
       {isMinimalist && isGlassPage && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-32 -left-32 w-64 h-64 rounded-full blur-[120px] opacity-30" style={{ backgroundColor: neoColors.neoGlowColor }} />
-          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full blur-[140px] opacity-20" style={{ backgroundColor: neoColors.neoGlowColor }} />
+          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full blur-[100px] neo-bg-orb" style={{ backgroundColor: neoColors.neoGlowColor, opacity: 0.35 }} />
+          <div className="absolute top-1/3 -right-10 w-56 h-56 rounded-full blur-[90px] neo-bg-orb" style={{ backgroundColor: neoColors.neoGlowColor, opacity: 0.25, animationDelay: '1.5s' }} />
+          <div className="absolute -bottom-16 left-1/4 w-64 h-64 rounded-full blur-[110px] neo-bg-orb" style={{ backgroundColor: neoColors.neoGlowColor, opacity: 0.3, animationDelay: '3s' }} />
+          <div className="absolute bottom-1/3 right-1/4 w-48 h-48 rounded-full blur-[80px] neo-bg-orb" style={{ backgroundColor: neoColors.neoGlowColor, opacity: 0.2, animationDelay: '2s' }} />
         </div>
       )}
 
