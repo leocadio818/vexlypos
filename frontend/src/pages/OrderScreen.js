@@ -2055,36 +2055,15 @@ export default function OrderScreen() {
         <DialogContent className="max-w-lg bg-card border-border p-5" data-testid="modifier-dialog">
           <DialogHeader><DialogTitle className="font-oswald text-lg">{modDialog.product?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1 scrollbar-thin">
-            {/* Numeric Keypad Quantity Section */}
-            <div className="bg-background rounded-xl border border-border p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-muted-foreground">Cantidad:</span>
-                <span className="font-oswald text-3xl font-bold text-primary" data-testid="qty-display">{modDialog.qty || '0'}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {[1,2,3,4,5,6,7,8,9].map(n => (
-                  <button key={n} onClick={() => setModDialog(p => {
-                    const newQty = !p._qtyTouched || p.qty === '0' ? String(n) : p.qty + String(n);
-                    return { ...p, qty: newQty, _qtyTouched: true };
-                  })}
-                    data-testid={`qty-key-${n}`}
-                    className="h-11 rounded-lg bg-muted hover:bg-primary/20 font-oswald font-bold text-lg active:scale-95 transition-all">{n}</button>
-                ))}
-                <button onClick={() => setModDialog(p => ({ ...p, qty: '0', _qtyTouched: true }))}
-                  data-testid="qty-key-clear"
-                  className="h-11 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 font-bold text-sm active:scale-95 transition-all">CLR</button>
-                <button onClick={() => setModDialog(p => {
-                  if (!p._qtyTouched || p.qty === '0') return { ...p, qty: '0', _qtyTouched: true };
-                  return { ...p, qty: p.qty + '0', _qtyTouched: true };
-                })}
-                  data-testid="qty-key-0"
-                  className="h-11 rounded-lg bg-muted hover:bg-primary/20 font-oswald font-bold text-lg active:scale-95 transition-all">0</button>
-                <button onClick={() => setModDialog(p => {
-                  const newQty = p.qty.length > 1 ? p.qty.slice(0, -1) : '0';
-                  return { ...p, qty: newQty, _qtyTouched: true };
-                })}
-                  data-testid="qty-key-backspace"
-                  className="h-11 rounded-lg bg-muted hover:bg-orange-500/20 font-bold text-lg active:scale-95 transition-all">&larr;</button>
+            {/* Simple quantity display - no keypad, use # button for custom qty */}
+            <div className="bg-background rounded-xl border border-border p-3 flex items-center justify-between">
+              <span className="text-sm font-semibold text-muted-foreground">Cantidad:</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setModDialog(p => ({ ...p, qty: String(Math.max(1, (parseInt(p.qty) || 1) - 1)) }))}
+                  className="w-9 h-9 rounded-lg bg-muted hover:bg-destructive/20 font-bold text-lg active:scale-95 transition-all">-</button>
+                <span className="font-oswald text-2xl font-bold text-primary w-10 text-center" data-testid="qty-display">{modDialog.qty || '1'}</span>
+                <button onClick={() => setModDialog(p => ({ ...p, qty: String((parseInt(p.qty) || 1) + 1) }))}
+                  className="w-9 h-9 rounded-lg bg-muted hover:bg-primary/20 font-bold text-lg active:scale-95 transition-all">+</button>
               </div>
             </div>
 
