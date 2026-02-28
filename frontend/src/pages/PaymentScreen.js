@@ -172,6 +172,13 @@ export default function PaymentScreen() {
   // Business config for thermal ticket
   const { config: businessConfig } = useBusinessConfig();
 
+  // Discount state
+  const [discountDialog, setDiscountDialog] = useState(false);
+  const [availableDiscounts, setAvailableDiscounts] = useState([]);
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
+  const [discountPinDialog, setDiscountPinDialog] = useState({ open: false, discount: null });
+  const [discountPin, setDiscountPin] = useState('');
+
   // NCF Fiscal Types
   const fiscalTypes = [
     { code: 'B02', name: 'Consumidor Final', short: 'CF' },
