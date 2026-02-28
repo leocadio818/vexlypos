@@ -1242,7 +1242,7 @@ export default function PaymentScreen() {
                   )}
                   {/* Dynamic tax display from tax_breakdown or taxConfig */}
                   {(adjustedBill?.tax_breakdown || bill.tax_breakdown || []).length > 0 ? (
-                    (adjustedBill?.tax_breakdown || bill.tax_breakdown).filter(t => t.rate > 0).map((tax, i) => (
+                    (adjustedBill?.tax_breakdown || bill.tax_breakdown).filter(t => !(t.rate === 0 && t.amount === 0)).map((tax, i) => (
                       <div key={i} className={`flex justify-between ${tax.amount === 0 ? 'text-red-400/60 line-through' : 'text-white/70'}`}>
                         <span className={isMobile ? '' : 'text-lg'}>
                           {tax.description || tax.name || (tax.is_tip ? 'Propina' : 'ITBIS')}
