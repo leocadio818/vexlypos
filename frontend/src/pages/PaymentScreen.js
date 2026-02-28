@@ -542,13 +542,7 @@ export default function PaymentScreen() {
     const taxBreakdown = [];
     taxConfig.forEach(tax => {
       if (!tax.is_active && !tax.active) return;
-      const taxCode = tax.code || tax.name?.toUpperCase();
-      const isEnabled = taxOverrides[taxCode] !== false;
-      const exemptions = selectedServiceType?.tax_exemptions || [];
-      const isExempt = exemptions.includes(tax.id);
-      const amount = (!isEnabled || isExempt) ? 0 : subtotal * (tax.rate / 100);
-      
-      taxBreakdown.push({
+      if (!tax.rate || tax.rate <= 0) return;
         tax_id: tax.id || taxCode,
         description: tax.name || (tax.is_tip ? 'Propina Legal' : 'ITBIS'),
         rate: tax.rate,
