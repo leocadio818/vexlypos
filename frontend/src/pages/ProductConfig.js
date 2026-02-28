@@ -1155,25 +1155,35 @@ export default function ProductConfig() {
                         const g = modifierGroups.find(g => g.id === modAssignDialog.group_id);
                         const newName = window.prompt('Nuevo nombre del grupo:', g?.name || '');
                         if (!newName || !newName.trim() || newName === g?.name) return;
-                        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifier-groups/${modAssignDialog.group_id}`, {
-                          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ name: newName.trim() })
-                        });
-                        setModifierGroups(prev => prev.map(g => g.id === modAssignDialog.group_id ? { ...g, name: newName.trim() } : g));
+                        try {
+                          const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifier-groups/${modAssignDialog.group_id}`, {
+                            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: newName.trim() })
+                          });
+                          if (!res.ok) throw new Error();
+                          setModifierGroups(prev => prev.map(g => g.id === modAssignDialog.group_id ? { ...g, name: newName.trim() } : g));
+                          toast.success('Grupo renombrado');
+                        } catch { toast.error('Error al renombrar grupo'); }
                       }}
                       className="p-2 rounded-lg border border-border hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
                       title="Renombrar grupo"
                       data-testid="rename-group-btn"
                     >
-                      <ListChecks size={16} />
+                      <Pencil size={16} />
                     </button>
                     <button
                       onClick={async () => {
                         const g = modifierGroups.find(g => g.id === modAssignDialog.group_id);
                         if (!window.confirm(`Eliminar grupo "${g?.name}" y todas sus opciones?`)) return;
-                        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifier-groups/${modAssignDialog.group_id}`, { method: 'DELETE' });
-                        setModifierGroups(prev => prev.filter(g => g.id !== modAssignDialog.group_id));
-                        setModAssignDialog(p => ({ ...p, group_id: '' }));
+                        try {
+                          const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifier-groups/${modAssignDialog.group_id}`, { method: 'DELETE' });
+                          if (!res.ok) throw new Error();
+                          const deletedId = modAssignDialog.group_id;
+                          setModifierGroups(prev => prev.filter(g => g.id !== deletedId));
+                          setProduct(prev => ({ ...prev, modifier_assignments: prev.modifier_assignments.filter(a => a.group_id !== deletedId) }));
+                          setModAssignDialog(p => ({ ...p, group_id: '' }));
+                          toast.success('Grupo eliminado');
+                        } catch { toast.error('Error al eliminar grupo'); }
                       }}
                       className="p-2 rounded-lg border border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
                       title="Eliminar grupo"
