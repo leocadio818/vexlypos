@@ -286,32 +286,61 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
             detail="No hay jornada de trabajo abierta para cerrar"
         )
     
-    # Verificar turnos abiertos
-    if supabase_client:
-        try:
-            open_sessions = supabase_client.table("pos_sessions").select("id, ref, opened_by_name").eq("status", "open").execute()
-            if open_sessions.data and len(open_sessions.data) > 0 and not input.force_close:
-                session_names = [s["opened_by_name"] for s in open_sessions.data]
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Hay {len(open_sessions.data)} turno(s) abierto(s): {', '.join(session_names)}. Ciérrelos primero."
-                )
-        except HTTPException:
-            raise
-        except Exception as e:
-            print(f"Warning: Could not check open sessions: {e}")
-    
-    # Verificar cuentas/mesas abiertas
-    open_orders = await db.orders.find(
-        {"status": {"$in": ["active", "pending"]}},
-        {"_id": 0, "table_number": 1}
-    ).to_list(100)
-    if open_orders and not input.force_close:
-        tables = [str(o.get("table_number", "?")) for o in open_orders]
-        raise HTTPException(
-            status_code=400,
-            detail=f"Hay {len(open_orders)} cuenta(s) abierta(s) en: Mesa {', Mesa '.join(tables)}. Ciérrelas primero."
-        )
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # VALIDACIÓN: No cerrar jornada si hay turnos abiertos o cuentas abiertas
+    # ═══════════════════════════════════════════════════════════════════════════════
+    if not input.force_close:
+        blocking_reasons = []
+        
+        # 1. Verificar turnos abiertos en Supabase
+        if supabase_client:
+            try:
+                open_sessions = supabase_client.table("pos_sessions").select(
+                    "id, ref, opened_by_name, terminal_name"
+                ).eq("status", "open").execute()
+                if open_sessions.data and len(open_sessions.data) > 0:
+                    session_details = [
+                        f"{s['opened_by_name']} ({s.get('terminal_name', '')})"
+                        for s in open_sessions.data
+                    ]
+                    blocking_reasons.append(
+                        f"Hay {len(open_sessions.data)} turno(s) abierto(s): {', '.join(session_details)}"
+                    )
+            except HTTPException:
+                raise
+            except Exception as e:
+                print(f"Warning: Could not check open sessions: {e}")
+        
+        # 2. Verificar cuentas/mesas abiertas en MongoDB
+        open_orders = await db.orders.find(
+            {"status": {"$in": ["active", "pending"]}},
+            {"_id": 0, "table_number": 1, "waiter_name": 1}
+        ).to_list(100)
+        if open_orders:
+            tables_by_user = {}
+            for o in open_orders:
+                responsible = o.get("waiter_name") or "Sin asignar"
+                table_num = str(o.get("table_number", "?"))
+                if responsible not in tables_by_user:
+                    tables_by_user[responsible] = []
+                tables_by_user[responsible].append(table_num)
+            
+            details = []
+            for name, tables in tables_by_user.items():
+                tables_list = ", ".join([f"Mesa {t}" for t in tables[:5]])
+                if len(tables) > 5:
+                    tables_list += f" y {len(tables) - 5} mas"
+                details.append(f"{name}: {tables_list}")
+            
+            blocking_reasons.append(
+                f"Hay {len(open_orders)} cuenta(s) abierta(s) - {'; '.join(details)}"
+            )
+        
+        if blocking_reasons:
+            raise HTTPException(
+                status_code=400,
+                detail="No se puede cerrar la jornada. " + " | ".join(blocking_reasons) + ". Cierre todos los turnos y cuentas primero."
+            )
     
     # Calcular estadísticas finales
     stats = await calculate_day_stats(business_day["id"])
