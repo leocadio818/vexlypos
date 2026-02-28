@@ -337,6 +337,16 @@ export default function ProductionTab({
                 >
                   <BookOpen size={14} className="mr-1" /> Definir / Editar Receta
                 </Button>
+                {subrecipeRecipes[sr.id]?.id && (
+                  <Button 
+                    variant="ghost"
+                    className="w-full mt-1 text-cyan-500"
+                    onClick={() => setHistoryDialog({ open: true, recipeId: subrecipeRecipes[sr.id].id, recipeName: sr.name })}
+                    data-testid={`history-urgent-${sr.id}`}
+                  >
+                    <History size={14} className="mr-1" /> Historial de Cambios
+                  </Button>
+                )}
               </div>
             ))}
           </div>
