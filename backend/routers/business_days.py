@@ -1293,6 +1293,12 @@ async def generate_x_report(
             "count": sum(v["count"] for v in voids_list)
         },
         
+        # Descuentos
+        "discounts": {
+            "count": discounts_count_x,
+            "total": round(discounts_total_x, 2)
+        },
+        
         # Desglose por Forma de Pago
         "payment_breakdown": payment_breakdown,
         "payment_totals": {
