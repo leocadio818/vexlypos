@@ -123,8 +123,11 @@ async def list_modifiers_combined(group_id: Optional[str] = Query(None)):
     for g in new_groups:
         g["options"] = [o for o in all_options if o.get("group_id") == g["id"]]
     
-    old_ids = {g["id"] for g in old_groups}
-    combined = old_groups + [g for g in new_groups if g["id"] not in old_ids]
+    # Deduplicate: new-style groups (enriched) take priority over old-style groups with same name
+    new_names = {g["name"].lower().strip() for g in new_groups}
+    filtered_old = [g for g in old_groups if g["name"].lower().strip() not in new_names]
+    
+    combined = filtered_old + new_groups
     return combined
 
 api.include_router(config_router)
