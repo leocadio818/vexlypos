@@ -184,7 +184,7 @@ async def dashboard():
 
     # Voids/Anulaciones - real-time, by shift, by jornada
     current_bday = await db.business_days.find_one({"status": "open"}, {"_id": 0})
-    jornada_start = current_bday.get("opened_at", today_str) if current_bday else today_str
+    jornada_start = current_bday.get("opened_at", today) if current_bday else today
     if hasattr(jornada_start, 'isoformat'):
         jornada_start = jornada_start.isoformat()
 
@@ -193,7 +193,7 @@ async def dashboard():
     # Filter voids for current jornada (from business day open)
     jornada_voids = [v for v in all_voids if v.get("created_at", "") >= jornada_start]
     # Filter voids for today (calendar date)
-    today_voids = [v for v in all_voids if v.get("created_at", "")[:10] == today_str]
+    today_voids = [v for v in all_voids if v.get("created_at", "")[:10] == today]
 
     def summarize_voids(voids_list):
         count = len(voids_list)
