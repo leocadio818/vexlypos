@@ -37,7 +37,7 @@ def now_iso() -> str:
 def now_local_print() -> str:
     """Fecha/hora local DR para impresion de comandas."""
     from zoneinfo import ZoneInfo
-    return datetime.now(ZoneInfo("America/Santo_Domingo")).strftime("%Y-%m-%d %I:%M:%S %p")
+    return datetime.now(ZoneInfo("America/Santo_Domingo")).strftime("%Y-%m-%d %H:%M:%S")
 
 async def get_next_transaction_number() -> int:
     """
