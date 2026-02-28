@@ -1208,6 +1208,78 @@ export default function CashRegister() {
         open={!!closedDayId}
         onClose={() => setClosedDayId(null)}
       />
+
+      {/* Teclado Flotante Numerico - Fuera de todos los dialogs para z-index correcto */}
+      {floatingKeypad.open && (
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center" onClick={() => {
+          if (floatingKeypad.field === 'card') setCardDeclared(floatingKeypad.value);
+          else if (floatingKeypad.field === 'transfer') setTransferDeclared(floatingKeypad.value);
+          setFloatingKeypad({ open: false, field: null, value: '' });
+        }}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div 
+            className="relative w-full max-w-md mx-4 mb-4 rounded-2xl overflow-hidden"
+            style={{ background: 'rgba(15,15,30,0.97)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 -8px 40px rgba(0,0,0,0.6), 0 0 40px rgba(138,43,226,0.1)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Display */}
+            <div className="px-4 pt-4 pb-2">
+              <p className="text-xs text-white/40 mb-1">
+                {floatingKeypad.field === 'card' ? 'Tarjeta Declarado' : 'Transferencias'}
+              </p>
+              <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-center justify-between">
+                <span className="text-xs text-white/40">RD$</span>
+                <span className="font-oswald text-2xl font-bold text-white">
+                  {floatingKeypad.value || '0'}
+                </span>
+              </div>
+            </div>
+            {/* Keys */}
+            <div className="grid grid-cols-3 gap-2 p-4">
+              {['1','2','3','4','5','6','7','8','9','.','0','del'].map(key => (
+                <button
+                  key={key}
+                  data-testid={`keypad-${key}`}
+                  onClick={() => {
+                    if (key === 'del') {
+                      setFloatingKeypad(p => ({ ...p, value: p.value.slice(0, -1) }));
+                    } else if (key === '.') {
+                      if (!floatingKeypad.value.includes('.')) {
+                        setFloatingKeypad(p => ({ ...p, value: p.value + '.' }));
+                      }
+                    } else {
+                      setFloatingKeypad(p => ({ ...p, value: p.value + key }));
+                    }
+                  }}
+                  className={`h-14 rounded-xl font-oswald text-xl font-bold transition-all active:scale-90 ${
+                    key === 'del' 
+                      ? 'bg-red-500/15 text-red-400 border border-red-500/20 hover:bg-red-500/25' 
+                      : key === '.' 
+                        ? 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                        : 'bg-white/5 text-white border border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  {key === 'del' ? <X size={20} className="mx-auto" /> : key}
+                </button>
+              ))}
+            </div>
+            {/* Confirm */}
+            <div className="px-4 pb-4">
+              <button
+                data-testid="keypad-confirm"
+                onClick={() => {
+                  if (floatingKeypad.field === 'card') setCardDeclared(floatingKeypad.value);
+                  else if (floatingKeypad.field === 'transfer') setTransferDeclared(floatingKeypad.value);
+                  setFloatingKeypad({ open: false, field: null, value: '' });
+                }}
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-oswald font-bold active:scale-95 transition-all"
+              >
+                CONFIRMAR
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
