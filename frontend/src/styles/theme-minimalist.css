@@ -382,6 +382,37 @@ body.theme-minimalist:not(.neo-dark) .bg-white\/20 { background-color: var(--neo
 body.theme-minimalist .backdrop-blur-xl,
 body.theme-minimalist .backdrop-blur-md { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL CONTRAST FIX — Buttons & elements with invisible text
+   Ensures all interactive elements have readable text
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Force all buttons/links to inherit foreground color as default */
+body.theme-minimalist button,
+body.theme-minimalist [role="button"],
+body.theme-minimalist a {
+  color: hsl(var(--foreground));
+}
+
+/* bg-white → adapt to theme bg */
+body.theme-minimalist .bg-white {
+  background-color: var(--neo-bg) !important;
+}
+
+/* bg-background should be neo-bg */
+body.theme-minimalist .bg-background {
+  background-color: var(--neo-bg) !important;
+}
+
+/* Ensure colored buttons keep their white text */
+body.theme-minimalist [class*="bg-primary"] { color: hsl(var(--primary-foreground)); }
+body.theme-minimalist [class*="bg-green-"] { color: white; }
+body.theme-minimalist [class*="bg-red-"] { color: white; }
+body.theme-minimalist [class*="bg-blue-"] { color: white; }
+body.theme-minimalist [class*="bg-amber-"] { color: white; }
+body.theme-minimalist [class*="bg-orange-"] { color: white; }
+body.theme-minimalist [class*="bg-gradient"] { color: white; }
+
 
 /* ═══════════════════════════════════════════════════════════════
    UTILITY CLASSES
