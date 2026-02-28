@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 const ThemeContext = createContext(null);
 
-// Default Glassmorphism theme
+// ── Default Glass Theme (Original) ──
 const defaultTheme = {
   gradientStart: '#0f0f23',
   gradientMid1: '#1a1a3e',
@@ -16,27 +16,63 @@ const defaultTheme = {
   orbColor3: 'rgba(6, 182, 212, 0.2)',
 };
 
+// ── Default Neumorphic Colors ──
+const defaultNeoColors = {
+  neoBgColor: '#f0f5f9',
+  neoGlowColor: '#a78bfa',
+  neoAccentColor: '#1e293b',
+};
+
+// ── Helpers ──
+function adjustBrightness(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + amount));
+  const b = Math.min(255, Math.max(0, (num & 0xff) + amount));
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function hexToHslParts(hex) {
+  let r = parseInt(hex.slice(1, 3), 16) / 255;
+  let g = parseInt(hex.slice(3, 5), 16) / 255;
+  let b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(defaultTheme);
+  const [activeThemeMode, setActiveThemeMode] = useState('original');
+  const [neoColors, setNeoColors] = useState(defaultNeoColors);
   const [loading, setLoading] = useState(true);
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
-  // Fetch theme from backend
+  // ── Fetch (public GET, no auth needed) ──
   const fetchTheme = useCallback(async () => {
     try {
-      const token = localStorage.getItem('pos_token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      const res = await fetch(`${API_BASE}/api/theme-config`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(`${API_BASE}/api/theme-config`);
       if (res.ok) {
         const data = await res.json();
         if (data && Object.keys(data).length > 0) {
-          setTheme({ ...defaultTheme, ...data });
+          setTheme(prev => ({ ...defaultTheme, ...data }));
+          if (data.activeThemeMode) setActiveThemeMode(data.activeThemeMode);
+          if (data.neoBgColor || data.neoGlowColor || data.neoAccentColor) {
+            setNeoColors({
+              neoBgColor: data.neoBgColor || defaultNeoColors.neoBgColor,
+              neoGlowColor: data.neoGlowColor || defaultNeoColors.neoGlowColor,
+              neoAccentColor: data.neoAccentColor || defaultNeoColors.neoAccentColor,
+            });
+          }
         }
       }
     } catch (err) {
@@ -46,48 +82,108 @@ export function ThemeProvider({ children }) {
     }
   }, [API_BASE]);
 
-  // Save theme to backend
+  // ── Save everything ──
+  const saveAllThemeSettings = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('pos_token');
+      if (!token) return false;
+      const payload = { ...theme, activeThemeMode, ...neoColors };
+      const res = await fetch(`${API_BASE}/api/theme-config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('Error saving theme:', err);
+      return false;
+    }
+  }, [API_BASE, theme, activeThemeMode, neoColors]);
+
+  // ── Save glass theme only (backward compat) ──
   const saveTheme = useCallback(async (newTheme) => {
     try {
       const token = localStorage.getItem('pos_token');
       if (!token) return false;
-      
+      const payload = { ...newTheme, activeThemeMode, ...neoColors };
       const res = await fetch(`${API_BASE}/api/theme-config`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(newTheme)
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
       });
-      
-      if (res.ok) {
-        setTheme(newTheme);
-        return true;
-      }
+      if (res.ok) { setTheme(newTheme); return true; }
       return false;
     } catch (err) {
       console.error('Error saving theme:', err);
       return false;
     }
-  }, [API_BASE]);
+  }, [API_BASE, activeThemeMode, neoColors]);
 
-  // Update a single theme property
+  // Update a single glass property
   const updateTheme = useCallback((key, value) => {
     setTheme(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  // Update a single neo color
+  const updateNeoColor = useCallback((key, value) => {
+    setNeoColors(prev => ({ ...prev, [key]: value }));
   }, []);
 
   // Reset to defaults
   const resetTheme = useCallback(() => {
     setTheme(defaultTheme);
-    return saveTheme(defaultTheme);
-  }, [saveTheme]);
+    setActiveThemeMode('original');
+    setNeoColors(defaultNeoColors);
+    return saveAllThemeSettings();
+  }, [saveAllThemeSettings]);
 
+  useEffect(() => { fetchTheme(); }, [fetchTheme]);
+
+  // ── Apply / remove theme class + CSS variables ──
   useEffect(() => {
-    fetchTheme();
-  }, [fetchTheme]);
+    const root = document.documentElement;
 
-  // Generate CSS variables from theme
+    if (activeThemeMode === 'minimalist') {
+      document.body.classList.add('theme-minimalist');
+      document.body.classList.remove('theme-original');
+
+      // Compute shadows from bg color
+      const dk = adjustBrightness(neoColors.neoBgColor, -40);
+      const lt = adjustBrightness(neoColors.neoBgColor, 15);
+
+      root.style.setProperty('--neo-bg', neoColors.neoBgColor);
+      root.style.setProperty('--neo-shadow-dark', dk);
+      root.style.setProperty('--neo-shadow-light', lt);
+      root.style.setProperty('--neo-glow', neoColors.neoGlowColor + '40');
+      root.style.setProperty('--neo-glow-solid', neoColors.neoGlowColor);
+      root.style.setProperty('--neo-accent', neoColors.neoAccentColor);
+
+      // Dynamic Shadcn overrides from neo bg / accent
+      const bgHsl = hexToHslParts(neoColors.neoBgColor);
+      const fgHsl = hexToHslParts(neoColors.neoAccentColor);
+      root.style.setProperty('--background', bgHsl);
+      root.style.setProperty('--card', bgHsl);
+      root.style.setProperty('--popover', bgHsl);
+      root.style.setProperty('--foreground', fgHsl);
+      root.style.setProperty('--card-foreground', fgHsl);
+      root.style.setProperty('--popover-foreground', fgHsl);
+    } else {
+      document.body.classList.remove('theme-minimalist');
+      document.body.classList.add('theme-original');
+
+      // Restore original dark variables
+      root.style.setProperty('--background', '240 10% 4%');
+      root.style.setProperty('--foreground', '0 0% 95%');
+      root.style.setProperty('--card', '240 10% 8%');
+      root.style.setProperty('--card-foreground', '0 0% 95%');
+      root.style.setProperty('--popover', '240 10% 8%');
+      root.style.setProperty('--popover-foreground', '0 0% 95%');
+
+      ['--neo-bg','--neo-shadow-dark','--neo-shadow-light','--neo-glow','--neo-glow-solid','--neo-accent'].forEach(p => root.style.removeProperty(p));
+    }
+  }, [activeThemeMode, neoColors]);
+
+  // ── CSS variable map for glass theme (used by Layout/Login) ──
   const cssVariables = {
     '--glass-gradient': `linear-gradient(135deg, ${theme.gradientStart} 0%, ${theme.gradientMid1} 25%, ${theme.gradientMid2} 50%, ${theme.gradientEnd} 100%)`,
     '--glass-opacity': theme.glassOpacity,
@@ -98,7 +194,6 @@ export function ThemeProvider({ children }) {
     '--orb-color-3': theme.orbColor3,
   };
 
-  // Glass style helpers
   const glassStyles = {
     background: `linear-gradient(135deg, ${theme.gradientStart} 0%, ${theme.gradientMid1} 25%, ${theme.gradientMid2} 50%, ${theme.gradientEnd} 100%)`,
     card: `backdrop-blur-xl bg-white/${Math.round(theme.glassOpacity * 100)} border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)]`,
@@ -108,17 +203,17 @@ export function ThemeProvider({ children }) {
     input: `backdrop-blur-md bg-white/5 border border-white/10 focus:border-white/30 focus:bg-white/10`,
   };
 
+  const isMinimalist = activeThemeMode === 'minimalist';
+
   return (
     <ThemeContext.Provider value={{
-      theme,
-      setTheme,
-      updateTheme,
-      saveTheme,
-      resetTheme,
-      loading,
-      cssVariables,
-      glassStyles,
-      defaultTheme,
+      theme, setTheme, updateTheme,
+      saveTheme, resetTheme,
+      activeThemeMode, setActiveThemeMode,
+      neoColors, setNeoColors, updateNeoColor,
+      saveAllThemeSettings,
+      loading, cssVariables, glassStyles, defaultTheme,
+      isMinimalist,
       refetchTheme: fetchTheme,
     }}>
       {children}
@@ -128,9 +223,7 @@ export function ThemeProvider({ children }) {
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
+  if (!context) throw new Error('useTheme must be used within a ThemeProvider');
   return context;
 };
 

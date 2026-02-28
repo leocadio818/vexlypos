@@ -1,0 +1,135 @@
+/* ═══════════════════════════════════════════════════════════════
+   TEMA MINIMALISTA NEUMÓRFICO
+   Aislado bajo body.theme-minimalist
+   NO modifica el tema original
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Shadcn CSS Variable Overrides (Light Mode) ── */
+body.theme-minimalist {
+  --background: 210 29% 95%;
+  --foreground: 217 33% 17%;
+  --card: 210 25% 95%;
+  --card-foreground: 217 33% 17%;
+  --popover: 210 25% 96%;
+  --popover-foreground: 217 33% 17%;
+  --primary: 25 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 18% 89%;
+  --secondary-foreground: 217 33% 17%;
+  --muted: 210 18% 90%;
+  --muted-foreground: 217 12% 45%;
+  --accent: 210 18% 89%;
+  --accent-foreground: 217 33% 17%;
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 210 14% 87%;
+  --input: 210 18% 91%;
+  --ring: 25 100% 50%;
+
+  /* Neo Custom Props (defaults, overridden by JS) */
+  --neo-bg: #f0f5f9;
+  --neo-shadow-dark: #c8cfd8;
+  --neo-shadow-light: #ffffff;
+  --neo-glow: rgba(167, 139, 250, 0.25);
+  --neo-glow-solid: #a78bfa;
+  --neo-accent: #1e293b;
+
+  background-color: var(--neo-bg) !important;
+  color: hsl(217 33% 17%);
+}
+
+/* ── Scrollbar Light ── */
+body.theme-minimalist ::-webkit-scrollbar-track { background: #e6eaef; }
+body.theme-minimalist ::-webkit-scrollbar-thumb { background: #c0c8d2; border-radius: 3px; }
+body.theme-minimalist ::-webkit-scrollbar-thumb:hover { background: hsl(25 100% 50%); }
+
+/* ═══════════════════════════════════════
+   NEUMORPHIC UTILITY CLASSES
+   ═══════════════════════════════════════ */
+
+/* Raised surface (buttons, cards) */
+body.theme-minimalist .neo-raised {
+  background: var(--neo-bg);
+  box-shadow: 6px 6px 12px var(--neo-shadow-dark),
+              -6px -6px 12px var(--neo-shadow-light);
+  border: none !important;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+}
+body.theme-minimalist .neo-raised:active:not([disabled]) {
+  box-shadow: inset 4px 4px 8px var(--neo-shadow-dark),
+              inset -4px -4px 8px var(--neo-shadow-light);
+  transform: scale(0.98);
+}
+
+/* Pressed/inset surface */
+body.theme-minimalist .neo-pressed {
+  background: var(--neo-bg);
+  box-shadow: inset 4px 4px 8px var(--neo-shadow-dark),
+              inset -4px -4px 8px var(--neo-shadow-light);
+  border: none !important;
+}
+
+/* Soft raised (smaller shadow) */
+body.theme-minimalist .neo-soft {
+  background: var(--neo-bg);
+  box-shadow: 3px 3px 6px var(--neo-shadow-dark),
+              -3px -3px 6px var(--neo-shadow-light);
+  border: none !important;
+}
+
+/* Glow panel - LED backlight effect */
+body.theme-minimalist .neo-glow-panel {
+  background: var(--neo-bg);
+  box-shadow: 0 0 30px var(--neo-glow),
+              0 0 60px var(--neo-glow),
+              6px 6px 12px var(--neo-shadow-dark),
+              -6px -6px 12px var(--neo-shadow-light);
+  border: none !important;
+}
+
+/* Flat (no shadow, for minimal elements) */
+body.theme-minimalist .neo-flat {
+  background: var(--neo-bg);
+  box-shadow: none;
+  border: 1px solid hsl(210 14% 87%);
+}
+
+/* ═══════════════════════════════════════
+   AUTO-APPLY TO COMMON SHADCN PATTERNS
+   ═══════════════════════════════════════ */
+
+/* Dialog/Popover content */
+body.theme-minimalist [role="dialog"] [class*="DialogContent"],
+body.theme-minimalist [data-radix-popper-content-wrapper] > div {
+  background: var(--neo-bg) !important;
+  box-shadow: 8px 8px 20px var(--neo-shadow-dark),
+              -8px -8px 20px var(--neo-shadow-light) !important;
+  border: none !important;
+}
+
+/* Tabs active state → inset */
+body.theme-minimalist [role="tab"][data-state="active"] {
+  box-shadow: inset 2px 2px 5px var(--neo-shadow-dark),
+              inset -2px -2px 5px var(--neo-shadow-light);
+}
+
+/* Toast/Sonner */
+body.theme-minimalist [data-sonner-toaster] [data-sonner-toast] {
+  background: var(--neo-bg) !important;
+  box-shadow: 4px 4px 10px var(--neo-shadow-dark),
+              -4px -4px 10px var(--neo-shadow-light) !important;
+  border: none !important;
+  color: hsl(217 33% 17%) !important;
+}
+
+/* ═══════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════ */
+@keyframes neo-glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px var(--neo-glow), 0 0 40px var(--neo-glow); }
+  50% { box-shadow: 0 0 30px var(--neo-glow), 0 0 60px var(--neo-glow); }
+}
+
+body.theme-minimalist .neo-glow-animate {
+  animation: neo-glow-pulse 3s ease-in-out infinite;
+}
