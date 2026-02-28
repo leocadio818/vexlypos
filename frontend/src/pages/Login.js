@@ -54,11 +54,13 @@ export default function Login() {
 
   // ═══ NEUMORPHIC LOGIN ═══
   if (isMinimalist) {
-    const bg = neoColors.neoBgColor;
-    const dk = adjustHex(bg, -40);
-    const lt = adjustHex(bg, 15);
-    const accent = neoColors.neoAccentColor;
+    const bg = isNeoDark ? neoColors.neoDarkBg : neoColors.neoBgColor;
+    const dk = adjustHex(bg, isNeoDark ? -20 : -40);
+    const lt = adjustHex(bg, isNeoDark ? 20 : 15);
+    const accent = isNeoDark ? '#e2e8f0' : neoColors.neoAccentColor;
     const glow = neoColors.neoGlowColor;
+    const glowStrong = isNeoDark ? '80' : '30';
+    const glowSoft = isNeoDark ? '50' : '15';
 
     return (
       <div
