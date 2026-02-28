@@ -1123,16 +1123,16 @@ El panel "Anulaciones" del Dashboard mostraba datos inconsistentes: "Hoy (Tiempo
 
 ## Bug Fix: Modificadores redirigian al Dashboard (28 Feb 2026) [CORREGIDO]
 ### Problema
-Al hacer click en "Abrir Modificadores" en Config > Inventario > Modificadores, el enlace iba a `/modifiers` que no existia como ruta en App.js, causando redireccion al Dashboard.
+1. Al hacer click en "Abrir Modificadores" en Config > Inventario, redirige al Dashboard (ruta /modifiers no existia)
+2. El dropdown "Grupo de Preguntas" en Editar Producto mostraba opciones individuales (Caliente, Frio, CEBOLLA) como si fueran grupos
 
-### Solucion (Quirurgica - solo InventarioTab.js)
-- Reemplazo del enlace muerto por un CRUD funcional inline
-- Usa la API existente: `modifier-groups` (grupos) + `modifiers` (opciones individuales) de config.py
-- Modal con nombre, min/max selecciones, y lista de opciones con precio
-- Crear, editar, eliminar grupos con sus opciones
-
-### Archivos Modificados
-- `/app/frontend/src/pages/settings/InventarioTab.js` - Reemplazo placeholder por CRUD funcional
+### Solucion
+1. **InventarioTab.js**: Reemplazo enlace muerto por CRUD funcional inline (modifier-groups + modifiers)
+2. **server.py**: Nuevo GET /modifiers combinado que:
+   - Filtra opciones individuales (group_id no vacio) del listado
+   - Combina grupos old-style (embedded options) + new-style (modifier_groups con opciones enriquecidas)
+   - Deduplica por nombre (new-style tiene prioridad)
+   - Soporta ?group_id= para cargar opciones de un grupo especifico
 
 ## Pendiente
 ### P1 - Alta Prioridad
