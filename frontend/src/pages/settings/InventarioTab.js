@@ -64,6 +64,41 @@ export default function InventarioTab() {
     loadTaxConfigs();
   }, []);
 
+  // Modifier handlers
+  const openNewModifier = () => setModDialog({ open: true, editId: null, name: '', required: false, max_selections: 0, options: [{ id: '', name: '', price: 0 }] });
+  const openEditModifier = (m) => setModDialog({ open: true, editId: m.id, name: m.name, required: m.required, max_selections: m.max_selections || 0, options: m.options?.length ? m.options : [{ id: '', name: '', price: 0 }] });
+
+  const saveModifier = async () => {
+    if (!modDialog.name.trim()) { toast.error('Nombre requerido'); return; }
+    const validOpts = modDialog.options.filter(o => o.name.trim());
+    if (validOpts.length === 0) { toast.error('Agrega al menos una opcion'); return; }
+    const payload = { name: modDialog.name, required: modDialog.required, max_selections: modDialog.max_selections, options: validOpts };
+    try {
+      if (modDialog.editId) {
+        await axios.put(`${API}/modifiers/${modDialog.editId}`, payload, { headers: hdrs() });
+        toast.success('Modificador actualizado');
+      } else {
+        await axios.post(`${API}/modifiers`, payload, { headers: hdrs() });
+        toast.success('Modificador creado');
+      }
+      setModDialog({ ...modDialog, open: false });
+      loadModifiers();
+    } catch { toast.error('Error al guardar'); }
+  };
+
+  const deleteModifier = async (id) => {
+    if (!window.confirm('Eliminar este modificador?')) return;
+    try {
+      await axios.delete(`${API}/modifiers/${id}`, { headers: hdrs() });
+      toast.success('Modificador eliminado');
+      loadModifiers();
+    } catch { toast.error('Error al eliminar'); }
+  };
+
+  const addModOption = () => setModDialog(p => ({ ...p, options: [...p.options, { id: '', name: '', price: 0 }] }));
+  const removeModOption = (idx) => setModDialog(p => ({ ...p, options: p.options.filter((_, i) => i !== idx) }));
+  const updateModOption = (idx, field, val) => setModDialog(p => ({ ...p, options: p.options.map((o, i) => i === idx ? { ...o, [field]: val } : o) }));
+
   // Category handlers
   const handleSaveCategory = async () => {
     if (!categoryDialog.name.trim()) return;
