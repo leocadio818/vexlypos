@@ -45,12 +45,13 @@ export default function InventarioTab() {
 
   const loadModifiers = async () => {
     try {
-      const [gRes, mRes] = await Promise.all([
-        axios.get(`${API}/modifier-groups`, { headers: hdrs() }),
-        axios.get(`${API}/modifiers`, { headers: hdrs() })
-      ]);
+      const gRes = await axios.get(`${API}/modifier-groups`, { headers: hdrs() });
       setModGroups(gRes.data);
-      setModifiers(mRes.data);
+      // Load flat options: get all modifiers that have a group_id
+      const mRes = await axios.get(`${API}/modifiers`, { headers: hdrs() });
+      // Filter only actual options (those with non-empty group_id)
+      const flatOptions = (mRes.data || []).filter(m => m.group_id && m.group_id.trim());
+      setModifiers(flatOptions);
     } catch {}
   };
 
