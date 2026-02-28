@@ -67,16 +67,14 @@ export function ThemeProvider({ children }) {
         const data = await res.json();
         if (data && Object.keys(data).length > 0) {
           setTheme(prev => ({ ...defaultTheme, ...data }));
-          if (data.activeThemeMode) setActiveThemeMode(data.activeThemeMode);
-          if (data.neoMode) setNeoMode(data.neoMode);
-          if (data.neoBgColor || data.neoGlowColor || data.neoAccentColor) {
-            setNeoColors({
-              neoBgColor: data.neoBgColor || defaultNeoColors.neoBgColor,
-              neoDarkBg: data.neoDarkBg || defaultNeoColors.neoDarkBg,
-              neoGlowColor: data.neoGlowColor || defaultNeoColors.neoGlowColor,
-              neoAccentColor: data.neoAccentColor || defaultNeoColors.neoAccentColor,
-            });
-          }
+          setActiveThemeMode(data.activeThemeMode || 'original');
+          setNeoMode(data.neoMode || 'light');
+          setNeoColors({
+            neoBgColor: data.neoBgColor || defaultNeoColors.neoBgColor,
+            neoDarkBg: data.neoDarkBg || defaultNeoColors.neoDarkBg,
+            neoGlowColor: data.neoGlowColor || defaultNeoColors.neoGlowColor,
+            neoAccentColor: data.neoAccentColor || defaultNeoColors.neoAccentColor,
+          });
         }
       }
     } catch (err) {
