@@ -2086,6 +2086,11 @@ async def send_receipt_to_queue(bill_id: str):
     commands.append({"type": "divider"})
     commands.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
     
+    # Discount line (if applied)
+    discount_info = bill.get("discount_applied")
+    if discount_info and discount_info.get("amount", 0) > 0:
+        commands.append({"type": "columns", "left": f"Desc: {discount_info['name']}", "right": f"-RD$ {discount_info['amount']:,.2f}"})
+    
     # Dynamic tax lines from tax_breakdown
     tax_breakdown = bill.get("tax_breakdown", [])
     if tax_breakdown:
