@@ -1373,7 +1373,7 @@ async def print_receipt_escpos(bill_id: str):
         lines.append({"type": "divider"})
     
     lines.append({"type": "left", "text": f"Mesa: {bill['table_number']}"})
-    lines.append({"type": "left", "text": f"Fecha: {utc_to_local_str(bill.get('paid_at', bill['created_at']))})"})
+    lines.append({"type": "left", "text": f"Fecha: {utc_to_local_str(bill.get('paid_at', bill['created_at']))}"})
     if bill.get('cashier_name'):
         lines.append({"type": "left", "text": f"Cajero: {bill['cashier_name']}"})
     lines.append({"type": "divider"})
