@@ -325,6 +325,8 @@ export const recipesAPI = {
   deleteByProduct: (productId) => api.delete(`/recipes/product/${productId}`),
   getCost: (productId) => api.get(`/inventory/recipe-cost/${productId}`),
   recalculateCosts: () => api.post('/inventory/recalculate-costs'),
+  getHistory: (recipeId) => api.get(`/recipes/${recipeId}/history`),
+  getAllHistory: (params) => api.get('/recipes/history/all', { params }),
 };
 
 // Inventory Explosion
