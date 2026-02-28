@@ -898,16 +898,16 @@ export default function CashRegister() {
               {/* Coins */}
               <div>
                 <p className="text-[10px] text-white/40 uppercase mb-2 flex items-center gap-1"><Coins size={12} /> Monedas</p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {DENOMINACIONES.filter(d => d.tipo === 'moneda').map(denom => (
                     <div key={denom.valor} className="bg-white/5 border border-white/10 rounded-lg p-2">
                       <div className="flex items-center justify-center mb-1">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${COLORES_DENOMINACION[denom.valor]} text-white`}>{denom.label}</span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-1">
                         <button 
                           onClick={() => updateDenomination(denom.valor, -1)}
-                          className="w-6 h-6 rounded bg-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/30 transition-all"
+                          className="w-10 h-10 sm:w-6 sm:h-6 rounded bg-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/30 transition-all shrink-0"
                         >-</button>
                         <input
                           type="number"
@@ -917,7 +917,7 @@ export default function CashRegister() {
                         />
                         <button 
                           onClick={() => updateDenomination(denom.valor, 1)}
-                          className="w-6 h-6 rounded bg-green-500/20 text-green-400 text-sm font-bold hover:bg-green-500/30 transition-all"
+                          className="w-10 h-10 sm:w-6 sm:h-6 rounded bg-green-500/20 text-green-400 text-sm font-bold hover:bg-green-500/30 transition-all shrink-0"
                         >+</button>
                       </div>
                     </div>
