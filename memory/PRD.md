@@ -1010,6 +1010,22 @@ Los ajustes de stock (Diferencias de Inventario - faltantes como ACEITE) no apar
 - `/app/backend/routers/reports.py` - System audit incluye todos los tipos de movimiento + fix campo fecha
 - `/app/backend/routers/inventory.py` - ingredient_name en stock_movements para diferencias
 
+## Fix: Clientes y Reservaciones (28 Feb 2026)
+### Clientes - Lista no visible sin buscar
+- **Problema**: La lista de clientes podia no cargar al inicio, solo aparecia despues de escribir en el buscador
+- **Solucion**: Cambiado a carga inicial de TODOS los clientes con filtrado local instantaneo. Eliminada dependencia de search en el callback de fetch
+- **Archivo**: `/app/frontend/src/pages/Customers.js` - fetchAll ahora usa `[]` como dependencia, filtrado local con `allCustomers` state
+
+### Reservaciones - Mesas no visibles al seleccionar area
+- **Problema**: Solo mostraba mesas con `status === 'free'`, ignorando las de `status === 'available'`. De 8 mesas solo aparecian 2-3
+- **Solucion**: Filtro ahora incluye `(t.status === 'free' || t.status === 'available')` en 3 lugares
+- **Archivo**: `/app/frontend/src/pages/Reservations.js` - Filtro de mesas ampliado + styling de selects corregido para tema oscuro
+
+### REGLA IMPORTANTE PARA FUTUROS AGENTES
+**NUNCA tocar estos archivos sin verificar que la funcionalidad existente se mantiene:**
+- `Customers.js` - La lista SIEMPRE debe cargar todos los clientes al inicio
+- `Reservations.js` - Las mesas DEBEN incluir status 'free' Y 'available'
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
