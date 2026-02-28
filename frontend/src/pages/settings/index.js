@@ -83,6 +83,9 @@ function SettingsContent() {
             <TabsTrigger value="system" className="flex items-center gap-1 px-3 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs" data-testid="tab-system">
               <Cog size={14} className="mr-1" /> Sistema
             </TabsTrigger>
+            <TabsTrigger value="descuentos" className="flex items-center gap-1 px-3 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs" data-testid="tab-descuentos">
+              <Tag size={14} className="mr-1" /> Descuentos
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users"><UsersTab /></TabsContent>
