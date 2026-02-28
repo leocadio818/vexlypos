@@ -22,6 +22,25 @@ def gen_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+CASH_KEYWORDS = ["efectivo", "cash", "usd", "eur", "dolar", "euro", "dollar"]
+
+def resolve_is_cash(pm: dict) -> bool:
+    """Determine if a payment method is cash-based, matching billing.py logic."""
+    if "is_cash" in pm and pm["is_cash"] is not None:
+        return pm["is_cash"]
+    name_lower = pm.get("name", "").lower()
+    return any(kw in name_lower for kw in CASH_KEYWORDS)
+
+def build_pm_maps(payment_methods: list) -> tuple:
+    """Build ID-based and name-based payment method maps with is_cash resolved."""
+    for pm in payment_methods:
+        pm["is_cash"] = resolve_is_cash(pm)
+    pm_map = {pm["id"]: pm for pm in payment_methods}
+    pm_name_map = {pm.get("name", "").lower(): pm for pm in payment_methods}
+    return pm_map, pm_name_map
+
+
+
 # ─── DASHBOARD ───
 @router.get("/dashboard")
 async def dashboard():
