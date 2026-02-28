@@ -265,6 +265,7 @@ body.theme-minimalist [role="tablist"] {
 }
 
 body.theme-minimalist [role="tab"] {
+  color: hsl(var(--foreground)) !important;
   box-shadow:
     3px 3px 6px var(--neo-shadow-dark),
     -3px -3px 6px var(--neo-shadow-light),
