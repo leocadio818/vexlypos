@@ -490,22 +490,31 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput,
     active_items = [i for i in all_items if i.get("status") != "cancelled"]
     
     if len(active_items) == 0 and len(all_items) > 0:
-        # Todos los items están cancelados - marcar orden como cancelled y liberar mesa
         await db.orders.update_one(
             {"id": order_id}, 
             {"$set": {"status": "cancelled", "cancelled_at": now_iso()}}
         )
-        
-        # Liberar la mesa asociada
         table_id = updated_order.get("table_id")
         if table_id:
             await db.tables.update_one(
                 {"id": table_id},
-                {"$set": {
-                    "status": "free",
-                    "active_order_id": None
-                }}
+                {"$set": {"status": "free", "active_order_id": None}}
             )
+    
+    # Send cancellation ticket for sent items
+    if item_was_sent:
+        try:
+            cancel_item = {
+                "product_id": item.get("product_id"),
+                "product_name": item.get("product_name", "?"),
+                "qty_voided": item.get("quantity", 1),
+                "modifiers": item.get("modifiers", []),
+                "notes": item.get("notes", ""),
+                "was_sent": True
+            }
+            await send_cancel_ticket_to_print_queue(order_id, [cancel_item])
+        except Exception as e:
+            print(f"Error enviando ticket de cancelacion: {e}")
     
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
