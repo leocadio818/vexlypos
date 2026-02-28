@@ -601,6 +601,12 @@ export default function CashRegister() {
                   <p className="text-[10px] text-white/50 uppercase">Total Ventas</p>
                   <p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(salesBreakdown?.total ?? totalSales)}</p>
                 </div>
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-discounts">
+                  <Tag size={20} className="mx-auto mb-1 text-rose-400" />
+                  <p className="text-[10px] text-white/50 uppercase">Descuentos</p>
+                  <p className="font-oswald text-lg font-bold text-rose-400">-{formatMoney(salesBreakdown?.discounts ?? 0)}</p>
+                  <p className="text-[9px] text-white/40">{salesBreakdown?.discounts_count ?? 0} facturas</p>
+                </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-in">
                   <ArrowUpCircle size={20} className="mx-auto mb-1 text-emerald-400" />
                   <p className="text-[10px] text-white/50 uppercase">Ingresos</p>
