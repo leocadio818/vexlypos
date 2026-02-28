@@ -1183,8 +1183,17 @@ export default function PaymentScreen() {
                 <div className={`mt-3 pt-3 border-t border-white/10 space-y-2 ${isMobile ? 'text-sm' : 'text-base'}`}>
                   <div className="flex justify-between text-white/70">
                     <span className={isMobile ? '' : 'text-lg'}>Subtotal</span>
-                    <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(adjustedBill?.subtotal ?? bill.subtotal)}</span>
+                    <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>{formatMoney(appliedDiscount ? appliedDiscount.original_subtotal : (adjustedBill?.subtotal ?? bill.subtotal))}</span>
                   </div>
+                  {/* Discount line - shown between subtotal and taxes */}
+                  {appliedDiscount && (
+                    <div className="flex justify-between text-emerald-400" data-testid="discount-line">
+                      <span className={`flex items-center gap-1 ${isMobile ? '' : 'text-lg'}`}>
+                        Desc: {appliedDiscount.discount_name}
+                      </span>
+                      <span className={`font-oswald font-bold ${isMobile ? '' : 'text-xl'}`}>-{formatMoney(appliedDiscount.discount_amount)}</span>
+                    </div>
+                  )}
                   {/* Dynamic tax display from tax_breakdown or taxConfig */}
                   {(adjustedBill?.tax_breakdown || bill.tax_breakdown || []).length > 0 ? (
                     (adjustedBill?.tax_breakdown || bill.tax_breakdown).map((tax, i) => (
