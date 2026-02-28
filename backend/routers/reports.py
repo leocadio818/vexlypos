@@ -182,6 +182,48 @@ async def dashboard():
     for ct in closed_tables_list:
         ct["total"] = round(ct["total"], 2)
 
+    # Voids/Anulaciones - real-time, by shift, by jornada
+    current_bday = await db.business_days.find_one({"status": "open"}, {"_id": 0})
+    jornada_start = current_bday.get("opened_at", today_str) if current_bday else today_str
+    if hasattr(jornada_start, 'isoformat'):
+        jornada_start = jornada_start.isoformat()
+
+    all_voids = await db.void_audit_logs.find({}, {"_id": 0}).to_list(5000)
+
+    # Filter voids for current jornada (from business day open)
+    jornada_voids = [v for v in all_voids if v.get("created_at", "") >= jornada_start]
+    # Filter voids for today (calendar date)
+    today_voids = [v for v in all_voids if v.get("created_at", "")[:10] == today_str]
+
+    def summarize_voids(voids_list):
+        count = len(voids_list)
+        total = sum(v.get("total_value", 0) for v in voids_list)
+        by_reason = {}
+        for v in voids_list:
+            r = v.get("reason", "Sin razón")
+            if r not in by_reason:
+                by_reason[r] = {"reason": r, "count": 0, "total": 0}
+            by_reason[r]["count"] += 1
+            by_reason[r]["total"] += v.get("total_value", 0)
+        items_voided = []
+        for v in voids_list:
+            for item in v.get("items_cancelled", []):
+                items_voided.append({
+                    "product_name": item.get("product_name", "?"),
+                    "quantity": item.get("quantity", 1),
+                    "unit_price": item.get("unit_price", 0),
+                    "reason": v.get("reason", ""),
+                    "requested_by": v.get("requested_by_name", ""),
+                    "authorized_by": v.get("authorized_by_name", ""),
+                    "created_at": v.get("created_at", "")
+                })
+        return {
+            "count": count,
+            "total": round(total, 2),
+            "by_reason": sorted(by_reason.values(), key=lambda x: x["total"], reverse=True),
+            "items": items_voided[-10:]  # last 10
+        }
+
     return {
         "today": {
             "total_sales": round(total_sales, 2),
@@ -205,7 +247,11 @@ async def dashboard():
         },
         "hourly_sales": hourly_sales,
         "open_tables": open_tables_list,
-        "closed_tables": closed_tables_list
+        "closed_tables": closed_tables_list,
+        "voids": {
+            "today": summarize_voids(today_voids),
+            "jornada": summarize_voids(jornada_voids)
+        }
     }
 
 
