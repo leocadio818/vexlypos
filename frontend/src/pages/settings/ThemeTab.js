@@ -155,69 +155,76 @@ export default function ThemeTab() {
             <h3 className="font-oswald font-bold text-sm">Personalizar Neumorfismo</h3>
           </div>
 
-          <div className="rounded-2xl p-5 space-y-4" style={{
-            background: neoColors.neoBgColor,
-            boxShadow: `6px 6px 12px ${adjustBrightness(neoColors.neoBgColor, -40)}, -6px -6px 12px ${adjustBrightness(neoColors.neoBgColor, 15)}`,
-          }}>
-            <ColorPicker
-              label="Color de Fondo"
-              value={neoColors.neoBgColor}
-              onChange={v => updateNeoColor('neoBgColor', v)}
-              description="Tono base del fondo. Usa off-white o gris suave."
-            />
-            <ColorPicker
-              label="Color de Brillo (Glow)"
-              value={neoColors.neoGlowColor}
-              onChange={v => updateNeoColor('neoGlowColor', v)}
-              description="Color de las luces LED tenues detras de los paneles."
-            />
-            <ColorPicker
-              label="Color de Acento"
-              value={neoColors.neoAccentColor}
-              onChange={v => updateNeoColor('neoAccentColor', v)}
-              description="Color de textos oscuros y elementos resaltados."
-            />
+          {/* ── Light / Dark Toggle ── */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setNeoMode('light')}
+              data-testid="neo-mode-light"
+              className={`relative p-4 rounded-xl transition-all duration-200 ${
+                !isNeoDark ? 'ring-2 ring-primary scale-[1.02]' : 'ring-1 ring-border hover:ring-primary/50'
+              }`}
+              style={{ background: '#f0f5f9', boxShadow: !isNeoDark ? '3px 3px 6px #c8cfd8, -3px -3px 6px #fff' : 'none' }}
+            >
+              <Sun size={18} className="text-amber-500 mb-1" />
+              <span className="font-oswald font-bold text-xs text-slate-700 block">Claro</span>
+              {!isNeoDark && <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center"><Check size={12} className="text-white" /></div>}
+            </button>
+            <button
+              onClick={() => setNeoMode('dark')}
+              data-testid="neo-mode-dark"
+              className={`relative p-4 rounded-xl transition-all duration-200 ${
+                isNeoDark ? 'ring-2 ring-primary scale-[1.02]' : 'ring-1 ring-border hover:ring-primary/50'
+              }`}
+              style={{ background: '#0f172a', boxShadow: isNeoDark ? '3px 3px 6px #070d1a, -3px -3px 6px #1a2540, 0 6px 20px -5px rgba(167,139,250,0.5)' : 'none' }}
+            >
+              <Moon size={18} className="text-blue-400 mb-1" />
+              <span className="font-oswald font-bold text-xs text-slate-300 block">Oscuro</span>
+              {isNeoDark && <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center"><Check size={12} className="text-white" /></div>}
+            </button>
           </div>
 
-          {/* Live Preview */}
-          <div className="rounded-2xl p-5" style={{
-            background: neoColors.neoBgColor,
-            boxShadow: `0 0 30px ${neoColors.neoGlowColor}40, 0 0 60px ${neoColors.neoGlowColor}20, 6px 6px 12px ${adjustBrightness(neoColors.neoBgColor, -40)}, -6px -6px 12px ${adjustBrightness(neoColors.neoBgColor, 15)}`,
-          }}>
-            <h4 className="font-oswald font-bold text-xs mb-3" style={{ color: neoColors.neoAccentColor }}>Vista Previa en Vivo</h4>
-            <div className="flex gap-3 flex-wrap">
-              <button
-                className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
-                style={{
-                  background: neoColors.neoBgColor,
-                  color: neoColors.neoAccentColor,
-                  boxShadow: `4px 4px 8px ${adjustBrightness(neoColors.neoBgColor, -40)}, -4px -4px 8px ${adjustBrightness(neoColors.neoBgColor, 15)}`,
-                }}
-                data-testid="neo-preview-raised-btn"
-              >
-                Boton 3D
-              </button>
-              <button
-                className="px-5 py-2.5 rounded-xl font-bold text-sm text-white"
-                style={{
-                  backgroundColor: 'hsl(25 100% 50%)',
-                  boxShadow: `4px 4px 8px ${adjustBrightness(neoColors.neoBgColor, -40)}, -4px -4px 8px ${adjustBrightness(neoColors.neoBgColor, 15)}`,
-                }}
-              >
-                Primario
-              </button>
-              <button
-                className="px-5 py-2.5 rounded-xl font-bold text-sm"
-                style={{
-                  background: neoColors.neoBgColor,
-                  color: neoColors.neoAccentColor,
-                  boxShadow: `inset 3px 3px 6px ${adjustBrightness(neoColors.neoBgColor, -40)}, inset -3px -3px 6px ${adjustBrightness(neoColors.neoBgColor, 15)}`,
-                }}
-              >
-                Hundido
-              </button>
-            </div>
-          </div>
+          {/* Color Pickers */}
+          {(() => {
+            const bg = isNeoDark ? neoColors.neoDarkBg : neoColors.neoBgColor;
+            const dk = adjustBrightness(bg, isNeoDark ? -20 : -40);
+            const lt = adjustBrightness(bg, isNeoDark ? 20 : 15);
+            const txt = isNeoDark ? '#e2e8f0' : neoColors.neoAccentColor;
+            return (
+              <>
+                <div className="rounded-2xl p-5 space-y-4" style={{ background: bg, boxShadow: `6px 6px 12px ${dk}, -6px -6px 12px ${lt}` }}>
+                  {isNeoDark ? (
+                    <ColorPicker label="Fondo Oscuro" value={neoColors.neoDarkBg} onChange={v => updateNeoColor('neoDarkBg', v)} description="Tono base del fondo oscuro (navy, negro, etc.)" />
+                  ) : (
+                    <ColorPicker label="Fondo Claro" value={neoColors.neoBgColor} onChange={v => updateNeoColor('neoBgColor', v)} description="Tono base del fondo claro (off-white, gris suave)." />
+                  )}
+                  <ColorPicker label="Color de Brillo (Glow)" value={neoColors.neoGlowColor} onChange={v => updateNeoColor('neoGlowColor', v)} description="Color de las luces LED detras de los paneles." />
+                  {!isNeoDark && (
+                    <ColorPicker label="Color de Acento" value={neoColors.neoAccentColor} onChange={v => updateNeoColor('neoAccentColor', v)} description="Color de textos oscuros y elementos resaltados." />
+                  )}
+                </div>
+
+                {/* Live Preview */}
+                <div className="rounded-2xl p-5" style={{
+                  background: bg,
+                  boxShadow: `0 0 30px ${neoColors.neoGlowColor}50, 0 0 60px ${neoColors.neoGlowColor}25, 6px 6px 12px ${dk}, -6px -6px 12px ${lt}`,
+                }}>
+                  <h4 className="font-oswald font-bold text-xs mb-3" style={{ color: txt }}>Vista Previa en Vivo</h4>
+                  <div className="flex gap-3 flex-wrap">
+                    <button className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
+                      style={{ background: bg, color: txt, boxShadow: `4px 4px 8px ${dk}, -4px -4px 8px ${lt}, 0 6px 15px -5px ${neoColors.neoGlowColor}50` }}
+                      data-testid="neo-preview-raised-btn"
+                    >Boton 3D</button>
+                    <button className="px-5 py-2.5 rounded-xl font-bold text-sm text-white"
+                      style={{ backgroundColor: 'hsl(25 100% 50%)', boxShadow: `4px 4px 8px ${dk}, -4px -4px 8px ${lt}, 0 8px 20px -5px ${neoColors.neoGlowColor}60` }}
+                    >Primario</button>
+                    <button className="px-5 py-2.5 rounded-xl font-bold text-sm"
+                      style={{ background: bg, color: txt, boxShadow: `inset 3px 3px 6px ${dk}, inset -3px -3px 6px ${lt}` }}
+                    >Hundido</button>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       ) : (
         /* ── Original Glass Presets ── */
