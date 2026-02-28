@@ -407,6 +407,56 @@ class PrinterManager:
         except Exception as e:
             return False, str(e)
     
+    def print_cancel_comanda(self, printer, data):
+        """Imprime ticket de cancelacion para cocina/barra (texto plano, sin acentos)"""
+        try:
+            # === ENCABEZADO CANCELACION ===
+            printer.set(align='center', bold=True, double_width=True, double_height=True)
+            printer.text("*** CANCELACION ***\n")
+            printer.text(f"MESA {data.get('table_number', '?')}\n")
+            
+            printer.set(double_width=False, double_height=False, bold=False)
+            printer.text("=" * 42 + "\n")
+            
+            # === INFO ===
+            printer.set(align='left')
+            printer.text(f"Mesero: {data.get('waiter_name', '')}\n")
+            trans = data.get('transaction_number', '')
+            if trans:
+                printer.text(f"Trans: #{trans}\n")
+            printer.text(f"Hora: {data.get('date', '')[-8:]}\n")
+            printer.text("-" * 42 + "\n")
+            
+            # === ITEMS CANCELADOS (GRANDES) ===
+            for item in data.get("items", []):
+                qty = item.get('quantity', 1)
+                name = item.get('name', '')
+                
+                printer.set(bold=True, double_width=True, double_height=True)
+                printer.text(f"{qty}x {name}\n")
+                
+                printer.set(double_width=False, double_height=False, bold=False)
+                for mod in item.get('modifiers', []):
+                    if mod:
+                        printer.text(f"   + {mod}\n")
+                
+                if item.get('notes'):
+                    printer.set(bold=True)
+                    printer.text(f"   NOTA: {item.get('notes')}\n")
+                    printer.set(bold=False)
+                
+                printer.text("\n")
+            
+            printer.text("-" * 42 + "\n")
+            printer.set(align='center')
+            printer.text(f"Orden: {data.get('order_number', '')[:8]}\n")
+            printer.text("\n\n\n")
+            printer.cut()
+            
+            return True, None
+        except Exception as e:
+            return False, str(e)
+    
     def print_test(self, printer, data):
         """Imprime una página de prueba"""
         try:
