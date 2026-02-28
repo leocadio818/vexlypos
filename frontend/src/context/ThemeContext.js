@@ -145,7 +145,7 @@ export function ThemeProvider({ children }) {
 
   // ── Apply / remove theme class + CSS variables ──
   useEffect(() => {
-    const root = document.documentElement;
+    const root = document.body; // Set on body for highest specificity over CSS declarations
     const isDark = neoMode === 'dark';
 
     if (activeThemeMode === 'minimalist') {
