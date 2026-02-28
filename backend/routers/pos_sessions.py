@@ -707,3 +707,83 @@ async def register_sale_to_session(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.put("/{session_id}/sync-sales")
+async def sync_session_sales(session_id: str, user=Depends(get_current_user)):
+    """Resincroniza totales de ventas de la sesion basandose en las facturas reales de MongoDB"""
+    try:
+        sb = get_supabase()
+        session_result = sb.table("pos_sessions").select("*").eq("id", session_id).single().execute()
+        if not session_result.data:
+            raise HTTPException(status_code=404, detail="Sesion no encontrada")
+        
+        session = session_result.data
+        opened_at = session.get("opened_at", "")
+        closed_at = session.get("closed_at")
+        opened_by = session.get("opened_by", "")
+        
+        # Get all paid bills within this session's time range
+        query = {"status": "paid", "paid_at": {"$gte": opened_at}}
+        if closed_at:
+            query["paid_at"]["$lte"] = closed_at
+        
+        bills = await db.bills.find(query, {"_id": 0}).to_list(1000)
+        
+        cash_sales = 0.0
+        card_sales = 0.0
+        transfer_sales = 0.0
+        other_sales = 0.0
+        total_invoices = 0
+        
+        for bill in bills:
+            total_invoices += 1
+            payments = bill.get("payments", [])
+            if payments:
+                for pay in payments:
+                    label = (pay.get("label", "") or "").lower()
+                    amount = pay.get("amount_dop", pay.get("amount", 0)) or 0
+                    if "tarjeta" in label or "card" in label:
+                        card_sales += amount
+                    elif "transferencia" in label or "transfer" in label:
+                        transfer_sales += amount
+                    elif "efectivo" in label or "rd$" in label or "dolar" in label or "euro" in label or "cash" in label:
+                        cash_sales += amount
+                    else:
+                        other_sales += amount
+            else:
+                method = (bill.get("payment_method", "") or "").lower()
+                total = bill.get("total", 0) or 0
+                if "tarjeta" in method or "card" in method:
+                    card_sales += total
+                elif "transferencia" in method or "transfer" in method:
+                    transfer_sales += total
+                else:
+                    cash_sales += total
+        
+        update_data = {
+            "cash_sales": cash_sales,
+            "card_sales": card_sales,
+            "transfer_sales": transfer_sales,
+            "other_sales": other_sales,
+            "total_invoices": total_invoices,
+            "updated_at": now_iso()
+        }
+        
+        sb.table("pos_sessions").update(update_data).eq("id", session_id).execute()
+        
+        return {
+            "ok": True,
+            "synced": {
+                "cash_sales": cash_sales,
+                "card_sales": card_sales,
+                "transfer_sales": transfer_sales,
+                "other_sales": other_sales,
+                "total_invoices": total_invoices
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
