@@ -953,6 +953,25 @@ Testing agent 100% (9/9 backend, 10/10 frontend) para dashboard de entrenamiento
 - `/app/frontend/src/pages/Reports.js` - renderRecipesReport, auditEventFilter, renderSystemAuditReport mejorado
 - `/app/frontend/src/pages/OrderScreen.js` - Imagenes de productos ampliadas
 
+## Fix Critico: Proteccion de Recetas de Sub-Recetas (28 Feb 2026)
+### Problema
+Las definiciones de recetas de sub-recetas se eliminaban espontaneamente de la base de datos, causando perdida de datos y haciendo el modulo de produccion inusable.
+
+### Causa Raiz Identificada
+Las recetas de sub-recetas (is_subrecipe=true, product_id="") aparecian en el RecipesTab junto con las recetas de productos regulares, permitiendo su eliminacion accidental. Adicionalmente, filtros de busqueda poco especificos en el endpoint create_recipe podian causar colisiones.
+
+### Solucion Implementada (4 capas de proteccion)
+1. **Backend DELETE protegido**: `DELETE /api/recipes/{id}` ahora bloquea eliminacion de sub-recetas sin `force=true`
+2. **Frontend filtrado**: RecipesTab filtra `is_subrecipe=true` del listado visible
+3. **Create seguro**: `POST /api/recipes` usa filtro que excluye sub-recetas al buscar recetas existentes por product_id
+4. **Delete by product seguro**: `DELETE /api/recipes/product/{id}` nunca elimina sub-recetas
+5. **Limite aumentado**: GET /api/recipes devuelve hasta 500 recetas (antes 200)
+
+### Archivos Modificados
+- `/app/backend/routers/recipes.py` - Proteccion en DELETE, CREATE, DELETE-BY-PRODUCT + logging
+- `/app/frontend/src/pages/inventory/components/RecipesTab.jsx` - Filtro is_subrecipe en marginReport
+- `/app/frontend/src/lib/api.js` - Nuevo metodo deleteForce en recipesAPI
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
