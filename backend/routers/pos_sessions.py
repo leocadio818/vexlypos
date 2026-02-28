@@ -819,9 +819,17 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
         usd = 0.0
         eur = 0.0
         other = 0.0
+        discounts_total = 0.0
+        discounts_count = 0
         
         for bill in bills:
             bill_payments = bill.get("payments", [])
+            
+            # Descuentos
+            disc_amt = (bill.get("discount_applied", {}).get("amount", 0) or 0)
+            if disc_amt > 0:
+                discounts_total += disc_amt
+                discounts_count += 1
             
             if bill_payments and len(bill_payments) > 0:
                 for pay in bill_payments:
@@ -861,6 +869,8 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
             "usd": round(usd, 2),
             "eur": round(eur, 2),
             "other": round(other, 2),
+            "discounts": round(discounts_total, 2),
+            "discounts_count": discounts_count,
             "total": round(cash_rd + card + transfer + usd + eur + other, 2)
         }
     except HTTPException:
