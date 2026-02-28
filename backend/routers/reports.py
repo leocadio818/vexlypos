@@ -65,30 +65,29 @@ async def dashboard():
     # Cash vs Card breakdown - use payments array for accuracy
     cash_total = 0
     card_total = 0
-    # Also build a name-based lookup for fallback
-    pm_name_map = {pm.get("name", "").lower(): pm for pm in payment_methods}
     for bill in today_bills:
         bill_total = bill.get("total", 0)
         payments = bill.get("payments", [])
         if payments:
-            # Use the detailed payments array
             for payment in payments:
-                pm_id = payment.get("payment_method_id", "")
-                pm = pm_map.get(pm_id, {})
-                is_cash = pm.get("is_cash", False)
+                p_id = payment.get("payment_method_id", "")
+                pm = pm_map.get(p_id, {})
+                if not pm:
+                    p_name = payment.get("payment_method_name", "")
+                    pm = pm_name_map.get(p_name.lower(), {})
+                is_cash = resolve_is_cash(pm) if pm else ("efectivo" in payment.get("payment_method_name", "").lower())
                 amt = payment.get("amount_dop", payment.get("amount", 0))
                 if is_cash:
                     cash_total += amt
                 else:
                     card_total += amt
         else:
-            # Fallback: use top-level payment_method field
-            pm_id = bill.get("payment_method_id", "")
-            pm_name = bill.get("payment_method", "")
-            pm = pm_map.get(pm_id, {})
-            if not pm and pm_name:
-                pm = pm_name_map.get(pm_name.lower(), {})
-            is_cash = pm.get("is_cash", pm_id == "cash" or "efectivo" in pm_name.lower())
+            p_id = bill.get("payment_method_id", "")
+            p_name = bill.get("payment_method", "")
+            pm = pm_map.get(p_id, {})
+            if not pm and p_name:
+                pm = pm_name_map.get(p_name.lower(), {})
+            is_cash = resolve_is_cash(pm) if pm else ("efectivo" in p_name.lower())
             if is_cash:
                 cash_total += bill_total
             else:
