@@ -1095,19 +1095,23 @@ export default function CashRegister() {
 
       {/* Diálogo de Error: Mesas Abiertas */}
       <Dialog open={openTablesError.show} onOpenChange={(v) => !v && setOpenTablesError({ show: false, message: '' })}>
-        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-red-500/30" data-testid="open-tables-error-dialog">
+        <DialogContent className="max-w-md backdrop-blur-xl bg-slate-900/90 border-red-500/30" data-testid="open-tables-error-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald text-red-400 flex items-center gap-2">
               <AlertTriangle size={20} />
-              No puedes cerrar turno
+              No se puede cerrar turno
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-              <p className="text-white text-sm">{openTablesError.message}</p>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 space-y-2">
+              {openTablesError.message.split(' | ').map((reason, idx) => (
+                <p key={idx} className="text-white text-sm">
+                  {reason}
+                </p>
+              ))}
             </div>
             <p className="text-white/60 text-xs">
-              Debes cerrar o transferir todas tus cuentas abiertas antes de poder cerrar tu turno.
+              Debes cerrar todas las cuentas abiertas y asegurarte de que no haya otros turnos activos antes de cerrar tu turno.
             </p>
             <button 
               onClick={() => setOpenTablesError({ show: false, message: '' })}
