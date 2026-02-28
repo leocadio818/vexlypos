@@ -1208,7 +1208,7 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
             "table_number": bill.get("table_number", ""),
             "waiter_name": bill.get("waiter_name", ""),
             "cashier_name": bill.get("paid_by_name", ""),
-            "date": bill.get("paid_at", "")[:19].replace("T", " ") if bill.get("paid_at") else "",
+            "date": utc_to_local_str(bill.get("paid_at", ""), "%Y-%m-%d %I:%M:%S %p") if bill.get("paid_at") else "",
             "items": [{"name": item.get("product_name", ""), "quantity": item.get("quantity", 1), "total": item.get("total", 0)} for item in bill.get("items", [])],
             "subtotal": bill.get("subtotal", 0),
             "itbis": bill.get("itbis", 0),
@@ -2400,7 +2400,7 @@ async def send_receipt_to_printer(bill_id: str):
     commands.append({"type": "columns", "left": mesa_desc, "right": ""})
     if account_label:
         commands.append({"type": "columns", "left": "Cliente:", "right": account_label[:20]})
-    commands.append({"type": "columns", "left": "Fecha:", "right": bill.get('paid_at', bill['created_at'])[:19]})
+    commands.append({"type": "columns", "left": "Fecha:", "right": utc_to_local_str(bill.get('paid_at', bill['created_at']))})
     if bill.get('waiter_name'):
         commands.append({"type": "columns", "left": "Mesero:", "right": bill['waiter_name'][:20]})
     if bill.get('cashier_name'):
@@ -2998,7 +2998,7 @@ def build_receipt(data):
     if bill_num:
         commands.append({{"type": "text", "text": f"NCF: {{bill_num}}", "align": "center", "bold": True}})
     
-    commands.append({{"type": "columns", "left": "Fecha:", "right": data.get("date", "")[:19]}})
+    commands.append({{"type": "columns", "left": "Fecha:", "right": utc_to_local_str(data.get("date", ""))}})
     commands.append({{"type": "columns", "left": "Mesa:", "right": str(data.get("table_number", ""))}})
     commands.append({{"type": "columns", "left": "Mesero:", "right": data.get("waiter_name", "")[:20]}})
     commands.append({{"type": "columns", "left": "Cajero:", "right": data.get("cashier_name", "")[:20]}})
