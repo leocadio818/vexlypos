@@ -1208,6 +1208,20 @@ async def generate_x_report(
     ]
     voids_total = sum(v["total"] for v in voids_list)
     
+    # ═══ 2d. DESCUENTOS DEL TURNO ═══
+    discount_filter = {**base_filter, "discount_applied.amount": {"$gt": 0}}
+    disc_pipeline = [
+        {"$match": discount_filter},
+        {"$group": {
+            "_id": None,
+            "total_discount": {"$sum": "$discount_applied.amount"},
+            "count": {"$sum": 1}
+        }}
+    ]
+    disc_result = await db.bills.aggregate(disc_pipeline).to_list(1)
+    discounts_total_x = disc_result[0].get("total_discount", 0) if disc_result else 0
+    discounts_count_x = disc_result[0].get("count", 0) if disc_result else 0
+    
     # ═══ 3. MOVIMIENTOS DE LA SESIÓN ═══
     initial_fund = session.get("initial_cash", 0) or 0
     withdrawals = 0
