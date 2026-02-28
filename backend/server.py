@@ -1336,6 +1336,10 @@ async def print_receipt_escpos(bill_id: str):
         lines.append({"type": "columns", "left": f"{item['quantity']}x {item['product_name']}", "right": f"RD$ {item['total']:,.2f}"})
     lines.append({"type": "divider"})
     lines.append({"type": "columns", "left": "Subtotal", "right": f"RD$ {bill['subtotal']:,.2f}"})
+    # Discount line - texto plano sin acentos ni simbolos especiales
+    discount_info = bill.get("discount_applied")
+    if discount_info and discount_info.get("amount", 0) > 0:
+        lines.append({"type": "columns", "left": f"Desc: {discount_info['name']}", "right": f"-RD$ {discount_info['amount']:,.2f}"})
     # Dynamic tax lines from tax_breakdown
     tax_breakdown = bill.get("tax_breakdown", [])
     if tax_breakdown:
