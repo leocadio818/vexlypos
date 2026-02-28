@@ -369,10 +369,10 @@ export default function Layout() {
                 className={({ isActive }) =>
                   `${isTablet ? 'w-12 h-12' : largeMode ? 'w-14 h-14 lg:w-16 lg:h-16' : 'w-12 h-12 lg:w-14 lg:h-14'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all btn-press ${
                     isActive
-                      ? isGlassPage
+                      ? useGlassStyle
                         ? 'bg-white/20 text-white shadow-[0_4px_20px_rgba(255,255,255,0.15)] border border-white/30'
                         : 'bg-primary text-primary-foreground shadow-[0_4px_14px_0_rgba(255,100,0,0.39)]'
-                      : isGlassPage
+                      : useGlassStyle
                         ? 'text-white/60 hover:bg-white/10 hover:text-white'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`
@@ -390,7 +390,7 @@ export default function Layout() {
                   onClick={() => setFunctionsMenuOpen(true)}
                   data-testid="sidebar-functions-btn"
                   className={`${isTablet ? 'w-12 h-12' : largeMode ? 'w-14 h-14 lg:w-16 lg:h-16' : 'w-12 h-12 lg:w-14 lg:h-14'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all btn-press ${
-                    isGlassPage
+                    useGlassStyle
                       ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30'
                       : 'bg-blue-500/20 text-blue-500 hover:bg-blue-500/30'
                   }`}
@@ -521,7 +521,7 @@ export default function Layout() {
               className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
                 largeMode 
                   ? 'bg-green-600 text-white' 
-                  : isGlassPage
+                  : useGlassStyle
                     ? 'text-white/60 hover:bg-white/10 hover:text-white'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
@@ -558,7 +558,7 @@ export default function Layout() {
             
             {/* Device & Connection Status */}
             <div className="flex flex-col items-center gap-1" data-testid="status-indicators">
-              <DeviceIcon size={isTablet ? 14 : largeMode ? 18 : 14} className={isGlassPage ? 'text-white/30' : 'text-muted-foreground/50'} title={device?.deviceLabel} />
+              <DeviceIcon size={isTablet ? 14 : largeMode ? 18 : 14} className={useGlassStyle ? 'text-white/30' : 'text-muted-foreground/50'} title={device?.deviceLabel} />
               <div data-testid="online-status" className="relative">
                 {isOnline ? (
                   isSyncing ? (
@@ -574,14 +574,14 @@ export default function Layout() {
             
             <div className="text-center" data-testid="user-info">
               <div className={`${isTablet ? 'w-8 h-8' : largeMode ? 'w-10 h-10' : 'w-8 h-8'} rounded-full flex items-center justify-center font-bold font-oswald ${isTablet ? 'text-xs' : largeMode ? 'text-sm' : 'text-xs'} ${
-                isGlassPage 
+                useGlassStyle 
                   ? 'bg-white/10 text-white border border-white/20' 
                   : 'bg-primary/20 text-primary'
               }`}>
                 {user?.name?.[0]}
               </div>
               <p className={`mt-0.5 ${isTablet ? 'text-[7px] max-w-[45px]' : largeMode ? 'text-[10px] max-w-[60px]' : 'text-[8px] max-w-[50px]'} truncate ${
-                isGlassPage ? 'text-white/50' : 'text-muted-foreground'
+                useGlassStyle ? 'text-white/50' : 'text-muted-foreground'
               }`}>{user?.name}</p>
             </div>
           </div>
