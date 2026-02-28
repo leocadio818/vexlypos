@@ -1216,10 +1216,8 @@ async def system_audit_report(
                 "value": log.get("total_value", 0)
             })
     
-    # 2. Stock movements (adjustments, waste, transfers)
-    movements = await db.stock_movements.find({
-        "movement_type": {"$in": ["adjustment", "waste", "transfer_in", "transfer_out", "difference"]}
-    }, {"_id": 0}).to_list(2000)
+    # 2. Stock movements (ALL types for complete traceability)
+    movements = await db.stock_movements.find({}, {"_id": 0}).to_list(5000)
     for mov in movements:
         created = mov.get("created_at", "")
         if created[:10] >= date_from and created[:10] <= date_to:
@@ -1228,11 +1226,16 @@ async def system_audit_report(
                 "waste": "Merma",
                 "transfer_in": "Entrada por Transferencia",
                 "transfer_out": "Salida por Transferencia",
-                "difference": "Diferencia de Inventario"
+                "difference": "Diferencia de Inventario",
+                "sale": "Venta (Descuento de Inventario)",
+                "purchase": "Compra (Entrada de Inventario)",
+                "production_output": "Producción (Salida)",
+                "production_consume": "Producción (Consumo)",
+                "explosion": "Explosión de Receta"
             }
             activities.append({
                 "timestamp": created,
-                "type": type_names.get(mov.get("movement_type"), mov.get("movement_type")),
+                "type": type_names.get(mov.get("movement_type"), mov.get("movement_type", "Movimiento")),
                 "description": f"{mov.get('ingredient_name', '?')}: {mov.get('quantity', 0)} - {mov.get('notes', '')}",
                 "user": mov.get("user_name", "Sistema"),
                 "authorizer": "-",
