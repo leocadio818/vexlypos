@@ -98,7 +98,16 @@ export default function Dashboard() {
           </div>
 
           {/* Operations Row - Glassmorphism */}
-          <div className="grid grid-cols-4 gap-3" data-testid="operations-cards">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3" data-testid="operations-cards">
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center">
+                <Tag size={18} className="text-rose-400" />
+              </div>
+              <div>
+                <p className="font-oswald text-xl font-bold text-rose-400">-{formatMoney(today.discounts || 0)}</p>
+                <p className="text-[10px] text-white/50">Descuentos ({today.discounts_count || 0})</p>
+              </div>
+            </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
                 <ShoppingCart size={18} className="text-orange-400" />
