@@ -476,7 +476,7 @@ export default function CashRegister() {
           <CircleDollarSign size={22} className="text-orange-400" />
           <h1 className="font-oswald text-xl font-bold tracking-wide text-white">CAJA / TURNOS</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <button onClick={fetchData} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all">
             <RefreshCw size={16} />
           </button>
@@ -510,12 +510,12 @@ export default function CashRegister() {
           )}
           {!currentSession ? (
             <button onClick={() => setOpenDialog(true)} data-testid="open-shift-btn"
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all">
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all whitespace-nowrap">
               <Play size={16} /> ABRIR TURNO
             </button>
           ) : (
             <button onClick={() => setCloseDialog(true)} data-testid="close-shift-btn"
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all">
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white font-oswald font-bold active:scale-95 flex items-center gap-2 transition-all whitespace-nowrap">
               <Square size={16} /> CERRAR TURNO
             </button>
           )}
