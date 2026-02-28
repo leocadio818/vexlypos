@@ -115,8 +115,9 @@ export default function RecipesTab({
   };
 
   // Enhanced margin report with search and filters
+  // IMPORTANT: Filter out sub-recipe definitions - those are managed in ProductionTab
   const marginReport = useMemo(() => {
-    const data = recipes.map(rec => {
+    const data = recipes.filter(rec => !rec.is_subrecipe).map(rec => {
       const cost = calculateRecipeCost(rec);
       const product = products.find(p => p.id === rec.product_id);
       const price = product?.price_a || product?.price || 0;
