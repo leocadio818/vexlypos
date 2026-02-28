@@ -991,10 +991,10 @@ export default function PaymentScreen() {
   // Show loading/redirect screen if not authorized
   if (user && !canProcessPayment) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className={`h-full flex items-center justify-center ${isMinimalist ? '' : 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'}`} style={isMinimalist ? { background: neoBg } : {}}>
         <div className="text-center">
           <Lock size={48} className="text-red-400 mx-auto mb-4" />
-          <p className="text-white/70">Redirigiendo...</p>
+          <p className="text-muted-foreground">Redirigiendo...</p>
         </div>
       </div>
     );
