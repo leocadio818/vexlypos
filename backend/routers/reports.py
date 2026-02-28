@@ -22,6 +22,18 @@ def gen_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+# Dominican Republic timezone (UTC-4)
+_DR_TZ = timezone(timedelta(hours=-4))
+
+def get_local_today_utc_range():
+    """Get UTC start/end ISO boundaries for the current local day in DR (UTC-4).
+    Returns (start_str, end_str) for range-based filtering of UTC timestamps."""
+    local_now = datetime.now(_DR_TZ)
+    local_midnight = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start = local_midnight.astimezone(timezone.utc)
+    end = (local_midnight + timedelta(days=1)).astimezone(timezone.utc)
+    return start.strftime("%Y-%m-%dT%H:%M:%S"), end.strftime("%Y-%m-%dT%H:%M:%S")
+
 CASH_KEYWORDS = ["efectivo", "cash", "usd", "eur", "dolar", "euro", "dollar"]
 
 def resolve_is_cash(pm: dict) -> bool:
