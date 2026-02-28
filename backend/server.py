@@ -2241,7 +2241,7 @@ async def send_comanda_to_queue(order_id: str):
             "waiter_name": order.get("waiter_name", ""),
             "order_number": order.get("id", "")[:8],
             "transaction_number": transaction_number,
-            "date": now_iso()[:19].replace("T", " "),
+            "date": now_local_str("%Y-%m-%d %I:%M:%S %p"),
             "items_count": len(items),
             "items": [
                 {
@@ -2300,7 +2300,7 @@ async def send_test_print(channel_code: str):
         "paper_width": 80,
         "business_name": config.get("business_name", "ALONZO CIGAR"),
         "channel_name": channel.get("name", channel_code.title()),
-        "date": now_iso()[:19].replace("T", " "),
+        "date": now_local_str("%Y-%m-%d %I:%M:%S %p"),
         "message": "PRUEBA DE IMPRESION",
         "printer_name": channel.get("printer_name", "Sin configurar")
     }
