@@ -197,7 +197,7 @@ async def dashboard():
 
     # Voids/Anulaciones - real-time, by shift, by jornada
     current_bday = await db.business_days.find_one({"status": "open"}, {"_id": 0})
-    jornada_start = current_bday.get("opened_at", today) if current_bday else today
+    jornada_start = current_bday.get("opened_at", today_start) if current_bday else today_start
     if hasattr(jornada_start, 'isoformat'):
         jornada_start = jornada_start.isoformat()
 
