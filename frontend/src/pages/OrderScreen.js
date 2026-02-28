@@ -2249,6 +2249,58 @@ export default function OrderScreen() {
         </DialogContent>
       </Dialog>
 
+      {/* Partial Void Dialog */}
+      <Dialog open={partialVoidDialog.open} onOpenChange={(open) => !open && setPartialVoidDialog({ open: false, item: null, qtyToVoid: 1 })}>
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="partial-void-dialog" style={{ backdropFilter: 'blur(20px)', background: 'rgba(var(--card-rgb, 30,30,40), 0.85)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <AlertTriangle size={18} className="text-yellow-500" /> 
+              Anulacion Parcial
+            </DialogTitle>
+          </DialogHeader>
+          {partialVoidDialog.item && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Cuantas unidades desea anular de <strong className="text-foreground">{partialVoidDialog.item.product_name}</strong>?
+              </p>
+              <div className="bg-white/5 rounded-xl border border-white/10 p-4 flex items-center justify-center gap-4">
+                <button
+                  onClick={() => setPartialVoidDialog(p => ({ ...p, qtyToVoid: Math.max(1, p.qtyToVoid - 1) }))}
+                  data-testid="partial-void-minus"
+                  className="w-12 h-12 rounded-xl bg-red-500/20 text-red-400 font-bold text-xl hover:bg-red-500/30 active:scale-90 transition-all"
+                >-</button>
+                <span className="font-oswald text-4xl font-bold text-primary w-16 text-center" data-testid="partial-void-qty">
+                  {partialVoidDialog.qtyToVoid}
+                </span>
+                <button
+                  onClick={() => setPartialVoidDialog(p => ({ ...p, qtyToVoid: Math.min(p.item.quantity, p.qtyToVoid + 1) }))}
+                  data-testid="partial-void-plus"
+                  className="w-12 h-12 rounded-xl bg-green-500/20 text-green-400 font-bold text-xl hover:bg-green-500/30 active:scale-90 transition-all"
+                >+</button>
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                {partialVoidDialog.qtyToVoid} de {partialVoidDialog.item.quantity} | Quedan: <strong className="text-foreground">{partialVoidDialog.item.quantity - partialVoidDialog.qtyToVoid}</strong>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPartialVoidDialog({ open: false, item: null, qtyToVoid: 1 })}
+                  className="flex-1 h-11 rounded-xl bg-white/5 border border-white/10 text-muted-foreground font-semibold hover:bg-white/10 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handlePartialVoidConfirm}
+                  data-testid="partial-void-confirm"
+                  className="flex-1 h-11 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-oswald font-bold active:scale-95 transition-all"
+                >
+                  ANULAR ({partialVoidDialog.qtyToVoid})
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Cancel Dialog - Enhanced VoidReasonModal */}
       <Dialog open={cancelDialog.open} onOpenChange={(open) => !open && resetCancelDialog()}>
         <DialogContent className="max-w-md bg-card border-border" data-testid="cancel-dialog">
