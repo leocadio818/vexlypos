@@ -1,0 +1,54 @@
+{
+  "summary": "Completed testing of Sub-recipe Recipe Protection feature (P0 bug fix). All 10 backend tests passed. Frontend verification confirmed correct behavior - Recetas tab correctly filters out sub-recipe recipes, Producción tab correctly displays sub-recipe management UI.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_subrecipe_protection.py",
+    "/app/test_reports/pytest/subrecipe_protection_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": ["/app/backend/tests/test_subrecipe_protection.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin PIN: 10000 (Level 100)",
+  "seed_data_creation": "Test recipes created and cleaned up during testing",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Sub-recipe protection feature fully implemented and tested. Key findings: 1) DELETE /api/recipes/{id} returns 400 for sub-recipes without force=true, 2) DELETE /api/recipes/{id}?force=true allows deletion, 3) Regular recipe CRUD works normally, 4) Recetas tab filters out is_subrecipe=true recipes, 5) Producción tab shows sub-recipe management with Producir/Receta buttons",
+  "features_verified": {
+    "backend": {
+      "test_get_recipes_returns_all_including_subrecipes": "PASS - Returns all recipes including sub-recipes (limit 500)",
+      "test_delete_subrecipe_blocked_without_force": "PASS - Returns 400 for sub-recipe deletion without force=true",
+      "test_delete_subrecipe_allowed_with_force": "PASS - Allows deletion with force=true parameter",
+      "test_delete_regular_recipe_works_normally": "PASS - Regular recipes can be deleted without force",
+      "test_create_recipe_does_not_overwrite_subrecipe": "PASS - Create with empty product_id doesn't overwrite sub-recipes",
+      "test_delete_by_product_blocked_for_subrecipe": "PASS - Sub-recipes protected from delete by product endpoint",
+      "test_regular_recipe_crud_flow": "PASS - Full CRUD operations work for regular recipes",
+      "test_subrecipe_exists_in_ingredients": "PASS - Sub-recipe ingredients exist in database",
+      "test_subrecipe_recipe_linked_to_ingredient": "PASS - Sub-recipe recipes correctly linked to ingredients",
+      "test_check_production_preserves_recipe": "PASS - Check-production doesn't delete recipe definitions"
+    },
+    "frontend": {
+      "recetas_tab_filtering": "PASS - Shows only 3 product recipes (TEST, PRESIDENTE, MINI HAMBURGUESAS), sub-recipe SALSA CHIMI CHURRI NOT shown as recipe card",
+      "recetas_tab_subrecipe_as_ingredient": "PASS - SALSA CHIMI CHURRI appears as ingredient in MINI HAMBURGUESAS recipe (5 oz)",
+      "produccion_tab_subrecipe_display": "PASS - Shows SALSA CHIMI CHURRI with Producir/Receta buttons and stock level",
+      "produccion_tab_stock_adecuado": "PASS - Shows 'STOCK ADECUADO (1)' section with sub-recipe"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  },
+  "bug_fix_verification": {
+    "original_bug": "Sub-recipe recipe definitions were being spontaneously deleted from the database",
+    "fix_implemented": "Multiple layers of protection: 1) Backend DELETE blocks sub-recipes without force=true, 2) Frontend RecipesTab filters out sub-recipes, 3) create_recipe safety filter prevents matching sub-recipes, 4) delete_by_product blocks sub-recipe deletion",
+    "verification_status": "PASS - All protection layers working correctly"
+  }
+}
