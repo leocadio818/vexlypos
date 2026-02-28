@@ -1010,6 +1010,18 @@ Los ajustes de stock (Diferencias de Inventario - faltantes como ACEITE) no apar
 - `/app/backend/routers/reports.py` - System audit incluye todos los tipos de movimiento + fix campo fecha
 - `/app/backend/routers/inventory.py` - ingredient_name en stock_movements para diferencias
 
+## Feature: Dashboard Mesas en Tiempo Real (28 Feb 2026)
+### Descripcion
+Dashboard muestra mesas abiertas (con consumo en tiempo real, mesero, tiempo, items) y mesas cerradas del dia (con total facturado)
+
+### Implementacion
+- Backend: Endpoint `/api/reports/dashboard` ahora retorna `open_tables[]` y `closed_tables[]`
+- Frontend: Dos paneles glassmorphism (verde=abiertas, azul=cerradas) con badges, totales, y scroll
+
+### Archivos Modificados
+- `/app/backend/routers/reports.py` - Dashboard endpoint ampliado con mesas
+- `/app/frontend/src/pages/Dashboard.js` - Secciones de mesas abiertas/cerradas
+
 ## Fix: Dashboard clasificación incorrecta Efectivo/Tarjeta (28 Feb 2026)
 ### Problema
 Pago en efectivo aparecia como "Tarjeta" en Dashboard, Ventas Diarias y Cierre de Caja
