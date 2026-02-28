@@ -1017,7 +1017,8 @@ export default function PaymentScreen() {
   if (!businessDayLoading && !businessDay) {
     return (
       <div 
-        className="h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-red-900/30 to-slate-900 p-6"
+        className={`h-full flex flex-col items-center justify-center p-6 ${isMinimalist ? '' : 'bg-gradient-to-br from-slate-900 via-red-900/30 to-slate-900'}`}
+        style={isMinimalist ? { background: neoBg } : {}}
         data-testid="no-business-day-block"
       >
         <div className="max-w-md text-center space-y-6">
