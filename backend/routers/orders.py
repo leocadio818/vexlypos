@@ -615,9 +615,13 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
         
         items_cancelled.append({
             "id": item_id,
+            "product_id": item.get("product_id", ""),
             "product_name": item.get("product_name", "?"),
             "quantity": item.get("quantity", 1),
-            "unit_price": item.get("unit_price", 0)
+            "unit_price": item.get("unit_price", 0),
+            "modifiers": item.get("modifiers", []),
+            "notes": item.get("notes", ""),
+            "was_sent": item.get("status") == "sent" or item.get("sent_to_kitchen", False)
         })
         total_value += item.get("unit_price", 0) * item.get("quantity", 1)
         
