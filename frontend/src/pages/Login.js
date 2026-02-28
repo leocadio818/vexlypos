@@ -81,7 +81,7 @@ export default function Login() {
             className="rounded-3xl p-8"
             style={{
               background: bg,
-              boxShadow: `0 0 40px ${glow}30, 0 0 80px ${glow}15, 10px 10px 20px ${dk}, -10px -10px 20px ${lt}`,
+              boxShadow: `0 0 40px ${glow}${glowStrong}, 0 0 80px ${glow}${glowSoft}, 10px 10px 20px ${dk}, -10px -10px 20px ${lt}`,
             }}
           >
             {/* Brand */}
