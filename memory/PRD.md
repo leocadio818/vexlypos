@@ -38,18 +38,21 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - **Multi-Theme Engine**: Implemented complete multi-theme architecture with two isolated themes:
   - **Tema Original**: Dark glassmorphism with neon effects (preserved exactly as-was)
   - **Tema Minimalista**: Light neumorphic with 3D buttons, off-white backgrounds, LED glow panels
-- **ThemeContext.js**: Extended with `activeThemeMode`, `neoColors`, dynamic CSS variable injection, body class management
-- **Apariencia Tab**: New unified appearance panel in Settings replacing "Paleta":
-  - Theme mode toggle (Original vs Minimalist) with visual preview cards
-  - Color pickers for neo: bg, glow, and accent colors (only shown in minimalist mode)
-  - Glass presets shown in original mode
-  - Live preview of neumorphic buttons
-  - Save/restore functionality
-- **Neumorphic CSS** (`theme-minimalist.css`): Isolated CSS with Shadcn variable overrides, shadow utilities, text contrast fixes, auto-apply patterns
-- **Login.js**: Conditional rendering - glass PIN pad or neumorphic 3D PIN pad
-- **Layout.js**: Conditional sidebar styling via `useGlassStyle` variable
-- **Persistence**: Theme saved to MongoDB via existing `/api/theme-config` endpoint
-- **Testing**: 11/11 frontend test scenarios passed (100% success rate)
+- **Global Neumorphic 3D**: Extended CSS to apply neumorphic effects to ALL system elements:
+  - Buttons: Raised 3D with LED glow underneath, sink on press (:active inset shadows)
+  - Cards/Panels: Deep neumorphic shadows with prominent colored glow bleeding from beneath
+  - Sidebar nav: 3D raised items, active state shows pressed/inset effect
+  - Tabs: Raised inactive, inset active with glow
+  - Inputs: Sunken/inset shadow effect
+  - Dialogs: Deep shadow + intense glow
+  - Table map elements: Neumorphic depth with glow
+  - Animated glow orbs in page backgrounds
+- **ThemeContext.js**: Extended with `activeThemeMode`, `neoColors`, glow intensity variables (strong/medium/soft)
+- **Apariencia Tab**: Theme toggle + color pickers for bg, glow, accent
+- **Login.js**: Conditional dual rendering (glass vs neumorphic 3D PIN pad)
+- **Layout.js**: Conditional sidebar + animated glow orbs for minimalist
+- **Persistence**: Theme saved to MongoDB via `/api/theme-config`
+- **Testing**: 12/12 frontend test scenarios passed (100% success rate) - iteration_96
 
 ## File Structure
 ```
