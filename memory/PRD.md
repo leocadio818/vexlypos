@@ -1137,6 +1137,10 @@ cuando InventarioTab esperaba OPCIONES PLANAS, rompiendo ambos flujos.
 4. **InventarioTab**: Filtra opciones planas por `group_id` no vacio para mostrar bajo cada grupo
 
 ## Pendiente
+### Completado (2026-02-28)
+- [x] CRUD completo de Grupos de Modificadores: Editar nombre (PUT), Eliminar grupo con cascada (DELETE), Crear nuevo grupo, CRUD inline de opciones
+- [x] Endpoints: PUT/DELETE /api/modifier-groups/{gid}, limpieza de asignaciones en producto al eliminar
+
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
 - [ ] Envio automatico de facturas por email (requiere integracion con servicio de email)
