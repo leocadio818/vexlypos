@@ -1,15 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { useAuth } from '../../context/AuthContext';
-import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { invalidateTimezoneCache } from '@/lib/timezone';
 import ThermalTicket from '@/components/ThermalTicket';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
+
+// Common IANA timezones relevant for the Americas
+const IANA_TIMEZONES = [
+  { value: 'America/Santo_Domingo', label: 'Rep. Dominicana (UTC-4)' },
+  { value: 'America/New_York', label: 'Este EEUU / New York (UTC-5/-4)' },
+  { value: 'America/Chicago', label: 'Centro EEUU / Chicago (UTC-6/-5)' },
+  { value: 'America/Denver', label: 'Montana EEUU / Denver (UTC-7/-6)' },
+  { value: 'America/Los_Angeles', label: 'Pacifico EEUU / Los Angeles (UTC-8/-7)' },
+  { value: 'America/Puerto_Rico', label: 'Puerto Rico (UTC-4)' },
+  { value: 'America/Bogota', label: 'Colombia / Bogota (UTC-5)' },
+  { value: 'America/Mexico_City', label: 'Mexico / Ciudad de Mexico (UTC-6)' },
+  { value: 'America/Panama', label: 'Panama (UTC-5)' },
+  { value: 'America/Caracas', label: 'Venezuela / Caracas (UTC-4)' },
+  { value: 'America/Argentina/Buenos_Aires', label: 'Argentina / Buenos Aires (UTC-3)' },
+  { value: 'America/Sao_Paulo', label: 'Brasil / Sao Paulo (UTC-3)' },
+  { value: 'Europe/Madrid', label: 'Espana / Madrid (UTC+1/+2)' },
+];
 
 export default function SystemTab() {
   const { systemConfig, setSystemConfig, timezones, users } = useSettings();
