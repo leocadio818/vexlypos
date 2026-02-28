@@ -200,8 +200,8 @@ async def dashboard():
 
     # Filter voids for current jornada (from business day open)
     jornada_voids = [v for v in all_voids if v.get("created_at", "") >= jornada_start]
-    # Filter voids for today (calendar date)
-    today_voids = [v for v in all_voids if v.get("created_at", "")[:10] == today]
+    # Filter voids for today (local timezone range, same as bills)
+    today_voids = [v for v in all_voids if today_start <= v.get("created_at", "") < today_end]
 
     def summarize_voids(voids_list):
         count = len(voids_list)
