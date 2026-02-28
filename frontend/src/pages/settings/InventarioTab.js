@@ -371,35 +371,39 @@ export default function InventarioTab() {
             </Button>
           </div>
 
-          {modifiers.length === 0 ? (
+          {modGroups.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground" data-testid="no-modifiers">
               <ListChecks size={40} className="mx-auto mb-3 opacity-50" />
               <p className="text-sm">No hay modificadores configurados</p>
             </div>
           ) : (
             <div className="grid gap-3" data-testid="modifiers-list">
-              {modifiers.map(m => (
-                <div key={m.id} className="bg-card border border-border rounded-xl p-4" data-testid={`modifier-card-${m.id}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-oswald font-bold text-sm">{m.name}</span>
-                      {m.required && <Badge variant="destructive" className="text-[10px]">Obligatorio</Badge>}
-                      {m.max_selections > 0 && <Badge variant="outline" className="text-[10px]">Max: {m.max_selections}</Badge>}
+              {modGroups.map(g => {
+                const groupMods = modifiers.filter(m => m.group_id === g.id);
+                return (
+                  <div key={g.id} className="bg-card border border-border rounded-xl p-4" data-testid={`modifier-card-${g.id}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-oswald font-bold text-sm">{g.name}</span>
+                        {g.min_selection > 0 && <Badge variant="destructive" className="text-[10px]">Min: {g.min_selection}</Badge>}
+                        {g.max_selection > 0 && <Badge variant="outline" className="text-[10px]">Max: {g.max_selection}</Badge>}
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEditModifier(g)} data-testid={`edit-modifier-${g.id}`}><Pencil size={14} /></Button>
+                        <Button variant="ghost" size="icon" className="text-red-400" onClick={() => deleteModifier(g.id)} data-testid={`delete-modifier-${g.id}`}><Trash2 size={14} /></Button>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEditModifier(m)} data-testid={`edit-modifier-${m.id}`}><Pencil size={14} /></Button>
-                      <Button variant="ghost" size="icon" className="text-red-400" onClick={() => deleteModifier(m.id)} data-testid={`delete-modifier-${m.id}`}><Trash2 size={14} /></Button>
+                    <div className="flex flex-wrap gap-2">
+                      {groupMods.map(o => (
+                        <span key={o.id} className="text-xs bg-muted px-2 py-1 rounded-full">
+                          {o.name} {o.price > 0 ? `+RD$ ${o.price}` : ''}
+                        </span>
+                      ))}
+                      {groupMods.length === 0 && <span className="text-xs text-muted-foreground">Sin opciones</span>}
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(m.options || []).map(o => (
-                      <span key={o.id} className="text-xs bg-muted px-2 py-1 rounded-full">
-                        {o.name} {o.price > 0 ? `+RD$ ${o.price}` : ''}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
