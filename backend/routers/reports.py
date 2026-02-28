@@ -1259,15 +1259,15 @@ async def system_audit_report(
     # 4. Inventory difference logs
     diff_logs = await db.stock_difference_logs.find({}, {"_id": 0}).to_list(500)
     for diff in diff_logs:
-        created = diff.get("created_at", "")
+        created = diff.get("timestamp", diff.get("created_at", ""))
         if created[:10] >= date_from and created[:10] <= date_to:
             activities.append({
                 "timestamp": created,
-                "type": "Diferencia Inventario",
-                "description": f"{diff.get('ingredient_name', '?')}: {diff.get('difference_type', '?')} - {diff.get('reason', '')}",
-                "user": diff.get("user_name", "Sistema"),
+                "type": "Diferencia Inventario (Detalle)",
+                "description": f"{diff.get('ingredient_name', '?')}: {diff.get('difference_type', '?')} ({diff.get('quantity_dispatch_units', 0)} {diff.get('dispatch_unit', '')}) - {diff.get('reason', '')}",
+                "user": diff.get("authorized_by_name", diff.get("user_name", "Sistema")),
                 "authorizer": "-",
-                "value": diff.get("value", 0)
+                "value": diff.get("monetary_value", diff.get("value", 0))
             })
     
     # 5. Shift opens/closes
