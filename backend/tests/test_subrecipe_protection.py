@@ -149,7 +149,7 @@ class TestSubrecipeProtection:
             "yield_quantity": 1,
             "notes": "Test regular recipe for delete test",
             "is_subrecipe": False,
-            "produces_ingredient_id": None
+            "produces_ingredient_id": ""  # Must be empty string, not None
         }
         
         create_response = self.session.post(f"{BASE_URL}/api/recipes", json=test_recipe)
