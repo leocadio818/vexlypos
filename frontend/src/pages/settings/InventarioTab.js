@@ -339,13 +339,107 @@ export default function InventarioTab() {
 
       {/* MODIFICADORES */}
       {inventarioSubTab === 'modificadores' && (
-        <div className="text-center py-8">
-          <ListChecks size={40} className="mx-auto mb-3 text-primary opacity-50" />
-          <h2 className="font-oswald text-lg mb-2">Modificadores</h2>
-          <p className="text-sm text-muted-foreground mb-4">Gestiona extras, opciones y variantes de productos</p>
-          <a href="/modifiers" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-oswald font-bold">
-            <ListChecks size={16} /> Abrir Modificadores
-          </a>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-oswald text-lg font-bold">Modificadores</h2>
+              <p className="text-xs text-muted-foreground">Extras, opciones y variantes de productos</p>
+            </div>
+            <Button onClick={openNewModifier} className="gap-2" data-testid="add-modifier-btn">
+              <Plus size={16} /> Nuevo Modificador
+            </Button>
+          </div>
+
+          {modifiers.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground" data-testid="no-modifiers">
+              <ListChecks size={40} className="mx-auto mb-3 opacity-50" />
+              <p className="text-sm">No hay modificadores configurados</p>
+            </div>
+          ) : (
+            <div className="grid gap-3" data-testid="modifiers-list">
+              {modifiers.map(m => (
+                <div key={m.id} className="bg-card border border-border rounded-xl p-4" data-testid={`modifier-card-${m.id}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-oswald font-bold text-sm">{m.name}</span>
+                      {m.required && <Badge variant="destructive" className="text-[10px]">Obligatorio</Badge>}
+                      {m.max_selections > 0 && <Badge variant="outline" className="text-[10px]">Max: {m.max_selections}</Badge>}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEditModifier(m)} data-testid={`edit-modifier-${m.id}`}><Pencil size={14} /></Button>
+                      <Button variant="ghost" size="icon" className="text-red-400" onClick={() => deleteModifier(m.id)} data-testid={`delete-modifier-${m.id}`}><Trash2 size={14} /></Button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(m.options || []).map(o => (
+                      <span key={o.id} className="text-xs bg-muted px-2 py-1 rounded-full">
+                        {o.name} {o.price > 0 ? `+RD$ ${o.price}` : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Modifier Dialog */}
+          <Dialog open={modDialog.open} onOpenChange={(o) => !o && setModDialog(p => ({ ...p, open: false }))}>
+            <DialogContent className="max-w-lg" data-testid="modifier-modal">
+              <DialogHeader>
+                <DialogTitle className="font-oswald">{modDialog.editId ? 'Editar Modificador' : 'Nuevo Modificador'}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre del Grupo *</label>
+                  <input value={modDialog.name} onChange={e => setModDialog(p => ({ ...p, name: e.target.value }))}
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" placeholder="Ej: Temperatura, Extras, Toppings"
+                    data-testid="modifier-name-input" />
+                </div>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox checked={modDialog.required} onCheckedChange={v => setModDialog(p => ({ ...p, required: v }))} data-testid="modifier-required" />
+                    Obligatorio
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground">Max selecciones (0=sin limite)</label>
+                    <input type="number" min="0" value={modDialog.max_selections}
+                      onChange={e => setModDialog(p => ({ ...p, max_selections: parseInt(e.target.value) || 0 }))}
+                      className="w-16 bg-background border border-border rounded-lg px-2 py-1 text-sm text-center"
+                      data-testid="modifier-max-input" />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-muted-foreground">Opciones</label>
+                    <Button variant="outline" size="sm" onClick={addModOption} className="gap-1 h-7 text-xs" data-testid="add-option-btn">
+                      <Plus size={12} /> Opcion
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {modDialog.options.map((opt, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <input value={opt.name} onChange={e => updateModOption(idx, 'name', e.target.value)}
+                          className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-sm" placeholder="Nombre opcion"
+                          data-testid={`option-name-${idx}`} />
+                        <input type="number" value={opt.price} onChange={e => updateModOption(idx, 'price', parseFloat(e.target.value) || 0)}
+                          className="w-24 bg-background border border-border rounded-lg px-2 py-1.5 text-sm" placeholder="Precio"
+                          data-testid={`option-price-${idx}`} />
+                        {modDialog.options.length > 1 && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400" onClick={() => removeModOption(idx)}><X size={14} /></Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setModDialog(p => ({ ...p, open: false }))}>Cancelar</Button>
+                <Button onClick={saveModifier} data-testid="save-modifier-btn">
+                  {modDialog.editId ? 'Actualizar' : 'Crear Modificador'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 
