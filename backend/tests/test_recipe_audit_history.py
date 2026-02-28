@@ -224,8 +224,8 @@ class TestRecipeAuditHistory:
         
         time.sleep(0.5)
         
-        # Delete the recipe with force=true (since it's a subrecipe)
-        delete_res = self.session.delete(f"{BASE_URL}/api/recipes/{recipe_id}", params={"force": "true"})
+        # Delete the recipe (not a subrecipe, so no force needed)
+        delete_res = self.session.delete(f"{BASE_URL}/api/recipes/{recipe_id}")
         assert delete_res.status_code == 200
         
         time.sleep(0.5)
