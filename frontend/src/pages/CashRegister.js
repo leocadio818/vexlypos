@@ -147,6 +147,12 @@ export default function CashRegister() {
         if (currentRes.data?.id) {
           const movRes = await posSessionsAPI.getMovements(currentRes.data.id);
           setMovements(movRes.data || []);
+          
+          // Cargar desglose detallado de ventas por forma de pago
+          try {
+            const breakdownRes = await posSessionsAPI.salesBreakdown(currentRes.data.id);
+            setSalesBreakdown(breakdownRes.data);
+          } catch {}
         }
       } else {
         setCurrentSession(null);
