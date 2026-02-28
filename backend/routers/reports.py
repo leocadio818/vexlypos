@@ -105,21 +105,17 @@ async def dashboard():
     shifts = await db.shifts.find({"closed_at": None}, {"_id": 0}).to_list(50)
     open_shifts = len(shifts)
     
-    # Inventory alerts (low stock)
-    stock_docs = await db.stock.find({}, {"_id": 0}).to_list(1000)
+    # Inventory alerts (low stock) - check directly on ingredients
     ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
-    ing_map = {i["id"]: i for i in ingredients}
     inventory_alerts = 0
-    for stock in stock_docs:
-        ing = ing_map.get(stock.get("ingredient_id"), {})
-        min_stock = ing.get("min_stock", 0)
-        current = stock.get("current_stock", 0)
+    for ing in ingredients:
+        min_stock = ing.get("min_stock", 0) or 0
+        current = ing.get("current_stock", 0) or 0
         if current < min_stock and min_stock > 0:
             inventory_alerts += 1
     
     # Loyalty customers
-    customers = await db.loyalty_customers.find({}, {"_id": 0}).to_list(10000)
-    total_customers = len(customers)
+    total_customers = await db.customers.count_documents({})
     
     # Hourly sales for today
     hourly_data = {}
