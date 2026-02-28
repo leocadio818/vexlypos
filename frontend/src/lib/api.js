@@ -321,6 +321,7 @@ export const recipesAPI = {
   create: (data) => api.post('/recipes', data),
   update: (id, data) => api.put(`/recipes/${id}`, data),
   delete: (id) => api.delete(`/recipes/${id}`),
+  deleteForce: (id) => api.delete(`/recipes/${id}`, { params: { force: true } }),
   deleteByProduct: (productId) => api.delete(`/recipes/product/${productId}`),
   getCost: (productId) => api.get(`/inventory/recipe-cost/${productId}`),
   recalculateCosts: () => api.post('/inventory/recalculate-costs'),
