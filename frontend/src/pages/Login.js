@@ -70,8 +70,9 @@ export default function Login() {
       >
         {/* Subtle glow orbs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-32 -left-32 w-64 h-64 rounded-full blur-[120px] opacity-40" style={{ backgroundColor: glow }} />
-          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full blur-[140px] opacity-30" style={{ backgroundColor: glow }} />
+          <div className="absolute -top-32 -left-32 w-64 h-64 rounded-full blur-[120px]" style={{ backgroundColor: glow, opacity: isNeoDark ? 0.5 : 0.4 }} />
+          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full blur-[140px]" style={{ backgroundColor: glow, opacity: isNeoDark ? 0.4 : 0.3 }} />
+          {isNeoDark && <div className="absolute top-1/2 left-1/3 w-48 h-48 rounded-full blur-[100px]" style={{ backgroundColor: glow, opacity: 0.25 }} />}
         </div>
 
         <div className="w-full max-w-sm relative z-10">
