@@ -1192,6 +1192,56 @@ export default function ProductConfig() {
               />
             </div>
 
+            {/* Options list with editable prices */}
+            {modAssignDialog.group_id && (() => {
+              const selectedGroup = modifierGroups.find(g => g.id === modAssignDialog.group_id);
+              const options = selectedGroup?.options || [];
+              if (options.length === 0) return null;
+              return (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-2 block">
+                    Opciones del Grupo ({options.length})
+                  </label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {options.map((opt, idx) => (
+                      <div key={opt.id || idx} className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border" data-testid={`option-row-${idx}`}>
+                        <span className="flex-1 text-sm truncate">{opt.name}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-muted-foreground">RD$</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={opt.price || 0}
+                            onChange={e => {
+                              const newPrice = parseFloat(e.target.value) || 0;
+                              setModifierGroups(prev => prev.map(g => {
+                                if (g.id !== modAssignDialog.group_id) return g;
+                                return {
+                                  ...g,
+                                  options: g.options.map((o, i) => i === idx ? { ...o, price: newPrice } : o)
+                                };
+                              }));
+                              // Persist to backend
+                              if (opt.id) {
+                                fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifiers/${opt.id}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ name: opt.name, price: newPrice, group_id: opt.group_id || '' })
+                                });
+                              }
+                            }}
+                            className="w-20 bg-card border border-border rounded px-2 py-1 text-sm text-right font-mono"
+                            data-testid={`option-price-${idx}`}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <Button 
               onClick={handleAddModifierAssignment}
               className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95"
