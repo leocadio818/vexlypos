@@ -739,28 +739,30 @@ async def sync_session_sales(session_id: str, user=Depends(get_current_user)):
         
         for bill in bills:
             total_invoices += 1
-            payments = bill.get("payments", [])
-            if payments:
+            bill_total = bill.get("total", 0) or 0
+            main_method = (bill.get("payment_method", "") or "").lower()
+            
+            # Use main payment_method field as primary classifier
+            if "tarjeta" in main_method or "card" in main_method:
+                card_sales += bill_total
+            elif "transferencia" in main_method or "transfer" in main_method:
+                transfer_sales += bill_total
+            elif "efectivo" in main_method or "rd$" in main_method or "dolar" in main_method or "euro" in main_method or "cash" in main_method:
+                cash_sales += bill_total
+            elif main_method == "" or main_method == "?":
+                # Fallback: check individual payments
+                payments = bill.get("payments", [])
                 for pay in payments:
-                    label = (pay.get("label", "") or "").lower()
+                    label = (pay.get("label", "") or pay.get("method", "") or "").lower()
                     amount = pay.get("amount_dop", pay.get("amount", 0)) or 0
                     if "tarjeta" in label or "card" in label:
                         card_sales += amount
                     elif "transferencia" in label or "transfer" in label:
                         transfer_sales += amount
-                    elif "efectivo" in label or "rd$" in label or "dolar" in label or "euro" in label or "cash" in label:
-                        cash_sales += amount
                     else:
-                        other_sales += amount
+                        cash_sales += amount
             else:
-                method = (bill.get("payment_method", "") or "").lower()
-                total = bill.get("total", 0) or 0
-                if "tarjeta" in method or "card" in method:
-                    card_sales += total
-                elif "transferencia" in method or "transfer" in method:
-                    transfer_sales += total
-                else:
-                    cash_sales += total
+                other_sales += bill_total
         
         update_data = {
             "cash_sales": cash_sales,
