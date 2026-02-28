@@ -1095,9 +1095,6 @@ export default function PaymentScreen() {
     );
   }
 
-  // Neumorphic-aware background
-  const neoBg = isMinimalist ? (isNeoDark ? neoColors.neoDarkBg : neoColors.neoBgColor) : null;
-
   return (
     <div 
       className="h-full flex flex-col overflow-hidden relative"
