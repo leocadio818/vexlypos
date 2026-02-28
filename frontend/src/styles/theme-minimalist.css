@@ -123,6 +123,53 @@ body.theme-minimalist [data-sonner-toaster] [data-sonner-toast] {
 }
 
 /* ═══════════════════════════════════════
+   TEXT CONTRAST FIX FOR LIGHT THEME
+   Override hard-coded white text classes
+   ═══════════════════════════════════════ */
+
+/* Core white text → dark */
+body.theme-minimalist .text-white { color: hsl(var(--foreground)) !important; }
+body.theme-minimalist .text-white\/90 { color: hsl(var(--foreground) / 0.9) !important; }
+body.theme-minimalist .text-white\/80 { color: hsl(var(--foreground) / 0.8) !important; }
+body.theme-minimalist .text-white\/70 { color: hsl(var(--foreground) / 0.7) !important; }
+body.theme-minimalist .text-white\/60 { color: hsl(var(--foreground) / 0.6) !important; }
+body.theme-minimalist .text-white\/50 { color: hsl(var(--foreground) / 0.5) !important; }
+body.theme-minimalist .text-white\/40 { color: hsl(var(--foreground) / 0.4) !important; }
+body.theme-minimalist .text-white\/30 { color: hsl(var(--foreground) / 0.3) !important; }
+
+/* Preserve white text inside colored containers */
+body.theme-minimalist [class*="bg-primary"] > .text-white,
+body.theme-minimalist [class*="bg-primary"].text-white,
+body.theme-minimalist [class*="bg-green-"] > .text-white,
+body.theme-minimalist [class*="bg-green-"].text-white,
+body.theme-minimalist [class*="bg-red-"] > .text-white,
+body.theme-minimalist [class*="bg-red-"].text-white,
+body.theme-minimalist [class*="bg-blue-"] > .text-white,
+body.theme-minimalist [class*="bg-blue-"].text-white,
+body.theme-minimalist [class*="bg-amber-"] > .text-white,
+body.theme-minimalist [class*="bg-amber-"].text-white,
+body.theme-minimalist [class*="bg-orange-"] > .text-white,
+body.theme-minimalist [class*="bg-orange-"].text-white,
+body.theme-minimalist [class*="bg-gradient"] .text-white,
+body.theme-minimalist [class*="bg-gradient"].text-white,
+body.theme-minimalist [class*="bg-slate-9"] .text-white,
+body.theme-minimalist [class*="bg-slate-8"] .text-white,
+body.theme-minimalist .text-primary-foreground { color: hsl(var(--primary-foreground)) !important; }
+
+/* Border white → subtle gray */
+body.theme-minimalist .border-white\/10,
+body.theme-minimalist .border-white\/20,
+body.theme-minimalist .border-white\/30 { border-color: hsl(var(--border)) !important; }
+
+/* Glass backgrounds → solid neo backgrounds */
+body.theme-minimalist .bg-white\/5,
+body.theme-minimalist .bg-white\/10,
+body.theme-minimalist .bg-white\/15,
+body.theme-minimalist .bg-white\/20 { background-color: hsl(var(--muted)) !important; }
+body.theme-minimalist .backdrop-blur-xl,
+body.theme-minimalist .backdrop-blur-md { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+/* ═══════════════════════════════════════
    ANIMATIONS
    ═══════════════════════════════════════ */
 @keyframes neo-glow-pulse {
