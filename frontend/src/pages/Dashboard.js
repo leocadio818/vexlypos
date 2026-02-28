@@ -133,6 +133,95 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Open & Closed Tables - Glassmorphism */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="tables-section">
+            {/* Open Tables */}
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <h3 className="font-oswald text-sm font-bold uppercase tracking-wider text-white/50">Mesas Abiertas</h3>
+                </div>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-oswald">{open_tables.length}</Badge>
+              </div>
+              {open_tables.length === 0 ? (
+                <p className="text-xs text-white/30 text-center py-4">No hay mesas abiertas</p>
+              ) : (
+                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                  {open_tables.map((t, i) => {
+                    const mins = t.opened_at ? Math.floor((Date.now() - new Date(t.opened_at).getTime()) / 60000) : 0;
+                    const timeStr = mins >= 60 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${mins}m`;
+                    return (
+                      <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-white/5 border border-white/10" data-testid={`open-table-${t.table_number}`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-green-500/20 flex items-center justify-center">
+                            <span className="font-oswald text-sm font-bold text-green-400">{t.table_number}</span>
+                          </div>
+                          <div>
+                            <p className="text-xs text-white/70">{t.waiter || 'Sin mesero'}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <Clock size={10} className="text-white/40" />
+                              <span className="text-[10px] text-white/40 font-mono">{timeStr}</span>
+                              <span className="text-[10px] text-white/30">|</span>
+                              <span className="text-[10px] text-white/40">{t.items_count} items</span>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="font-oswald text-base font-bold text-green-400">{formatMoney(t.consumption)}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {open_tables.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-xs">
+                  <span className="text-white/40">Total en mesas</span>
+                  <span className="font-oswald font-bold text-green-400">{formatMoney(open_tables.reduce((s,t) => s + t.consumption, 0))}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Closed Tables Today */}
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={12} className="text-blue-400" />
+                  <h3 className="font-oswald text-sm font-bold uppercase tracking-wider text-white/50">Mesas Cerradas Hoy</h3>
+                </div>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 font-oswald">{closed_tables.length}</Badge>
+              </div>
+              {closed_tables.length === 0 ? (
+                <p className="text-xs text-white/30 text-center py-4">No hay mesas cerradas hoy</p>
+              ) : (
+                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                  {closed_tables.map((t, i) => {
+                    const paidTime = t.last_paid && t.last_paid.includes('T') ? t.last_paid.split('T')[1].slice(0,5) : '';
+                    return (
+                      <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-white/5 border border-white/10" data-testid={`closed-table-${t.table_number}`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                            <span className="font-oswald text-sm font-bold text-blue-400">{t.table_number}</span>
+                          </div>
+                          <div>
+                            <p className="text-xs text-white/70">{t.bills_count} factura{t.bills_count > 1 ? 's' : ''}</p>
+                            {paidTime && <p className="text-[10px] text-white/40 font-mono mt-0.5">{paidTime}</p>}
+                          </div>
+                        </div>
+                        <p className="font-oswald text-base font-bold text-blue-400">{formatMoney(t.total)}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {closed_tables.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-xs">
+                  <span className="text-white/40">Total facturado</span>
+                  <span className="font-oswald font-bold text-blue-400">{formatMoney(closed_tables.reduce((s,t) => s + t.total, 0))}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Hourly Sales Chart - Glassmorphism */}
           <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4" data-testid="hourly-chart">
             <h3 className="font-oswald text-sm font-bold mb-3 uppercase tracking-wider text-white/50">Ventas por Hora - Hoy</h3>
