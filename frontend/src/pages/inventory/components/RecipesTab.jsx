@@ -5,12 +5,13 @@ import { toast } from 'sonner';
 import { 
   FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, 
   AlertTriangle, Check, BarChart3, List, ArrowUpDown, Filter, Search,
-  UtensilsCrossed, Coffee, Beer, Cigarette, Soup, Package
+  UtensilsCrossed, Coffee, Beer, Cigarette, Soup, Package, History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { recipesAPI, formatMoney } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+import RecipeHistoryDialog from './RecipeHistoryDialog';
 
 // Searchable ingredient selector using Shadcn Combobox pattern
 function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
