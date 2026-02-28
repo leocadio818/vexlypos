@@ -103,7 +103,7 @@ export default function ProductConfig() {
       const [catRes, reportCatRes, modRes, channelsRes, taxRes] = await Promise.all([
         categoriesAPI.list(),
         reportCategoriesAPI.list(),
-        modifiersAPI.list(),
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifier-groups-with-options`).then(r => r.json()),
         fetch(`${process.env.REACT_APP_BACKEND_URL}/api/print-channels`).then(r => r.json()),
         fetch(`${process.env.REACT_APP_BACKEND_URL}/api/taxes/config`).then(r => r.json())
       ]);
