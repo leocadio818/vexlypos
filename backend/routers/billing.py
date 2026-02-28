@@ -525,31 +525,34 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                     session = session_result.data[0]
                     session_id = session["id"]
                     
-                    # Determine which field to update based on payment method
-                    if is_cash_payment:
-                        update_data = {
-                            "cash_sales": (session.get("cash_sales") or 0) + total,
-                            "total_invoices": (session.get("total_invoices") or 0) + 1
-                        }
-                        movement_payment_method = "cash"
-                    elif input.payment_method == "card":
-                        update_data = {
-                            "card_sales": (session.get("card_sales") or 0) + total,
-                            "total_invoices": (session.get("total_invoices") or 0) + 1
-                        }
-                        movement_payment_method = "card"
-                    elif input.payment_method == "transfer":
-                        update_data = {
-                            "transfer_sales": (session.get("transfer_sales") or 0) + total,
-                            "total_invoices": (session.get("total_invoices") or 0) + 1
-                        }
-                        movement_payment_method = "transfer"
-                    else:
-                        update_data = {
-                            "other_sales": (session.get("other_sales") or 0) + total,
-                            "total_invoices": (session.get("total_invoices") or 0) + 1
-                        }
-                        movement_payment_method = "other"
+                    # Distribute by individual payment method (mixed payments)
+                    sess_cash = 0
+                    sess_card = 0
+                    sess_transfer = 0
+                    sess_other = 0
+                    for pmt in payments_list:
+                        amt = pmt.get("amount_dop", 0) or 0
+                        name_lower = (pmt.get("payment_method_name", "") or "").lower()
+                        if pmt.get("is_cash", False):
+                            sess_cash += amt
+                        elif "tarjeta" in name_lower or "card" in name_lower:
+                            sess_card += amt
+                        elif "transfer" in name_lower:
+                            sess_transfer += amt
+                        else:
+                            sess_other += amt
+                    
+                    update_data = {"total_invoices": (session.get("total_invoices") or 0) + 1}
+                    if sess_cash > 0:
+                        update_data["cash_sales"] = (session.get("cash_sales") or 0) + round(sess_cash, 2)
+                    if sess_card > 0:
+                        update_data["card_sales"] = (session.get("card_sales") or 0) + round(sess_card, 2)
+                    if sess_transfer > 0:
+                        update_data["transfer_sales"] = (session.get("transfer_sales") or 0) + round(sess_transfer, 2)
+                    if sess_other > 0:
+                        update_data["other_sales"] = (session.get("other_sales") or 0) + round(sess_other, 2)
+                    
+                    movement_payment_method = "mixed" if len(payments_list) > 1 else ("cash" if is_cash_payment else "other")
                     
                     # Update session totals
                     supabase_client.table("pos_sessions").update(update_data).eq("id", session_id).execute()
