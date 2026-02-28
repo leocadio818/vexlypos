@@ -458,9 +458,14 @@ export default function CashRegister() {
       }
     } catch (err) {
       const detail = err.response?.data?.detail || 'Error al cerrar jornada';
-      toast.error('No se puede cerrar la jornada', {
-        description: detail
-      });
+      // Si el error es por turnos/cuentas abiertas, mostrar dialogo detallado
+      if (err.response?.status === 400 && (detail.includes('cuenta') || detail.includes('turno') || detail.includes('No se puede cerrar'))) {
+        setOpenTablesError({ show: true, message: detail });
+      } else {
+        toast.error('No se puede cerrar la jornada', {
+          description: detail
+        });
+      }
     } finally {
       setCloseDayLoading(false);
     }
