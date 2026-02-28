@@ -313,7 +313,7 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
         
         # 2. Verificar cuentas/mesas abiertas en MongoDB
         open_orders = await db.orders.find(
-            {"status": {"$in": ["active", "pending"]}},
+            {"status": {"$nin": ["closed", "paid", "cancelled"]}},
             {"_id": 0, "table_number": 1, "waiter_name": 1}
         ).to_list(100)
         if open_orders:
