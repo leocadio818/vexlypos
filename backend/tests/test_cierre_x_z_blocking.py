@@ -111,8 +111,8 @@ class TestCierreXBlocking:
             order_data = {
                 "table_id": free_table["id"],
                 "table_number": free_table.get("table_number", 1),
-                "waiter_id": self.admin_user["user_id"],
-                "waiter_name": self.admin_user["name"],
+                "waiter_id": self.admin_user.get("user_id") or self.admin_user.get("id"),
+                "waiter_name": self.admin_user.get("name"),
                 "status": "active",
                 "items": []
             }
