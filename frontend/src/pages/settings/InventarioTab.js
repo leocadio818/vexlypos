@@ -421,14 +421,17 @@ export default function InventarioTab() {
                     data-testid="modifier-name-input" />
                 </div>
                 <div className="flex gap-4">
-                  <label className="flex items-center gap-2 text-sm">
-                    <Checkbox checked={modDialog.required} onCheckedChange={v => setModDialog(p => ({ ...p, required: v }))} data-testid="modifier-required" />
-                    Obligatorio
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground">Min selecciones</label>
+                    <input type="number" min="0" value={modDialog.min_selection}
+                      onChange={e => setModDialog(p => ({ ...p, min_selection: parseInt(e.target.value) || 0 }))}
+                      className="w-16 bg-background border border-border rounded-lg px-2 py-1 text-sm text-center"
+                      data-testid="modifier-min-input" />
+                  </div>
                   <div className="flex items-center gap-2">
                     <label className="text-xs text-muted-foreground">Max selecciones (0=sin limite)</label>
-                    <input type="number" min="0" value={modDialog.max_selections}
-                      onChange={e => setModDialog(p => ({ ...p, max_selections: parseInt(e.target.value) || 0 }))}
+                    <input type="number" min="0" value={modDialog.max_selection}
+                      onChange={e => setModDialog(p => ({ ...p, max_selection: parseInt(e.target.value) || 0 }))}
                       className="w-16 bg-background border border-border rounded-lg px-2 py-1 text-sm text-center"
                       data-testid="modifier-max-input" />
                   </div>
