@@ -37,7 +37,14 @@ export default function SystemTab() {
   const [resetConfirmText, setResetConfirmText] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [keepUsers, setKeepUsers] = useState([]);
+  const [systemTimezone, setSystemTimezone] = useState('America/Santo_Domingo');
+  const [tzSaving, setTzSaving] = useState(false);
   const isSystemAdmin = (currentUser?.role_level || 0) >= 100;
+
+  // Load current timezone from API
+  useEffect(() => {
+    axios.get(`${API}/timezone`).then(r => setSystemTimezone(r.data.timezone)).catch(() => {});
+  }, []);
 
   // Initialize keepUsers with current admin
   useEffect(() => {
