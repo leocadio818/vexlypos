@@ -43,7 +43,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://discount-ui-build.preview.emergentagent.com"
+SERVER_URL = "https://polyglot-persistence.preview.emergentagent.com"
 
 DEFAULT_PRINTER = "Caja"
 
