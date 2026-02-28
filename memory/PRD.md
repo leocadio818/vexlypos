@@ -1,74 +1,72 @@
-# POS Dominicana - Product Requirements Document
+# Mesa POS RD - PRD
 
 ## Original Problem Statement
-Sistema POS (Point of Sale) para restaurantes en Republica Dominicana. Stack: React.js, FastAPI, MongoDB/Supabase, Tailwind CSS, Shadcn/UI.
+Full-stack POS (Point of Sale) application for restaurants in Dominican Republic. React frontend + FastAPI backend + MongoDB.
 
-## Strict Development Directive
-All changes must be surgical and minimal. No refactoring or unnecessary modifications to core modules:
-1. Motor de Inventario y Recetas
-2. Fiscalidad y Cumplimiento (DGII)
-3. Reloj de Negocio y Reportes de Cierre
-4. Multimoneda y Pagos Mixtos
-5. Motor de Impresion (ESC-POS 72mm)
-6. Interfaz y Themes (UI/UX) - Liquid Glass
-
-## Core Architecture
-- **Frontend**: React.js + Tailwind CSS + Shadcn/UI (port 3000)
-- **Backend**: FastAPI (port 8001, prefix /api)
-- **Database**: MongoDB (primary) + Supabase (pos_sessions, legacy)
-- **Printing**: Local print agent (print_agent_pro.py) using structured `data` payloads
+## Core Requirements
+- Shift management (Cierre X / Cierre Z) with business validation
+- Multi-payment method support (cash, card, transfer, USD, EUR)
+- Tax handling (ITBIS, Propina Legal) with manual overrides
+- NCF fiscal invoice management
+- Discount application and reporting
+- Kitchen display system
+- Inventory management with recipes
+- Comprehensive reporting system
 
 ## What's Been Implemented
 
-### Session 1 (Previous forks):
-- Full POS system: auth, inventory, recipes, orders, billing, kitchen, NCF/DGII compliance
-- Multi-currency payments, tax engine, discount system
-- Kitchen display, table management, customer loyalty
-- Business day management (open/close with admin PIN)
-- Report X (shift) and Report Z (day) generation
+### Completed (Previous Sessions)
+- Shift/Day Closure Logic with correct validation rules
+- Mixed Payment Bug Fix (proper distribution in billing.py)
+- Dashboard & Cash Register UI with all payment methods + discounts
+- UTC to Local Time correction across all prints
+- Real-time Report Filtering
+- Payment Screen fixes (tax override, visual feedback)
+- Discount totals in Cierre X/Z reports
+- Backend endpoint GET /api/reports/discounts
 
-### Session 2 (Previous fork):
-- Modifier Group CRUD (Edit/Delete)
-- Login Screen Redesign (dark glassmorphism)
-- Partial Item Void + Cancellation Ticket Printing
-- Cash Register data sync fix (MongoDB resync endpoint)
-- Blank print ticket fix (structured `data` vs raw `commands`)
-- Mobile UI fixes (flex-wrap headers, floating keyboard)
-- Product workflow fix (modifier dialog)
+### Completed (2026-02-28 - Current Session)
+- **Discount Report Frontend**: Created `DiscountsReport.jsx` component with formatted table showing Fecha, NCF, Mesa, Mesero, Descuento (badge), Subtotal, Monto Descuento, Total Final. Added summary cards for total discounts and count. Integrated into Reports.js switch statement.
 
-### Session 3 (Current - 2026-02-28):
-- **P0 FIX: Shift/Day Closure Validation** - Implemented comprehensive blocking logic:
-  - Cierre X (shift closure): Now checks ALL open orders (any user) and ALL other active sessions
-  - Cierre Z (day closure): Combined validation checks into single response showing all blocking reasons
-  - Detailed error messages identifying who/what is blocking (user names, table numbers, terminals)
-  - Frontend: Updated error dialog to show all blocking reasons with pipe separator display
-  - Files modified: `pos_sessions.py`, `business_days.py`, `CashRegister.js`
-  - Testing: 100% pass rate (10/10 backend tests, frontend verified)
+## Architecture
+```
+/app
+├── backend/
+│   ├── models/models.py
+│   ├── routers/
+│   │   ├── billing.py, business_days.py, orders.py
+│   │   ├── reports.py, pos_sessions.py
+│   ├── utils/printer.py, timezone.py
+│   ├── print_agent_pro.py
+│   └── server.py
+└── frontend/src/
+    ├── pages/
+    │   ├── Reports.js
+    │   ├── reports/DiscountsReport.jsx (NEW)
+    │   ├── CashRegister.js, Dashboard.js, PaymentScreen.js
+    └── components/, api/
+```
 
 ## Prioritized Backlog
 
-### P1 (Next)
+### P1 - Upcoming
 - Implement employee time clock (Reloj de entrada/salida)
-- Implement automatic invoice sending via email
+- Implement automatic sending of invoices via email
 
-### P2
+### P2 - Future
 - DGII Report 608 (NCF Anulados)
 - Cache product images for offline access
-- Compile print_agent_pro.py into Windows executable
-
-### P3
+- Compile print_agent_pro.py into standalone Windows executable
 - Export Audit Trail to Excel/CSV
 
-## Technical Debt
-- Supabase dead code removal (identified as bug source, partially resolved)
-- Consolidate modifier API from server.py + config.py into routers/modifiers.py
+### P3 - Refactoring
+- Remove dead Supabase code
+- Consolidate Modifier API logic (server.py + config.py)
 
-## Key Credentials
+## Credentials
 - Admin PIN: 10000
-- Cajero (Luis) PIN: 4321
+- Cajero (Luis/Oscar) PIN: 4321
 
-## Key API Endpoints (Modified)
-- `PUT /api/pos-sessions/{session_id}/close` - Now validates ALL open orders + other active sessions
-- `POST /api/business-days/close` - Combined validation with detailed blocking reasons
-- `PUT /api/pos-sessions/{session_id}/sync-sales` - Resync session totals
-- `PUT /api/orders/{order_id}/partial-void/{item_id}` - Partial item void
+## 3rd Party Integrations
+- MongoDB
+- rnc.megaplus.com.do (RNC validation)
