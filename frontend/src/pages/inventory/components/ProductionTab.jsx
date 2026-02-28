@@ -398,6 +398,18 @@ export default function ProductionTab({
                   >
                     <BookOpen size={14} className="mr-1" /> Receta
                   </Button>
+                  {subrecipeRecipes[sr.id]?.id && (
+                    <Button 
+                      variant="ghost"
+                      size="icon"
+                      className="text-cyan-500"
+                      onClick={() => setHistoryDialog({ open: true, recipeId: subrecipeRecipes[sr.id].id, recipeName: sr.name })}
+                      data-testid={`history-ok-${sr.id}`}
+                      title="Historial"
+                    >
+                      <History size={14} />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
