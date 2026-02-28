@@ -41,6 +41,7 @@ const REPORT_CATEGORIES = [
       { id: 'by-category', name: 'Ventas por Categoría', description: 'Distribución de ventas por categoría' },
       { id: 'payment-methods', name: 'Formas de Pago', description: 'Desglose detallado por método de pago' },
       { id: 'void-audit', name: 'Auditoría de Anulaciones', description: 'Anulaciones con nombre del autorizador' },
+      { id: 'discounts', name: 'Descuentos Aplicados', description: 'Detalle de descuentos aplicados a facturas' },
     ]
   },
   {
@@ -535,6 +536,7 @@ export default function Reports() {
       'by-waiter': '/reports/sales-by-waiter',
       'system-audit': '/reports/system-audit',
       'stock-adjustments': '/reports/stock-adjustments',
+      'discounts': '/reports/discounts',
     };
     
     const endpoint = endpoints[reportId];
