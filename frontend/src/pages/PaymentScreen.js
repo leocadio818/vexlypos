@@ -793,7 +793,16 @@ export default function PaymentScreen() {
         fiscal_id_type: fiscalData?.fiscalIdType || null,
         razon_social: fiscalData?.razonSocial || selectedCustomer?.name || null,
         customer_email: fiscalData?.email || selectedCustomer?.email || null,
-        send_email: fiscalData?.sendEmail || false
+        send_email: fiscalData?.sendEmail || false,
+        // Discount applied
+        discount_applied: appliedDiscount ? {
+          id: appliedDiscount.discount_id,
+          name: appliedDiscount.discount_name,
+          type: appliedDiscount.discount_type,
+          value: appliedDiscount.discount_value,
+          amount: appliedDiscount.discount_amount,
+          affected_items: appliedDiscount.affected_items
+        } : null
       });
       
       const pts = res.data?.points_earned;
