@@ -113,6 +113,7 @@ export default function PaymentScreen() {
   const { billId } = useParams();
   const navigate = useNavigate();
   const { largeMode, device, user } = useAuth();
+  const { isMinimalist, isNeoDark, neoColors } = useTheme();
   const ticketRef = useRef(null);
   const [bill, setBill] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
