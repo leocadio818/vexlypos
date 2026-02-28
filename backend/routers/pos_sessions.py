@@ -792,3 +792,78 @@ async def sync_session_sales(session_id: str, user=Depends(get_current_user)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{session_id}/sales-breakdown")
+async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
+    """Devuelve desglose detallado de ventas por forma de pago para una sesion"""
+    try:
+        sb = get_supabase()
+        session_result = sb.table("pos_sessions").select("opened_at, closed_at, opened_by").eq("id", session_id).single().execute()
+        if not session_result.data:
+            raise HTTPException(status_code=404, detail="Sesion no encontrada")
+        
+        session = session_result.data
+        opened_at = session.get("opened_at", "")
+        closed_at = session.get("closed_at")
+        
+        query = {"status": "paid", "paid_at": {"$gte": opened_at}}
+        if closed_at:
+            query["paid_at"]["$lte"] = closed_at
+        
+        bills = await db.bills.find(query, {"_id": 0, "payments": 1, "total": 1, "payment_method": 1}).to_list(1000)
+        
+        cash_rd = 0.0
+        card = 0.0
+        transfer = 0.0
+        usd = 0.0
+        eur = 0.0
+        other = 0.0
+        
+        for bill in bills:
+            bill_payments = bill.get("payments", [])
+            
+            if bill_payments and len(bill_payments) > 0:
+                for pay in bill_payments:
+                    amt = pay.get("amount_dop", pay.get("amount", 0)) or 0
+                    name_lower = (pay.get("payment_method_name", "") or "").lower()
+                    
+                    if "dolar" in name_lower or "usd" in name_lower:
+                        usd += amt
+                    elif "euro" in name_lower or "eur" in name_lower:
+                        eur += amt
+                    elif "tarjeta" in name_lower or "card" in name_lower:
+                        card += amt
+                    elif "transfer" in name_lower:
+                        transfer += amt
+                    elif pay.get("is_cash", False) or "efectivo" in name_lower or "cash" in name_lower:
+                        cash_rd += amt
+                    else:
+                        other += amt
+            else:
+                bill_total = bill.get("total", 0) or 0
+                main_method = (bill.get("payment_method", "") or "").lower()
+                if "tarjeta" in main_method or "card" in main_method:
+                    card += bill_total
+                elif "transfer" in main_method:
+                    transfer += bill_total
+                elif "dolar" in main_method or "usd" in main_method:
+                    usd += bill_total
+                elif "euro" in main_method or "eur" in main_method:
+                    eur += bill_total
+                else:
+                    cash_rd += bill_total
+        
+        return {
+            "cash_rd": round(cash_rd, 2),
+            "card": round(card, 2),
+            "transfer": round(transfer, 2),
+            "usd": round(usd, 2),
+            "eur": round(eur, 2),
+            "other": round(other, 2),
+            "total": round(cash_rd + card + transfer + usd + eur + other, 2)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
