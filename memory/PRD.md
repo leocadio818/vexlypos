@@ -991,6 +991,25 @@ Cada operacion de crear, editar o eliminar una receta genera un registro de audi
 - `/app/frontend/src/pages/inventory/components/ProductionTab.jsx` - Boton historial para sub-recetas
 - `/app/frontend/src/lib/api.js` - Metodos getHistory y getAllHistory
 
+## Fix: Reportes de Inventario Incompletos (28 Feb 2026)
+### Problema
+Los ajustes de stock (Diferencias de Inventario - faltantes como ACEITE) no aparecian en los reportes del sistema.
+
+### Causas Raiz (3 bugs)
+1. **System Audit filtraba solo ciertos tipos**: Solo mostraba adjustment, waste, transfer, difference. Faltaban ventas, compras, y produccion
+2. **ingredient_name faltante**: Los movimientos de diferencia se guardaban sin nombre del ingrediente (aparecia como "?")
+3. **Campo de fecha incorrecto**: `stock_difference_logs` usaba `timestamp` pero el audit buscaba `created_at`
+
+### Solucion
+- System Audit ahora incluye TODOS los tipos de movimiento: ventas, compras, produccion (salida/consumo), ajustes, diferencias, mermas, transferencias
+- Se agrego `ingredient_name` al insertar movimientos de diferencia en `stock_movements`
+- Se corrigio el campo de fecha para `stock_difference_logs`
+- Se repararon datos existentes en la base de datos
+
+### Archivos Modificados
+- `/app/backend/routers/reports.py` - System audit incluye todos los tipos de movimiento + fix campo fecha
+- `/app/backend/routers/inventory.py` - ingredient_name en stock_movements para diferencias
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
