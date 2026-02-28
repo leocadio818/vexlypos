@@ -570,28 +570,43 @@ export default function CashRegister() {
               </div>
               
               {/* Stats Grid */}
-              <div className="p-6 grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
+              <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-rd">
                   <Banknote size={20} className="mx-auto mb-1 text-green-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Efectivo</p>
-                  <p className="font-oswald text-lg font-bold text-green-400">{formatMoney(currentSession.cash_sales)}</p>
+                  <p className="text-[10px] text-white/50 uppercase">Efectivo RD$</p>
+                  <p className="font-oswald text-lg font-bold text-green-400">{formatMoney(salesBreakdown?.cash_rd ?? currentSession.cash_sales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-card">
                   <CreditCard size={20} className="mx-auto mb-1 text-blue-400" />
                   <p className="text-[10px] text-white/50 uppercase">Tarjeta</p>
-                  <p className="font-oswald text-lg font-bold text-blue-400">{formatMoney(currentSession.card_sales)}</p>
+                  <p className="font-oswald text-lg font-bold text-blue-400">{formatMoney(salesBreakdown?.card ?? currentSession.card_sales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-transfer">
+                  <RefreshCw size={20} className="mx-auto mb-1 text-purple-400" />
+                  <p className="text-[10px] text-white/50 uppercase">Transferencia</p>
+                  <p className="font-oswald text-lg font-bold text-purple-400">{formatMoney(salesBreakdown?.transfer ?? currentSession.transfer_sales)}</p>
+                </div>
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-usd">
+                  <CircleDollarSign size={20} className="mx-auto mb-1 text-yellow-400" />
+                  <p className="text-[10px] text-white/50 uppercase">USD Dolar</p>
+                  <p className="font-oswald text-lg font-bold text-yellow-400">{formatMoney(salesBreakdown?.usd ?? 0)}</p>
+                </div>
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-eur">
+                  <Coins size={20} className="mx-auto mb-1 text-cyan-400" />
+                  <p className="text-[10px] text-white/50 uppercase">Euro</p>
+                  <p className="font-oswald text-lg font-bold text-cyan-400">{formatMoney(salesBreakdown?.eur ?? 0)}</p>
+                </div>
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-total-sales">
                   <TrendingUp size={20} className="mx-auto mb-1 text-orange-400" />
                   <p className="text-[10px] text-white/50 uppercase">Total Ventas</p>
-                  <p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(totalSales)}</p>
+                  <p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(salesBreakdown?.total ?? totalSales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-in">
                   <ArrowUpCircle size={20} className="mx-auto mb-1 text-emerald-400" />
                   <p className="text-[10px] text-white/50 uppercase">Ingresos</p>
                   <p className="font-oswald text-lg font-bold text-emerald-400">{formatMoney(currentSession.cash_in)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10">
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-out">
                   <ArrowDownCircle size={20} className="mx-auto mb-1 text-red-400" />
                   <p className="text-[10px] text-white/50 uppercase">Retiros</p>
                   <p className="font-oswald text-lg font-bold text-red-400">{formatMoney(currentSession.cash_out)}</p>
