@@ -489,6 +489,13 @@ export default function Reports() {
     fetchInitialData();
   }, []);
   
+  // Auto-recargar reporte cuando cambia el rango de fechas
+  useEffect(() => {
+    if (selectedReport) {
+      loadReport(selectedReport);
+    }
+  }, [dateRange]); // eslint-disable-line react-hooks/exhaustive-deps
+  
   // When selecting a business day, update the date range
   const handleSelectBusinessDay = (day) => {
     if (day) {
@@ -690,11 +697,7 @@ export default function Reports() {
               size="sm" 
               variant="ghost"
               className="h-7 px-2 text-xs"
-              onClick={() => {
-                const range = preset.value();
-                setDateRange(range);
-                if (selectedReport) loadReport(selectedReport);
-              }}
+              onClick={() => setDateRange(preset.value())}
             >
               {preset.label}
             </Button>
@@ -734,9 +737,6 @@ export default function Reports() {
               onChange={(e) => {
                 const day = businessDays.find(d => d.id === e.target.value);
                 handleSelectBusinessDay(day);
-                if (day && selectedReport) {
-                  setTimeout(() => loadReport(selectedReport), 100);
-                }
               }}
               className="bg-card border border-border rounded-lg px-2 py-1 text-xs w-48"
               data-testid="business-day-filter"
