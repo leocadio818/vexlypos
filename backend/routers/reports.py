@@ -43,17 +43,37 @@ async def dashboard():
     bills_count = len(today_bills)
     avg_ticket = round(total_sales / bills_count, 2) if bills_count > 0 else 0
     
-    # Cash vs Card breakdown
+    # Cash vs Card breakdown - use payments array for accuracy
     cash_total = 0
     card_total = 0
+    # Also build a name-based lookup for fallback
+    pm_name_map = {pm.get("name", "").lower(): pm for pm in payment_methods}
     for bill in today_bills:
-        pm_id = bill.get("payment_method_id", bill.get("payment_method", "cash"))
-        pm = pm_map.get(pm_id, {})
-        is_cash = pm.get("is_cash", pm_id == "cash")
-        if is_cash:
-            cash_total += bill.get("total", 0)
+        bill_total = bill.get("total", 0)
+        payments = bill.get("payments", [])
+        if payments:
+            # Use the detailed payments array
+            for payment in payments:
+                pm_id = payment.get("payment_method_id", "")
+                pm = pm_map.get(pm_id, {})
+                is_cash = pm.get("is_cash", False)
+                amt = payment.get("amount_dop", payment.get("amount", 0))
+                if is_cash:
+                    cash_total += amt
+                else:
+                    card_total += amt
         else:
-            card_total += bill.get("total", 0)
+            # Fallback: use top-level payment_method field
+            pm_id = bill.get("payment_method_id", "")
+            pm_name = bill.get("payment_method", "")
+            pm = pm_map.get(pm_id, {})
+            if not pm and pm_name:
+                pm = pm_name_map.get(pm_name.lower(), {})
+            is_cash = pm.get("is_cash", pm_id == "cash" or "efectivo" in pm_name.lower())
+            if is_cash:
+                cash_total += bill_total
+            else:
+                card_total += bill_total
     
     # Operations data
     tables = await db.tables.find({}, {"_id": 0}).to_list(200)
