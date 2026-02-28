@@ -588,7 +588,7 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     if open_bills == 0:
         all_paid = await db.bills.count_documents({"order_id": order_id, "status": "paid"})
         if all_paid > 0:
-            await db.orders.update_one({"id": order_id}, {"$set": {"status": "completed"}})
+            await db.orders.update_one({"id": order_id}, {"$set": {"status": "closed"}})
             await db.tables.update_one(
                 {"id": bill["table_id"]},
                 {"$set": {"status": "free", "active_order_id": None}}
