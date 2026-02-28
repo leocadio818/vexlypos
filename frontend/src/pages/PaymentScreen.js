@@ -2178,6 +2178,81 @@ export default function PaymentScreen() {
           setPendingFiscalType(null);
         }}
       />
+
+      {/* ─── DISCOUNT SELECTION DIALOG ─── */}
+      <Dialog open={discountDialog} onOpenChange={setDiscountDialog}>
+        <DialogContent className="max-w-md backdrop-blur-2xl bg-black/90 border-white/10" data-testid="discount-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-white">Aplicar Descuento</DialogTitle>
+            <DialogDescription className="text-white/60 text-xs">Solo se puede aplicar un descuento por orden</DialogDescription>
+          </DialogHeader>
+          {appliedDiscount && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-emerald-300 text-sm font-bold">{appliedDiscount.discount_name}</span>
+                  <span className="text-emerald-400 text-xs ml-2">-{formatMoney(appliedDiscount.discount_amount)}</span>
+                </div>
+                <button onClick={removeDiscount} className="text-red-400 hover:text-red-300 text-xs px-2 py-1 border border-red-400/30 rounded" data-testid="remove-discount-btn">
+                  Quitar
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {availableDiscounts.length === 0 ? (
+              <p className="text-center text-white/40 text-sm py-6">No hay descuentos activos</p>
+            ) : availableDiscounts.map(d => (
+              <button
+                key={d.id}
+                onClick={() => handleDiscountSelect(d)}
+                className={`w-full text-left p-3 rounded-lg border transition-all ${
+                  appliedDiscount?.discount_id === d.id
+                    ? 'bg-emerald-500/20 border-emerald-400/50'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                }`}
+                data-testid={`select-discount-${d.id}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-medium text-sm">{d.name}</span>
+                  <span className="font-oswald font-bold text-cyan-300">
+                    {d.type === 'PERCENTAGE' ? `${d.value}%` : formatMoney(d.value)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-white/40 text-xs">{d.scope === 'GLOBAL' ? 'Todo el menu' : d.scope === 'CATEGORY' ? 'Por categoria' : 'Productos especificos'}</span>
+                  {d.authorization_level === 'MANAGER_PIN_REQUIRED' && (
+                    <span className="flex items-center gap-1 text-amber-400 text-xs"><Shield size={8} /> PIN</span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── DISCOUNT PIN DIALOG ─── */}
+      <Dialog open={discountPinDialog.open} onOpenChange={(o) => !o && setDiscountPinDialog({ open: false, discount: null })}>
+        <DialogContent className="max-w-xs backdrop-blur-2xl bg-black/90 border-white/10" data-testid="discount-pin-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-white text-center">PIN de Gerente</DialogTitle>
+            <DialogDescription className="text-white/60 text-xs text-center">Este descuento requiere autorizacion</DialogDescription>
+          </DialogHeader>
+          <input
+            type="password"
+            value={discountPin}
+            onChange={e => setDiscountPin(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && verifyDiscountPin()}
+            className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-center text-2xl font-mono text-white tracking-[0.5em]"
+            placeholder="****"
+            autoFocus
+            data-testid="discount-pin-input"
+          />
+          <Button onClick={verifyDiscountPin} className="w-full bg-amber-600 hover:bg-amber-700" data-testid="discount-pin-confirm">
+            Autorizar
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
