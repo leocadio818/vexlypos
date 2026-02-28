@@ -140,9 +140,11 @@ async def set_timezone_config(body: dict):
     """Update the system timezone. Requires a valid IANA timezone name."""
     from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
     tz_name = body.get("timezone", "")
+    if not tz_name or not tz_name.strip():
+        raise HTTPException(status_code=400, detail="Timezone invalido: valor vacio")
     try:
         ZoneInfo(tz_name)
-    except (ZoneInfoNotFoundError, KeyError):
+    except (ZoneInfoNotFoundError, KeyError, TypeError, ValueError):
         raise HTTPException(status_code=400, detail=f"Timezone invalido: {tz_name}")
     await db.system_config.update_one(
         {"id": "timezone"},
