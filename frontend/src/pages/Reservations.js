@@ -229,7 +229,7 @@ export default function Reservations() {
                     const areaTables = tables.filter(t => t.status === 'free' || t.status === 'available');
                     setDialog(p => ({ ...p, table_ids: areaTables.map(t => t.id) }));
                   }
-                }} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 outline-none">
+                }} className="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 outline-none" style={{ colorScheme: 'dark' }}>
                   <option value="">Seleccionar area...</option>
                   {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
