@@ -31,15 +31,27 @@ export default function Customers() {
   const fetchAll = useCallback(async () => {
     try {
       const [cRes, cfgRes] = await Promise.all([
-        axios.get(`${API}/customers`, { params: search ? { search } : {}, headers: headers() }),
+        axios.get(`${API}/customers`, { headers: headers() }),
         axios.get(`${API}/loyalty/config`, { headers: headers() }),
       ]);
-      setCustomers(cRes.data);
+      setAllCustomers(cRes.data);
       setConfig(cfgRes.data);
-    } catch {}
-  }, [search]);
+    } catch (e) { console.error('Error loading customers:', e); }
+  }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Filter customers locally for instant search
+  useEffect(() => {
+    if (!search) {
+      setCustomers(allCustomers);
+    } else {
+      const q = search.toLowerCase();
+      setCustomers(allCustomers.filter(c => 
+        c.name?.toLowerCase().includes(q) || c.phone?.includes(q) || c.email?.toLowerCase().includes(q)
+      ));
+    }
+  }, [search, allCustomers]);
 
   const handleAddCustomer = async () => {
     if (!addDialog.name) return;
