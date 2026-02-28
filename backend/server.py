@@ -93,19 +93,11 @@ api.include_router(tables_router)
 api.include_router(billing_router)
 api.include_router(kitchen_router)
 api.include_router(customers_router)
-# ─── MODIFIERS (combinado: old-style + new-style groups) ───
-# NOTA: Este endpoint debe estar ANTES de include_router(config_router)
-# para tomar precedencia sobre config.py's /modifiers
-@api.get("/modifiers")
-async def list_modifiers_combined(group_id: Optional[str] = Query(None)):
-    """When group_id is provided: return flat options for that group.
-    When no group_id: return all modifier GROUPS (combined old+new style) with enriched options.
-    """
-    if group_id:
-        # Return flat options for a specific group
-        return await db.modifiers.find({"group_id": group_id}, {"_id": 0}).to_list(200)
-    
-    # Return combined groups from both collections
+# ─── MODIFIER GROUPS WITH OPTIONS (para ProductConfig dropdown) ───
+# Retorna grupos combinados (old-style + new-style) con opciones enriquecidas
+@api.get("/modifier-groups-with-options")
+async def list_modifier_groups_with_options():
+    """Return all modifier GROUPS with enriched options for ProductConfig dropdown."""
     # Old-style: modifiers collection docs without group_id (they ARE groups with embedded options)
     old_groups = []
     async for doc in db.modifiers.find({}, {"_id": 0}):
@@ -123,12 +115,11 @@ async def list_modifiers_combined(group_id: Optional[str] = Query(None)):
     for g in new_groups:
         g["options"] = [o for o in all_options if o.get("group_id") == g["id"]]
     
-    # Deduplicate: new-style groups (enriched) take priority over old-style groups with same name
+    # Deduplicate: new-style groups take priority over old-style with same name
     new_names = {g["name"].lower().strip() for g in new_groups}
     filtered_old = [g for g in old_groups if g["name"].lower().strip() not in new_names]
     
-    combined = filtered_old + new_groups
-    return combined
+    return filtered_old + new_groups
 
 api.include_router(config_router)
 api.include_router(ncf_router)
