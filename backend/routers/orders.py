@@ -139,6 +139,110 @@ async def restore_inventory_for_item(item: dict, warehouse_id: str, user_id: str
         }
         await db.stock_movements.insert_one(movement)
 
+async def restore_inventory_partial(product_id: str, qty: int, warehouse_id: str, user_id: str, user_name: str, order_id: str):
+    """Restore inventory for a partial void (specific quantity)"""
+    recipe = await db.recipes.find_one({"product_id": product_id}, {"_id": 0})
+    if not recipe:
+        return
+    for recipe_ing in recipe.get("ingredients", []):
+        ing_id = recipe_ing.get("ingredient_id")
+        required_qty = recipe_ing.get("quantity", 0)
+        waste_pct = recipe_ing.get("waste_percentage", 0)
+        if not ing_id or required_qty <= 0:
+            continue
+        ingredient = await db.ingredients.find_one({"id": ing_id}, {"_id": 0})
+        if not ingredient:
+            continue
+        restore_amount = required_qty * qty * (1 + waste_pct / 100)
+        await db.stock.update_one(
+            {"ingredient_id": ing_id, "warehouse_id": warehouse_id},
+            {"$inc": {"current_stock": restore_amount}},
+            upsert=True
+        )
+        movement = {
+            "id": gen_id(),
+            "ingredient_id": ing_id,
+            "ingredient_name": ingredient.get("name", "?"),
+            "warehouse_id": warehouse_id,
+            "quantity": restore_amount,
+            "type": "void_restoration",
+            "reason": f"Anulacion parcial ({qty} uds)",
+            "parent_product_id": product_id,
+            "order_id": order_id,
+            "user_id": user_id,
+            "user_name": user_name,
+            "created_at": now_iso()
+        }
+        await db.stock_movements.insert_one(movement)
+
+async def send_cancel_ticket_to_print_queue(order_id: str, items_cancelled: list):
+    """Send cancellation ticket to same production printer as original comanda"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        return
+    channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
+    category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
+    cat_to_channel = {m["category_id"]: m["channel_code"] for m in category_mappings}
+    products_db = await db.products.find({}, {"_id": 0, "id": 1, "category_id": 1, "print_channels": 1}).to_list(500)
+    prod_map = {p["id"]: p for p in products_db}
+    
+    items_by_channel = {}
+    for item in items_cancelled:
+        prod_id = item.get("product_id", "")
+        product = prod_map.get(prod_id, {})
+        product_channels = product.get("print_channels", [])
+        if product_channels and len(product_channels) > 0:
+            target_channels = product_channels
+        else:
+            cat_id = product.get("category_id", "")
+            channel_code = cat_to_channel.get(cat_id, "kitchen")
+            target_channels = [channel_code]
+        for channel_code in target_channels:
+            if channel_code == "receipt":
+                continue
+            if channel_code not in items_by_channel:
+                items_by_channel[channel_code] = []
+            items_by_channel[channel_code].append(item)
+    
+    for channel_code, items in items_by_channel.items():
+        if not items:
+            continue
+        channel = next((c for c in channels if c.get("code") == channel_code), None)
+        printer_name = channel.get("printer_name", "") if channel else ""
+        printer_target = channel.get("target", "usb") if channel else "usb"
+        printer_ip = channel.get("ip", "") if channel else ""
+        
+        cancel_data = {
+            "type": "cancel_comanda",
+            "paper_width": 80,
+            "table_number": order.get("table_number", "?"),
+            "waiter_name": order.get("waiter_name", ""),
+            "order_number": order.get("id", "")[:8],
+            "transaction_number": order.get("transaction_number", ""),
+            "date": now_iso()[:19].replace("T", " "),
+            "items": [
+                {
+                    "name": i.get("product_name", ""),
+                    "quantity": i.get("qty_voided", i.get("quantity", 1)),
+                    "modifiers": [m.get("name", "") for m in i.get("modifiers", [])],
+                    "notes": i.get("notes", "")
+                }
+                for i in items
+            ]
+        }
+        job = {
+            "id": str(uuid.uuid4()),
+            "type": "cancel_comanda",
+            "channel": channel_code,
+            "printer_name": printer_name,
+            "printer_target": printer_target,
+            "printer_ip": printer_ip,
+            "data": cancel_data,
+            "status": "pending",
+            "created_at": now_iso()
+        }
+        await db.print_queue.insert_one(job)
+
 # ─── ORDERS CRUD ───
 @router.get("/orders")
 async def list_orders(status: Optional[str] = Query(None), table_id: Optional[str] = Query(None)):
