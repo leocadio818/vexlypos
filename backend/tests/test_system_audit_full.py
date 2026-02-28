@@ -7,7 +7,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://billing-grid-desktop.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://subrecipe-critical.preview.emergentagent.com')
 
 class TestSystemAuditCore:
     """Core API endpoint tests for full system audit"""
