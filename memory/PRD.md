@@ -1140,6 +1140,14 @@ cuando InventarioTab esperaba OPCIONES PLANAS, rompiendo ambos flujos.
 ### Completado (2026-02-28)
 - [x] CRUD completo de Grupos de Modificadores: Editar nombre (PUT), Eliminar grupo con cascada (DELETE), Crear nuevo grupo, CRUD inline de opciones
 - [x] Endpoints: PUT/DELETE /api/modifier-groups/{gid}, limpieza de asignaciones en producto al eliminar
+- [x] Rediseno Login: Estilo neon glassmorphism con PIN dots gradiente rosa-azul
+- [x] Fix mobile: Botones +/- Arqueo de Caja en 2 cols movil, teclado flotante para Tarjeta/Transferencias
+- [x] Fix mobile: Cabecera Caja flex-wrap para boton CERRAR TURNO
+- [x] Fix: Teclado numerico removido del dialog de modificadores (usa +/- simple)
+- [x] Fix: Modifier groups del sistema nuevo cargados en OrderScreen (merge old + new systems)
+- [x] Anulacion Parcial: Modal para elegir cantidad a anular (qty > 1), endpoint POST /api/orders/{id}/partial-void/{item_id}
+- [x] Ticket de Cancelacion: Generacion automatica ESC-POS para produccion (cocina/barra) al anular items enviados
+- [x] Audit trail: void_audit_logs registra partial_void con historial, restauracion de inventario parcial
 
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
