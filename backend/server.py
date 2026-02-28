@@ -1160,7 +1160,7 @@ async def print_pre_check(order_id: str):
     {reprint_label}
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
     <b style='font-size:16px;'>ALONZO CIGAR</b><br><b>PRE-CUENTA</b></div>
-    <div style='font-size:11px;'>Mesa: {order['table_number']}<br>Mesero: {order['waiter_name']}<br>Fecha: {order['created_at'][:19]}</div>
+    <div style='font-size:11px;'>Mesa: {order['table_number']}<br>Mesero: {order['waiter_name']}<br>Fecha: {utc_to_local_str(order['created_at'])}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;font-size:11px;'>
     {items_html}</table>
     <table style='width:100%;font-size:11px;'>
@@ -1318,7 +1318,7 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     <b>NCF: {bill.get('ncf', '')}</b><br>
     Valido hasta: {printer_config.get('ncf_expiry', config.get('ticket_ncf_expiry', '31/12/2026'))}</div>
     {customer_fiscal_html}
-    <div style='font-size:10px;border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;'>Mesa: {bill['table_number']} | Fecha: {bill.get('paid_at', bill['created_at'])[:19]}</div>
+    <div style='font-size:10px;border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;'>Mesa: {bill['table_number']} | Fecha: {utc_to_local_str(bill.get('paid_at', bill['created_at']))}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;font-size:11px;'>
     {items_html}</table>
     <table style='width:100%;font-size:11px;'>
@@ -1373,7 +1373,7 @@ async def print_receipt_escpos(bill_id: str):
         lines.append({"type": "divider"})
     
     lines.append({"type": "left", "text": f"Mesa: {bill['table_number']}"})
-    lines.append({"type": "left", "text": f"Fecha: {bill.get('paid_at', bill['created_at'])[:19]}"})
+    lines.append({"type": "left", "text": f"Fecha: {utc_to_local_str(bill.get('paid_at', bill['created_at']))})"})
     if bill.get('cashier_name'):
         lines.append({"type": "left", "text": f"Cajero: {bill['cashier_name']}"})
     lines.append({"type": "divider"})
@@ -1430,7 +1430,7 @@ async def print_comanda(order_id: str):
     return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:13px;margin:0 auto;box-sizing:border-box;'>
     <div style='text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;'>
     <b style='font-size:18px;'>COMANDA</b></div>
-    <div style='font-size:14px;'><b>Mesa: {order['table_number']}</b><br>Mesero: {order['waiter_name']}<br>Hora: {now_iso()[11:16]}</div>
+    <div style='font-size:14px;'><b>Mesa: {order['table_number']}</b><br>Mesero: {order['waiter_name']}<br>Hora: {now_local_str()}</div>
     <table style='width:100%;margin-top:10px;border-top:1px dashed #000;'>
     {items_html}</table></div>"""}
 
@@ -1445,7 +1445,7 @@ async def print_comanda_escpos(order_id: str):
     lines.append({"type": "divider"})
     lines.append({"type": "left", "bold": True, "size": "large", "text": f"Mesa: {order['table_number']}"})
     lines.append({"type": "left", "text": f"Mesero: {order['waiter_name']}"})
-    lines.append({"type": "left", "text": f"Hora: {now_iso()[11:16]}"})
+    lines.append({"type": "left", "text": f"Hora: {now_local_str()}"})
     lines.append({"type": "divider"})
     for item in items:
         lines.append({"type": "left", "bold": True, "text": f"{item['quantity']}x {item['product_name']}"})
