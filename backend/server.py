@@ -477,36 +477,6 @@ async def get_product_image(filename: str):
     
     return FileResponse(file_path, media_type=content_type)
 
-@api.get("/modifiers/{modifier_id}")
-async def get_modifier(modifier_id: str):
-    modifier = await db.modifiers.find_one({"id": modifier_id}, {"_id": 0})
-    if not modifier:
-        raise HTTPException(status_code=404, detail="Grupo de modificador no encontrado")
-    return modifier
-
-@api.post("/modifiers")
-async def create_modifier(input: dict):
-    options = [{"id": gen_id(), "name": o.get("name", ""), "price": o.get("price", 0)} for o in input.get("options", [])]
-    doc = {"id": gen_id(), "name": input.get("name", ""), "required": input.get("required", False), "max_selections": input.get("max_selections", 0), "options": options, "active": True}
-    await db.modifiers.insert_one(doc)
-    return {k: v for k, v in doc.items() if k != "_id"}
-
-@api.put("/modifiers/{modifier_id}")
-async def update_modifier(modifier_id: str, input: dict):
-    if "_id" in input:
-        del input["_id"]
-    if "options" in input:
-        for opt in input["options"]:
-            if "id" not in opt:
-                opt["id"] = gen_id()
-    await db.modifiers.update_one({"id": modifier_id}, {"$set": input})
-    return {"ok": True}
-
-@api.delete("/modifiers/{modifier_id}")
-async def delete_modifier(modifier_id: str):
-    await db.modifiers.delete_one({"id": modifier_id})
-    return {"ok": True}
-
 # ─── REPORT CATEGORIES ───
 @api.get("/report-categories")
 async def list_report_categories():
