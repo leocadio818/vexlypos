@@ -466,34 +466,6 @@ async def get_product_image(filename: str):
     
     return FileResponse(file_path, media_type=content_type)
 
-# ─── MODIFIERS ───
-@api.get("/modifiers")
-async def list_modifiers():
-    """Return all modifier groups (both old-style embedded and new-style from modifier_groups).
-    Old-style: stored in 'modifiers' collection with embedded options array.
-    New-style: stored in 'modifier_groups' collection with separate options in 'modifiers' collection.
-    Individual options (with non-empty group_id) are excluded.
-    """
-    # Old-style groups (no group_id or empty group_id = they ARE groups)
-    old_query = {"$or": [{"group_id": {"$exists": False}}, {"group_id": ""}, {"group_id": None}]}
-    old_groups = await db.modifiers.find(old_query, {"_id": 0}).to_list(100)
-    
-    # New-style groups from modifier_groups collection
-    new_groups = await db.modifier_groups.find({}, {"_id": 0}).to_list(100)
-    # Get individual options (those with a non-empty group_id)
-    all_options = []
-    async for doc in db.modifiers.find({}, {"_id": 0}):
-        gid = doc.get("group_id", "")
-        if gid and gid.strip():  # Has a real group_id = it's an option, not a group
-            all_options.append(doc)
-    # Enrich new groups with their options
-    for g in new_groups:
-        g["options"] = [o for o in all_options if o.get("group_id") == g["id"]]
-    
-    old_ids = {g["id"] for g in old_groups}
-    combined = old_groups + [g for g in new_groups if g["id"] not in old_ids]
-    return combined
-
 @api.get("/modifiers/{modifier_id}")
 async def get_modifier(modifier_id: str):
     modifier = await db.modifiers.find_one({"id": modifier_id}, {"_id": 0})
