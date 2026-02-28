@@ -1060,19 +1060,36 @@ El campo `is_cash` NO EXISTE en la coleccion `payment_methods` de MongoDB. El AP
 ### Problema
 El panel "Anulaciones" del Dashboard mostraba datos inconsistentes: "Hoy (Tiempo Real)" = RD$700 vs "Jornada Operativa" = RD$1,000. La raiz era que el filtro "hoy" usaba la fecha UTC del servidor en vez del dia local (UTC-4).
 
-### Solucion (Quirurgica - solo reports.py)
-1. **Funcion `get_local_today_utc_range()`**: Calcula limites UTC para el dia local en RD (UTC-4). Ej: Feb 27 local = 04:00 UTC a 04:00 UTC del dia siguiente.
-2. **Filtro `today_bills`**: Cambiado de `startswith(today_utc)` a rango `today_start <= paid_at < today_end`
-3. **Filtro `today_voids`**: Misma logica de rango
-4. **Ventas por hora**: Conversion UTC → hora local con `(utc_hour - 4) % 24`
-5. **Fallback jornada_start**: Cambiado de variable `today` (inexistente) a `today_start`
+### Solucion: Arquitectura de Timezone Centralizada
+1. **`/app/backend/utils/timezone.py`**: Modulo centralizado que lee timezone desde `system_config` en MongoDB
+   - `get_system_timezone_name()` - lee timezone con cache en memoria
+   - `get_system_now()` - datetime actual en timezone configurado (usa `zoneinfo`)
+   - `get_local_today_utc_range()` - limites UTC para el dia local
+   - `utc_hour_to_local(utc_hour)` - convierte hora UTC a hora local
+   - `invalidate_cache()` - limpia cache al actualizar config
+2. **`/app/frontend/src/lib/timezone.js`**: Utilidad frontend
+   - `getSystemTimezone()` - lee timezone del API con cache
+   - `formatSystemDate()` - formatea fecha usando `Intl.DateTimeFormat` con timezone configurado
+   - `getSystemToday()` - fecha de hoy en timezone del sistema (YYYY-MM-DD)
+3. **API Endpoints**:
+   - `GET /api/timezone` - retorna timezone configurado
+   - `PUT /api/timezone` - actualiza timezone (valida nombre IANA)
+4. **Seed automatico**: Al iniciar, si no existe config, se crea con `America/Santo_Domingo`
+5. **Dashboard actualizado**: Usa funciones centralizadas en vez de hardcode UTC-4
 
-### REGLA: Timezone UTC-4
-- `_DR_TZ = timezone(timedelta(hours=-4))` definido globalmente en reports.py
-- Todos los filtros "hoy" del dashboard usan `get_local_today_utc_range()`
-- Las horas en graficos se muestran en hora local, no UTC
+### REGLA: Arquitectura de Timezone
+- PROHIBIDO usar `new Date()` crudo o `datetime.now()` local para transacciones
+- SIEMPRE usar `get_system_now()` (backend) o `formatSystemDate()` (frontend)
+- Timezone se lee de `system_config` (id: "timezone") en MongoDB
+- Default: `America/Santo_Domingo` (UTC-4, sin DST)
 
-### Verificacion: Testing agent 100% (12/12 backend, frontend OK)
+### Archivos Creados/Modificados
+- `/app/backend/utils/timezone.py` - NUEVO: utilidad centralizada
+- `/app/frontend/src/lib/timezone.js` - NUEVO: utilidad frontend
+- `/app/backend/server.py` - Endpoints GET/PUT /api/timezone + seed en startup
+- `/app/backend/routers/reports.py` - Dashboard usa funciones centralizadas
+
+### Verificacion: Testing agent 100% (12/12 backend, frontend OK) - iteration_89
 
 ## Pendiente
 ### P1 - Alta Prioridad
