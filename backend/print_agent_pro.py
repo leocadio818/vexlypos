@@ -365,6 +365,13 @@ def print_worker():
                 
                 try:
                     commands = job.get("commands", [])
+                    data = job.get("data", {})
+                    
+                    # If job has structured data (comanda/cancel_comanda format), convert to commands
+                    if not commands and data:
+                        job_type = data.get("type", job.get("type", ""))
+                        commands = data_to_commands(data, job_type)
+                    
                     if commands:
                         # Construir datos ESC/POS
                         raw_data = build_escpos_data(commands)
