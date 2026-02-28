@@ -1118,6 +1118,22 @@ export default function PurchasesTab({
               </div>
             </div>
 
+            {/* Recibir Todo button */}
+            <Button
+              variant="outline"
+              className="w-full border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 font-oswald"
+              data-testid="receive-all-btn"
+              onClick={() => {
+                const items = (receiveDialog.items || []).map(item => {
+                  const pending = item.quantity - (item.received_quantity || 0);
+                  return { ...item, received_quantity: pending > 0 ? pending : item.received_quantity };
+                });
+                setReceiveDialog(p => ({ ...p, items }));
+              }}
+            >
+              <Check size={16} className="mr-1" /> Recibir Orden Completa
+            </Button>
+
             <div className="space-y-2">
               {(receiveDialog.items || []).map((item, idx) => {
                 const ing = ingredients.find(i => i.id === item.ingredient_id);
