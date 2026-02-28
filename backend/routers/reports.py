@@ -137,7 +137,12 @@ async def dashboard():
     for bill in today_bills:
         paid_at = bill.get("paid_at", "")
         if "T" in paid_at:
-            hour = paid_at.split("T")[1][:2]
+            try:
+                utc_hour = int(paid_at.split("T")[1][:2])
+                local_hour = (utc_hour - 4) % 24  # Convert UTC to DR local (UTC-4)
+                hour = f"{local_hour:02d}"
+            except (ValueError, IndexError):
+                continue
             if hour in hourly_data:
                 hourly_data[hour]["total"] += bill.get("total", 0)
     
