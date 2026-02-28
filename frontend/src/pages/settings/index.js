@@ -16,6 +16,7 @@ import TaxesTab from './TaxesTab';
 import NcfTab from './NcfTab';
 import SystemTab from './SystemTab';
 import ThemeTab from './ThemeTab';
+import DescuentosTab from './DescuentosTab';
 
 function SettingsContent() {
   const [searchParams, setSearchParams] = useSearchParams();
