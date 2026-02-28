@@ -96,6 +96,8 @@ class PayBillInput(BaseModel):
     razon_social: Optional[str] = None  # Nombre del cliente fiscal
     customer_email: Optional[str] = None  # Email para envío de factura
     send_email: bool = False  # Si enviar factura por email
+    # Descuento aplicado
+    discount_applied: Optional[dict] = None
 
 # ─── PAYMENT METHODS ───
 @router.get("/payment-methods")
