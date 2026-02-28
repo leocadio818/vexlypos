@@ -605,6 +605,15 @@ export default function OrderScreen() {
 
   // Smart void handler: Determines if express void or audit protocol is needed
   const handleSmartVoid = (itemIds) => {
+    // PARTIAL VOID: If single item selected and qty > 1, show partial void dialog
+    if (itemIds.length === 1) {
+      const item = order?.items?.find(i => i.id === itemIds[0]);
+      if (item && item.quantity > 1) {
+        setPartialVoidDialog({ open: true, item, qtyToVoid: 1 });
+        return;
+      }
+    }
+    
     // Check if ALL selected items are pending (not sent to kitchen)
     const allPending = itemIds.every(id => {
       const item = order?.items?.find(i => i.id === id);
@@ -618,11 +627,57 @@ export default function OrderScreen() {
     });
     
     if (allPending) {
-      // EXPRESS VOID: All items are pending - direct deletion
       handleExpressVoid(itemIds);
     } else {
-      // AUDIT PROTOCOL: Some items were sent - require reason and possibly PIN
       openBulkCancelDialog(itemIds, anyWasSent);
+    }
+  };
+
+  // Handle partial void confirmation
+  const handlePartialVoidConfirm = async () => {
+    const { item, qtyToVoid } = partialVoidDialog;
+    if (!item || qtyToVoid < 1) return;
+    
+    const wasSent = item.status === 'sent' || item.sent_to_kitchen;
+    
+    // If voiding all, delegate to normal flow
+    if (qtyToVoid === item.quantity) {
+      setPartialVoidDialog({ open: false, item: null, qtyToVoid: 1 });
+      handleSmartVoidSingle(item.id, wasSent);
+      return;
+    }
+    
+    // If item is pending (not sent), use express partial void
+    if (!wasSent) {
+      try {
+        const res = await fetch(`${API_BASE}/api/orders/${order.id}/partial-void/${item.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+          body: JSON.stringify({ qty_to_void: qtyToVoid, express_void: true, return_to_inventory: false, comments: `Anulacion parcial express (${qtyToVoid} de ${item.quantity})` })
+        });
+        if (res.ok) { setOrder(await res.json()); setSelectedItems([]); }
+      } catch {}
+      setPartialVoidDialog({ open: false, item: null, qtyToVoid: 1 });
+      return;
+    }
+    
+    // Item was sent: open cancel dialog with partial void context
+    setPartialVoidDialog({ open: false, item: null, qtyToVoid: 1 });
+    setCancelDialog({ 
+      open: true, itemId: item.id, itemIds: [], mode: 'single',
+      selectedReasonId: null, returnToInventory: true, comments: '',
+      requiresManagerAuth: false, showManagerPin: false, managerPin: '',
+      managerAuthError: '', authorizedBy: null,
+      partialVoid: true, partialQty: qtyToVoid
+    });
+  };
+
+  // Single item smart void (for when partial void resolves to full void)
+  const handleSmartVoidSingle = (itemId, wasSent) => {
+    if (!wasSent) {
+      handleExpressVoid([itemId]);
+    } else {
+      openBulkCancelDialog([itemId], true);
     }
   };
 
