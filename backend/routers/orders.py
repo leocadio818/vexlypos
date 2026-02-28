@@ -176,37 +176,11 @@ async def restore_inventory_partial(product_id: str, qty: int, warehouse_id: str
         await db.stock_movements.insert_one(movement)
 
 async def send_cancel_ticket_to_print_queue(order_id: str, items_cancelled: list):
-    """Send cancellation ticket to same production printer as original comanda"""
+    """Send cancellation ticket to same production printer as original comanda.
+    Uses 'data' format (not commands) for compatibility with local print agent."""
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         return
-    
-    # Generate ESC-POS commands (texto plano, sin acentos, 72mm)
-    commands = []
-    commands.append({"type": "center", "bold": True, "size": "large", "text": "*** CANCELACION DE ORDEN ***"})
-    commands.append({"type": "divider"})
-    commands.append({"type": "left", "bold": True, "size": "large", "text": f"Mesa: {order.get('table_number', '?')}"})
-    commands.append({"type": "left", "text": f"Mozo: {order.get('waiter_name', '')}"})
-    trans = order.get("transaction_number", "")
-    if trans:
-        commands.append({"type": "left", "text": f"Trans: #{trans}"})
-    commands.append({"type": "left", "text": f"Hora: {now_iso()[11:16]}"})
-    commands.append({"type": "divider"})
-    
-    for item in items_cancelled:
-        qty = item.get("qty_voided", item.get("quantity", 1))
-        name = item.get("product_name", "?")
-        commands.append({"type": "left", "bold": True, "size": "large", "text": f"ANULAR: {qty} x {name}"})
-        for mod in item.get("modifiers", []):
-            mod_name = mod.get("name", "") if isinstance(mod, dict) else str(mod)
-            if mod_name:
-                commands.append({"type": "left", "text": f"  + {mod_name}"})
-        if item.get("notes"):
-            commands.append({"type": "left", "text": f"  NOTA: {item['notes']}"})
-    
-    commands.append({"type": "divider"})
-    commands.append({"type": "feed", "lines": 2})
-    commands.append({"type": "cut"})
     
     # Route to same printer channel as original comanda
     channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
@@ -233,14 +207,46 @@ async def send_cancel_ticket_to_print_queue(order_id: str, items_cancelled: list
     if not target_channels_set:
         target_channels_set = {"kitchen"}
     
+    # Build cancel data in comanda-compatible format
+    cancel_items = [
+        {
+            "name": f"ANULAR: {i.get('product_name', '?')}",
+            "quantity": i.get("qty_voided", i.get("quantity", 1)),
+            "modifiers": [m.get("name", "") if isinstance(m, dict) else str(m) for m in i.get("modifiers", [])],
+            "notes": i.get("notes", "")
+        }
+        for i in items_cancelled
+    ]
+    
     for channel_code in target_channels_set:
         channel = next((c for c in channels if c.get("code") == channel_code), None)
+        printer_name = channel.get("printer_name", "") if channel else ""
+        printer_target = channel.get("target", "usb") if channel else "usb"
+        printer_ip = channel.get("ip", "") if channel else ""
+        channel_name = channel.get("name", channel_code.title()) if channel else channel_code.title()
+        
+        cancel_data = {
+            "type": "cancel_comanda",
+            "paper_width": 80,
+            "channel_name": channel_name,
+            "table_number": order.get("table_number", "?"),
+            "waiter_name": order.get("waiter_name", ""),
+            "order_number": order.get("id", "")[:8],
+            "transaction_number": order.get("transaction_number", ""),
+            "date": now_iso()[:19].replace("T", " "),
+            "items_count": len(cancel_items),
+            "items": cancel_items
+        }
+        
         job = {
             "id": str(uuid.uuid4()),
             "type": "cancel_comanda",
             "channel": channel_code,
+            "printer_name": printer_name,
+            "printer_target": printer_target,
+            "printer_ip": printer_ip,
             "reference_id": order_id,
-            "commands": commands,
+            "data": cancel_data,
             "status": "pending",
             "created_at": now_iso()
         }
