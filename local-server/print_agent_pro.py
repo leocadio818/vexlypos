@@ -539,6 +539,8 @@ class PrintAgent:
             success, error = self.printer_manager.print_receipt(printer, data)
         elif job_type == "comanda":
             success, error = self.printer_manager.print_comanda(printer, data)
+        elif job_type == "cancel_comanda":
+            success, error = self.printer_manager.print_cancel_comanda(printer, data)
         elif job_type == "test":
             success, error = self.printer_manager.print_test(printer, data)
         else:
