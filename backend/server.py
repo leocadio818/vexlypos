@@ -1181,7 +1181,8 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
             "ncf_type": bill.get("ncf_type", ""),
             "customer_fiscal_id": bill.get("fiscal_id", ""),
             "customer_fiscal_id_type": bill.get("fiscal_id_type", ""),
-            "customer_razon_social": bill.get("razon_social", "")
+            "customer_razon_social": bill.get("razon_social", ""),
+            "discount_applied": bill.get("discount_applied")
         }
         job = {"id": gen_id(), "type": "receipt", "channel": "receipt", "printer_name": printer_name, "data": receipt_data, "status": "pending", "created_at": now_iso()}
         await db.print_queue.insert_one(job)
