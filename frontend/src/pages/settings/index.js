@@ -100,6 +100,7 @@ function SettingsContent() {
           <TabsContent value="ncf"><NcfTab /></TabsContent>
           <TabsContent value="theme"><ThemeTab /></TabsContent>
           <TabsContent value="system"><SystemTab /></TabsContent>
+          <TabsContent value="descuentos"><DescuentosTab /></TabsContent>
         </Tabs>
       </div>
     </div>
