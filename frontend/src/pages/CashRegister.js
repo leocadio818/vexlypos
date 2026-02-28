@@ -208,10 +208,10 @@ export default function CashRegister() {
     (total, [valor, cantidad]) => total + (parseInt(valor) * cantidad), 0
   );
 
-  // Calculate expected cash (total_esperado)
+  // Calculate expected cash (total_esperado) - Solo efectivo RD$ en caja
   const totalEsperado = currentSession ? (
     (currentSession.opening_amount || 0) +
-    (currentSession.cash_sales || 0) +
+    (salesBreakdown?.cash_rd ?? currentSession.cash_sales ?? 0) +
     (currentSession.cash_in || 0) -
     (currentSession.cash_out || 0)
   ) : 0;
