@@ -459,6 +459,17 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         # Descuento aplicado
         "discount_applied": input.discount_applied
     }
+    # Rebuild tax_breakdown with adjusted values (reflects tax overrides)
+    existing_breakdown = bill.get("tax_breakdown", [])
+    adjusted_breakdown = []
+    for tax in existing_breakdown:
+        adj = {**tax}
+        if tax.get("is_tip"):
+            adj["amount"] = round(propina, 2)
+        else:
+            adj["amount"] = round(itbis, 2)
+        adjusted_breakdown.append(adj)
+    update_fields["tax_breakdown"] = adjusted_breakdown
     if input.amount_received is not None:
         update_fields["amount_received"] = input.amount_received
     await db.bills.update_one({"id": bill_id}, {"$set": update_fields})
