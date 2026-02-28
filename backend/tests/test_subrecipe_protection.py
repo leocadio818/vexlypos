@@ -273,7 +273,7 @@ class TestSubrecipeProtection:
             "yield_quantity": 5,
             "notes": "Test CRUD recipe",
             "is_subrecipe": False,
-            "produces_ingredient_id": None
+            "produces_ingredient_id": ""  # Must be string, not None
         }
         
         create_response = self.session.post(f"{BASE_URL}/api/recipes", json=test_recipe)
