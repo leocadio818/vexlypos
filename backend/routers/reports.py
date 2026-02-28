@@ -382,22 +382,37 @@ async def cash_close_report(date: Optional[str] = Query(None)):
     
     # Aggregate by payment method
     by_payment_method = {}
+    pm_name_map = {pm.get("name", "").lower(): pm for pm in payment_methods}
     for bill in day_bills:
-        pm_id = bill.get("payment_method_id", bill.get("payment_method", "cash"))
-        pm_name = pm_map.get(pm_id, {}).get("name", pm_id.title())
-        is_cash = pm_map.get(pm_id, {}).get("is_cash", pm_id == "cash")
-        
-        if pm_name not in by_payment_method:
-            by_payment_method[pm_name] = {
-                "name": pm_name,
-                "is_cash": is_cash,
-                "count": 0,
-                "total": 0,
-                "tips": 0
-            }
-        by_payment_method[pm_name]["count"] += 1
-        by_payment_method[pm_name]["total"] += bill.get("total", 0)
-        by_payment_method[pm_name]["tips"] += bill.get("propina_legal", 0)
+        payments = bill.get("payments", [])
+        if payments:
+            for payment in payments:
+                p_id = payment.get("payment_method_id", "")
+                pm = pm_map.get(p_id, {})
+                pm_name = pm.get("name", payment.get("payment_method_name", "Otro"))
+                is_cash = pm.get("is_cash", False)
+                amt = payment.get("amount_dop", payment.get("amount", 0))
+                if pm_name not in by_payment_method:
+                    by_payment_method[pm_name] = {"name": pm_name, "is_cash": is_cash, "count": 0, "total": 0, "tips": 0}
+                by_payment_method[pm_name]["total"] += amt
+                by_payment_method[pm_name]["tips"] += bill.get("propina_legal", 0) / max(len(payments), 1)
+            # Count the bill once
+            first_pm_name = pm_map.get(payments[0].get("payment_method_id",""), {}).get("name", payments[0].get("payment_method_name", "Otro"))
+            if first_pm_name in by_payment_method:
+                by_payment_method[first_pm_name]["count"] += 1
+        else:
+            p_id = bill.get("payment_method_id", "")
+            p_name = bill.get("payment_method", "")
+            pm = pm_map.get(p_id, {})
+            if not pm and p_name:
+                pm = pm_name_map.get(p_name.lower(), {})
+            pm_name = pm.get("name", p_name or "Otro")
+            is_cash = pm.get("is_cash", p_id == "cash" or "efectivo" in p_name.lower())
+            if pm_name not in by_payment_method:
+                by_payment_method[pm_name] = {"name": pm_name, "is_cash": is_cash, "count": 0, "total": 0, "tips": 0}
+            by_payment_method[pm_name]["count"] += 1
+            by_payment_method[pm_name]["total"] += bill.get("total", 0)
+            by_payment_method[pm_name]["tips"] += bill.get("propina_legal", 0)
     
     # Get shifts for the day
     shifts = await db.shifts.find({
