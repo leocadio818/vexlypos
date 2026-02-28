@@ -1010,6 +1010,23 @@ Los ajustes de stock (Diferencias de Inventario - faltantes como ACEITE) no apar
 - `/app/backend/routers/reports.py` - System audit incluye todos los tipos de movimiento + fix campo fecha
 - `/app/backend/routers/inventory.py` - ingredient_name en stock_movements para diferencias
 
+## Fix: Dashboard clasificación incorrecta Efectivo/Tarjeta (28 Feb 2026)
+### Problema
+Pago en efectivo aparecia como "Tarjeta" en Dashboard, Ventas Diarias y Cierre de Caja
+
+### Causa Raiz
+El campo `is_cash` NO EXISTE en la coleccion `payment_methods` de MongoDB. El API `/api/payment-methods` lo agrega dinamicamente pero los reportes leian directo de la BD sin esa logica
+
+### Solucion
+- Creada funcion `resolve_is_cash()` y `build_pm_maps()` en reports.py que replica la logica de billing.py usando CASH_KEYWORDS
+- Aplicado a los 3 reportes afectados: dashboard, daily-sales, cash-close
+- Los reportes ahora usan el array `payments[]` de cada factura para mayor precision
+
+### Archivos Modificados
+- `/app/backend/routers/reports.py` - resolve_is_cash, build_pm_maps + 3 reportes corregidos
+
+### REGLA: El campo is_cash de payment_methods se resuelve por nombre, NO por un campo en la BD
+
 ## Fix: Clientes y Reservaciones (28 Feb 2026)
 ### Clientes - Lista no visible sin buscar
 - **Problema**: La lista de clientes podia no cargar al inicio, solo aparecia despues de escribir en el buscador
