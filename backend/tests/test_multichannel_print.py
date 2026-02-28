@@ -12,7 +12,7 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://pos-data-sync-1.preview.emergentagent.com"
+    BASE_URL = "https://admin-group-manager.preview.emergentagent.com"
 
 
 class TestLogin:

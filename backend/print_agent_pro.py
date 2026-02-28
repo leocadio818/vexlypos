@@ -43,7 +43,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://pos-data-sync-1.preview.emergentagent.com"
+SERVER_URL = "https://admin-group-manager.preview.emergentagent.com"
 
 DEFAULT_PRINTER = "Caja"
 
