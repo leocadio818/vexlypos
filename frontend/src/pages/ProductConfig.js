@@ -109,7 +109,7 @@ export default function ProductConfig() {
       ]);
       setCategories(catRes.data);
       setReportCategories(reportCatRes.data);
-      setModifierGroups(modRes.data);
+      setModifierGroups(Array.isArray(modRes) ? modRes : modRes.data || []);
       setPrintChannels(channelsRes || []);
       setTaxConfig(taxRes || []);
 
