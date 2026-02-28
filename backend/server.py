@@ -72,6 +72,7 @@ customers_set_db(db)
 config_set_db(db)
 business_days_set_db(db)
 business_days_init_supabase()  # Initialize Supabase for business days
+discounts_set_db(db)
 
 # Connect KDS notifier to orders
 set_kds_notifier(notify_kds)
