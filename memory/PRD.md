@@ -1092,6 +1092,35 @@ El panel "Anulaciones" del Dashboard mostraba datos inconsistentes: "Hoy (Tiempo
 
 ### Verificacion: Testing agent 100% (12/12 backend, frontend OK) - iteration_89
 
+## Motor de Reglas de Descuento (28 Feb 2026) [COMPLETADO]
+### Modelo de Datos (MongoDB: coleccion `discounts`)
+- name, description, type (PERCENTAGE|FIXED_AMOUNT|NEW_PRICE), value
+- scope (GLOBAL|CATEGORY|SPECIFIC_PRODUCTS), target_ids[]
+- authorization_level (CASHIER|MANAGER_PIN_REQUIRED)
+- active_from, active_to, schedule_start_time, schedule_end_time (Happy Hour)
+- active (boolean)
+
+### Backend: `/app/backend/routers/discounts.py`
+- `GET /api/discounts` - Lista todos
+- `POST /api/discounts` - Crear con validacion Pydantic
+- `PUT /api/discounts/{id}` - Actualizar
+- `DELETE /api/discounts/{id}` - Eliminar
+- `GET /api/discounts/active` - Filtro por fecha/horario activo
+- `POST /api/discounts/calculate` - Motor de calculo: aplica descuento al subtotal, recalcula ITBIS y propina sobre base reducida
+
+### Frontend
+- `/app/frontend/src/pages/settings/DescuentosTab.js` - Tab en Config con CRUD completo, modal Liquid Glass, multi-select
+- PaymentScreen: Boton "Descuento" al lado de "Impuesto", dialogo selector, dialogo PIN gerente, linea de descuento en desglose
+
+### Regla Fiscal
+- Descuento se aplica al SUBTOTAL antes de ITBIS/Propina (reduce base imponible)
+- Solo 1 descuento por orden (seleccion manual del cajero)
+
+### Impresion ESC-POS
+- Linea: `Desc: [Nombre]   -RD$ [Monto]` (texto plano sin acentos)
+
+### Verificacion: Testing agent 100% (20/20 backend, frontend OK) - iteration_90
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
