@@ -1115,7 +1115,7 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
             "order_number": order.get("id", "")[:8],
             "transaction_number": transaction_number,
             "training_mode": order.get("training_mode", False),
-            "date": now_iso()[:19].replace("T", " "),
+            "date": now_local_print(),
             "items_count": len(items),
             "items": [
                 {
