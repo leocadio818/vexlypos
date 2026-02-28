@@ -298,7 +298,7 @@ class TestSubrecipeProtection:
             "yield_quantity": 10,
             "notes": "Updated test recipe",
             "is_subrecipe": False,
-            "produces_ingredient_id": None
+            "produces_ingredient_id": ""  # Must be string, not None
         }
         update_response = self.session.put(f"{BASE_URL}/api/recipes/{recipe_id}", json=update_data)
         assert update_response.status_code == 200, f"Update failed: {update_response.text}"
