@@ -97,6 +97,9 @@ export default function OrderScreen() {
   // Account Label Dialog
   const [accountLabelDialog, setAccountLabelDialog] = useState({ open: false, label: '', action: null, itemIds: [] });
   
+  // Partial Void Dialog
+  const [partialVoidDialog, setPartialVoidDialog] = useState({ open: false, item: null, qtyToVoid: 1 });
+  
   // Move Items Mode
   const [moveItemsMode, setMoveItemsMode] = useState(false);
   const [selectedItemsToMove, setSelectedItemsToMove] = useState([]);
