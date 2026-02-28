@@ -560,15 +560,27 @@ export default function RecipesTab({
                       )}
                     </td>
                     <td className="p-3 text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openRecipeDialog({ ...item })}
-                        className="h-7 px-2 text-xs"
-                        data-testid={`adjust-price-${item.id}`}
-                      >
-                        <Pencil size={12} className="mr-1" /> Ajustar
-                      </Button>
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setHistoryDialog({ open: true, recipeId: item.id, recipeName: item.product_name })}
+                          className="h-7 px-1.5 text-xs text-cyan-500"
+                          data-testid={`history-margin-${item.id}`}
+                          title="Historial"
+                        >
+                          <History size={12} />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openRecipeDialog({ ...item })}
+                          className="h-7 px-2 text-xs"
+                          data-testid={`adjust-price-${item.id}`}
+                        >
+                          <Pencil size={12} className="mr-1" /> Ajustar
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
