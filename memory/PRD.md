@@ -1055,6 +1055,25 @@ El campo `is_cash` NO EXISTE en la coleccion `payment_methods` de MongoDB. El AP
 - `Customers.js` - La lista SIEMPRE debe cargar todos los clientes al inicio
 - `Reservations.js` - Las mesas DEBEN incluir status 'free' Y 'available'
 
+
+## Fix: Timezone en Dashboard (28 Feb 2026) [P0 - CORREGIDO]
+### Problema
+El panel "Anulaciones" del Dashboard mostraba datos inconsistentes: "Hoy (Tiempo Real)" = RD$700 vs "Jornada Operativa" = RD$1,000. La raiz era que el filtro "hoy" usaba la fecha UTC del servidor en vez del dia local (UTC-4).
+
+### Solucion (Quirurgica - solo reports.py)
+1. **Funcion `get_local_today_utc_range()`**: Calcula limites UTC para el dia local en RD (UTC-4). Ej: Feb 27 local = 04:00 UTC a 04:00 UTC del dia siguiente.
+2. **Filtro `today_bills`**: Cambiado de `startswith(today_utc)` a rango `today_start <= paid_at < today_end`
+3. **Filtro `today_voids`**: Misma logica de rango
+4. **Ventas por hora**: Conversion UTC → hora local con `(utc_hour - 4) % 24`
+5. **Fallback jornada_start**: Cambiado de variable `today` (inexistente) a `today_start`
+
+### REGLA: Timezone UTC-4
+- `_DR_TZ = timezone(timedelta(hours=-4))` definido globalmente en reports.py
+- Todos los filtros "hoy" del dashboard usan `get_local_today_utc_range()`
+- Las horas en graficos se muestran en hora local, no UTC
+
+### Verificacion: Testing agent 100% (12/12 backend, frontend OK)
+
 ## Pendiente
 ### P1 - Alta Prioridad
 - [ ] Reloj de entrada/salida empleados
