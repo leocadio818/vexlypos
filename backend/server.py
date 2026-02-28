@@ -1798,8 +1798,7 @@ async def print_shift_report(input: dict, user=Depends(get_current_user)):
     def fmt_dt(d):
         if not d: return "-"
         try:
-            parsed = dt_parse.fromisoformat(d.replace("Z", "+00:00"))
-            return parsed.strftime("%d/%m/%Y %I:%M %p")
+            return utc_to_local_str(d, "%d/%m/%Y %I:%M %p")
         except:
             return str(d)[:19]
     
