@@ -818,24 +818,12 @@ export default function PaymentScreen() {
         const sessionCheck = await posSessionsAPI.check();
         const sessionId = sessionCheck.data?.session?.id;
         if (sessionId) {
-          // Register each payment method separately for accurate tracking
-          if (paymentsList && paymentsList.length > 0) {
-            for (const pay of paymentsList) {
-              let method = 'cash';
-              const label = (pay.label || '').toLowerCase();
-              if (label.includes('tarjeta') || label.includes('card')) method = 'card';
-              else if (label.includes('transferencia') || label.includes('transfer')) method = 'transfer';
-              else if (label.includes('efectivo') || label.includes('cash') || label.includes('rd$') || label.includes('dolar') || label.includes('euro')) method = 'cash';
-              else method = 'other';
-              await posSessionsAPI.registerSale(sessionId, pay.amount_dop || pay.amount || 0, method);
-            }
-          } else {
-            let method = 'cash';
-            const ml = mainMethod.toLowerCase();
-            if (ml.includes('tarjeta') || ml.includes('card')) method = 'card';
-            else if (ml.includes('transferencia') || ml.includes('transfer')) method = 'transfer';
-            await posSessionsAPI.registerSale(sessionId, billTotal, method);
-          }
+          // Use main payment method from the bill
+          let method = 'cash';
+          const ml = (mainMethod || '').toLowerCase();
+          if (ml.includes('tarjeta') || ml.includes('card')) method = 'card';
+          else if (ml.includes('transferencia') || ml.includes('transfer')) method = 'transfer';
+          await posSessionsAPI.registerSale(sessionId, billTotal, method);
         }
       } catch (regErr) {
         console.warn('Session sale register warning:', regErr);
