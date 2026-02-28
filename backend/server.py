@@ -435,7 +435,9 @@ async def get_product_image(filename: str):
 # ─── MODIFIERS ───
 @api.get("/modifiers")
 async def list_modifiers():
-    return await db.modifiers.find({}, {"_id": 0}).to_list(100)
+    # Only return modifier groups (not individual options which have a non-empty group_id)
+    query = {"$or": [{"group_id": {"$exists": False}}, {"group_id": ""}, {"group_id": None}]}
+    return await db.modifiers.find(query, {"_id": 0}).to_list(100)
 
 @api.get("/modifiers/{modifier_id}")
 async def get_modifier(modifier_id: str):
