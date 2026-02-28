@@ -1944,3 +1944,50 @@ def _adjust_value_for_movements(current_value: float, movements_after: list, ing
         # Reverse the movement: subtract what was added, add what was removed
         adjustment -= qty * cost
     return max(0, current_value + adjustment)
+
+
+
+@router.get("/discounts")
+async def get_discounts_report(
+    date_from: str = None,
+    date_to: str = None,
+    user=Depends(get_current_user)
+):
+    """Reporte detallado de descuentos aplicados"""
+    query = {"status": "paid", "discount_applied.amount": {"$gt": 0}}
+    
+    if date_from:
+        query["paid_at"] = {"$gte": date_from}
+    if date_to:
+        query.setdefault("paid_at", {})["$lte"] = date_to + "T23:59:59"
+    
+    bills = await db.bills.find(
+        query,
+        {"_id": 0, "id": 1, "ncf": 1, "table_number": 1, "waiter_name": 1,
+         "subtotal": 1, "total": 1, "discount_applied": 1, "paid_at": 1}
+    ).sort("paid_at", -1).to_list(500)
+    
+    rows = []
+    total_discounts = 0
+    for b in bills:
+        disc = b.get("discount_applied", {})
+        amount = disc.get("amount", 0) or 0
+        total_discounts += amount
+        rows.append({
+            "NCF": b.get("ncf", "-"),
+            "Mesa": b.get("table_number", "-"),
+            "Mesero": b.get("waiter_name", "-"),
+            "Subtotal": round(b.get("subtotal", 0), 2),
+            "Descuento": disc.get("name", "-"),
+            "Monto Descuento": round(amount, 2),
+            "Total Final": round(b.get("total", 0), 2),
+            "Fecha": b.get("paid_at", "")[:19].replace("T", " ")
+        })
+    
+    return {
+        "rows": rows,
+        "summary": {
+            "total_descuentos": round(total_discounts, 2),
+            "cantidad_facturas": len(rows)
+        }
+    }
