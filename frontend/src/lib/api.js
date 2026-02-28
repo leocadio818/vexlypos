@@ -177,6 +177,7 @@ export const posSessionsAPI = {
   addMovement: (sessionId, data) => api.post(`/pos-sessions/${sessionId}/movements`, data),
   getMovements: (sessionId) => api.get(`/pos-sessions/${sessionId}/movements`),
   registerSale: (sessionId, amount, method) => api.put(`/pos-sessions/${sessionId}/register-sale`, null, { params: { amount, payment_method: method } }),
+  salesBreakdown: (sessionId) => api.get(`/pos-sessions/${sessionId}/sales-breakdown`),
 };
 
 // Business Days (Jornadas de Trabajo)
