@@ -1211,8 +1211,8 @@ export default function CashRegister() {
       />
 
       {/* Teclado Flotante Numerico - Fuera de todos los dialogs para z-index correcto */}
-      {floatingKeypad.open && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center" onClick={() => {
+      {floatingKeypad.open && createPortal(
+        <div className="fixed inset-0 flex items-end justify-center" style={{ zIndex: 99999 }} onClick={() => {
           if (floatingKeypad.field === 'card') setCardDeclared(floatingKeypad.value);
           else if (floatingKeypad.field === 'transfer') setTransferDeclared(floatingKeypad.value);
           setFloatingKeypad({ open: false, field: null, value: '' });
@@ -1279,7 +1279,8 @@ export default function CashRegister() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
