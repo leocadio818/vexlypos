@@ -18,6 +18,7 @@ const ADMIN_ROLES = ['admin', 'gerente', 'propietario', 'manager', 'owner'];
 export default function Customers() {
   const { user } = useAuth();
   const [customers, setCustomers] = useState([]);
+  const [allCustomers, setAllCustomers] = useState([]);
   const [search, setSearch] = useState('');
   const [config, setConfig] = useState({ points_per_hundred: 10, point_value_rd: 1, min_redemption: 50 });
   const [addDialog, setAddDialog] = useState({ open: false, name: '', phone: '', email: '' });
