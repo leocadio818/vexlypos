@@ -184,18 +184,23 @@ export default function Layout() {
   const DeviceIcon = isMobile ? Smartphone : isTablet ? Tablet : Monitor;
 
   // Glassmorphism background style
-  const bgStyle = isGlassPage ? {
+  const bgStyle = isGlassPage && !isMinimalist ? {
     background: `linear-gradient(135deg, ${theme.gradientStart} 0%, ${theme.gradientMid1} 25%, ${theme.gradientMid2} 50%, ${theme.gradientEnd} 100%)`,
+  } : isMinimalist ? {
+    background: neoColors.neoBgColor,
   } : {};
+
+  // For neumorphic mode, override glass page logic for styling
+  const useGlassStyle = isGlassPage && !isMinimalist;
 
   return (
     <div 
-      className={`h-screen flex overflow-hidden ${isGlassPage ? '' : 'bg-background'}`} 
+      className={`h-screen flex overflow-hidden ${useGlassStyle ? '' : isMinimalist ? '' : 'bg-background'}`} 
       style={bgStyle}
       data-testid="main-layout"
     >
-      {/* Animated orbs for glass pages */}
-      {isGlassPage && (
+      {/* Animated orbs for glass pages (original theme only) */}
+      {useGlassStyle && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div 
             className="absolute -top-40 -left-40 w-80 h-80 rounded-full blur-[100px] animate-pulse"
@@ -209,6 +214,14 @@ export default function Layout() {
             className="absolute -bottom-20 left-1/3 w-72 h-72 rounded-full blur-[90px] animate-pulse"
             style={{ backgroundColor: theme.orbColor3, animationDelay: '2s' }}
           />
+        </div>
+      )}
+
+      {/* Subtle glow orbs for minimalist */}
+      {isMinimalist && isGlassPage && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-32 -left-32 w-64 h-64 rounded-full blur-[120px] opacity-30" style={{ backgroundColor: neoColors.neoGlowColor }} />
+          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full blur-[140px] opacity-20" style={{ backgroundColor: neoColors.neoGlowColor }} />
         </div>
       )}
 
