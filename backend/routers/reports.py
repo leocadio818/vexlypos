@@ -66,6 +66,8 @@ async def dashboard():
     total_sales = sum(b.get("total", 0) for b in today_bills)
     total_itbis = sum(b.get("itbis", 0) for b in today_bills)
     total_tips = sum(b.get("propina_legal", 0) for b in today_bills)
+    discounts_total = sum((b.get("discount_applied", {}).get("amount", 0) or 0) for b in today_bills)
+    discounts_count = sum(1 for b in today_bills if (b.get("discount_applied", {}).get("amount", 0) or 0) > 0)
     bills_count = len(today_bills)
     avg_ticket = round(total_sales / bills_count, 2) if bills_count > 0 else 0
     
@@ -244,7 +246,9 @@ async def dashboard():
             "cash": round(cash_total, 2),
             "card": round(card_total, 2),
             "itbis": round(total_itbis, 2),
-            "tips": round(total_tips, 2)
+            "tips": round(total_tips, 2),
+            "discounts": round(discounts_total, 2),
+            "discounts_count": discounts_count
         },
         "operations": {
             "occupancy_pct": occupancy_pct,
