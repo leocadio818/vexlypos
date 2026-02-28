@@ -455,7 +455,9 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         "send_email": input.send_email,
         # Doble marcación de tiempo (Jornada de Trabajo)
         "business_date": business_date,  # Fecha contable (jornada)
-        "business_day_id": business_day["id"]  # Referencia a la jornada
+        "business_day_id": business_day["id"],  # Referencia a la jornada
+        # Descuento aplicado
+        "discount_applied": input.discount_applied
     }
     if input.amount_received is not None:
         update_fields["amount_received"] = input.amount_received
