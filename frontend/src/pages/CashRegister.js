@@ -90,6 +90,9 @@ export default function CashRegister() {
   const [reprintSessionId, setReprintSessionId] = useState(null);
   const [logoutAfterReport, setLogoutAfterReport] = useState(false);
   
+  // Teclado flotante para campos de monto
+  const [floatingKeypad, setFloatingKeypad] = useState({ open: false, field: null, value: '' });
+  
   // Check URL params for B04 redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
