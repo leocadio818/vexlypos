@@ -30,7 +30,9 @@ export default function Dashboard() {
     </div>
   );
 
-  const { today, operations, loyalty, hourly_sales, open_tables = [], closed_tables = [] } = data;
+  const { today, operations, loyalty, hourly_sales, open_tables = [], closed_tables = [], voids = {} } = data;
+  const voidsToday = voids.today || { count: 0, total: 0, by_reason: [], items: [] };
+  const voidsJornada = voids.jornada || { count: 0, total: 0, by_reason: [], items: [] };
 
   const CustomTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null;
