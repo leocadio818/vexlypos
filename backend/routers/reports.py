@@ -129,12 +129,16 @@ async def dashboard():
     for h in range(24):
         hourly_data[f"{h:02d}"] = {"hour": f"{h:02d}:00", "total": 0}
     
+    # Pre-compute UTC-to-local hour offset using centralized timezone
+    _sample_local = await utc_hour_to_local(0)
+    _tz_offset = _sample_local  # offset from UTC hour 0
+
     for bill in today_bills:
         paid_at = bill.get("paid_at", "")
         if "T" in paid_at:
             try:
                 utc_hour = int(paid_at.split("T")[1][:2])
-                local_hour = (utc_hour - 4) % 24  # Convert UTC to DR local (UTC-4)
+                local_hour = (utc_hour + _tz_offset) % 24
                 hour = f"{local_hour:02d}"
             except (ValueError, IndexError):
                 continue
