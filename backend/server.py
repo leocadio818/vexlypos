@@ -93,6 +93,40 @@ api.include_router(tables_router)
 api.include_router(billing_router)
 api.include_router(kitchen_router)
 api.include_router(customers_router)
+# ─── MODIFIERS (combinado: old-style + new-style groups) ───
+# NOTA: Este endpoint debe estar ANTES de include_router(config_router)
+# para tomar precedencia sobre config.py's /modifiers
+@api.get("/modifiers")
+async def list_modifiers_combined(group_id: Optional[str] = Query(None)):
+    """When group_id is provided: return flat options for that group.
+    When no group_id: return all modifier GROUPS (combined old+new style) with enriched options.
+    """
+    if group_id:
+        # Return flat options for a specific group
+        return await db.modifiers.find({"group_id": group_id}, {"_id": 0}).to_list(200)
+    
+    # Return combined groups from both collections
+    # Old-style: modifiers collection docs without group_id (they ARE groups with embedded options)
+    old_groups = []
+    async for doc in db.modifiers.find({}, {"_id": 0}):
+        gid = doc.get("group_id", "")
+        if not gid or not gid.strip():
+            old_groups.append(doc)
+    
+    # New-style: modifier_groups collection + enrich with their options
+    new_groups = await db.modifier_groups.find({}, {"_id": 0}).to_list(100)
+    all_options = []
+    async for doc in db.modifiers.find({}, {"_id": 0}):
+        gid = doc.get("group_id", "")
+        if gid and gid.strip():
+            all_options.append(doc)
+    for g in new_groups:
+        g["options"] = [o for o in all_options if o.get("group_id") == g["id"]]
+    
+    old_ids = {g["id"] for g in old_groups}
+    combined = old_groups + [g for g in new_groups if g["id"] not in old_ids]
+    return combined
+
 api.include_router(config_router)
 api.include_router(ncf_router)
 api.include_router(credit_notes_router)
