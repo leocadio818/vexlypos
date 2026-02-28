@@ -667,6 +667,16 @@ export default function RecipesTab({
                       <Button 
                         variant="ghost" 
                         size="icon" 
+                        className="h-8 w-8 text-cyan-500"
+                        onClick={() => setHistoryDialog({ open: true, recipeId: rec.id, recipeName: rec.product_name })}
+                        data-testid={`history-recipe-${rec.id}`}
+                        title="Historial de cambios"
+                      >
+                        <History size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
                         className="h-8 w-8"
                         onClick={() => openRecipeDialog({ ...rec })}
                         data-testid={`edit-recipe-${rec.id}`}
