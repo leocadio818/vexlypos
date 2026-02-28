@@ -168,7 +168,7 @@ def data_to_commands(data, job_type):
         trans = data.get('transaction_number', '')
         if trans:
             commands.append({"type": "left", "text": f"Trans: #{trans}"})
-        commands.append({"type": "left", "text": f"Hora: {data.get('date', '')[-8:]}"})
+        commands.append({"type": "left", "text": f"Hora: {data.get('date', '').split(' ', 1)[-1] if ' ' in data.get('date', '') else data.get('date', '')[-8:]}"})
         commands.append({"type": "divider"})
         for item in data.get("items", []):
             qty = item.get('quantity', 1)

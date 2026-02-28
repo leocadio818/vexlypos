@@ -2068,7 +2068,7 @@ async def send_receipt_to_queue(bill_id: str):
         commands.append({"type": "divider"})
     
     commands.append({"type": "left", "text": f"Mesa: {bill['table_number']}"})
-    commands.append({"type": "left", "text": f"Fecha: {bill.get('paid_at', bill['created_at'])[:19]}"})
+    commands.append({"type": "left", "text": f"Fecha: {utc_to_local_str(bill.get('paid_at', bill['created_at']))}"})
     if bill.get('waiter_name'):
         commands.append({"type": "left", "text": f"Mesero: {bill['waiter_name']}"})
     if bill.get('paid_by_name'):
@@ -2645,7 +2645,7 @@ async def send_precheck_to_printer(order_id: str):
     if account_label:
         commands.append({"type": "columns", "left": "Cliente:", "right": account_label[:20]})
     commands.append({"type": "columns", "left": "Mesero:", "right": order['waiter_name'][:20]})
-    commands.append({"type": "columns", "left": "Fecha:", "right": order['created_at'][:19]})
+    commands.append({"type": "columns", "left": "Fecha:", "right": utc_to_local_str(order['created_at'])})
     commands.append({"type": "divider"})
     
     for item in items:
