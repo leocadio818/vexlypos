@@ -1091,21 +1091,31 @@ export default function PaymentScreen() {
     );
   }
 
+  // Neumorphic-aware background
+  const neoBg = isMinimalist ? (isNeoDark ? neoColors.neoDarkBg : neoColors.neoBgColor) : null;
+
   return (
     <div 
       className="h-full flex flex-col overflow-hidden relative"
       data-testid="payment-screen"
       style={{
-        background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 25%, #2d1b4e 50%, #1e3a5f 75%, #0f2027 100%)',
+        background: isMinimalist ? neoBg : 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 25%, #2d1b4e 50%, #1e3a5f 75%, #0f2027 100%)',
       }}
     >
-      {/* Animated background orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-80 h-80 bg-purple-500/30 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute top-1/2 -right-20 w-60 h-60 bg-blue-500/20 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute -bottom-20 left-1/3 w-72 h-72 bg-cyan-500/20 rounded-full blur-[90px] animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-20 right-1/4 w-40 h-40 bg-pink-500/20 rounded-full blur-[60px] animate-pulse" style={{ animationDelay: '0.5s' }} />
-      </div>
+      {/* Background orbs - glass or neumorphic glow */}
+      {isMinimalist ? (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full blur-[100px] neo-bg-orb" style={{ backgroundColor: neoColors.neoGlowColor, opacity: isNeoDark ? 0.4 : 0.3 }} />
+          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full blur-[120px] neo-bg-orb" style={{ backgroundColor: neoColors.neoGlowColor, opacity: isNeoDark ? 0.3 : 0.2, animationDelay: '2s' }} />
+        </div>
+      ) : (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -left-40 w-80 h-80 bg-purple-500/30 rounded-full blur-[100px] animate-pulse" />
+          <div className="absolute top-1/2 -right-20 w-60 h-60 bg-blue-500/20 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute -bottom-20 left-1/3 w-72 h-72 bg-cyan-500/20 rounded-full blur-[90px] animate-pulse" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-20 right-1/4 w-40 h-40 bg-pink-500/20 rounded-full blur-[60px] animate-pulse" style={{ animationDelay: '0.5s' }} />
+        </div>
+      )}
 
       {/* Glass Header */}
       <div className={`relative z-10 px-4 ${isMobile ? 'py-3' : largeMode ? 'py-4' : 'py-3'} ${glassStyles.card} border-t-0 border-x-0 rounded-none`}>
