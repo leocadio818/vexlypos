@@ -204,7 +204,7 @@ class TestSubrecipeProtection:
             "yield_quantity": 99,  # Different value to detect if it overwrote
             "notes": "Test that this creates new recipe, not overwrites sub-recipe",
             "is_subrecipe": False,  # This is a regular recipe attempt
-            "produces_ingredient_id": None
+            "produces_ingredient_id": ""  # Must be string, not None
         }
         
         create_response = self.session.post(f"{BASE_URL}/api/recipes", json=test_recipe)
