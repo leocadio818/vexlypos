@@ -224,6 +224,79 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Voids/Anulaciones Panel - Glassmorphism */}
+          {(voidsToday.count > 0 || voidsJornada.count > 0) && (
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4" data-testid="voids-section">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <XCircle size={14} className="text-red-400" />
+                  <h3 className="font-oswald text-sm font-bold uppercase tracking-wider text-white/50">Anulaciones</h3>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Hoy */}
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <p className="text-[10px] text-red-300/60 uppercase font-bold mb-1">Hoy (Tiempo Real)</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-oswald text-2xl font-bold text-red-400">{voidsToday.count}</span>
+                    <span className="text-xs text-white/40">anulaciones</span>
+                  </div>
+                  <p className="font-oswald text-base font-bold text-red-400 mt-1">{formatMoney(voidsToday.total)}</p>
+                  {voidsToday.by_reason.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {voidsToday.by_reason.map((r, i) => (
+                        <div key={i} className="flex justify-between text-[11px]">
+                          <span className="text-white/50 truncate mr-2">{r.reason}</span>
+                          <span className="text-red-400 font-mono shrink-0">{r.count}x {formatMoney(r.total)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Jornada */}
+                <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                  <p className="text-[10px] text-orange-300/60 uppercase font-bold mb-1">Jornada Operativa</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-oswald text-2xl font-bold text-orange-400">{voidsJornada.count}</span>
+                    <span className="text-xs text-white/40">anulaciones</span>
+                  </div>
+                  <p className="font-oswald text-base font-bold text-orange-400 mt-1">{formatMoney(voidsJornada.total)}</p>
+                  {voidsJornada.by_reason.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {voidsJornada.by_reason.map((r, i) => (
+                        <div key={i} className="flex justify-between text-[11px]">
+                          <span className="text-white/50 truncate mr-2">{r.reason}</span>
+                          <span className="text-orange-400 font-mono shrink-0">{r.count}x {formatMoney(r.total)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Last voided items */}
+              {voidsJornada.items.length > 0 && (
+                <div className="mt-3 pt-2 border-t border-white/10">
+                  <p className="text-[10px] text-white/30 uppercase font-bold mb-1.5">Items Anulados Recientes</p>
+                  <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                    {voidsJornada.items.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-[11px] py-0.5" data-testid={`void-item-${i}`}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-red-400 font-mono">x{item.quantity}</span>
+                          <span className="text-white/70">{item.product_name}</span>
+                          <span className="text-white/30">— {item.reason}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-white/40">{item.requested_by}</span>
+                          <span className="text-red-400 font-mono">{formatMoney(item.unit_price * item.quantity)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Hourly Sales Chart - Glassmorphism */}
           <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4" data-testid="hourly-chart">
             <h3 className="font-oswald text-sm font-bold mb-3 uppercase tracking-wider text-white/50">Ventas por Hora - Hoy</h3>
