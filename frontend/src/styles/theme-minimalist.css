@@ -296,12 +296,21 @@ body.theme-minimalist [role="tab"][data-state="active"] {
 
 
 /* ═══════════════════════════════════════════════════════════════
-   DIALOGS & MODALS
+   DIALOGS & MODALS — Clean edges, no blur overlay
    ═══════════════════════════════════════════════════════════════ */
 
+/* Dialog overlay — solid dim, no blur */
+body.theme-minimalist [data-state="open"][class*="fixed"][class*="inset"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(0,0,0,0.4) !important;
+}
+
+/* Dialog content — solid bg, clean edges, dark text */
 body.theme-minimalist [role="dialog"] > div,
 body.theme-minimalist [data-radix-popper-content-wrapper] > div {
   background: var(--neo-bg) !important;
+  color: hsl(var(--foreground)) !important;
   box-shadow:
     12px 12px 24px var(--neo-shadow-dark),
     -12px -12px 24px var(--neo-shadow-light),
@@ -309,6 +318,22 @@ body.theme-minimalist [data-radix-popper-content-wrapper] > div {
     0 30px 70px -15px var(--neo-glow-medium) !important;
   border: none !important;
   border-radius: 20px;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ALL text inside dialogs must be dark/readable */
+body.theme-minimalist:not(.neo-dark) [role="dialog"] * {
+  color: hsl(var(--foreground));
+}
+/* Preserve colored text inside dialogs */
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-green"],
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-red"],
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-blue"],
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-primary"],
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-orange"],
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-amber"] {
+  color: revert;
 }
 
 
