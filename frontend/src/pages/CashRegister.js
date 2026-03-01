@@ -127,9 +127,9 @@ export default function CashRegister() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Step 1: Check session + independent data IN PARALLEL
-      const [checkRes, historyRes, termRes] = await Promise.all([
-        posSessionsAPI.check(),
+      // Step 1: Get current session + independent data IN PARALLEL (skip check — redundant)
+      const [currentResult, historyRes, termRes] = await Promise.all([
+        posSessionsAPI.current().catch(() => ({ data: null })),
         posSessionsAPI.history({ limit: 20, status: 'closed' }).catch(() => ({ data: [] })),
         posSessionsAPI.terminals().catch(() => ({ data: defaultTerminals })),
       ]);
@@ -139,44 +139,38 @@ export default function CashRegister() {
       // Set terminals
       const terminalsData = termRes.data?.length > 0 ? termRes.data : defaultTerminals;
       setTerminals(terminalsData);
-      try {
-        const inUseRes = await posSessionsAPI.terminalsInUse();
-        setTerminalsInUse(inUseRes.data || {});
-      } catch {
+      posSessionsAPI.terminalsInUse().then(r => setTerminalsInUse(r.data || {})).catch(() => {
         const inUse = {};
         terminalsData.forEach(t => { if (t.in_use) inUse[t.name] = t.in_use_by || 'En uso'; });
         setTerminalsInUse(inUse);
-      }
+      });
       const availableTerminal = terminalsData.find(t => !t.in_use);
       if (availableTerminal && !terminalName) {
         setSelectedTerminal(availableTerminal.id);
         setTerminalName(availableTerminal.name);
       }
 
-      // Step 2: If has open session, load session data
-      if (checkRes.data.has_open_session && checkRes.data.session) {
-        const currentRes = await posSessionsAPI.current();
-        setCurrentSession(currentRes.data);
+      // Step 2: If has open session, load movements + sync
+      const sessionData = currentResult.data;
+      if (sessionData?.id && sessionData?.status === 'open') {
+        setCurrentSession(sessionData);
+        const sid = sessionData.id;
         
-        if (currentRes.data?.id) {
-          const sid = currentRes.data.id;
-          // Step 3: Sync + movements + breakdown IN PARALLEL
-          const [syncResult, movResult, breakdownResult] = await Promise.allSettled([
-            fetch(`${process.env.REACT_APP_BACKEND_URL}/api/pos-sessions/${sid}/sync-sales`, {
-              method: 'PUT', headers: { 'Authorization': `Bearer ${localStorage.getItem('pos_token')}` }
-            }),
-            posSessionsAPI.getMovements(sid),
-            posSessionsAPI.salesBreakdown(sid),
-          ]);
+        // Step 3: Sync + movements + breakdown IN PARALLEL
+        const [syncResult, movResult, breakdownResult] = await Promise.allSettled([
+          fetch(`${process.env.REACT_APP_BACKEND_URL}/api/pos-sessions/${sid}/sync-sales`, {
+            method: 'PUT', headers: { 'Authorization': `Bearer ${localStorage.getItem('pos_token')}` }
+          }),
+          posSessionsAPI.getMovements(sid),
+          posSessionsAPI.salesBreakdown(sid),
+        ]);
 
-          if (movResult.status === 'fulfilled') setMovements(movResult.value.data || []);
-          if (breakdownResult.status === 'fulfilled') setSalesBreakdown(breakdownResult.value.data);
+        if (movResult.status === 'fulfilled') setMovements(movResult.value.data || []);
+        if (breakdownResult.status === 'fulfilled') setSalesBreakdown(breakdownResult.value.data);
 
-          // Refresh session after sync if successful
-          if (syncResult.status === 'fulfilled' && syncResult.value?.ok) {
-            const refreshRes = await posSessionsAPI.current();
-            setCurrentSession(refreshRes.data);
-          }
+        // Refresh session after sync
+        if (syncResult.status === 'fulfilled' && syncResult.value?.ok) {
+          posSessionsAPI.current().then(r => setCurrentSession(r.data)).catch(() => {});
         }
       } else {
         setCurrentSession(null);
