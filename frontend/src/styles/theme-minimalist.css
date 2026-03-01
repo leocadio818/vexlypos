@@ -386,13 +386,13 @@ body.theme-minimalist [data-sonner-toaster] [data-sonner-toast] {
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist:not(.neo-dark) .text-white { color: hsl(var(--foreground)) !important; }
-body.theme-minimalist:not(.neo-dark) .text-white\/90 { color: hsl(var(--foreground) / 0.9) !important; }
-body.theme-minimalist:not(.neo-dark) .text-white\/80 { color: hsl(var(--foreground) / 0.8) !important; }
-body.theme-minimalist:not(.neo-dark) .text-white\/70 { color: hsl(var(--foreground) / 0.7) !important; }
-body.theme-minimalist:not(.neo-dark) .text-white\/60 { color: hsl(var(--foreground) / 0.6) !important; }
-body.theme-minimalist:not(.neo-dark) .text-white\/50 { color: hsl(var(--foreground) / 0.5) !important; }
-body.theme-minimalist:not(.neo-dark) .text-white\/40 { color: hsl(var(--foreground) / 0.4) !important; }
-body.theme-minimalist:not(.neo-dark) .text-white\/30 { color: hsl(var(--foreground) / 0.3) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/90 { color: hsl(var(--foreground)) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/80 { color: hsl(var(--foreground) / 0.9) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/70 { color: hsl(var(--foreground) / 0.85) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/60 { color: hsl(var(--foreground) / 0.8) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/50 { color: hsl(var(--foreground) / 0.7) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/40 { color: hsl(var(--foreground) / 0.6) !important; }
+body.theme-minimalist:not(.neo-dark) .text-white\/30 { color: hsl(var(--foreground) / 0.5) !important; }
 
 /* ── Pastel/light text colors → darker saturated versions ── */
 /* Very light shades (50, 100) - nearly invisible on light bg */
