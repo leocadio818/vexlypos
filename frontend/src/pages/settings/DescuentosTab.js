@@ -365,7 +365,7 @@ export default function DescuentosTab() {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Fecha Inicio (opcional)</label>
                 <input
-                  type="date"
+                 
                   value={form.active_from?.split('T')[0] || ''}
                   onChange={e => setForm(p => ({ ...p, active_from: e.target.value ? e.target.value + 'T00:00:00' : '' }))}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
@@ -375,7 +375,7 @@ export default function DescuentosTab() {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Fecha Fin (opcional)</label>
                 <input
-                  type="date"
+                 
                   value={form.active_to?.split('T')[0] || ''}
                   onChange={e => setForm(p => ({ ...p, active_to: e.target.value ? e.target.value + 'T23:59:59' : '' }))}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
@@ -391,7 +391,7 @@ export default function DescuentosTab() {
                   <Clock size={10} className="inline mr-1" />Hora Inicio Happy Hour (opcional)
                 </label>
                 <input
-                  type="time"
+                 
                   value={form.schedule_start_time}
                   onChange={e => setForm(p => ({ ...p, schedule_start_time: e.target.value }))}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
@@ -403,7 +403,7 @@ export default function DescuentosTab() {
                   <Clock size={10} className="inline mr-1" />Hora Fin Happy Hour (opcional)
                 </label>
                 <input
-                  type="time"
+                 
                   value={form.schedule_end_time}
                   onChange={e => setForm(p => ({ ...p, schedule_end_time: e.target.value }))}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"

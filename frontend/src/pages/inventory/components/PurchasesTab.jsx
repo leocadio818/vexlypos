@@ -479,7 +479,7 @@ export default function PurchasesTab({
             <div>
               <label className="text-xs text-muted-foreground">Desde</label>
               <input
-                type="date"
+               
                 value={formatDateInput(dateRange.start)}
                 onChange={e => handleDateChange('start', e.target.value)}
                 className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm"
@@ -489,7 +489,7 @@ export default function PurchasesTab({
             <div>
               <label className="text-xs text-muted-foreground">Hasta</label>
               <input
-                type="date"
+               
                 value={formatDateInput(dateRange.end)}
                 onChange={e => handleDateChange('end', e.target.value)}
                 className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm"

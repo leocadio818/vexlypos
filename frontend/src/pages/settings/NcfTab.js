@@ -341,7 +341,7 @@ export default function NcfTab() {
             </div>
             <div>
               <label className="text-sm font-medium">Fecha de Vencimiento</label>
-              <input type="date" value={ncfDialog.expiration_date} onChange={e => setNcfDialog({ ...ncfDialog, expiration_date: e.target.value })}
+              <NeoDatePicker value={ncfDialog.expiration_date} onChange={e => setNcfDialog({ ...ncfDialog, expiration_date: e.target.value })}
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" />
             </div>
             <div>

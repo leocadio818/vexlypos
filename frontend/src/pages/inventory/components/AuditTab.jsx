@@ -161,7 +161,7 @@ export default function AuditTab() {
           <div>
             <label className="text-xs text-muted-foreground">Fecha Inicio</label>
             <input
-              type="date"
+             
               value={auditFilters.start_date}
               onChange={e => setAuditFilters(p => ({ ...p, start_date: e.target.value }))}
               className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
@@ -171,7 +171,7 @@ export default function AuditTab() {
           <div>
             <label className="text-xs text-muted-foreground">Fecha Fin</label>
             <input
-              type="date"
+             
               value={auditFilters.end_date}
               onChange={e => setAuditFilters(p => ({ ...p, end_date: e.target.value }))}
               className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"

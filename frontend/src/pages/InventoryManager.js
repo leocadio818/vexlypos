@@ -1010,7 +1010,7 @@ export default function InventoryManager() {
                   <div className="flex items-center gap-3">
                     <label className="text-sm">Hora de envío:</label>
                     <input
-                      type="time"
+                     
                       value={alertConfig.schedule_time || '08:00'}
                       onChange={e => setAlertConfig(p => ({ ...p, schedule_time: e.target.value }))}
                       className="px-3 py-1.5 bg-background border border-border rounded-lg text-sm"

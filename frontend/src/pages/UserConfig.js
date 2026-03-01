@@ -440,11 +440,11 @@ export default function UserConfig() {
             <Section title="Empleo" icon={Briefcase}>
               <Input label="Cedula / IMSS" value={user.social_security} onChange={e => setUser(p => ({ ...p, social_security: e.target.value }))} />
               <div className="grid grid-cols-2 gap-3">
-                <Input label="Fecha Inicio" type="date" value={user.start_date} onChange={e => setUser(p => ({ ...p, start_date: e.target.value }))} />
-                <Input label="Fecha Fin" type="date" value={user.end_date} onChange={e => setUser(p => ({ ...p, end_date: e.target.value }))} />
+                <Input label="Fecha Inicio" value={user.start_date} onChange={e => setUser(p => ({ ...p, start_date: e.target.value }))}  />
+                <Input label="Fecha Fin" value={user.end_date} onChange={e => setUser(p => ({ ...p, end_date: e.target.value }))}  />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Input label="Fecha Nacimiento" type="date" icon={Calendar} value={user.birth_date} onChange={e => setUser(p => ({ ...p, birth_date: e.target.value }))} />
+                <Input label="Fecha Nacimiento" icon={Calendar} value={user.birth_date} onChange={e => setUser(p => ({ ...p, birth_date: e.target.value }))}  />
                 <Input label="Tarjeta #" value={user.card_number} readOnly placeholder="Sin asignar" />
               </div>
             </Section>
