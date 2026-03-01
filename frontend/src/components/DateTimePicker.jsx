@@ -170,7 +170,7 @@ export function NeoTimePicker({ value, onChange, className = '', placeholder = '
   // Display value in chosen format
   const displayValue = useMemo(() => {
     if (!value) return '';
-    if (!use12h) return value;
+    if (!is12h) return value;
     const h = parseInt(value.split(':')[0]);
     const m = value.split(':')[1];
     const period = h >= 12 ? 'PM' : 'AM';
