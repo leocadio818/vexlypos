@@ -215,10 +215,10 @@ export default function Reservations() {
             <input value={dialog.phone} onChange={e => setDialog(p => ({ ...p, phone: e.target.value }))}
               placeholder="Telefono" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 outline-none" data-testid="res-phone" />
             <div className="grid grid-cols-2 gap-2">
-              <input type="date" value={dialog.date} onChange={e => setDialog(p => ({ ...p, date: e.target.value }))}
-                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:border-white/30 outline-none" />
-              <input type="time" value={dialog.time} onChange={e => setDialog(p => ({ ...p, time: e.target.value }))}
-                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:border-white/30 outline-none" />
+              <NeoDatePicker value={dialog.date} onChange={e => setDialog(p => ({ ...p, date: e.target.value }))}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono" />
+              <NeoTimePicker value={dialog.time} onChange={e => setDialog(p => ({ ...p, time: e.target.value }))}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
