@@ -411,6 +411,17 @@ async def list_reservations(date: Optional[str] = Query(None), status: Optional[
 
 @router.post("/reservations")
 async def create_reservation(input: ReservationInput):
+    table_ids = input.table_ids if hasattr(input, 'table_ids') and input.table_ids else []
+    if input.table_id and input.table_id not in table_ids:
+        table_ids.append(input.table_id)
+    
+    # Resolve table numbers
+    table_numbers = []
+    for tid in table_ids:
+        t = await db.tables.find_one({"id": tid}, {"_id": 0, "number": 1})
+        if t:
+            table_numbers.append(t["number"])
+    
     doc = {
         "id": gen_id(),
         "customer_name": input.customer_name,
@@ -418,9 +429,13 @@ async def create_reservation(input: ReservationInput):
         "party_size": input.party_size,
         "reservation_date": input.reservation_date,
         "reservation_time": input.reservation_time,
-        "table_id": input.table_id,
+        "table_ids": table_ids,
+        "table_numbers": table_numbers,
+        "area_id": input.area_id if hasattr(input, 'area_id') else "",
         "notes": input.notes,
         "status": "confirmed",
+        "activation_minutes": input.activation_minutes if hasattr(input, 'activation_minutes') else 60,
+        "tolerance_minutes": input.tolerance_minutes if hasattr(input, 'tolerance_minutes') else 15,
         "created_at": now_iso()
     }
     await db.reservations.insert_one(doc)
