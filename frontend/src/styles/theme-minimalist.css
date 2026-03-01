@@ -539,6 +539,14 @@ body.theme-minimalist:not(.neo-dark) p[style*="color"],
 body.theme-minimalist:not(.neo-dark) div[style*="color"] {
   color: hsl(var(--foreground)) !important;
 }
+/* BUT preserve text color inside colored bg buttons */
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] span[style*="color"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] p[style*="color"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-blue-"] span,
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] span,
+body.theme-minimalist:not(.neo-dark) button[class*="bg-primary"] {
+  color: white !important;
+}
 
 /* Make inline bg colors more visible with subtle border */
 body.theme-minimalist:not(.neo-dark) [style*="backgroundColor"] {
