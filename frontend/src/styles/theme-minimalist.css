@@ -161,11 +161,20 @@ body.theme-minimalist [class*="bg-slate-8"] {
   background-color: var(--neo-bg) !important;
 }
 
+/* bg-card opacity variants */
+body.theme-minimalist [class*="bg-card/"] { background-color: var(--neo-bg) !important; }
+
 /* Override responsive border-white variants */
 body.theme-minimalist:not(.neo-dark) [class*="border-white/"] { border-color: transparent !important; }
 
 body.theme-minimalist .bg-gradient-to-br {
   background: var(--neo-bg) !important;
+}
+
+/* Outline buttons: ensure they use neo-bg not a stale background */
+body.theme-minimalist button.bg-background,
+body.theme-minimalist [class*="bg-background"] {
+  background-color: var(--neo-bg) !important;
 }
 
 
