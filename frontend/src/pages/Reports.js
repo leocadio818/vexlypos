@@ -518,6 +518,13 @@ export default function Reports() {
     setLoading(true);
     setSelectedReport(reportId);
     
+    // Self-managed reports (handle their own data fetching)
+    if (reportId === 'reservations') {
+      setReportData(null);
+      setLoading(false);
+      return;
+    }
+    
     const endpoints = {
       'daily-close': '/reports/daily-sales',
       'cash-close': '/reports/cash-close',
