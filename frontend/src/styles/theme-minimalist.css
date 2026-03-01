@@ -326,15 +326,19 @@ body.theme-minimalist [data-radix-popper-content-wrapper] > div {
 body.theme-minimalist:not(.neo-dark) [role="dialog"] * {
   color: hsl(var(--foreground));
 }
-/* Preserve colored text inside dialogs */
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-green"],
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-red"],
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-blue"],
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-primary"],
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-orange"],
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="text-amber"] {
-  color: revert;
-}
+/* Preserve button text colors inside dialogs */
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-primary"] * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-green-5"] * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-red-5"] * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-gradient"] * { color: white; }
+/* Keep strong colored text readable (500+ shades) */
+body.theme-minimalist:not(.neo-dark) [role="dialog"] .text-green-500,
+body.theme-minimalist:not(.neo-dark) [role="dialog"] .text-green-600 { color: #059669 !important; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] .text-red-500,
+body.theme-minimalist:not(.neo-dark) [role="dialog"] .text-red-600 { color: #dc2626 !important; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] .text-blue-500,
+body.theme-minimalist:not(.neo-dark) [role="dialog"] .text-blue-600 { color: #2563eb !important; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] .text-primary { color: hsl(var(--primary)) !important; }
 
 
 /* ═══════════════════════════════════════════════════════════════
