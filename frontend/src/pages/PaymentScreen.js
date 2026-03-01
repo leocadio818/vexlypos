@@ -1445,7 +1445,8 @@ export default function PaymentScreen() {
           
           <button
             onClick={handleExact}
-            className={`w-full ${isMobile ? 'h-12' : 'h-14'} rounded-2xl bg-[#D4C5F0] text-[#3b1f6e] font-oswald font-bold transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border-2 border-[#D4C5F0]/80 hover:border-[#b8a4e0]`}
+            className={`w-full ${isMobile ? 'h-12' : 'h-14'} rounded-2xl font-oswald font-bold transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border-2`}
+            style={{ backgroundColor: exactAmountColor, borderColor: exactAmountColor + '80', color: '#1f2937' }}
           >
             <Sparkles size={18} />
             MONTO EXACTO ({formatMoney(billTotal)})
