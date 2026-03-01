@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from '@/components/ui/badge';
 import { suppliersAPI, formatMoney } from '@/lib/api';
 import axios from 'axios';
-import { 
 import { NumericInput } from '@/components/NumericKeypad';
+import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend, AreaChart, Area
 } from 'recharts';
