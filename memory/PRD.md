@@ -51,7 +51,7 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
   - Fixed dark bg-slate-900 override for modals/dialogs
   - Comprehensive light mode text contrast: pastel color overrides (50/100/200-400 shades → darker), gradient text → solid, headers enforced dark
   - Added bg-background to Shadcn Button outline variant for proper neumorphism
-  - Testing: iterations 95-100, final 85%→100% text contrast in light mode
+- **Numeric Keypad Component**: Created reusable `NumericKeypad.jsx` with modal popup, decimal support, Cancelar/Confirmar buttons. Replaced ALL `type="number"` inputs across 14+ files (Settings, Inventory, CashRegister, ProductConfig, etc.) EXCEPT NcfTab (RNC fields preserved as-is)
 
 ## File Structure
 ```
