@@ -682,6 +682,8 @@ export default function Reports() {
         return <SystemAuditReport data={reportData} auditEventFilter={auditEventFilter} onFilterChange={setAuditEventFilter} onReload={() => loadReport('system-audit')} />;
       case 'discounts':
         return <DiscountsReport data={reportData} />;
+      case 'reservations':
+        return <ReservationsReport />;
       default:
         return <pre className="text-xs overflow-auto">{JSON.stringify(reportData, null, 2)}</pre>;
     }
