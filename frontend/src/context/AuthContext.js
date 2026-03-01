@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { authAPI, seedAPI, processOfflineQueue } from '@/lib/api';
+import { useTheme } from '@/context/ThemeContext';
 import useDeviceDetect from '@/hooks/useDeviceDetect';
 import offlineDB from '@/lib/offlineDB';
 import { toast } from 'sonner';
