@@ -266,6 +266,27 @@ async def get_me(user=Depends(get_current_user)):
     return u
 
 
+@router.put("/users/me/ui-preferences")
+async def update_ui_preferences(input: dict, user=Depends(get_current_user)):
+    """Save UI preferences (theme, color_mode) for the current user"""
+    prefs = {
+        "theme": input.get("theme", "original"),
+        "color_mode": input.get("color_mode", "light"),
+        "neo_bg_color": input.get("neo_bg_color"),
+        "neo_dark_bg": input.get("neo_dark_bg"),
+        "neo_glow_color": input.get("neo_glow_color"),
+        "neo_accent_color": input.get("neo_accent_color"),
+    }
+    # Remove None values
+    prefs = {k: v for k, v in prefs.items() if v is not None}
+    await db.users.update_one(
+        {"id": user["user_id"]},
+        {"$set": {"ui_preferences": prefs}}
+    )
+    return {"ok": True, "ui_preferences": prefs}
+
+
+
 @router.get("/users")
 async def list_users(user=Depends(get_current_user)):
     caller_level = await get_role_level_async(user.get("role", "waiter"))
