@@ -259,7 +259,7 @@ export function ThemeProvider({ children }) {
   const isMinimalist = activeThemeMode === 'minimalist';
   const isNeoDark = isMinimalist && neoMode === 'dark';
 
-  // Apply user's ui_preferences from login
+  // Apply user's ui_preferences from login (WINS over global theme)
   const applyUserPreferences = useCallback((prefs) => {
     if (!prefs || Object.keys(prefs).length === 0) return;
     const newMode = prefs.theme || 'original';
@@ -275,6 +275,17 @@ export function ThemeProvider({ children }) {
         ...(prefs.neo_accent_color ? { neoAccentColor: prefs.neo_accent_color } : {}),
       }));
     }
+    // Mark user has personal prefs (prevents fetchTheme from overwriting)
+    localStorage.setItem('pos_user_ui_prefs', JSON.stringify(prefs));
+  }, []);
+
+  // Reset theme on logout (clean slate for next user)
+  const resetThemeOnLogout = useCallback(() => {
+    localStorage.removeItem('pos_user_ui_prefs');
+    localStorage.removeItem('pos_theme_cache');
+    setActiveThemeMode('original');
+    setNeoMode('light');
+    setNeoColors(defaultNeoColors);
   }, []);
 
   return (
@@ -284,7 +295,7 @@ export function ThemeProvider({ children }) {
       activeThemeMode, setActiveThemeMode,
       neoColors, setNeoColors, updateNeoColor,
       neoMode, setNeoMode,
-      saveAllThemeSettings, applyUserPreferences,
+      saveAllThemeSettings, applyUserPreferences, resetThemeOnLogout,
       loading, cssVariables, glassStyles, defaultTheme,
       isMinimalist, isNeoDark,
       refetchTheme: fetchTheme,
