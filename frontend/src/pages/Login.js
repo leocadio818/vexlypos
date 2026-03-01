@@ -53,10 +53,13 @@ export default function Login() {
         body: JSON.stringify({ pin }),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.detail || 'Error'); setPin(''); setLoading(false); return; }
+      if (!res.ok) { toast.error(data.detail || 'Error al procesar'); setPin(''); setLoading(false); return; }
       setAttendanceResult(data);
       setPin('');
-    } catch { toast.error('Error de conexion'); }
+    } catch (err) {
+      console.error('Attendance error:', err);
+      toast.error('Error de conexion. Verifica tu internet.');
+    }
     setLoading(false);
   };
 
