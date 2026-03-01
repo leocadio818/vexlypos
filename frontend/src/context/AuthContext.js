@@ -223,6 +223,7 @@ export function AuthProvider({ children }) {
     } catch {}
     localStorage.removeItem('pos_token');
     setUser(null);
+    resetThemeOnLogout();
   };
 
   const ensureSeed = async () => {
