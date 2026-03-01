@@ -2948,6 +2948,15 @@ export default function OrderScreen() {
         </DialogContent>
       </Dialog>
 
+      {/* Transfer Table Modal */}
+      <TransferTableModal
+        open={transferDialogOpen}
+        onClose={(success) => { setTransferDialogOpen(false); if (success) navigate('/tables'); }}
+        tableId={tableId}
+        currentUserId={user?.id}
+        currentUserName={user?.name}
+      />
+
     </div>
   );
 }
