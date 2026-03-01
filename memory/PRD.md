@@ -8,101 +8,64 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - **MongoDB**: Exclusive engine for operational data (products, modifiers, tables, users, inventory, orders, theme config)
 - This "Polyglot Persistence" architecture is permanently frozen by user directive
 
-## Core Requirements
-- Shift management (Cierre X / Cierre Z) with business validation
-- Multi-payment method support (cash, card, transfer, USD, EUR)
-- Tax handling (ITBIS, Propina Legal) with manual overrides
-- NCF fiscal invoice management
-- Discount application and reporting
-- Kitchen display system
-- Inventory management with recipes
-- Comprehensive reporting system
-- Multi-theme visual system (Original Glass + Minimalist Neumorphic)
-
 ## What's Been Implemented
 
-### Completed (Previous Sessions)
-- Shift/Day Closure Logic with correct validation rules
-- Mixed Payment Bug Fix (proper distribution in billing.py)
-- Dashboard & Cash Register UI with all payment methods + discounts
-- UTC to Local Time correction across all prints
-- Real-time Report Filtering
-- Payment Screen fixes (tax override, visual feedback)
-- Discount totals in Cierre X/Z reports
-- Backend endpoint GET /api/reports/discounts
-- Discount Report Frontend (DiscountsReport.jsx)
-- Modifier Routes Cleanup (removed duplicates from server.py)
-- Architecture Resolution: Polyglot Persistence frozen by user directive
+### Multi-Theme System (COMPLETE - 2026-03-01)
+- **3 Visual Modes**: Original (dark glass), Minimalist Light (off-white neumorphic), Minimalist Dark (navy neumorphic)
+- **Global Neumorphic 3D**: Buttons, cards, inputs, sidebar, tabs, dialogs — ALL have 3D depth + LED glow
+- **Dark/Light Toggle**: Claro/Oscuro within minimalist, with customizable colors (bg, glow, accent)
+- **Persistence**: localStorage cache for instant F5 apply (no FOUC) + MongoDB backend save
+- **Text Contrast**: Comprehensive CSS overrides for ALL pastel colors, gradient text, inline colors, opacity variants
+- **Pastel Payment Colors**: Soft mint/sky/peach/lavender palette, editable from Settings, NO brand SVGs
+- **Configurable "Monto Exacto"**: Color picker in Settings > Ventas
+- **Category/Product Buttons**: Solid colors (A0 opacity), larger on tablet/PC, name-top/price-bottom layout
+- **"Categorias" Back Button**: Large tactile orange button with arrow
+- **Clean Modals**: No backdrop blur, solid edges, all text readable
 
-### Completed (2026-02-28 - Current Session)
-- **Multi-Theme Engine**: Implemented complete multi-theme architecture with three visual modes:
-  - **Tema Original**: Dark glassmorphism with neon effects (preserved exactly)
-  - **Tema Minimalista Claro**: Light neumorphic (off-white, 3D buttons, subtle LED glow)
-  - **Tema Minimalista Oscuro**: Dark navy neumorphic (dramatic LED glow, 3D depth)
-- **Global Neumorphic 3D**: CSS auto-applies to ALL elements: buttons, cards, inputs, sidebar, tabs, dialogs, toasts, table map
-- **Dark/Light Toggle**: Within minimalist theme, users choose between Claro/Oscuro backgrounds. Glow is dramatically more visible on dark bg
-- **Color Customizer**: Separate bg colors for light/dark, shared glow + accent. Persists to MongoDB
-- **Modal Contrast Fix**: Payment keypad numbers now clearly visible in both modes
-- **ThemeContext.js**: neoMode ('light'|'dark'), neoDarkBg, body.style CSS vars, neo-dark class
-- **PaymentScreen Neumorphic Fix**: PaymentScreen now uses conditional theme-aware backgrounds instead of hardcoded dark gradient. Loading/error states also adapted. Works correctly in both Claro (off-white) and Oscuro (navy) modes
-- **Bug Fixes (2026-02-28)**:
-  - Fixed neoMode persistence: Dark mode now survives page refresh
-  - Fixed invisible tab/button text: Darker muted-foreground, explicit foreground color on tabs
-  - Fixed dark bg-slate-900 override for modals/dialogs
-  - Comprehensive light mode text contrast: pastel color overrides (50/100/200-400 shades → darker), gradient text → solid, headers enforced dark
-  - Added bg-background to Shadcn Button outline variant for proper neumorphism
-- **Numeric Keypad Component**: Created reusable `NumericKeypad.jsx` with modal popup, decimal support, Cancelar/Confirmar buttons. Replaced ALL `type="number"` inputs across 14+ files (Settings, Inventory, CashRegister, ProductConfig, etc.) EXCEPT NcfTab (RNC fields preserved as-is)
-
-## File Structure
-```
-/app
-├── backend/
-│   ├── models/
-│   ├── routers/
-│   │   ├── billing.py, config.py, pos_sessions.py
-│   │   ├── reports.py, orders.py, business_days.py
-│   │   └── ... (auth, kitchen, inventory, etc.)
-│   ├── server.py
-│   └── utils/
-└── frontend/src/
-    ├── context/ThemeContext.js          # Multi-theme provider
-    ├── styles/theme-minimalist.css     # Neumorphic CSS (NEW)
-    ├── components/
-    │   ├── Layout.js                   # Conditional theme sidebar
-    │   └── GlassUI.js
-    ├── pages/
-    │   ├── Login.js                    # Dual-theme login
-    │   ├── settings/
-    │   │   ├── ThemeTab.js             # Appearance tab (REWRITTEN)
-    │   │   └── index.js               # Tab renamed to Apariencia
-    │   ├── reports/DiscountsReport.jsx
-    │   └── ... (Dashboard, CashRegister, etc.)
-    └── index.css                       # Imports theme-minimalist.css
-```
-
-## Prioritized Backlog
-
-### P0 - Traceability Bridge (COMPLETED 2026-03-01)
+### P0 Traceability Bridge (COMPLETE - 2026-03-01)
 - Bidirectional cross-reference between MongoDB and Supabase on every payment
 - MongoDB `bills` → `supabase_transaction_id`, `supabase_movement_ref`
 - Supabase `cash_movements.description` → `[BILL:{mongodb_bill_id}]` parseable format
-- Verified end-to-end: Bill d9c282f5 ↔ Movement bdf02277 ↔ NCF B0100000029
 
-### P1 - Upcoming
-- Implement employee time clock (Reloj de entrada/salida)
-- Implement automatic sending of invoices via email
+### Dashboard Enhancements (COMPLETE - 2026-03-01)
+- Payment breakdown cards: Tarjeta, Transferencia, Propinas (Jornada data)
+- Bug fix: "Ordenes Activas" now excludes `closed` status orders
 
-### P2 - Future
-- DGII Report 608 (NCF Anulados)
-- Cache product images for offline access
-- Compile print_agent_pro.py into standalone Windows executable
-- Export Audit Trail to Excel/CSV
+### Numeric Keypad (COMPLETE - 2026-03-01)
+- Reusable `NumericKeypad.jsx` component with modal popup, decimal support
+- Replaced ALL `type="number"` inputs across 14+ files (except NcfTab RNC fields)
+
+### Previous Session Work
+- Shift/Day Closure Logic, Mixed Payment Bug Fix
+- Dashboard & Cash Register UI, UTC to Local Time correction
+- Payment Screen fixes, Discount reporting, Modifier cleanup
+- Architecture Resolution: Polyglot Persistence frozen
+
+## Key Files
+```
+/app/frontend/src/
+├── context/ThemeContext.js         # Multi-theme + localStorage persistence
+├── styles/theme-minimalist.css    # ALL neumorphic CSS + contrast fixes
+├── components/
+│   ├── Layout.js                  # Conditional theme bg (dark/light aware)
+│   ├── NumericKeypad.jsx          # Reusable numeric input component
+│   └── GlassUI.js
+├── pages/
+│   ├── Login.js                   # Dual-theme login (glass vs neumorphic)
+│   ├── Dashboard.js               # Payment breakdown + fixed active orders
+│   ├── PaymentScreen.js           # Pastel buttons, configurable exact amount
+│   ├── OrderScreen.js             # Larger buttons, back button, theme-aware
+│   └── settings/
+│       ├── ThemeTab.js            # Apariencia: theme toggle + color pickers
+│       ├── VentasTab.js           # Exact amount color + numeric keypad
+│       └── index.js
+```
 
 ## Credentials
 - Admin PIN: 10000
-- Cajero (Luis) PIN: 4321
+- Cajero PIN: 4321
 
-## 3rd Party Integrations
-- MongoDB
-- Supabase (PostgreSQL)
-- rnc.megaplus.com.do (RNC validation)
+## Next Tasks
+- **P1**: Reloj de entrada/salida de empleados
+- **P1**: Envío automático de facturas por email
+- **P2**: DGII Report 608, Cache imágenes offline, Export Audit Trail
