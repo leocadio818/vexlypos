@@ -336,10 +336,10 @@ async def transfer_tables(input: TransferInput, user=Depends(get_current_user)):
         )
         
         if result.modified_count > 0:
-            # Update table ownership
+            # Update table ownership AND ensure status is occupied
             await db.tables.update_one(
                 {"id": tid},
-                {"$set": {"owner_id": input.target_user_id, "owner_name": target_user["name"]}}
+                {"$set": {"owner_id": input.target_user_id, "owner_name": target_user["name"], "status": "occupied"}}
             )
             table = await db.tables.find_one({"id": tid}, {"_id": 0, "number": 1})
             transferred.append({"table_id": tid, "table_number": table.get("number", "?"), "orders_moved": result.modified_count})
