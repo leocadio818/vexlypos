@@ -88,6 +88,7 @@ ALL_PERMISSIONS = {
     "view_reports": "Ver Reportes", "export_dgii": "Exportar DGII",
     "open_shift": "Abrir Turno", "close_shift": "Cerrar Turno", "close_day": "Cierre de Dia",
     "release_reserved_table": "Desbloquear Mesa Reservada",
+    "transfer_tables": "Transferir Mesas entre Usuarios",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───
