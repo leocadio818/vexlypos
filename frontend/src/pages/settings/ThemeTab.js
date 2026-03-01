@@ -46,8 +46,10 @@ export default function ThemeTab() {
     neoColors, updateNeoColor, saveAllThemeSettings, isMinimalist,
     neoMode, setNeoMode, isNeoDark,
   } = useTheme();
+  const { user } = useAuth();
 
   const [saving, setSaving] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
@@ -55,6 +57,26 @@ export default function ThemeTab() {
     setSaving(false);
     if (ok) toast.success('Tema guardado correctamente');
     else toast.error('Error al guardar el tema');
+  };
+
+  const handleSaveAsMyPreference = async () => {
+    setSavingProfile(true);
+    try {
+      const API = process.env.REACT_APP_BACKEND_URL + '/api';
+      const token = localStorage.getItem('pos_token');
+      await axios.put(`${API}/users/me/ui-preferences`, {
+        theme: activeThemeMode,
+        color_mode: neoMode,
+        neo_bg_color: neoColors.neoBgColor,
+        neo_dark_bg: neoColors.neoDarkBg,
+        neo_glow_color: neoColors.neoGlowColor,
+        neo_accent_color: neoColors.neoAccentColor,
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(`Preferencia guardada para ${user?.name || 'tu perfil'}`);
+    } catch {
+      toast.error('Error al guardar preferencia');
+    }
+    setSavingProfile(false);
   };
 
   const applyGlassPreset = (preset) => {
