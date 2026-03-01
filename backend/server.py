@@ -736,8 +736,8 @@ async def update_category_channels(input: dict):
 async def list_reservations(date: Optional[str] = Query(None)):
     query = {}
     if date:
-        query = {"date": date}
-    return await db.reservations.find(query, {"_id": 0}).sort("time", 1).to_list(200)
+        query = {"$or": [{"reservation_date": date}, {"date": date}]}
+    return await db.reservations.find(query, {"_id": 0}).sort("reservation_time", 1).to_list(200)
 
 @api.post("/reservations")
 async def create_reservation(input: dict):
