@@ -78,11 +78,9 @@ body.theme-minimalist.neo-dark .border-white\/10,
 body.theme-minimalist.neo-dark .border-white\/20,
 body.theme-minimalist.neo-dark .border-white\/30 { border-color: rgba(255,255,255,0.08) !important; }
 
-/* Dark: glass backgrounds → dark neo bg */
-body.theme-minimalist.neo-dark .bg-white\/5,
-body.theme-minimalist.neo-dark .bg-white\/10,
-body.theme-minimalist.neo-dark .bg-white\/15,
-body.theme-minimalist.neo-dark .bg-white\/20 { background-color: var(--neo-bg) !important; }
+/* Dark: glass backgrounds → dark neo bg (attribute selectors) */
+body.theme-minimalist.neo-dark [class*="bg-white/"] { background-color: var(--neo-bg) !important; }
+body.theme-minimalist.neo-dark [class*="bg-background/"] { background-color: var(--neo-bg) !important; }
 
 
 /* ── Light Mode: Scrollbar ── */
