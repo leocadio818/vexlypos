@@ -72,8 +72,8 @@ export default function Reservations() {
       await axios.put(`${API}/reservations/${dialog.editId}`, { 
         customer_name: dialog.customer_name,
         phone: dialog.phone,
-        date: dialog.date,
-        time: dialog.time,
+        reservation_date: dialog.date,
+        reservation_time: dialog.time,
         party_size: dialog.party_size,
         table_ids: dialog.table_ids,
         area_id: dialog.area_id,
