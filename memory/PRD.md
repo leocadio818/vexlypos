@@ -77,3 +77,10 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - **P1**: Reloj de entrada/salida de empleados
 - **P1**: Envío automático de facturas por email
 - **P2**: DGII Report 608, Cache imágenes offline, Export Audit Trail
+
+### Mobile Responsive Fixes (COMPLETE - 2026-03-01)
+- Reservations card: `min-w-0` + `shrink-0` + `flex-wrap` — buttons never clip on mobile
+- DateTimePicker: `w-[calc(100vw-32px)]` responsive popover
+- TimePicker: `max-w-[400px]` large touchscreen buttons `py-3 text-base`
+- Calendar: month/year quick picker, `max-w-[360px]`
+- Exchange rate badges: clean style with method colors (no bg-white/30 dark blobs)
