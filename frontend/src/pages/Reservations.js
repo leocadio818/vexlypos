@@ -123,7 +123,7 @@ export default function Reservations() {
   // Group by time slots
   const timeSlots = {};
   reservations.forEach(r => {
-    const slot = r.time?.slice(0, 5) || '?';
+    const slot = (r.reservation_time || r.time || '?').slice(0, 5);
     if (!timeSlots[slot]) timeSlots[slot] = [];
     timeSlots[slot].push(r);
   });
