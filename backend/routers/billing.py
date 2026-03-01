@@ -571,13 +571,14 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                     # Create cash_movement record for this sale
                     if len(payments_list) > 1:
                         pmt_names = ", ".join([p["payment_method_name"] for p in payments_list])
-                        pmt_description = f"Venta {bill.get('ncf', bill_id[:8])} - Pago mixto: {pmt_names}"
+                        pmt_description = f"[BILL:{bill_id}] Venta {bill.get('ncf', bill_id[:8])} - Pago mixto: {pmt_names}"
                     else:
-                        pmt_description = f"Venta {bill.get('ncf', bill_id[:8])} - {primary_payment_method_name}"
+                        pmt_description = f"[BILL:{bill_id}] Venta {bill.get('ncf', bill_id[:8])} - {primary_payment_method_name}"
                     
+                    supabase_movement_id = gen_id()
                     movement_ref = f"MOV-{datetime.now().year}-{gen_id()[:5].upper()}"
                     movement_data = {
-                        "id": gen_id(),
+                        "id": supabase_movement_id,
                         "ref": movement_ref,
                         "session_id": session_id,
                         "movement_type": "sale",
@@ -589,6 +590,12 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                         "created_by_name": user["name"]
                     }
                     supabase_client.table("cash_movements").insert(movement_data).execute()
+                    
+                    # ── TRACEABILITY BRIDGE: Save Supabase reference in MongoDB bill ──
+                    await db.bills.update_one({"id": bill_id}, {"$set": {
+                        "supabase_transaction_id": supabase_movement_id,
+                        "supabase_movement_ref": movement_ref,
+                    }})
                     
             except Exception as e:
                 print(f"Warning: Could not update Supabase pos_session: {e}")
