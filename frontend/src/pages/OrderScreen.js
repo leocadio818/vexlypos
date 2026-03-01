@@ -1958,7 +1958,7 @@ export default function OrderScreen() {
                     onMouseLeave={handleTouchEnd}
                     disabled={isOutOfStock}
                     data-testid={`product-${product.id}`}
-                    className={`group relative border-2 transition-all rounded-xl flex flex-col ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[5.625rem] text-left ${
+                    className={`group relative border-2 transition-all rounded-xl flex flex-col justify-between ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[5.625rem] text-left ${
                       isOutOfStock 
                         ? 'bg-card/50 border-red-500/50 opacity-60 cursor-not-allowed' 
                         : isLowStock
