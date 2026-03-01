@@ -33,6 +33,7 @@ export default function OrderScreen() {
   const { tableId } = useParams();
   const navigate = useNavigate();
   const { user, largeMode } = useAuth();
+  const { isMinimalist } = useTheme();
   const [table, setTable] = useState(null);
   const [order, setOrder] = useState(null);
   const [categories, setCategories] = useState([]);
