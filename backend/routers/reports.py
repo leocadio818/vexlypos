@@ -159,12 +159,12 @@ async def dashboard():
     
     hourly_sales = [{"hour": v["hour"], "total": round(v["total"], 2)} for v in hourly_data.values()]
     
-    # Open tables with consumption
+    # Open tables with consumption (occupied OR billed OR with active orders)
     open_tables_list = []
-    occupied = [t for t in tables if t.get("status") == "occupied"]
-    if occupied:
-        all_orders = await db.orders.find({"status": {"$nin": ["cancelled", "paid"]}}, {"_id": 0}).to_list(500)
-        for t in occupied:
+    active_tables = [t for t in tables if t.get("status") in ("occupied", "billed") or t["id"] in active_table_ids]
+    if active_tables:
+        all_orders = await db.orders.find({"status": {"$nin": ["cancelled", "paid", "closed"]}}, {"_id": 0}).to_list(500)
+        for t in active_tables:
             t_id = t.get("id", "")
             t_num = t.get("number", "?")
             # Find active orders for this table
