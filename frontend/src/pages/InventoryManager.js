@@ -838,8 +838,8 @@ export default function InventoryManager() {
                   <label className="text-sm font-medium">Cantidad</label>
                   <input
                     type="number"
-                    step="0.01"
-                    min="0"
+                   
+                   
                     value={differenceDialog.data.quantity || ''}
                     onChange={e => setDifferenceDialog(p => ({ ...p, data: { ...p.data, quantity: e.target.value } }))}
                     className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"

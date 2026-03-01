@@ -1224,7 +1224,7 @@ export default function ProductConfig() {
               <label className="text-xs text-muted-foreground mb-1 block">Selecciones Mínimas</label>
               <input 
                 type="number"
-                min="0"
+               
                 value={modAssignDialog.min_selections}
                 onChange={e => setModAssignDialog(p => ({ ...p, min_selections: parseInt(e.target.value) || 0 }))}
                 className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
@@ -1240,7 +1240,7 @@ export default function ProductConfig() {
               <label className="text-xs text-muted-foreground mb-1 block">Selecciones Máximas</label>
               <input 
                 type="number"
-                min="1"
+               
                 value={modAssignDialog.max_selections}
                 onChange={e => setModAssignDialog(p => ({ ...p, max_selections: parseInt(e.target.value) || 1 }))}
                 className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
@@ -1329,7 +1329,7 @@ export default function ProductConfig() {
                         <div className="flex items-center gap-1 shrink-0">
                           <span className="text-[10px] text-muted-foreground">RD$</span>
                           <input
-                            type="number" min="0" step="0.01"
+                            type="number"
                             value={opt.price || 0}
                             onChange={e => updateOption(idx, 'price', parseFloat(e.target.value) || 0)}
                             onBlur={() => persistOption(options[idx])}

@@ -399,7 +399,7 @@ export default function Billing() {
                       onChange={e => setPayAmounts(p => ({ ...p, [method.name]: e.target.value }))}
                       onFocus={() => setActivePayMethod(method.name)}
                       type="number" 
-                      step="0.01" 
+                      
                       placeholder="0.00"
                       className={`flex-1 bg-background border rounded-lg px-2 py-1.5 text-sm font-oswald text-right ${isActive ? 'border-primary' : 'border-border'}`}
                       data-testid={`pay-amount-${method.id}`} />

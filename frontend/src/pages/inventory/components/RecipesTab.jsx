@@ -855,9 +855,9 @@ export default function RecipesTab({
                         value={targetMargin}
                         onChange={e => setTargetMargin(parseFloat(e.target.value) || 0)}
                         className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-center font-mono"
-                        min="0"
+                       
                         max="99"
-                        step="1"
+                       
                         data-testid="target-margin-input"
                       />
                       <span className="text-muted-foreground">%</span>
@@ -879,8 +879,8 @@ export default function RecipesTab({
                         value={customPrice}
                         onChange={e => setCustomPrice(parseFloat(e.target.value) || 0)}
                         className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-center font-mono"
-                        min="0"
-                        step="0.01"
+                       
+                       
                         data-testid="custom-price-input"
                       />
                     </div>

@@ -1036,7 +1036,7 @@ export default function PurchasesTab({
                           <label className="text-[10px] text-muted-foreground">Precio por {getUnitLabel(item.purchase_unit || selectedIng?.purchase_unit)}</label>
                           <input
                             type="number"
-                            step="0.01"
+                           
                             value={item.unit_price}
                             onChange={e => {
                               setPODialog(p => ({
@@ -1176,7 +1176,7 @@ export default function PurchasesTab({
                         <label className="text-xs text-muted-foreground">Precio real (por {getUnitLabel(purchaseUnit)})</label>
                         <input
                           type="number"
-                          step="0.01"
+                         
                           value={receiveDialog.items[idx]?.actual_unit_price || ''}
                           onChange={e => {
                             const items = [...receiveDialog.items];

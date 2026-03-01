@@ -218,7 +218,7 @@ export default function Reservations() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-white/50 mb-1 block">Personas</label>
-                <input type="number" value={dialog.party_size} onChange={e => setDialog(p => ({ ...p, party_size: parseInt(e.target.value) || 1 }))}
+                <NumericInput label="Valor" value={dialog.party_size} onChange={e => setDialog(p => ({ ...p, party_size: parseInt(e.target.value) || 1 }))}
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm font-oswald text-white focus:border-white/30 outline-none" />
               </div>
               <div>

@@ -240,7 +240,7 @@ export default function PrinterSettings() {
                             <Label className="text-xs text-slate-400 whitespace-nowrap">Copias:</Label>
                             <Input
                               type="number"
-                              min="1"
+                             
                               max="5"
                               value={channel.copies || 1}
                               onChange={(e) => setChannels(channels.map(c => 

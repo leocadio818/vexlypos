@@ -623,8 +623,8 @@ export default function IngredientsTab({
                   <span className="text-foreground">trae</span>
                   <input
                     type="number"
-                    step="0.01"
-                    min="0.01"
+                   
+                   
                     value={ingredientDialog.data?.dispatch_quantity || 1}
                     onChange={e => {
                       const dq = parseFloat(e.target.value) || 1;
@@ -887,7 +887,7 @@ export default function IngredientsTab({
                 </label>
                 <input
                   type="number"
-                  step="0.01"
+                 
                   value={ingredientDialog.data?.avg_cost ?? ''}
                   onChange={e => {
                     const cost = parseFloat(e.target.value) || 0;

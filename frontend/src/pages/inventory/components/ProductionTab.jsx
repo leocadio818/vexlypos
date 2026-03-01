@@ -490,8 +490,8 @@ export default function ProductionTab({
                 <label className="text-sm font-medium">Cantidad a producir *</label>
                 <input
                   type="number"
-                  step="0.1"
-                  min="0.1"
+                 
+                 
                   value={productionDialog.data?.quantity || 1}
                   onChange={e => setProductionDialog(p => ({ 
                     ...p, 
@@ -619,8 +619,8 @@ export default function ProductionTab({
               <label className="text-sm font-medium">Rendimiento (en unidad de despacho, ej: Onzas)</label>
               <input
                 type="number"
-                step="0.1"
-                min="0.1"
+               
+               
                 value={recipeDialog.yield_quantity}
                 onChange={e => setRecipeDialog(p => ({ ...p, yield_quantity: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
@@ -652,8 +652,8 @@ export default function ProductionTab({
                     />
                     <input
                       type="number"
-                      step="0.01"
-                      min="0.01"
+                     
+                     
                       value={ing.quantity}
                       onChange={e => setRecipeDialog(p => ({
                         ...p,
