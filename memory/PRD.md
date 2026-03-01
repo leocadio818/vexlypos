@@ -82,8 +82,11 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 
 ## Prioritized Backlog
 
-### P0 - Mandatory Architecture
-- Implement Traceability Bridge between MongoDB and Supabase (cross-reference IDs on payment)
+### P0 - Traceability Bridge (COMPLETED 2026-03-01)
+- Bidirectional cross-reference between MongoDB and Supabase on every payment
+- MongoDB `bills` → `supabase_transaction_id`, `supabase_movement_ref`
+- Supabase `cash_movements.description` → `[BILL:{mongodb_bill_id}]` parseable format
+- Verified end-to-end: Bill d9c282f5 ↔ Movement bdf02277 ↔ NCF B0100000029
 
 ### P1 - Upcoming
 - Implement employee time clock (Reloj de entrada/salida)
