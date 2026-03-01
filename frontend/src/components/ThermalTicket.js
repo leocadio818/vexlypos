@@ -83,8 +83,8 @@ const formatMoney = (amount) => {
   });
 };
 
-// Helper para formatear fecha
-const formatDateTime = (isoString) => {
+// Helper para formatear fecha con formato de hora configurable
+const formatDateTime = (isoString, timeFormat = '12h') => {
   if (!isoString) return '-';
   const date = new Date(isoString);
   return date.toLocaleString('es-DO', {
@@ -92,7 +92,8 @@ const formatDateTime = (isoString) => {
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: timeFormat === '12h'
   });
 };
 
