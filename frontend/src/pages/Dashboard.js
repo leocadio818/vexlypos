@@ -76,10 +76,6 @@ export default function Dashboard() {
               <Banknote size={16} className="text-green-400 mb-2" />
               <p className="text-[10px] text-white/50 uppercase tracking-wider">Efectivo</p>
               <p className="font-oswald text-2xl font-bold text-green-400 mt-1">{formatMoney(today.cash)}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <CreditCard size={10} className="text-blue-400" />
-                <span className="text-[10px] text-blue-400 font-oswald">Tarjeta: {formatMoney(today.card)}</span>
-              </div>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-bl-full" />
