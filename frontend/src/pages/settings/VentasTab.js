@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { NumericInput } from '@/components/NumericKeypad';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -235,11 +236,12 @@ export default function VentasTab() {
             </div>
             
             <div className="flex gap-2">
-              <input 
-                type="number"
+              <NumericInput 
                 value={quickAmountInput}
                 onChange={e => setQuickAmountInput(e.target.value)}
-                placeholder="Agregar monto (ej: 500, 1000, 5000)..."
+                placeholder="Agregar monto..."
+                label="Monto Rapido"
+                allowDecimal={false}
                 className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-sm font-oswald"
               />
               <Button 
@@ -378,8 +380,8 @@ export default function VentasTab() {
               {payDialog.currency !== 'DOP' && (
                 <div>
                   <label className="text-sm font-medium">Tasa de Cambio</label>
-                  <input type="number" step="0.01" value={payDialog.exchange_rate} onChange={e => setPayDialog({ ...payDialog, exchange_rate: e.target.value })}
-                    className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" />
+                  <NumericInput value={payDialog.exchange_rate} onChange={e => setPayDialog({ ...payDialog, exchange_rate: e.target.value })}
+                    label="Tasa de Cambio" className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" />
                 </div>
               )}
             </div>
