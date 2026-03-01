@@ -39,8 +39,9 @@ DEFAULT_PERMISSIONS = {
         "open_shift": True, "close_shift": True, "close_day": True,
         "release_reserved_table": True,
         "access_all_tables": True,
-        "reprint_receipt": True,  # Admin can always reprint
-        "can_manage_tax_override": True,  # Admin can override taxes with documentation
+        "reprint_receipt": True,
+        "can_manage_tax_override": True,
+        "transfer_tables": True,
     },
     "waiter": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
