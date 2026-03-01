@@ -152,6 +152,16 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => { fetchTheme(); }, [fetchTheme]);
 
+  // ── Cache to localStorage for instant apply on refresh ──
+  useEffect(() => {
+    localStorage.setItem('pos_theme_cache', JSON.stringify({
+      activeThemeMode, neoMode,
+      neoBgColor: neoColors.neoBgColor, neoDarkBg: neoColors.neoDarkBg,
+      neoGlowColor: neoColors.neoGlowColor, neoAccentColor: neoColors.neoAccentColor,
+    }));
+  }, [activeThemeMode, neoMode, neoColors]);
+
+
   // ── Apply / remove theme class + CSS variables ──
   useEffect(() => {
     const root = document.body; // Set on body for highest specificity over CSS declarations
