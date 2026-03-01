@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { useAuth } from '../../context/AuthContext';
-import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe } from 'lucide-react';
+import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
