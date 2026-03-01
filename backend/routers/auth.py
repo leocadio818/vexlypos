@@ -66,8 +66,8 @@ DEFAULT_PERMISSIONS = {
         "open_shift": True, "close_shift": True,
         "access_all_tables": True,
         "reprint_receipt": True,
+        "transfer_tables": True,
     },
-    "kitchen": {},
 }
 
 ALL_PERMISSIONS = {
