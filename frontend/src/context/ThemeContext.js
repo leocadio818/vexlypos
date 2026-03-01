@@ -84,28 +84,20 @@ export function ThemeProvider({ children }) {
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
-  // ── Fetch GLOBAL theme (only applies glass theme data, never overrides mode/colors if cached) ──
+  // ── Fetch GLOBAL theme (only loads glass gradient props, NEVER overwrites mode/colors) ──
   const fetchTheme = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/theme-config`);
       if (res.ok) {
         const data = await res.json();
         if (data && Object.keys(data).length > 0) {
-          // Always load glass theme props (gradient colors, etc.)
+          // Only load glass theme visual props (gradient colors etc.)
           setTheme(prev => ({ ...defaultTheme, ...data }));
-          
-          // NEVER overwrite activeThemeMode/neoMode if there's ANY cache
-          const hasCache = localStorage.getItem('pos_theme_cache') || localStorage.getItem('pos_user_ui_prefs');
-          if (!hasCache) {
-            setActiveThemeMode(data.activeThemeMode || 'original');
-            setNeoMode(data.neoMode || 'light');
-            setNeoColors({
-              neoBgColor: data.neoBgColor || defaultNeoColors.neoBgColor,
-              neoDarkBg: data.neoDarkBg || defaultNeoColors.neoDarkBg,
-              neoGlowColor: data.neoGlowColor || defaultNeoColors.neoGlowColor,
-              neoAccentColor: data.neoAccentColor || defaultNeoColors.neoAccentColor,
-            });
-          }
+          // Mode, neoMode, and neo colors are ONLY set by:
+          // 1. localStorage cache on init
+          // 2. applyUserPreferences on login
+          // 3. User interaction (avatar menu, settings)
+          // NEVER by fetchTheme
         }
       }
     } catch (err) {
