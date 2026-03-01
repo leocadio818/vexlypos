@@ -194,7 +194,7 @@ export function NeoTimePicker({ value, onChange, className = '', placeholder = '
         <div className="p-2 sm:p-3">
           <p className="text-xs font-bold text-muted-foreground mb-2 text-center">Seleccionar Hora</p>
 
-          {use12h ? (
+          {is12h ? (
             /* ── 12H Mode ── */
             <div>
               {/* AM/PM Toggle */}
