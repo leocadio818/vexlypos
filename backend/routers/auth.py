@@ -68,6 +68,7 @@ DEFAULT_PERMISSIONS = {
         "reprint_receipt": True,
         "transfer_tables": True,
     },
+    "kitchen": {},
 }
 
 ALL_PERMISSIONS = {
