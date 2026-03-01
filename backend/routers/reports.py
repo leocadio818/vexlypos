@@ -111,11 +111,15 @@ async def dashboard():
     # Operations data
     tables = await db.tables.find({}, {"_id": 0}).to_list(200)
     total_tables = len(tables)
-    occupied_tables = len([t for t in tables if t.get("status") == "occupied"])
-    occupancy_pct = round((occupied_tables / total_tables * 100) if total_tables > 0 else 0)
     
+    # Tables with active orders (regardless of table status)
     orders = await db.orders.find({"status": {"$nin": ["delivered", "cancelled", "paid", "closed"]}}, {"_id": 0}).to_list(500)
     active_orders = len(orders)
+    active_table_ids = set(o.get("table_id") for o in orders if o.get("table_id"))
+    
+    # Occupied = tables marked occupied OR tables with active orders
+    occupied_tables = len([t for t in tables if t.get("status") in ("occupied", "billed") or t["id"] in active_table_ids])
+    occupancy_pct = round((occupied_tables / total_tables * 100) if total_tables > 0 else 0)
     
     shifts = await db.shifts.find({"closed_at": None}, {"_id": 0}).to_list(50)
     open_shifts = len(shifts)
