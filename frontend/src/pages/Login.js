@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { Delete, LogIn } from 'lucide-react';
+import { Delete, LogIn, Clock, LogOut as LogOutIcon } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 // Neon glow colors for PIN dots
 const DOT_COLORS = [
