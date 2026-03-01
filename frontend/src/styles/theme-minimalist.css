@@ -37,6 +37,7 @@ body.theme-minimalist {
   --neo-accent: #1e293b;
 
   background-color: var(--neo-bg) !important;
+  color: #1e293b;
 }
 
 
