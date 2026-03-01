@@ -488,6 +488,13 @@ body.theme-minimalist a {
   color: hsl(var(--foreground));
 }
 
+/* Ensure headings are always readable */
+body.theme-minimalist h1,
+body.theme-minimalist h2,
+body.theme-minimalist h3 {
+  color: hsl(var(--foreground)) !important;
+}
+
 /* bg-white → adapt to theme bg */
 body.theme-minimalist .bg-white,
 body.theme-minimalist [class*="bg-white "] {
