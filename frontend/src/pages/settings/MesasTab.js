@@ -3,6 +3,7 @@ import { useSettings } from './SettingsContext';
 import { areasAPI, tablesAPI } from '@/lib/api';
 import { MapPin, Table2, Plus, Trash2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
+import { NumericInput } from '@/components/NumericKeypad';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -178,8 +179,8 @@ export default function MesasTab() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Número</label>
-              <input type="number" value={tableDialog.number} onChange={e => setTableDialog({ ...tableDialog, number: e.target.value })}
-                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" placeholder="Ej: 1" />
+              <NumericInput value={tableDialog.number} onChange={e => setTableDialog({ ...tableDialog, number: e.target.value })}
+                label="Numero de Mesa" allowDecimal={false} className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" placeholder="Ej: 1" />
             </div>
             <div>
               <label className="text-sm font-medium">Area</label>
@@ -190,8 +191,8 @@ export default function MesasTab() {
             </div>
             <div>
               <label className="text-sm font-medium">Capacidad</label>
-              <input type="number" value={tableDialog.capacity} onChange={e => setTableDialog({ ...tableDialog, capacity: e.target.value })}
-                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" />
+              <NumericInput value={tableDialog.capacity} onChange={e => setTableDialog({ ...tableDialog, capacity: e.target.value })}
+                label="Capacidad" allowDecimal={false} className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" />
             </div>
             <div>
               <label className="text-sm font-medium">Forma</label>

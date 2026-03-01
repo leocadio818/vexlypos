@@ -3,6 +3,7 @@ import { useSettings } from './SettingsContext';
 import { taxesAPI } from '@/lib/api';
 import { Calculator, Plus, Trash2, Pencil, Sparkles, Percent, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { NumericInput } from '@/components/NumericKeypad';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -203,8 +204,8 @@ export default function TaxesTab() {
               </div>
               <div>
                 <label className="text-sm font-medium">Tasa (%)</label>
-                <input type="number" step="0.01" value={taxDialog.rate} onChange={e => setTaxDialog({ ...taxDialog, rate: e.target.value })}
-                  className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" />
+                <NumericInput value={taxDialog.rate} onChange={e => setTaxDialog({ ...taxDialog, rate: e.target.value })}
+                  label="Tasa (%)" className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" />
               </div>
             </div>
             <div>
