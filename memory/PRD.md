@@ -8,62 +8,58 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - **MongoDB**: Exclusive engine for operational data (products, modifiers, tables, users, inventory, orders, theme config)
 - This "Polyglot Persistence" architecture is permanently frozen by user directive
 
+## 🔒 LOCKED SYSTEMS — DO NOT MODIFY WITHOUT EXPLICIT USER APPROVAL
+
+### 🔒 Theme Persistence Engine (ThemeContext.js)
+**Status: LOCKED — Working perfectly as of 2026-03-01**
+**Architecture:**
+- `fetchTheme` ONLY loads glass gradient props from API. NEVER overwrites `activeThemeMode`, `neoMode`, or `neoColors`
+- State source of truth hierarchy: 1) `pos_user_ui_prefs` in localStorage → 2) `pos_theme_cache` in localStorage → 3) defaults
+- `applyUserPreferences()` called on login — sets mode from MongoDB `ui_preferences` + writes to `pos_user_ui_prefs`
+- `resetThemeOnLogout()` only removes `pos_user_ui_prefs` flag — keeps visual state for login screen
+- `pos_theme_cache` auto-updates via useEffect on every state change
+- CSS effect applies body classes (`theme-minimalist`, `neo-dark`) and CSS variables on `document.body.style`
+- **Key files**: `ThemeContext.js`, `AuthContext.js`, `Layout.js`, `theme-minimalist.css`
+- **DO NOT**: Add fetchTheme calls that set activeThemeMode/neoMode. DO NOT reset theme state on logout. DO NOT move CSS variable setting to document.documentElement (must be on body).
+
+### 🔒 Provider Order (App.js)
+**ThemeProvider wraps AuthProvider** (AuthProvider uses useTheme). DO NOT reverse.
+
+### 🔒 Traceability Bridge (billing.py)
+**MongoDB bill ↔ Supabase cash_movement cross-reference on every payment. DO NOT remove.**
+
 ## What's Been Implemented
 
-### Multi-Theme System (COMPLETE - 2026-03-01)
-- **3 Visual Modes**: Original (dark glass), Minimalist Light (off-white neumorphic), Minimalist Dark (navy neumorphic)
-- **Global Neumorphic 3D**: Buttons, cards, inputs, sidebar, tabs, dialogs — ALL have 3D depth + LED glow
-- **Dark/Light Toggle**: Claro/Oscuro within minimalist, with customizable colors (bg, glow, accent)
-- **Persistence**: localStorage cache for instant F5 apply (no FOUC) + MongoDB backend save
-- **Text Contrast**: Comprehensive CSS overrides for ALL pastel colors, gradient text, inline colors, opacity variants
-- **Pastel Payment Colors**: Soft mint/sky/peach/lavender palette, editable from Settings, NO brand SVGs
-- **Configurable "Monto Exacto"**: Color picker in Settings > Ventas
-- **Category/Product Buttons**: Solid colors (A0 opacity), larger on tablet/PC, name-top/price-bottom layout
-- **"Categorias" Back Button**: Large tactile orange button with arrow
-- **Clean Modals**: No backdrop blur, solid edges, all text readable
+### Multi-Theme System (COMPLETE)
+- 3 Visual Modes: Original (dark glass), Minimalist Light, Minimalist Dark
+- Global Neumorphic 3D on ALL elements (buttons, cards, inputs, tabs, dialogs)
+- Dark/Light toggle within minimalist + customizable colors
+- F5 persistence via localStorage cache + MongoDB per-user `ui_preferences`
+- Comprehensive CSS text contrast: pastel overrides, gradient text fix, inline color overrides
+- Pastel payment colors, configurable "Monto Exacto" color
+- Category/Product buttons: solid colors, larger on tablet/PC, name-top/price-bottom
+- Avatar popover: theme selector accessible to ALL roles (cajeros, meseros, admin)
+- Clean modals: no backdrop blur, solid edges, all text readable
 
-### P0 Traceability Bridge (COMPLETE - 2026-03-01)
-- Bidirectional cross-reference between MongoDB and Supabase on every payment
+### P0 Traceability Bridge (COMPLETE)
 - MongoDB `bills` → `supabase_transaction_id`, `supabase_movement_ref`
-- Supabase `cash_movements.description` → `[BILL:{mongodb_bill_id}]` parseable format
+- Supabase `cash_movements.description` → `[BILL:{mongodb_bill_id}]`
 
-### Dashboard Enhancements (COMPLETE - 2026-03-01)
-- Payment breakdown cards: Tarjeta, Transferencia, Propinas (Jornada data)
-- Bug fix: "Ordenes Activas" now excludes `closed` status orders
+### Dashboard (COMPLETE)
+- Payment breakdown: Tarjeta, Transferencia, Propinas (Jornada data)
+- Bug fix: "Ordenes Activas" excludes `closed` status
 
-### Numeric Keypad (COMPLETE - 2026-03-01)
-- Reusable `NumericKeypad.jsx` component with modal popup, decimal support
-- Replaced ALL `type="number"` inputs across 14+ files (except NcfTab RNC fields)
+### Numeric Keypad (COMPLETE)
+- `NumericKeypad.jsx` with modal popup, decimal support
+- Replaced ALL `type="number"` inputs (except NcfTab RNC)
 
-### Previous Session Work
-- Shift/Day Closure Logic, Mixed Payment Bug Fix
-- Dashboard & Cash Register UI, UTC to Local Time correction
-- Payment Screen fixes, Discount reporting, Modifier cleanup
-- Architecture Resolution: Polyglot Persistence frozen
-
-## Key Files
-```
-/app/frontend/src/
-├── context/ThemeContext.js         # Multi-theme + localStorage persistence
-├── styles/theme-minimalist.css    # ALL neumorphic CSS + contrast fixes
-├── components/
-│   ├── Layout.js                  # Conditional theme bg (dark/light aware)
-│   ├── NumericKeypad.jsx          # Reusable numeric input component
-│   └── GlassUI.js
-├── pages/
-│   ├── Login.js                   # Dual-theme login (glass vs neumorphic)
-│   ├── Dashboard.js               # Payment breakdown + fixed active orders
-│   ├── PaymentScreen.js           # Pastel buttons, configurable exact amount
-│   ├── OrderScreen.js             # Larger buttons, back button, theme-aware
-│   └── settings/
-│       ├── ThemeTab.js            # Apariencia: theme toggle + color pickers
-│       ├── VentasTab.js           # Exact amount color + numeric keypad
-│       └── index.js
-```
+### User UI Preferences (COMPLETE)
+- `PUT /api/users/me/ui-preferences` endpoint
+- Login applies `ui_preferences` automatically via `applyUserPreferences`
+- Avatar "Guardar como mi tema" saves to API + localStorage
 
 ## Credentials
 - Admin PIN: 10000
-- Cajero PIN: 4321
 
 ## Next Tasks
 - **P1**: Reloj de entrada/salida de empleados
