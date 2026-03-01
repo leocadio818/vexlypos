@@ -625,6 +625,102 @@ body.theme-minimalist .neo-flat {
 
 
 /* ═══════════════════════════════════════════════════════════════
+   NATIVE DATE & TIME PICKER — Theme-aware styling
+   Applies to ALL input[type="date"] and input[type="time"] system-wide
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base input styling */
+body.theme-minimalist input[type="date"],
+body.theme-minimalist input[type="time"],
+body.theme-minimalist input[type="datetime-local"] {
+  background: var(--neo-bg) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  font-family: 'Oswald', sans-serif !important;
+  font-size: 14px !important;
+  box-shadow: inset 2px 2px 4px var(--neo-shadow-dark), inset -2px -2px 4px var(--neo-shadow-light) !important;
+}
+
+body.theme-minimalist input[type="date"]:focus,
+body.theme-minimalist input[type="time"]:focus {
+  outline: none !important;
+  box-shadow: inset 2px 2px 4px var(--neo-shadow-dark), inset -2px -2px 4px var(--neo-shadow-light), 0 0 0 3px var(--neo-glow-soft) !important;
+}
+
+/* Calendar icon / clock icon */
+body.theme-minimalist input[type="date"]::-webkit-calendar-picker-indicator,
+body.theme-minimalist input[type="time"]::-webkit-calendar-picker-indicator,
+body.theme-minimalist input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+  cursor: pointer;
+  opacity: 0.7;
+}
+body.theme-minimalist.neo-dark input[type="date"]::-webkit-calendar-picker-indicator,
+body.theme-minimalist.neo-dark input[type="time"]::-webkit-calendar-picker-indicator,
+body.theme-minimalist.neo-dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+/* Chromium date/time picker popup panel */
+body.theme-minimalist ::-webkit-datetime-edit {
+  color: hsl(var(--foreground));
+  font-family: 'Oswald', sans-serif;
+}
+body.theme-minimalist ::-webkit-datetime-edit-fields-wrapper {
+  color: hsl(var(--foreground));
+}
+body.theme-minimalist ::-webkit-datetime-edit-text {
+  color: hsl(var(--muted-foreground));
+}
+body.theme-minimalist ::-webkit-datetime-edit-month-field,
+body.theme-minimalist ::-webkit-datetime-edit-day-field,
+body.theme-minimalist ::-webkit-datetime-edit-year-field,
+body.theme-minimalist ::-webkit-datetime-edit-hour-field,
+body.theme-minimalist ::-webkit-datetime-edit-minute-field,
+body.theme-minimalist ::-webkit-datetime-edit-ampm-field {
+  color: hsl(var(--foreground));
+  padding: 2px;
+  border-radius: 4px;
+}
+body.theme-minimalist ::-webkit-datetime-edit-month-field:focus,
+body.theme-minimalist ::-webkit-datetime-edit-day-field:focus,
+body.theme-minimalist ::-webkit-datetime-edit-year-field:focus,
+body.theme-minimalist ::-webkit-datetime-edit-hour-field:focus,
+body.theme-minimalist ::-webkit-datetime-edit-minute-field:focus {
+  background: hsl(var(--primary) / 0.2);
+  color: hsl(var(--primary));
+}
+
+/* Color scheme for the native popup (dark mode = dark popup) */
+body.theme-minimalist.neo-dark input[type="date"],
+body.theme-minimalist.neo-dark input[type="time"],
+body.theme-minimalist.neo-dark input[type="datetime-local"] {
+  color-scheme: dark;
+}
+body.theme-minimalist:not(.neo-dark) input[type="date"],
+body.theme-minimalist:not(.neo-dark) input[type="time"],
+body.theme-minimalist:not(.neo-dark) input[type="datetime-local"] {
+  color-scheme: light;
+}
+
+/* Select dropdowns also need theming */
+body.theme-minimalist select {
+  background: var(--neo-bg) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  box-shadow: inset 2px 2px 4px var(--neo-shadow-dark), inset -2px -2px 4px var(--neo-shadow-light) !important;
+  appearance: auto;
+}
+body.theme-minimalist.neo-dark select {
+  color-scheme: dark;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
    ANIMATIONS
    ═══════════════════════════════════════════════════════════════ */
 
