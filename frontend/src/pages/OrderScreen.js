@@ -1984,11 +1984,9 @@ export default function OrderScreen() {
                         ) : null}
                       </div>
                     ) : null}
-                    {/* Nombre y precio */}
-                    <div className="flex-shrink-0 mt-auto">
-                      <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
-                      <span className={`font-oswald font-bold block ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>{formatMoney(product.price)}</span>
-                    </div>
+                    {/* Nombre arriba, precio al fondo */}
+                    <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
+                    <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>{formatMoney(product.price)}</span>
                     {hasModifiers && !isOutOfStock && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
                     
                     {/* Out of Stock Badge */}
