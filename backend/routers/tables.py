@@ -246,3 +246,98 @@ async def move_all_orders_to_table(table_id: str, input: dict, user: dict = Depe
         "orders_moved": len(source_orders),
         "target_table_number": target_table["number"]
     }
+
+
+# ─── TRANSFER TABLES BETWEEN USERS ───
+
+class TransferInput(BaseModel):
+    target_user_id: str
+    table_ids: list = []  # empty = transfer current table only
+    transfer_all: bool = False
+    authorized_by_pin: str = ""  # PIN of admin if authorization was needed
+
+@router.post("/tables/transfer")
+async def transfer_tables(input: TransferInput, user=Depends(get_current_user)):
+    """Transfer table ownership from current user to another user"""
+    from routers.auth import get_permissions, hash_pin
+    
+    # Validate target user exists and is active
+    target_user = await db.users.find_one({"id": input.target_user_id, "active": True}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Usuario destino no encontrado o inactivo")
+    
+    # Check permission
+    perms = get_permissions(user.get("role", "waiter"), user.get("permissions"))
+    authorized_by = None
+    
+    if not perms.get("transfer_tables"):
+        # Need admin PIN authorization
+        if not input.authorized_by_pin:
+            raise HTTPException(status_code=403, detail="Se requiere autorizacion de administrador")
+        
+        pin_hash = hash_pin(input.authorized_by_pin)
+        admin = await db.users.find_one({"pin_hash": pin_hash, "active": True}, {"_id": 0})
+        if not admin:
+            raise HTTPException(status_code=403, detail="PIN incorrecto")
+        
+        admin_perms = get_permissions(admin.get("role", "waiter"), admin.get("permissions"))
+        if not admin_perms.get("transfer_tables"):
+            raise HTTPException(status_code=403, detail="El usuario no tiene permiso de transferencia")
+        
+        authorized_by = {"id": admin["id"], "name": admin["name"]}
+    
+    # Determine which tables to transfer
+    if input.transfer_all:
+        # All tables owned by current user
+        orders = await db.orders.find(
+            {"waiter_id": user["user_id"], "status": {"$nin": ["closed", "cancelled", "paid"]}},
+            {"_id": 0}
+        ).to_list(100)
+        table_ids = list(set(o.get("table_id") for o in orders if o.get("table_id")))
+    elif input.table_ids:
+        table_ids = input.table_ids
+    else:
+        raise HTTPException(status_code=400, detail="Debe especificar mesas o usar transfer_all")
+    
+    if not table_ids:
+        raise HTTPException(status_code=400, detail="No hay mesas activas para transferir")
+    
+    # Transfer each table's orders
+    transferred = []
+    for tid in table_ids:
+        # Update all active orders for this table
+        result = await db.orders.update_many(
+            {"table_id": tid, "waiter_id": user["user_id"], "status": {"$nin": ["closed", "cancelled", "paid"]}},
+            {"$set": {
+                "waiter_id": input.target_user_id,
+                "waiter_name": target_user["name"],
+            }, "$push": {
+                "audit_trail": {
+                    "action": "table_transfer",
+                    "timestamp": now_iso(),
+                    "from_user_id": user["user_id"],
+                    "from_user_name": user["name"],
+                    "to_user_id": input.target_user_id,
+                    "to_user_name": target_user["name"],
+                    "authorized_by": authorized_by["name"] if authorized_by else user["name"],
+                    "authorized_by_id": authorized_by["id"] if authorized_by else user["user_id"],
+                }
+            }}
+        )
+        
+        if result.modified_count > 0:
+            # Update table ownership
+            await db.tables.update_one(
+                {"id": tid},
+                {"$set": {"owner_id": input.target_user_id, "owner_name": target_user["name"]}}
+            )
+            table = await db.tables.find_one({"id": tid}, {"_id": 0, "number": 1})
+            transferred.append({"table_id": tid, "table_number": table.get("number", "?"), "orders_moved": result.modified_count})
+    
+    return {
+        "ok": True,
+        "transferred": transferred,
+        "from_user": user["name"],
+        "to_user": target_user["name"],
+        "authorized_by": authorized_by["name"] if authorized_by else None,
+    }
