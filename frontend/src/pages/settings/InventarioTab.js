@@ -334,9 +334,9 @@ export default function InventarioTab() {
           <div className="space-y-4">
             {Object.entries(productsByCategory).map(([catName, { color, products: prods }]) => (
               <div key={catName}>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2" style={{ backgroundColor: color + '60', padding: '6px 12px', borderRadius: '8px', borderLeft: `4px solid ${color}` }}>
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                  <span className="font-oswald font-bold text-sm">{catName}</span>
+                  <span className="font-oswald font-bold text-sm text-foreground">{catName}</span>
                   <Badge variant="secondary" className="text-[9px]">{prods.length}</Badge>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
