@@ -1,9 +1,23 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChevronLeft, ChevronRight, CalendarDays, Clock } from 'lucide-react';
 
 const DAYS_ES = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 const MONTHS_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+// Cache time format globally so all pickers share it
+let _cachedTimeFormat = null;
+function useTimeFormat() {
+  const [fmt, setFmt] = useState(_cachedTimeFormat || '12h');
+  useEffect(() => {
+    if (_cachedTimeFormat) return;
+    fetch(`${process.env.REACT_APP_BACKEND_URL}/api/system/config`)
+      .then(r => r.json())
+      .then(d => { const f = d.time_format || '12h'; _cachedTimeFormat = f; setFmt(f); })
+      .catch(() => {});
+  }, []);
+  return fmt;
+}
 
 function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
