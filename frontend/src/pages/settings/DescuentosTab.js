@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Tag, Clock, Shield, Percent, DollarSign, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { NumericInput } from '@/components/NumericKeypad';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import axios from 'axios';
@@ -244,14 +245,12 @@ export default function DescuentosTab() {
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">
                   Valor * {form.type === 'PERCENTAGE' ? '(%)' : '(RD$)'}
                 </label>
-                <input
-                  type="number"
+                <NumericInput
                   value={form.value}
                   onChange={e => setForm(p => ({ ...p, value: e.target.value }))}
                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
                   placeholder={form.type === 'PERCENTAGE' ? 'Ej: 20' : 'Ej: 500'}
-                  min="0"
-                  step="0.01"
+                  label={form.type === 'PERCENTAGE' ? 'Porcentaje (%)' : 'Monto (RD$)'}
                   data-testid="discount-value-input"
                 />
               </div>
