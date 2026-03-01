@@ -71,9 +71,10 @@ async def dashboard():
     bills_count = len(today_bills)
     avg_ticket = round(total_sales / bills_count, 2) if bills_count > 0 else 0
     
-    # Cash vs Card breakdown - use payments array for accuracy
+    # Cash vs Card vs Transfer breakdown - use payments array for accuracy
     cash_total = 0
     card_total = 0
+    transfer_total = 0
     for bill in today_bills:
         bill_total = bill.get("total", 0)
         payments = bill.get("payments", [])
@@ -86,8 +87,11 @@ async def dashboard():
                     pm = pm_name_map.get(p_name.lower(), {})
                 is_cash = resolve_is_cash(pm) if pm else ("efectivo" in payment.get("payment_method_name", "").lower())
                 amt = payment.get("amount_dop", payment.get("amount", 0))
+                name_lower = (payment.get("payment_method_name", "") or "").lower()
                 if is_cash:
                     cash_total += amt
+                elif "transfer" in name_lower:
+                    transfer_total += amt
                 else:
                     card_total += amt
         else:
@@ -99,6 +103,8 @@ async def dashboard():
             is_cash = resolve_is_cash(pm) if pm else ("efectivo" in p_name.lower())
             if is_cash:
                 cash_total += bill_total
+            elif "transfer" in p_name.lower():
+                transfer_total += bill_total
             else:
                 card_total += bill_total
     
