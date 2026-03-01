@@ -134,6 +134,7 @@ body.theme-minimalist [role="button"][disabled] {
 
 body.theme-minimalist .bg-card {
   background: var(--neo-bg) !important;
+  color: hsl(var(--foreground)) !important;
   box-shadow:
     8px 8px 16px var(--neo-shadow-dark),
     -8px -8px 16px var(--neo-shadow-light),
