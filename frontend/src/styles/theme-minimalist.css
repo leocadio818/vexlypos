@@ -373,11 +373,9 @@ body.theme-minimalist:not(.neo-dark) .border-white\/10,
 body.theme-minimalist:not(.neo-dark) .border-white\/20,
 body.theme-minimalist:not(.neo-dark) .border-white\/30 { border-color: transparent !important; }
 
-/* Light mode: glass bg → neo bg */
-body.theme-minimalist:not(.neo-dark) .bg-white\/5,
-body.theme-minimalist:not(.neo-dark) .bg-white\/10,
-body.theme-minimalist:not(.neo-dark) .bg-white\/15,
-body.theme-minimalist:not(.neo-dark) .bg-white\/20 { background-color: var(--neo-bg) !important; }
+/* Light mode: glass bg → neo bg (use attribute selectors for responsive variants) */
+body.theme-minimalist:not(.neo-dark) [class*="bg-white/"] { background-color: var(--neo-bg) !important; }
+body.theme-minimalist:not(.neo-dark) [class*="bg-background/"] { background-color: var(--neo-bg) !important; }
 
 /* Both modes: kill backdrop blur */
 body.theme-minimalist .backdrop-blur-xl,
