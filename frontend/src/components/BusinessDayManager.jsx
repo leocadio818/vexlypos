@@ -186,7 +186,8 @@ export default function BusinessDayManager({
     if (!isoStr) return '';
     return new Date(isoStr).toLocaleTimeString('es-DO', { 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      hour12: true
     });
   };
 
