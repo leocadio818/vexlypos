@@ -334,6 +334,20 @@ async def transfer_tables(input: TransferInput, user=Depends(get_current_user)):
             table = await db.tables.find_one({"id": tid}, {"_id": 0, "number": 1})
             transferred.append({"table_id": tid, "table_number": table.get("number", "?"), "orders_moved": result.modified_count})
     
+    # Create notification for the receiving user
+    if transferred:
+        table_names = ", ".join([f"Mesa {t['table_number']}" for t in transferred])
+        await db.notifications.insert_one({
+            "id": gen_id(),
+            "user_id": input.target_user_id,
+            "type": "table_transfer",
+            "title": "Mesa Transferida",
+            "message": f"{user['name']} te ha transferido {table_names}",
+            "data": {"transferred": transferred, "from_user": user["name"]},
+            "read": False,
+            "created_at": now_iso(),
+        })
+    
     return {
         "ok": True,
         "transferred": transferred,
@@ -341,3 +355,24 @@ async def transfer_tables(input: TransferInput, user=Depends(get_current_user)):
         "to_user": target_user["name"],
         "authorized_by": authorized_by["name"] if authorized_by else None,
     }
+
+
+# ─── NOTIFICATIONS POLLING ───
+
+@router.get("/notifications/pending")
+async def get_pending_notifications(user=Depends(get_current_user)):
+    """Get unread notifications for the current user"""
+    notifications = await db.notifications.find(
+        {"user_id": user["user_id"], "read": False},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(10)
+    return notifications
+
+@router.put("/notifications/{nid}/read")
+async def mark_notification_read(nid: str, user=Depends(get_current_user)):
+    """Mark a notification as read"""
+    await db.notifications.update_one(
+        {"id": nid, "user_id": user["user_id"]},
+        {"$set": {"read": True}}
+    )
+    return {"ok": True}
