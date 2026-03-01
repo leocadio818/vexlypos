@@ -169,21 +169,22 @@ export default function Reservations() {
                     {items.map(r => (
                       <div key={r.id} 
                         onClick={() => openEdit(r)}
-                        className="flex items-center justify-between p-3 rounded-xl backdrop-blur-xl bg-white/10 border border-white/20 cursor-pointer hover:bg-white/15 transition-colors" 
+                        className="p-3 rounded-xl backdrop-blur-xl bg-white/10 border border-white/20 cursor-pointer hover:bg-white/15 transition-colors" 
                         data-testid={`reservation-${r.id}`}>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-white">{r.customer_name}</span>
-                            <Badge className={statusColors[r.status]}>{r.status === 'confirmed' ? 'Confirmada' : r.status === 'seated' ? 'Sentados' : r.status === 'cancelled' ? 'Cancelada' : 'Completada'}</Badge>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-white">{r.customer_name}</span>
+                              <Badge className={statusColors[r.status]}>{r.status === 'confirmed' ? 'Confirmada' : r.status === 'seated' ? 'Sentados' : r.status === 'cancelled' ? 'Cancelada' : 'Completada'}</Badge>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-white/50 flex-wrap">
+                              <span className="flex items-center gap-1"><Users size={10} /> {r.party_size} personas</span>
+                              {r.phone && <span className="flex items-center gap-1"><Phone size={10} /> {r.phone}</span>}
+                              {r.table_numbers?.length > 0 && <span>Mesas: {r.table_numbers.join(', ')}</span>}
+                              {r.notes && <span className="italic truncate max-w-[150px]">{r.notes}</span>}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-white/50">
-                            <span className="flex items-center gap-1"><Users size={10} /> {r.party_size} personas</span>
-                            {r.phone && <span className="flex items-center gap-1"><Phone size={10} /> {r.phone}</span>}
-                            {r.table_numbers?.length > 0 && <span>Mesas: {r.table_numbers.join(', ')}</span>}
-                            {r.notes && <span className="italic">{r.notes}</span>}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                           {r.status === 'confirmed' && (
                             <button className="h-8 w-8 rounded-lg text-green-400 hover:text-green-300 hover:bg-white/10 flex items-center justify-center transition-all"
                               onClick={() => updateStatus(r.id, 'seated')}><Check size={14} /></button>
