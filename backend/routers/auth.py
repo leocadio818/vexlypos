@@ -215,6 +215,8 @@ async def login(input: LoginInput):
     user_data = {k: v for k, v in user.items() if k != "pin_hash"}
     user_data["permissions"] = perms
     user_data["role_level"] = role_level
+    # Include ui_preferences for theme persistence per user
+    user_data["ui_preferences"] = user.get("ui_preferences", {})
 
     # Auto-open business day if none is active
     business_day_opened = False
