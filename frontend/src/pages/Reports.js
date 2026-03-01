@@ -21,6 +21,7 @@ import {
   ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport,
   DiscountsReport
 } from './reports';
+import ReservationsReport from './reports/ReservationsReport';
 import { COLORS } from './reports/reportUtils';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
