@@ -59,7 +59,8 @@ export const useBusinessConfig = () => {
             footer_msg1: data.ticket_footer_msg1 || data.ticket_footer_message || data.ticket_thank_you || DEFAULT_BUSINESS_CONFIG.footer_msg1,
             footer_msg2: data.ticket_footer_msg2 || data.ticket_dgii_message || DEFAULT_BUSINESS_CONFIG.footer_msg2,
             footer_msg3: data.ticket_footer_msg3 || '',
-            footer_msg4: data.ticket_footer_msg4 || ''
+            footer_msg4: data.ticket_footer_msg4 || '',
+            time_format: data.time_format || '12h'
           });
         }
       } catch (err) {
