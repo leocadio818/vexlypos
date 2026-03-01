@@ -98,20 +98,31 @@ export default function TransferTableModal({ open, onClose, tableId, currentUser
               {users.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No hay usuarios activos disponibles</p>
               ) : users.map(u => (
-                <button key={u.id} onClick={() => setSelectedUser(u)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all active:scale-98 ${
-                    selectedUser?.id === u.id
-                      ? 'bg-primary/20 border-2 border-primary'
-                      : 'bg-card border border-border hover:border-primary/50'
+                <button key={u.id} onClick={() => u.clockedIn && setSelectedUser(u)}
+                  disabled={!u.clockedIn}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                    !u.clockedIn
+                      ? 'opacity-40 cursor-not-allowed bg-muted border border-border'
+                      : selectedUser?.id === u.id
+                        ? 'bg-primary/20 border-2 border-primary active:scale-98'
+                        : 'bg-card border border-border hover:border-primary/50 active:scale-98'
                   }`}
                   data-testid={`transfer-user-${u.id}`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-oswald font-bold text-primary">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-oswald font-bold ${
+                    u.clockedIn ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                  }`}>
                     {u.name?.[0]}
                   </div>
                   <div className="text-left flex-1">
                     <p className="font-medium text-sm">{u.name}</p>
-                    <p className="text-xs text-muted-foreground">{roleLabels[u.role] || u.role}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {roleLabels[u.role] || u.role}
+                      {u.clockedIn
+                        ? <span className="ml-2 text-green-500 font-bold">En turno</span>
+                        : <span className="ml-2 text-red-400">Sin entrada</span>
+                      }
+                    </p>
                   </div>
                   {selectedUser?.id === u.id && (
                     <UserCheck size={18} className="text-primary" />
