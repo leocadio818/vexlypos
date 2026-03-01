@@ -35,9 +35,18 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 def now_local_print() -> str:
-    """Fecha/hora local DR para impresion de comandas."""
+    """Fecha/hora local DR para impresion de comandas. Respects time_format from system_config."""
     from zoneinfo import ZoneInfo
     return datetime.now(ZoneInfo("America/Santo_Domingo")).strftime("%Y-%m-%d %H:%M:%S")
+
+async def now_local_print_formatted() -> str:
+    """Fecha/hora local DR formatted per system config (12h/24h)."""
+    from zoneinfo import ZoneInfo
+    config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+    now = datetime.now(ZoneInfo("America/Santo_Domingo"))
+    if config.get("time_format") == "24h":
+        return now.strftime("%Y-%m-%d %H:%M:%S")
+    return now.strftime("%Y-%m-%d %I:%M:%S %p")
 
 async def get_next_transaction_number() -> int:
     """
