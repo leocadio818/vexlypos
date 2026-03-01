@@ -156,15 +156,17 @@ export function NeoDatePicker({ value, onChange, className = '', placeholder = '
             ))}
           </div>
         </div>
+        )}
 
         {/* Today shortcut */}
+        {!showMonthPicker && !showYearPicker && (
         <div className="border-t border-border p-2">
-          <button type="button" onClick={() => selectDay(today.getDate()) || setViewMonth(today.getMonth()) || setViewYear(today.getFullYear())}
-            className="w-full text-xs text-primary font-medium hover:bg-primary/10 rounded-lg py-1.5 transition-all"
-            onClickCapture={() => { setViewMonth(today.getMonth()); setViewYear(today.getFullYear()); }}>
+          <button type="button" onClick={() => { setViewMonth(today.getMonth()); setViewYear(today.getFullYear()); setTimeout(() => selectDay(today.getDate()), 50); }}
+            className="w-full text-xs text-primary font-medium hover:bg-primary/10 rounded-lg py-2 transition-all">
             Hoy
           </button>
         </div>
+        )}
       </PopoverContent>
     </Popover>
   );
