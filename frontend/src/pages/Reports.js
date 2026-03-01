@@ -82,6 +82,7 @@ const REPORT_CATEGORIES = [
     reports: [
       { id: 'profit-loss', name: 'Ganancias y Pérdidas', description: 'Estado de resultados' },
       { id: 'table-movements', name: 'Movimientos de Mesas', description: 'Trazabilidad de usuario' },
+      { id: 'reservations', name: 'Reservaciones', description: 'Análisis de reservas, no-shows y clientes frecuentes' },
       { id: 'system-audit', name: 'Auditoría General del Sistema', description: 'Historial de actividades' },
     ]
   },
