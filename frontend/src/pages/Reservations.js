@@ -298,9 +298,9 @@ export default function Reservations() {
                   </select>
                 </div>
               </div>
-              <p className="text-[9px] text-white/40">
-                La mesa se marcará como reservada {dialog.activation_minutes} min antes de la hora. 
-                Si no llega después de {dialog.tolerance_minutes} min, se liberará automáticamente.
+              <p className="text-xs text-white/60">
+                La mesa se marcara como reservada {dialog.activation_minutes} min antes de la hora. 
+                Si no llega despues de {dialog.tolerance_minutes} min, se liberara automaticamente.
               </p>
             </div>
             
