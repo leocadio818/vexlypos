@@ -1408,8 +1408,8 @@ export default function PaymentScreen() {
                   
                   {/* Exchange rate badge */}
                   {isForeignCurrency && (
-                    <span className={`absolute bottom-1.5 right-2 bg-white/30 px-1.5 py-0.5 rounded-full font-oswald ${isMobile ? 'text-[7px]' : 'text-[9px]'}`}
-                      style={{ color: method.text_color || '#1f2937' }}>
+                    <span className={`absolute bottom-2 right-2 px-2 py-0.5 rounded-full font-oswald font-bold ${isMobile ? 'text-[8px]' : 'text-[10px]'}`}
+                      style={{ backgroundColor: method.text_color || '#1f2937', color: method.bg_color || '#fff', opacity: 0.8 }}>
                       1 = {method.exchange_rate}
                     </span>
                   )}
