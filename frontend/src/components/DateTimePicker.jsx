@@ -67,10 +67,15 @@ export function NeoDatePicker({ value, onChange, className = '', placeholder = '
   const isToday = (day) => day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
   const isSelected = (day) => selected && day === selected.getDate() && viewMonth === selected.getMonth() && viewYear === selected.getFullYear();
 
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+
+  const years = Array.from({ length: 11 }, (_, i) => today.getFullYear() - 3 + i);
+
   const displayValue = value || '';
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setShowMonthPicker(false); setShowYearPicker(false); } }}>
       <PopoverTrigger asChild>
         <button type="button" disabled={disabled}
           className={`flex items-center gap-2 text-left cursor-pointer disabled:opacity-50 ${className}`}
@@ -79,20 +84,50 @@ export function NeoDatePicker({ value, onChange, className = '', placeholder = '
           {displayValue ? <span>{displayValue}</span> : <span className="text-muted-foreground">{placeholder}</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[calc(100vw-32px)] max-w-[300px] p-0" align="start" data-testid="neo-calendar-popup">
-        {/* Header */}
+      <PopoverContent className="w-[calc(100vw-32px)] max-w-[360px] p-0" align="start" data-testid="neo-calendar-popup">
+        {/* Header with clickable month + year */}
         <div className="flex items-center justify-between p-3 border-b border-border">
-          <button type="button" onClick={prevMonth} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-all active:scale-90">
-            <ChevronLeft size={16} />
+          <button type="button" onClick={prevMonth} className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-all active:scale-90">
+            <ChevronLeft size={18} />
           </button>
-          <div className="text-center">
-            <span className="font-oswald font-bold text-sm">{MONTHS_ES[viewMonth]}</span>
-            <span className="font-oswald text-sm text-muted-foreground ml-2">{viewYear}</span>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => { setShowMonthPicker(!showMonthPicker); setShowYearPicker(false); }}
+              className="font-oswald font-bold text-base hover:text-primary transition-all px-2 py-1 rounded-lg hover:bg-primary/10">
+              {MONTHS_ES[viewMonth]}
+            </button>
+            <button type="button" onClick={() => { setShowYearPicker(!showYearPicker); setShowMonthPicker(false); }}
+              className="font-oswald text-base text-muted-foreground hover:text-primary transition-all px-2 py-1 rounded-lg hover:bg-primary/10">
+              {viewYear}
+            </button>
           </div>
-          <button type="button" onClick={nextMonth} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-all active:scale-90">
-            <ChevronRight size={16} />
+          <button type="button" onClick={nextMonth} className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-all active:scale-90">
+            <ChevronRight size={18} />
           </button>
         </div>
+
+        {/* Month quick picker */}
+        {showMonthPicker && (
+          <div className="grid grid-cols-3 gap-1.5 p-3 border-b border-border">
+            {MONTHS_ES.map((m, i) => (
+              <button key={i} type="button" onClick={() => { setViewMonth(i); setShowMonthPicker(false); }}
+                className={`py-2 rounded-lg text-xs font-oswald font-bold transition-all active:scale-95 ${i === viewMonth ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
+                {m.slice(0, 3)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Year quick picker */}
+        {showYearPicker && (
+          <div className="grid grid-cols-4 gap-1.5 p-3 border-b border-border">
+            {years.map(y => (
+              <button key={y} type="button" onClick={() => { setViewYear(y); setShowYearPicker(false); }}
+                className={`py-2 rounded-lg text-xs font-oswald font-bold transition-all active:scale-95 ${y === viewYear ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
+                {y}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Days Grid */}
         <div className="p-2 sm:p-3">
