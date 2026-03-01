@@ -184,10 +184,11 @@ export default function Layout() {
   const DeviceIcon = isMobile ? Smartphone : isTablet ? Tablet : Monitor;
 
   // Glassmorphism background style
+  const neoBgActive = isNeoDark ? neoColors.neoDarkBg : neoColors.neoBgColor;
   const bgStyle = isGlassPage && !isMinimalist ? {
     background: `linear-gradient(135deg, ${theme.gradientStart} 0%, ${theme.gradientMid1} 25%, ${theme.gradientMid2} 50%, ${theme.gradientEnd} 100%)`,
   } : isMinimalist ? {
-    background: neoColors.neoBgColor,
+    background: neoBgActive,
   } : {};
 
   // For neumorphic mode, override glass page logic for styling
