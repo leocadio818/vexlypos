@@ -28,6 +28,7 @@ const noGlassPages = ['/kitchen', '/kitchen-tv'];
 export default function Layout() {
   const { user, logout, isOnline, hasPermission, largeMode, toggleLargeMode, device, offline } = useAuth();
   const { theme, isMinimalist, isNeoDark, neoColors } = useTheme();
+  const { activeThemeMode, setActiveThemeMode, neoMode, setNeoMode, saveAllThemeSettings } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
