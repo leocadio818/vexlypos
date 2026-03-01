@@ -611,10 +611,12 @@ export default function Layout() {
                     <button onClick={async () => {
                       try {
                         const token = localStorage.getItem('pos_token');
+                        const prefs = { theme: activeThemeMode, color_mode: neoMode };
                         await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users/me/ui-preferences`, {
                           method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                          body: JSON.stringify({ theme: activeThemeMode, color_mode: neoMode })
+                          body: JSON.stringify(prefs)
                         });
+                        localStorage.setItem('pos_user_ui_prefs', JSON.stringify(prefs));
                         toast.success('Preferencia guardada');
                       } catch { toast.error('Error'); }
                     }}
