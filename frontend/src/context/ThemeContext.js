@@ -51,10 +51,21 @@ function hexToHslParts(hex) {
 }
 
 export function ThemeProvider({ children }) {
+  // Load from localStorage FIRST for instant apply (no FOUC)
+  const cached = (() => {
+    try { return JSON.parse(localStorage.getItem('pos_theme_cache') || '{}'); } catch { return {}; }
+  })();
+
   const [theme, setTheme] = useState(defaultTheme);
-  const [activeThemeMode, setActiveThemeMode] = useState('original');
-  const [neoColors, setNeoColors] = useState(defaultNeoColors);
-  const [neoMode, setNeoMode] = useState('light'); // 'light' | 'dark'
+  const [activeThemeMode, setActiveThemeMode] = useState(cached.activeThemeMode || 'original');
+  const [neoColors, setNeoColors] = useState({
+    ...defaultNeoColors,
+    ...(cached.neoBgColor ? { neoBgColor: cached.neoBgColor } : {}),
+    ...(cached.neoDarkBg ? { neoDarkBg: cached.neoDarkBg } : {}),
+    ...(cached.neoGlowColor ? { neoGlowColor: cached.neoGlowColor } : {}),
+    ...(cached.neoAccentColor ? { neoAccentColor: cached.neoAccentColor } : {}),
+  });
+  const [neoMode, setNeoMode] = useState(cached.neoMode || 'light');
   const [loading, setLoading] = useState(true);
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
