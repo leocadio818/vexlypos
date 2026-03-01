@@ -190,8 +190,8 @@ export default function Customers() {
               <p className="text-sm text-muted-foreground">{redeemDialog.customer?.name}</p>
               <p className="font-oswald text-3xl font-bold text-yellow-400">{redeemDialog.customer?.points} pts</p>
             </div>
-            <input value={redeemDialog.points} onChange={e => setRedeemDialog(p => ({ ...p, points: e.target.value }))}
-              type="number" placeholder={`Minimo ${config.min_redemption} puntos`}
+            <NumericInput label="Valor" value={redeemDialog.points} onChange={e => setRedeemDialog(p => ({ ...p, points: e.target.value }))}
+               placeholder={`Minimo ${config.min_redemption} puntos`}
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald text-center text-lg" data-testid="redeem-points-input" />
             {redeemDialog.points && (
               <p className="text-center text-sm">Descuento: <span className="font-oswald text-primary font-bold">{formatMoney(parseInt(redeemDialog.points) * config.point_value_rd)}</span></p>
@@ -210,18 +210,18 @@ export default function Customers() {
           <div className="space-y-3">
             <div>
               <label className="text-xs text-muted-foreground">Puntos por cada RD$100</label>
-              <input value={config.points_per_hundred} onChange={e => setConfig(p => ({ ...p, points_per_hundred: parseInt(e.target.value) || 0 }))}
-                type="number" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
+              <NumericInput label="Valor" value={config.points_per_hundred} onChange={e => setConfig(p => ({ ...p, points_per_hundred: parseInt(e.target.value) || 0 }))}
+                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Valor de cada punto (RD$)</label>
-              <input value={config.point_value_rd} onChange={e => setConfig(p => ({ ...p, point_value_rd: parseFloat(e.target.value) || 0 }))}
-                type="number" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
+              <NumericInput label="Valor" value={config.point_value_rd} onChange={e => setConfig(p => ({ ...p, point_value_rd: parseFloat(e.target.value) || 0 }))}
+                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Minimo puntos para canjeo</label>
-              <input value={config.min_redemption} onChange={e => setConfig(p => ({ ...p, min_redemption: parseInt(e.target.value) || 0 }))}
-                type="number" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
+              <NumericInput label="Valor" value={config.min_redemption} onChange={e => setConfig(p => ({ ...p, min_redemption: parseInt(e.target.value) || 0 }))}
+                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald" />
             </div>
             <Button onClick={handleUpdateConfig} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95">
               GUARDAR

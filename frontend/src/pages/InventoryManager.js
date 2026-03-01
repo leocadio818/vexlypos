@@ -709,8 +709,7 @@ export default function InventoryManager() {
             </div>
             <div>
               <label className="text-sm font-medium">Cantidad *</label>
-              <input
-                type="number"
+              <NumericInput label="Valor"
                 value={transferDialog.data?.quantity || ''}
                 onChange={e => setTransferDialog(p => ({ ...p, data: { ...p.data, quantity: parseFloat(e.target.value) || 0 } }))}
                 className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
@@ -763,8 +762,7 @@ export default function InventoryManager() {
             </div>
             <div>
               <label className="text-sm font-medium">Cantidad (+ agregar, - quitar) *</label>
-              <input
-                type="number"
+              <NumericInput label="Valor"
                 value={adjustDialog.data?.quantity || ''}
                 onChange={e => setAdjustDialog(p => ({ ...p, data: { ...p.data, quantity: parseFloat(e.target.value) || 0 } }))}
                 className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
@@ -836,8 +834,7 @@ export default function InventoryManager() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium">Cantidad</label>
-                  <input
-                    type="number"
+                  <NumericInput label="Valor"
                    
                    
                     value={differenceDialog.data.quantity || ''}

@@ -306,7 +306,6 @@ export default function SuppliersTab({
                 <BarChart data={top_suppliers} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                   <XAxis 
-                    type="number" 
                     stroke="#888" 
                     tick={{ fill: '#888', fontSize: 10 }}
                     tickFormatter={(v) => `${(v/1000).toFixed(0)}k`}

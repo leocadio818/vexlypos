@@ -869,8 +869,7 @@ export default function CashRegister() {
             </div>
             <div>
               <label className="text-sm font-semibold text-white/60 mb-1 block">Monto de Apertura (RD$)</label>
-              <input
-                type="number"
+              <NumericInput label="Valor"
                 value={openingAmount}
                 onChange={e => setOpeningAmount(e.target.value)}
                 placeholder="0.00"
@@ -926,8 +925,7 @@ export default function CashRegister() {
                           onClick={() => updateDenomination(denom.valor, -1)}
                           className="w-10 h-10 sm:w-8 sm:h-8 rounded bg-red-500/20 text-red-400 font-bold hover:bg-red-500/30 transition-all shrink-0"
                         >-</button>
-                        <input
-                          type="number"
+                        <NumericInput label="Valor"
                           value={denominationCounts[denom.valor]}
                           onChange={e => setDenominationCounts(prev => ({...prev, [denom.valor]: Math.max(0, parseInt(e.target.value) || 0)}))}
                           className="w-12 text-center bg-transparent text-white font-oswald text-lg border-none outline-none"
@@ -959,8 +957,7 @@ export default function CashRegister() {
                           onClick={() => updateDenomination(denom.valor, -1)}
                           className="w-10 h-10 sm:w-6 sm:h-6 rounded bg-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/30 transition-all shrink-0"
                         >-</button>
-                        <input
-                          type="number"
+                        <NumericInput label="Valor"
                           value={denominationCounts[denom.valor]}
                           onChange={e => setDenominationCounts(prev => ({...prev, [denom.valor]: Math.max(0, parseInt(e.target.value) || 0)}))}
                           className="w-10 text-center bg-transparent text-white font-oswald border-none outline-none"
@@ -1072,8 +1069,7 @@ export default function CashRegister() {
             
             <div>
               <label className="text-sm font-semibold text-white/60 mb-1 block">Monto (RD$)</label>
-              <input
-                type="number"
+              <NumericInput label="Valor"
                 value={movementForm.amount}
                 onChange={e => setMovementForm({...movementForm, amount: e.target.value})}
                 placeholder="0.00"

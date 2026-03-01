@@ -239,7 +239,6 @@ export default function PrinterSettings() {
                           <div className="flex items-center gap-1">
                             <Label className="text-xs text-slate-400 whitespace-nowrap">Copias:</Label>
                             <Input
-                              type="number"
                              
                               max="5"
                               value={channel.copies || 1}

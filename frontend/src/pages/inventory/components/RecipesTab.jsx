@@ -792,8 +792,7 @@ export default function RecipesTab({
             
             <div>
               <label className="text-sm font-medium">Rendimiento (en unidad de despacho, ej: Onzas)</label>
-              <input
-                type="number"
+              <NumericInput label="Valor"
                 value={recipeDialog.data?.yield_quantity || 1}
                 onChange={e => setRecipeDialog(p => ({ ...p, data: { ...p.data, yield_quantity: parseFloat(e.target.value) || 1 } }))}
                 className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg"
@@ -850,8 +849,7 @@ export default function RecipesTab({
                       <TrendingUp size={12} /> % Margen Deseado
                     </label>
                     <div className="flex items-center gap-2 mt-1">
-                      <input
-                        type="number"
+                      <NumericInput label="Valor"
                         value={targetMargin}
                         onChange={e => setTargetMargin(parseFloat(e.target.value) || 0)}
                         className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-center font-mono"
@@ -874,8 +872,7 @@ export default function RecipesTab({
                     </label>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-muted-foreground">RD$</span>
-                      <input
-                        type="number"
+                      <NumericInput label="Valor"
                         value={customPrice}
                         onChange={e => setCustomPrice(parseFloat(e.target.value) || 0)}
                         className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-center font-mono"
@@ -964,8 +961,7 @@ export default function RecipesTab({
                       }}
                       testId={`ingredient-search-${idx}`}
                     />
-                    <input
-                      type="number"
+                    <NumericInput label="Valor"
                       value={ing.quantity}
                       onChange={e => {
                         setRecipeDialog(p => ({
@@ -980,8 +976,7 @@ export default function RecipesTab({
                       placeholder="Cant."
                     />
                     <span className="text-xs text-muted-foreground w-16">{ing.unit}</span>
-                    <input
-                      type="number"
+                    <NumericInput label="Valor"
                       value={ing.waste_percentage}
                       onChange={e => {
                         setRecipeDialog(p => ({

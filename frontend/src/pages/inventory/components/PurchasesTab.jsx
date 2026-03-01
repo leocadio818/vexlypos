@@ -684,7 +684,7 @@ export default function PurchasesTab({
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={chartData.status} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
-                    <XAxis type="number" stroke="#888" fontSize={12} />
+                    <XAxis  stroke="#888" fontSize={12} />
                     <YAxis type="category" dataKey="name" stroke="#888" fontSize={12} width={80} />
                     <Tooltip 
                       contentStyle={{ 
@@ -1016,8 +1016,7 @@ export default function PurchasesTab({
                       <div className="flex items-center gap-2">
                         <div className="flex-1">
                           <label className="text-[10px] text-muted-foreground">Cantidad ({getUnitLabel(item.purchase_unit || selectedIng?.purchase_unit)})</label>
-                          <input
-                            type="number"
+                          <NumericInput label="Valor"
                             value={item.quantity}
                             onChange={e => {
                               setPODialog(p => ({
@@ -1034,8 +1033,7 @@ export default function PurchasesTab({
                         </div>
                         <div className="flex-1">
                           <label className="text-[10px] text-muted-foreground">Precio por {getUnitLabel(item.purchase_unit || selectedIng?.purchase_unit)}</label>
-                          <input
-                            type="number"
+                          <NumericInput label="Valor"
                            
                             value={item.unit_price}
                             onChange={e => {
@@ -1160,8 +1158,7 @@ export default function PurchasesTab({
                     <div className="flex items-center gap-3">
                       <div className="flex-1">
                         <label className="text-xs text-muted-foreground">Cantidad recibida ({getUnitLabel(purchaseUnit)})</label>
-                        <input
-                          type="number"
+                        <NumericInput label="Valor"
                           value={receiveDialog.items[idx]?.received_quantity || ''}
                           onChange={e => {
                             const items = [...receiveDialog.items];
@@ -1174,8 +1171,7 @@ export default function PurchasesTab({
                       </div>
                       <div className="flex-1">
                         <label className="text-xs text-muted-foreground">Precio real (por {getUnitLabel(purchaseUnit)})</label>
-                        <input
-                          type="number"
+                        <NumericInput label="Valor"
                          
                           value={receiveDialog.items[idx]?.actual_unit_price || ''}
                           onChange={e => {

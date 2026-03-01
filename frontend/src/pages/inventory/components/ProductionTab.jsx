@@ -488,8 +488,7 @@ export default function ProductionTab({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Cantidad a producir *</label>
-                <input
-                  type="number"
+                <NumericInput label="Valor"
                  
                  
                   value={productionDialog.data?.quantity || 1}
@@ -617,8 +616,7 @@ export default function ProductionTab({
             {/* Yield */}
             <div>
               <label className="text-sm font-medium">Rendimiento (en unidad de despacho, ej: Onzas)</label>
-              <input
-                type="number"
+              <NumericInput label="Valor"
                
                
                 value={recipeDialog.yield_quantity}
@@ -650,8 +648,7 @@ export default function ProductionTab({
                         }));
                       }}
                     />
-                    <input
-                      type="number"
+                    <NumericInput label="Valor"
                      
                      
                       value={ing.quantity}

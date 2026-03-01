@@ -239,8 +239,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">#</span>
-                    <input
-                      type="number"
+                    <NumericInput label="Valor"
                       value={transactionNumber}
                       onChange={(e) => setTransactionNumber(e.target.value)}
                       placeholder="Ej: 1025"

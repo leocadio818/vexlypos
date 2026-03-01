@@ -621,8 +621,7 @@ export default function IngredientsTab({
                      ingredientDialog.data?.purchase_unit || 'Unidad'}
                   </span>
                   <span className="text-foreground">trae</span>
-                  <input
-                    type="number"
+                  <NumericInput label="Valor"
                    
                    
                     value={ingredientDialog.data?.dispatch_quantity || 1}
@@ -838,8 +837,7 @@ export default function IngredientsTab({
                     ingredientDialog.data?.unit || 'Unidades'
                   }s)`}
                 </label>
-                <input
-                  type="number"
+                <NumericInput label="Valor"
                   value={ingredientDialog.data?.min_stock ?? ''}
                   onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, min_stock: parseFloat(e.target.value) || 0 } }))}
                   className={`w-full mt-1 px-3 py-2 bg-background border rounded-lg ${
@@ -885,8 +883,7 @@ export default function IngredientsTab({
                     ingredientDialog.data?.purchase_unit || 'Unidad'
                   })`}
                 </label>
-                <input
-                  type="number"
+                <NumericInput label="Valor"
                  
                   value={ingredientDialog.data?.avg_cost ?? ''}
                   onChange={e => {

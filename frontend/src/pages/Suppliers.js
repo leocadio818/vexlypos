@@ -213,14 +213,14 @@ export default function Suppliers() {
                     <option value="">Producto...</option>
                     {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
-                  <input value={item.quantity} onChange={e => {
+                  <NumericInput label="Valor" value={item.quantity} onChange={e => {
                     const newItems = [...poDialog.items]; newItems[i].quantity = parseFloat(e.target.value) || 0;
                     setPoDialog(prev => ({ ...prev, items: newItems }));
-                  }} type="number" placeholder="Cant" className="w-16 bg-background border border-border rounded-lg px-2 py-1.5 text-xs font-oswald" />
-                  <input value={item.unit_price} onChange={e => {
+                  }}  placeholder="Cant" className="w-16 bg-background border border-border rounded-lg px-2 py-1.5 text-xs font-oswald" />
+                  <NumericInput label="Valor" value={item.unit_price} onChange={e => {
                     const newItems = [...poDialog.items]; newItems[i].unit_price = parseFloat(e.target.value) || 0;
                     setPoDialog(prev => ({ ...prev, items: newItems }));
-                  }} type="number" placeholder="RD$" className="w-20 bg-background border border-border rounded-lg px-2 py-1.5 text-xs font-oswald" />
+                  }}  placeholder="RD$" className="w-20 bg-background border border-border rounded-lg px-2 py-1.5 text-xs font-oswald" />
                 </div>
               ))}
             </ScrollArea>
@@ -247,10 +247,10 @@ export default function Suppliers() {
               <div key={i} className="flex items-center justify-between p-2 bg-background rounded-lg border border-border">
                 <div><span className="text-sm font-medium">{item.product_name}</span>
                   <span className="text-xs text-muted-foreground ml-2">Pedido: {item.quantity} | Recibido: {item.received_quantity || 0}</span></div>
-                <input value={receiveDialog.items[i]?.received_quantity || 0} onChange={e => {
+                <NumericInput label="Valor" value={receiveDialog.items[i]?.received_quantity || 0} onChange={e => {
                   const newItems = [...receiveDialog.items]; newItems[i].received_quantity = parseFloat(e.target.value) || 0;
                   setReceiveDialog(p => ({ ...p, items: newItems }));
-                }} type="number" className="w-20 bg-card border border-border rounded-lg px-2 py-1.5 text-xs font-oswald text-center" />
+                }}  className="w-20 bg-card border border-border rounded-lg px-2 py-1.5 text-xs font-oswald text-center" />
               </div>
             ))}
             <Button onClick={handleReceive} className="w-full h-11 bg-green-600 text-white font-oswald font-bold active:scale-95" data-testid="confirm-receive">
