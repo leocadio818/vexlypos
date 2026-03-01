@@ -2001,3 +2001,112 @@ async def get_discounts_report(
             "cantidad_facturas": len(rows)
         }
     }
+
+
+# ═══════════════════════════════════════════════════════════════
+# RESERVATIONS REPORT
+# ═══════════════════════════════════════════════════════════════
+
+@router.get("/reservations")
+async def reservations_report(period: str = Query("month")):
+    """Reservation analytics: KPIs, by day of week, top customers, detailed list"""
+    now = datetime.now(timezone.utc)
+    
+    if period == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "week":
+        start = now - timedelta(days=7)
+    elif period == "month":
+        start = now - timedelta(days=30)
+    elif period == "quarter":
+        start = now - timedelta(days=90)
+    else:
+        start = now - timedelta(days=30)
+    
+    start_str = start.strftime("%Y-%m-%d")
+    
+    all_reservations = await db.reservations.find(
+        {"reservation_date": {"$gte": start_str}}, {"_id": 0}
+    ).sort("reservation_date", -1).to_list(1000)
+    
+    total = len(all_reservations)
+    confirmed = len([r for r in all_reservations if r.get("status") == "confirmed"])
+    seated = len([r for r in all_reservations if r.get("status") == "seated"])
+    completed = len([r for r in all_reservations if r.get("status") == "completed"])
+    no_show = len([r for r in all_reservations if r.get("status") == "no_show"])
+    cancelled = len([r for r in all_reservations if r.get("status") == "cancelled"])
+    fulfilled = seated + completed + confirmed
+    fulfillment_rate = round((fulfilled / total * 100) if total > 0 else 0, 1)
+    total_guests = sum(r.get("party_size", 0) for r in all_reservations)
+    avg_party = round(total_guests / total, 1) if total > 0 else 0
+    
+    # By day of week
+    day_names = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"]
+    by_day = {d: 0 for d in day_names}
+    for r in all_reservations:
+        try:
+            dt = datetime.strptime(r.get("reservation_date", ""), "%Y-%m-%d")
+            by_day[day_names[dt.weekday()]] += 1
+        except:
+            pass
+    by_day_list = [{"day": d, "count": by_day[d]} for d in day_names]
+    
+    # By hour
+    by_hour = {}
+    for r in all_reservations:
+        hour = (r.get("reservation_time") or "??:??")[:2] + ":00"
+        by_hour[hour] = by_hour.get(hour, 0) + 1
+    by_hour_list = sorted([{"hour": h, "count": c} for h, c in by_hour.items()], key=lambda x: x["hour"])
+    
+    # Top customers
+    customer_map = {}
+    for r in all_reservations:
+        name = r.get("customer_name", "Desconocido")
+        if name not in customer_map:
+            customer_map[name] = {"name": name, "phone": r.get("phone", ""), "count": 0, "total_guests": 0}
+        customer_map[name]["count"] += 1
+        customer_map[name]["total_guests"] += r.get("party_size", 0)
+    top_customers = sorted(customer_map.values(), key=lambda x: x["count"], reverse=True)[:10]
+    
+    # By status
+    by_status = [
+        {"status": "Confirmadas", "count": confirmed, "color": "#22c55e"},
+        {"status": "Sentadas", "count": seated, "color": "#3b82f6"},
+        {"status": "Completadas", "count": completed, "color": "#8b5cf6"},
+        {"status": "No Show", "count": no_show, "color": "#ef4444"},
+        {"status": "Canceladas", "count": cancelled, "color": "#6b7280"},
+    ]
+    
+    # Detailed list (last 50)
+    details = []
+    for r in all_reservations[:50]:
+        details.append({
+            "id": r.get("id"),
+            "customer_name": r.get("customer_name", ""),
+            "phone": r.get("phone", ""),
+            "date": r.get("reservation_date", ""),
+            "time": r.get("reservation_time", ""),
+            "party_size": r.get("party_size", 0),
+            "table_ids": r.get("table_ids", []),
+            "status": r.get("status", ""),
+            "notes": r.get("notes", ""),
+        })
+    
+    return {
+        "summary": {
+            "total": total,
+            "confirmed": confirmed,
+            "seated": seated,
+            "completed": completed,
+            "no_show": no_show,
+            "cancelled": cancelled,
+            "fulfillment_rate": fulfillment_rate,
+            "total_guests": total_guests,
+            "avg_party_size": avg_party,
+        },
+        "by_day": by_day_list,
+        "by_hour": by_hour_list,
+        "by_status": by_status,
+        "top_customers": top_customers,
+        "details": details,
+    }
