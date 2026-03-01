@@ -30,6 +30,7 @@ import PurchasesTab from './inventory/components/PurchasesTab';
 import ValuationTab from './inventory/components/ValuationTab';
 import AuditTab from './inventory/components/AuditTab';
 import ConfigTab from './inventory/components/ConfigTab';
+import { NumericInput } from '@/components/NumericKeypad';
 
 const INGREDIENT_CATEGORIES = [
   { value: 'general', label: 'General' },

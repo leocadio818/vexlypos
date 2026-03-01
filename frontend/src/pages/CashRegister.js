@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from '@/components/ui/badge';
 import CreditNoteModal from '@/components/CreditNoteModal';
 import ReportXZ from '@/components/ReportXZ';
+import { NumericInput } from '@/components/NumericKeypad';
 
 // Denominaciones de billetes y monedas RD (estructura del usuario)
 const DENOMINACIONES = [

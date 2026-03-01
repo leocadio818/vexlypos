@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertTriangle, Search, FileX, Printer, ArrowRight, Lock, Receipt, CheckCircle } from 'lucide-react';
 import { formatMoney } from '@/lib/api';
+import { NumericInput } from '@/components/NumericKeypad';
 
 const CREDIT_NOTE_STEPS = {
   SEARCH: 'search',

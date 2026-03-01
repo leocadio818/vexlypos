@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { CalendarDays, Plus, Clock, Users, Phone, Trash2, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { NumericInput } from '@/components/NumericKeypad';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Truck, ShoppingCart, Plus, Check, Package, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { NumericInput } from '@/components/NumericKeypad';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });

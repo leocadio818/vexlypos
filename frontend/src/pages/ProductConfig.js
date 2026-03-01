@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
+import { NumericInput } from '@/components/NumericKeypad';
 
 const PRESET_COLORS = [
   '#FF6600', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#FFB300',

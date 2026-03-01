@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Heart, Plus, Search, Gift, Star, Phone, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { NumericInput } from '@/components/NumericKeypad';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });

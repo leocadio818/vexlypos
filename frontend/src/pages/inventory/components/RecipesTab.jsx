@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { recipesAPI, formatMoney } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import RecipeHistoryDialog from './RecipeHistoryDialog';
+import { NumericInput } from '@/components/NumericKeypad';
 
 // Searchable ingredient selector using Shadcn Combobox pattern
 function IngredientSearchSelect({ ingredients, value, onChange, testId }) {

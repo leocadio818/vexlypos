@@ -11,6 +11,7 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { productionAPI, recipesAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import RecipeHistoryDialog from './RecipeHistoryDialog';
+import { NumericInput } from '@/components/NumericKeypad';
 
 // Searchable ingredient selector for sub-recipe recipes
 function SubrecipeIngredientSelect({ ingredients, value, onChange }) {

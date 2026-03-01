@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ingredientsAPI, unitDefinitionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { INGREDIENT_CATEGORIES, UNITS } from '../constants';
+import { NumericInput } from '@/components/NumericKeypad';
 
 const getCategoryLabel = (value) => {
   const cat = INGREDIENT_CATEGORIES.find(c => c.value === value);
