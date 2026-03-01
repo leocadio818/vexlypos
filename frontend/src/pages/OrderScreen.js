@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { useTheme } from '@/context/ThemeContext';
+import TransferTableModal from '@/components/TransferTableModal';
 
 // Mapa de iconos de producto
 const PRODUCT_ICON_MAP = {
