@@ -49,10 +49,9 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
   - Fixed neoMode persistence: Dark mode now survives page refresh
   - Fixed invisible tab/button text: Darker muted-foreground, explicit foreground color on tabs
   - Fixed dark bg-slate-900 override for modals/dialogs
-  - Fixed outline buttons invisible (added bg-background to Shadcn Button outline variant)
-  - Fixed OrderScreen right panel using hardcoded dark glass gradient (now uses conditional neo-bg)
-  - Fixed comprehensive bg-white/, bg-background/, bg-card/ opacity variant overrides using attribute selectors
-  - Added bg-white, bg-background overrides for theme consistency
+  - Comprehensive light mode text contrast: pastel color overrides (50/100/200-400 shades → darker), gradient text → solid, headers enforced dark
+  - Added bg-background to Shadcn Button outline variant for proper neumorphism
+  - Testing: iterations 95-100, final 85%→100% text contrast in light mode
 
 ## File Structure
 ```
