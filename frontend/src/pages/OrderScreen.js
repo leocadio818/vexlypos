@@ -1881,7 +1881,7 @@ export default function OrderScreen() {
                     onTouchStart={(e) => { catTouchStartY = e.touches?.[0]?.clientY || 0; catTouchMoved = false; }}
                     onTouchMove={(e) => { if (Math.abs((e.touches?.[0]?.clientY || 0) - catTouchStartY) > 10) catTouchMoved = true; }}
                     data-testid={`cat-card-${cat.id}`}
-                    className={`relative rounded-xl border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[3rem] text-left flex flex-col justify-between`}
+                    className={`relative rounded-xl border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
                     style={{ backgroundColor: cat.color + (isMinimalist ? 'A0' : '15'), borderColor: cat.color + (isMinimalist ? 'DD' : '40') }}>
                     <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`} style={{ color: cat.color }}>{cat.name}</span>
                     <span className={`text-muted-foreground ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`}>{catProductCount} productos</span>
@@ -1958,7 +1958,7 @@ export default function OrderScreen() {
                     onMouseLeave={handleTouchEnd}
                     disabled={isOutOfStock}
                     data-testid={`product-${product.id}`}
-                    className={`group relative border-2 transition-all rounded-xl flex flex-col ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[3rem] text-left ${
+                    className={`group relative border-2 transition-all rounded-xl flex flex-col ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[5.625rem] text-left ${
                       isOutOfStock 
                         ? 'bg-card/50 border-red-500/50 opacity-60 cursor-not-allowed' 
                         : isLowStock
