@@ -19,9 +19,18 @@ export default function TransferTableModal({ open, onClose, tableId, currentUser
 
   useEffect(() => {
     if (open) {
-      axios.get(`${API}/users`, { headers: hdrs() }).then(r => {
-        const active = (r.data || []).filter(u => u.active && u.id !== currentUserId && u.role !== 'kitchen');
-        setUsers(active);
+      // Load users AND today's attendance to filter only clocked-in users
+      Promise.all([
+        axios.get(`${API}/users`, { headers: hdrs() }),
+        axios.get(`${API}/attendance/today`, { headers: hdrs() }),
+      ]).then(([usersRes, attendanceRes]) => {
+        const activeUsers = (usersRes.data || []).filter(u => u.active && u.id !== currentUserId && u.role !== 'kitchen');
+        const clockedInIds = new Set((attendanceRes.data || []).filter(a => a.status === 'ACTIVE').map(a => a.user_id));
+        // Mark who is clocked in
+        const usersWithStatus = activeUsers.map(u => ({ ...u, clockedIn: clockedInIds.has(u.id) }));
+        // Sort: clocked-in first
+        usersWithStatus.sort((a, b) => (b.clockedIn ? 1 : 0) - (a.clockedIn ? 1 : 0));
+        setUsers(usersWithStatus);
       }).catch(() => {});
       setSelectedUser(null);
       setTransferAll(false);
