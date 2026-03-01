@@ -65,7 +65,7 @@ export function NeoDatePicker({ value, onChange, className = '', placeholder = '
           {displayValue ? <span>{displayValue}</span> : <span className="text-muted-foreground">{placeholder}</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-0" align="start" data-testid="neo-calendar-popup">
+      <PopoverContent className="w-[calc(100vw-32px)] max-w-[300px] p-0" align="start" data-testid="neo-calendar-popup">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-border">
           <button type="button" onClick={prevMonth} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/20 transition-all active:scale-90">
