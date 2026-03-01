@@ -65,7 +65,11 @@ class ReservationInput(BaseModel):
     reservation_date: str
     reservation_time: str
     table_id: str = ""
+    table_ids: list = []
+    area_id: str = ""
     notes: str = ""
+    activation_minutes: int = 60
+    tolerance_minutes: int = 15
 
 # ─── TIMEZONE OPTIONS ───
 TIMEZONE_OPTIONS = [
