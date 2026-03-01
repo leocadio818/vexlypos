@@ -125,6 +125,9 @@ export default function OrderScreen() {
   // Merge Accounts Dialog
   const [mergeAccountsDialog, setMergeAccountsDialog] = useState({ open: false, sourceOrderId: null });
   
+  // Transfer Table Dialog
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+
   // Mobile fullscreen account view
   const [mobileAccountExpanded, setMobileAccountExpanded] = useState(false);
   
