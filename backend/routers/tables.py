@@ -266,6 +266,16 @@ async def transfer_tables(input: TransferInput, user=Depends(get_current_user)):
     if not target_user:
         raise HTTPException(status_code=404, detail="Usuario destino no encontrado o inactivo")
     
+    # Validate target user has clocked in today
+    from zoneinfo import ZoneInfo
+    today = datetime.now(ZoneInfo("America/Santo_Domingo")).strftime("%Y-%m-%d")
+    clock_in = await db.attendance.find_one(
+        {"user_id": input.target_user_id, "date": today, "status": "ACTIVE"},
+        {"_id": 0}
+    )
+    if not clock_in:
+        raise HTTPException(status_code=400, detail=f"{target_user['name']} no tiene entrada registrada hoy. Debe marcar entrada primero.")
+    
     # Check permission
     perms = get_permissions(user.get("role", "waiter"), user.get("permissions"))
     authorized_by = None
