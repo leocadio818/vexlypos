@@ -363,6 +363,35 @@ body.theme-minimalist:not(.neo-dark) .text-white\/40 { color: hsl(var(--foregrou
 body.theme-minimalist:not(.neo-dark) .text-white\/30 { color: hsl(var(--foreground) / 0.3) !important; }
 
 /* ── Pastel/light text colors → darker saturated versions ── */
+/* Very light shades (50, 100) - nearly invisible on light bg */
+body.theme-minimalist:not(.neo-dark) .text-emerald-50,
+body.theme-minimalist:not(.neo-dark) .text-emerald-100,
+body.theme-minimalist:not(.neo-dark) .text-green-50,
+body.theme-minimalist:not(.neo-dark) .text-green-100 { color: #065f46 !important; }
+
+body.theme-minimalist:not(.neo-dark) .text-cyan-50,
+body.theme-minimalist:not(.neo-dark) .text-cyan-100,
+body.theme-minimalist:not(.neo-dark) .text-blue-50,
+body.theme-minimalist:not(.neo-dark) .text-blue-100 { color: #1e40af !important; }
+
+body.theme-minimalist:not(.neo-dark) .text-purple-50,
+body.theme-minimalist:not(.neo-dark) .text-purple-100,
+body.theme-minimalist:not(.neo-dark) .text-violet-50,
+body.theme-minimalist:not(.neo-dark) .text-violet-100,
+body.theme-minimalist:not(.neo-dark) .text-pink-50,
+body.theme-minimalist:not(.neo-dark) .text-pink-100 { color: #6b21a8 !important; }
+
+body.theme-minimalist:not(.neo-dark) .text-amber-50,
+body.theme-minimalist:not(.neo-dark) .text-amber-100,
+body.theme-minimalist:not(.neo-dark) .text-yellow-50,
+body.theme-minimalist:not(.neo-dark) .text-yellow-100,
+body.theme-minimalist:not(.neo-dark) .text-orange-50,
+body.theme-minimalist:not(.neo-dark) .text-orange-100 { color: #92400e !important; }
+
+body.theme-minimalist:not(.neo-dark) .text-red-50,
+body.theme-minimalist:not(.neo-dark) .text-red-100 { color: #991b1b !important; }
+
+/* Light shades with opacity (200/70, 300/80, etc.) + standard 200-400 */
 body.theme-minimalist:not(.neo-dark) [class*="text-green-2"],
 body.theme-minimalist:not(.neo-dark) [class*="text-green-3"],
 body.theme-minimalist:not(.neo-dark) [class*="text-green-4"],
