@@ -2077,9 +2077,28 @@ async def reservations_report(period: str = Query("month")):
         {"status": "Canceladas", "count": cancelled, "color": "#6b7280"},
     ]
     
+    # Resolve table names and areas
+    tables = await db.tables.find({}, {"_id": 0, "id": 1, "number": 1, "area_id": 1}).to_list(200)
+    areas = await db.areas.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(50)
+    table_map = {t["id"]: t for t in tables}
+    area_map = {a["id"]: a["name"] for a in areas}
+    
     # Detailed list (last 50)
     details = []
     for r in all_reservations[:50]:
+        # Resolve table numbers and area name
+        r_table_ids = r.get("table_ids", [])
+        table_names = []
+        area_name = r.get("area_id", "")
+        for tid in r_table_ids:
+            t = table_map.get(tid)
+            if t:
+                table_names.append(f"Mesa {t.get('number', '?')}")
+                if not area_name and t.get("area_id"):
+                    area_name = t["area_id"]
+        # Resolve area name from area_id
+        resolved_area = area_map.get(area_name or r.get("area_id", ""), area_name or "")
+        
         details.append({
             "id": r.get("id"),
             "customer_name": r.get("customer_name", ""),
@@ -2087,7 +2106,8 @@ async def reservations_report(period: str = Query("month")):
             "date": r.get("reservation_date", ""),
             "time": r.get("reservation_time", ""),
             "party_size": r.get("party_size", 0),
-            "table_ids": r.get("table_ids", []),
+            "tables": ", ".join(table_names) if table_names else "-",
+            "area": resolved_area or "-",
             "status": r.get("status", ""),
             "notes": r.get("notes", ""),
         })
