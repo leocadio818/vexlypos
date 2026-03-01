@@ -316,6 +316,18 @@ export default function ThemeTab() {
           <RotateCcw size={16} />
         </Button>
       </div>
+
+      {/* Save as personal preference */}
+      <Button
+        onClick={handleSaveAsMyPreference}
+        disabled={savingProfile}
+        variant="outline"
+        className="w-full h-11 font-oswald font-bold gap-2"
+        data-testid="save-user-preference-btn"
+      >
+        <User size={16} />
+        {savingProfile ? 'Guardando...' : `Guardar como preferencia de ${user?.name || 'mi perfil'}`}
+      </Button>
     </div>
   );
 }
