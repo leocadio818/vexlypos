@@ -127,73 +127,61 @@ export default function CashRegister() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const checkRes = await posSessionsAPI.check();
+      // Step 1: Check session + independent data IN PARALLEL
+      const [checkRes, historyRes, termRes] = await Promise.all([
+        posSessionsAPI.check(),
+        posSessionsAPI.history({ limit: 20, status: 'closed' }).catch(() => ({ data: [] })),
+        posSessionsAPI.terminals().catch(() => ({ data: defaultTerminals })),
+      ]);
+
+      setSessions(historyRes.data || []);
+
+      // Set terminals
+      const terminalsData = termRes.data?.length > 0 ? termRes.data : defaultTerminals;
+      setTerminals(terminalsData);
+      try {
+        const inUseRes = await posSessionsAPI.terminalsInUse();
+        setTerminalsInUse(inUseRes.data || {});
+      } catch {
+        const inUse = {};
+        terminalsData.forEach(t => { if (t.in_use) inUse[t.name] = t.in_use_by || 'En uso'; });
+        setTerminalsInUse(inUse);
+      }
+      const availableTerminal = terminalsData.find(t => !t.in_use);
+      if (availableTerminal && !terminalName) {
+        setSelectedTerminal(availableTerminal.id);
+        setTerminalName(availableTerminal.name);
+      }
+
+      // Step 2: If has open session, load session data
       if (checkRes.data.has_open_session && checkRes.data.session) {
         const currentRes = await posSessionsAPI.current();
         setCurrentSession(currentRes.data);
         
-        // Auto-sync sales totals on load
         if (currentRes.data?.id) {
-          try {
-            const syncRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/pos-sessions/${currentRes.data.id}/sync-sales`, {
+          const sid = currentRes.data.id;
+          // Step 3: Sync + movements + breakdown IN PARALLEL
+          const [syncResult, movResult, breakdownResult] = await Promise.allSettled([
+            fetch(`${process.env.REACT_APP_BACKEND_URL}/api/pos-sessions/${sid}/sync-sales`, {
               method: 'PUT', headers: { 'Authorization': `Bearer ${localStorage.getItem('pos_token')}` }
-            });
-            if (syncRes.ok) {
-              const refreshRes = await posSessionsAPI.current();
-              setCurrentSession(refreshRes.data);
-            }
-          } catch {}
-        }
-        
-        if (currentRes.data?.id) {
-          const movRes = await posSessionsAPI.getMovements(currentRes.data.id);
-          setMovements(movRes.data || []);
-          
-          // Cargar desglose detallado de ventas por forma de pago
-          try {
-            const breakdownRes = await posSessionsAPI.salesBreakdown(currentRes.data.id);
-            setSalesBreakdown(breakdownRes.data);
-          } catch {}
+            }),
+            posSessionsAPI.getMovements(sid),
+            posSessionsAPI.salesBreakdown(sid),
+          ]);
+
+          if (movResult.status === 'fulfilled') setMovements(movResult.value.data || []);
+          if (breakdownResult.status === 'fulfilled') setSalesBreakdown(breakdownResult.value.data);
+
+          // Refresh session after sync if successful
+          if (syncResult.status === 'fulfilled' && syncResult.value?.ok) {
+            const refreshRes = await posSessionsAPI.current();
+            setCurrentSession(refreshRes.data);
+          }
         }
       } else {
         setCurrentSession(null);
         setMovements([]);
       }
-      
-      const historyRes = await posSessionsAPI.history({ limit: 20, status: 'closed' });
-      setSessions(historyRes.data || []);
-      
-      try {
-        const termRes = await posSessionsAPI.terminals();
-        const terminalsData = termRes.data?.length > 0 ? termRes.data : defaultTerminals;
-        setTerminals(terminalsData);
-        
-        // Obtener terminales en uso desde el endpoint
-        try {
-          const inUseRes = await posSessionsAPI.terminalsInUse();
-          setTerminalsInUse(inUseRes.data || {});
-        } catch {
-          // Si falla, intentar extraer de los datos de terminales
-          const inUse = {};
-          terminalsData.forEach(t => {
-            if (t.in_use) {
-              inUse[t.name] = t.in_use_by || 'En uso';
-            }
-          });
-          setTerminalsInUse(inUse);
-        }
-        
-        // Auto-seleccionar el primer terminal disponible
-        const availableTerminal = terminalsData.find(t => !t.in_use);
-        if (availableTerminal && !terminalName) {
-          setSelectedTerminal(availableTerminal.id);
-          setTerminalName(availableTerminal.name);
-        }
-      } catch {
-        setTerminals(defaultTerminals);
-        setTerminalsInUse({});
-      }
-      
     } catch (err) {
       console.error('Error fetching session data:', err);
       toast.error('Error cargando datos de caja');
