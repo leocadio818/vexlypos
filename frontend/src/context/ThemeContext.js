@@ -52,8 +52,22 @@ function hexToHslParts(hex) {
 
 export function ThemeProvider({ children }) {
   // Load from localStorage FIRST for instant apply (no FOUC)
+  // Priority: user preferences > theme cache
   const cached = (() => {
-    try { return JSON.parse(localStorage.getItem('pos_theme_cache') || '{}'); } catch { return {}; }
+    try {
+      const userPrefs = JSON.parse(localStorage.getItem('pos_user_ui_prefs') || 'null');
+      if (userPrefs) {
+        return {
+          activeThemeMode: userPrefs.theme || 'original',
+          neoMode: userPrefs.color_mode || 'light',
+          neoBgColor: userPrefs.neo_bg_color,
+          neoDarkBg: userPrefs.neo_dark_bg,
+          neoGlowColor: userPrefs.neo_glow_color,
+          neoAccentColor: userPrefs.neo_accent_color,
+        };
+      }
+      return JSON.parse(localStorage.getItem('pos_theme_cache') || '{}');
+    } catch { return {}; }
   })();
 
   const [theme, setTheme] = useState(defaultTheme);
