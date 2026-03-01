@@ -430,6 +430,12 @@ body.theme-minimalist:not(.neo-dark) [class*="text-red-2"],
 body.theme-minimalist:not(.neo-dark) [class*="text-red-3"],
 body.theme-minimalist:not(.neo-dark) [class*="text-red-4"] { color: #dc2626 !important; }
 
+/* Also catch opacity variants like text-emerald-200/70 via broader attribute match */
+body.theme-minimalist:not(.neo-dark) [class*="emerald-1"],
+body.theme-minimalist:not(.neo-dark) [class*="emerald-2"],
+body.theme-minimalist:not(.neo-dark) [class*="emerald-3"] { color: #059669 !important; }
+body.theme-minimalist:not(.neo-dark) .text-emerald-50 { color: #065f46 !important; }
+
 /* ── Gradient text → solid dark color (light pastel gradients invisible on light bg) ── */
 body.theme-minimalist:not(.neo-dark) .bg-clip-text.text-transparent {
   -webkit-text-fill-color: hsl(var(--foreground)) !important;
