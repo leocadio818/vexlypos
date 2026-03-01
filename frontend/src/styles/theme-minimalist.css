@@ -511,6 +511,19 @@ body.theme-minimalist:not(.neo-dark) div[style*="color"] {
   color: hsl(var(--foreground)) !important;
 }
 
+/* Make inline bg colors more solid (15% opacity → 35% minimum) */
+body.theme-minimalist:not(.neo-dark) [style*="background"][style*="15)"],
+body.theme-minimalist:not(.neo-dark) [style*="background"][style*="10)"],
+body.theme-minimalist:not(.neo-dark) [style*="background"][style*="20)"] {
+  filter: saturate(2.5) contrast(1.1);
+}
+
+/* Category/product buttons with very light inline backgrounds - boost visibility */
+body.theme-minimalist:not(.neo-dark) [style*="backgroundColor"] {
+  filter: saturate(2) contrast(1.05);
+  border: 1px solid rgba(0,0,0,0.08) !important;
+}
+
 /* Spans and paragraphs that inherit light colors */
 body.theme-minimalist:not(.neo-dark) span,
 body.theme-minimalist:not(.neo-dark) p,
