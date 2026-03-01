@@ -117,7 +117,7 @@ export default function NcfTab() {
           <Button 
             size="sm" 
             onClick={() => setNcfDialog({ open: true, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' })}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
             data-testid="add-ncf-btn"
           >
             <Plus size={14} className="mr-1" /> Nueva Secuencia
