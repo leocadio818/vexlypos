@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const { applyUserPreferences } = useTheme();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
