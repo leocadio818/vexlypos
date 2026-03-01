@@ -12,6 +12,8 @@ def set_db(database):
     global db
     db = database
 
+from routers.auth import get_current_user
+
 def gen_id() -> str:
     return str(uuid.uuid4())
 
