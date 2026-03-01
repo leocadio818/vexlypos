@@ -31,6 +31,7 @@ import ValuationTab from './inventory/components/ValuationTab';
 import AuditTab from './inventory/components/AuditTab';
 import ConfigTab from './inventory/components/ConfigTab';
 import { NumericInput } from '@/components/NumericKeypad';
+import { NeoDatePicker, NeoTimePicker } from '@/components/DateTimePicker';
 
 const INGREDIENT_CATEGORIES = [
   { value: 'general', label: 'General' },
