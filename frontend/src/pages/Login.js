@@ -15,9 +15,11 @@ const DOT_COLORS = [
 export default function Login() {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
+  const [attendanceResult, setAttendanceResult] = useState(null);
   const { login, user, ensureSeed } = useAuth();
   const { theme, isMinimalist, neoColors, isNeoDark } = useTheme();
   const navigate = useNavigate();
+  const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     if (user) navigate(user.permissions?.view_dashboard ? '/dashboard' : '/tables');
