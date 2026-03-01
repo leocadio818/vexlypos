@@ -173,7 +173,7 @@ const ThermalTicket = forwardRef(({
       <div className="ticket-info">
         <div className="ticket-info-row">
           <span className="ticket-info-label">Fecha:</span>
-          <span className="ticket-info-value">{formatDateTime(bill.paid_at || bill.created_at)}</span>
+          <span className="ticket-info-value">{formatDateTime(bill.paid_at || bill.created_at, config.time_format)}</span>
         </div>
         <div className="ticket-info-row">
           <span className="ticket-info-label">Cajero:</span>
