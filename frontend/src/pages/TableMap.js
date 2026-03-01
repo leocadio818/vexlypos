@@ -321,6 +321,13 @@ export default function TableMap() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
   
+  // Listen for table transfer notifications → refetch
+  useEffect(() => {
+    const handleTablesUpdated = () => fetchData();
+    window.addEventListener('tablesUpdated', handleTablesUpdated);
+    return () => window.removeEventListener('tablesUpdated', handleTablesUpdated);
+  }, [fetchData]);
+  
   // Check reservation activations every 30 seconds
   useEffect(() => {
     const interval = setInterval(fetchData, 30000);
