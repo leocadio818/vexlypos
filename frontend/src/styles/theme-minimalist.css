@@ -403,11 +403,6 @@ body.theme-minimalist a {
   color: hsl(var(--foreground));
 }
 
-/* Buttons without explicit bg: give them solid neo-bg for proper neumorphism */
-body.theme-minimalist button:not([class*="bg-"]):not([disabled]) {
-  background-color: var(--neo-bg);
-}
-
 /* bg-white → adapt to theme bg */
 body.theme-minimalist .bg-white,
 body.theme-minimalist [class*="bg-white "] {
