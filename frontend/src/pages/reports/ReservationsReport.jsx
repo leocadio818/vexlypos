@@ -194,7 +194,10 @@ export default function ReservationsReport() {
                   <th className="text-left p-3">Fecha</th>
                   <th className="text-left p-3">Hora</th>
                   <th className="text-center p-3">Personas</th>
+                  <th className="text-left p-3">Mesas</th>
+                  <th className="text-left p-3">Area</th>
                   <th className="text-left p-3">Estado</th>
+                  <th className="text-left p-3">Notas</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,11 +208,14 @@ export default function ReservationsReport() {
                     <td className="p-3 font-mono text-xs">{r.date}</td>
                     <td className="p-3 font-mono text-xs">{r.time}</td>
                     <td className="p-3 text-center font-oswald">{r.party_size}</td>
+                    <td className="p-3 text-xs">{r.tables || '-'}</td>
+                    <td className="p-3 text-xs">{r.area || '-'}</td>
                     <td className="p-3">
                       <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || 'bg-gray-500/20 text-gray-500'}`}>
                         {STATUS_LABELS[r.status] || r.status}
                       </Badge>
                     </td>
+                    <td className="p-3 text-xs text-muted-foreground max-w-[150px] truncate">{r.notes || '-'}</td>
                   </tr>
                 ))}
               </tbody>
