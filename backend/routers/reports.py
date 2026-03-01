@@ -251,6 +251,7 @@ async def dashboard():
             "avg_ticket": avg_ticket,
             "cash": round(cash_total, 2),
             "card": round(card_total, 2),
+            "transfer": round(transfer_total, 2),
             "itbis": round(total_itbis, 2),
             "tips": round(total_tips, 2),
             "discounts": round(discounts_total, 2),
