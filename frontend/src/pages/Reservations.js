@@ -207,7 +207,7 @@ export default function Reservations() {
 
       {/* New/Edit Reservation Dialog - Glassmorphism */}
       <Dialog open={dialog.open} onOpenChange={(o) => !o && setDialog(p => ({ ...p, open: false, editId: null }))}>
-        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="new-reservation-dialog">
+        <DialogContent className="max-w-3xl w-[95vw] backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="new-reservation-dialog">
           <DialogHeader><DialogTitle className="font-oswald text-white">{dialog.editId ? 'Editar Reservacion' : 'Nueva Reservacion'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <input value={dialog.customer_name} onChange={e => setDialog(p => ({ ...p, customer_name: e.target.value }))}
