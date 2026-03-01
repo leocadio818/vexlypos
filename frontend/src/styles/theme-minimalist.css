@@ -544,10 +544,6 @@ body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] span[style*="color"],
 body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] p[style*="color"] {
   color: white !important;
 }
-body.theme-minimalist:not(.neo-dark) button.bg-primary,
-body.theme-minimalist:not(.neo-dark) a.bg-primary {
-  color: white !important;
-}
 
 /* Make inline bg colors more visible with subtle border */
 body.theme-minimalist:not(.neo-dark) [style*="backgroundColor"] {
