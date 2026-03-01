@@ -79,7 +79,7 @@ async def clock_in(input: PinInput):
 
 @router.post("/attendance/clock-out")
 async def clock_out(input: PinInput):
-    """Register employee clock-out."""
+    """Register employee clock-out with validations for open tables and shifts."""
     from routers.auth import hash_pin
     
     pin_hash = hash_pin(input.pin)
@@ -88,7 +88,6 @@ async def clock_out(input: PinInput):
         raise HTTPException(status_code=401, detail="PIN incorrecto o usuario inactivo")
     
     user_id = user["id"]
-    today = now_local().strftime("%Y-%m-%d")
     
     # Find active clock-in record
     existing = await db.attendance.find_one(
@@ -98,6 +97,28 @@ async def clock_out(input: PinInput):
     if not existing:
         raise HTTPException(status_code=400, detail="No tienes una entrada registrada. Debes marcar entrada primero.")
     
+    # ── Validation 1: Open tables/orders ──
+    open_orders = await db.orders.find(
+        {"waiter_id": user_id, "status": {"$nin": ["closed", "cancelled", "paid"]}},
+        {"_id": 0, "table_id": 1}
+    ).to_list(100)
+    if open_orders:
+        table_count = len(set(o.get("table_id") for o in open_orders if o.get("table_id")))
+        raise HTTPException(status_code=400, detail=f"Tienes {table_count} mesa(s) abierta(s). Debes cerrarlas o transferirlas antes de marcar salida.")
+    
+    # ── Validation 2: Open POS shift (Cierre X pending) ──
+    try:
+        from routers.pos_sessions import get_supabase
+        sb = get_supabase()
+        open_shift = sb.table("pos_sessions").select("id, ref").eq("opened_by", user_id).eq("status", "open").limit(1).execute()
+        if open_shift.data and len(open_shift.data) > 0:
+            raise HTTPException(status_code=400, detail=f"Tienes un turno de caja abierto ({open_shift.data[0]['ref']}). Debes hacer Cierre X primero.")
+    except HTTPException:
+        raise
+    except:
+        pass  # If Supabase check fails, allow clock-out (don't block operations)
+    
+    # ── All validations passed — register clock-out ──
     local_now = now_local()
     config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
     is_12h = config.get("time_format", "12h") == "12h"
