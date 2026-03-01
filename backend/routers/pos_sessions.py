@@ -325,6 +325,41 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
             
             sb.table("cash_movements").insert(adjustment_data).execute()
         
+        # ── AUTO CLOCK-OUT: Register attendance exit for the cashier ──
+        try:
+            from zoneinfo import ZoneInfo
+            local_now = datetime.now(ZoneInfo("America/Santo_Domingo"))
+            config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+            is_12h = config.get("time_format", "12h") == "12h"
+            display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
+            
+            active_attendance = await db.attendance.find_one(
+                {"user_id": user_id, "status": "ACTIVE"}, {"_id": 0}
+            )
+            if active_attendance:
+                try:
+                    clock_in_dt = datetime.fromisoformat(active_attendance["clock_in"])
+                    diff = local_now - clock_in_dt.replace(tzinfo=local_now.tzinfo) if clock_in_dt.tzinfo is None else local_now - clock_in_dt
+                    hours = round(diff.total_seconds() / 3600, 2)
+                except:
+                    hours = 0
+                hours_display = f"{int(hours)}h {int((hours % 1) * 60)}m"
+                
+                await db.attendance.update_one(
+                    {"id": active_attendance["id"]},
+                    {"$set": {
+                        "clock_out": local_now.isoformat(),
+                        "clock_out_display": display_time,
+                        "hours_worked": hours,
+                        "hours_display": hours_display,
+                        "status": "COMPLETED",
+                        "auto_clock_out": True,
+                        "auto_clock_out_reason": "Cierre de turno de caja",
+                    }}
+                )
+        except Exception as e:
+            print(f"Auto clock-out warning: {e}")
+        
         return {
             "ok": True,
             "session_id": session_id,
