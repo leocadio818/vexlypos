@@ -43,6 +43,24 @@ export default function Login() {
     setLoading(false);
   };
 
+  const handleAttendance = async (action) => {
+    if (pin.length < 1) { toast.error('Ingresa tu PIN primero'); return; }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/attendance/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.detail || 'Error'); setPin(''); setLoading(false); return; }
+      setAttendanceResult(data);
+      setPin('');
+    } catch { toast.error('Error de conexion'); }
+    setLoading(false);
+  };
+
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key >= '0' && e.key <= '9') setPin(prev => prev.length < 8 ? prev + e.key : prev);
