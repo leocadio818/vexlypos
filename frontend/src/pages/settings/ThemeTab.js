@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import { Palette, Check, Sun, Moon, Sparkles, RotateCcw } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Palette, Check, Sun, Moon, Sparkles, RotateCcw, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import axios from 'axios';
 
 // Glass theme presets (original)
 const GLASS_PRESETS = [
