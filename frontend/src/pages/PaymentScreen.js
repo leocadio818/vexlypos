@@ -1381,68 +1381,48 @@ export default function PaymentScreen() {
                 <button
                   key={method.id}
                   onClick={() => handleMethodClick(method)}
-                  className={`group relative rounded-3xl transition-all duration-500 flex flex-col items-center justify-center overflow-hidden
+                  className={`group relative rounded-2xl transition-all duration-300 flex flex-col items-center justify-center overflow-hidden
                     ${isMobile ? 'h-24 p-3' : largeMode ? 'h-36 p-4' : 'h-28 p-3'}
-                    ${hasAmount ? glassStyles.cardActive : pendingAmount !== null ? 'ring-2 ring-yellow-400/50 ' + glassStyles.card : glassStyles.card}
-                    ${glassStyles.cardHover}
-                    active:scale-95 transform
+                    ${hasAmount ? 'ring-2 ring-primary shadow-lg' : pendingAmount !== null ? 'ring-2 ring-yellow-400/50' : ''}
+                    active:scale-95 transform border-2
                   `}
                   style={{
-                    animationDelay: `${index * 50}ms`,
+                    backgroundColor: method.bg_color || '#e5e7eb',
+                    borderColor: (method.bg_color || '#e5e7eb') + '80',
+                    color: method.text_color || '#1f2937',
                   }}
                   data-testid={`payment-method-${method.id}`}
                 >
-                  {/* Liquid gradient background */}
-                  <div 
-                    className="absolute inset-0 opacity-40 group-hover:opacity-60 transition-opacity duration-500"
-                    style={{
-                      background: `linear-gradient(135deg, ${method.bg_color || '#6b7280'}40 0%, transparent 50%, ${method.bg_color || '#6b7280'}20 100%)`,
-                    }}
-                  />
-                  
-                  {/* Shine effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                    <div 
-                      className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
-                      style={{
-                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Icon with glow */}
-                  <div className="relative z-10 transform group-hover:scale-110 transition-transform duration-300">
-                    <div 
-                      className="absolute inset-0 blur-xl opacity-50"
-                      style={{ backgroundColor: method.bg_color || '#6b7280' }}
-                    />
-                    <div className="relative" style={{ color: method.text_color || '#ffffff' }}>
-                      {renderPaymentIcon(method)}
-                    </div>
+                  {/* Icon */}
+                  <div className="relative z-10">
+                    {renderPaymentIcon(method)}
                   </div>
                   
                   {/* Name */}
-                  <span className={`relative z-10 font-oswald font-bold text-center leading-tight text-white/90 mt-1 drop-shadow-lg ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                  <span className={`relative z-10 font-oswald font-bold text-center leading-tight mt-1 ${isMobile ? 'text-xs' : 'text-sm'}`}
+                    style={{ color: method.text_color || '#1f2937' }}>
                     {method.name}
                   </span>
                   
-                  {/* Foreign currency equivalent - Shows how much to receive in USD/EUR */}
+                  {/* Foreign currency equivalent */}
                   {isForeignCurrency && equivalentInForeign && !hasAmount && (
-                    <span className={`relative z-10 font-oswald font-bold text-center text-yellow-300 drop-shadow-lg ${isMobile ? 'text-sm' : 'text-base'}`}>
+                    <span className={`relative z-10 font-oswald font-bold text-center ${isMobile ? 'text-sm' : 'text-base'}`}
+                      style={{ color: method.text_color || '#1f2937' }}>
                       {currencySymbol}{equivalentInForeign}
                     </span>
                   )}
                   
                   {/* Exchange rate badge */}
                   {isForeignCurrency && (
-                    <span className={`absolute bottom-1.5 right-2 ${glassStyles.card} px-1.5 py-0.5 rounded-full font-oswald text-white/60 ${isMobile ? 'text-[7px]' : 'text-[9px]'}`}>
+                    <span className={`absolute bottom-1.5 right-2 bg-white/30 px-1.5 py-0.5 rounded-full font-oswald ${isMobile ? 'text-[7px]' : 'text-[9px]'}`}
+                      style={{ color: method.text_color || '#1f2937' }}>
                       1 = {method.exchange_rate}
                     </span>
                   )}
                   
-                  {/* Amount badge - Liquid glass effect */}
+                  {/* Amount badge */}
                   {hasAmount && (
-                    <div className={`absolute -top-1 -right-1 backdrop-blur-xl bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-full px-3 py-1 font-oswald font-bold shadow-lg shadow-green-500/30 animate-pulse ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                    <div className={`absolute -top-1 -right-1 bg-green-500 text-white rounded-full px-3 py-1 font-oswald font-bold shadow-lg ${isMobile ? 'text-xs' : 'text-sm'}`}>
                       {formatMoney(parseFloat(amount) * (method.exchange_rate || 1))}
                     </div>
                   )}
