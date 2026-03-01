@@ -444,11 +444,14 @@ export default function OrderScreen() {
     window.addEventListener('openMoveTableDialog', handleOpenMoveDialog);
     window.addEventListener('enterSplitMode', handleEnterSplitMode);
     window.addEventListener('voidEntireOrder', handleVoidEntireOrder);
+    const handleOpenTransfer = () => setTransferDialogOpen(true);
+    window.addEventListener('openTransferTableDialog', handleOpenTransfer);
     
     return () => {
       window.removeEventListener('openMoveTableDialog', handleOpenMoveDialog);
       window.removeEventListener('enterSplitMode', handleEnterSplitMode);
       window.removeEventListener('voidEntireOrder', handleVoidEntireOrder);
+      window.removeEventListener('openTransferTableDialog', handleOpenTransfer);
     };
   }, [order]);
 
