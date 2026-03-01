@@ -637,7 +637,7 @@ export default function Reports() {
         </div>
       );
     }
-    if (!reportData) {
+    if (!reportData && selectedReport !== 'reservations') {
       return (
         <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
           <AlertTriangle size={48} className="mb-4 opacity-50" />
