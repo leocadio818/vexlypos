@@ -161,6 +161,9 @@ body.theme-minimalist [class*="bg-slate-8"] {
   background-color: var(--neo-bg) !important;
 }
 
+/* Override responsive border-white variants */
+body.theme-minimalist:not(.neo-dark) [class*="border-white/"] { border-color: transparent !important; }
+
 body.theme-minimalist .bg-gradient-to-br {
   background: var(--neo-bg) !important;
 }
