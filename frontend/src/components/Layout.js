@@ -441,6 +441,21 @@ export default function Layout() {
                           <span className="text-sm font-medium text-white/90 group-hover:text-white">Mover Mesa</span>
                         </button>
                         
+                        {/* Transferir Mesa */}
+                        <button 
+                          onClick={() => { 
+                            setFunctionsMenuOpen(false); 
+                            window.dispatchEvent(new CustomEvent('openTransferTableDialog'));
+                          }}
+                          className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-purple-500/20 border border-white/10 hover:border-purple-400/50 transition-all duration-200 group active:scale-95"
+                          data-testid="sidebar-fn-transfer-table"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+                            <ArrowRightLeft size={16} className="text-purple-400" />
+                          </div>
+                          <span className="text-sm font-medium text-white/90 group-hover:text-white">Transferir Mesa</span>
+                        </button>
+                        
                         {/* Dividir Cuenta */}
                         <button 
                           onClick={() => { 
