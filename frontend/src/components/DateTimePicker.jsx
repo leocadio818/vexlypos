@@ -228,31 +228,31 @@ export function NeoTimePicker({ value, onChange, className = '', placeholder = '
           {displayValue ? <span>{displayValue}</span> : <span className="text-muted-foreground">{placeholder}</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[calc(100vw-32px)] max-w-[260px] p-0" align="start" data-testid="neo-time-popup">
-        <div className="p-2 sm:p-3">
-          <p className="text-xs font-bold text-muted-foreground mb-2 text-center">Seleccionar Hora</p>
+      <PopoverContent className="w-[calc(100vw-32px)] max-w-[400px] p-0" align="start" data-testid="neo-time-popup">
+        <div className="p-4">
+          <p className="text-sm font-bold text-muted-foreground mb-3 text-center">Seleccionar Hora</p>
 
           {is12h ? (
             /* ── 12H Mode ── */
             <div>
               {/* AM/PM Toggle */}
-              <div className="flex gap-1 mb-2">
+              <div className="flex gap-2 mb-3">
                 <button type="button" onClick={() => setAmpm('AM')}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-oswald font-bold transition-all ${ampm === 'AM' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                  className={`flex-1 py-3 rounded-xl text-sm font-oswald font-bold transition-all ${ampm === 'AM' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                   AM
                 </button>
                 <button type="button" onClick={() => setAmpm('PM')}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-oswald font-bold transition-all ${ampm === 'PM' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                  className={`flex-1 py-3 rounded-xl text-sm font-oswald font-bold transition-all ${ampm === 'PM' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                   PM
                 </button>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <div className="flex-1">
-                  <p className="text-[10px] text-muted-foreground text-center mb-1">Hora</p>
-                  <div className="grid grid-cols-4 gap-0.5">
+                  <p className="text-xs text-muted-foreground text-center mb-2 font-bold">Hora</p>
+                  <div className="grid grid-cols-4 gap-1.5">
                     {hours12.map(h => (
                       <button key={h} type="button" onClick={() => selectTime12(h, selMin || '00', ampm)}
-                        className={`py-2 rounded-md text-[11px] font-oswald font-bold transition-all active:scale-90
+                        className={`py-3 rounded-xl text-base font-oswald font-bold transition-all active:scale-90
                           ${h === current12h && ((ampm === 'AM' && selHourNum < 12) || (ampm === 'PM' && selHourNum >= 12))
                             ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
                         {h}
@@ -261,12 +261,12 @@ export function NeoTimePicker({ value, onChange, className = '', placeholder = '
                   </div>
                 </div>
                 <div className="w-px bg-border" />
-                <div className="w-[70px]">
-                  <p className="text-[10px] text-muted-foreground text-center mb-1">Min</p>
-                  <div className="grid grid-cols-2 gap-0.5">
+                <div className="w-[120px]">
+                  <p className="text-xs text-muted-foreground text-center mb-2 font-bold">Min</p>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {minutes.map(m => (
                       <button key={m} type="button" onClick={() => selectTime12(current12h || 12, m, ampm)}
-                        className={`py-2 rounded-md text-[11px] font-oswald font-bold transition-all active:scale-90
+                        className={`py-3 rounded-xl text-base font-oswald font-bold transition-all active:scale-90
                           ${m === selMin ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
                         :{m}
                       </button>
@@ -277,13 +277,13 @@ export function NeoTimePicker({ value, onChange, className = '', placeholder = '
             </div>
           ) : (
             /* ── 24H Mode ── */
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <div className="flex-1">
-                <p className="text-[10px] text-muted-foreground text-center mb-1">Hora</p>
-                <div className="grid grid-cols-4 gap-0.5 max-h-[180px] overflow-y-auto">
+                <p className="text-xs text-muted-foreground text-center mb-2 font-bold">Hora</p>
+                <div className="grid grid-cols-6 gap-1.5 max-h-[250px] overflow-y-auto">
                   {hours24.map(h => (
                     <button key={h} type="button" onClick={() => selectTime(h, selMin || '00')}
-                      className={`py-1.5 rounded-md text-[11px] font-oswald font-bold transition-all active:scale-90
+                      className={`py-3 rounded-xl text-base font-oswald font-bold transition-all active:scale-90
                         ${h === selHour ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
                       {h}
                     </button>
@@ -291,12 +291,12 @@ export function NeoTimePicker({ value, onChange, className = '', placeholder = '
                 </div>
               </div>
               <div className="w-px bg-border" />
-              <div className="w-[70px]">
-                <p className="text-[10px] text-muted-foreground text-center mb-1">Min</p>
-                <div className="grid grid-cols-2 gap-0.5 max-h-[180px] overflow-y-auto">
+              <div className="w-[120px]">
+                <p className="text-xs text-muted-foreground text-center mb-2 font-bold">Min</p>
+                <div className="grid grid-cols-2 gap-1.5 max-h-[250px] overflow-y-auto">
                   {minutes.map(m => (
                     <button key={m} type="button" onClick={() => selectTime(selHour || '12', m)}
-                      className={`py-1.5 rounded-md text-[11px] font-oswald font-bold transition-all active:scale-90
+                      className={`py-3 rounded-xl text-base font-oswald font-bold transition-all active:scale-90
                         ${m === selMin ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
                       :{m}
                     </button>
