@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { formatMoney } from '@/lib/api';
 import { getSystemTimezone, formatSystemDate } from '@/lib/timezone';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Users, ShoppingCart, DollarSign, Utensils, AlertTriangle, Clock, CreditCard, Banknote, BarChart3, Heart, UtensilsCrossed, CheckCircle2, XCircle, Tag } from 'lucide-react';
+import { TrendingUp, Users, ShoppingCart, DollarSign, Utensils, AlertTriangle, Clock, CreditCard, Banknote, BarChart3, Heart, UtensilsCrossed, CheckCircle2, XCircle, Tag, ArrowLeftRight, Wallet } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 
