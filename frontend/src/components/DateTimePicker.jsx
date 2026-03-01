@@ -176,7 +176,7 @@ export function NeoTimePicker({ value, onChange, className = '', placeholder = '
     const period = h >= 12 ? 'PM' : 'AM';
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
     return `${h12}:${m} ${period}`;
-  }, [value, use12h]);
+  }, [value, is12h]);
 
   const current12h = selHourNum === 0 ? 12 : selHourNum > 12 ? selHourNum - 12 : selHourNum;
 
