@@ -46,9 +46,12 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - **ThemeContext.js**: neoMode ('light'|'dark'), neoDarkBg, body.style CSS vars, neo-dark class
 - **PaymentScreen Neumorphic Fix**: PaymentScreen now uses conditional theme-aware backgrounds instead of hardcoded dark gradient. Loading/error states also adapted. Works correctly in both Claro (off-white) and Oscuro (navy) modes
 - **Bug Fixes (2026-02-28)**:
-  - Fixed neoMode persistence: Dark mode now survives page refresh (unconditional state loading from API)
-  - Fixed invisible tab/button text: Darker muted-foreground, explicit foreground color on tabs and interactive elements
-  - Fixed dark bg-slate-900 override for modals/dialogs to use neo-bg
+  - Fixed neoMode persistence: Dark mode now survives page refresh
+  - Fixed invisible tab/button text: Darker muted-foreground, explicit foreground color on tabs
+  - Fixed dark bg-slate-900 override for modals/dialogs
+  - Fixed outline buttons invisible (added bg-background to Shadcn Button outline variant)
+  - Fixed OrderScreen right panel using hardcoded dark glass gradient (now uses conditional neo-bg)
+  - Fixed comprehensive bg-white/, bg-background/, bg-card/ opacity variant overrides using attribute selectors
   - Added bg-white, bg-background overrides for theme consistency
 
 ## File Structure
