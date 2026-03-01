@@ -50,7 +50,11 @@ export default function Reservations() {
     if (!dialog.customer_name || !dialog.date || !dialog.time) { toast.error('Completa los campos requeridos'); return; }
     if (dialog.table_ids.length === 0) { toast.error('Selecciona al menos una mesa'); return; }
     try {
-      await axios.post(`${API}/reservations`, { ...dialog }, { headers: hdrs() });
+      await axios.post(`${API}/reservations`, {
+        ...dialog,
+        reservation_date: dialog.date,
+        reservation_time: dialog.time,
+      }, { headers: hdrs() });
       toast.success('Reservacion creada');
       setDialog({ 
         open: false, editId: null, customer_name: '', phone: '', date: getLocalDate(), time: '', party_size: 2, 
