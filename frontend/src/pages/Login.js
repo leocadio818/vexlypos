@@ -412,6 +412,39 @@ export default function Login() {
         .neon-key-danger:hover { background: rgba(239,68,68,0.08) !important; border-color: rgba(239,68,68,0.3) !important; box-shadow: 0 0 10px rgba(239,68,68,0.15) !important; color: rgba(248,113,113,0.8) !important; }
         .neon-submit-btn:hover:not(:disabled) { box-shadow: 0 0 20px rgba(255,102,0,0.5), 0 0 40px rgba(255,102,0,0.25), inset 0 0 20px rgba(255,102,0,0.15) !important; border-color: rgba(255,102,0,0.7) !important; background: rgba(255,102,0,0.08) !important; }
       `}</style>
+
+      {/* Attendance Result Modal */}
+      <Dialog open={!!attendanceResult} onOpenChange={() => setAttendanceResult(null)}>
+        <DialogContent className="max-w-sm text-center p-8">
+          <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${
+            attendanceResult?.action === 'clock_in' ? 'bg-green-500/20' : 'bg-orange-500/20'
+          }`}>
+            {attendanceResult?.action === 'clock_in' 
+              ? <Clock size={40} className="text-green-500" />
+              : <LogOutIcon size={40} className="text-orange-500" />
+            }
+          </div>
+          <h2 className="font-oswald text-2xl font-bold mb-2">
+            {attendanceResult?.action === 'clock_in' ? 'Entrada Registrada!' : 'Salida Registrada!'}
+          </h2>
+          <p className="text-lg mb-1">
+            {attendanceResult?.action === 'clock_in' ? 'Bienvenido' : 'Hasta luego'}, <strong>{attendanceResult?.user_name}</strong>
+          </p>
+          <p className="font-oswald text-3xl font-bold text-primary my-3">
+            {attendanceResult?.time}
+          </p>
+          {attendanceResult?.hours_display && (
+            <p className="text-sm text-muted-foreground">
+              Horas trabajadas: <strong>{attendanceResult.hours_display}</strong>
+              <br />Entrada: {attendanceResult.clock_in_time}
+            </p>
+          )}
+          <button onClick={() => setAttendanceResult(null)}
+            className="mt-6 w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold text-lg transition-all active:scale-95">
+            OK
+          </button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
