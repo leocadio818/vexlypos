@@ -789,7 +789,10 @@ async def check_reservation_activations():
     tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
     
     reservations = await db.reservations.find(
-        {"date": {"$in": [today, tomorrow]}, "status": "confirmed"}, {"_id": 0}
+        {"$or": [
+            {"reservation_date": {"$in": [today, tomorrow]}},
+            {"date": {"$in": [today, tomorrow]}}
+        ], "status": "confirmed"}, {"_id": 0}
     ).to_list(200)
     
     activated = []
@@ -797,7 +800,9 @@ async def check_reservation_activations():
     
     for res in reservations:
         try:
-            res_time_str = f"{res['date']} {res['time']}"
+            res_date = res.get('reservation_date') or res.get('date', '')
+            res_time = res.get('reservation_time') or res.get('time', '')
+            res_time_str = f"{res_date} {res_time}"
             res_datetime = datetime.strptime(res_time_str, "%Y-%m-%d %H:%M").replace(tzinfo=LOCAL_TZ)
             
             activation_minutes = res.get("activation_minutes", 60)
