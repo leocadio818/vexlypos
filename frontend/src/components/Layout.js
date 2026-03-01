@@ -578,13 +578,53 @@ export default function Layout() {
             </div>
             
             <div className="text-center" data-testid="user-info">
-              <div className={`${isTablet ? 'w-8 h-8' : largeMode ? 'w-10 h-10' : 'w-8 h-8'} rounded-full flex items-center justify-center font-bold font-oswald ${isTablet ? 'text-xs' : largeMode ? 'text-sm' : 'text-xs'} ${
-                useGlassStyle 
-                  ? 'bg-white/10 text-white border border-white/20' 
-                  : 'bg-primary/20 text-primary'
-              }`}>
-                {user?.name?.[0]}
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={`${isTablet ? 'w-8 h-8' : largeMode ? 'w-10 h-10' : 'w-8 h-8'} rounded-full flex items-center justify-center font-bold font-oswald ${isTablet ? 'text-xs' : largeMode ? 'text-sm' : 'text-xs'} transition-all hover:scale-110 active:scale-95 ${
+                    useGlassStyle 
+                      ? 'bg-white/10 text-white border border-white/20' 
+                      : 'bg-primary/20 text-primary'
+                  }`} data-testid="user-avatar-btn">
+                    {user?.name?.[0]}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="right" align="end" className="w-48 p-2" data-testid="user-theme-popover">
+                  <p className="font-oswald font-bold text-sm px-2 mb-2">{user?.name}</p>
+                  <div className="space-y-1">
+                    <button onClick={() => { setActiveThemeMode('original'); }}
+                      className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium transition-all ${activeThemeMode === 'original' ? 'bg-primary/20 text-primary' : 'hover:bg-muted'}`}
+                      data-testid="theme-opt-original">
+                      <Moon size={14} /> Tema Original
+                    </button>
+                    <button onClick={() => { setActiveThemeMode('minimalist'); setNeoMode('light'); }}
+                      className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium transition-all ${isMinimalist && !isNeoDark ? 'bg-primary/20 text-primary' : 'hover:bg-muted'}`}
+                      data-testid="theme-opt-light">
+                      <Sun size={14} /> Minimalista Claro
+                    </button>
+                    <button onClick={() => { setActiveThemeMode('minimalist'); setNeoMode('dark'); }}
+                      className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium transition-all ${isNeoDark ? 'bg-primary/20 text-primary' : 'hover:bg-muted'}`}
+                      data-testid="theme-opt-dark">
+                      <Palette size={14} /> Minimalista Oscuro
+                    </button>
+                  </div>
+                  <div className="border-t border-border mt-2 pt-2">
+                    <button onClick={async () => {
+                      try {
+                        const token = localStorage.getItem('pos_token');
+                        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users/me/ui-preferences`, {
+                          method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ theme: activeThemeMode, color_mode: neoMode })
+                        });
+                        toast.success('Preferencia guardada');
+                      } catch { toast.error('Error'); }
+                    }}
+                      className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-all"
+                      data-testid="save-my-theme-btn">
+                      <Settings size={14} /> Guardar como mi tema
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <p className={`mt-0.5 ${isTablet ? 'text-[7px] max-w-[45px]' : largeMode ? 'text-[10px] max-w-[60px]' : 'text-[8px] max-w-[50px]'} truncate ${
                 useGlassStyle ? 'text-white/50' : 'text-muted-foreground'
               }`}>{user?.name}</p>
