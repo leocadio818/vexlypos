@@ -268,6 +268,24 @@ export default function VentasTab() {
             >
               <Check size={18} className="mr-2" /> Guardar Montos Rápidos
             </Button>
+
+            {/* Color del botón Monto Exacto */}
+            <div className="mt-6 bg-card border border-border rounded-xl p-4">
+              <h3 className="font-oswald font-bold text-sm mb-2">Color del Boton "Monto Exacto"</h3>
+              <p className="text-xs text-muted-foreground mb-3">Este color se usa en la pantalla de Procesar Pago</p>
+              <div className="flex items-center gap-3">
+                <input 
+                  type="color" 
+                  value={systemConfig.exact_amount_color || '#D4C5F0'} 
+                  onChange={e => setSystemConfig(p => ({ ...p, exact_amount_color: e.target.value }))}
+                  className="w-12 h-10 rounded-lg border border-border cursor-pointer"
+                />
+                <div className="flex-1 h-11 rounded-xl flex items-center justify-center font-oswald font-bold text-sm"
+                  style={{ backgroundColor: systemConfig.exact_amount_color || '#D4C5F0', color: '#1f2937' }}>
+                  MONTO EXACTO (Vista Previa)
+                </div>
+              </div>
+            </div>
           </div>
         </>
       )}
