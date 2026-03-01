@@ -12,15 +12,12 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 
 ### 🔒 Theme Persistence Engine (ThemeContext.js)
 **Status: LOCKED — Working perfectly as of 2026-03-01**
-**Architecture:**
-- `fetchTheme` ONLY loads glass gradient props from API. NEVER overwrites `activeThemeMode`, `neoMode`, or `neoColors`
-- State source of truth hierarchy: 1) `pos_user_ui_prefs` in localStorage → 2) `pos_theme_cache` in localStorage → 3) defaults
-- `applyUserPreferences()` called on login — sets mode from MongoDB `ui_preferences` + writes to `pos_user_ui_prefs`
-- `resetThemeOnLogout()` only removes `pos_user_ui_prefs` flag — keeps visual state for login screen
-- `pos_theme_cache` auto-updates via useEffect on every state change
-- CSS effect applies body classes (`theme-minimalist`, `neo-dark`) and CSS variables on `document.body.style`
-- **Key files**: `ThemeContext.js`, `AuthContext.js`, `Layout.js`, `theme-minimalist.css`
-- **DO NOT**: Add fetchTheme calls that set activeThemeMode/neoMode. DO NOT reset theme state on logout. DO NOT move CSS variable setting to document.documentElement (must be on body).
+- `fetchTheme` ONLY loads glass gradient props. NEVER overwrites `activeThemeMode`, `neoMode`, or `neoColors`
+- State hierarchy: 1) `pos_user_ui_prefs` → 2) `pos_theme_cache` → 3) defaults
+- `applyUserPreferences()` on login sets mode + writes to `pos_user_ui_prefs`
+- `resetThemeOnLogout()` only removes `pos_user_ui_prefs` flag
+- CSS variables set on `document.body.style` (NOT documentElement)
+- **DO NOT**: Add fetchTheme calls that set activeThemeMode/neoMode. DO NOT reset theme state on logout.
 
 ### 🔒 Provider Order (App.js)
 **ThemeProvider wraps AuthProvider** (AuthProvider uses useTheme). DO NOT reverse.
@@ -28,35 +25,50 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 ### 🔒 Traceability Bridge (billing.py)
 **MongoDB bill ↔ Supabase cash_movement cross-reference on every payment. DO NOT remove.**
 
+### 🔒 CashRegister Performance (CashRegister.js)
+**Status: LOCKED — Optimized to 1.85s from 5s as of 2026-03-01**
+- Eliminated redundant `check()` call (0.8s Supabase roundtrip)
+- Group 1 parallel: `current()` + `history()` + `terminals()`
+- Group 2 parallel: `sync-sales` + `movements()` + `salesBreakdown()`
+- `terminalsInUse()` fire-and-forget (non-blocking)
+- Refresh post-sync non-blocking
+- **DO NOT**: Add sequential API calls. DO NOT re-add `check()`. Keep all groups parallel.
+
 ## What's Been Implemented
 
 ### Multi-Theme System (COMPLETE)
 - 3 Visual Modes: Original (dark glass), Minimalist Light, Minimalist Dark
-- Global Neumorphic 3D on ALL elements (buttons, cards, inputs, tabs, dialogs)
-- Dark/Light toggle within minimalist + customizable colors
-- F5 persistence via localStorage cache + MongoDB per-user `ui_preferences`
-- Comprehensive CSS text contrast: pastel overrides, gradient text fix, inline color overrides
-- Pastel payment colors, configurable "Monto Exacto" color
-- Category/Product buttons: solid colors, larger on tablet/PC, name-top/price-bottom
-- Avatar popover: theme selector accessible to ALL roles (cajeros, meseros, admin)
-- Clean modals: no backdrop blur, solid edges, all text readable
+- Global Neumorphic 3D on ALL elements
+- Dark/Light toggle + customizable colors + pastel payment palette
+- F5 persistence via localStorage + MongoDB per-user `ui_preferences`
+- Avatar popover theme selector for ALL roles
+- Comprehensive text contrast (pastel overrides, gradient text, inline colors, opacity)
+- Clean modals (no backdrop blur, solid edges)
+- Configurable "Monto Exacto" color in Settings > Ventas
+
+### Custom UI Components (COMPLETE)
+- **NumericKeypad.jsx**: Modal numeric input with decimal, replaces all type="number"
+- **DateTimePicker.jsx**: NeoDatePicker (calendar with month/year quick select) + NeoTimePicker (12h/24h)
+- **12H/24H Format**: Configurable in Settings > Sistema, auto-applied to pickers + tickets + comandas
+- All components touchscreen-optimized (large buttons, py-3, rounded-xl)
 
 ### P0 Traceability Bridge (COMPLETE)
 - MongoDB `bills` → `supabase_transaction_id`, `supabase_movement_ref`
 - Supabase `cash_movements.description` → `[BILL:{mongodb_bill_id}]`
 
 ### Dashboard (COMPLETE)
-- Payment breakdown: Tarjeta, Transferencia, Propinas (Jornada data)
+- Payment breakdown: Tarjeta, Transferencia, Propinas
 - Bug fix: "Ordenes Activas" excludes `closed` status
+- Category buttons solid colors, larger on tablet/PC, name-top/price-bottom
+- "Categorias" back button large and tactile
 
-### Numeric Keypad (COMPLETE)
-- `NumericKeypad.jsx` with modal popup, decimal support
-- Replaced ALL `type="number"` inputs (except NcfTab RNC)
+### Reservations (COMPLETE)
+- Bug fixes: date/time field mapping, edit hour persistence
+- Report: KPIs, by day/hour/status charts, top customers, detail table with Mesas/Area/Notas
+- Wide modal (95vw), large table selector buttons, timing config visible
 
-### User UI Preferences (COMPLETE)
-- `PUT /api/users/me/ui-preferences` endpoint
-- Login applies `ui_preferences` automatically via `applyUserPreferences`
-- Avatar "Guardar como mi tema" saves to API + localStorage
+### Performance (COMPLETE)
+- CashRegister: 5s → 1.85s via API parallelization
 
 ## Credentials
 - Admin PIN: 10000
