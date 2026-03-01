@@ -350,6 +350,7 @@ body.theme-minimalist [data-sonner-toaster] [data-sonner-toast] {
 
 /* ═══════════════════════════════════════════════════════════════
    TEXT CONTRAST — LIGHT MODE ONLY
+   Comprehensive fix for ALL light-colored text on light bg
    ═══════════════════════════════════════════════════════════════ */
 
 body.theme-minimalist:not(.neo-dark) .text-white { color: hsl(var(--foreground)) !important; }
@@ -361,29 +362,78 @@ body.theme-minimalist:not(.neo-dark) .text-white\/50 { color: hsl(var(--foregrou
 body.theme-minimalist:not(.neo-dark) .text-white\/40 { color: hsl(var(--foreground) / 0.4) !important; }
 body.theme-minimalist:not(.neo-dark) .text-white\/30 { color: hsl(var(--foreground) / 0.3) !important; }
 
-/* Preserve white text inside colored containers (light mode) */
-body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] > .text-white,
+/* ── Pastel/light text colors → darker saturated versions ── */
+body.theme-minimalist:not(.neo-dark) [class*="text-green-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-green-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-green-4"],
+body.theme-minimalist:not(.neo-dark) [class*="text-emerald-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-emerald-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-emerald-4"] { color: #059669 !important; }
+
+body.theme-minimalist:not(.neo-dark) [class*="text-cyan-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-cyan-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-cyan-4"],
+body.theme-minimalist:not(.neo-dark) [class*="text-blue-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-blue-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-blue-4"] { color: #2563eb !important; }
+
+body.theme-minimalist:not(.neo-dark) [class*="text-purple-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-purple-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-purple-4"],
+body.theme-minimalist:not(.neo-dark) [class*="text-violet-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-violet-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-violet-4"],
+body.theme-minimalist:not(.neo-dark) [class*="text-pink-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-pink-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-pink-4"] { color: #9333ea !important; }
+
+body.theme-minimalist:not(.neo-dark) [class*="text-amber-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-amber-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-amber-4"],
+body.theme-minimalist:not(.neo-dark) [class*="text-yellow-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-yellow-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-yellow-4"],
+body.theme-minimalist:not(.neo-dark) [class*="text-orange-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-orange-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-orange-4"] { color: #d97706 !important; }
+
+body.theme-minimalist:not(.neo-dark) [class*="text-red-2"],
+body.theme-minimalist:not(.neo-dark) [class*="text-red-3"],
+body.theme-minimalist:not(.neo-dark) [class*="text-red-4"] { color: #dc2626 !important; }
+
+/* ── Gradient text → solid dark color (light pastel gradients invisible on light bg) ── */
+body.theme-minimalist:not(.neo-dark) .bg-clip-text.text-transparent {
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  background: none !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── Preserve white/gradient text inside colored containers ── */
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] .text-white,
 body.theme-minimalist:not(.neo-dark) [class*="bg-primary"].text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-green-"] > .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-green-"].text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-red-"] > .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-red-"].text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-blue-"] > .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-blue-"].text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-amber-"] > .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-amber-"].text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-orange-"] > .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-orange-"].text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-5"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-6"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-red-5"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-red-6"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-blue-5"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-blue-6"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-amber-5"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-orange-5"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-orange-6"] .text-white,
 body.theme-minimalist:not(.neo-dark) [class*="bg-gradient"] .text-white,
 body.theme-minimalist:not(.neo-dark) [class*="bg-gradient"].text-white,
-body.theme-minimalist:not(.neo-dark) .text-primary-foreground { color: hsl(var(--primary-foreground)) !important; }
+body.theme-minimalist:not(.neo-dark) .text-primary-foreground { color: white !important; }
 
-/* Light mode: borders white → transparent */
-body.theme-minimalist:not(.neo-dark) .border-white\/10,
-body.theme-minimalist:not(.neo-dark) .border-white\/20,
-body.theme-minimalist:not(.neo-dark) .border-white\/30 { border-color: transparent !important; }
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] .bg-clip-text,
+body.theme-minimalist:not(.neo-dark) [class*="bg-gradient"] .bg-clip-text {
+  -webkit-text-fill-color: white !important;
+  color: white !important;
+}
 
-/* Light mode: glass bg → neo bg (use attribute selectors for responsive variants) */
+/* ── Light mode: borders ── */
+body.theme-minimalist:not(.neo-dark) [class*="border-white/"] { border-color: transparent !important; }
+
+/* Light mode: glass bg → neo bg (attribute selectors for responsive variants) */
 body.theme-minimalist:not(.neo-dark) [class*="bg-white/"] { background-color: var(--neo-bg) !important; }
 body.theme-minimalist:not(.neo-dark) [class*="bg-background/"] { background-color: var(--neo-bg) !important; }
 
