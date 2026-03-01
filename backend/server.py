@@ -60,6 +60,7 @@ SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 # Initialize routers with db
 orders_set_db(db)
 tables_set_db(db)
+attendance_set_db(db)
 billing_set_db(db)
 billing_init_supabase()  # Initialize Supabase for pos_sessions integration
 ncf_set_db(db)  # Set MongoDB for NCF additional config
