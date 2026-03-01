@@ -979,16 +979,8 @@ export default function PaymentScreen() {
 
   const renderPaymentIcon = (method, size = 'normal') => {
     const iconSize = size === 'small' ? (isMobile ? 20 : 24) : (isMobile ? 28 : largeMode ? 36 : 32);
-    if (method.icon_type === 'brand' && method.brand_icon && BrandIcons[method.brand_icon]) {
-      const BrandIcon = BrandIcons[method.brand_icon];
-      return (
-        <div className={`${size === 'small' ? 'w-10 h-7' : isMobile ? 'w-12 h-9' : largeMode ? 'w-16 h-12' : 'w-14 h-10'}`}>
-          <BrandIcon />
-        </div>
-      );
-    }
     const LucideIcon = lucideIcons[method.icon] || lucideIcons.default;
-    return <LucideIcon size={iconSize} className="drop-shadow-lg" />;
+    return <LucideIcon size={iconSize} />;
   };
 
   // Show loading/redirect screen if not authorized
