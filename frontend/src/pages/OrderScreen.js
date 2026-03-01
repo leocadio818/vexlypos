@@ -1883,7 +1883,7 @@ export default function OrderScreen() {
                     onTouchMove={(e) => { if (Math.abs((e.touches?.[0]?.clientY || 0) - catTouchStartY) > 10) catTouchMoved = true; }}
                     data-testid={`cat-card-${cat.id}`}
                     className={`relative rounded-xl border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[3rem] text-left flex flex-col justify-between`}
-                    style={{ backgroundColor: cat.color + '15', borderColor: cat.color + '40' }}>
+                    style={{ backgroundColor: cat.color + (isMinimalist ? '45' : '15'), borderColor: cat.color + (isMinimalist ? '90' : '40') }}>
                     <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`} style={{ color: cat.color }}>{cat.name}</span>
                     <span className={`text-muted-foreground ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`}>{catProductCount} productos</span>
                     <div className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`} style={{ backgroundColor: cat.color + '20' }}>
