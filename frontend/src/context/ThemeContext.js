@@ -293,13 +293,12 @@ export function ThemeProvider({ children }) {
     localStorage.setItem('pos_user_ui_prefs', JSON.stringify(prefs));
   }, []);
 
-  // Reset theme on logout (clean slate for next user)
+  // Reset theme on logout — keep user's visual preference for login screen
   const resetThemeOnLogout = useCallback(() => {
+    // Only clear the user prefs marker, but KEEP the theme cache
+    // so the login screen still shows the last user's theme
     localStorage.removeItem('pos_user_ui_prefs');
-    localStorage.removeItem('pos_theme_cache');
-    setActiveThemeMode('original');
-    setNeoMode('light');
-    setNeoColors(defaultNeoColors);
+    // Don't reset the visual state — let the login screen look consistent
   }, []);
 
   return (
