@@ -196,6 +196,7 @@ export default function Reservations() {
                           <button className="h-8 w-8 rounded-lg text-white/40 hover:text-red-400 hover:bg-white/10 flex items-center justify-center transition-all"
                             onClick={() => deleteRes(r.id)}><Trash2 size={12} /></button>
                         </div>
+                        </div>
                       </div>
                     ))}
                   </div>
