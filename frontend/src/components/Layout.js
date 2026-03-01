@@ -40,6 +40,50 @@ export default function Layout() {
   useEffect(() => {
     toast.dismiss();
   }, [location.pathname]);
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // NOTIFICATION POLLING — Real-time alerts for table transfers etc.
+  // ═══════════════════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!user) return;
+    const API_BASE = process.env.REACT_APP_BACKEND_URL;
+    const token = localStorage.getItem('pos_token');
+    if (!token) return;
+    
+    const pollNotifications = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/notifications/pending`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const notifications = await res.json();
+        
+        for (const n of notifications) {
+          if (n.type === 'table_transfer') {
+            toast.success(n.title, { description: n.message, duration: 8000 });
+          } else {
+            toast.info(n.title, { description: n.message, duration: 5000 });
+          }
+          // Mark as read
+          fetch(`${API_BASE}/api/notifications/${n.id}/read`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => {});
+        }
+        
+        // If we got transfer notifications, refresh tables data
+        if (notifications.some(n => n.type === 'table_transfer')) {
+          window.dispatchEvent(new CustomEvent('tablesUpdated'));
+        }
+      } catch {}
+    };
+    
+    // Poll every 3 seconds
+    const interval = setInterval(pollNotifications, 3000);
+    pollNotifications(); // Initial check
+    
+    return () => clearInterval(interval);
+  }, [user]);
   
   // ═══════════════════════════════════════════════════════════════════════════════
   // CONTROL DE TURNO DE CAJA PARA CAJEROS - BLOQUEO TOTAL
