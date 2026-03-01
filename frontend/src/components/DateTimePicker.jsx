@@ -139,8 +139,10 @@ export function NeoDatePicker({ value, onChange, className = '', placeholder = '
  * Drop-in replacement for <input type="time">
  * Supports 12h (AM/PM) and 24h formats. Always stores value in 24h internally.
  */
-export function NeoTimePicker({ value, onChange, className = '', placeholder = 'Seleccionar hora', disabled, use12h = false }) {
+export function NeoTimePicker({ value, onChange, className = '', placeholder = 'Seleccionar hora', disabled, use12h }) {
   const [open, setOpen] = useState(false);
+  const timeFormat = useTimeFormat();
+  const is12h = use12h !== undefined ? use12h : timeFormat === '12h';
 
   const hours24 = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
   const hours12 = Array.from({ length: 12 }, (_, i) => i === 0 ? 12 : i);
