@@ -282,6 +282,7 @@ export default function PaymentScreen() {
         const configRes = await fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
         const config = await configRes.json();
         if (config.quick_amounts) setQuickAmounts(config.quick_amounts);
+        if (config.exact_amount_color) setExactAmountColor(config.exact_amount_color);
       } catch {}
     } catch {
       console.warn('Error cargando datos de pago');
