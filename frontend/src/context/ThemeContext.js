@@ -254,6 +254,24 @@ export function ThemeProvider({ children }) {
   const isMinimalist = activeThemeMode === 'minimalist';
   const isNeoDark = isMinimalist && neoMode === 'dark';
 
+  // Apply user's ui_preferences from login
+  const applyUserPreferences = useCallback((prefs) => {
+    if (!prefs || Object.keys(prefs).length === 0) return;
+    const newMode = prefs.theme || 'original';
+    const newColorMode = prefs.color_mode || 'light';
+    setActiveThemeMode(newMode);
+    setNeoMode(newColorMode);
+    if (prefs.neo_bg_color || prefs.neo_dark_bg || prefs.neo_glow_color || prefs.neo_accent_color) {
+      setNeoColors(prev => ({
+        ...prev,
+        ...(prefs.neo_bg_color ? { neoBgColor: prefs.neo_bg_color } : {}),
+        ...(prefs.neo_dark_bg ? { neoDarkBg: prefs.neo_dark_bg } : {}),
+        ...(prefs.neo_glow_color ? { neoGlowColor: prefs.neo_glow_color } : {}),
+        ...(prefs.neo_accent_color ? { neoAccentColor: prefs.neo_accent_color } : {}),
+      }));
+    }
+  }, []);
+
   return (
     <ThemeContext.Provider value={{
       theme, setTheme, updateTheme,
@@ -261,7 +279,7 @@ export function ThemeProvider({ children }) {
       activeThemeMode, setActiveThemeMode,
       neoColors, setNeoColors, updateNeoColor,
       neoMode, setNeoMode,
-      saveAllThemeSettings,
+      saveAllThemeSettings, applyUserPreferences,
       loading, cssVariables, glassStyles, defaultTheme,
       isMinimalist, isNeoDark,
       refetchTheme: fetchTheme,
