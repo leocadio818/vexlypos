@@ -130,18 +130,19 @@ export function NeoDatePicker({ value, onChange, className = '', placeholder = '
         )}
 
         {/* Days Grid */}
-        <div className="p-2 sm:p-3">
-          <div className="grid grid-cols-7 gap-0.5 mb-1">
+        {!showMonthPicker && !showYearPicker && (
+        <div className="p-3">
+          <div className="grid grid-cols-7 gap-1 mb-2">
             {DAYS_ES.map((d, i) => (
-              <div key={i} className="text-center text-[10px] font-bold text-muted-foreground">{d}</div>
+              <div key={i} className="text-center text-xs font-bold text-muted-foreground py-1">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-0.5">
+          <div className="grid grid-cols-7 gap-1">
             {days.map((day, i) => (
               <div key={i} className="aspect-square flex items-center justify-center">
                 {day && (
                   <button type="button" onClick={() => selectDay(day)}
-                    className={`w-full h-full rounded-md text-xs font-medium transition-all active:scale-90
+                    className={`w-full h-full rounded-lg text-sm font-medium transition-all active:scale-90
                       ${isSelected(day)
                         ? 'bg-primary text-primary-foreground font-bold shadow-lg'
                         : isToday(day)
