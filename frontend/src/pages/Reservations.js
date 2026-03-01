@@ -242,13 +242,13 @@ export default function Reservations() {
               </div>
             </div>
             <div>
-              <label className="text-xs text-white/50 mb-1 block">Mesas ({dialog.table_ids.length} seleccionadas)</label>
-              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 bg-white/5 rounded-lg border border-white/10">
+              <label className="text-sm font-semibold text-white/70 mb-2 block">Mesas ({dialog.table_ids.length} seleccionadas)</label>
+              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-3 bg-white/5 rounded-xl border border-white/10">
                 {dialog.area_id && (
                   <button onClick={() => {
                     const areaTables = tables.filter(t => t.area_id === dialog.area_id && (t.status === 'free' || t.status === 'available'));
                     setDialog(p => ({ ...p, table_ids: areaTables.map(t => t.id) }));
-                  }} className="px-2 py-1 rounded bg-orange-500/20 text-orange-400 text-[10px] font-bold">
+                  }} className="px-4 py-2.5 rounded-xl bg-orange-500/20 text-orange-400 text-xs font-bold border border-orange-500/30 hover:bg-orange-500/30 transition-all">
                     Seleccionar toda el area
                   </button>
                 )}
@@ -257,8 +257,8 @@ export default function Reservations() {
                   return (
                     <button key={t.id} onClick={() => {
                       setDialog(p => ({ ...p, table_ids: selected ? p.table_ids.filter(id => id !== t.id) : [...p.table_ids, t.id] }));
-                    }} className={`px-2.5 py-1.5 rounded-lg text-xs font-oswald font-bold transition-all ${
-                      selected ? 'bg-purple-600 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'
+                    }} className={`px-4 py-2.5 rounded-xl text-sm font-oswald font-bold transition-all active:scale-95 min-w-[80px] ${
+                      selected ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30' : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
                     }`}>
                       Mesa {t.number}
                     </button>
