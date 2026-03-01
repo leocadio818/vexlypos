@@ -70,7 +70,7 @@ export function ThemeProvider({ children }) {
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
-  // ── Fetch (public GET, no auth needed) ──
+  // ── Fetch GLOBAL theme (only applies if no user preferences are cached) ──
   const fetchTheme = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/theme-config`);
@@ -78,14 +78,19 @@ export function ThemeProvider({ children }) {
         const data = await res.json();
         if (data && Object.keys(data).length > 0) {
           setTheme(prev => ({ ...defaultTheme, ...data }));
-          setActiveThemeMode(data.activeThemeMode || 'original');
-          setNeoMode(data.neoMode || 'light');
-          setNeoColors({
-            neoBgColor: data.neoBgColor || defaultNeoColors.neoBgColor,
-            neoDarkBg: data.neoDarkBg || defaultNeoColors.neoDarkBg,
-            neoGlowColor: data.neoGlowColor || defaultNeoColors.neoGlowColor,
-            neoAccentColor: data.neoAccentColor || defaultNeoColors.neoAccentColor,
-          });
+          
+          // Only apply global theme/mode if NO user preferences in cache
+          const hasUserPrefs = localStorage.getItem('pos_user_ui_prefs');
+          if (!hasUserPrefs) {
+            setActiveThemeMode(data.activeThemeMode || 'original');
+            setNeoMode(data.neoMode || 'light');
+            setNeoColors({
+              neoBgColor: data.neoBgColor || defaultNeoColors.neoBgColor,
+              neoDarkBg: data.neoDarkBg || defaultNeoColors.neoDarkBg,
+              neoGlowColor: data.neoGlowColor || defaultNeoColors.neoGlowColor,
+              neoAccentColor: data.neoAccentColor || defaultNeoColors.neoAccentColor,
+            });
+          }
         }
       }
     } catch (err) {
