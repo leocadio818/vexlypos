@@ -197,3 +197,72 @@ async def attendance_report(start: str = None, end: str = None, user_id: str = N
         s["total_hours_display"] = f"{int(h)}h {int((h % 1) * 60)}m"
     
     return {"records": records, "summary": summary, "start": start, "end": end}
+
+
+# ─── MANAGER: Force clock-out for users who left ───
+
+@router.get("/attendance/active-users")
+async def get_active_users():
+    """Get all users currently clocked in (for manager to force clock-out)"""
+    today = now_local().strftime("%Y-%m-%d")
+    active = await db.attendance.find(
+        {"date": today, "status": "ACTIVE"},
+        {"_id": 0}
+    ).to_list(50)
+    return active
+
+
+class ForceClockOutInput(BaseModel):
+    user_id: str
+    reason: str = "Salida forzada por gerente"
+
+@router.post("/attendance/force-clock-out")
+async def force_clock_out(input: ForceClockOutInput, user=Depends(get_current_user)):
+    """Manager forces clock-out for a user who left without clocking out"""
+    from routers.auth import get_permissions
+    
+    perms = get_permissions(user.get("role", "waiter"), user.get("permissions"))
+    if not perms.get("close_day") and not perms.get("manage_users"):
+        raise HTTPException(status_code=403, detail="Solo gerentes pueden forzar salida de empleados")
+    
+    existing = await db.attendance.find_one(
+        {"user_id": input.user_id, "status": "ACTIVE"},
+        {"_id": 0}
+    )
+    if not existing:
+        raise HTTPException(status_code=400, detail="El usuario no tiene entrada activa")
+    
+    local_now = now_local()
+    config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+    is_12h = config.get("time_format", "12h") == "12h"
+    display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
+    
+    try:
+        clock_in_dt = datetime.fromisoformat(existing["clock_in"])
+        diff = local_now - clock_in_dt.replace(tzinfo=local_now.tzinfo) if clock_in_dt.tzinfo is None else local_now - clock_in_dt
+        hours = round(diff.total_seconds() / 3600, 2)
+    except:
+        hours = 0
+    
+    hours_display = f"{int(hours)}h {int((hours % 1) * 60)}m"
+    
+    await db.attendance.update_one(
+        {"id": existing["id"]},
+        {"$set": {
+            "clock_out": local_now.isoformat(),
+            "clock_out_display": display_time,
+            "hours_worked": hours,
+            "hours_display": hours_display,
+            "status": "COMPLETED",
+            "forced_by": user["name"],
+            "forced_by_id": user["user_id"],
+            "force_reason": input.reason,
+        }}
+    )
+    
+    return {
+        "ok": True,
+        "user_name": existing["user_name"],
+        "hours_display": hours_display,
+        "forced_by": user["name"],
+    }
