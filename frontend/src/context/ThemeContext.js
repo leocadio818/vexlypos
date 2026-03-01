@@ -84,18 +84,19 @@ export function ThemeProvider({ children }) {
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
-  // ── Fetch GLOBAL theme (only applies if no user preferences are cached) ──
+  // ── Fetch GLOBAL theme (only applies glass theme data, never overrides mode/colors if cached) ──
   const fetchTheme = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/theme-config`);
       if (res.ok) {
         const data = await res.json();
         if (data && Object.keys(data).length > 0) {
+          // Always load glass theme props (gradient colors, etc.)
           setTheme(prev => ({ ...defaultTheme, ...data }));
           
-          // Only apply global theme/mode if NO user preferences in cache
-          const hasUserPrefs = localStorage.getItem('pos_user_ui_prefs');
-          if (!hasUserPrefs) {
+          // NEVER overwrite activeThemeMode/neoMode if there's ANY cache
+          const hasCache = localStorage.getItem('pos_theme_cache') || localStorage.getItem('pos_user_ui_prefs');
+          if (!hasCache) {
             setActiveThemeMode(data.activeThemeMode || 'original');
             setNeoMode(data.neoMode || 'light');
             setNeoColors({
