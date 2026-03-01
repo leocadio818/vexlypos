@@ -177,6 +177,34 @@ export default function SystemTab() {
           </Button>
         </div>
 
+        {/* Time Format */}
+        <div className="bg-card border border-border rounded-xl p-4 mb-4">
+          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <Clock size={14} className="text-purple-400" /> Formato de Hora
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">Elige como se muestra la hora en todo el sistema. Los datos se guardan internamente en 24H.</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSystemConfig(p => ({ ...p, time_format: '12h' }))}
+              className={`flex-1 py-2.5 rounded-lg font-oswald font-bold text-sm transition-all ${
+                (systemConfig.time_format || '12h') === '12h' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+              }`}
+              data-testid="time-format-12h"
+            >
+              12H (AM/PM)
+            </button>
+            <button
+              onClick={() => setSystemConfig(p => ({ ...p, time_format: '24h' }))}
+              className={`flex-1 py-2.5 rounded-lg font-oswald font-bold text-sm transition-all ${
+                systemConfig.time_format === '24h' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+              }`}
+              data-testid="time-format-24h"
+            >
+              24H
+            </button>
+          </div>
+        </div>
+
         {/* Currency */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">
           <h3 className="text-sm font-semibold mb-3">Moneda</h3>
