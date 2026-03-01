@@ -94,16 +94,7 @@ export default function Dashboard() {
           </div>
 
           {/* Payment Methods Breakdown - Jornada */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="payment-breakdown">
-            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                <Banknote size={18} className="text-green-500" />
-              </div>
-              <div>
-                <p className="font-oswald text-lg font-bold text-green-500">{formatMoney(today.cash)}</p>
-                <p className="text-[10px] text-muted-foreground">Efectivo</p>
-              </div>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3" data-testid="payment-breakdown">
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
                 <CreditCard size={18} className="text-blue-500" />
