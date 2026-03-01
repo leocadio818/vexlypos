@@ -275,7 +275,7 @@ export default function InventarioTab() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {categories.map(cat => (
               <div key={cat.id} className="flex items-center justify-between p-4 rounded-xl border-2"
-                style={{ borderColor: cat.color + '50', backgroundColor: cat.color + '10' }} data-testid={`category-${cat.id}`}>
+                style={{ borderColor: cat.color + '80', backgroundColor: cat.color + '30' }} data-testid={`category-${cat.id}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: cat.color }}>
                     <Tag size={18} className="text-white" />
