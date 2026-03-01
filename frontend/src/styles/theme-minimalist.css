@@ -495,6 +495,29 @@ body.theme-minimalist h3 {
   color: hsl(var(--foreground)) !important;
 }
 
+/* Force readable text on ALL elements with opacity-reduced foreground */
+body.theme-minimalist:not(.neo-dark) [class*="text-foreground/"],
+body.theme-minimalist:not(.neo-dark) [class*="text-muted-foreground/"] {
+  color: hsl(var(--foreground) / 0.85) !important;
+}
+
+/* Spans and paragraphs that inherit light colors */
+body.theme-minimalist:not(.neo-dark) span,
+body.theme-minimalist:not(.neo-dark) p,
+body.theme-minimalist:not(.neo-dark) label,
+body.theme-minimalist:not(.neo-dark) td,
+body.theme-minimalist:not(.neo-dark) th,
+body.theme-minimalist:not(.neo-dark) li {
+  color: inherit;
+}
+
+/* Override inline opacity patterns used across the app */
+body.theme-minimalist:not(.neo-dark) .opacity-70,
+body.theme-minimalist:not(.neo-dark) .opacity-60,
+body.theme-minimalist:not(.neo-dark) .opacity-50 {
+  opacity: 1 !important;
+}
+
 /* bg-white → adapt to theme bg */
 body.theme-minimalist .bg-white,
 body.theme-minimalist [class*="bg-white "] {
