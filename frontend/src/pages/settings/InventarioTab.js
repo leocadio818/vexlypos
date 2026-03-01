@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { NumericInput } from '@/components/NumericKeypad';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import axios from 'axios';
@@ -424,15 +425,17 @@ export default function InventarioTab() {
                 <div className="flex gap-4">
                   <div className="flex items-center gap-2">
                     <label className="text-xs text-muted-foreground">Min selecciones</label>
-                    <input type="number" min="0" value={modDialog.min_selection}
+                    <NumericInput value={modDialog.min_selection}
                       onChange={e => setModDialog(p => ({ ...p, min_selection: parseInt(e.target.value) || 0 }))}
+                      label="Min Selecciones" allowDecimal={false}
                       className="w-16 bg-background border border-border rounded-lg px-2 py-1 text-sm text-center"
                       data-testid="modifier-min-input" />
                   </div>
                   <div className="flex items-center gap-2">
                     <label className="text-xs text-muted-foreground">Max selecciones (0=sin limite)</label>
-                    <input type="number" min="0" value={modDialog.max_selection}
+                    <NumericInput value={modDialog.max_selection}
                       onChange={e => setModDialog(p => ({ ...p, max_selection: parseInt(e.target.value) || 0 }))}
+                      label="Max Selecciones" allowDecimal={false}
                       className="w-16 bg-background border border-border rounded-lg px-2 py-1 text-sm text-center"
                       data-testid="modifier-max-input" />
                   </div>
@@ -450,8 +453,9 @@ export default function InventarioTab() {
                         <input value={opt.name} onChange={e => updateModOption(idx, 'name', e.target.value)}
                           className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-sm" placeholder="Nombre opcion"
                           data-testid={`option-name-${idx}`} />
-                        <input type="number" value={opt.price} onChange={e => updateModOption(idx, 'price', parseFloat(e.target.value) || 0)}
+                        <NumericInput value={opt.price} onChange={e => updateModOption(idx, 'price', parseFloat(e.target.value) || 0)}
                           className="w-24 bg-background border border-border rounded-lg px-2 py-1.5 text-sm" placeholder="Precio"
+                          label="Precio Opcion"
                           data-testid={`option-price-${idx}`} />
                         {modDialog.options.length > 1 && (
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400" onClick={() => removeModOption(idx)}><X size={14} /></Button>
