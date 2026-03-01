@@ -138,8 +138,8 @@ export default function Reservations() {
           <h1 className="font-oswald text-xl font-bold tracking-wide text-white">RESERVACIONES</h1>
         </div>
         <div className="flex items-center gap-2">
-          <input type="date" value={date} onChange={e => setDate(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm font-mono text-white focus:border-white/30 outline-none" data-testid="reservation-date" />
+          <NeoDatePicker value={date} onChange={e => setDate(e.target.value)}
+            className="bg-background border border-border rounded-lg px-3 py-1.5 text-sm font-mono" />
           <button onClick={() => setDialog({ 
             open: true, editId: null, customer_name: '', phone: '', date, time: '19:00', party_size: 2, 
             table_ids: [], area_id: '', notes: '',
