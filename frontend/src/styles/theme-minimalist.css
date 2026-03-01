@@ -147,6 +147,7 @@ body.theme-minimalist .bg-card {
 body.theme-minimalist div[class*="rounded-xl"][class*="border"],
 body.theme-minimalist div[class*="rounded-2xl"][class*="border"],
 body.theme-minimalist div[class*="rounded-lg"][class*="border"][class*="p-"] {
+  color: hsl(var(--foreground));
   box-shadow:
     6px 6px 14px var(--neo-shadow-dark),
     -6px -6px 14px var(--neo-shadow-light),
