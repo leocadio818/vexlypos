@@ -504,6 +504,13 @@ body.theme-minimalist:not(.neo-dark) [class*="text-muted-foreground/"] {
   color: hsl(var(--foreground) / 0.85) !important;
 }
 
+/* Force dark text on spans/elements with inline style colors inside cards */
+body.theme-minimalist:not(.neo-dark) span[style*="color"],
+body.theme-minimalist:not(.neo-dark) p[style*="color"],
+body.theme-minimalist:not(.neo-dark) div[style*="color"] {
+  color: hsl(var(--foreground)) !important;
+}
+
 /* Spans and paragraphs that inherit light colors */
 body.theme-minimalist:not(.neo-dark) span,
 body.theme-minimalist:not(.neo-dark) p,
