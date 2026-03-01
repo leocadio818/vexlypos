@@ -248,6 +248,7 @@ async def send_cancel_ticket_to_print_queue(order_id: str, items_cancelled: list
             "order_number": order.get("id", "")[:8],
             "transaction_number": order.get("transaction_number", ""),
             "date": await now_local_print_formatted(),
+            "items_count": len(cancel_items),
             "items": cancel_items
         }
         
