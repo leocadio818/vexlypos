@@ -1,5 +1,5 @@
 # Attendance / Time Clock Router
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
 import uuid
