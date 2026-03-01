@@ -169,6 +169,12 @@ export function AuthProvider({ children }) {
     const res = await authAPI.login(pin);
     localStorage.setItem('pos_token', res.data.token);
     setUser(res.data.user);
+    
+    // Apply user's UI preferences (theme/mode)
+    if (res.data.user?.ui_preferences) {
+      applyUserPreferences(res.data.user.ui_preferences);
+    }
+    
     // Cache data after login
     setTimeout(cacheForOffline, 1000);
     
