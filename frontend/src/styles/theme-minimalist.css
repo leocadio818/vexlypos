@@ -395,7 +395,8 @@ body.theme-minimalist a {
 }
 
 /* bg-white → adapt to theme bg */
-body.theme-minimalist .bg-white {
+body.theme-minimalist .bg-white,
+body.theme-minimalist [class*="bg-white "] {
   background-color: var(--neo-bg) !important;
 }
 
