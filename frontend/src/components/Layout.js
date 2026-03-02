@@ -626,7 +626,7 @@ export default function Layout() {
             <div className="text-center mt-2 pt-3 border-t border-white/10" data-testid="user-info">
               <Popover>
                 <PopoverTrigger asChild>
-                  <button className="w-11 h-11 lg:w-12 lg:h-12 rounded-full flex items-center justify-center font-bold font-oswald text-sm transition-all hover:scale-110 active:scale-95 ${
+                  <button className={`w-11 h-11 lg:w-12 lg:h-12 rounded-full flex items-center justify-center font-bold font-oswald text-sm transition-all hover:scale-110 active:scale-95 ${
                     useGlassStyle 
                       ? 'bg-white/10 text-white border border-white/20' 
                       : 'bg-primary/20 text-primary'
