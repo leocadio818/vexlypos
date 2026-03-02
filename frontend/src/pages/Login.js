@@ -445,7 +445,7 @@ export default function Login() {
               <br />Entrada: {attendanceResult.clock_in_time}
             </p>
           )}
-          <button onClick={() => setAttendanceResult(null)}
+          <button onClick={() => { setAttendanceResult(null); if (postLoginRoute) { navigate(postLoginRoute); setPostLoginRoute(null); } }}
             className="mt-6 w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold text-lg transition-all active:scale-95">
             OK
           </button>
