@@ -23,8 +23,10 @@ export default function Login() {
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
+    // Don't auto-navigate if showing welcome modal
+    if (attendanceResult) return;
     if (user) navigate(user.permissions?.view_dashboard ? '/dashboard' : '/tables');
-  }, [user, navigate]);
+  }, [user, navigate, attendanceResult]);
 
   useEffect(() => { ensureSeed(); }, [ensureSeed]);
 
