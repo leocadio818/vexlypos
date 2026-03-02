@@ -255,15 +255,6 @@ export default function Login() {
               >
                 <Clock size={16} /> ENTRADA
               </button>
-              <button
-                onClick={() => handleAttendance('clock-out')}
-                disabled={pin.length < 1 || loading}
-                data-testid="clock-out-btn"
-                className="flex-1 h-11 rounded-xl font-oswald font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-30 transition-all active:scale-95"
-                style={{ background: '#F5C6AA', color: '#5c2e1a', boxShadow: `3px 3px 6px ${dk}, -3px -3px 6px ${lt}` }}
-              >
-                <LogOutIcon size={16} /> SALIDA
-              </button>
             </div>
           </div>
 
