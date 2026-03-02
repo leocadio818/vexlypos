@@ -159,6 +159,60 @@ async def clock_out(input: PinInput):
     }
 
 
+@router.post("/attendance/auto-clock-out")
+async def auto_clock_out(user=Depends(get_current_user)):
+    """Clock-out using the authenticated user's token — no PIN needed."""
+    user_id = user["user_id"]
+    
+    existing = await db.attendance.find_one(
+        {"user_id": user_id, "status": "ACTIVE"}, {"_id": 0}
+    )
+    if not existing:
+        raise HTTPException(status_code=400, detail="No tienes una entrada registrada. Debes marcar entrada primero.")
+    
+    # Validate no open tables
+    open_orders = await db.orders.find(
+        {"waiter_id": user_id, "status": {"$nin": ["closed", "cancelled", "paid"]}},
+        {"_id": 0, "table_id": 1}
+    ).to_list(100)
+    if open_orders:
+        table_count = len(set(o.get("table_id") for o in open_orders if o.get("table_id")))
+        raise HTTPException(status_code=400, detail=f"Tienes {table_count} mesa(s) abierta(s). Debes cerrarlas o transferirlas antes de marcar salida.")
+    
+    local_now = now_local()
+    config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+    is_12h = config.get("time_format", "12h") == "12h"
+    display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
+    
+    try:
+        clock_in_dt = datetime.fromisoformat(existing["clock_in"])
+        diff = local_now - clock_in_dt.replace(tzinfo=local_now.tzinfo) if clock_in_dt.tzinfo is None else local_now - clock_in_dt
+        hours = round(diff.total_seconds() / 3600, 2)
+    except:
+        hours = 0
+    hours_display = f"{int(hours)}h {int((hours % 1) * 60)}m"
+    
+    await db.attendance.update_one(
+        {"id": existing["id"]},
+        {"$set": {
+            "clock_out": local_now.isoformat(),
+            "clock_out_display": display_time,
+            "hours_worked": hours,
+            "hours_display": hours_display,
+            "status": "COMPLETED",
+        }}
+    )
+    
+    return {
+        "ok": True,
+        "action": "clock_out",
+        "user_name": user["name"],
+        "time": display_time,
+        "hours_display": hours_display,
+        "message": f"Salida registrada! Hasta luego, {user['name']}. Hora: {display_time}. Trabajaste: {hours_display}"
+    }
+
+
 @router.get("/attendance/today")
 async def get_today_attendance():
     """Get all attendance records for today"""
