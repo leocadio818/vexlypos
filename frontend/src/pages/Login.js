@@ -52,13 +52,22 @@ export default function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin }),
       });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.detail || 'Error al procesar'); setPin(''); setLoading(false); return; }
+      
+      let data;
+      try { data = await res.json(); } catch { data = {}; }
+      
+      if (!res.ok) {
+        const errorMsg = data.detail || `Error ${res.status}`;
+        toast.error(errorMsg, { duration: 6000 });
+        setPin('');
+        setLoading(false);
+        return;
+      }
       setAttendanceResult(data);
       setPin('');
     } catch (err) {
       console.error('Attendance error:', err);
-      toast.error('Error de conexion. Verifica tu internet.');
+      toast.error(`Error: ${err.message || 'No se pudo conectar al servidor'}`, { duration: 6000 });
     }
     setLoading(false);
   };
