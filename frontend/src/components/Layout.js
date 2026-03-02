@@ -32,6 +32,9 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
+  const [clockOutDialogOpen, setClockOutDialogOpen] = useState(false);
+  const [clockOutPin, setClockOutPin] = useState('');
+  const [clockOutLoading, setClockOutLoading] = useState(false);
   const [businessDayDialogOpen, setBusinessDayDialogOpen] = useState(false);
   const [businessDay, setBusinessDay] = useState(null);
   const [businessDayLoading, setBusinessDayLoading] = useState(true);
