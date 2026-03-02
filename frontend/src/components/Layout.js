@@ -673,7 +673,7 @@ export default function Layout() {
                   </div>
                 </PopoverContent>
               </Popover>
-              <p className={`mt-0.5 ${isTablet ? 'text-[7px] max-w-[45px]' : largeMode ? 'text-[10px] max-w-[60px]' : 'text-[8px] max-w-[50px]'} truncate ${
+              <p className={`mt-1 text-[9px] max-w-[55px] truncate ${
                 useGlassStyle ? 'text-white/50' : 'text-muted-foreground'
               }`}>{user?.name}</p>
             </div>
