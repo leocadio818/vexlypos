@@ -53,12 +53,12 @@ export default function Login() {
         body: JSON.stringify({ pin }),
       });
       
-      const text = await res.text();
+      const clone = res.clone();
       let data = {};
-      try { data = JSON.parse(text); } catch {}
+      try { data = await clone.json(); } catch { try { data = { detail: await res.text() }; } catch {} }
       
       if (!res.ok) {
-        toast.error(data.detail || `Error del servidor (${res.status})`, { duration: 6000 });
+        toast.error(data.detail || 'Error al procesar la solicitud', { duration: 6000 });
         setPin('');
         setLoading(false);
         return;
@@ -66,7 +66,7 @@ export default function Login() {
       setAttendanceResult(data);
       setPin('');
     } catch (err) {
-      toast.error(`No se pudo conectar: ${err.message}`, { duration: 6000 });
+      toast.error(`No se pudo conectar al servidor`, { duration: 6000 });
     }
     setLoading(false);
   };
