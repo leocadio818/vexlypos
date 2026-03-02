@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const wasOfflineRef = useRef(!navigator.onLine);
+  const isOnlineRef = useRef(navigator.onLine);
   const syncIntervalRef = useRef(null);
   
   // Device detection for responsive UI
