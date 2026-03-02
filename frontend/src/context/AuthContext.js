@@ -91,30 +91,45 @@ export function AuthProvider({ children }) {
     const handleOnline = async () => {
       setIsOnline(true);
       processOfflineQueue();
-      
-      // Removed toast notification - silent reconnection
       if (wasOfflineRef.current) {
-        // Auto-sync after coming online
-        setTimeout(() => {
-          syncPendingOperations();
-        }, 1500);
+        setTimeout(() => { syncPendingOperations(); }, 1500);
       }
-      
       wasOfflineRef.current = false;
     };
 
     const handleOffline = () => {
       setIsOnline(false);
       wasOfflineRef.current = true;
-      // Removed toast notification - silent offline mode
+    };
+
+    // Real connectivity check — ping server every 10s
+    const checkRealConnection = async () => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/health`, {
+          method: 'GET', signal: controller.signal, cache: 'no-store',
+        });
+        clearTimeout(timeout);
+        if (res.ok && !isOnlineRef.current) { handleOnline(); }
+        isOnlineRef.current = res.ok;
+        setIsOnline(res.ok);
+      } catch {
+        if (isOnlineRef.current) { handleOffline(); }
+        isOnlineRef.current = false;
+        setIsOnline(false);
+      }
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    checkRealConnection();
+    const pingInterval = setInterval(checkRealConnection, 10000);
     
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(pingInterval);
     };
   }, [syncPendingOperations]);
 
