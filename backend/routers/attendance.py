@@ -221,6 +221,32 @@ async def get_today_attendance():
     return records
 
 
+@router.get("/attendance/clocked-in-users")
+async def get_clocked_in_users(user=Depends(get_current_user)):
+    """Get all users currently clocked in — for transfer modal. No role filtering."""
+    today = now_local().strftime("%Y-%m-%d")
+    active_records = await db.attendance.find(
+        {"date": today, "status": "ACTIVE"}, {"_id": 0}
+    ).to_list(50)
+    
+    # Fetch user details for each clocked-in user
+    result = []
+    for rec in active_records:
+        if rec["user_id"] == user["user_id"]:
+            continue  # Skip self
+        u = await db.users.find_one({"id": rec["user_id"], "active": True}, {"_id": 0, "pin_hash": 0})
+        if u and u.get("role") != "kitchen":
+            result.append({
+                "id": u["id"],
+                "name": u["name"],
+                "role": u.get("role", ""),
+                "clock_in_display": rec.get("clock_in_display", ""),
+                "clockedIn": True,
+            })
+    return result
+
+
+
 @router.get("/attendance/report")
 async def attendance_report(start: str = None, end: str = None, user_id: str = None):
     """Get attendance records for date range"""
