@@ -395,16 +395,6 @@ export default function Login() {
               </>
             )}
           </button>
-
-          {/* Clock In button */}
-          <div className="flex gap-2 max-w-[280px] mx-auto mt-3 relative z-10">
-            <button onClick={() => handleAttendance('clock-in')} disabled={pin.length < 1 || loading}
-              data-testid="clock-in-btn"
-              className="flex-1 h-11 rounded-xl font-oswald font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-30 transition-all active:scale-95 border border-green-500/30"
-              style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
-              <Clock size={16} /> ENTRADA
-            </button>
-          </div>
         </div>
 
         <div className="mt-6 text-center relative z-10">
