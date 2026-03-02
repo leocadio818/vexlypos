@@ -776,6 +776,69 @@ export default function Layout() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Clock Out Dialog */}
+      <Dialog open={clockOutDialogOpen} onOpenChange={setClockOutDialogOpen}>
+        <DialogContent className="max-w-xs text-center">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center justify-center gap-2">
+              <Clock size={20} className="text-red-400" /> Marcar Salida
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Ingresa tu PIN para registrar tu salida</p>
+          <input
+            type="password"
+            value={clockOutPin}
+            onChange={e => setClockOutPin(e.target.value)}
+            placeholder="PIN"
+            className="w-full bg-background border border-border rounded-xl px-4 py-3 text-center font-mono text-2xl tracking-[0.5em]"
+            onKeyDown={e => {
+              if (e.key === 'Enter' && clockOutPin.length > 0) {
+                (async () => {
+                  setClockOutLoading(true);
+                  try {
+                    const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/attendance/clock-out`, {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ pin: clockOutPin }),
+                    });
+                    const clone = res.clone();
+                    let data = {};
+                    try { data = await clone.json(); } catch {}
+                    if (!res.ok) { toast.error(data.detail || 'Error'); } 
+                    else { toast.success(data.message, { duration: 8000 }); setClockOutDialogOpen(false); logout(); }
+                  } catch { toast.error('Error de conexion'); }
+                  setClockOutLoading(false);
+                  setClockOutPin('');
+                })();
+              }
+            }}
+            autoFocus
+          />
+          <Button
+            onClick={async () => {
+              if (clockOutPin.length < 1) { toast.error('Ingresa tu PIN'); return; }
+              setClockOutLoading(true);
+              try {
+                const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/attendance/clock-out`, {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ pin: clockOutPin }),
+                });
+                const clone = res.clone();
+                let data = {};
+                try { data = await clone.json(); } catch {}
+                if (!res.ok) { toast.error(data.detail || 'Error'); }
+                else { toast.success(data.message, { duration: 8000 }); setClockOutDialogOpen(false); logout(); }
+              } catch { toast.error('Error de conexion'); }
+              setClockOutLoading(false);
+              setClockOutPin('');
+            }}
+            disabled={clockOutPin.length < 1 || clockOutLoading}
+            className="w-full h-12 bg-red-500 hover:bg-red-600 text-white font-oswald font-bold"
+          >
+            {clockOutLoading ? 'Procesando...' : 'MARCAR SALIDA'}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
