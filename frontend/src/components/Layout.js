@@ -579,6 +579,19 @@ export default function Layout() {
 
           {/* Bottom section */}
           <div className="flex flex-col items-center gap-2 lg:gap-3 mt-auto">
+            {/* Clock Out button - visible only for non-cashier roles */}
+            {user && !hasPermission('close_shift') && (
+              <button
+                onClick={() => setClockOutDialogOpen(true)}
+                className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 active:scale-95`}
+                title="Marcar Salida"
+                data-testid="sidebar-clock-out-btn"
+              >
+                <LogOutIcon size={isTablet ? 14 : largeMode ? 18 : 16} />
+                {!isTablet && <span className="text-[7px]">Salida</span>}
+              </button>
+            )}
+            
             {/* Large Mode Toggle */}
             <button
               onClick={toggleLargeMode}
