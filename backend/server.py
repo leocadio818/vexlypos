@@ -96,6 +96,13 @@ api.include_router(attendance_router)
 api.include_router(billing_router)
 api.include_router(kitchen_router)
 api.include_router(customers_router)
+
+@api.get("/health")
+async def health_check():
+    """Lightweight health check for real connectivity detection"""
+    return {"ok": True}
+
+
 # ─── MODIFIER GROUPS WITH OPTIONS (para ProductConfig dropdown) ───
 # Retorna grupos combinados (old-style + new-style) con opciones enriquecidas
 @api.get("/modifier-groups-with-options")
