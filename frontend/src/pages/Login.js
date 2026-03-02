@@ -37,6 +37,30 @@ export default function Login() {
     if (pin.length < 1) return;
     setLoading(true);
     try {
+      // Try clock-in first (if no active entry today, register it)
+      try {
+        const clockRes = await fetch(`${API_BASE}/api/attendance/clock-in`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin }),
+        });
+        const clone = clockRes.clone();
+        let clockData = {};
+        try { clockData = await clone.json(); } catch {}
+        
+        if (clockRes.ok) {
+          // First entry today — show welcome + login
+          setAttendanceResult(clockData);
+          const u = await login(pin);
+          // Navigate after user closes the welcome modal
+          setPostLoginRoute(u.permissions?.view_dashboard ? '/dashboard' : '/tables');
+          setLoading(false);
+          return;
+        }
+        // If 400 "already clocked in" — normal login (no message)
+      } catch {}
+      
+      // Normal login (already clocked in or clock-in check failed)
       const u = await login(pin);
       navigate(u.permissions?.view_dashboard ? '/dashboard' : '/tables');
     } catch { setPin(''); }
