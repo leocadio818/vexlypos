@@ -580,79 +580,50 @@ export default function Layout() {
             )}
           </nav>
 
-          {/* Bottom section */}
-          <div className="flex flex-col items-center gap-2 lg:gap-3 mt-auto">
+          {/* Bottom section — large touch-friendly buttons */}
+          <div className="flex flex-col items-center gap-4 mt-auto pb-2">
             {/* Clock Out button - visible only for non-cashier roles */}
             {user && !hasPermission('close_shift') && (
               <button
                 onClick={() => setClockOutDialogOpen(true)}
-                className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 active:scale-95`}
+                className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 active:scale-95"
                 title="Marcar Salida"
                 data-testid="sidebar-clock-out-btn"
               >
-                <LogOutIcon size={isTablet ? 14 : largeMode ? 18 : 16} />
-                {!isTablet && <span className="text-[7px]">Salida</span>}
+                <LogOutIcon size={20} />
+                <span className="text-[8px] font-bold">Salida</span>
               </button>
             )}
             
-            {/* Large Mode Toggle */}
-            <button
-              onClick={toggleLargeMode}
-              className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
-                largeMode 
-                  ? 'bg-green-600 text-white' 
-                  : useGlassStyle
-                    ? 'text-white/60 hover:bg-white/10 hover:text-white'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-              title="Modo texto grande (A+)"
-            >
-              <span className={`font-bold ${isTablet ? 'text-xs' : largeMode ? 'text-base' : 'text-sm'}`}>A+</span>
-            </button>
+            {/* Connection Status */}
+            <div className="flex flex-col items-center gap-1" data-testid="status-indicators">
+              <div data-testid="online-status">
+                {isOnline ? (
+                  <Wifi size={16} className="text-green-400" />
+                ) : (
+                  <WifiOff size={16} className="text-orange-400 animate-pulse" />
+                )}
+              </div>
+            </div>
             
             {/* Sync Status */}
             {pendingCount > 0 && (
               <button
                 onClick={isOnline ? syncNow : undefined}
                 disabled={isSyncing || !isOnline}
-                className={`relative ${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-xl flex items-center justify-center transition-all ${
-                  isSyncing 
-                    ? 'bg-blue-500/20 text-blue-400' 
-                    : isOnline 
-                      ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' 
-                      : 'bg-orange-500/20 text-orange-400'
-                }`}
-                title={isSyncing ? 'Sincronizando...' : `${pendingCount} operación(es) pendiente(s)`}
+                className="relative w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"
+                title={`${pendingCount} pendiente(s)`}
                 data-testid="sync-status-btn"
               >
-                {isSyncing ? (
-                  <RefreshCw size={isTablet ? 14 : largeMode ? 18 : 16} className="animate-spin" />
-                ) : (
-                  <CloudOff size={isTablet ? 14 : largeMode ? 18 : 16} />
-                )}
-                <span className={`absolute -top-1 -right-1 ${isTablet ? 'w-4 h-4 text-[8px]' : 'w-5 h-5 text-[10px]'} rounded-full bg-orange-500 text-white font-bold flex items-center justify-center`}>
+                {isSyncing ? <RefreshCw size={16} className="animate-spin" /> : <CloudOff size={16} />}
+                <span className="absolute -top-1 -right-1 w-4 h-4 text-[8px] rounded-full bg-orange-500 text-white font-bold flex items-center justify-center">
                   {pendingCount > 9 ? '9+' : pendingCount}
                 </span>
               </button>
             )}
             
-            {/* Device & Connection Status */}
-            <div className="flex flex-col items-center gap-1" data-testid="status-indicators">
-              <DeviceIcon size={isTablet ? 14 : largeMode ? 18 : 14} className={useGlassStyle ? 'text-white/30' : 'text-muted-foreground/50'} title={device?.deviceLabel} />
-              <div data-testid="online-status" className="relative">
-                {isOnline ? (
-                  isSyncing ? (
-                    <Cloud size={isTablet ? 14 : largeMode ? 20 : 16} className="text-blue-400 animate-pulse" />
-                  ) : (
-                    <Wifi size={isTablet ? 14 : largeMode ? 20 : 16} className="text-green-400" />
-                  )
-                ) : (
-                  <WifiOff size={isTablet ? 14 : largeMode ? 20 : 16} className="text-orange-400 animate-pulse" />
-                )}
-              </div>
-            </div>
-            
-            <div className="text-center" data-testid="user-info">
+            {/* User Avatar — separated from other buttons */}
+            <div className="text-center mt-2 pt-3 border-t border-white/10" data-testid="user-info">
               <Popover>
                 <PopoverTrigger asChild>
                   <button className={`${isTablet ? 'w-8 h-8' : largeMode ? 'w-10 h-10' : 'w-8 h-8'} rounded-full flex items-center justify-center font-bold font-oswald ${isTablet ? 'text-xs' : largeMode ? 'text-sm' : 'text-xs'} transition-all hover:scale-110 active:scale-95 ${
