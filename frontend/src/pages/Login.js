@@ -376,19 +376,13 @@ export default function Login() {
             )}
           </button>
 
-          {/* Clock In / Clock Out buttons */}
+          {/* Clock In button */}
           <div className="flex gap-2 max-w-[280px] mx-auto mt-3 relative z-10">
             <button onClick={() => handleAttendance('clock-in')} disabled={pin.length < 1 || loading}
               data-testid="clock-in-btn"
               className="flex-1 h-11 rounded-xl font-oswald font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-30 transition-all active:scale-95 border border-green-500/30"
               style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
               <Clock size={16} /> ENTRADA
-            </button>
-            <button onClick={() => handleAttendance('clock-out')} disabled={pin.length < 1 || loading}
-              data-testid="clock-out-btn"
-              className="flex-1 h-11 rounded-xl font-oswald font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-30 transition-all active:scale-95 border border-red-500/30"
-              style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
-              <LogOutIcon size={16} /> SALIDA
             </button>
           </div>
         </div>
