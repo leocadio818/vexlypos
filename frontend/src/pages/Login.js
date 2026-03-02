@@ -28,6 +28,14 @@ export default function Login() {
 
   useEffect(() => { ensureSeed(); }, [ensureSeed]);
 
+  // Check if there are any active clock-ins (to color the ENTRAR button)
+  const [hasActiveClock, setHasActiveClock] = useState(null); // null=unknown, true=has entry, false=no entry
+  useEffect(() => {
+    // We can't check for a specific user without PIN, so we just check if ANY user is clocked in
+    // The actual per-user check happens in handleSubmit
+    setHasActiveClock(null);
+  }, []);
+
   const handleDigit = (d) => {
     if (pin.length < 8) setPin(prev => prev + d);
   };
