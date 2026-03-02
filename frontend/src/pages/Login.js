@@ -16,6 +16,7 @@ export default function Login() {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [attendanceResult, setAttendanceResult] = useState(null);
+  const [postLoginRoute, setPostLoginRoute] = useState(null);
   const { login, user, ensureSeed } = useAuth();
   const { theme, isMinimalist, neoColors, isNeoDark } = useTheme();
   const navigate = useNavigate();
