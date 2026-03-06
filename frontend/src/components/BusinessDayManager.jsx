@@ -25,7 +25,7 @@ export default function BusinessDayManager({
   onDayStatusChange,
   showStatsInline = false 
 }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [businessDay, setBusinessDay] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -155,7 +155,12 @@ export default function BusinessDayManager({
       setAuthorizerPin('');
       setClosingNotes('');
       setForceClose(false);
-      fetchCurrentDay();
+      
+      // After closing day → logout to login screen
+      setTimeout(() => {
+        logout();
+        window.location.href = '/login';
+      }, 2000);
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error al cerrar jornada');
     } finally {
