@@ -53,8 +53,9 @@ def now_iso() -> str:
 
 
 def today_str() -> str:
-    """Returns today's date as YYYY-MM-DD string"""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    """Returns today's date as YYYY-MM-DD string in DR local time"""
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo("America/Santo_Domingo")).strftime("%Y-%m-%d")
 
 
 # Import auth dependency
