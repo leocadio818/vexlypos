@@ -51,7 +51,7 @@ async def now_local_print_formatted() -> str:
 async def get_next_transaction_number() -> int:
     """
     Genera el siguiente número de transacción interno secuencial.
-    Usa find_one_and_update con upsert para garantizar atomicidad.
+    Inicia en 1001. Usa find_one_and_update con upsert para garantizar atomicidad.
     """
     result = await db.counters.find_one_and_update(
         {"_id": "internal_transaction"},
@@ -59,6 +59,13 @@ async def get_next_transaction_number() -> int:
         upsert=True,
         return_document=ReturnDocument.AFTER
     )
+    # If freshly created (seq=1), set to 1001
+    if result["seq"] < 1001:
+        result = await db.counters.find_one_and_update(
+            {"_id": "internal_transaction"},
+            {"$set": {"seq": 1001}},
+            return_document=ReturnDocument.AFTER
+        )
     return result["seq"]
 
 # ─── PYDANTIC MODELS ───
@@ -245,8 +252,7 @@ async def send_cancel_ticket_to_print_queue(order_id: str, items_cancelled: list
             "channel_name": channel_name,
             "table_number": order.get("table_number", "?"),
             "waiter_name": order.get("waiter_name", ""),
-            "order_number": order.get("id", "")[:8],
-            "transaction_number": order.get("transaction_number", ""),
+            "order_number": f"T-{order.get('transaction_number', '')}" if order.get('transaction_number') else order.get("id", "")[:8],
             "date": await now_local_print_formatted(),
             "items_count": len(cancel_items),
             "items": cancel_items
@@ -1123,8 +1129,7 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
             "channel_name": channel_name,
             "table_number": order.get("table_number", "?"),
             "waiter_name": order.get("waiter_name", ""),
-            "order_number": order.get("id", "")[:8],
-            "transaction_number": transaction_number,
+            "order_number": f"T-{transaction_number}" if transaction_number else order.get("id", "")[:8],
             "training_mode": order.get("training_mode", False),
             "date": await now_local_print_formatted(),
             "items_count": len(items),

@@ -1341,7 +1341,7 @@ export default function OrderScreen() {
               {splitMode ? <X size={18} /> : <ArrowLeft size={18} />}
             </button>
             <h2 className="font-oswald text-lg lg:text-base font-bold text-white">
-              {accessDenied ? `Mesa ${table?.number || '?'}` : splitMode ? 'EDITAR CUENTA' : tableOrders.length > 1 ? `Mesa ${table?.number || '?'} - Cuenta #${order?.account_number || 1}` : `Mesa ${table?.number || '?'}`}
+              {accessDenied ? `Mesa ${table?.number || '?'}` : splitMode ? 'EDITAR CUENTA' : `Mesa ${table?.number || '?'}${order?.transaction_number ? ` | T-${order.transaction_number}` : ''}`}
             </h2>
           </div>
         </div>

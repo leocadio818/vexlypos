@@ -190,7 +190,8 @@ async def dashboard():
                 "consumption": round(consumption, 2),
                 "items_count": items_count,
                 "opened_at": opened_at or "",
-                "waiter": table_orders[0].get("waiter_name", "") if table_orders else ""
+                "waiter": table_orders[0].get("waiter_name", "") if table_orders else "",
+                "transaction_number": table_orders[0].get("transaction_number") if table_orders else None
             })
     open_tables_list.sort(key=lambda x: x.get("table_number", 0))
 

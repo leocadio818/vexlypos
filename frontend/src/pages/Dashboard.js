@@ -199,7 +199,7 @@ export default function Dashboard() {
                             <span className="font-oswald text-sm font-bold text-green-400">{t.table_number}</span>
                           </div>
                           <div>
-                            <p className="text-xs text-white/70">{t.waiter || 'Sin mesero'}</p>
+                            <p className="text-xs text-white/70">{t.waiter || 'Sin mesero'} {t.transaction_number ? <span className="text-green-400 font-mono">T-{t.transaction_number}</span> : ''}</p>
                             <div className="flex items-center gap-2 mt-0.5">
                               <Clock size={10} className="text-white/40" />
                               <span className="text-[10px] text-white/40 font-mono">{timeStr}</span>
