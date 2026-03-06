@@ -3,8 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Delete, Check, X, Keyboard } from 'lucide-react';
 import { useInputMode } from '@/hooks/useInputMode';
 
-/**
-
 function KeypadDialog({ open, setOpen, tempValue, setTempValue, handleDigit, handleDelete, handleClear, handleConfirm, allowDecimal, label }) {
   // Listen for physical keyboard input while dialog is open
   useEffect(() => {
@@ -71,6 +69,7 @@ function KeypadDialog({ open, setOpen, tempValue, setTempValue, handleDigit, han
 }
 
 
+/**
  * NumericInput — Smart input that auto-detects keyboard vs touch
  * Touch-only → opens keypad modal on click
  * Has keyboard → renders normal input with optional keypad button
