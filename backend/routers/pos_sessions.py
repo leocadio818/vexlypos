@@ -775,6 +775,7 @@ async def sync_session_sales(session_id: str, user=Depends(get_current_user)):
         for bill in bills:
             total_invoices += 1
             bill_total = bill.get("total", 0) or 0
+            bill_change = bill.get("change_amount", 0) or 0
             bill_payments = bill.get("payments", [])
             
             # Si hay pagos individuales, distribuir por cada uno (pagos mixtos)
@@ -783,7 +784,9 @@ async def sync_session_sales(session_id: str, user=Depends(get_current_user)):
                     amt = pay.get("amount_dop", pay.get("amount", 0)) or 0
                     name_lower = (pay.get("payment_method_name", "") or "").lower()
                     if pay.get("is_cash", False) or "efectivo" in name_lower or "cash" in name_lower or "dolar" in name_lower or "euro" in name_lower:
-                        cash_sales += amt
+                        # Cash: subtract change (only the bill amount stays in register)
+                        cash_sales += amt - bill_change
+                        bill_change = 0  # Change only applies once per bill
                     elif "tarjeta" in name_lower or "card" in name_lower:
                         card_sales += amt
                     elif "transfer" in name_lower:

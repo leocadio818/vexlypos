@@ -77,8 +77,10 @@ async def dashboard():
     transfer_total = 0
     for bill in today_bills:
         bill_total = bill.get("total", 0)
+        bill_change = bill.get("change_amount", 0) or 0
         payments = bill.get("payments", [])
         if payments:
+            change_remaining = bill_change
             for payment in payments:
                 p_id = payment.get("payment_method_id", "")
                 pm = pm_map.get(p_id, {})
@@ -89,7 +91,9 @@ async def dashboard():
                 amt = payment.get("amount_dop", payment.get("amount", 0))
                 name_lower = (payment.get("payment_method_name", "") or "").lower()
                 if is_cash:
-                    cash_total += amt
+                    # Subtract change (cash in register = paid - change)
+                    cash_total += amt - change_remaining
+                    change_remaining = 0
                 elif "transfer" in name_lower:
                     transfer_total += amt
                 else:
