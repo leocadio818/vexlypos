@@ -80,7 +80,9 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
         body: JSON.stringify({ pin: adminPin, permission: 'void_transaction' })
       });
 
-      const data = await res.json();
+      const clone = res.clone();
+      let data = {};
+      try { data = await clone.json(); } catch { try { const t = await res.text(); data = JSON.parse(t); } catch { data = {}; } }
       
       if (!res.ok) {
         setPinError(data.detail || 'PIN incorrecto o sin permisos');
@@ -88,8 +90,8 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
         return;
       }
 
-      if (data.role !== 'admin') {
-        setPinError('Solo administradores pueden realizar esta acción');
+      if (!data.authorized) {
+        setPinError('No tienes permisos para esta accion');
         setAdminPin('');
         return;
       }
@@ -123,7 +125,9 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
         body: JSON.stringify({ transaction_number: parseInt(transactionNumber) })
       });
 
-      const data = await res.json();
+      const clone = res.clone();
+      let data = {};
+      try { data = await clone.json(); } catch { try { const t = await res.text(); data = JSON.parse(t); } catch { data = {}; } }
 
       if (!res.ok) {
         setSearchError(data.detail || 'Error buscando transacción');
@@ -164,7 +168,9 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
         })
       });
 
-      const data = await res.json();
+      const clone = res.clone();
+      let data = {};
+      try { data = await clone.json(); } catch { try { const t = await res.text(); data = JSON.parse(t); } catch { data = {}; } }
 
       if (!res.ok) {
         setSearchError(data.detail || 'Error creando nota de crédito');
@@ -175,7 +181,8 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
       setCreatedCreditNote(data);
       setStep(CREDIT_NOTE_STEPS.SUCCESS);
     } catch (e) {
-      setSearchError('Error de conexión');
+      console.error('Credit note error:', e);
+      setSearchError(`Error: ${e.message || 'No se pudo conectar'}`);
       setStep(CREDIT_NOTE_STEPS.REASON);
     } finally {
       setIsProcessing(false);
