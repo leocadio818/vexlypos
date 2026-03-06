@@ -253,22 +253,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
 
               {/* Admin PIN */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white/70">PIN de Administrador</label>
-                <div className="flex justify-center gap-2">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className={`w-12 h-14 rounded-lg border-2 flex items-center justify-center text-2xl font-bold transition-all ${
-                        adminPin.length > i
-                          ? 'bg-blue-500/20 border-blue-400 text-blue-400'
-                          : 'bg-white/5 border-white/20 text-white/30'
-                      }`}
-                    >
-                      {adminPin.length > i ? '•' : ''}
-                    </div>
-                  ))}
-                </div>
-                <PinPad value={adminPin} onChange={(val) => { setAdminPin(val.slice(0, 5)); setPinError(''); }} placeholder="Ingresa PIN" />
+                <PinPad value={adminPin} onChange={(val) => { setAdminPin(val.slice(0, 5)); setPinError(''); }} label="PIN de Administrador" placeholder="Ingresa PIN" maxLength={5} />
                 {pinError && (
                   <p className="text-red-400 text-sm text-center mt-2">{pinError}</p>
                 )}
@@ -280,27 +265,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                 </div>
               )}
 
-              {/* Numpad for PIN */}
-              <div className="grid grid-cols-3 gap-2">
-                {[1,2,3,4,5,6,7,8,9,'C',0,'⌫'].map((key) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      if (key === 'C') setAdminPin('');
-                      else if (key === '⌫') setAdminPin(p => p.slice(0, -1));
-                      else if (adminPin.length < 5) setAdminPin(p => p + key);
-                    }}
-                    className={`h-12 rounded-lg font-medium text-lg transition-all active:scale-95 ${
-                      key === 'C' || key === '⌫'
-                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                        : 'bg-white/10 text-white hover:bg-white/20'
-                    }`}
-                  >
-                    {key}
-                  </button>
-                ))}
-              </div>
-
+              {/* Verify PIN Button */}
               <Button
                 onClick={handleVerifyPin}
                 disabled={adminPin.length < 5 || !transactionNumber || isSearching}
