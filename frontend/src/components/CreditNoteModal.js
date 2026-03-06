@@ -16,16 +16,6 @@ const CREDIT_NOTE_STEPS = {
   SUCCESS: 'success'
 };
 
-// Razones de anulación fiscal
-const CREDIT_NOTE_REASONS = [
-  { id: "cn-error-ncf", code: "ERROR_NCF", name: "Error en NCF", description: "NCF emitido con datos incorrectos", color: "blue" },
-  { id: "cn-error-payment", code: "ERROR_PAGO", name: "Error en forma de pago", description: "Forma de pago registrada incorrectamente", color: "orange" },
-  { id: "cn-return", code: "DEVOLUCION", name: "Devolución de productos", description: "Cliente devolvió productos", color: "purple" },
-  { id: "cn-discount", code: "DESC_POST", name: "Descuento post-venta", description: "Descuento aplicado después del cierre", color: "green" },
-  { id: "cn-duplicate", code: "DUPLICADO", name: "Factura duplicada", description: "Se emitió factura duplicada por error", color: "red" },
-  { id: "cn-other", code: "OTRO", name: "Otro motivo", description: "Especificar en comentarios", color: "gray" }
-];
-
 export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialTransactionNumber = null }) {
   const [step, setStep] = useState(CREDIT_NOTE_STEPS.SEARCH);
   const [transactionNumber, setTransactionNumber] = useState('');
@@ -38,6 +28,33 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
   const [comments, setComments] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdCreditNote, setCreatedCreditNote] = useState(null);
+  // Fetch return reasons from API instead of using hardcoded values
+  const [returnReasons, setReturnReasons] = useState([]);
+  const [loadingReasons, setLoadingReasons] = useState(false);
+  
+  // Fetch return reasons from API when modal opens
+  useEffect(() => {
+    const fetchReasons = async () => {
+      if (!open || returnReasons.length > 0) return;
+      setLoadingReasons(true);
+      try {
+        const res = await fetch(`${API_BASE}/api/credit-notes/return-reasons`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('pos_token')}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setReturnReasons(data);
+        }
+      } catch (e) {
+        console.error('Error fetching return reasons:', e);
+      } finally {
+        setLoadingReasons(false);
+      }
+    };
+    fetchReasons();
+  }, [open, API_BASE, returnReasons.length]);
   
   // Cargar número de transacción inicial cuando se abre el modal
   useEffect(() => {
@@ -370,7 +387,11 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
 
               <ScrollArea className="h-[280px] pr-2">
                 <div className="space-y-2">
-                  {CREDIT_NOTE_REASONS.map((reason) => (
+                  {loadingReasons ? (
+                    <div className="text-center text-white/50 py-4">Cargando razones...</div>
+                  ) : returnReasons.length === 0 ? (
+                    <div className="text-center text-white/50 py-4">No hay razones disponibles</div>
+                  ) : returnReasons.map((reason) => (
                     <button
                       key={reason.id}
                       onClick={() => setSelectedReason(reason)}
