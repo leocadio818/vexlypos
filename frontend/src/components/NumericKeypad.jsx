@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Delete, Check, X, Keyboard } from 'lucide-react';
 import { useInputMode } from '@/hooks/useInputMode';
@@ -6,6 +6,20 @@ import { useInputMode } from '@/hooks/useInputMode';
 /**
 
 function KeypadDialog({ open, setOpen, tempValue, setTempValue, handleDigit, handleDelete, handleClear, handleConfirm, allowDecimal, label }) {
+  // Listen for physical keyboard input while dialog is open
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e) => {
+      if (e.key >= '0' && e.key <= '9') handleDigit(e.key);
+      else if (e.key === '.' && allowDecimal) handleDigit('.');
+      else if (e.key === 'Backspace') handleDelete();
+      else if (e.key === 'Enter') handleConfirm();
+      else if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [open, handleDigit, handleDelete, handleConfirm, setOpen, allowDecimal]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-xs p-4" data-testid="numeric-keypad-dialog">
