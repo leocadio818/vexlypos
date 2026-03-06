@@ -80,9 +80,8 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
         body: JSON.stringify({ pin: adminPin, permission: 'void_transaction' })
       });
 
-      const clone = res.clone();
-      let data = {};
-      try { data = await clone.json(); } catch { try { const t = await res.text(); data = JSON.parse(t); } catch { data = {}; } }
+      let data;
+      try { data = await res.json(); } catch { data = { detail: 'Error procesando respuesta' }; }
       
       if (!res.ok) {
         setPinError(data.detail || 'PIN incorrecto o sin permisos');
@@ -125,9 +124,8 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
         body: JSON.stringify({ transaction_number: parseInt(transactionNumber) })
       });
 
-      const clone = res.clone();
-      let data = {};
-      try { data = await clone.json(); } catch { try { const t = await res.text(); data = JSON.parse(t); } catch { data = {}; } }
+      let data;
+      try { data = await res.json(); } catch { data = { detail: 'Error procesando respuesta' }; }
 
       if (!res.ok) {
         setSearchError(data.detail || 'Error buscando transacción');
@@ -168,9 +166,8 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
         })
       });
 
-      const clone = res.clone();
-      let data = {};
-      try { data = await clone.json(); } catch { try { const t = await res.text(); data = JSON.parse(t); } catch { data = {}; } }
+      let data;
+      try { data = await res.json(); } catch { data = { detail: 'Error procesando respuesta' }; }
 
       if (!res.ok) {
         setSearchError(data.detail || 'Error creando nota de crédito');
@@ -182,7 +179,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
       setStep(CREDIT_NOTE_STEPS.SUCCESS);
     } catch (e) {
       console.error('Credit note error:', e);
-      setSearchError(`Error: ${e.message || 'No se pudo conectar'}`);
+      setSearchError(`Error: ${e.message}`);
       setStep(CREDIT_NOTE_STEPS.REASON);
     } finally {
       setIsProcessing(false);
