@@ -569,11 +569,19 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                     supabase_client.table("pos_sessions").update(update_data).eq("id", session_id).execute()
                     
                     # Create cash_movement record for this sale
+                    order_num = ""
+                    try:
+                        order_doc = await db.orders.find_one({"id": bill.get("order_id")}, {"_id": 0, "order_number": 1, "table_number": 1})
+                        if order_doc:
+                            order_num = f" | Orden #{order_doc.get('order_number', order_doc.get('table_number', ''))}"
+                    except:
+                        pass
+                    
                     if len(payments_list) > 1:
                         pmt_names = ", ".join([p["payment_method_name"] for p in payments_list])
-                        pmt_description = f"[BILL:{bill_id}] Venta {bill.get('ncf', bill_id[:8])} - Pago mixto: {pmt_names}"
+                        pmt_description = f"[BILL:{bill_id}] Venta {bill.get('ncf', bill_id[:8])}{order_num} - Pago mixto: {pmt_names}"
                     else:
-                        pmt_description = f"[BILL:{bill_id}] Venta {bill.get('ncf', bill_id[:8])} - {primary_payment_method_name}"
+                        pmt_description = f"[BILL:{bill_id}] Venta {bill.get('ncf', bill_id[:8])}{order_num} - {primary_payment_method_name}"
                     
                     supabase_movement_id = gen_id()
                     movement_ref = f"MOV-{datetime.now().year}-{gen_id()[:5].upper()}"
