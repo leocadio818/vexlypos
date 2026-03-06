@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import CreditNoteModal from '@/components/CreditNoteModal';
 import ReportXZ from '@/components/ReportXZ';
 import { NumericInput } from '@/components/NumericKeypad';
+import { PinPad } from '@/components/PinPad';
 
 // Denominaciones de billetes y monedas RD (estructura del usuario)
 const DENOMINACIONES = [
@@ -1180,20 +1181,7 @@ export default function CashRegister() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <div>
-              <label className="text-white/60 text-xs mb-1 block">PIN de Autorización (Admin)</label>
-              <div className="relative">
-                <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                <input
-                  type="password"
-                  value={closeDayPin}
-                  onChange={(e) => setCloseDayPin(e.target.value)}
-                  placeholder="PIN del administrador"
-                  data-testid="close-day-pin"
-                  className="w-full h-11 pl-10 pr-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 text-center font-oswald text-lg tracking-widest focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none"
-                />
-              </div>
-            </div>
+            <PinPad value={closeDayPin} onChange={setCloseDayPin} label="PIN de Autorizacion (Admin)" placeholder="PIN del administrador" />
             <div>
               <label className="text-white/60 text-xs mb-1 block">Notas de cierre (opcional)</label>
               <textarea

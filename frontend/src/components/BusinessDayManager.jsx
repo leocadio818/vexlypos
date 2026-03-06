@@ -6,6 +6,7 @@ import {
   AlertTriangle, TrendingUp, Banknote, CreditCard, ArrowRight,
   History, FileText, X, Shield, Printer
 } from 'lucide-react';
+import { PinPad } from '@/components/PinPad';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -376,19 +377,12 @@ export default function BusinessDayManager({
           </DialogHeader>
           
           <div className="space-y-4 pt-4">
-            <div>
-              <label className="text-white/70 text-sm block mb-2">PIN de Autorización</label>
-              <input
-                type="password"
-                value={authorizerPin}
-                onChange={(e) => setAuthorizerPin(e.target.value.replace(/\D/g, ''))}
-                placeholder="Ingresa PIN"
-                className="w-full h-14 bg-white/5 border-2 border-white/20 rounded-xl px-4 text-white text-2xl text-center font-mono tracking-widest focus:border-amber-400 outline-none"
-                maxLength={10}
-                autoFocus
-                data-testid="authorizer-pin-input"
-              />
-            </div>
+            <PinPad
+              value={authorizerPin}
+              onChange={setAuthorizerPin}
+              label="PIN de Autorizacion"
+              placeholder="Ingresa PIN"
+            />
             
             <div className="flex gap-3">
               <Button

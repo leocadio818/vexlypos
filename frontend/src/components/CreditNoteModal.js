@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertTriangle, Search, FileX, Printer, ArrowRight, Lock, Receipt, CheckCircle } from 'lucide-react';
 import { formatMoney } from '@/lib/api';
 import { NumericInput } from '@/components/NumericKeypad';
+import { PinPad } from '@/components/PinPad';
 
 const CREDIT_NOTE_STEPS = {
   SEARCH: 'search',
@@ -267,18 +268,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                     </div>
                   ))}
                 </div>
-                <input
-                  type="password"
-                  value={adminPin}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 5);
-                    setAdminPin(val);
-                    setPinError('');
-                  }}
-                  className="sr-only"
-                  autoFocus
-                  data-testid="credit-note-pin-input"
-                />
+                <PinPad value={adminPin} onChange={(val) => { setAdminPin(val.slice(0, 5)); setPinError(''); }} placeholder="Ingresa PIN" />
                 {pinError && (
                   <p className="text-red-400 text-sm text-center mt-2">{pinError}</p>
                 )}

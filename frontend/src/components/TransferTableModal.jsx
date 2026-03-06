@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { UserCheck, ArrowRightLeft, Lock, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { PinPad } from '@/components/PinPad';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -123,14 +124,7 @@ export default function TransferTableModal({ open, onClose, tableId, currentUser
                 <p className="text-sm font-bold text-amber-600">Autorizacion Requerida</p>
               </div>
               <p className="text-xs text-muted-foreground">Ingresa el PIN de un administrador o supervisor para autorizar esta transferencia.</p>
-              <input
-                type="password"
-                value={adminPin}
-                onChange={e => setAdminPin(e.target.value)}
-                placeholder="PIN de administrador"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-center font-mono tracking-widest"
-                data-testid="transfer-admin-pin"
-              />
+              <PinPad value={adminPin} onChange={setAdminPin} placeholder="PIN administrador" />
             </div>
           )}
 

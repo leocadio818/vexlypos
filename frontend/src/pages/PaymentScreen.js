@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import ThermalTicket, { printTicket, useBusinessConfig } from '@/components/ThermalTicket';
 import FiscalDataDrawer from '@/components/FiscalDataDrawer';
 import BusinessDayManager from '@/components/BusinessDayManager';
+import { PinPad } from '@/components/PinPad';
 
 // Iconos de Lucide para métodos de pago
 const lucideIcons = {
@@ -1960,17 +1961,7 @@ export default function PaymentScreen() {
               </div>
               
               <div>
-                <label className="text-xs text-white/50 block mb-2">PIN de Autorización</label>
-                <input
-                  type="password"
-                  value={taxOverridePin}
-                  onChange={(e) => setTaxOverridePin(e.target.value)}
-                  placeholder="••••••"
-                  className="w-full h-12 bg-white/5 border border-white/10 rounded-xl text-center text-white text-2xl font-oswald tracking-[0.5em] focus:border-amber-500/50 focus:outline-none"
-                  maxLength={10}
-                  autoFocus
-                  data-testid="tax-override-pin-input"
-                />
+                <PinPad value={taxOverridePin} onChange={setTaxOverridePin} label="PIN de Autorizacion" placeholder="Ingresa PIN" />
               </div>
               
               <div className="flex gap-2">
@@ -2272,16 +2263,7 @@ export default function PaymentScreen() {
             <DialogTitle className="font-oswald text-white text-center">PIN de Gerente</DialogTitle>
             <DialogDescription className="text-white/60 text-xs text-center">Este descuento requiere autorizacion</DialogDescription>
           </DialogHeader>
-          <input
-            type="password"
-            value={discountPin}
-            onChange={e => setDiscountPin(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && verifyDiscountPin()}
-            className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-center text-2xl font-mono text-white tracking-[0.5em]"
-            placeholder="****"
-            autoFocus
-            data-testid="discount-pin-input"
-          />
+          <PinPad value={discountPin} onChange={setDiscountPin} placeholder="Ingresa PIN" />
           <Button onClick={verifyDiscountPin} className="w-full bg-amber-600 hover:bg-amber-700" data-testid="discount-pin-confirm">
             Autorizar
           </Button>
