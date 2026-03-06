@@ -849,7 +849,7 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
         if closed_at:
             query["paid_at"]["$lte"] = closed_at
         
-        bills = await db.bills.find(query, {"_id": 0, "payments": 1, "total": 1, "payment_method": 1, "discount_applied": 1}).to_list(1000)
+        bills = await db.bills.find(query, {"_id": 0, "payments": 1, "total": 1, "payment_method": 1, "discount_applied": 1, "change_amount": 1}).to_list(1000)
         
         cash_rd = 0.0
         card = 0.0
@@ -862,6 +862,7 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
         
         for bill in bills:
             bill_payments = bill.get("payments", [])
+            bill_change = bill.get("change_amount", 0) or 0
             
             # Descuentos
             disc_amt = ((bill.get("discount_applied") or {}).get("amount", 0) or 0)
@@ -870,20 +871,29 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
                 discounts_count += 1
             
             if bill_payments and len(bill_payments) > 0:
+                change_remaining = bill_change
                 for pay in bill_payments:
                     amt = pay.get("amount_dop", pay.get("amount", 0)) or 0
                     name_lower = (pay.get("payment_method_name", "") or "").lower()
                     
                     if "dolar" in name_lower or "usd" in name_lower:
-                        usd += amt
+                        # USD cash — subtract change
+                        net = amt - change_remaining
+                        change_remaining = 0
+                        usd += net
                     elif "euro" in name_lower or "eur" in name_lower:
-                        eur += amt
+                        net = amt - change_remaining
+                        change_remaining = 0
+                        eur += net
                     elif "tarjeta" in name_lower or "card" in name_lower:
                         card += amt
                     elif "transfer" in name_lower:
                         transfer += amt
                     elif pay.get("is_cash", False) or "efectivo" in name_lower or "cash" in name_lower:
-                        cash_rd += amt
+                        # Cash — subtract change (only real amount stays in register)
+                        net = amt - change_remaining
+                        change_remaining = 0
+                        cash_rd += net
                     else:
                         other += amt
             else:
