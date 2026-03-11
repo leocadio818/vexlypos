@@ -439,7 +439,8 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
     # 10. Update POS session if exists (Supabase)
     if supabase_client:
         try:
-            session_result = supabase_client.table("pos_sessions").select("*").eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
+            # Find any open session (not just current user's)
+            session_result = supabase_client.table("pos_sessions").select("*").eq("status", "open").limit(1).execute()
             
             if session_result.data and len(session_result.data) > 0:
                 session = session_result.data[0]

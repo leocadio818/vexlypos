@@ -837,12 +837,13 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
     """Devuelve desglose detallado de ventas por forma de pago para una sesion"""
     try:
         sb = get_supabase()
-        session_result = sb.table("pos_sessions").select("opened_at, closed_at, opened_by").eq("id", session_id).single().execute()
+        session_result = sb.table("pos_sessions").select("*").eq("id", session_id).single().execute()
         if not session_result.data:
             raise HTTPException(status_code=404, detail="Sesion no encontrada")
         
         session = session_result.data
         opened_at = session.get("opened_at", "")
+        session_opened_at = opened_at
         closed_at = session.get("closed_at")
         
         query = {"status": "paid", "paid_at": {"$gte": opened_at}}
@@ -910,6 +911,42 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
                 else:
                     cash_rd += bill_total
         
+        # Get withdrawals and deposits from Supabase movements
+        withdrawals = 0
+        deposits = 0
+        credit_notes_total = 0
+        credit_notes_count = 0
+        try:
+            movements = sb.table("cash_movements").select("*").eq("session_id", session_id).execute()
+            for mov in movements.data:
+                if mov.get("movement_type") == "cash_out":
+                    withdrawals += mov.get("amount", 0)
+                elif mov.get("movement_type") == "cash_in" and mov.get("description", "").lower() != "fondo de apertura":
+                    deposits += mov.get("amount", 0)
+                elif mov.get("movement_type") == "credit_note":
+                    credit_notes_total += mov.get("amount", 0)
+                    credit_notes_count += 1
+        except:
+            pass
+        
+        # Get voids/anulaciones from MongoDB for this session's bills
+        voids_total = 0
+        voids_count = 0
+        try:
+            voided_bills = await db.bills.find(
+                {"status": "voided", "paid_at": {"$gte": session_opened_at} if session_opened_at else {"$exists": True}},
+                {"_id": 0, "total": 1}
+            ).to_list(100)
+            voids_count = len(voided_bills)
+            voids_total = sum(b.get("total", 0) for b in voided_bills)
+        except:
+            pass
+        
+        # Smart cash balance: opening - withdrawals
+        opening = session.get("opening_amount", 0) or 0
+        effective_cash = cash_rd  # Net cash from sales (after change)
+        cash_balance = opening + effective_cash - withdrawals + deposits
+        
         return {
             "cash_rd": round(cash_rd, 2),
             "card": round(card, 2),
@@ -919,7 +956,15 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
             "other": round(other, 2),
             "discounts": round(discounts_total, 2),
             "discounts_count": discounts_count,
-            "total": round(cash_rd + card + transfer + usd + eur + other, 2)
+            "total": round(cash_rd + card + transfer + usd + eur + other, 2),
+            "withdrawals": round(withdrawals, 2),
+            "deposits": round(deposits, 2),
+            "credit_notes_total": round(credit_notes_total, 2),
+            "credit_notes_count": credit_notes_count,
+            "voids_total": round(voids_total, 2),
+            "voids_count": voids_count,
+            "opening_amount": round(opening, 2),
+            "cash_balance": round(cash_balance, 2),
         }
     except HTTPException:
         raise

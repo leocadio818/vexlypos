@@ -146,6 +146,15 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                <XCircle size={18} className="text-red-400" />
+              </div>
+              <div>
+                <p className="font-oswald text-xl font-bold text-red-400">-{formatMoney(voidsToday.total)}</p>
+                <p className="text-[10px] text-white/50">Anulaciones ({voidsToday.count})</p>
+              </div>
+            </div>
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
                 <Clock size={18} className="text-green-400" />
               </div>

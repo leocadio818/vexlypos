@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { posSessionsAPI, businessDaysAPI, formatMoney } from '@/lib/api';
-import { CircleDollarSign, Play, Square, Clock, Banknote, CreditCard, AlertTriangle, TrendingUp, ArrowDownCircle, ArrowUpCircle, History, Wallet, CheckCircle2, Calculator, Coins, Receipt, RefreshCw, FileX, Search, Printer, X, Calendar, Lock, KeyRound, Tag } from 'lucide-react';
+import { CircleDollarSign, Play, Square, Clock, Banknote, CreditCard, AlertTriangle, TrendingUp, ArrowDownCircle, ArrowUpCircle, History, Wallet, CheckCircle2, Calculator, Coins, Receipt, RefreshCw, FileX, Search, Printer, X, Calendar, Lock, KeyRound, Tag, XCircle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -599,7 +599,25 @@ export default function CashRegister() {
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-out">
                   <ArrowDownCircle size={20} className="mx-auto mb-1 text-red-400" />
                   <p className="text-[10px] text-white/50 uppercase">Retiros</p>
-                  <p className="font-oswald text-lg font-bold text-red-400">{formatMoney(currentSession.cash_out)}</p>
+                  <p className="font-oswald text-lg font-bold text-red-400">-{formatMoney(salesBreakdown?.withdrawals ?? currentSession.cash_out ?? 0)}</p>
+                </div>
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-voids">
+                  <XCircle size={20} className="mx-auto mb-1 text-orange-500" />
+                  <p className="text-[10px] text-white/50 uppercase">Anulaciones</p>
+                  <p className="font-oswald text-lg font-bold text-orange-500">-{formatMoney(salesBreakdown?.voids_total ?? 0)}</p>
+                  <p className="text-[9px] text-white/40">{salesBreakdown?.voids_count ?? 0} anuladas</p>
+                </div>
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-credit-notes">
+                  <FileText size={20} className="mx-auto mb-1 text-amber-400" />
+                  <p className="text-[10px] text-white/50 uppercase">Notas Credito</p>
+                  <p className="font-oswald text-lg font-bold text-amber-400">-{formatMoney(salesBreakdown?.credit_notes_total ?? 0)}</p>
+                  <p className="text-[9px] text-white/40">{salesBreakdown?.credit_notes_count ?? 0} B04</p>
+                </div>
+                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-green-500/10 border border-green-500/30" data-testid="stat-cash-balance">
+                  <Wallet size={20} className="mx-auto mb-1 text-green-300" />
+                  <p className="text-[10px] text-green-300/70 uppercase font-bold">Balance Efectivo</p>
+                  <p className="font-oswald text-xl font-bold text-green-300">{formatMoney(salesBreakdown?.cash_balance ?? 0)}</p>
+                  <p className="text-[9px] text-white/40">Apertura + Ventas - Retiros</p>
                 </div>
               </div>
               
