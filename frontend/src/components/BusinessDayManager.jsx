@@ -7,6 +7,7 @@ import {
   History, FileText, X, Shield, Printer
 } from 'lucide-react';
 import { PinPad } from '@/components/PinPad';
+import { NeoDatePicker } from '@/components/DateTimePicker';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -423,12 +424,10 @@ export default function BusinessDayManager({
           <div className="space-y-4 pt-4">
             <div>
               <label className="text-white/70 text-sm block mb-2">Fecha de Negocio (Contable)</label>
-              <input
-                type="date"
+              <NeoDatePicker
                 value={businessDate}
                 onChange={(e) => setBusinessDate(e.target.value)}
-                className="w-full h-12 bg-white/5 border border-white/20 rounded-xl px-4 text-white focus:border-green-400 outline-none"
-                data-testid="business-date-input"
+                className="w-full h-12 bg-background border border-border rounded-xl px-4 text-sm font-mono"
               />
               <p className="text-white/40 text-xs mt-1">
                 Esta fecha se usará para todas las transacciones hasta el cierre
