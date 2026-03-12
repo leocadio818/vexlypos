@@ -2,28 +2,32 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Toaster } from "@/components/ui/sonner";
+import React, { Suspense } from "react";
+import PageSkeleton from "@/components/PageSkeleton";
 import Login from "@/pages/Login";
-import TableMap from "@/pages/TableMap";
-import OrderScreen from "@/pages/OrderScreen";
-import Kitchen from "@/pages/Kitchen";
-import Billing from "@/pages/Billing";
-import PaymentScreen from "@/pages/PaymentScreen";
-import CashRegister from "@/pages/CashRegister";
-import Settings from "@/pages/settings";
-import PrinterSettings from "@/pages/settings/PrinterSettings";
-import InventoryManager from "@/pages/InventoryManager";
-import Suppliers from "@/pages/Suppliers";
-import Reports from "@/pages/Reports";
-import Customers from "@/pages/Customers";
-import Dashboard from "@/pages/Dashboard";
-import KitchenTV from "@/pages/KitchenTV";
-import Reservations from "@/pages/Reservations";
-import ProductConfig from "@/pages/ProductConfig";
-import UserConfig from "@/pages/UserConfig";
-import AnulacionesReport from "@/pages/AnulacionesReport";
-import TicketDemo from "@/pages/TicketDemo";
-import BillHistory from "@/pages/BillHistory";
 import Layout from "@/components/Layout";
+
+// Lazy load ALL pages for instant navigation
+const Dashboard = React.lazy(() => import("@/pages/Dashboard"));
+const TableMap = React.lazy(() => import("@/pages/TableMap"));
+const OrderScreen = React.lazy(() => import("@/pages/OrderScreen"));
+const Kitchen = React.lazy(() => import("@/pages/Kitchen"));
+const Billing = React.lazy(() => import("@/pages/Billing"));
+const PaymentScreen = React.lazy(() => import("@/pages/PaymentScreen"));
+const CashRegister = React.lazy(() => import("@/pages/CashRegister"));
+const Settings = React.lazy(() => import("@/pages/settings"));
+const PrinterSettings = React.lazy(() => import("@/pages/settings/PrinterSettings"));
+const InventoryManager = React.lazy(() => import("@/pages/InventoryManager"));
+const Suppliers = React.lazy(() => import("@/pages/Suppliers"));
+const Reports = React.lazy(() => import("@/pages/Reports"));
+const Customers = React.lazy(() => import("@/pages/Customers"));
+const KitchenTV = React.lazy(() => import("@/pages/KitchenTV"));
+const Reservations = React.lazy(() => import("@/pages/Reservations"));
+const ProductConfig = React.lazy(() => import("@/pages/ProductConfig"));
+const UserConfig = React.lazy(() => import("@/pages/UserConfig"));
+const AnulacionesReport = React.lazy(() => import("@/pages/AnulacionesReport"));
+const TicketDemo = React.lazy(() => import("@/pages/TicketDemo"));
+const BillHistory = React.lazy(() => import("@/pages/BillHistory"));
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -36,29 +40,29 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/kitchen-tv" element={<KitchenTV />} />
+      <Route path="/kitchen-tv" element={<Suspense fallback={<PageSkeleton />}><KitchenTV /></Suspense>} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="tables" element={<TableMap />} />
-        <Route path="order/:tableId" element={<OrderScreen />} />
-        <Route path="kitchen" element={<Kitchen />} />
-        <Route path="billing/:orderId" element={<Billing />} />
-        <Route path="payment/:billId" element={<PaymentScreen />} />
-        <Route path="cash-register" element={<CashRegister />} />
+        <Route path="dashboard" element={<Suspense fallback={<PageSkeleton />}><Dashboard /></Suspense>} />
+        <Route path="tables" element={<Suspense fallback={<PageSkeleton />}><TableMap /></Suspense>} />
+        <Route path="order/:tableId" element={<Suspense fallback={<PageSkeleton />}><OrderScreen /></Suspense>} />
+        <Route path="kitchen" element={<Suspense fallback={<PageSkeleton />}><Kitchen /></Suspense>} />
+        <Route path="billing/:orderId" element={<Suspense fallback={<PageSkeleton />}><Billing /></Suspense>} />
+        <Route path="payment/:billId" element={<Suspense fallback={<PageSkeleton />}><PaymentScreen /></Suspense>} />
+        <Route path="cash-register" element={<Suspense fallback={<PageSkeleton />}><CashRegister /></Suspense>} />
         <Route path="inventory" element={<Navigate to="/inventory-manager" replace />} />
-        <Route path="inventory-manager" element={<InventoryManager />} />
-        <Route path="suppliers" element={<Suppliers />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="reports/anulaciones" element={<AnulacionesReport />} />
-        <Route path="reports/facturas" element={<BillHistory />} />
-        <Route path="customers" element={<Customers />} />
-        <Route path="reservations" element={<Reservations />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="settings/printer" element={<PrinterSettings />} />
-        <Route path="product/:productId" element={<ProductConfig />} />
-        <Route path="user/:userId" element={<UserConfig />} />
-        <Route path="ticket-demo" element={<TicketDemo />} />
+        <Route path="inventory-manager" element={<Suspense fallback={<PageSkeleton />}><InventoryManager /></Suspense>} />
+        <Route path="suppliers" element={<Suspense fallback={<PageSkeleton />}><Suppliers /></Suspense>} />
+        <Route path="reports" element={<Suspense fallback={<PageSkeleton />}><Reports /></Suspense>} />
+        <Route path="reports/anulaciones" element={<Suspense fallback={<PageSkeleton />}><AnulacionesReport /></Suspense>} />
+        <Route path="reports/facturas" element={<Suspense fallback={<PageSkeleton />}><BillHistory /></Suspense>} />
+        <Route path="customers" element={<Suspense fallback={<PageSkeleton />}><Customers /></Suspense>} />
+        <Route path="reservations" element={<Suspense fallback={<PageSkeleton />}><Reservations /></Suspense>} />
+        <Route path="settings" element={<Suspense fallback={<PageSkeleton />}><Settings /></Suspense>} />
+        <Route path="settings/printer" element={<Suspense fallback={<PageSkeleton />}><PrinterSettings /></Suspense>} />
+        <Route path="product/:productId" element={<Suspense fallback={<PageSkeleton />}><ProductConfig /></Suspense>} />
+        <Route path="user/:userId" element={<Suspense fallback={<PageSkeleton />}><UserConfig /></Suspense>} />
+        <Route path="ticket-demo" element={<Suspense fallback={<PageSkeleton />}><TicketDemo /></Suspense>} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
