@@ -11,6 +11,7 @@ import ReportXZ from '@/components/ReportXZ';
 import { NumericInput } from '@/components/NumericKeypad';
 import { PinPad } from '@/components/PinPad';
 import axios from 'axios';
+import { Button } from '@/components/ui/button';
 
 // Denominaciones de billetes y monedas RD (estructura del usuario)
 const DENOMINACIONES = [
