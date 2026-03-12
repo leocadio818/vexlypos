@@ -500,25 +500,23 @@ export default function CashRegister() {
           <button onClick={fetchData} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all">
             <RefreshCw size={16} />
           </button>
-          {/* Botón Nota de Crédito B04 - Siempre visible, pide autorización si no tiene permiso */}
-          {currentSession && (
-            <button 
-              onClick={() => {
-                if (hasPermission('create_b04')) {
-                  setCreditNoteModalOpen(true);
-                } else {
-                  setB04AuthPin('');
-                  setB04AuthError('');
-                  setB04AuthModal(true);
-                }
-              }} 
-              data-testid="credit-note-btn"
-              className="px-3 py-2 rounded-xl bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 font-medium text-sm flex items-center gap-2 transition-all"
-              title="Nota de Crédito B04"
-            >
-              <FileX size={16} /> B04
-            </button>
-          )}
+          {/* Botón Nota de Crédito B04 - SIEMPRE visible */}
+          <button 
+            onClick={() => {
+              if (hasPermission('create_b04')) {
+                setCreditNoteModalOpen(true);
+              } else {
+                setB04AuthPin('');
+                setB04AuthError('');
+                setB04AuthModal(true);
+              }
+            }} 
+            data-testid="credit-note-btn"
+            className="px-3 py-2 rounded-xl bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 font-medium text-sm flex items-center gap-2 transition-all"
+            title="Nota de Crédito B04"
+          >
+            <FileX size={16} /> B04
+          </button>
           {/* Botón Cierre de Día - Solo para Admin */}
           {user?.role === 'admin' && !currentSession && (
             <button 
