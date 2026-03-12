@@ -1251,7 +1251,7 @@ export default function CashRegister() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <PinPad value={closeDayPin} onChange={setCloseDayPin} label="PIN de Autorizacion (Admin)" placeholder="PIN del administrador" />
+            <PinPad value={closeDayPin} onChange={setCloseDayPin} label="PIN de Autorizacion (Admin)" placeholder="PIN del administrador" forceKeypad />
             <div>
               <label className="text-white/60 text-xs mb-1 block">Notas de cierre (opcional)</label>
               <textarea

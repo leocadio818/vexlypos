@@ -383,6 +383,7 @@ export default function BusinessDayManager({
               onChange={setAuthorizerPin}
               label="PIN de Autorizacion"
               placeholder="Ingresa PIN"
+              forceKeypad
             />
             
             <div className="flex gap-3">

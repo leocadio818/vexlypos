@@ -124,7 +124,7 @@ export default function TransferTableModal({ open, onClose, tableId, currentUser
                 <p className="text-sm font-bold text-amber-600">Autorizacion Requerida</p>
               </div>
               <p className="text-xs text-muted-foreground">Ingresa el PIN de un administrador o supervisor para autorizar esta transferencia.</p>
-              <PinPad value={adminPin} onChange={setAdminPin} placeholder="PIN administrador" />
+              <PinPad value={adminPin} onChange={setAdminPin} placeholder="PIN administrador" forceKeypad />
             </div>
           )}
 

@@ -227,7 +227,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
 
               {/* Admin PIN */}
               <div className="space-y-2">
-                <PinPad value={adminPin} onChange={(val) => { setAdminPin(val.slice(0, 5)); setPinError(''); }} label="PIN de Administrador" placeholder="Ingresa PIN" maxLength={5} />
+                <PinPad value={adminPin} onChange={(val) => { setAdminPin(val.slice(0, 5)); setPinError(''); }} label="PIN de Administrador" placeholder="Ingresa PIN" forceKeypad />
                 {pinError && (
                   <p className="text-red-400 text-sm text-center mt-2">{pinError}</p>
                 )}

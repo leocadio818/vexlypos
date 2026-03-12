@@ -1961,7 +1961,7 @@ export default function PaymentScreen() {
               </div>
               
               <div>
-                <PinPad value={taxOverridePin} onChange={setTaxOverridePin} label="PIN de Autorizacion" placeholder="Ingresa PIN" />
+                <PinPad value={taxOverridePin} onChange={setTaxOverridePin} label="PIN de Autorizacion" placeholder="Ingresa PIN" forceKeypad />
               </div>
               
               <div className="flex gap-2">
@@ -2263,7 +2263,7 @@ export default function PaymentScreen() {
             <DialogTitle className="font-oswald text-white text-center">PIN de Gerente</DialogTitle>
             <DialogDescription className="text-white/60 text-xs text-center">Este descuento requiere autorizacion</DialogDescription>
           </DialogHeader>
-          <PinPad value={discountPin} onChange={setDiscountPin} placeholder="Ingresa PIN" />
+          <PinPad value={discountPin} onChange={setDiscountPin} placeholder="Ingresa PIN" forceKeypad />
           <Button onClick={verifyDiscountPin} className="w-full bg-amber-600 hover:bg-amber-700" data-testid="discount-pin-confirm">
             Autorizar
           </Button>
