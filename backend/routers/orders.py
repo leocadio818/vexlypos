@@ -911,13 +911,18 @@ async def get_void_report(
     to_date: Optional[str] = Query(None),
     period: Optional[str] = Query(None)
 ):
-    now = datetime.utcnow()
-    if period == 'day':
-        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat() + "Z"
+    # Use active business day for "day" period (not calendar midnight)
+    if period == 'day' or period == 'today':
+        active_day = await db.business_days.find_one({"status": "open"}, {"_id": 0, "opened_at": 1})
+        if active_day:
+            start_date = active_day["opened_at"]
+        else:
+            from zoneinfo import ZoneInfo
+            start_date = datetime.now(ZoneInfo("America/Santo_Domingo")).replace(hour=0, minute=0, second=0).isoformat()
     elif period == 'week':
-        start_date = (now - timedelta(days=7)).isoformat() + "Z"
+        start_date = (datetime.utcnow() - timedelta(days=7)).isoformat() + "Z"
     elif period == 'month':
-        start_date = (now - timedelta(days=30)).isoformat() + "Z"
+        start_date = (datetime.utcnow() - timedelta(days=30)).isoformat() + "Z"
     else:
         start_date = from_date
     

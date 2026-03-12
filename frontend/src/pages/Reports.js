@@ -435,11 +435,25 @@ export default function Reports() {
   const [reportZDayId, setReportZDayId] = useState(null);
   const [auditEventFilter, setAuditEventFilter] = useState('Todos');
   
-  // Quick date presets
+  // Load active business date on mount
+  useEffect(() => {
+    fetch(`${API}/business-days/active-date`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.date) {
+          setDateRange({ from: d.date, to: d.date });
+        }
+      }).catch(() => {});
+  }, []);
+  
+  // Quick date presets — "Hoy" uses business date, not calendar
   const datePresets = [
-    { label: 'Hoy', value: () => {
-      const today = new Date().toISOString().slice(0, 10);
-      return { from: today, to: today };
+    { label: 'Jornada', value: async () => {
+      try {
+        const r = await fetch(`${API}/business-days/active-date`);
+        const d = await r.json();
+        return { from: d.date, to: d.date };
+      } catch { const t = new Date().toISOString().slice(0, 10); return { from: t, to: t }; }
     }},
     { label: 'Ayer', value: () => {
       const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
@@ -714,7 +728,7 @@ export default function Reports() {
               size="sm" 
               variant="ghost"
               className="h-7 px-2 text-xs"
-              onClick={() => setDateRange(preset.value())}
+              onClick={async () => { const v = await preset.value(); setDateRange(v); }}
             >
               {preset.label}
             </Button>

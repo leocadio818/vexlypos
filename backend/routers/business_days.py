@@ -168,6 +168,21 @@ async def check_business_day_status(user=Depends(get_current_user)):
     }
 
 
+@router.get("/active-date")
+async def get_active_business_date():
+    """Returns the active business date (or last closed). No auth required — used by reports date pickers."""
+    business_day = await get_current_business_day()
+    if business_day:
+        return {"date": business_day["business_date"], "status": "open"}
+    # Fallback: find the last closed day
+    last = await db.business_days.find_one({"status": "closed"}, {"_id": 0, "business_date": 1}, sort=[("closed_at", -1)])
+    if last:
+        return {"date": last["business_date"], "status": "closed"}
+    return {"date": today_str(), "status": "none"}
+
+
+
+
 @router.post("/authorize")
 async def authorize_day_action(input: AuthorizeDayActionInput):
     """

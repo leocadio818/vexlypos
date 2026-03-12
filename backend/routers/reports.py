@@ -22,6 +22,15 @@ def gen_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+async def get_active_business_date():
+    """Returns active business day date, or fallback to local DR date"""
+    bd = await db.business_days.find_one({"status": "open"}, {"_id": 0, "business_date": 1})
+    if bd:
+        return bd["business_date"]
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo("America/Santo_Domingo")).strftime("%Y-%m-%d")
+
+
 # Import centralized timezone utilities
 from utils.timezone import (
     get_local_today_utc_range,
@@ -307,7 +316,7 @@ async def daily_sales_report(
     date: Optional[str] = Query(None)
 ):
     """Complete daily sales summary"""
-    d_from = date or date_from or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    d_from = date or date_from or await get_active_business_date()
     d_to = date_to or d_from
     
     bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(10000)
@@ -390,7 +399,7 @@ async def sales_by_category_report(
     date: Optional[str] = Query(None)
 ):
     """Sales breakdown by product category"""
-    d_from = date or date_from or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    d_from = date or date_from or await get_active_business_date()
     d_to = date_to or d_from
     
     bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(10000)
@@ -438,7 +447,7 @@ async def sales_by_waiter_report(
     date: Optional[str] = Query(None)
 ):
     """Sales breakdown by waiter/server"""
-    d_from = date or date_from or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    d_from = date or date_from or await get_active_business_date()
     d_to = date_to or d_from
     
     bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(10000)
@@ -485,7 +494,7 @@ async def shift_close_report(
         ]
     else:
         # Get today's shifts
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today = await get_active_business_date()
         query["$or"] = [
             {"opened_at": {"$regex": f"^{today}"}},
             {"closed_at": {"$regex": f"^{today}"}}
@@ -528,7 +537,7 @@ async def shift_close_report(
 async def cash_close_report(date: Optional[str] = Query(None)):
     """Detailed cash register close report with payment method breakdown"""
     if not date:
-        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date = await get_active_business_date()
     
     # Get all paid bills for the date
     bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
@@ -613,7 +622,7 @@ async def top_products_extended(
 ):
     """Top N products with customizable limit and date range"""
     if not date_from:
-        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_from = await get_active_business_date()
     if not date_to:
         date_to = date_from
     
@@ -671,7 +680,7 @@ async def sales_by_type_report(
 ):
     """Sales breakdown by sale type (dine-in, delivery, takeout, etc.)"""
     if not date_from:
-        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_from = await get_active_business_date()
     if not date_to:
         date_to = date_from
     
@@ -715,7 +724,7 @@ async def payment_methods_breakdown(
 ):
     """Detailed payment methods breakdown with trends"""
     if not date_from:
-        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_from = await get_active_business_date()
     if not date_to:
         date_to = date_from
     
@@ -785,7 +794,7 @@ async def void_audit_report(
 ):
     """Complete void/cancellation audit with authorizer information"""
     if not date_from:
-        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_from = await get_active_business_date()
     if not date_to:
         date_to = date_from
     
@@ -1206,7 +1215,7 @@ async def taxes_report(
 ):
     """Tax collection report (ITBIS and Legal Tip)"""
     if not date_from:
-        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_from = await get_active_business_date()
     if not date_to:
         date_to = date_from
     
@@ -1266,7 +1275,7 @@ async def profit_loss_report(
 ):
     """Extended profit and loss report"""
     if not date_from:
-        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_from = await get_active_business_date()
     if not date_to:
         date_to = date_from
     
@@ -1373,7 +1382,7 @@ async def hourly_sales_report(
 ):
     """Hourly sales distribution"""
     if not date_from:
-        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_from = await get_active_business_date()
     if not date_to:
         date_to = date_from
     
@@ -1408,7 +1417,7 @@ async def system_audit_report(
 ):
     """General system audit log - all significant activities"""
     if not date_from:
-        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_from = await get_active_business_date()
     if not date_to:
         date_to = date_from
     
