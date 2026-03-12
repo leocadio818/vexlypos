@@ -460,7 +460,9 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
                 }
                 supabase_client.table("cash_movements").insert(movement_data).execute()
         except Exception as e:
-            print(f"Warning: Could not update POS session for credit note: {e}")
+            import traceback
+            print(f"WARNING: Could not create credit note movement in Supabase: {e}")
+            traceback.print_exc()
     
     # 11. Create audit log
     audit_log = {
