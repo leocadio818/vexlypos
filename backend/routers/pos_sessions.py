@@ -929,16 +929,25 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
         except:
             pass
         
-        # Get voids/anulaciones from MongoDB for this session's bills
+        # Get voids/anulaciones from MongoDB — both full bills AND individual items
         voids_total = 0
         voids_count = 0
         try:
+            # 1. Full voided bills
             voided_bills = await db.bills.find(
                 {"status": "voided", "paid_at": {"$gte": session_opened_at} if session_opened_at else {"$exists": True}},
                 {"_id": 0, "total": 1}
             ).to_list(100)
-            voids_count = len(voided_bills)
-            voids_total = sum(b.get("total", 0) for b in voided_bills)
+            voids_total += sum(b.get("total", 0) for b in voided_bills)
+            voids_count += len(voided_bills)
+            
+            # 2. Individual item voids (line-item voids from void_audit_logs)
+            item_voids = await db.void_audit_logs.find(
+                {"created_at": {"$gte": session_opened_at} if session_opened_at else {"$exists": True}},
+                {"_id": 0, "total_value": 1}
+            ).to_list(500)
+            voids_total += sum(v.get("total_value", 0) for v in item_voids)
+            voids_count += len(item_voids)
         except:
             pass
         
