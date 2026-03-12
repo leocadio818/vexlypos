@@ -1190,18 +1190,18 @@ export default function CashRegister() {
           <div className="space-y-4">
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 space-y-2">
               {openTablesError.message.split(' | ').map((reason, idx) => (
-                <p key={idx} className="text-white text-sm">
+                <p key={idx} className="text-foreground text-sm font-medium">
                   {reason}
                 </p>
               ))}
             </div>
-            <p className="text-white/60 text-xs">
+            <p className="text-muted-foreground text-xs">
               Debes cerrar todas las cuentas abiertas y asegurarte de que no haya otros turnos activos antes de cerrar tu turno.
             </p>
             <button 
               onClick={() => setOpenTablesError({ show: false, message: '' })}
               data-testid="close-open-tables-error"
-              className="w-full h-11 rounded-xl bg-white/10 border border-white/20 text-white font-oswald font-bold hover:bg-white/20 transition-all"
+              className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-oswald font-bold hover:opacity-90 transition-all"
             >
               ENTENDIDO
             </button>
