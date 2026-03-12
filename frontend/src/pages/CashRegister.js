@@ -831,7 +831,7 @@ export default function CashRegister() {
 
       {/* Open Session Dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="open-session-dialog">
+        <DialogContent className="max-w-sm sm:max-w-md mx-auto" data-testid="open-session-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald text-white">Abrir Turno</DialogTitle>
             <DialogDescription className="text-white/60">Selecciona la estación e ingresa el monto inicial</DialogDescription>
@@ -901,7 +901,7 @@ export default function CashRegister() {
 
       {/* Close Session Dialog - ARQUEO DE CAJA */}
       <Dialog open={closeDialog} onOpenChange={setCloseDialog}>
-        <DialogContent className="max-w-2xl backdrop-blur-xl bg-slate-900/90 border-white/20 max-h-[90vh] overflow-y-auto" data-testid="close-session-dialog">
+        <DialogContent className="max-w-2xl mx-auto max-h-[90vh] overflow-y-auto" data-testid="close-session-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald text-white flex items-center gap-2">
               <Calculator size={20} className="text-orange-400" />
@@ -1045,7 +1045,7 @@ export default function CashRegister() {
 
       {/* Cash Movement Dialog */}
       <Dialog open={movementDialog} onOpenChange={setMovementDialog}>
-        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-white/20" data-testid="movement-dialog">
+        <DialogContent className="max-w-sm sm:max-w-md mx-auto" data-testid="movement-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald text-white">Nuevo Movimiento de Caja</DialogTitle>
           </DialogHeader>
@@ -1140,7 +1140,7 @@ export default function CashRegister() {
 
       {/* B04 Authorization Modal - For users without create_b04 permission */}
       <Dialog open={b04AuthModal} onOpenChange={setB04AuthModal}>
-        <DialogContent className="max-w-xs">
+        <DialogContent className="max-w-xs sm:max-w-sm mx-auto" data-testid="b04-auth-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald flex items-center justify-center gap-2">
               <Lock size={20} className="text-amber-500" /> Autorizacion Requerida
@@ -1183,7 +1183,7 @@ export default function CashRegister() {
 
       {/* Diálogo de Error: Mesas Abiertas */}
       <Dialog open={openTablesError.show} onOpenChange={(v) => !v && setOpenTablesError({ show: false, message: '' })}>
-        <DialogContent className="max-w-md backdrop-blur-xl bg-slate-900/90 border-red-500/30" data-testid="open-tables-error-dialog">
+        <DialogContent className="max-w-md mx-auto" data-testid="open-tables-error-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald text-red-400 flex items-center gap-2">
               <AlertTriangle size={20} />
@@ -1243,7 +1243,7 @@ export default function CashRegister() {
 
       {/* Diálogo Cierre de Día (Z) */}
       <Dialog open={closeDayDialog} onOpenChange={setCloseDayDialog}>
-        <DialogContent className="max-w-sm backdrop-blur-xl bg-slate-900/90 border-amber-500/30" data-testid="close-day-dialog">
+        <DialogContent className="max-w-sm mx-auto" data-testid="close-day-dialog">
           <DialogHeader>
             <DialogTitle className="font-oswald text-amber-400 flex items-center gap-2">
               <Calendar size={20} />
