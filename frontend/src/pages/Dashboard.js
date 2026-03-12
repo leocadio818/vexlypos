@@ -32,7 +32,7 @@ export default function Dashboard() {
     </div>
   );
 
-  const { today, operations, loyalty, hourly_sales, open_tables = [], closed_tables = [], voids = {} } = data;
+  const { today, operations, loyalty, hourly_sales, open_tables = [], closed_tables = [], voids = {}, jornada = {} } = data;
   const voidsToday = voids.today || { count: 0, total: 0, by_reason: [], items: [] };
   const voidsJornada = voids.jornada || { count: 0, total: 0, by_reason: [], items: [] };
 
@@ -55,8 +55,10 @@ export default function Dashboard() {
           <h1 className="font-oswald text-xl font-bold tracking-wide text-white">DASHBOARD</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-mono text-xs animate-pulse border-orange-400 text-orange-400 bg-orange-400/10">EN VIVO</Badge>
-          <span className="text-xs text-white/60 font-mono">{formatSystemDate(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
+          <Badge variant="outline" className={`font-mono text-xs ${jornada.status === 'open' ? 'animate-pulse border-green-400 text-green-400 bg-green-400/10' : 'border-orange-400 text-orange-400 bg-orange-400/10'}`}>
+            {jornada.status === 'open' ? 'JORNADA ACTIVA' : 'SIN JORNADA'}
+          </Badge>
+          <span className="text-xs text-white/60 font-mono">{jornada.date || formatSystemDate(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
         </div>
       </div>
 

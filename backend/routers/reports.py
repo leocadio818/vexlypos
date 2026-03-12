@@ -51,12 +51,24 @@ def build_pm_maps(payment_methods: list) -> tuple:
 # ─── DASHBOARD ───
 @router.get("/dashboard")
 async def dashboard():
-    """Main dashboard data for KPIs and real-time stats"""
-    today_start, today_end = await get_local_today_utc_range()
+    """Main dashboard data for KPIs and real-time stats — filtered by ACTIVE business day, not calendar date"""
     
-    # Get today's paid bills (using local timezone range)
+    # Find the active business day (jornada operativa)
+    active_day = await db.business_days.find_one({"status": "open"}, {"_id": 0})
+    
+    if active_day:
+        # Use the business day's opened_at as the start filter
+        jornada_start = active_day.get("opened_at", "")
+        jornada_date = active_day.get("business_date", "")
+    else:
+        # No active day — fallback to today's calendar date
+        today_start, today_end = await get_local_today_utc_range()
+        jornada_start = today_start
+        jornada_date = today_start[:10]
+    
+    # Get ALL paid bills since the jornada started (not by calendar date)
     bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
-    today_bills = [b for b in bills if today_start <= b.get("paid_at", "") < today_end]
+    today_bills = [b for b in bills if b.get("paid_at", "") >= jornada_start]
     
     # Payment methods for cash/card breakdown
     payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
@@ -211,18 +223,12 @@ async def dashboard():
     for ct in closed_tables_list:
         ct["total"] = round(ct["total"], 2)
 
-    # Voids/Anulaciones - real-time, by shift, by jornada
-    current_bday = await db.business_days.find_one({"status": "open"}, {"_id": 0})
-    jornada_start = current_bday.get("opened_at", today_start) if current_bday else today_start
-    if hasattr(jornada_start, 'isoformat'):
-        jornada_start = jornada_start.isoformat()
-
+    # Voids/Anulaciones - filtered by active jornada
     all_voids = await db.void_audit_logs.find({}, {"_id": 0}).to_list(5000)
 
-    # Filter voids for current jornada (from business day open)
+    # Filter voids for current jornada
     jornada_voids = [v for v in all_voids if v.get("created_at", "") >= jornada_start]
-    # Filter voids for today (local timezone range, same as bills)
-    today_voids = [v for v in all_voids if today_start <= v.get("created_at", "") < today_end]
+    today_voids = jornada_voids  # Same as jornada (jornada IS "today")
 
     def summarize_voids(voids_list):
         count = len(voids_list)
@@ -265,6 +271,11 @@ async def dashboard():
             "tips": round(total_tips, 2),
             "discounts": round(discounts_total, 2),
             "discounts_count": discounts_count
+        },
+        "jornada": {
+            "date": jornada_date,
+            "status": "open" if active_day else "closed",
+            "opened_at": active_day.get("opened_at", "") if active_day else "",
         },
         "operations": {
             "occupancy_pct": occupancy_pct,
