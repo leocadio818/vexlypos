@@ -103,3 +103,9 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Sequential from 1001, assigned at order creation (first product)
 - Printed on comandas, visible in OrderScreen header, Dashboard, CashRegister movements
 - Separate from NCF (fiscal) — operational use only
+
+### 🔒 Zero Native Date/Time Inputs (LOCKED - 2026-03-12)
+- ALL date/time inputs replaced with NeoDatePicker/NeoTimePicker across entire system
+- 0 remaining `type="date"` or `type="time"` inputs
+- Files covered: Reports.js, AuditTab.jsx, PurchasesTab.jsx, UserConfig.js, BusinessDayManager.jsx, Reservations.js, DescuentosTab.js, NcfTab.js, InventoryManager.js
+- DO NOT add native date/time inputs. Always use NeoDatePicker/NeoTimePicker from DateTimePicker.jsx
