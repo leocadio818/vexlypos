@@ -42,6 +42,7 @@ DEFAULT_PERMISSIONS = {
         "reprint_receipt": True,
         "can_manage_tax_override": True,
         "transfer_tables": True,
+        "create_b04": True,
     },
     "waiter": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
@@ -67,6 +68,7 @@ DEFAULT_PERMISSIONS = {
         "access_all_tables": True,
         "reprint_receipt": True,
         "transfer_tables": True,
+        "create_b04": True,
     },
     "kitchen": {},
 }
@@ -91,6 +93,7 @@ ALL_PERMISSIONS = {
     "open_shift": "Abrir Turno", "close_shift": "Cerrar Turno", "close_day": "Cierre de Dia",
     "release_reserved_table": "Desbloquear Mesa Reservada",
     "transfer_tables": "Transferir Mesas entre Usuarios",
+    "create_b04": "Crear Nota de Credito (B04)",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───

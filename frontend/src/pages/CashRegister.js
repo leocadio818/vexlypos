@@ -40,7 +40,7 @@ const COLORES_DENOMINACION = {
 };
 
 export default function CashRegister() {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const [currentSession, setCurrentSession] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [movements, setMovements] = useState([]);
@@ -495,8 +495,8 @@ export default function CashRegister() {
           <button onClick={fetchData} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all">
             <RefreshCw size={16} />
           </button>
-          {/* Botón Nota de Crédito B04 - Cajeros y Admin */}
-          {currentSession && (
+          {/* Botón Nota de Crédito B04 - Requiere permiso create_b04 */}
+          {currentSession && hasPermission('create_b04') && (
             <button 
               onClick={() => setCreditNoteModalOpen(true)} 
               data-testid="credit-note-btn"
