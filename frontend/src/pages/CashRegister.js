@@ -1171,7 +1171,6 @@ export default function CashRegister() {
               setB04AuthLoading(false);
             }}
             placeholder="PIN de autorizacion"
-            maxLength={5}
             forceKeypad
           />
           {b04AuthError && <p className="text-sm text-red-500 text-center font-bold">{b04AuthError}</p>}
