@@ -1146,38 +1146,36 @@ export default function CashRegister() {
               <Lock size={20} className="text-amber-500" /> Autorizacion Requerida
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground text-center">Se requiere PIN de un administrador o supervisor para crear una Nota de Credito B04.</p>
+          <p className="text-sm text-muted-foreground text-center">PIN de administrador para autorizar Nota de Credito B04</p>
           <PinPad 
             value={b04AuthPin} 
             onChange={(val) => { setB04AuthPin(val); setB04AuthError(''); }}
-            placeholder="PIN de autorizacion"
-          />
-          {b04AuthError && <p className="text-sm text-red-500 text-center">{b04AuthError}</p>}
-          <Button
-            onClick={async () => {
-              if (b04AuthPin.length < 4) { setB04AuthError('Ingresa el PIN completo'); return; }
+            onSubmit={async (pin) => {
               setB04AuthLoading(true);
               try {
                 const hdrs = { Authorization: `Bearer ${localStorage.getItem('pos_token')}` };
                 const { data } = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/auth/verify-manager`, 
-                  { pin: b04AuthPin, permission: 'create_b04' }, { headers: hdrs });
+                  { pin, permission: 'create_b04' }, { headers: hdrs });
                 if (data.authorized) {
                   setB04AuthModal(false);
+                  setB04AuthPin('');
                   setCreditNoteModalOpen(true);
                 } else {
                   setB04AuthError('PIN sin permisos para B04');
+                  setB04AuthPin('');
                 }
               } catch (e) {
                 setB04AuthError(e.response?.data?.detail || 'PIN incorrecto');
+                setB04AuthPin('');
               }
               setB04AuthLoading(false);
-              setB04AuthPin('');
             }}
-            disabled={b04AuthPin.length < 4 || b04AuthLoading}
-            className="w-full h-11 bg-amber-500 hover:bg-amber-600 text-white font-oswald font-bold"
-          >
-            {b04AuthLoading ? 'Verificando...' : 'AUTORIZAR'}
-          </Button>
+            placeholder="PIN de autorizacion"
+            maxLength={5}
+            forceKeypad
+          />
+          {b04AuthError && <p className="text-sm text-red-500 text-center font-bold">{b04AuthError}</p>}
+          {b04AuthLoading && <p className="text-sm text-muted-foreground text-center animate-pulse">Verificando...</p>}
         </DialogContent>
       </Dialog>
 

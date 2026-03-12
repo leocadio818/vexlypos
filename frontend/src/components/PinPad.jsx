@@ -7,12 +7,20 @@ import { useInputMode } from '@/hooks/useInputMode';
  * Touch-only → shows on-screen keypad
  * Has keyboard → shows password input with optional keypad button
  */
-export function PinPad({ value = '', onChange, onSubmit, maxLength = 8, placeholder = 'Ingresa PIN', label }) {
+export function PinPad({ value = '', onChange, onSubmit, maxLength = 5, placeholder = 'Ingresa PIN', label, forceKeypad = false }) {
   const { isTouchOnly } = useInputMode();
   const [showKeypad, setShowKeypad] = useState(false);
+  const showTouchPad = forceKeypad || isTouchOnly || showKeypad;
 
   const handleDigit = (d) => {
-    if (value.length < maxLength) onChange(value + d);
+    if (value.length < maxLength) {
+      const newVal = value + d;
+      onChange(newVal);
+      // Auto-submit when PIN is complete
+      if (newVal.length === maxLength && onSubmit) {
+        setTimeout(() => onSubmit(newVal), 150);
+      }
+    }
   };
   const handleDelete = () => onChange(value.slice(0, -1));
   const handleClear = () => onChange('');
@@ -56,8 +64,8 @@ export function PinPad({ value = '', onChange, onSubmit, maxLength = 8, placehol
     </div>
   );
 
-  // Has keyboard → input field + optional keypad
-  if (!isTouchOnly && !showKeypad) {
+  // Has keyboard AND not forced → input field + optional keypad
+  if (!showTouchPad) {
     return (
       <div className="space-y-3" data-testid="pin-pad-component">
         {label && <p className="text-sm font-medium text-center">{label}</p>}
