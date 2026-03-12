@@ -84,3 +84,22 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - TimePicker: `max-w-[400px]` large touchscreen buttons `py-3 text-base`
 - Calendar: month/year quick picker, `max-w-[360px]`
 - Exchange rate badges: clean style with method colors (no bg-white/30 dark blobs)
+
+### 🔒 Performance Optimization (LOCKED - 2026-03-12)
+- **React.lazy + Suspense**: ALL 20 pages lazy-loaded with PageSkeleton fallback
+- **Code splitting**: Each page = separate chunk, downloaded on first visit, cached by browser
+- **PageSkeleton.jsx**: Animated pulse skeleton (header + KPI cards + content + table)
+- **cache.js**: useSWRCache hook — stale-while-revalidate pattern, 5min staleTime
+- **Layout persistent**: Sidebar/ThemeProvider/AuthProvider NEVER re-mount on navigation
+- **Login stays eager**: Not lazy-loaded for instant initial render
+- **DO NOT**: Convert back to static imports. DO NOT remove Suspense wrappers. DO NOT add heavy sync operations to sidebar NavLinks.
+
+### Business Day "Midnight Bug" Fix (2026-03-12)
+- Dashboard filters by ACTIVE business_day.opened_at, NOT calendar date
+- Shows "JORNADA ACTIVA: date" instead of "EN VIVO: today"
+- If jornada crosses midnight, data persists until Cierre Z
+
+### Transaction Numbers (T-1001+)
+- Sequential from 1001, assigned at order creation (first product)
+- Printed on comandas, visible in OrderScreen header, Dashboard, CashRegister movements
+- Separate from NCF (fiscal) — operational use only
