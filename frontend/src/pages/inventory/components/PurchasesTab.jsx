@@ -478,23 +478,13 @@ export default function PurchasesTab({
           <div className="flex items-center gap-2">
             <div>
               <label className="text-xs text-muted-foreground">Desde</label>
-              <input
-               
-                value={formatDateInput(dateRange.start)}
-                onChange={e => handleDateChange('start', e.target.value)}
-                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm"
-                data-testid="date-start"
-              />
+              <NeoDatePicker value={formatDateInput(dateRange.start)} onChange={e => handleDateChange('start', e.target.value)}
+                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Hasta</label>
-              <input
-               
-                value={formatDateInput(dateRange.end)}
-                onChange={e => handleDateChange('end', e.target.value)}
-                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm"
-                data-testid="date-end"
-              />
+              <NeoDatePicker value={formatDateInput(dateRange.end)} onChange={e => handleDateChange('end', e.target.value)}
+                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm" />
             </div>
           </div>
 

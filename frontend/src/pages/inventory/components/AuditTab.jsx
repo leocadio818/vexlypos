@@ -160,23 +160,13 @@ export default function AuditTab() {
           </div>
           <div>
             <label className="text-xs text-muted-foreground">Fecha Inicio</label>
-            <input
-             
-              value={auditFilters.start_date}
-              onChange={e => setAuditFilters(p => ({ ...p, start_date: e.target.value }))}
-              className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
-              data-testid="audit-filter-start-date"
-            />
+            <NeoDatePicker value={auditFilters.start_date} onChange={e => setAuditFilters(p => ({ ...p, start_date: e.target.value }))}
+              className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground">Fecha Fin</label>
-            <input
-             
-              value={auditFilters.end_date}
-              onChange={e => setAuditFilters(p => ({ ...p, end_date: e.target.value }))}
-              className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
-              data-testid="audit-filter-end-date"
-            />
+            <NeoDatePicker value={auditFilters.end_date} onChange={e => setAuditFilters(p => ({ ...p, end_date: e.target.value }))}
+              className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground">Campo Editado</label>

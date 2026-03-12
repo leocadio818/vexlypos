@@ -720,21 +720,16 @@ export default function Reports() {
             </Button>
           ))}
           <div className="flex items-center gap-1">
-            <Calendar size={14} className="text-muted-foreground" />
-            <input 
-              
+            <NeoDatePicker 
               value={dateRange.from} 
               onChange={e => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-              className="bg-card border border-border rounded-lg px-2 py-1 text-xs font-mono w-32"
-              data-testid="date-from"
+              className="bg-card border border-border rounded-lg px-2 py-1 text-xs font-mono"
             />
             <span className="text-muted-foreground text-xs">al</span>
-            <input 
-              
+            <NeoDatePicker 
               value={dateRange.to} 
               onChange={e => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-              className="bg-card border border-border rounded-lg px-2 py-1 text-xs font-mono w-32"
-              data-testid="date-to"
+              className="bg-card border border-border rounded-lg px-2 py-1 text-xs font-mono"
             />
           </div>
           <Button 

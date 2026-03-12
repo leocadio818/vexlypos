@@ -440,11 +440,14 @@ export default function UserConfig() {
             <Section title="Empleo" icon={Briefcase}>
               <Input label="Cedula / IMSS" value={user.social_security} onChange={e => setUser(p => ({ ...p, social_security: e.target.value }))} />
               <div className="grid grid-cols-2 gap-3">
-                <Input label="Fecha Inicio" value={user.start_date} onChange={e => setUser(p => ({ ...p, start_date: e.target.value }))}  />
-                <Input label="Fecha Fin" value={user.end_date} onChange={e => setUser(p => ({ ...p, end_date: e.target.value }))}  />
+                <div><label className="text-xs text-muted-foreground">Fecha Inicio</label>
+                <NeoDatePicker value={user.start_date} onChange={e => setUser(p => ({ ...p, start_date: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm" /></div>
+                <div><label className="text-xs text-muted-foreground">Fecha Fin</label>
+                <NeoDatePicker value={user.end_date} onChange={e => setUser(p => ({ ...p, end_date: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Input label="Fecha Nacimiento" icon={Calendar} value={user.birth_date} onChange={e => setUser(p => ({ ...p, birth_date: e.target.value }))}  />
+                <div><label className="text-xs text-muted-foreground">Fecha Nacimiento</label>
+                <NeoDatePicker value={user.birth_date} onChange={e => setUser(p => ({ ...p, birth_date: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm" /></div>
                 <Input label="Tarjeta #" value={user.card_number} readOnly placeholder="Sin asignar" />
               </div>
             </Section>
