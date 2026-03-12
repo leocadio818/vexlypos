@@ -474,7 +474,8 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput,
         "was_inventory_deducted": inventory_was_deducted,
         "comments": input.comments,
         "void_type": "single_item",
-        "created_at": now_iso()
+        "created_at": now_iso(),
+        "business_date": (await db.business_days.find_one({"status": "open"}, {"_id": 0, "business_date": 1}) or {}).get("business_date", "")
     }
     await db.void_audit_logs.insert_one(audit_log)
     
@@ -744,7 +745,8 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
         "restored_to_inventory": input.return_to_inventory,
         "comments": input.comments,
         "void_type": "multiple_items",
-        "created_at": now_iso()
+        "created_at": now_iso(),
+        "business_date": (await db.business_days.find_one({"status": "open"}, {"_id": 0, "business_date": 1}) or {}).get("business_date", "")
     }
     await db.void_audit_logs.insert_one(audit_log)
     
@@ -861,7 +863,8 @@ async def partial_void_item(order_id: str, item_id: str, input: PartialVoidInput
         "restored_to_inventory": input.return_to_inventory and inventory_was_deducted,
         "comments": input.comments,
         "void_type": "partial_void",
-        "created_at": now_iso()
+        "created_at": now_iso(),
+        "business_date": (await db.business_days.find_one({"status": "open"}, {"_id": 0, "business_date": 1}) or {}).get("business_date", "")
     }
     await db.void_audit_logs.insert_one(audit_log)
     
@@ -911,7 +914,10 @@ async def get_void_report(
     to_date: Optional[str] = Query(None),
     period: Optional[str] = Query(None)
 ):
-    # Use active business day for "day" period (not calendar midnight)
+    """Void audit report — filters by business day time range, not calendar date"""
+    start_date = None
+    end_date = None
+    
     if period == 'day' or period == 'today':
         active_day = await db.business_days.find_one({"status": "open"}, {"_id": 0, "opened_at": 1})
         if active_day:
@@ -923,17 +929,25 @@ async def get_void_report(
         start_date = (datetime.utcnow() - timedelta(days=7)).isoformat() + "Z"
     elif period == 'month':
         start_date = (datetime.utcnow() - timedelta(days=30)).isoformat() + "Z"
-    else:
-        start_date = from_date
+    elif from_date:
+        # Find the business day for this date and use its opened_at/closed_at
+        bday = await db.business_days.find_one({"business_date": from_date}, {"_id": 0, "opened_at": 1, "closed_at": 1})
+        if bday:
+            start_date = bday["opened_at"]
+            end_date = bday.get("closed_at")
+        else:
+            start_date = from_date + "T00:00:00"
+            end_date = (to_date or from_date) + "T23:59:59"
+    
+    if to_date and not end_date:
+        bday_to = await db.business_days.find_one({"business_date": to_date}, {"_id": 0, "closed_at": 1})
+        end_date = bday_to["closed_at"] if bday_to and bday_to.get("closed_at") else to_date + "T23:59:59"
     
     query = {}
     if start_date:
         query["created_at"] = {"$gte": start_date}
-    if to_date:
-        if "created_at" in query:
-            query["created_at"]["$lte"] = to_date
-        else:
-            query["created_at"] = {"$lte": to_date}
+    if end_date:
+        query.setdefault("created_at", {})["$lte"] = end_date
     
     logs = await db.void_audit_logs.find(query, {"_id": 0}).to_list(1000)
     
