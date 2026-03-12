@@ -10,6 +10,7 @@ import CreditNoteModal from '@/components/CreditNoteModal';
 import ReportXZ from '@/components/ReportXZ';
 import { NumericInput } from '@/components/NumericKeypad';
 import { PinPad } from '@/components/PinPad';
+import axios from 'axios';
 
 // Denominaciones de billetes y monedas RD (estructura del usuario)
 const DENOMINACIONES = [
@@ -76,6 +77,10 @@ export default function CashRegister() {
   // Credit Note Modal (B04)
   const [creditNoteModalOpen, setCreditNoteModalOpen] = useState(false);
   const [pendingB04Transaction, setPendingB04Transaction] = useState(null);
+  const [b04AuthModal, setB04AuthModal] = useState(false);
+  const [b04AuthPin, setB04AuthPin] = useState('');
+  const [b04AuthError, setB04AuthError] = useState('');
+  const [b04AuthLoading, setB04AuthLoading] = useState(false);
   
   // Estado para diálogo de error por mesas abiertas
   const [openTablesError, setOpenTablesError] = useState({ show: false, message: '' });
@@ -495,10 +500,18 @@ export default function CashRegister() {
           <button onClick={fetchData} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all">
             <RefreshCw size={16} />
           </button>
-          {/* Botón Nota de Crédito B04 - Requiere permiso create_b04 */}
-          {currentSession && hasPermission('create_b04') && (
+          {/* Botón Nota de Crédito B04 - Siempre visible, pide autorización si no tiene permiso */}
+          {currentSession && (
             <button 
-              onClick={() => setCreditNoteModalOpen(true)} 
+              onClick={() => {
+                if (hasPermission('create_b04')) {
+                  setCreditNoteModalOpen(true);
+                } else {
+                  setB04AuthPin('');
+                  setB04AuthError('');
+                  setB04AuthModal(true);
+                }
+              }} 
               data-testid="credit-note-btn"
               className="px-3 py-2 rounded-xl bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 font-medium text-sm flex items-center gap-2 transition-all"
               title="Nota de Crédito B04"
@@ -1125,6 +1138,49 @@ export default function CashRegister() {
         API_BASE={process.env.REACT_APP_BACKEND_URL}
         initialTransactionNumber={pendingB04Transaction}
       />
+
+      {/* B04 Authorization Modal - For users without create_b04 permission */}
+      <Dialog open={b04AuthModal} onOpenChange={setB04AuthModal}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center justify-center gap-2">
+              <Lock size={20} className="text-amber-500" /> Autorizacion Requerida
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground text-center">Se requiere PIN de un administrador o supervisor para crear una Nota de Credito B04.</p>
+          <PinPad 
+            value={b04AuthPin} 
+            onChange={(val) => { setB04AuthPin(val); setB04AuthError(''); }}
+            placeholder="PIN de autorizacion"
+          />
+          {b04AuthError && <p className="text-sm text-red-500 text-center">{b04AuthError}</p>}
+          <Button
+            onClick={async () => {
+              if (b04AuthPin.length < 4) { setB04AuthError('Ingresa el PIN completo'); return; }
+              setB04AuthLoading(true);
+              try {
+                const hdrs = { Authorization: `Bearer ${localStorage.getItem('pos_token')}` };
+                const { data } = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/auth/verify-manager`, 
+                  { pin: b04AuthPin, permission: 'create_b04' }, { headers: hdrs });
+                if (data.authorized) {
+                  setB04AuthModal(false);
+                  setCreditNoteModalOpen(true);
+                } else {
+                  setB04AuthError('PIN sin permisos para B04');
+                }
+              } catch (e) {
+                setB04AuthError(e.response?.data?.detail || 'PIN incorrecto');
+              }
+              setB04AuthLoading(false);
+              setB04AuthPin('');
+            }}
+            disabled={b04AuthPin.length < 4 || b04AuthLoading}
+            className="w-full h-11 bg-amber-500 hover:bg-amber-600 text-white font-oswald font-bold"
+          >
+            {b04AuthLoading ? 'Verificando...' : 'AUTORIZAR'}
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* Diálogo de Error: Mesas Abiertas */}
       <Dialog open={openTablesError.show} onOpenChange={(v) => !v && setOpenTablesError({ show: false, message: '' })}>
