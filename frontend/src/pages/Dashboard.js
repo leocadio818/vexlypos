@@ -226,9 +226,9 @@ export default function Dashboard() {
                 </div>
               )}
               {open_tables.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-xs">
-                  <span className="text-white/40">Total en mesas</span>
-                  <span className="font-oswald font-bold text-green-400">{formatMoney(open_tables.reduce((s,t) => s + t.consumption, 0))}</span>
+                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Total en mesas</span>
+                  <span className="font-oswald font-black text-2xl text-green-400">{formatMoney(open_tables.reduce((s,t) => s + t.consumption, 0))}</span>
                 </div>
               )}
             </div>
@@ -266,9 +266,9 @@ export default function Dashboard() {
                 </div>
               )}
               {closed_tables.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-xs">
-                  <span className="text-white/40">Total facturado</span>
-                  <span className="font-oswald font-bold text-blue-400">{formatMoney(closed_tables.reduce((s,t) => s + t.total, 0))}</span>
+                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Total facturado</span>
+                  <span className="font-oswald font-black text-2xl text-primary">{formatMoney(closed_tables.reduce((s,t) => s + t.total, 0))}</span>
                 </div>
               )}
             </div>
