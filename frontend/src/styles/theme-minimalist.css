@@ -550,6 +550,34 @@ body.theme-minimalist:not(.neo-dark) [style*="backgroundColor"] {
   border: 1px solid rgba(0,0,0,0.06) !important;
 }
 
+/* Fix green/colored banners: dark text on light colored backgrounds */
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-5"][class*="text-white"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-emerald"][class*="text-white"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-"][class*="/"] {
+  color: #065f46 !important;
+}
+
+/* Badges on colored backgrounds — ensure readable */
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-"] [class*="text-white"] {
+  color: #065f46 !important;
+}
+body.theme-minimalist:not(.neo-dark) [class*="bg-emerald-"] .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-emerald-"] [class*="text-white"] {
+  color: #065f46 !important;
+}
+
+/* Light colored badge backgrounds — boost text contrast */
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-500/1"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-500/2"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-600/1"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-600/2"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-emerald-500/1"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-emerald-500/2"] {
+  color: #065f46 !important;
+  border: 1px solid rgba(5, 150, 105, 0.3) !important;
+}
+
 /* Spans and paragraphs that inherit light colors */
 body.theme-minimalist:not(.neo-dark) span,
 body.theme-minimalist:not(.neo-dark) p,

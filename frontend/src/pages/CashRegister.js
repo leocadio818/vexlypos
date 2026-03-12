@@ -556,12 +556,12 @@ export default function CashRegister() {
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl overflow-hidden">
               <div className="bg-green-500/20 border-b border-green-500/30 px-6 py-4 flex items-center justify-between">
                 <div>
-                  <h2 className="font-oswald text-lg font-bold text-white">Turno Activo</h2>
-                  <p className="text-xs text-white/60">{currentSession.ref} - {currentSession.terminal_name}</p>
+                  <h2 className="font-oswald text-lg font-bold text-foreground">Turno Activo</h2>
+                  <p className="text-xs text-muted-foreground">{currentSession.ref} - {currentSession.terminal_name}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className="bg-green-500 animate-pulse text-white">En Curso</Badge>
-                  <span className="text-xs text-white/50">{currentSession.opened_by_name}</span>
+                  <span className="text-xs text-muted-foreground font-bold">{currentSession.opened_by_name}</span>
                 </div>
               </div>
               
