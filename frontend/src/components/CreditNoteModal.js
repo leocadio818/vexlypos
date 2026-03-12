@@ -7,6 +7,7 @@ import { AlertTriangle, Search, FileX, Printer, ArrowRight, Lock, Receipt, Check
 import { formatMoney } from '@/lib/api';
 import { NumericInput } from '@/components/NumericKeypad';
 import { PinPad } from '@/components/PinPad';
+import axios from 'axios';
 
 const CREDIT_NOTE_STEPS = {
   SEARCH: 'search',
@@ -88,23 +89,9 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/verify-manager`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('pos_token')}`
-        },
-        body: JSON.stringify({ pin: adminPin, permission: 'void_transaction' })
-      });
-
-      let data;
-      try { data = await res.json(); } catch { data = { detail: 'Error procesando respuesta' }; }
-      
-      if (!res.ok) {
-        setPinError(data.detail || 'PIN incorrecto o sin permisos');
-        setAdminPin('');
-        return;
-      }
+      const hdrs = { Authorization: `Bearer ${localStorage.getItem('pos_token')}` };
+      const { data } = await axios.post(`${API_BASE}/api/auth/verify-manager`, 
+        { pin: adminPin, permission: 'void_transaction' }, { headers: hdrs });
 
       if (!data.authorized) {
         setPinError('No tienes permisos para esta accion');
@@ -112,16 +99,14 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
         return;
       }
 
-      // PIN válido, continuar con búsqueda
       setPinError('');
       handleSearchTransaction();
     } catch (e) {
-      setPinError('Error de conexión');
+      setPinError(e.response?.data?.detail || 'PIN incorrecto o sin permisos');
       setAdminPin('');
     }
   };
 
-  // Buscar transacción
   const handleSearchTransaction = async () => {
     if (!transactionNumber) {
       setSearchError('Ingrese el número de transacción');
@@ -132,71 +117,39 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
     setSearchError('');
 
     try {
-      const res = await fetch(`${API_BASE}/api/credit-notes/search-by-transaction`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('pos_token')}`
-        },
-        body: JSON.stringify({ transaction_number: parseInt(transactionNumber) })
-      });
-
-      let data;
-      try { data = await res.json(); } catch { data = { detail: 'Error procesando respuesta' }; }
-
-      if (!res.ok) {
-        setSearchError(data.detail || 'Error buscando transacción');
-        return;
-      }
+      const hdrs = { Authorization: `Bearer ${localStorage.getItem('pos_token')}` };
+      const { data } = await axios.post(`${API_BASE}/api/credit-notes/search-by-transaction`,
+        { transaction_number: parseInt(transactionNumber) }, { headers: hdrs });
 
       setFoundBill(data.bill);
       setStep(CREDIT_NOTE_STEPS.CONFIRM);
     } catch (e) {
-      setSearchError('Error de conexión');
+      setSearchError(e.response?.data?.detail || 'Error buscando transacción');
     } finally {
       setIsSearching(false);
     }
   };
 
-  // Crear nota de crédito
   const handleCreateCreditNote = async () => {
-    if (!selectedReason) {
-      return;
-    }
+    if (!selectedReason) return;
 
     setIsProcessing(true);
     setStep(CREDIT_NOTE_STEPS.PROCESSING);
 
     try {
-      const res = await fetch(`${API_BASE}/api/credit-notes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('pos_token')}`
-        },
-        body: JSON.stringify({
-          original_bill_id: foundBill.id,
-          reason_id: selectedReason.id,
-          reason_text: selectedReason.name,
-          notes: comments,
-          is_full_reversal: true
-        })
-      });
-
-      let data;
-      try { data = await res.json(); } catch { data = { detail: 'Error procesando respuesta' }; }
-
-      if (!res.ok) {
-        setSearchError(data.detail || 'Error creando nota de crédito');
-        setStep(CREDIT_NOTE_STEPS.REASON);
-        return;
-      }
+      const hdrs = { Authorization: `Bearer ${localStorage.getItem('pos_token')}` };
+      const { data } = await axios.post(`${API_BASE}/api/credit-notes`, {
+        original_bill_id: foundBill.id,
+        reason_id: selectedReason.id,
+        reason_text: selectedReason.name,
+        notes: comments,
+        is_full_reversal: true
+      }, { headers: hdrs });
 
       setCreatedCreditNote(data);
       setStep(CREDIT_NOTE_STEPS.SUCCESS);
     } catch (e) {
-      console.error('Credit note error:', e);
-      setSearchError(`Error: ${e.message}`);
+      setSearchError(e.response?.data?.detail || `Error: ${e.message}`);
       setStep(CREDIT_NOTE_STEPS.REASON);
     } finally {
       setIsProcessing(false);
