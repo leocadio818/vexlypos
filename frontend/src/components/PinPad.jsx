@@ -1,16 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Delete, Keyboard } from 'lucide-react';
 import { useInputMode } from '@/hooks/useInputMode';
 
 /**
- * PinPad — Smart PIN input
- * Touch-only → shows on-screen keypad
- * Has keyboard → shows password input with optional keypad button
+ * PinPad — Hybrid PIN input (touch + physical keyboard)
+ * forceKeypad: always shows on-screen keypad
+ * Physical keyboard: 0-9 digits, Backspace, Enter — all work simultaneously
  */
 export function PinPad({ value = '', onChange, onSubmit, maxLength = 10, placeholder = 'Ingresa PIN', label, forceKeypad = false }) {
   const { isTouchOnly } = useInputMode();
   const [showKeypad, setShowKeypad] = useState(false);
+  const [activeKey, setActiveKey] = useState(null);
   const showTouchPad = forceKeypad || isTouchOnly || showKeypad;
+
+  // Physical keyboard listener — works alongside touch buttons
+  useEffect(() => {
+    if (!showTouchPad) return;
+    const handleKeyDown = (e) => {
+      if (e.key >= '0' && e.key <= '9') {
+        e.preventDefault();
+        if (value.length < maxLength) {
+          onChange(value + e.key);
+          setActiveKey(e.key);
+          setTimeout(() => setActiveKey(null), 150);
+        }
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        onChange(value.slice(0, -1));
+      } else if (e.key === 'Delete') {
+        e.preventDefault();
+        onChange('');
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (value.length > 0 && onSubmit) onSubmit(value);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showTouchPad, value, maxLength, onChange, onSubmit]);
 
   const handleDigit = (d) => {
     if (value.length < maxLength) {
@@ -39,7 +66,7 @@ export function PinPad({ value = '', onChange, onSubmit, maxLength = 10, placeho
       <div className="grid grid-cols-3 gap-2">
         {[1,2,3,4,5,6,7,8,9].map(d => (
           <button key={d} type="button" onClick={() => handleDigit(String(d))}
-            className="h-14 rounded-xl font-oswald font-bold text-xl bg-background border border-border transition-all active:scale-90 hover:bg-muted"
+            className={`h-14 rounded-xl font-oswald font-bold text-xl bg-background border border-border transition-all active:scale-90 hover:bg-muted ${activeKey === String(d) ? 'bg-primary/30 scale-95 border-primary' : ''}`}
             data-testid={`pin-pad-${d}`}>
             {d}
           </button>
@@ -49,7 +76,7 @@ export function PinPad({ value = '', onChange, onSubmit, maxLength = 10, placeho
           CLR
         </button>
         <button type="button" onClick={() => handleDigit('0')}
-          className="h-14 rounded-xl font-oswald font-bold text-xl bg-background border border-border transition-all active:scale-90 hover:bg-muted"
+          className={`h-14 rounded-xl font-oswald font-bold text-xl bg-background border border-border transition-all active:scale-90 hover:bg-muted ${activeKey === '0' ? 'bg-primary/30 scale-95 border-primary' : ''}`}
           data-testid="pin-pad-0">
           0
         </button>
