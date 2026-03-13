@@ -109,3 +109,20 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - 0 remaining `type="date"` or `type="time"` inputs
 - Files covered: Reports.js, AuditTab.jsx, PurchasesTab.jsx, UserConfig.js, BusinessDayManager.jsx, Reservations.js, DescuentosTab.js, NcfTab.js, InventoryManager.js
 - DO NOT add native date/time inputs. Always use NeoDatePicker/NeoTimePicker from DateTimePicker.jsx
+
+### 🔒 PinPad Hybrid System (LOCKED - 2026-03-12)
+- ALL 7 PinPads use `forceKeypad` — always show on-screen numpad
+- Physical keyboard works simultaneously: 0-9, Backspace, Delete, Enter
+- Visual feedback: button highlights 150ms when physical key pressed
+- Enter = auto-submit (onSubmit)
+- NO `<input>` fields for PIN authorization anywhere in the system
+- UserConfig PIN setup is the ONLY exception (text input for config, not auth)
+- DO NOT: Remove forceKeypad. DO NOT add input fields for auth PINs. DO NOT remove keydown listener.
+
+### 🔒 Business Day (Jornada) Filtering (LOCKED - 2026-03-12)
+- ALL reports filter by active business_day.opened_at, NOT calendar date
+- Dashboard, void-audit-logs, sales, by-payment, by-waiter — all use jornada
+- Date pickers initialize with `/api/business-days/active-date`
+- void_audit_logs now include `business_date` field
+- Midnight bug permanently fixed
+- DO NOT: Use datetime.utcnow() or new Date() for report defaults. Always use active business date.
