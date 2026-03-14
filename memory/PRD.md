@@ -131,6 +131,24 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - **Root cause**: `Layout.js` used `axios` directly (not imported) instead of the `api` instance from `@/lib/api`
 - Backend `PUT /api/users/me/pin` returns `PIN_ALREADY_IN_USE` code (not user-facing message)
 - Frontend catches the code and displays: "Esta clave ya está en uso" (no info leak)
-- Query checks ALL users (active + inactive) EXCEPT current user (`$ne: currentUserId`)
-- User CAN re-set their own current PIN or any old PIN (as long as no one else has it)
+- Query checks ACTIVE users only, EXCEPT current user (`$ne: currentUserId`)
+- User CAN re-set their own current PIN or any old PIN (as long as no other ACTIVE user has it)
+- Inactive users' PINs are freed up immediately upon deactivation
 - Real network errors show "Error de conexión"
+
+### 🔒 Zero Native `<a href>` for Internal Navigation (LOCKED - 2026-03-14)
+- ALL internal links use React Router `<Link to>`, NEVER `<a href>`
+- `<a href>` causes full page reload → loses SPA auth state → redirects to login
+- ONLY exception: `Kitchen.js` uses `<a href="/kitchen-tv" target="_blank">` (intentional new tab)
+- Files fixed: ReportsTab.js, CustomersTab.js, InventoryManager.js, InventarioTab.js, UsersTab.js (x2)
+- DO NOT: Add `<a href="/...">` for internal routes. ALWAYS use `<Link to>` from react-router-dom.
+
+### Branding & White-Label (2026-03-14)
+- Login screen loads restaurant name + logo from `/api/system/branding` (public endpoint, no auth)
+- Logo uploaded via `POST /api/system/upload-logo` → stored in `/uploads/logo/`
+- Logo size on login: `w-32 h-32` (128px) for visibility
+- Fallback: first 3 letters of restaurant name if no logo uploaded
+- Config > Sistema has logo upload section (below restaurant name)
+- Tab title: "VexlyPOS" (set in index.html)
+- "Made with Emergent" badge: REMOVED (approved by Emergent support - Jen)
+- Demo PINs section: REMOVED from both Neumorphic and Glass login versions
