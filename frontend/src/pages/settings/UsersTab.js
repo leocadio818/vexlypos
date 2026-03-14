@@ -186,7 +186,7 @@ export default function UsersTab() {
       ) : (
         <div className="space-y-2">
           {filteredUsers.map(user => (
-            <a key={user.id} href={`/user/${user.id}`} 
+            <Link key={user.id} to={`/user/${user.id}`} 
               className={`flex items-center justify-between p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors cursor-pointer ${user.active === false ? 'opacity-50' : ''}`} data-testid={`user-${user.id}`}>
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold font-oswald ${
@@ -217,7 +217,7 @@ export default function UsersTab() {
                 )}
                 <Pencil size={14} className="text-muted-foreground" />
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       )}
