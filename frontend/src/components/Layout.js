@@ -820,19 +820,16 @@ export default function Layout() {
             onSubmit={async (pin) => {
               try {
                 const token = localStorage.getItem('pos_token');
-                const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users/me/pin`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                  body: JSON.stringify({ pin }),
+                await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/users/me/pin`, { pin }, {
+                  headers: { Authorization: `Bearer ${token}` }
                 });
-                const clone = res.clone();
-                let data = {};
-                try { data = await clone.json(); } catch {}
-                if (!res.ok) { toast.error(data.detail || 'Error'); setNewPinValue(''); return; }
                 toast.success('PIN actualizado correctamente');
                 setChangePinOpen(false);
                 setNewPinValue('');
-              } catch { toast.error('Error de conexion'); setNewPinValue(''); }
+              } catch (e) {
+                toast.error(e.response?.data?.detail || 'Error de conexion');
+                setNewPinValue('');
+              }
             }}
             maxLength={8}
             placeholder="Nuevo PIN"
