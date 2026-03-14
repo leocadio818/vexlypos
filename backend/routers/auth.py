@@ -298,7 +298,7 @@ async def update_my_pin(input: dict, user=Depends(get_current_user)):
     # Check if PIN is already in use by ANY other user (active OR inactive)
     # Excludes current user so they can re-set their own current/old PIN
     existing = await db.users.find_one(
-        {"pin_hash": pin_hash, "id": {"$ne": user["user_id"]}},
+        {"pin_hash": pin_hash, "id": {"$ne": user["user_id"]}, "active": True},
         {"_id": 0, "id": 1}
     )
     if existing:
