@@ -33,8 +33,9 @@ export default function Layout() {
   const location = useLocation();
   const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
   const [clockOutDialogOpen, setClockOutDialogOpen] = useState(false);
-  const [clockOutPin, setClockOutPin] = useState('');
   const [clockOutLoading, setClockOutLoading] = useState(false);
+  const [changePinOpen, setChangePinOpen] = useState(false);
+  const [newPinValue, setNewPinValue] = useState('');
   const [businessDayDialogOpen, setBusinessDayDialogOpen] = useState(false);
   const [businessDay, setBusinessDay] = useState(null);
   const [businessDayLoading, setBusinessDayLoading] = useState(true);
@@ -663,7 +664,12 @@ export default function Layout() {
                       <Palette size={14} /> Minimalista Oscuro
                     </button>
                   </div>
-                  <div className="border-t border-border mt-2 pt-2">
+                  <div className="border-t border-border mt-2 pt-2 space-y-1">
+                    <button onClick={() => setChangePinOpen(true)}
+                      className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium hover:bg-muted transition-all"
+                      data-testid="change-pin-btn">
+                      <Lock size={14} /> Cambiar PIN
+                    </button>
                     <button onClick={async () => {
                       try {
                         const token = localStorage.getItem('pos_token');
@@ -795,6 +801,44 @@ export default function Layout() {
               {clockOutLoading ? 'Procesando...' : 'CONFIRMAR SALIDA'}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change PIN Dialog */}
+      <Dialog open={changePinOpen} onOpenChange={setChangePinOpen}>
+        <DialogContent className="max-w-xs sm:max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center justify-center gap-2">
+              <Lock size={20} className="text-primary" /> Cambiar PIN
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground text-center">Ingresa tu nuevo PIN, {user?.name}</p>
+          <PinPad
+            value={newPinValue}
+            onChange={setNewPinValue}
+            onSubmit={async (pin) => {
+              try {
+                const token = localStorage.getItem('pos_token');
+                const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users/me/pin`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({ pin }),
+                });
+                const clone = res.clone();
+                let data = {};
+                try { data = await clone.json(); } catch {}
+                if (!res.ok) { toast.error(data.detail || 'Error'); setNewPinValue(''); return; }
+                toast.success('PIN actualizado correctamente');
+                setChangePinOpen(false);
+                setNewPinValue('');
+              } catch { toast.error('Error de conexion'); setNewPinValue(''); }
+            }}
+            maxLength={8}
+            placeholder="Nuevo PIN"
+            forceKeypad
+          />
+          <button type="button" onClick={() => { setChangePinOpen(false); setNewPinValue(''); }}
+            className="w-full text-xs text-muted-foreground hover:text-foreground py-2">Cancelar</button>
         </DialogContent>
       </Dialog>
     </div>

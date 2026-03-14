@@ -284,6 +284,26 @@ async def login(input: LoginInput):
 
 
 @router.get("/auth/me")
+
+@router.put("/users/me/pin")
+async def update_my_pin(input: dict, user=Depends(get_current_user)):
+    """Update the current user's own PIN"""
+    new_pin = input.get("pin", "")
+    if not new_pin or len(new_pin) < 1 or len(new_pin) > 8:
+        raise HTTPException(status_code=400, detail="PIN debe tener entre 1 y 8 digitos")
+    if not new_pin.isdigit():
+        raise HTTPException(status_code=400, detail="PIN solo puede contener numeros")
+    
+    pin_hash = hash_pin(new_pin)
+    # Check if PIN is already in use by another user
+    existing = await db.users.find_one({"pin_hash": pin_hash, "id": {"$ne": user["user_id"]}}, {"_id": 0, "id": 1})
+    if existing:
+        raise HTTPException(status_code=400, detail="Este PIN ya esta en uso por otro usuario")
+    
+    await db.users.update_one({"id": user["user_id"]}, {"$set": {"pin_hash": pin_hash}})
+    return {"ok": True, "message": "PIN actualizado correctamente"}
+
+
 async def get_me(user=Depends(get_current_user)):
     u = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "pin_hash": 0})
     if not u:
