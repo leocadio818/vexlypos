@@ -160,13 +160,13 @@ export default function Login() {
             {/* Brand */}
             <div className="text-center mb-8">
               {branding.logo_url ? (
-                <img src={`${API_BASE}${branding.logo_url}`} alt="Logo" className="w-16 h-16 rounded-2xl mx-auto mb-4 object-contain" style={{ boxShadow: `6px 6px 12px ${dk}, -6px -6px 12px ${lt}` }} />
+                <img src={`${API_BASE}${branding.logo_url}`} alt="Logo" className="w-32 h-32 rounded-2xl mx-auto mb-4 object-contain" style={{ boxShadow: `6px 6px 12px ${dk}, -6px -6px 12px ${lt}` }} />
               ) : (
                 <div
-                  className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4"
+                  className="w-32 h-32 rounded-2xl mx-auto flex items-center justify-center mb-4"
                   style={{ background: bg, boxShadow: `6px 6px 12px ${dk}, -6px -6px 12px ${lt}`, color: accent }}
                 >
-                  <span className="font-oswald text-2xl font-bold">{(branding.restaurant_name || 'POS').substring(0, 3).toUpperCase()}</span>
+                  <span className="font-oswald text-4xl font-bold">{(branding.restaurant_name || 'POS').substring(0, 3).toUpperCase()}</span>
                 </div>
               )}
               <h1 className="font-oswald text-2xl font-bold tracking-wide" style={{ color: accent }}>{branding.restaurant_name || 'POS'}</h1>
@@ -324,13 +324,13 @@ export default function Login() {
 
           <div className="text-center mb-8 relative z-10">
             {branding.logo_url ? (
-              <img src={`${API_BASE}${branding.logo_url}`} alt="Logo" className="w-16 h-16 rounded-2xl mx-auto mb-4 object-contain neon-logo-glow" />
+              <img src={`${API_BASE}${branding.logo_url}`} alt="Logo" className="w-32 h-32 rounded-2xl mx-auto mb-4 object-contain neon-logo-glow" />
             ) : (
               <div
-                className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 neon-logo-glow"
+                className="w-32 h-32 rounded-2xl mx-auto flex items-center justify-center mb-4 neon-logo-glow"
                 style={{ backgroundColor: theme.accentColor, boxShadow: `0 0 20px ${theme.accentColor}80, 0 0 40px ${theme.accentColor}40` }}
               >
-                <span className="font-oswald text-2xl font-bold text-white">{(branding.restaurant_name || 'POS').substring(0, 3).toUpperCase()}</span>
+                <span className="font-oswald text-4xl font-bold text-white">{(branding.restaurant_name || 'POS').substring(0, 3).toUpperCase()}</span>
               </div>
             )}
             <h1 className="font-oswald text-2xl font-bold tracking-wide text-white">{branding.restaurant_name || 'POS'}</h1>
