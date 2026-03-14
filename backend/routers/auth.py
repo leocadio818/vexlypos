@@ -807,6 +807,15 @@ async def delete_role(rid: str, caller=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Solo el Administrador del Sistema puede eliminar puestos")
     
     old_role = await db.custom_roles.find_one({"id": rid}, {"_id": 0})
+    if not old_role:
+        raise HTTPException(status_code=404, detail="Puesto no encontrado")
+    
+    # INTEGRITY CHECK: verify no users are using this role
+    role_code = old_role.get("code", old_role.get("name", "").lower().replace(" ", "_"))
+    users_with_role = await db.users.count_documents({"role": role_code})
+    if users_with_role > 0:
+        raise HTTPException(status_code=400, detail=f"No puedes eliminar este puesto porque hay {users_with_role} empleado(s) usandolo. Cambia el puesto de esos empleados primero.")
+    
     await db.custom_roles.delete_one({"id": rid})
     
     # Audit
@@ -814,7 +823,7 @@ async def delete_role(rid: str, caller=Depends(get_current_user)):
         "id": gen_id(),
         "action": "role_deleted",
         "role_id": rid,
-        "role_name": old_role.get("name", "") if old_role else "",
+        "role_name": old_role.get("name", ""),
         "performed_by_id": caller["user_id"],
         "performed_by_name": caller.get("name", ""),
         "created_at": datetime.now(timezone.utc).isoformat(),

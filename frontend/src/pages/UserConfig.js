@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Trash2, Camera, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock, GraduationCap, Briefcase, Check } from 'lucide-react';
+import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Trash2, Camera, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock, GraduationCap, Briefcase, Check, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -198,6 +198,7 @@ export default function UserConfig() {
   const [createRoleDialog, setCreateRoleDialog] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleLevel, setNewRoleLevel] = useState(20);
+  const [editRoleDialog, setEditRoleDialog] = useState({ open: false, id: null, name: '', level: 20 });
   const [trainingStats, setTrainingStats] = useState(null);
 
   const [user, setUser] = useState({
@@ -213,6 +214,13 @@ export default function UserConfig() {
     annual_salary: 0, schedule: [], preferred_hours: 0, skill_level: 1,
     revenue_center_id: '',
   });
+
+  const fetchRoles = useCallback(async () => {
+    try {
+      const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
+      setRoles(rolesRes.data);
+    } catch {}
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -601,6 +609,27 @@ export default function UserConfig() {
                       <span className={`text-[10px] ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
                         {permCount}p {role.level != null ? `· N${role.level}` : ''}
                       </span>
+                      {/* Edit/Delete for custom roles */}
+                      {!role.builtin && isSystemAdmin && (
+                        <span className="flex gap-0.5 ml-1" onClick={e => e.stopPropagation()}>
+                          <button onClick={() => setEditRoleDialog({ open: true, id: role.id, name: role.name, level: role.level || 20 })}
+                            className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition-all" title="Editar">
+                            <Pencil size={10} />
+                          </button>
+                          <button onClick={async () => {
+                            if (!window.confirm(`¿Eliminar puesto "${role.name}"?`)) return;
+                            try {
+                              await axios.delete(`${API}/roles/${role.id}`, { headers: hdrs() });
+                              toast.success(`Puesto "${role.name}" eliminado`);
+                              fetchRoles();
+                            } catch (e) {
+                              toast.error(e.response?.data?.detail || 'Error eliminando');
+                            }
+                          }} className="w-6 h-6 rounded flex items-center justify-center hover:bg-red-500/30 text-red-400 transition-all" title="Eliminar">
+                            <Trash2 size={10} />
+                          </button>
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -754,6 +783,42 @@ export default function UserConfig() {
             </div>
             <Button onClick={handleCreateRole} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-create-role-btn">
               CREAR PUESTO
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={editRoleDialog.open} onOpenChange={(o) => !o && setEditRoleDialog({ ...editRoleDialog, open: false })}>
+        <DialogContent className="max-w-sm mx-auto">
+          <DialogHeader><DialogTitle className="font-oswald">Editar Puesto</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Nombre del Puesto</label>
+              <input type="text" value={editRoleDialog.name} onChange={e => setEditRoleDialog(p => ({ ...p, name: e.target.value }))}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Nivel</label>
+              <select value={editRoleDialog.level} onChange={e => setEditRoleDialog(p => ({ ...p, level: parseInt(e.target.value) }))}
+                className="w-full mt-1 bg-background border border-border rounded-lg px-3 py-2 text-sm">
+                <option value={80}>80 - Propietario</option>
+                <option value={60}>60 - Gerente</option>
+                <option value={40}>40 - Supervisor</option>
+                <option value={30}>30 - Cajero</option>
+                <option value={20}>20 - Mesero</option>
+                <option value={10}>10 - Cocina/Apoyo</option>
+              </select>
+            </div>
+            <Button onClick={async () => {
+              try {
+                await axios.put(`${API}/roles/${editRoleDialog.id}`, { name: editRoleDialog.name, level: editRoleDialog.level }, { headers: hdrs() });
+                toast.success('Puesto actualizado');
+                setEditRoleDialog({ open: false, id: null, name: '', level: 20 });
+                fetchRoles();
+              } catch (e) { toast.error(e.response?.data?.detail || 'Error'); }
+            }} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold">
+              GUARDAR CAMBIOS
             </Button>
           </div>
         </DialogContent>
