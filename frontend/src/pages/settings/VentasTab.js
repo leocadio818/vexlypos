@@ -5,6 +5,7 @@ import { CreditCard, AlertTriangle, ShoppingBag, Plus, Trash2, Pencil, Banknote,
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { NumericInput } from '@/components/NumericKeypad';
@@ -39,6 +40,7 @@ export default function VentasTab() {
   });
   const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', affects_inventory: true, allowed_roles: [], active: true, editId: null });
   const [showInactiveReasons, setShowInactiveReasons] = useState(false);
+  const [confirmAction, setConfirmAction] = useState({ open: false, title: '', description: '', onConfirm: null, variant: 'default' });
   const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null });
 
   // Payment method handlers
@@ -78,8 +80,15 @@ export default function VentasTab() {
   // Reason handlers
   const handleSaveReason = async () => {
     if (!reasonDialog.name.trim()) return;
-    if (!window.confirm(reasonDialog.editId ? '¿Confirmas guardar los cambios?' : '¿Crear esta nueva razon de anulacion?')) return;
-    try {
+    setConfirmAction({
+      open: true,
+      title: reasonDialog.editId ? 'Guardar Cambios' : 'Crear Razon',
+      description: reasonDialog.editId
+        ? `¿Confirmas guardar los cambios en "${reasonDialog.name}"?`
+        : `¿Crear la razon "${reasonDialog.name}"?`,
+      variant: 'default',
+      onConfirm: async () => {
+        try {
       const payload = {
         name: reasonDialog.name,
         return_to_inventory: reasonDialog.affects_inventory,
@@ -97,6 +106,8 @@ export default function VentasTab() {
       setReasonDialog({ open: false, name: '', affects_inventory: true, allowed_roles: [], active: true, editId: null });
       fetchAll();
     } catch { toast.error('Error'); }
+      }
+    });
   };
 
   // Sale type handlers
@@ -342,9 +353,20 @@ export default function VentasTab() {
                   <Switch checked={reason.active !== false}
                     onCheckedChange={() => {
                       const newState = !(reason.active !== false);
-                      const msg = newState ? `¿Reactivar "${reason.name}"?` : `¿Desactivar "${reason.name}"? No aparecera en el dropdown de anulaciones.`;
-                      if (!window.confirm(msg)) return;
-                      reasonsAPI.update(reason.id, { active: newState }).then(() => { toast.success(newState ? 'Razon reactivada' : 'Razon desactivada'); fetchAll(); });
+                      setConfirmAction({
+                        open: true,
+                        title: newState ? 'Reactivar Razon' : 'Desactivar Razon',
+                        description: newState
+                          ? `¿Reactivar "${reason.name}"? Volvera a aparecer en la pantalla de caja.`
+                          : `¿Desactivar "${reason.name}"? Dejara de aparecer en la pantalla de caja para anulaciones.`,
+                        variant: newState ? 'default' : 'destructive',
+                        onConfirm: () => {
+                          reasonsAPI.update(reason.id, { active: newState }).then(() => {
+                            toast.success(newState ? 'Razon reactivada' : 'Razon desactivada');
+                            fetchAll();
+                          });
+                        }
+                      });
                     }} />
                   <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-primary"
                     onClick={() => setReasonDialog({ open: true, name: reason.name, affects_inventory: reason.return_to_inventory || reason.affects_inventory || false, allowed_roles: reason.allowed_roles || ['admin','supervisor','cashier','waiter','kitchen'], active: reason.active !== false, editId: reason.id })}>
@@ -574,6 +596,25 @@ export default function VentasTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm Action AlertDialog */}
+      <AlertDialog open={confirmAction.open} onOpenChange={(o) => !o && setConfirmAction(p => ({ ...p, open: false }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-oswald">{confirmAction.title}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmAction.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (confirmAction.onConfirm) confirmAction.onConfirm(); }}
+              className={confirmAction.variant === 'destructive' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
