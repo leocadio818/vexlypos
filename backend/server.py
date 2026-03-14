@@ -487,6 +487,40 @@ async def get_product_image(filename: str):
     
     return FileResponse(file_path, media_type=content_type)
 
+# ─── LOGO UPLOAD ───
+@api.post("/system/upload-logo")
+async def upload_logo(file: UploadFile = File(...)):
+    """Upload restaurant logo"""
+    contents = await file.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Logo debe ser menor a 5MB")
+    file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else "png"
+    if file_ext not in ["jpg", "jpeg", "png", "webp", "gif", "svg"]:
+        file_ext = "png"
+    logo_dir = Path(__file__).parent / "uploads" / "logo"
+    logo_dir.mkdir(parents=True, exist_ok=True)
+    # Remove old logos
+    for old in logo_dir.iterdir():
+        old.unlink()
+    unique_filename = f"logo.{file_ext}"
+    with open(logo_dir / unique_filename, "wb") as f:
+        f.write(contents)
+    logo_url = f"/api/uploads/logo/{unique_filename}"
+    await db.system_config.update_one({}, {"$set": {"logo_url": logo_url}}, upsert=True)
+    return {"ok": True, "logo_url": logo_url}
+
+@api.get("/uploads/logo/{filename}")
+async def get_logo(filename: str):
+    """Serve restaurant logo"""
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Nombre de archivo inválido")
+    file_path = Path(__file__).parent / "uploads" / "logo" / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Logo no encontrado")
+    ext = filename.split(".")[-1].lower()
+    ct = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif", "svg": "image/svg+xml"}
+    return FileResponse(file_path, media_type=ct.get(ext, "image/png"))
+
 # ─── REPORT CATEGORIES ───
 @api.get("/report-categories")
 async def list_report_categories():

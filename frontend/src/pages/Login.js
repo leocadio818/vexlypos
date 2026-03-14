@@ -17,10 +17,15 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [attendanceResult, setAttendanceResult] = useState(null);
   const [postLoginRoute, setPostLoginRoute] = useState(null);
+  const [branding, setBranding] = useState({ restaurant_name: '', logo_url: '' });
   const { login, user, ensureSeed } = useAuth();
   const { theme, isMinimalist, neoColors, isNeoDark } = useTheme();
   const navigate = useNavigate();
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/system/branding`).then(r => r.json()).then(d => setBranding(d)).catch(() => {});
+  }, [API_BASE]);
 
   useEffect(() => {
     // Don't auto-navigate if showing welcome modal
@@ -154,17 +159,17 @@ export default function Login() {
           >
             {/* Brand */}
             <div className="text-center mb-8">
-              <div
-                className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4"
-                style={{
-                  background: bg,
-                  boxShadow: `6px 6px 12px ${dk}, -6px -6px 12px ${lt}`,
-                  color: accent,
-                }}
-              >
-                <span className="font-oswald text-3xl font-bold">RD</span>
-              </div>
-              <h1 className="font-oswald text-3xl font-bold tracking-wide" style={{ color: accent }}>MESA POS</h1>
+              {branding.logo_url ? (
+                <img src={`${API_BASE}${branding.logo_url}`} alt="Logo" className="w-16 h-16 rounded-2xl mx-auto mb-4 object-contain" style={{ boxShadow: `6px 6px 12px ${dk}, -6px -6px 12px ${lt}` }} />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4"
+                  style={{ background: bg, boxShadow: `6px 6px 12px ${dk}, -6px -6px 12px ${lt}`, color: accent }}
+                >
+                  <span className="font-oswald text-2xl font-bold">{(branding.restaurant_name || 'POS').substring(0, 3).toUpperCase()}</span>
+                </div>
+              )}
+              <h1 className="font-oswald text-2xl font-bold tracking-wide" style={{ color: accent }}>{branding.restaurant_name || 'POS'}</h1>
               <p className="text-sm mt-1" style={{ color: accent + '80' }}>Sistema de Punto de Venta</p>
             </div>
 
@@ -280,20 +285,6 @@ export default function Login() {
             </button>
           </div>
 
-          {/* Demo PINs */}
-          <div className="mt-6 text-center">
-            <div
-              className="rounded-2xl p-3 max-w-[280px] mx-auto"
-              style={{
-                background: bg,
-                boxShadow: `4px 4px 8px ${dk}, -4px -4px 8px ${lt}`,
-              }}
-            >
-              <p className="text-[10px] mb-1" style={{ color: accent + '40' }}>PINs de Demo:</p>
-              <p className="text-[11px]" style={{ color: accent + '70' }}>Admin: 10000 | Carlos: 1234 | Maria: 5678</p>
-              <p className="text-[11px]" style={{ color: accent + '70' }}>Luis (Cajero): 4321 | Chef Pedro: 9999</p>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -332,13 +323,17 @@ export default function Login() {
           />
 
           <div className="text-center mb-8 relative z-10">
-            <div
-              className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 neon-logo-glow"
-              style={{ backgroundColor: theme.accentColor, boxShadow: `0 0 20px ${theme.accentColor}80, 0 0 40px ${theme.accentColor}40` }}
-            >
-              <span className="font-oswald text-3xl font-bold text-white">RD</span>
-            </div>
-            <h1 className="font-oswald text-3xl font-bold tracking-wide text-white">MESA POS</h1>
+            {branding.logo_url ? (
+              <img src={`${API_BASE}${branding.logo_url}`} alt="Logo" className="w-16 h-16 rounded-2xl mx-auto mb-4 object-contain neon-logo-glow" />
+            ) : (
+              <div
+                className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 neon-logo-glow"
+                style={{ backgroundColor: theme.accentColor, boxShadow: `0 0 20px ${theme.accentColor}80, 0 0 40px ${theme.accentColor}40` }}
+              >
+                <span className="font-oswald text-2xl font-bold text-white">{(branding.restaurant_name || 'POS').substring(0, 3).toUpperCase()}</span>
+              </div>
+            )}
+            <h1 className="font-oswald text-2xl font-bold tracking-wide text-white">{branding.restaurant_name || 'POS'}</h1>
             <p className="text-sm text-white/50 mt-1">Sistema de Punto de Venta</p>
           </div>
 
@@ -399,15 +394,6 @@ export default function Login() {
           </button>
         </div>
 
-        <div className="mt-6 text-center relative z-10">
-          <div className="rounded-2xl p-3 max-w-[280px] mx-auto"
-            style={{ background: 'rgba(10, 10, 20, 0.5)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.05)' }}
-          >
-            <p className="text-[10px] text-white/30 mb-1">PINs de Demo:</p>
-            <p className="text-[11px] text-white/50">Admin: 10000 | Carlos: 1234 | Maria: 5678</p>
-            <p className="text-[11px] text-white/50">Luis (Cajero): 4321 | Chef Pedro: 9999</p>
-          </div>
-        </div>
       </div>
 
       <style>{`

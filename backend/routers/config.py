@@ -90,6 +90,12 @@ async def get_system_config():
     config = await db.system_config.find_one({}, {"_id": 0})
     return config or {"timezone_offset": -4, "restaurant_name": "Mi Restaurante", "currency": "RD$", "rnc": "000-000000-0"}
 
+@router.get("/system/branding")
+async def get_system_branding():
+    """Public endpoint for login screen - returns only name and logo"""
+    config = await db.system_config.find_one({}, {"_id": 0, "restaurant_name": 1, "logo_url": 1})
+    return config or {"restaurant_name": "Mi Restaurante"}
+
 @router.put("/system/config")
 async def update_system_config(input: dict):
     if "_id" in input: del input["_id"]

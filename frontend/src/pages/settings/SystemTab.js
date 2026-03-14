@@ -127,6 +127,43 @@ export default function SystemTab() {
           />
         </div>
 
+        {/* Logo Upload */}
+        <div className="bg-card border border-border rounded-xl p-4 mb-4">
+          <h3 className="text-sm font-semibold mb-2">Logo del Restaurante</h3>
+          <p className="text-xs text-muted-foreground mb-3">Se mostrará en la pantalla de login. Formato: PNG, JPG, WebP. Máx 5MB.</p>
+          <div className="flex items-center gap-4">
+            {systemConfig.logo_url && (
+              <img src={`${API.replace('/api', '')}${systemConfig.logo_url}`} alt="Logo" className="w-16 h-16 rounded-xl object-contain border border-border bg-background" />
+            )}
+            <label className="flex-1">
+              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) { toast.error('Logo debe ser menor a 5MB'); return; }
+                const fd = new FormData();
+                fd.append('file', file);
+                try {
+                  const res = await axios.post(`${API}/system/upload-logo`, fd, { headers: { ...hdrs(), 'Content-Type': 'multipart/form-data' } });
+                  setSystemConfig(p => ({ ...p, logo_url: res.data.logo_url }));
+                  toast.success('Logo actualizado');
+                } catch { toast.error('Error al subir logo'); }
+              }} />
+              <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold cursor-pointer active:scale-95 transition-transform">
+                <Building2 size={16} /> {systemConfig.logo_url ? 'Cambiar Logo' : 'Subir Logo'}
+              </div>
+            </label>
+            {systemConfig.logo_url && (
+              <button onClick={async () => {
+                try {
+                  await axios.put(`${API}/system/config`, { ...systemConfig, logo_url: '' }, { headers: hdrs() });
+                  setSystemConfig(p => ({ ...p, logo_url: '' }));
+                  toast.success('Logo eliminado');
+                } catch { toast.error('Error'); }
+              }} className="text-xs text-destructive hover:underline">Quitar</button>
+            )}
+          </div>
+        </div>
+
         {/* RNC */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">
           <h3 className="text-sm font-semibold mb-2">RNC (Registro Nacional de Contribuyentes)</h3>
