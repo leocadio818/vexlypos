@@ -38,6 +38,7 @@ export default function VentasTab() {
     bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true 
   });
   const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', affects_inventory: true, allowed_roles: [], active: true, editId: null });
+  const [showInactiveReasons, setShowInactiveReasons] = useState(false);
   const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null });
 
   // Payment method handlers
@@ -77,6 +78,7 @@ export default function VentasTab() {
   // Reason handlers
   const handleSaveReason = async () => {
     if (!reasonDialog.name.trim()) return;
+    if (!window.confirm(reasonDialog.editId ? '¿Confirmas guardar los cambios?' : '¿Crear esta nueva razon de anulacion?')) return;
     try {
       const payload = {
         name: reasonDialog.name,
@@ -305,17 +307,28 @@ export default function VentasTab() {
 
       {ventasSubTab === 'anulaciones' && (
         <>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h2 className="font-oswald text-base font-bold">Razones de Anulacion</h2>
-            <Button onClick={() => setReasonDialog({ open: true, name: '', affects_inventory: true, allowed_roles: ['admin','supervisor','cashier','waiter','kitchen'], active: true, editId: null })} size="sm"
-              className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-reason-btn">
-              <Plus size={14} className="mr-1" /> Agregar
-            </Button>
+            <div className="flex items-center gap-2">
+              {reasons.filter(r => r.active === false).length > 0 && (
+                <button
+                  onClick={() => setShowInactiveReasons(!showInactiveReasons)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    showInactiveReasons ? 'bg-red-500 text-white' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                  }`}>
+                  {showInactiveReasons ? 'Ocultar' : 'Mostrar'} Inactivas ({reasons.filter(r => r.active === false).length})
+                </button>
+              )}
+              <Button onClick={() => setReasonDialog({ open: true, name: '', affects_inventory: true, allowed_roles: ['admin','supervisor','cashier','waiter','kitchen'], active: true, editId: null })} size="sm"
+                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-reason-btn">
+                <Plus size={14} className="mr-1" /> Agregar
+              </Button>
+            </div>
           </div>
           <div className="space-y-2">
-            {reasons.map(reason => (
-              <div key={reason.id} className={`flex items-center justify-between p-3 rounded-lg bg-card border border-border ${reason.active === false ? 'opacity-50' : ''}`}>
-                <div className="flex items-center gap-2 flex-wrap">
+            {reasons.filter(r => showInactiveReasons || r.active !== false).map(reason => (
+              <div key={reason.id} className={`flex items-center justify-between p-4 rounded-lg bg-card border border-border ${reason.active === false ? 'opacity-50' : ''}`}>
+                <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
                   <span className="font-semibold text-sm">{reason.name}</span>
                   <Badge variant={reason.return_to_inventory || reason.affects_inventory ? 'default' : 'destructive'} className="text-[9px]">
                     {reason.return_to_inventory || reason.affects_inventory ? 'Retorna inventario' : 'No retorna'}
@@ -325,12 +338,17 @@ export default function VentasTab() {
                   )}
                   {reason.active === false && <Badge className="text-[9px] bg-red-500/20 text-red-500">INACTIVA</Badge>}
                 </div>
-                <div className="flex gap-1 items-center">
+                <div className="flex items-center gap-6 shrink-0">
                   <Switch checked={reason.active !== false}
-                    onCheckedChange={() => { reasonsAPI.update(reason.id, { active: !(reason.active !== false) }).then(() => { toast.success('Estado actualizado'); fetchAll(); }); }} />
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onCheckedChange={() => {
+                      const newState = !(reason.active !== false);
+                      const msg = newState ? `¿Reactivar "${reason.name}"?` : `¿Desactivar "${reason.name}"? No aparecera en el dropdown de anulaciones.`;
+                      if (!window.confirm(msg)) return;
+                      reasonsAPI.update(reason.id, { active: newState }).then(() => { toast.success(newState ? 'Razon reactivada' : 'Razon desactivada'); fetchAll(); });
+                    }} />
+                  <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-primary"
                     onClick={() => setReasonDialog({ open: true, name: reason.name, affects_inventory: reason.return_to_inventory || reason.affects_inventory || false, allowed_roles: reason.allowed_roles || ['admin','supervisor','cashier','waiter','kitchen'], active: reason.active !== false, editId: reason.id })}>
-                    <Pencil size={14} />
+                    <Pencil size={16} />
                   </Button>
                 </div>
               </div>
