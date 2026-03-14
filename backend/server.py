@@ -531,9 +531,10 @@ async def create_cancellation_reason(input: dict):
     doc = {
         "id": gen_id(),
         "name": input.get("name", ""),
-        "return_to_inventory": input.get("return_to_inventory", True),
-        "requires_manager_auth": input.get("requires_manager_auth", False),
-        "active": True
+        "return_to_inventory": input.get("return_to_inventory", input.get("affects_inventory", True)),
+        "affects_inventory": input.get("affects_inventory", input.get("return_to_inventory", True)),
+        "allowed_roles": input.get("allowed_roles", ["admin", "supervisor", "cashier", "waiter", "kitchen"]),
+        "active": input.get("active", True)
     }
     await db.cancellation_reasons.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}

@@ -37,7 +37,7 @@ export default function VentasTab() {
     open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
     bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true 
   });
-  const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', return_to_inventory: true });
+  const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', affects_inventory: true, allowed_roles: [], active: true, editId: null });
   const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null });
 
   // Payment method handlers
@@ -75,12 +75,25 @@ export default function VentasTab() {
   };
 
   // Reason handlers
-  const handleAddReason = async () => {
+  const handleSaveReason = async () => {
     if (!reasonDialog.name.trim()) return;
     try {
-      await reasonsAPI.create({ name: reasonDialog.name, return_to_inventory: reasonDialog.return_to_inventory });
-      toast.success('Razon creada');
-      setReasonDialog({ open: false, name: '', return_to_inventory: true }); fetchAll();
+      const payload = {
+        name: reasonDialog.name,
+        return_to_inventory: reasonDialog.affects_inventory,
+        affects_inventory: reasonDialog.affects_inventory,
+        allowed_roles: reasonDialog.allowed_roles,
+        active: reasonDialog.active,
+      };
+      if (reasonDialog.editId) {
+        await reasonsAPI.update(reasonDialog.editId, payload);
+        toast.success('Razon actualizada');
+      } else {
+        await reasonsAPI.create(payload);
+        toast.success('Razon creada');
+      }
+      setReasonDialog({ open: false, name: '', affects_inventory: true, allowed_roles: [], active: true, editId: null });
+      fetchAll();
     } catch { toast.error('Error'); }
   };
 
@@ -294,22 +307,32 @@ export default function VentasTab() {
         <>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-oswald text-base font-bold">Razones de Anulacion</h2>
-            <Button onClick={() => setReasonDialog({ open: true, name: '', return_to_inventory: true })} size="sm"
+            <Button onClick={() => setReasonDialog({ open: true, name: '', affects_inventory: true, allowed_roles: ['admin','supervisor','cashier','waiter','kitchen'], active: true, editId: null })} size="sm"
               className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-reason-btn">
               <Plus size={14} className="mr-1" /> Agregar
             </Button>
           </div>
           <div className="space-y-2">
             {reasons.map(reason => (
-              <div key={reason.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
-                <div>
+              <div key={reason.id} className={`flex items-center justify-between p-3 rounded-lg bg-card border border-border ${reason.active === false ? 'opacity-50' : ''}`}>
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-sm">{reason.name}</span>
-                  <Badge variant={reason.return_to_inventory ? 'default' : 'destructive'} className="ml-2 text-[9px]">
-                    {reason.return_to_inventory ? 'Retorna inventario' : 'No retorna'}
+                  <Badge variant={reason.return_to_inventory || reason.affects_inventory ? 'default' : 'destructive'} className="text-[9px]">
+                    {reason.return_to_inventory || reason.affects_inventory ? 'Retorna inventario' : 'No retorna'}
                   </Badge>
+                  {reason.allowed_roles && reason.allowed_roles.length < 5 && (
+                    <Badge variant="outline" className="text-[9px]">{reason.allowed_roles.length} roles</Badge>
+                  )}
+                  {reason.active === false && <Badge className="text-[9px] bg-red-500/20 text-red-500">INACTIVA</Badge>}
                 </div>
-                <Switch checked={reason.return_to_inventory}
-                  onCheckedChange={() => { reasonsAPI.update(reason.id, { return_to_inventory: !reason.return_to_inventory }).then(() => { toast.success('Actualizado'); fetchAll(); }); }} />
+                <div className="flex gap-1 items-center">
+                  <Switch checked={reason.active !== false}
+                    onCheckedChange={() => { reasonsAPI.update(reason.id, { active: !(reason.active !== false) }).then(() => { toast.success('Estado actualizado'); fetchAll(); }); }} />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => setReasonDialog({ open: true, name: reason.name, affects_inventory: reason.return_to_inventory || reason.affects_inventory || false, allowed_roles: reason.allowed_roles || ['admin','supervisor','cashier','waiter','kitchen'], active: reason.active !== false, editId: reason.id })}>
+                    <Pencil size={14} />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -417,24 +440,54 @@ export default function VentasTab() {
 
       {/* Reason Dialog */}
       <Dialog open={reasonDialog.open} onOpenChange={(o) => !o && setReasonDialog({ ...reasonDialog, open: false })}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-oswald">Nueva Razón de Anulación</DialogTitle>
+            <DialogTitle className="font-oswald">{reasonDialog.editId ? 'Editar Razon' : 'Nueva Razon de Anulacion'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Nombre</label>
               <input type="text" value={reasonDialog.name} onChange={e => setReasonDialog({ ...reasonDialog, name: e.target.value })}
-                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" placeholder="Ej: Cliente cambió de opinión" />
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" placeholder="Ej: Cliente cambio de opinion" />
             </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={reasonDialog.return_to_inventory} onCheckedChange={(v) => setReasonDialog({ ...reasonDialog, return_to_inventory: v })} />
-              <label className="text-sm">Retornar al inventario</label>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted border border-border">
+              <Switch checked={reasonDialog.affects_inventory} onCheckedChange={(v) => setReasonDialog({ ...reasonDialog, affects_inventory: v })} />
+              <div>
+                <label className="text-sm font-medium">Afecta Inventario</label>
+                <p className="text-[10px] text-muted-foreground">Si se activa, los productos anulados retornan al stock</p>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Puestos Autorizados</label>
+              <p className="text-[10px] text-muted-foreground mb-2">Solo estos roles pueden usar esta razon sin autorizacion de un superior</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'admin', label: 'Admin' },
+                  { id: 'supervisor', label: 'Supervisor' },
+                  { id: 'cashier', label: 'Cajero' },
+                  { id: 'waiter', label: 'Mesero' },
+                  { id: 'kitchen', label: 'Cocina' },
+                ].map(role => {
+                  const selected = (reasonDialog.allowed_roles || []).includes(role.id);
+                  return (
+                    <button key={role.id} type="button"
+                      onClick={() => {
+                        const roles = reasonDialog.allowed_roles || [];
+                        setReasonDialog({ ...reasonDialog, allowed_roles: selected ? roles.filter(r => r !== role.id) : [...roles, role.id] });
+                      }}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 ${
+                        selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}>
+                      {role.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setReasonDialog({ ...reasonDialog, open: false })}>Cancelar</Button>
-            <Button onClick={handleAddReason} className="bg-primary text-primary-foreground">Guardar</Button>
+            <Button onClick={handleSaveReason} className="bg-primary text-primary-foreground">Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

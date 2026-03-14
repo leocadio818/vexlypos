@@ -752,29 +752,22 @@ export default function OrderScreen() {
     });
   };
 
-  // Verify manager PIN
+  // Verify manager PIN — check against reason's allowed_roles
   const verifyManagerPin = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/auth/verify-manager`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
-        body: JSON.stringify({ 
-          pin: cancelDialog.managerPin,
-          permission: 'void_items'  // Request specific permission for void/cancel
-        })
-      });
+      const res = await axios.post(`${API_BASE}/api/auth/verify-manager`, {
+        pin: cancelDialog.managerPin,
+        permission: 'void_items'
+      }, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
       
-      if (!res.ok) {
-        const data = await res.json();
-        // Show specific error message for permission denied vs invalid PIN
-        const errorMsg = data.detail || 'Error de autenticación';
-        setCancelDialog(prev => ({ ...prev, managerAuthError: errorMsg, managerPin: '' }));
+      const data = res.data;
+      // Check if the authorizing user's role is in the reason's allowed_roles
+      const allowedRoles = cancelDialog.reasonAllowedRoles || ['admin','supervisor'];
+      if (data.role && !allowedRoles.includes(data.role) && !data.is_superuser) {
+        setCancelDialog(prev => ({ ...prev, managerAuthError: 'Este usuario no tiene el rol autorizado para esta razon', managerPin: '' }));
         return;
       }
       
-      const data = await res.json();
-      // Manager verified with correct permissions - mark as authorized but DON'T auto-submit
-      // User must click "Anular" button to confirm
       setCancelDialog(prev => ({ 
         ...prev, 
         showManagerPin: false, 
@@ -787,7 +780,7 @@ export default function OrderScreen() {
       
       // DON'T auto-submit - let user confirm with "Anular" button
     } catch (e) {
-      const errorMsg = 'Error verificando PIN - intenta de nuevo';
+      const errorMsg = e.response?.data?.detail || 'Error verificando PIN';
       setCancelDialog(prev => ({ ...prev, managerAuthError: errorMsg, managerPin: '' }));
     }
   };
@@ -835,15 +828,21 @@ export default function OrderScreen() {
     });
   };
 
-  // Handle reason selection - auto-set return_to_inventory and requiresManagerAuth
+  // Handle reason selection - check allowed_roles for authorization
   const handleReasonSelect = (reasonId) => {
     const reason = cancelReasons.find(r => r.id === reasonId);
+    const userRole = user?.role || 'waiter';
+    const allowedRoles = reason?.allowed_roles || ['admin','supervisor','cashier','waiter','kitchen'];
+    const needsAuth = !allowedRoles.includes(userRole);
+    
     setCancelDialog(prev => ({
       ...prev,
       selectedReasonId: reasonId,
-      returnToInventory: reason?.return_to_inventory ?? prev.returnToInventory,
-      requiresManagerAuth: reason?.requires_manager_auth ?? false,
-      authorizedBy: null // Reset authorization when changing reason
+      returnToInventory: reason?.return_to_inventory ?? reason?.affects_inventory ?? prev.returnToInventory,
+      requiresManagerAuth: needsAuth,
+      showManagerPin: needsAuth,
+      authorizedBy: null,
+      reasonAllowedRoles: allowedRoles,
     }));
   };
 
