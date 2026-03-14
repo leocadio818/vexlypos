@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useSettings } from './SettingsContext';
 import { categoriesAPI, productsAPI, warehousesAPI, inventorySettingsAPI } from '@/lib/api';
 import { Tag, Package, Plus, Trash2, Pencil, Search, X, Sparkles, ListChecks, Receipt } from 'lucide-react';
@@ -311,9 +312,9 @@ export default function InventarioTab() {
               Productos
               <Badge variant="secondary" className="text-[10px]">{products.length}</Badge>
             </h2>
-            <a href="/product/new?from=products" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold" data-testid="add-product-btn">
+            <Link to="/product/new?from=products" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold" data-testid="add-product-btn">
               <Plus size={14} /> Nuevo Producto
-            </a>
+            </Link>
           </div>
           
           {/* Search */}

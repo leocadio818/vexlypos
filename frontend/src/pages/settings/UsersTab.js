@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useSettings, PERM_LABELS } from './SettingsContext';
 import { Users, Search, X, Plus, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -138,10 +139,10 @@ export default function UsersTab() {
           
           {/* Add User Button */}
           <div className="sm:ml-auto">
-            <a href="/user/new"
+            <Link to="/user/new"
               className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold active:scale-95 transition-transform" data-testid="add-user-btn">
               <Plus size={14} /> Nuevo Empleado
-            </a>
+            </Link>
           </div>
         </div>
         

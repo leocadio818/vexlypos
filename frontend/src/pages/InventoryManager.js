@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
   ingredientsAPI, stockAPI, stockMovementsAPI, warehousesAPI, 
@@ -354,9 +354,9 @@ export default function InventoryManager() {
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
         <div className="flex items-center gap-2">
-          <a href="/settings?tab=inventario" className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <Link to="/settings?tab=inventario" className="p-2 hover:bg-muted rounded-lg transition-colors">
             <ArrowLeft size={20} />
-          </a>
+          </Link>
           <Package size={22} className="text-primary" />
           <h1 className="font-oswald text-xl font-bold tracking-wide">INVENTARIO MAESTRO</h1>
         </div>
