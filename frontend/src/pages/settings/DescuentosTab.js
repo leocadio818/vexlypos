@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Switch } from '@/components/ui/switch';
 import axios from 'axios';
 import { NeoDatePicker, NeoTimePicker } from '@/components/DateTimePicker';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -34,6 +35,7 @@ const EMPTY_FORM = {
 };
 
 export default function DescuentosTab() {
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [discounts, setDiscounts] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -103,7 +105,7 @@ export default function DescuentosTab() {
   };
 
   const remove = async (id) => {
-    if (!window.confirm('Eliminar este descuento?')) return;
+    { const ok = await showConfirm({ title: 'Confirmar', description: 'Eliminar este descuento?' }); if (!ok) return; }
     try {
       await axios.delete(`${API}/discounts/${id}`, { headers: hdrs() });
       toast.success('Descuento eliminado');
@@ -434,6 +436,7 @@ export default function DescuentosTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    <ConfirmDialog {...confirmProps} />
     </div>
-  );
+    );
 }

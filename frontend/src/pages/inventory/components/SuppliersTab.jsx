@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { suppliersAPI, formatMoney } from '@/lib/api';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend, AreaChart, Area
@@ -35,6 +36,7 @@ export default function SuppliersTab({
   suppliers: initialSuppliers, 
   onRefreshAll 
 }) {
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [suppliers, setSuppliers] = useState(initialSuppliers || []);
   const [supplierDialog, setSupplierDialog] = useState({ open: false, data: null });
   const [searchQuery, setSearchQuery] = useState('');
@@ -139,7 +141,7 @@ export default function SuppliersTab({
   };
 
   const handleDeleteSupplier = async (id) => {
-    if (!window.confirm('¿Eliminar proveedor?')) return;
+    { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar proveedor?' }); if (!ok) return; }
     try {
       await suppliersAPI.delete(id);
       toast.success('Proveedor eliminado');
@@ -759,6 +761,7 @@ export default function SuppliersTab({
           </div>
         </DialogContent>
       </Dialog>
+    <ConfirmDialog {...confirmProps} />
     </div>
-  );
+    );
 }

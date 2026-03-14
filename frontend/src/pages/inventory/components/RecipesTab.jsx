@@ -13,9 +13,11 @@ import { recipesAPI, formatMoney } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import RecipeHistoryDialog from './RecipeHistoryDialog';
 import { NumericInput } from '@/components/NumericKeypad';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 
 // Searchable ingredient selector using Shadcn Combobox pattern
 function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [open, setOpen] = useState(false);
   const selected = ingredients.find(i => i.id === value);
 
@@ -54,7 +56,7 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
         </Command>
       </PopoverContent>
     </Popover>
-  );
+    );
 }
 
 // Menu category configuration
@@ -305,7 +307,7 @@ export default function RecipesTab({
   };
 
   const handleDeleteRecipe = async (id) => {
-    if (!window.confirm('¿Eliminar receta?')) return;
+    { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar receta?' }); if (!ok) return; }
     try {
       await recipesAPI.delete(id);
       toast.success('Receta eliminada');

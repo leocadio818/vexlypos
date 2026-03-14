@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Monitor, CheckCircle, XCircle } from 'lucide-react';
 import axios from 'axios';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -15,6 +16,7 @@ export default function StationTab() {
   const { stationConfig, setStationConfig } = useSettings();
   
   // Estado para gestión de terminales
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [terminals, setTerminals] = useState([]);
   const [loadingTerminals, setLoadingTerminals] = useState(true);
   const [terminalDialog, setTerminalDialog] = useState({ open: false, mode: 'create', terminal: null });
@@ -89,7 +91,7 @@ export default function StationTab() {
 
   // Eliminar terminal
   const handleDeleteTerminal = async (terminal) => {
-    if (!window.confirm(`¿Eliminar terminal "${terminal.name}"?`)) return;
+    { const ok = await showConfirm({ title: 'Eliminar Terminal', description: `¿Eliminar terminal "${terminal.name}"?` }); if (!ok) return; }
 
     try {
       await axios.delete(`${API}/pos-sessions/terminals/${terminal.id}`, { headers: hdrs() });
@@ -273,6 +275,7 @@ export default function StationTab() {
           </div>
         </DialogContent>
       </Dialog>
+    <ConfirmDialog {...confirmProps} />
     </div>
-  );
+    );
 }

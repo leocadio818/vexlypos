@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { NumericInput } from '@/components/NumericKeypad';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 
 const PRESET_COLORS = [
   '#FF6600', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#FFB300',
@@ -37,6 +38,7 @@ const PRODUCT_ICONS = [
 export default function ProductConfig() {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [searchParams] = useSearchParams();
   const isNew = productId === 'new';
   const fromProducts = searchParams.get('from') === 'products';
@@ -1175,7 +1177,7 @@ export default function ProductConfig() {
                     <button
                       onClick={async () => {
                         const g = modifierGroups.find(g => g.id === modAssignDialog.group_id);
-                        if (!window.confirm(`Eliminar grupo "${g?.name}" y todas sus opciones?`)) return;
+                        { const ok = await showConfirm({ title: 'Eliminar Grupo', description: `¿Eliminar grupo "${g?.name}" y todas sus opciones?` }); if (!ok) return; }
                         try {
                           const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/modifier-groups/${modAssignDialog.group_id}`, { method: 'DELETE' });
                           if (!res.ok) throw new Error();
@@ -1456,6 +1458,7 @@ export default function ProductConfig() {
           </div>
         </div>
       )}
+    <ConfirmDialog {...confirmProps} />
     </div>
-  );
+    );
 }

@@ -12,6 +12,7 @@ import { ingredientsAPI, unitDefinitionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { INGREDIENT_CATEGORIES, UNITS } from '../constants';
 import { NumericInput } from '@/components/NumericKeypad';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 
 const getCategoryLabel = (value) => {
   const cat = INGREDIENT_CATEGORIES.find(c => c.value === value);
@@ -28,6 +29,7 @@ export default function IngredientsTab({
   onLoadConversionAnalysis
 }) {
   // Search/filter states
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [ingredientSearch, setIngredientSearch] = useState('');
   const [ingredientCategory, setIngredientCategory] = useState('');
   
@@ -157,7 +159,7 @@ export default function IngredientsTab({
   };
 
   const handleDeleteIngredient = async (id) => {
-    if (!window.confirm('¿Eliminar ingrediente?')) return;
+    { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar ingrediente?' }); if (!ok) return; }
     try {
       await ingredientsAPI.delete(id);
       toast.success('Ingrediente eliminado');
@@ -189,7 +191,7 @@ export default function IngredientsTab({
   };
 
   const handleDeleteUnit = async (id) => {
-    if (!window.confirm('¿Eliminar unidad? Solo se puede eliminar si no está en uso.')) return;
+    { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar unidad? Solo se puede eliminar si no está en uso.' }); if (!ok) return; }
     try {
       await unitDefinitionsAPI.delete(id);
       toast.success('Unidad eliminada');
@@ -1059,6 +1061,7 @@ export default function IngredientsTab({
           </div>
         </DialogContent>
       </Dialog>
+    <ConfirmDialog {...confirmProps} />
     </div>
-  );
+    );
 }

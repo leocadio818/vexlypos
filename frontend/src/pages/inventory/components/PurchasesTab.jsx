@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { NumericInput } from '@/components/NumericKeypad';
 import { NeoDatePicker, NeoTimePicker } from '@/components/DateTimePicker';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend, PieChart, Pie, Cell
@@ -67,6 +68,7 @@ export default function PurchasesTab({
   ingredients,
   onRefreshAll
 }) {
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [poStatusFilter, setPOStatusFilter] = useState('');
   const [poDialog, setPODialog] = useState({ open: false, data: null });
   const [receiveDialog, setReceiveDialog] = useState({ open: false, po: null });
@@ -335,7 +337,7 @@ export default function PurchasesTab({
   };
 
   const handleDeletePO = async (id) => {
-    if (!window.confirm('¿Eliminar orden?')) return;
+    { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar orden?' }); if (!ok) return; }
     try {
       await purchaseOrdersAPI.delete(id);
       toast.success('Orden eliminada');
@@ -1212,6 +1214,7 @@ export default function PurchasesTab({
           </div>
         </DialogContent>
       </Dialog>
+    <ConfirmDialog {...confirmProps} />
     </div>
-  );
+    );
 }

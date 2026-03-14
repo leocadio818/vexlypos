@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import axios from 'axios';
 import { NeoDatePicker, NeoTimePicker } from '@/components/DateTimePicker';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -146,6 +147,7 @@ function getRoleColor(roleCode) {
 
 // ─── Collapsible section component ───
 function Section({ title, icon: Icon, defaultOpen = false, children, badge }) {
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border border-border rounded-xl overflow-hidden bg-card">
@@ -158,8 +160,9 @@ function Section({ title, icon: Icon, defaultOpen = false, children, badge }) {
         {open ? <ChevronDown size={14} className="text-muted-foreground" /> : <ChevronRight size={14} className="text-muted-foreground" />}
       </button>
       {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
+    <ConfirmDialog {...confirmProps} />
     </div>
-  );
+    );
 }
 
 function Input({ label, value, onChange, type = 'text', placeholder, className = '', readOnly, icon: Icon, required, ...props }) {
@@ -617,7 +620,7 @@ export default function UserConfig() {
                             <Pencil size={10} />
                           </button>
                           <button onClick={async () => {
-                            if (!window.confirm(`¿Eliminar puesto "${role.name}"?`)) return;
+                            { const ok = await showConfirm({ title: 'Eliminar Puesto', description: `¿Eliminar puesto "${role.name}"?` }); if (!ok) return; }
                             try {
                               await axios.delete(`${API}/roles/${role.id}`, { headers: hdrs() });
                               toast.success(`Puesto "${role.name}" eliminado`);

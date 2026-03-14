@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { warehousesAPI } from '@/lib/api';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 
 export default function WarehousesTab({ 
   warehouses, 
@@ -12,6 +13,7 @@ export default function WarehousesTab({
   ingredients,
   onRefreshAll 
 }) {
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [warehouseDialog, setWarehouseDialog] = useState({ open: false, data: null });
 
   // ─── WAREHOUSE HANDLERS ───
@@ -37,7 +39,7 @@ export default function WarehousesTab({
   };
 
   const handleDeleteWarehouse = async (id) => {
-    if (!window.confirm('¿Eliminar almacén?')) return;
+    { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar almacén?' }); if (!ok) return; }
     try {
       await warehousesAPI.delete(id);
       toast.success('Almacén eliminado');
@@ -160,6 +162,7 @@ export default function WarehousesTab({
           </div>
         </DialogContent>
       </Dialog>
+    <ConfirmDialog {...confirmProps} />
     </div>
-  );
+    );
 }

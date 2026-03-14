@@ -10,6 +10,7 @@ import { NumericInput } from '@/components/NumericKeypad';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import axios from 'axios';
+import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -30,6 +31,7 @@ const SubTabButton = ({ active, onClick, icon: Icon, label }) => (
 
 export default function InventarioTab() {
   const { categories, products, printChannels, categoryChannels, inventorySettings, setInventorySettings, warehouses, fetchAll } = useSettings();
+  const [confirmProps, showConfirm] = useConfirmDialog();
   const [inventarioSubTab, setInventarioSubTab] = useState('categorias');
   const [productSearch, setProductSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -110,7 +112,7 @@ export default function InventarioTab() {
   };
 
   const deleteModifier = async (id) => {
-    if (!window.confirm('Eliminar este modificador y todas sus opciones?')) return;
+    { const ok = await showConfirm({ title: 'Confirmar', description: 'Eliminar este modificador y todas sus opciones?' }); if (!ok) return; }
     try {
       await axios.delete(`${API}/modifier-groups/${id}`, { headers: hdrs() });
       toast.success('Modificador eliminado');
@@ -546,6 +548,7 @@ export default function InventarioTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    <ConfirmDialog {...confirmProps} />
     </div>
-  );
+    );
 }
