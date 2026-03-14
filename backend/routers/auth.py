@@ -43,6 +43,11 @@ DEFAULT_PERMISSIONS = {
         "can_manage_tax_override": True,
         "transfer_tables": True,
         "create_b04": True,
+        "config_users": True, "config_mesas": True, "config_ventas": True,
+        "config_productos": True, "config_inventario": True, "config_impresion": True,
+        "config_estacion": True, "config_reportes": True, "config_clientes": True,
+        "config_impuestos": True, "config_ncf": True, "config_apariencia": True,
+        "config_sistema": True, "config_descuentos": True,
     },
     "waiter": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
@@ -69,6 +74,8 @@ DEFAULT_PERMISSIONS = {
         "reprint_receipt": True,
         "transfer_tables": True,
         "create_b04": True,
+        "config_mesas": True, "config_ventas": True, "config_productos": True,
+        "config_clientes": True, "config_apariencia": True,
     },
     "kitchen": {},
 }
@@ -94,6 +101,20 @@ ALL_PERMISSIONS = {
     "release_reserved_table": "Desbloquear Mesa Reservada",
     "transfer_tables": "Transferir Mesas entre Usuarios",
     "create_b04": "Crear Nota de Credito (B04)",
+    "config_users": "Config: Pestaña Usuarios",
+    "config_mesas": "Config: Pestaña Mesas",
+    "config_ventas": "Config: Pestaña Ventas",
+    "config_productos": "Config: Pestaña Productos",
+    "config_inventario": "Config: Pestaña Inventario Maestro",
+    "config_impresion": "Config: Pestaña Impresion",
+    "config_estacion": "Config: Pestaña Estacion",
+    "config_reportes": "Config: Pestaña Reportes",
+    "config_clientes": "Config: Pestaña Clientes",
+    "config_impuestos": "Config: Pestaña Impuestos",
+    "config_ncf": "Config: Pestaña NCF",
+    "config_apariencia": "Config: Pestaña Apariencia",
+    "config_sistema": "Config: Pestaña Sistema",
+    "config_descuentos": "Config: Pestaña Descuentos",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───

@@ -222,8 +222,11 @@ export default function Layout() {
   const filteredNav = navItems.filter(item => {
     if (item.to === '/dashboard') return hasPermission('view_dashboard');
     if (item.to === '/reservations') return hasPermission('manage_reservations');
-    // Only show Config for admins
-    if (item.to === '/settings') return isAdmin;
+    // Show Config if user has ANY config_ permission
+    if (item.to === '/settings') {
+      const configPerms = ['config_users','config_mesas','config_ventas','config_productos','config_inventario','config_impresion','config_estacion','config_reportes','config_clientes','config_impuestos','config_ncf','config_apariencia','config_sistema','config_descuentos'];
+      return configPerms.some(p => hasPermission(p));
+    }
     // Only show Caja for cashiers and admins
     if (item.to === '/cash-register') return canAccessCash;
     return true;
