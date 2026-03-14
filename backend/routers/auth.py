@@ -295,10 +295,14 @@ async def update_my_pin(input: dict, user=Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="PIN solo puede contener numeros")
     
     pin_hash = hash_pin(new_pin)
-    # Check if PIN is already in use by another user
-    existing = await db.users.find_one({"pin_hash": pin_hash, "id": {"$ne": user["user_id"]}}, {"_id": 0, "id": 1})
+    # Check if PIN is already in use by ANY other user (active OR inactive)
+    # Excludes current user so they can re-set their own current/old PIN
+    existing = await db.users.find_one(
+        {"pin_hash": pin_hash, "id": {"$ne": user["user_id"]}},
+        {"_id": 0, "id": 1}
+    )
     if existing:
-        raise HTTPException(status_code=400, detail="Esta clave ya esta en uso")
+        raise HTTPException(status_code=400, detail="PIN_ALREADY_IN_USE")
     
     await db.users.update_one({"id": user["user_id"]}, {"$set": {"pin_hash": pin_hash}})
     return {"ok": True, "message": "PIN actualizado correctamente"}

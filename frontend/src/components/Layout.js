@@ -827,7 +827,11 @@ export default function Layout() {
                 setChangePinOpen(false);
                 setNewPinValue('');
               } catch (e) {
-                toast.error(e.response?.data?.detail || 'Error de conexion');
+                if (e.response?.data?.detail === 'PIN_ALREADY_IN_USE') {
+                  toast.error('Esta clave ya está en uso');
+                } else {
+                  toast.error('Error de conexión');
+                }
                 setNewPinValue('');
               }
             }}
