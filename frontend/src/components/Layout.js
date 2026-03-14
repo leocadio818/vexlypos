@@ -819,10 +819,7 @@ export default function Layout() {
             onChange={setNewPinValue}
             onSubmit={async (pin) => {
               try {
-                const token = localStorage.getItem('pos_token');
-                await axios.put(`${process.env.REACT_APP_BACKEND_URL}/api/users/me/pin`, { pin }, {
-                  headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.put(`/users/me/pin`, { pin });
                 toast.success('PIN actualizado correctamente');
                 setChangePinOpen(false);
                 setNewPinValue('');

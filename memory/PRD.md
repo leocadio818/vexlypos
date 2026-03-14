@@ -126,3 +126,11 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - void_audit_logs now include `business_date` field
 - Midnight bug permanently fixed
 - DO NOT: Use datetime.utcnow() or new Date() for report defaults. Always use active business date.
+
+### Bug Fix: PIN Change Validation & Security (2026-03-14)
+- **Root cause**: `Layout.js` used `axios` directly (not imported) instead of the `api` instance from `@/lib/api`
+- Backend `PUT /api/users/me/pin` returns `PIN_ALREADY_IN_USE` code (not user-facing message)
+- Frontend catches the code and displays: "Esta clave ya está en uso" (no info leak)
+- Query checks ALL users (active + inactive) EXCEPT current user (`$ne: currentUserId`)
+- User CAN re-set their own current PIN or any old PIN (as long as no one else has it)
+- Real network errors show "Error de conexión"
