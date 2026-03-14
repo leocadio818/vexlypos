@@ -222,9 +222,16 @@ export default function Layout() {
   const filteredNav = navItems.filter(item => {
     if (item.to === '/dashboard') return hasPermission('view_dashboard');
     if (item.to === '/reservations') return hasPermission('manage_reservations');
-    // Show Config if user has ANY config_ permission
+    // Show Config if user has ANY config_ or manage_ permission
     if (item.to === '/settings') {
-      const configPerms = ['config_users','config_mesas','config_ventas','config_productos','config_inventario','config_impresion','config_estacion','config_reportes','config_clientes','config_impuestos','config_ncf','config_apariencia','config_sistema','config_descuentos'];
+      const configPerms = [
+        'config_users','config_mesas','config_ventas','config_productos','config_inventario',
+        'config_impresion','config_estacion','config_reportes','config_clientes',
+        'config_impuestos','config_ncf','config_apariencia','config_sistema','config_descuentos',
+        'manage_users','manage_tables','manage_areas','manage_products','manage_payment_methods',
+        'manage_cancellation_reasons','manage_sale_types','manage_print_channels',
+        'manage_station_config','manage_inventory','manage_suppliers','manage_customers',
+      ];
       return configPerms.some(p => hasPermission(p));
     }
     // Only show Caja for cashiers and admins

@@ -19,22 +19,22 @@ import SystemTab from './SystemTab';
 import ThemeTab from './ThemeTab';
 import DescuentosTab from './DescuentosTab';
 
-// Tab definitions with permission mapping
+// Tab definitions with permission mapping (new config_* + old manage_* fallback)
 const ALL_TABS = [
-  { value: 'users', label: 'Usuarios', icon: Users, permission: 'config_users', component: UsersTab },
-  { value: 'mesas', label: 'Mesas', icon: Table2, permission: 'config_mesas', component: MesasTab },
-  { value: 'ventas', label: 'Ventas', icon: CreditCard, permission: 'config_ventas', component: VentasTab },
-  { value: 'inventario', label: 'Config. Productos', icon: Package, permission: 'config_productos', component: InventarioTab },
-  { value: 'inventario-maestro', label: 'Inventario Maestro', icon: Warehouse, permission: 'config_inventario', navigate: '/inventory' },
-  { value: 'channels', label: 'Impresion', icon: Printer, permission: 'config_impresion', component: ChannelsTab },
-  { value: 'station', label: 'Estacion', icon: Cog, permission: 'config_estacion', component: StationTab },
-  { value: 'reports-cfg', label: 'Reportes', icon: BarChart3, permission: 'config_reportes', component: ReportsTab },
-  { value: 'customers-cfg', label: 'Clientes', icon: Heart, permission: 'config_clientes', component: CustomersTab },
-  { value: 'taxes', label: 'Impuestos', icon: Calculator, permission: 'config_impuestos', component: TaxesTab },
-  { value: 'ncf', label: 'NCF', icon: FileText, permission: 'config_ncf', component: NcfTab },
-  { value: 'theme', label: 'Apariencia', icon: Palette, permission: 'config_apariencia', component: ThemeTab },
-  { value: 'system', label: 'Sistema', icon: Cog, permission: 'config_sistema', component: SystemTab },
-  { value: 'descuentos', label: 'Descuentos', icon: Tag, permission: 'config_descuentos', component: DescuentosTab },
+  { value: 'users', label: 'Usuarios', icon: Users, permissions: ['config_users','manage_users'], component: UsersTab },
+  { value: 'mesas', label: 'Mesas', icon: Table2, permissions: ['config_mesas','manage_tables','manage_areas'], component: MesasTab },
+  { value: 'ventas', label: 'Ventas', icon: CreditCard, permissions: ['config_ventas','manage_payment_methods','manage_cancellation_reasons','manage_sale_types'], component: VentasTab },
+  { value: 'inventario', label: 'Config. Productos', icon: Package, permissions: ['config_productos','manage_products'], component: InventarioTab },
+  { value: 'inventario-maestro', label: 'Inventario Maestro', icon: Warehouse, permissions: ['config_inventario','manage_inventory','manage_suppliers'], navigate: '/inventory' },
+  { value: 'channels', label: 'Impresion', icon: Printer, permissions: ['config_impresion','manage_print_channels'], component: ChannelsTab },
+  { value: 'station', label: 'Estacion', icon: Cog, permissions: ['config_estacion','manage_station_config'], component: StationTab },
+  { value: 'reports-cfg', label: 'Reportes', icon: BarChart3, permissions: ['config_reportes'], component: ReportsTab },
+  { value: 'customers-cfg', label: 'Clientes', icon: Heart, permissions: ['config_clientes','manage_customers'], component: CustomersTab },
+  { value: 'taxes', label: 'Impuestos', icon: Calculator, permissions: ['config_impuestos'], component: TaxesTab },
+  { value: 'ncf', label: 'NCF', icon: FileText, permissions: ['config_ncf'], component: NcfTab },
+  { value: 'theme', label: 'Apariencia', icon: Palette, permissions: ['config_apariencia'], component: ThemeTab },
+  { value: 'system', label: 'Sistema', icon: Cog, permissions: ['config_sistema'], component: SystemTab },
+  { value: 'descuentos', label: 'Descuentos', icon: Tag, permissions: ['config_descuentos','manage_cancellation_reasons'], component: DescuentosTab },
 ];
 
 function SettingsContent() {
@@ -42,9 +42,9 @@ function SettingsContent() {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
 
-  // Filter tabs by user permissions
+  // Filter tabs by user permissions (check any of the tab's permissions)
   const allowedTabs = useMemo(() => {
-    return ALL_TABS.filter(tab => hasPermission(tab.permission));
+    return ALL_TABS.filter(tab => tab.permissions.some(p => hasPermission(p)));
   }, [hasPermission]);
 
   // Smart default: first allowed tab (or requested tab if allowed)
