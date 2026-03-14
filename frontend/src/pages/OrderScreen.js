@@ -207,7 +207,7 @@ export default function OrderScreen() {
         categoriesAPI.list(), productsAPI.list(), modifiersAPI.list(), reasonsAPI.list()
       ]);
       setCategories(catRes.data); setProducts(prodRes.data);
-      setCancelReasons(reasonRes.data);
+      setCancelReasons((reasonRes.data || []).filter(r => r.active !== false));
       // Merge old modifier system with new modifier_groups system
       const oldGroups = modRes.data.filter(m => m.options && m.options.length > 0);
       try {

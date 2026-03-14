@@ -341,7 +341,7 @@ async def delete_modifier(mid: str):
 # ─── CANCELLATION REASONS ───
 @router.get("/cancellation-reasons")
 async def list_cancellation_reasons():
-    return await db.cancellation_reasons.find({"active": True}, {"_id": 0}).to_list(50)
+    return await db.cancellation_reasons.find({}, {"_id": 0}).to_list(50)
 
 @router.post("/cancellation-reasons")
 async def create_cancellation_reason(input: CancellationReasonInput):
