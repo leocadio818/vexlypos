@@ -5,6 +5,7 @@ import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Tras
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PinPad } from '@/components/PinPad';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import axios from 'axios';
@@ -188,6 +189,8 @@ export default function UserConfig() {
   const isSystemAdmin = (currentUser?.role_level || 0) >= 100;
   const canEditPin = isSystemAdmin || isAdmin || (!isNew && currentUser?.id === userId) || isNew;
   const [showPin, setShowPin] = useState(false);
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [tempPin, setTempPin] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [roles, setRoles] = useState([]);
@@ -384,19 +387,43 @@ export default function UserConfig() {
                 </label>
                 {canEditPin ? (
                   <div className="relative">
-                    <input
-                      type={showPin ? 'text' : 'password'} value={user.pin} maxLength={8}
-                      onChange={e => setUser(p => ({ ...p, pin: e.target.value.replace(/\D/g, '') }))}
-                      placeholder={isNew ? '1-8 digitos' : 'Vacio = no cambiar'}
-                      className={`w-full bg-background border rounded-lg px-3 py-2 pr-10 text-sm font-mono tracking-widest ${user.pin && !validatePin(user.pin).valid ? 'border-red-500' : 'border-border'}`}
+                    <button
+                      type="button"
+                      onClick={() => { setTempPin(''); setPinModalOpen(true); }}
+                      className={`w-full bg-background border rounded-lg px-3 py-2.5 text-sm font-mono tracking-widest text-left ${user.pin && !validatePin(user.pin).valid ? 'border-red-500' : 'border-border'}`}
                       data-testid="user-pin-input"
-                    />
-                    {isAdmin && (
-                      <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                        {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                    >
+                      {user.pin ? '●'.repeat(user.pin.length) : <span className="text-muted-foreground">{isNew ? 'Toca para establecer PIN' : 'Toca para cambiar PIN'}</span>}
+                    </button>
+                    {user.pin && (
+                      <button type="button" onClick={() => setUser(p => ({ ...p, pin: '' }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive text-xs">
+                        Limpiar
                       </button>
                     )}
                     {user.pin && !validatePin(user.pin).valid && <p className="text-[10px] text-red-500 mt-1">{validatePin(user.pin).error}</p>}
+                    <Dialog open={pinModalOpen} onOpenChange={setPinModalOpen}>
+                      <DialogContent className="max-w-xs sm:max-w-sm mx-auto">
+                        <DialogHeader>
+                          <DialogTitle className="font-oswald text-center">{isNew ? 'Establecer PIN' : 'Cambiar PIN'}</DialogTitle>
+                        </DialogHeader>
+                        <p className="text-xs text-muted-foreground text-center">Ingresa el nuevo PIN (1-8 digitos)</p>
+                        <PinPad
+                          value={tempPin}
+                          onChange={setTempPin}
+                          onSubmit={(val) => {
+                            setUser(p => ({ ...p, pin: val }));
+                            setPinModalOpen(false);
+                          }}
+                          maxLength={8}
+                          placeholder="Nuevo PIN"
+                          forceKeypad
+                        />
+                        <button type="button" onClick={() => { setPinModalOpen(false); setTempPin(''); }}
+                          className="w-full text-xs text-muted-foreground hover:text-foreground py-2">
+                          Cancelar
+                        </button>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 ) : (
                   <div className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-sm font-mono text-muted-foreground">
