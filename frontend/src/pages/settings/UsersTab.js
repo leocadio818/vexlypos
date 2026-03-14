@@ -9,11 +9,13 @@ export default function UsersTab() {
   const { users } = useSettings();
   const [userSearch, setUserSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
 
-  // Filter users based on search and role
+  // Filter users based on search, role, and active status
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
-      if (u.active === false) return false;
+      // Active filter: hide inactive unless toggle is on
+      if (!showInactive && u.active === false) return false;
       
       // Search filter
       if (userSearch) {
@@ -29,9 +31,10 @@ export default function UsersTab() {
       
       return true;
     });
-  }, [users, userSearch, userRoleFilter]);
+  }, [users, userSearch, userRoleFilter, showInactive]);
 
   const activeUsersCount = users.filter(u => u.active !== false).length;
+  const inactiveUsersCount = users.filter(u => u.active === false).length;
 
   return (
     <div>
@@ -116,6 +119,21 @@ export default function UsersTab() {
             >
               Cocina
             </button>
+            
+            {/* Show Inactive Toggle */}
+            {inactiveUsersCount > 0 && (
+              <button
+                onClick={() => setShowInactive(!showInactive)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  showInactive 
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                }`}
+                data-testid="filter-inactive"
+              >
+                {showInactive ? `Ocultar Inactivos (${inactiveUsersCount})` : `Mostrar Inactivos (${inactiveUsersCount})`}
+              </button>
+            )}
           </div>
           
           {/* Add User Button */}
@@ -168,9 +186,10 @@ export default function UsersTab() {
         <div className="space-y-2">
           {filteredUsers.map(user => (
             <a key={user.id} href={`/user/${user.id}`} 
-              className="flex items-center justify-between p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors cursor-pointer" data-testid={`user-${user.id}`}>
+              className={`flex items-center justify-between p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors cursor-pointer ${user.active === false ? 'opacity-50' : ''}`} data-testid={`user-${user.id}`}>
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold font-oswald ${
+                  user.active === false ? 'bg-muted text-muted-foreground' :
                   user.role === 'admin' ? 'bg-red-500/20 text-red-500' :
                   user.role === 'waiter' ? 'bg-blue-500/20 text-blue-500' :
                   user.role === 'cashier' ? 'bg-green-500/20 text-green-500' :
@@ -187,6 +206,7 @@ export default function UsersTab() {
                     user.role === 'cashier' ? 'bg-green-500/10 text-green-500' :
                     user.role === 'kitchen' ? 'bg-orange-500/10 text-orange-500' : ''
                   }`}>{ROLE_LABELS[user.role] || user.role}</Badge>
+                  {user.active === false && <Badge className="ml-1 text-[9px] bg-red-500/20 text-red-500 border-red-500/30">INACTIVO</Badge>}
                   {user.training_mode && <Badge variant="outline" className="ml-1 text-[9px] border-yellow-500 text-yellow-400">Entrenamiento</Badge>}
                 </div>
               </div>
