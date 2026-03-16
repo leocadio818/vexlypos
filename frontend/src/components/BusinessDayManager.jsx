@@ -216,8 +216,8 @@ export default function BusinessDayManager({
             }}
             data-testid="business-day-indicator"
           >
-            <Sun size={14} className="text-green-400" />
-            <span className="text-green-300 text-xs font-medium">
+            <Sun size={14} className="text-green-500" />
+            <span className="text-green-700 dark:text-green-300 text-xs font-medium">
               {businessDay.business_date}
             </span>
           </div>
@@ -227,8 +227,8 @@ export default function BusinessDayManager({
             className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 transition-all animate-pulse"
             data-testid="open-day-compact-btn"
           >
-            <Moon size={14} className="text-red-400" />
-            <span className="text-red-300 text-xs font-medium">
+            <Moon size={14} className="text-red-500" />
+            <span className="text-red-700 dark:text-red-300 text-xs font-medium">
               Sin Jornada
             </span>
           </button>
@@ -254,8 +254,8 @@ export default function BusinessDayManager({
                   <Sun size={24} className="text-green-400" />
                 </div>
                 <div>
-                  <h3 className="font-oswald font-bold text-white text-lg">JORNADA ABIERTA</h3>
-                  <p className="text-green-300 text-sm">{formatDate(businessDay.business_date)}</p>
+                  <h3 className="font-oswald font-bold text-foreground text-lg">JORNADA ABIERTA</h3>
+                  <p className="text-green-600 dark:text-green-300 text-sm">{formatDate(businessDay.business_date)}</p>
                 </div>
               </>
             ) : (
@@ -264,8 +264,8 @@ export default function BusinessDayManager({
                   <Moon size={24} className="text-red-400" />
                 </div>
                 <div>
-                  <h3 className="font-oswald font-bold text-white text-lg">SIN JORNADA</h3>
-                  <p className="text-red-300 text-sm">Debe abrir el día para operar</p>
+                  <h3 className="font-oswald font-bold text-foreground text-lg">SIN JORNADA</h3>
+                  <p className="text-red-600 dark:text-red-300 text-sm">Debe abrir el día para operar</p>
                 </div>
               </>
             )}
@@ -276,7 +276,7 @@ export default function BusinessDayManager({
               <>
                 <Button
                   onClick={() => setReportZDialog({ open: true, dayId: businessDay.id })}
-                  className="bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-300"
+                  className="bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300"
                   data-testid="report-z-btn"
                 >
                   <FileText size={16} className="mr-2" />
@@ -284,7 +284,7 @@ export default function BusinessDayManager({
                 </Button>
                 <Button
                   onClick={() => startAction('close')}
-                  className="bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300"
+                  className="bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-700 dark:text-red-300"
                   data-testid="close-day-btn"
                 >
                   <Lock size={16} className="mr-2" />
@@ -294,7 +294,7 @@ export default function BusinessDayManager({
             ) : (
               <Button
                 onClick={() => startAction('open')}
-                className="bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-300"
+                className="bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-700 dark:text-green-300"
                 data-testid="open-day-btn"
               >
                 <Unlock size={16} className="mr-2" />
@@ -308,7 +308,7 @@ export default function BusinessDayManager({
                 setHistoryDialog(true);
               }}
               variant="outline"
-              className="border-white/20 text-white/70 hover:bg-white/10"
+              className="border-border text-muted-foreground hover:bg-muted"
             >
               <History size={16} />
             </Button>
@@ -317,48 +317,48 @@ export default function BusinessDayManager({
         
         {/* Info de la jornada */}
         {businessDay && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-white/10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-border">
             <div className="text-center">
-              <p className="text-white/50 text-xs mb-1">Abierta</p>
-              <p className="text-white font-medium text-sm">{formatTime(businessDay.opened_at)}</p>
+              <p className="text-muted-foreground text-xs mb-1">Abierta</p>
+              <p className="text-foreground font-medium text-sm">{formatTime(businessDay.opened_at)}</p>
             </div>
             <div className="text-center">
-              <p className="text-white/50 text-xs mb-1">Por</p>
-              <p className="text-white font-medium text-sm">{businessDay.opened_by_name}</p>
+              <p className="text-muted-foreground text-xs mb-1">Por</p>
+              <p className="text-foreground font-medium text-sm">{businessDay.opened_by_name}</p>
             </div>
             <div className="text-center">
-              <p className="text-white/50 text-xs mb-1">Autorizado</p>
-              <p className="text-white font-medium text-sm">{businessDay.authorized_by_name}</p>
+              <p className="text-muted-foreground text-xs mb-1">Autorizado</p>
+              <p className="text-foreground font-medium text-sm">{businessDay.authorized_by_name}</p>
             </div>
             <div className="text-center">
-              <p className="text-white/50 text-xs mb-1">Referencia</p>
-              <p className="text-cyan-400 font-mono text-sm">{businessDay.ref}</p>
+              <p className="text-muted-foreground text-xs mb-1">Referencia</p>
+              <p className="text-cyan-600 dark:text-cyan-400 font-mono text-sm">{businessDay.ref}</p>
             </div>
           </div>
         )}
         
         {/* Estadísticas del día */}
         {businessDay && stats && showStatsInline && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-white/10">
-            <div className="bg-white/5 rounded-xl p-3 text-center">
-              <TrendingUp size={20} className="text-green-400 mx-auto mb-1" />
-              <p className="text-white/50 text-xs">Ventas</p>
-              <p className="font-oswald font-bold text-green-400">{formatMoney(stats.total_sales)}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-border">
+            <div className="bg-muted rounded-xl p-3 text-center">
+              <TrendingUp size={20} className="text-green-500 mx-auto mb-1" />
+              <p className="text-muted-foreground text-xs">Ventas</p>
+              <p className="font-oswald font-bold text-green-600 dark:text-green-400">{formatMoney(stats.total_sales)}</p>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 text-center">
-              <Banknote size={20} className="text-emerald-400 mx-auto mb-1" />
-              <p className="text-white/50 text-xs">Efectivo</p>
-              <p className="font-oswald font-bold text-emerald-400">{formatMoney(stats.total_cash)}</p>
+            <div className="bg-muted rounded-xl p-3 text-center">
+              <Banknote size={20} className="text-emerald-500 mx-auto mb-1" />
+              <p className="text-muted-foreground text-xs">Efectivo</p>
+              <p className="font-oswald font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(stats.total_cash)}</p>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 text-center">
-              <CreditCard size={20} className="text-blue-400 mx-auto mb-1" />
-              <p className="text-white/50 text-xs">Tarjeta</p>
-              <p className="font-oswald font-bold text-blue-400">{formatMoney(stats.total_card)}</p>
+            <div className="bg-muted rounded-xl p-3 text-center">
+              <CreditCard size={20} className="text-blue-500 mx-auto mb-1" />
+              <p className="text-muted-foreground text-xs">Tarjeta</p>
+              <p className="font-oswald font-bold text-blue-600 dark:text-blue-400">{formatMoney(stats.total_card)}</p>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 text-center">
-              <FileText size={20} className="text-cyan-400 mx-auto mb-1" />
-              <p className="text-white/50 text-xs">Facturas</p>
-              <p className="font-oswald font-bold text-cyan-400">{stats.total_invoices}</p>
+            <div className="bg-muted rounded-xl p-3 text-center">
+              <FileText size={20} className="text-cyan-500 mx-auto mb-1" />
+              <p className="text-muted-foreground text-xs">Facturas</p>
+              <p className="font-oswald font-bold text-cyan-600 dark:text-cyan-400">{stats.total_invoices}</p>
             </div>
           </div>
         )}
