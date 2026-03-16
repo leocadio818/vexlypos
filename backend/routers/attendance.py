@@ -26,6 +26,22 @@ class PinInput(BaseModel):
     pin: str
 
 
+@router.post("/attendance/check-status")
+async def check_attendance_status(input: PinInput):
+    """Check if user has active clock-in today (without modifying anything)"""
+    from routers.auth import hash_pin
+    pin_hash = hash_pin(input.pin)
+    user = await db.users.find_one({"pin_hash": pin_hash, "active": True}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="PIN incorrecto")
+    today = now_local().strftime("%Y-%m-%d")
+    existing = await db.attendance.find_one(
+        {"user_id": user["id"], "date": today, "status": "ACTIVE"},
+        {"_id": 0}
+    )
+    return {"clocked_in": existing is not None, "user_name": user["name"]}
+
+
 @router.post("/attendance/clock-in")
 async def clock_in(input: PinInput):
     """Register employee clock-in. Does NOT start a POS session."""

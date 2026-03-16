@@ -17,6 +17,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [attendanceResult, setAttendanceResult] = useState(null);
   const [postLoginRoute, setPostLoginRoute] = useState(null);
+  const [askClockIn, setAskClockIn] = useState(null); // {user_name, route} — pregunta si desea marcar entrada
   const [branding, setBranding] = useState({ restaurant_name: '', logo_url: '' });
   const { login, user, ensureSeed } = useAuth();
   const { theme, isMinimalist, neoColors, isNeoDark } = useTheme();
@@ -28,10 +29,10 @@ export default function Login() {
   }, [API_BASE]);
 
   useEffect(() => {
-    // Don't auto-navigate if showing welcome modal
-    if (attendanceResult) return;
+    // Don't auto-navigate if showing welcome modal or clock-in question
+    if (attendanceResult || askClockIn) return;
     if (user) navigate(user.permissions?.view_dashboard ? '/dashboard' : '/tables');
-  }, [user, navigate, attendanceResult]);
+  }, [user, navigate, attendanceResult, askClockIn]);
 
   useEffect(() => { ensureSeed(); }, [ensureSeed]);
 
@@ -53,34 +54,60 @@ export default function Login() {
     if (pin.length < 1) return;
     setLoading(true);
     try {
-      // Try clock-in first (if no active entry today, register it)
+      // 1. Check attendance status first (without modifying anything)
+      let needsClockIn = false;
+      let userName = '';
       try {
-        const clockRes = await fetch(`${API_BASE}/api/attendance/clock-in`, {
+        const statusRes = await fetch(`${API_BASE}/api/attendance/check-status`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pin }),
         });
-        const clone = clockRes.clone();
-        let clockData = {};
-        try { clockData = await clone.json(); } catch {}
-        
-        if (clockRes.ok) {
-          // First entry today — show welcome + login
-          setAttendanceResult(clockData);
-          const u = await login(pin);
-          // Navigate after user closes the welcome modal
-          setPostLoginRoute(u.permissions?.view_dashboard ? '/dashboard' : '/tables');
-          setLoading(false);
-          return;
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          needsClockIn = !statusData.clocked_in;
+          userName = statusData.user_name;
         }
-        // If 400 "already clocked in" — normal login (no message)
       } catch {}
-      
-      // Normal login (already clocked in or clock-in check failed)
+
+      // 2. Login
       const u = await login(pin);
-      navigate(u.permissions?.view_dashboard ? '/dashboard' : '/tables');
+      const route = u.permissions?.view_dashboard ? '/dashboard' : '/tables';
+
+      // 3. If not clocked in, ask before auto clock-in
+      if (needsClockIn) {
+        setAskClockIn({ user_name: userName || u.name, route, pin });
+        setLoading(false);
+        return;
+      }
+
+      // 4. Already clocked in — navigate directly
+      navigate(route);
     } catch { setPin(''); }
     setLoading(false);
+  };
+
+  const handleConfirmClockIn = async (doClockIn) => {
+    if (doClockIn && askClockIn?.pin) {
+      try {
+        const res = await fetch(`${API_BASE}/api/attendance/clock-in`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: askClockIn.pin }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAttendanceResult(data);
+          setPostLoginRoute(askClockIn.route);
+          setAskClockIn(null);
+          return; // Will navigate when welcome modal closes
+        }
+      } catch {}
+    }
+    // No clock-in or failed — just navigate
+    const route = askClockIn?.route || '/dashboard';
+    setAskClockIn(null);
+    navigate(route);
   };
 
   const handleAttendance = async (action) => {
@@ -406,6 +433,33 @@ export default function Login() {
         .neon-key-danger:hover { background: rgba(239,68,68,0.08) !important; border-color: rgba(239,68,68,0.3) !important; box-shadow: 0 0 10px rgba(239,68,68,0.15) !important; color: rgba(248,113,113,0.8) !important; }
         .neon-submit-btn:hover:not(:disabled) { box-shadow: 0 0 20px rgba(255,102,0,0.5), 0 0 40px rgba(255,102,0,0.25), inset 0 0 20px rgba(255,102,0,0.15) !important; border-color: rgba(255,102,0,0.7) !important; background: rgba(255,102,0,0.08) !important; }
       `}</style>
+
+      {/* Ask Clock-In Modal */}
+      <Dialog open={!!askClockIn} onOpenChange={() => handleConfirmClockIn(false)}>
+        <DialogContent className="max-w-sm text-center p-8">
+          <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center bg-primary/10">
+            <Clock size={40} className="text-primary" />
+          </div>
+          <h2 className="font-oswald text-2xl font-bold mb-2">
+            Bienvenido, {askClockIn?.user_name}!
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            No tienes entrada registrada hoy. ¿Deseas marcar tu entrada ahora?
+          </p>
+          <div className="flex gap-3">
+            <button onClick={() => handleConfirmClockIn(false)}
+              className="flex-1 h-12 rounded-xl border border-border text-foreground font-oswald font-bold text-base transition-all active:scale-95 hover:bg-muted"
+              data-testid="skip-clock-in-btn">
+              No, Solo Entrar
+            </button>
+            <button onClick={() => handleConfirmClockIn(true)}
+              className="flex-1 h-12 rounded-xl bg-green-600 text-white font-oswald font-bold text-base transition-all active:scale-95 hover:bg-green-700"
+              data-testid="confirm-clock-in-btn">
+              Marcar Entrada
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Attendance Result Modal */}
       <Dialog open={!!attendanceResult} onOpenChange={() => setAttendanceResult(null)}>
