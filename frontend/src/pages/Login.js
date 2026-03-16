@@ -53,41 +53,43 @@ export default function Login() {
   const handleSubmit = async () => {
     if (pin.length < 1) return;
     setLoading(true);
+    const currentPin = pin;
     try {
-      // 1. Check attendance status first (without modifying anything)
+      // PASO 1: Autenticación primero
+      const u = await login(currentPin);
+      const route = u.permissions?.view_dashboard ? '/dashboard' : '/tables';
+
+      // PASO 2: Verificar asistencia DESPUÉS de login exitoso
       let needsClockIn = false;
-      let userName = '';
       try {
         const statusRes = await fetch(`${API_BASE}/api/attendance/check-status`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pin }),
+          body: JSON.stringify({ pin: currentPin }),
         });
         if (statusRes.ok) {
           const statusData = await statusRes.json();
           needsClockIn = !statusData.clocked_in;
-          userName = statusData.user_name;
         }
-      } catch {}
-
-      // 2. Login
-      const u = await login(pin);
-      const route = u.permissions?.view_dashboard ? '/dashboard' : '/tables';
-
-      // 3. If not clocked in, ask before auto clock-in
-      if (needsClockIn) {
-        setAskClockIn({ user_name: userName || u.name, route, pin });
-        setLoading(false);
-        return;
+      } catch {
+        // Si falla la consulta de asistencia, NO bloquear
       }
 
-      // 4. Already clocked in — navigate directly
-      navigate(route);
-    } catch { setPin(''); }
+      // PASO 3: Renderizado condicional
+      if (needsClockIn) {
+        setAskClockIn({ user_name: u.name, route, pin: currentPin });
+      } else {
+        navigate(route);
+      }
+    } catch {
+      toast.error('PIN incorrecto');
+      setPin('');
+    }
     setLoading(false);
   };
 
   const handleConfirmClockIn = async (doClockIn) => {
+    const route = askClockIn?.route || '/dashboard';
     if (doClockIn && askClockIn?.pin) {
       try {
         const res = await fetch(`${API_BASE}/api/attendance/clock-in`, {
@@ -97,15 +99,13 @@ export default function Login() {
         });
         if (res.ok) {
           const data = await res.json();
-          setAttendanceResult(data);
-          setPostLoginRoute(askClockIn.route);
           setAskClockIn(null);
-          return; // Will navigate when welcome modal closes
+          setAttendanceResult(data);
+          setPostLoginRoute(route);
+          return;
         }
       } catch {}
     }
-    // No clock-in or failed — just navigate
-    const route = askClockIn?.route || '/dashboard';
     setAskClockIn(null);
     navigate(route);
   };
