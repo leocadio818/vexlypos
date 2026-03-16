@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
-import { posSessionsAPI, businessDaysAPI, formatMoney } from '@/lib/api';
+import api, { posSessionsAPI, businessDaysAPI, formatMoney } from '@/lib/api';
 import { CircleDollarSign, Play, Square, Clock, Banknote, CreditCard, AlertTriangle, TrendingUp, ArrowDownCircle, ArrowUpCircle, History, Wallet, CheckCircle2, Calculator, Coins, Receipt, RefreshCw, FileX, Search, Printer, X, Calendar, Lock, KeyRound, Tag, XCircle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -450,6 +450,8 @@ export default function CashRegister() {
       
       // Force logout after Cierre Z - brief delay to let user see the toast
       if (res.data?.force_logout) {
+        // Auto clock-out del cajero al cerrar caja
+        try { await api.post('/attendance/auto-clock-out'); } catch {}
         setTimeout(() => {
           logout();
           toast.info('Jornada cerrada. Se requiere nuevo login para iniciar la próxima jornada.');

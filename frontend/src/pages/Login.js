@@ -106,7 +106,14 @@ export default function Login() {
         }
       } catch {}
     }
+    // "No" → borrar sesión y devolver a login
     setAskClockIn(null);
+    if (!doClockIn) {
+      try { const { logout: doLogout } = await import('@/context/AuthContext'); } catch {}
+      localStorage.removeItem('pos_token');
+      window.location.href = '/login';
+      return;
+    }
     navigate(route);
   };
 
@@ -435,27 +442,27 @@ export default function Login() {
       `}</style>
 
       {/* Ask Clock-In Modal */}
-      <Dialog open={!!askClockIn} onOpenChange={() => handleConfirmClockIn(false)}>
-        <DialogContent className="max-w-sm text-center p-8">
-          <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center bg-primary/10">
-            <Clock size={40} className="text-primary" />
+      <Dialog open={!!askClockIn} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
+          <div className="w-24 h-24 rounded-full mx-auto mb-5 flex items-center justify-center bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-2 border-green-500/30">
+            <Clock size={48} className="text-green-500" />
           </div>
-          <h2 className="font-oswald text-2xl font-bold mb-2">
+          <h2 className="font-oswald text-2xl font-bold mb-1">
             Bienvenido, {askClockIn?.user_name}!
           </h2>
-          <p className="text-muted-foreground mb-6">
-            No tienes entrada registrada hoy. ¿Deseas marcar tu entrada ahora?
+          <p className="text-muted-foreground mb-6 text-sm">
+            No tienes un turno activo. Para acceder al sistema debes marcar tu entrada.
           </p>
-          <div className="flex gap-3">
-            <button onClick={() => handleConfirmClockIn(false)}
-              className="flex-1 h-12 rounded-xl border border-border text-foreground font-oswald font-bold text-base transition-all active:scale-95 hover:bg-muted"
-              data-testid="skip-clock-in-btn">
-              No, Solo Entrar
-            </button>
+          <div className="flex flex-col gap-3">
             <button onClick={() => handleConfirmClockIn(true)}
-              className="flex-1 h-12 rounded-xl bg-green-600 text-white font-oswald font-bold text-base transition-all active:scale-95 hover:bg-green-700"
+              className="w-full h-14 rounded-xl bg-green-600 text-white font-oswald font-bold text-lg transition-all active:scale-95 hover:bg-green-700 flex items-center justify-center gap-2"
               data-testid="confirm-clock-in-btn">
-              Marcar Entrada
+              <Clock size={20} /> Marcar Entrada
+            </button>
+            <button onClick={() => handleConfirmClockIn(false)}
+              className="w-full h-10 rounded-xl text-muted-foreground text-sm transition-all active:scale-95 hover:bg-muted"
+              data-testid="skip-clock-in-btn">
+              No, volver al Login
             </button>
           </div>
         </DialogContent>
