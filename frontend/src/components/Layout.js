@@ -782,17 +782,13 @@ export default function Layout() {
               onClick={async () => {
                 setClockOutLoading(true);
                 try {
-                  const token = localStorage.getItem('pos_token');
-                  const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/attendance/auto-clock-out`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                  });
-                  const clone = res.clone();
-                  let data = {};
-                  try { data = await clone.json(); } catch {}
-                  if (!res.ok) { toast.error(data.detail || 'Error al marcar salida'); }
-                  else { toast.success(data.message, { duration: 8000 }); setClockOutDialogOpen(false); logout(); }
-                } catch { toast.error('Error de conexion'); }
+                  const res = await api.post('/attendance/auto-clock-out');
+                  toast.success(res.data.message, { duration: 8000 });
+                  setClockOutDialogOpen(false);
+                  logout();
+                } catch (e) {
+                  toast.error(e.response?.data?.detail || 'Error de conexión');
+                }
                 setClockOutLoading(false);
               }}
               disabled={clockOutLoading}
