@@ -129,12 +129,16 @@ async def log_table_movement(
 @router.get("/reports/table-movements")
 async def get_table_movements(
     date: Optional[str] = Query(None),
-    limit: int = Query(50, ge=1, le=200),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    limit: int = Query(200, ge=1, le=500),
     user: dict = Depends(get_current_user)
 ):
     """Get table movement history for audit"""
     query = {}
-    if date:
+    if date_from and date_to:
+        query["created_at"] = {"$gte": date_from, "$lte": date_to + "T23:59:59"}
+    elif date:
         query["created_at"] = {"$regex": f"^{date}"}
     
     movements = await db.table_movements.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)

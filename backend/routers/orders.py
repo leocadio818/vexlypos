@@ -1521,5 +1521,23 @@ async def move_order_to_table(order_id: str, input: dict, user: dict = Depends(g
         )
     
     if target_order and merge:
+        # Log merge movement for audit
+        from routers.tables import log_table_movement
+        await log_table_movement(
+            user_id=user["user_id"], user_name=user["name"], user_role=user.get("role", ""),
+            source_table_id=source_table_id, source_table_number=source_table.get("number", 0),
+            target_table_id=target_table_id, target_table_number=target_table.get("number", 0),
+            movement_type="merge", orders_moved=1, merged=True
+        )
         return {"ok": True, "merged": True, "target_order_id": target_order["id"]}
+    
+    # Log table movement for audit
+    from routers.tables import log_table_movement
+    await log_table_movement(
+        user_id=user["user_id"], user_name=user["name"], user_role=user.get("role", ""),
+        source_table_id=source_table_id, source_table_number=source_table.get("number", 0),
+        target_table_id=target_table_id, target_table_number=target_table.get("number", 0),
+        movement_type="merge" if merge else "single", orders_moved=1, merged=merge
+    )
+    
     return {"ok": True, "moved": True}
