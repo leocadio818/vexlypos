@@ -86,3 +86,8 @@
         min-width: 44px;
     }
 }
+
+/* Auto-contrast for category/product cards — CANNOT be overridden by theme */
+[data-contrast="light"] * { color: #FFFFFF !important; }
+[data-contrast="dark"] * { color: #1E293B !important; }
+[data-contrast="light"] { text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
