@@ -18,11 +18,11 @@ export default function Login() {
   const [attendanceResult, setAttendanceResult] = useState(null);
   const [postLoginRoute, setPostLoginRoute] = useState(null);
   const [askClockIn, setAskClockIn] = useState(null);
+  const [loggedInUser, setLoggedInUser] = useState(null);
   const [branding, setBranding] = useState(() => {
     try { return JSON.parse(localStorage.getItem('pos_branding')) || { restaurant_name: '', logo_url: '' }; }
     catch { return { restaurant_name: '', logo_url: '' }; }
   });
-  const loginInProgress = useRef(false);
   const { login, user, ensureSeed } = useAuth();
   const { theme, isMinimalist, neoColors, isNeoDark } = useTheme();
   const navigate = useNavigate();
@@ -35,21 +35,17 @@ export default function Login() {
     }).catch(() => {});
   }, [API_BASE]);
 
+  // Auto-navigate ONLY if user was already logged in (page refresh with valid token)
+  // NOT during fresh login flow (loggedInUser handles that)
   useEffect(() => {
-    // Don't auto-navigate if login is in progress, showing modal, or asking clock-in
-    if (loginInProgress.current || attendanceResult || askClockIn) return;
+    if (attendanceResult || askClockIn || loggedInUser) return;
     if (user) navigate(user.permissions?.view_dashboard ? '/dashboard' : '/tables');
-  }, [user, navigate, attendanceResult, askClockIn]);
+  }, [user, navigate, attendanceResult, askClockIn, loggedInUser]);
 
   useEffect(() => { ensureSeed(); }, [ensureSeed]);
 
-  // Check if there are any active clock-ins (to color the ENTRAR button)
-  const [hasActiveClock, setHasActiveClock] = useState(null); // null=unknown, true=has entry, false=no entry
-  useEffect(() => {
-    // We can't check for a specific user without PIN, so we just check if ANY user is clocked in
-    // The actual per-user check happens in handleSubmit
-    setHasActiveClock(null);
-  }, []);
+  const [hasActiveClock, setHasActiveClock] = useState(null);
+  useEffect(() => { setHasActiveClock(null); }, []);
 
   const handleDigit = (d) => {
     if (pin.length < 8) setPin(prev => prev + d);
@@ -58,59 +54,44 @@ export default function Login() {
   const handleClear = () => setPin('');
 
   const handleSubmit = async () => {
-    if (pin.length < 1) return;
+    if (pin.length < 1 || loading) return;
     setLoading(true);
-    loginInProgress.current = true;
-    const currentPin = pin;
-    console.log('[LOGIN] Starting login with PIN length:', currentPin.length);
+    const savedPin = pin;
     try {
-      // PASO 1: Autenticación primero
-      const u = await login(currentPin);
-      console.log('[LOGIN] Login OK:', u.name);
+      const u = await login(savedPin);
+      setLoggedInUser(u);
       const route = u.permissions?.view_dashboard ? '/dashboard' : '/tables';
 
-      // PASO 2: Verificar asistencia DESPUÉS de login exitoso
+      // Check attendance
       let needsClockIn = false;
       try {
-        const statusRes = await fetch(`${API_BASE}/api/attendance/check-status`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pin: currentPin }),
+        const r = await fetch(`${API_BASE}/api/attendance/check-status`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: savedPin }),
         });
-        if (statusRes.ok) {
-          const statusData = await statusRes.json();
-          needsClockIn = !statusData.clocked_in;
-          console.log('[LOGIN] Attendance check:', statusData);
-        }
-      } catch (attErr) {
-        console.error('[LOGIN] Attendance check failed:', attErr);
-      }
+        if (r.ok) { const d = await r.json(); needsClockIn = !d.clocked_in; }
+      } catch {}
 
-      // PASO 3: Renderizado condicional
-      console.log('[LOGIN] needsClockIn:', needsClockIn);
+      setLoading(false);
       if (needsClockIn) {
-        setAskClockIn({ user_name: u.name, route, pin: currentPin });
+        setAskClockIn({ user_name: u.name, route, pin: savedPin });
       } else {
-        loginInProgress.current = false;
         navigate(route);
       }
-    } catch (err) {
-      console.error('[LOGIN] Login failed:', err);
-      loginInProgress.current = false;
+    } catch {
+      setLoading(false);
+      setLoggedInUser(null);
       toast.error('PIN incorrecto');
       setPin('');
     }
-    setLoading(false);
   };
 
   const handleConfirmClockIn = async (doClockIn) => {
     const route = askClockIn?.route || '/dashboard';
-    loginInProgress.current = false;
     if (doClockIn && askClockIn?.pin) {
       try {
         const res = await fetch(`${API_BASE}/api/attendance/clock-in`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pin: askClockIn.pin }),
         });
         if (res.ok) {
@@ -122,8 +103,9 @@ export default function Login() {
         }
       } catch {}
     }
-    // "No" → borrar sesión y devolver a login
+    // "No" → clear session, back to login
     setAskClockIn(null);
+    setLoggedInUser(null);
     if (!doClockIn) {
       localStorage.removeItem('pos_token');
       window.location.href = '/login';
@@ -161,16 +143,19 @@ export default function Login() {
   };
 
 
+  const handleSubmitRef = useRef(null);
+  handleSubmitRef.current = handleSubmit;
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key >= '0' && e.key <= '9') setPin(prev => prev.length < 8 ? prev + e.key : prev);
       else if (e.key === 'Backspace') setPin(prev => prev.slice(0, -1));
-      else if (e.key === 'Enter') handleSubmit();
+      else if (e.key === 'Enter') { e.preventDefault(); handleSubmitRef.current(); }
       else if (e.key === 'Escape') setPin('');
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+  }, []);
 
   const digits = [1,2,3,4,5,6,7,8,9];
 
