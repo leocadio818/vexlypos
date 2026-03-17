@@ -30,6 +30,17 @@ const PRODUCT_ICON_MAP = {
   'cake': Cake,
 };
 
+// Auto-contrast: returns white or black text based on background luminance (WCAG algorithm)
+function getContrastText(hex) {
+  if (!hex) return '#FFFFFF';
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16) / 255;
+  const g = parseInt(c.substring(2, 4), 16) / 255;
+  const b = parseInt(c.substring(4, 6), 16) / 255;
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 0.55 ? '#1E293B' : '#FFFFFF';
+}
+
 export default function OrderScreen() {
   const { tableId } = useParams();
   const navigate = useNavigate();
@@ -1894,6 +1905,7 @@ export default function OrderScreen() {
                   '#EA580C', // Burnt Orange
                 ];
                 const color = cat.color || AUTO_PALETTE[idx % AUTO_PALETTE.length];
+                const textColor = getContrastText(color);
                 
                 let catTouchStartY = 0;
                 let catTouchMoved = false;
@@ -1906,10 +1918,10 @@ export default function OrderScreen() {
                     data-testid={`cat-card-${cat.id}`}
                     className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
                     style={{ backgroundColor: color }}>
-                    <span className={`font-bold leading-tight drop-shadow-sm ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`} style={{ color: cat.text_color || '#FFFFFF' }}>{cat.name}</span>
-                    <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`} style={{ color: (cat.text_color || '#FFFFFF') + 'B0' }}>{catProductCount} productos</span>
-                    <div className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`} style={{ backgroundColor: (cat.text_color || '#FFFFFF') + '30' }}>
-                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-[10px]' : 'text-xs md:text-[9px]'}`} style={{ color: cat.text_color || '#FFFFFF' }}>{catProductCount}</span>
+                    <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`} style={{ color: textColor, textShadow: textColor === '#FFFFFF' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none' }}>{cat.name}</span>
+                    <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`} style={{ color: textColor, opacity: 0.7 }}>{catProductCount} productos</span>
+                    <div className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`} style={{ backgroundColor: textColor === '#FFFFFF' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }}>
+                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-[10px]' : 'text-xs md:text-[9px]'}`} style={{ color: textColor }}>{catProductCount}</span>
                     </div>
                   </button>
                 );
@@ -2011,8 +2023,8 @@ export default function OrderScreen() {
                       </div>
                     ) : null}
                     {/* Nombre arriba, precio al fondo */}
-                    <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`} style={product.button_text_color && !isOutOfStock ? { color: product.button_text_color } : {}}>{product.name}</span>
-                    <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : product.button_text_color ? '' : 'text-primary'}`} style={product.button_text_color && !isOutOfStock ? { color: product.button_text_color } : {}}>{formatMoney(product.price)}</span>
+                    <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`} style={product.button_bg_color && !isOutOfStock ? { color: getContrastText(product.button_bg_color) } : {}}>{product.name}</span>
+                    <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : product.button_bg_color ? '' : 'text-primary'}`} style={product.button_bg_color && !isOutOfStock ? { color: getContrastText(product.button_bg_color) } : {}}>{formatMoney(product.price)}</span>
                     {hasModifiers && !isOutOfStock && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
                     
                     {/* Out of Stock Badge */}
