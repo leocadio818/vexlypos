@@ -391,7 +391,7 @@ export default function Layout() {
           
           {/* Business Day Indicator - Jornada de Trabajo */}
           <button
-            onClick={() => setBusinessDayDialogOpen(true)}
+            onClick={() => { if (hasPermission('close_day') || isAdmin) setBusinessDayDialogOpen(true); }}
             data-testid="business-day-sidebar-btn"
             title={businessDay ? `Jornada: ${businessDay.business_date}` : 'Sin jornada abierta'}
             className={`${isTablet ? 'w-12 h-14' : largeMode ? 'w-14 h-16' : 'w-12 h-14'} rounded-xl flex flex-col items-center justify-center mb-4 transition-all ${
