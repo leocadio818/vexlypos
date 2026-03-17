@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -53,7 +53,7 @@ export default function Login() {
   const handleDelete = () => setPin(prev => prev.slice(0, -1));
   const handleClear = () => setPin('');
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (pin.length < 1 || loading) return;
     setLoading(true);
     const savedPin = pin;
@@ -62,7 +62,6 @@ export default function Login() {
       setLoggedInUser(u);
       const route = u.permissions?.view_dashboard ? '/dashboard' : '/tables';
 
-      // Check attendance
       let needsClockIn = false;
       try {
         const r = await fetch(`${API_BASE}/api/attendance/check-status`, {
@@ -78,13 +77,13 @@ export default function Login() {
       } else {
         navigate(route);
       }
-    } catch {
+    } catch (err) {
       setLoading(false);
       setLoggedInUser(null);
       toast.error('PIN incorrecto');
       setPin('');
     }
-  };
+  }, [pin, loading, login, navigate, API_BASE]);
 
   const handleConfirmClockIn = async (doClockIn) => {
     const route = askClockIn?.route || '/dashboard';
@@ -143,19 +142,16 @@ export default function Login() {
   };
 
 
-  const handleSubmitRef = useRef(null);
-  handleSubmitRef.current = handleSubmit;
-
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key >= '0' && e.key <= '9') setPin(prev => prev.length < 8 ? prev + e.key : prev);
       else if (e.key === 'Backspace') setPin(prev => prev.slice(0, -1));
-      else if (e.key === 'Enter') { e.preventDefault(); handleSubmitRef.current(); }
+      else if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); }
       else if (e.key === 'Escape') setPin('');
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [handleSubmit]);
 
   const digits = [1,2,3,4,5,6,7,8,9];
 
@@ -170,6 +166,7 @@ export default function Login() {
     const glowSoft = isNeoDark ? '50' : '15';
 
     return (
+      <>
       <div
         className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
         style={{ background: bg }}
@@ -321,7 +318,37 @@ export default function Login() {
 
         </div>
       </div>
-    );
+
+      {/* Clock-In Modal - Neumorphic */}
+      {askClockIn && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" data-testid="clock-in-overlay">
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl">
+            <div className="w-24 h-24 rounded-full mx-auto mb-5 flex items-center justify-center bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-2 border-green-500/30">
+              <Clock size={48} className="text-green-500" />
+            </div>
+            <h2 className="font-oswald text-2xl font-bold mb-1 text-foreground">Bienvenido, {askClockIn?.user_name}!</h2>
+            <p className="text-muted-foreground mb-6 text-sm">No tienes un turno activo. Para acceder al sistema debes marcar tu entrada.</p>
+            <div className="flex flex-col gap-3">
+              <button onClick={() => handleConfirmClockIn(true)} className="w-full h-14 rounded-xl bg-green-600 text-white font-oswald font-bold text-lg transition-all active:scale-95 hover:bg-green-700 flex items-center justify-center gap-2" data-testid="confirm-clock-in-btn"><Clock size={20} /> Marcar Entrada</button>
+              <button onClick={() => handleConfirmClockIn(false)} className="w-full h-10 rounded-xl text-muted-foreground text-sm transition-all active:scale-95 hover:bg-muted" data-testid="skip-clock-in-btn">No</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {attendanceResult && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl">
+            <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${attendanceResult?.action === 'clock_in' ? 'bg-green-500/20' : 'bg-orange-500/20'}`}>
+              {attendanceResult?.action === 'clock_in' ? <Clock size={40} className="text-green-500" /> : <LogOutIcon size={40} className="text-orange-500" />}
+            </div>
+            <h2 className="font-oswald text-2xl font-bold mb-2 text-foreground">{attendanceResult?.action === 'clock_in' ? 'Entrada Registrada!' : 'Salida Registrada!'}</h2>
+            <p className="text-lg mb-1 text-foreground">{attendanceResult?.action === 'clock_in' ? 'Bienvenido' : 'Hasta luego'}, <strong>{attendanceResult?.user_name}</strong></p>
+            <p className="font-oswald text-3xl font-bold text-primary my-3">{attendanceResult?.time}</p>
+            <button onClick={() => { setAttendanceResult(null); if (postLoginRoute) { navigate(postLoginRoute); setPostLoginRoute(null); } }} className="mt-6 w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold text-lg transition-all active:scale-95">OK</button>
+          </div>
+        </div>
+      )}
+    </>);
   }
 
   // ═══ ORIGINAL GLASS LOGIN ═══
@@ -441,65 +468,69 @@ export default function Login() {
         .neon-submit-btn:hover:not(:disabled) { box-shadow: 0 0 20px rgba(255,102,0,0.5), 0 0 40px rgba(255,102,0,0.25), inset 0 0 20px rgba(255,102,0,0.15) !important; border-color: rgba(255,102,0,0.7) !important; background: rgba(255,102,0,0.08) !important; }
       `}</style>
 
-      {/* Ask Clock-In Modal */}
-      <Dialog open={!!askClockIn} onOpenChange={() => {}}>
-        <DialogContent className="max-w-sm text-center p-8" onPointerDownOutside={(e) => e.preventDefault()}>
-          <div className="w-24 h-24 rounded-full mx-auto mb-5 flex items-center justify-center bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-2 border-green-500/30">
-            <Clock size={48} className="text-green-500" />
-          </div>
-          <h2 className="font-oswald text-2xl font-bold mb-1">
-            Bienvenido, {askClockIn?.user_name}!
-          </h2>
-          <p className="text-muted-foreground mb-6 text-sm">
-            No tienes un turno activo. Para acceder al sistema debes marcar tu entrada.
-          </p>
-          <div className="flex flex-col gap-3">
-            <button onClick={() => handleConfirmClockIn(true)}
-              className="w-full h-14 rounded-xl bg-green-600 text-white font-oswald font-bold text-lg transition-all active:scale-95 hover:bg-green-700 flex items-center justify-center gap-2"
-              data-testid="confirm-clock-in-btn">
-              <Clock size={20} /> Marcar Entrada
-            </button>
-            <button onClick={() => handleConfirmClockIn(false)}
-              className="w-full h-10 rounded-xl text-muted-foreground text-sm transition-all active:scale-95 hover:bg-muted"
-              data-testid="skip-clock-in-btn">
-              No
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Attendance Result Modal */}
-      <Dialog open={!!attendanceResult} onOpenChange={() => setAttendanceResult(null)}>
-        <DialogContent className="max-w-sm text-center p-8">
-          <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${
-            attendanceResult?.action === 'clock_in' ? 'bg-green-500/20' : 'bg-orange-500/20'
-          }`}>
-            {attendanceResult?.action === 'clock_in' 
-              ? <Clock size={40} className="text-green-500" />
-              : <LogOutIcon size={40} className="text-orange-500" />
-            }
-          </div>
-          <h2 className="font-oswald text-2xl font-bold mb-2">
-            {attendanceResult?.action === 'clock_in' ? 'Entrada Registrada!' : 'Salida Registrada!'}
-          </h2>
-          <p className="text-lg mb-1">
-            {attendanceResult?.action === 'clock_in' ? 'Bienvenido' : 'Hasta luego'}, <strong>{attendanceResult?.user_name}</strong>
-          </p>
-          <p className="font-oswald text-3xl font-bold text-primary my-3">
-            {attendanceResult?.time}
-          </p>
-          {attendanceResult?.hours_display && (
-            <p className="text-sm text-muted-foreground">
-              Horas trabajadas: <strong>{attendanceResult.hours_display}</strong>
-              <br />Entrada: {attendanceResult.clock_in_time}
+      {/* Ask Clock-In Modal - Inline overlay (not Dialog portal) */}
+      {askClockIn && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" data-testid="clock-in-overlay">
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl">
+            <div className="w-24 h-24 rounded-full mx-auto mb-5 flex items-center justify-center bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-2 border-green-500/30">
+              <Clock size={48} className="text-green-500" />
+            </div>
+            <h2 className="font-oswald text-2xl font-bold mb-1 text-foreground">
+              Bienvenido, {askClockIn?.user_name}!
+            </h2>
+            <p className="text-muted-foreground mb-6 text-sm">
+              No tienes un turno activo. Para acceder al sistema debes marcar tu entrada.
             </p>
-          )}
-          <button onClick={() => { setAttendanceResult(null); if (postLoginRoute) { navigate(postLoginRoute); setPostLoginRoute(null); } }}
-            className="mt-6 w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold text-lg transition-all active:scale-95">
-            OK
-          </button>
-        </DialogContent>
-      </Dialog>
+            <div className="flex flex-col gap-3">
+              <button onClick={() => handleConfirmClockIn(true)}
+                className="w-full h-14 rounded-xl bg-green-600 text-white font-oswald font-bold text-lg transition-all active:scale-95 hover:bg-green-700 flex items-center justify-center gap-2"
+                data-testid="confirm-clock-in-btn">
+                <Clock size={20} /> Marcar Entrada
+              </button>
+              <button onClick={() => handleConfirmClockIn(false)}
+                className="w-full h-10 rounded-xl text-muted-foreground text-sm transition-all active:scale-95 hover:bg-muted"
+                data-testid="skip-clock-in-btn">
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attendance Result Modal - Inline overlay */}
+      {attendanceResult && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl">
+            <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${
+              attendanceResult?.action === 'clock_in' ? 'bg-green-500/20' : 'bg-orange-500/20'
+            }`}>
+              {attendanceResult?.action === 'clock_in' 
+                ? <Clock size={40} className="text-green-500" />
+                : <LogOutIcon size={40} className="text-orange-500" />
+              }
+            </div>
+            <h2 className="font-oswald text-2xl font-bold mb-2 text-foreground">
+              {attendanceResult?.action === 'clock_in' ? 'Entrada Registrada!' : 'Salida Registrada!'}
+            </h2>
+            <p className="text-lg mb-1 text-foreground">
+              {attendanceResult?.action === 'clock_in' ? 'Bienvenido' : 'Hasta luego'}, <strong>{attendanceResult?.user_name}</strong>
+            </p>
+            <p className="font-oswald text-3xl font-bold text-primary my-3">
+              {attendanceResult?.time}
+            </p>
+            {attendanceResult?.hours_display && (
+              <p className="text-sm text-muted-foreground">
+                Horas trabajadas: <strong>{attendanceResult.hours_display}</strong>
+                <br />Entrada: {attendanceResult.clock_in_time}
+              </p>
+            )}
+            <button onClick={() => { setAttendanceResult(null); if (postLoginRoute) { navigate(postLoginRoute); setPostLoginRoute(null); } }}
+              className="mt-6 w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold text-lg transition-all active:scale-95">
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
