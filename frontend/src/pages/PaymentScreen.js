@@ -1539,7 +1539,7 @@ export default function PaymentScreen() {
 
       {/* Customer Search Dialog - Glass effect */}
       <Dialog open={customerDialog} onOpenChange={setCustomerDialog}>
-        <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-md'} ${glassStyles.card} border-white/20 bg-slate-900/80`}>
+        <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-2xl'} ${glassStyles.card} border-white/20 bg-slate-900/80`}>
           <DialogHeader>
             <DialogTitle className="font-oswald text-white text-lg flex items-center justify-between">
               <span>Buscar Cliente</span>
