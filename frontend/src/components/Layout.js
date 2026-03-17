@@ -36,6 +36,7 @@ export default function Layout() {
   const [clockOutDialogOpen, setClockOutDialogOpen] = useState(false);
   const [clockOutLoading, setClockOutLoading] = useState(false);
   const [changePinOpen, setChangePinOpen] = useState(false);
+  const branding = (() => { try { return JSON.parse(localStorage.getItem('pos_branding')) || {}; } catch { return {}; } })();
   const [newPinValue, setNewPinValue] = useState('');
   const [businessDayDialogOpen, setBusinessDayDialogOpen] = useState(false);
   const [businessDay, setBusinessDay] = useState(null);
@@ -381,7 +382,11 @@ export default function Layout() {
             }`}
             style={{ backgroundColor: useGlassStyle ? 'transparent' : theme.accentColor }}
           >
-            <span className={`font-oswald font-bold ${useGlassStyle ? 'text-white' : 'text-primary-foreground'} ${isTablet ? 'text-base' : largeMode ? 'text-xl' : 'text-lg'}`}>RD</span>
+            {branding.logo_url ? (
+              <img src={`${process.env.REACT_APP_BACKEND_URL}${branding.logo_url}`} alt="Logo" className="w-full h-full object-contain rounded-lg" />
+            ) : (
+              <span className={`font-oswald font-bold ${useGlassStyle ? 'text-white' : 'text-primary-foreground'} ${isTablet ? 'text-base' : largeMode ? 'text-xl' : 'text-lg'}`}>{(branding.restaurant_name || 'POS').substring(0, 2).toUpperCase()}</span>
+            )}
           </button>
           
           {/* Business Day Indicator - Jornada de Trabajo */}
