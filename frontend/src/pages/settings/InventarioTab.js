@@ -483,7 +483,7 @@ export default function InventarioTab() {
 
       {/* Category Dialog */}
       <Dialog open={categoryDialog.open} onOpenChange={(o) => !o && setCategoryDialog({ ...categoryDialog, open: false })}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogContent className="sm:max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-oswald">{categoryDialog.editId ? 'Editar Categoría' : 'Nueva Categoría'}</DialogTitle>
           </DialogHeader>
