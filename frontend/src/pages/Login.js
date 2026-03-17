@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -17,8 +17,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [attendanceResult, setAttendanceResult] = useState(null);
   const [postLoginRoute, setPostLoginRoute] = useState(null);
-  const [askClockIn, setAskClockIn] = useState(null); // {user_name, route} — pregunta si desea marcar entrada
+  const [askClockIn, setAskClockIn] = useState(null);
   const [branding, setBranding] = useState({ restaurant_name: '', logo_url: '' });
+  const loginInProgress = useRef(false);
   const { login, user, ensureSeed } = useAuth();
   const { theme, isMinimalist, neoColors, isNeoDark } = useTheme();
   const navigate = useNavigate();
@@ -29,8 +30,8 @@ export default function Login() {
   }, [API_BASE]);
 
   useEffect(() => {
-    // Don't auto-navigate if showing welcome modal or clock-in question
-    if (attendanceResult || askClockIn) return;
+    // Don't auto-navigate if login is in progress, showing modal, or asking clock-in
+    if (loginInProgress.current || attendanceResult || askClockIn) return;
     if (user) navigate(user.permissions?.view_dashboard ? '/dashboard' : '/tables');
   }, [user, navigate, attendanceResult, askClockIn]);
 
@@ -53,6 +54,7 @@ export default function Login() {
   const handleSubmit = async () => {
     if (pin.length < 1) return;
     setLoading(true);
+    loginInProgress.current = true;
     const currentPin = pin;
     try {
       // PASO 1: Autenticación primero
@@ -79,9 +81,11 @@ export default function Login() {
       if (needsClockIn) {
         setAskClockIn({ user_name: u.name, route, pin: currentPin });
       } else {
+        loginInProgress.current = false;
         navigate(route);
       }
     } catch {
+      loginInProgress.current = false;
       toast.error('PIN incorrecto');
       setPin('');
     }
@@ -90,6 +94,7 @@ export default function Login() {
 
   const handleConfirmClockIn = async (doClockIn) => {
     const route = askClockIn?.route || '/dashboard';
+    loginInProgress.current = false;
     if (doClockIn && askClockIn?.pin) {
       try {
         const res = await fetch(`${API_BASE}/api/attendance/clock-in`, {
@@ -109,7 +114,6 @@ export default function Login() {
     // "No" → borrar sesión y devolver a login
     setAskClockIn(null);
     if (!doClockIn) {
-      try { const { logout: doLogout } = await import('@/context/AuthContext'); } catch {}
       localStorage.removeItem('pos_token');
       window.location.href = '/login';
       return;
