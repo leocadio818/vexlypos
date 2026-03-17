@@ -2139,6 +2139,7 @@ async def reservations_report(period: str = Query("month")):
             "area": resolved_area or "-",
             "status": r.get("status", ""),
             "notes": r.get("notes", ""),
+            "created_by": r.get("created_by", ""),
         })
     
     return {

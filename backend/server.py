@@ -812,6 +812,7 @@ async def create_reservation(input: dict):
         "status": "confirmed",
         "activation_minutes": activation_minutes,
         "tolerance_minutes": tolerance_minutes,
+        "created_by": input.get("created_by", ""),
         "created_at": now_iso()
     }
     await db.reservations.insert_one(doc)

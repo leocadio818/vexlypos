@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
 import { NeoDatePicker, NeoTimePicker } from '@/components/DateTimePicker';
+import { useAuth } from '@/context/AuthContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -16,6 +17,7 @@ const statusColors = { confirmed: 'bg-green-600', seated: 'bg-blue-600', cancell
 export default function Reservations() {
   const [reservations, setReservations] = useState([]);
   const [tables, setTables] = useState([]);
+  const { user } = useAuth();
   
   // Use local date, not UTC
   const getLocalDate = () => {
@@ -55,6 +57,7 @@ export default function Reservations() {
         ...dialog,
         reservation_date: dialog.date,
         reservation_time: dialog.time,
+        created_by: user?.name || '',
       }, { headers: hdrs() });
       toast.success('Reservacion creada');
       setDialog({ 

@@ -197,6 +197,7 @@ export default function ReservationsReport() {
                   <th className="text-left p-3">Mesas</th>
                   <th className="text-left p-3">Area</th>
                   <th className="text-left p-3">Estado</th>
+                  <th className="text-left p-3">Registrado por</th>
                   <th className="text-left p-3">Notas</th>
                 </tr>
               </thead>
@@ -215,6 +216,7 @@ export default function ReservationsReport() {
                         {STATUS_LABELS[r.status] || r.status}
                       </Badge>
                     </td>
+                    <td className="p-3 text-xs font-medium">{r.created_by || '—'}</td>
                     <td className="p-3 text-xs text-muted-foreground max-w-[150px] truncate">{r.notes || '-'}</td>
                   </tr>
                 ))}
