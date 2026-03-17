@@ -1,18 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { CalendarDays, Users, CheckCircle2, XCircle, Clock, UserCheck, TrendingUp, Phone } from 'lucide-react';
+import { CalendarDays, Users, CheckCircle2, XCircle, TrendingUp, Phone, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
 const formatPct = (v) => `${v}%`;
-
-const PERIODS = [
-  { id: 'today', label: 'Hoy' },
-  { id: 'week', label: '7 Dias' },
-  { id: 'month', label: '30 Dias' },
-  { id: 'quarter', label: '90 Dias' },
-];
 
 const STATUS_LABELS = {
   confirmed: 'Confirmada',
@@ -30,39 +20,14 @@ const STATUS_COLORS = {
   cancelled: 'bg-gray-500/20 text-gray-600',
 };
 
-export default function ReservationsReport() {
-  const [data, setData] = useState(null);
-  const [period, setPeriod] = useState('month');
-  const [loading, setLoading] = useState(true);
-
-  const fetchReport = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API}/reports/reservations?period=${period}`, { headers: hdrs() });
-      if (res.ok) setData(await res.json());
-    } catch {}
-    setLoading(false);
-  }, [period]);
-
-  useEffect(() => { fetchReport(); }, [fetchReport]);
-
-  if (loading) return <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
+export default function ReservationsReport({ data }) {
   if (!data) return <p className="text-center text-muted-foreground py-8">Sin datos</p>;
 
   const { summary, by_day, by_hour, by_status, top_customers, details } = data;
+  if (!summary) return <p className="text-center text-muted-foreground py-8">Sin datos</p>;
 
   return (
     <div className="space-y-5" data-testid="reservations-report">
-      {/* Period Selector */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {PERIODS.map(p => (
-          <button key={p.id} onClick={() => setPeriod(p.id)}
-            className={`px-4 py-2 rounded-xl font-oswald font-bold text-xs transition-all ${period === p.id ? 'bg-primary text-primary-foreground' : 'bg-card border border-border hover:border-primary/50'}`}>
-            {p.label}
-          </button>
-        ))}
-      </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div className="bg-card border border-border rounded-xl p-4 text-center">
@@ -94,7 +59,6 @@ export default function ReservationsReport() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* By Day of Week */}
         <div className="bg-card border border-border rounded-xl p-4">
           <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Reservaciones por Dia</h4>
           <ResponsiveContainer width="100%" height={200}>
@@ -107,7 +71,6 @@ export default function ReservationsReport() {
           </ResponsiveContainer>
         </div>
 
-        {/* By Status Pie */}
         <div className="bg-card border border-border rounded-xl p-4">
           <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Por Estado</h4>
           {summary.total > 0 ? (
@@ -137,7 +100,6 @@ export default function ReservationsReport() {
 
       {/* By Hour + Top Customers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* By Hour */}
         <div className="bg-card border border-border rounded-xl p-4">
           <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Horas Mas Populares</h4>
           {by_hour.length > 0 ? (
@@ -152,7 +114,6 @@ export default function ReservationsReport() {
           ) : <p className="text-sm text-muted-foreground text-center py-8">Sin datos</p>}
         </div>
 
-        {/* Top Customers */}
         <div className="bg-card border border-border rounded-xl p-4">
           <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">Top Clientes</h4>
           {top_customers.length > 0 ? (

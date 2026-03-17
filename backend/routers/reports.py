@@ -2037,25 +2037,36 @@ async def get_discounts_report(
 # ═══════════════════════════════════════════════════════════════
 
 @router.get("/reservations")
-async def reservations_report(period: str = Query("month")):
+async def reservations_report(
+    period: str = Query("month"),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None)
+):
     """Reservation analytics: KPIs, by day of week, top customers, detailed list"""
-    now = datetime.now(timezone.utc)
-    
-    if period == "today":
-        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == "week":
-        start = now - timedelta(days=7)
-    elif period == "month":
-        start = now - timedelta(days=30)
-    elif period == "quarter":
-        start = now - timedelta(days=90)
+    if date_from and date_to:
+        start_str = date_from
+        end_str = date_to
     else:
-        start = now - timedelta(days=30)
+        now = datetime.now(timezone.utc)
+        if period == "today":
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == "week":
+            start = now - timedelta(days=7)
+        elif period == "month":
+            start = now - timedelta(days=30)
+        elif period == "quarter":
+            start = now - timedelta(days=90)
+        else:
+            start = now - timedelta(days=30)
+        start_str = start.strftime("%Y-%m-%d")
+        end_str = None
     
-    start_str = start.strftime("%Y-%m-%d")
+    query = {"reservation_date": {"$gte": start_str}}
+    if end_str:
+        query["reservation_date"]["$lte"] = end_str
     
     all_reservations = await db.reservations.find(
-        {"reservation_date": {"$gte": start_str}}, {"_id": 0}
+        query, {"_id": 0}
     ).sort("reservation_date", -1).to_list(1000)
     
     total = len(all_reservations)

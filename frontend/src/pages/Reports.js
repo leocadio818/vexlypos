@@ -533,13 +533,7 @@ export default function Reports() {
     setLoading(true);
     setSelectedReport(reportId);
     
-    // Self-managed reports (handle their own data fetching)
-    if (reportId === 'reservations') {
-      setReportData(null);
-      setLoading(false);
-      return;
-    }
-    
+    // All reports use global date filters
     const endpoints = {
       'daily-close': '/reports/daily-sales',
       'cash-close': '/reports/cash-close',
@@ -562,6 +556,7 @@ export default function Reports() {
       'system-audit': '/reports/system-audit',
       'stock-adjustments': '/reports/stock-adjustments',
       'discounts': '/reports/discounts',
+      'reservations': '/reports/reservations',
     };
     
     const endpoint = endpoints[reportId];
@@ -652,7 +647,7 @@ export default function Reports() {
         </div>
       );
     }
-    if (!reportData && selectedReport !== 'reservations') {
+    if (!reportData) {
       return (
         <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
           <AlertTriangle size={48} className="mb-4 opacity-50" />
@@ -705,7 +700,7 @@ export default function Reports() {
       case 'discounts':
         return <DiscountsReport data={reportData} />;
       case 'reservations':
-        return <ReservationsReport />;
+        return <ReservationsReport data={reportData} />;
       default:
         return <pre className="text-xs overflow-auto">{JSON.stringify(reportData, null, 2)}</pre>;
     }
