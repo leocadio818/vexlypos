@@ -471,7 +471,7 @@ export default function Login() {
             <button onClick={() => handleConfirmClockIn(false)}
               className="w-full h-10 rounded-xl text-muted-foreground text-sm transition-all active:scale-95 hover:bg-muted"
               data-testid="skip-clock-in-btn">
-              No, volver al Login
+              No
             </button>
           </div>
         </DialogContent>
