@@ -18,7 +18,10 @@ export default function Login() {
   const [attendanceResult, setAttendanceResult] = useState(null);
   const [postLoginRoute, setPostLoginRoute] = useState(null);
   const [askClockIn, setAskClockIn] = useState(null);
-  const [branding, setBranding] = useState({ restaurant_name: '', logo_url: '' });
+  const [branding, setBranding] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pos_branding')) || { restaurant_name: '', logo_url: '' }; }
+    catch { return { restaurant_name: '', logo_url: '' }; }
+  });
   const loginInProgress = useRef(false);
   const { login, user, ensureSeed } = useAuth();
   const { theme, isMinimalist, neoColors, isNeoDark } = useTheme();
@@ -26,7 +29,10 @@ export default function Login() {
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/system/branding`).then(r => r.json()).then(d => setBranding(d)).catch(() => {});
+    fetch(`${API_BASE}/api/system/branding`).then(r => r.json()).then(d => {
+      setBranding(d);
+      localStorage.setItem('pos_branding', JSON.stringify(d));
+    }).catch(() => {});
   }, [API_BASE]);
 
   useEffect(() => {
