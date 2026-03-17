@@ -238,6 +238,7 @@ export default function Layout() {
     }
     // Only show Caja for cashiers and admins
     if (item.to === '/cash-register') return canAccessCash;
+    if (item.to === '/kitchen') return !isCashier;
     return true;
   });
 
