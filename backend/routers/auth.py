@@ -51,7 +51,7 @@ DEFAULT_PERMISSIONS = {
     },
     "waiter": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
-        "split_bill": True, "manage_reservations": True, "manage_customers": True,
+        "split_bill": True, "manage_reservations": False, "manage_customers": True,
         "access_all_tables": False,
         "reprint_receipt": False,
         "can_manage_tax_override": False,

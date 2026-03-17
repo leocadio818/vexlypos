@@ -594,18 +594,6 @@ export default function Layout() {
 
           {/* Bottom section — large touch-friendly buttons */}
           <div className="flex flex-col items-center gap-4 mt-auto pb-2">
-            {/* Clock Out button - visible only for non-cashier roles */}
-            {user && !hasPermission('close_shift') && (
-              <button
-                onClick={() => setClockOutDialogOpen(true)}
-                className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 active:scale-95"
-                title="Marcar Salida"
-                data-testid="sidebar-clock-out-btn"
-              >
-                <LogOutIcon size={20} />
-                <span className="text-[8px] font-bold">Salida</span>
-              </button>
-            )}
             
             {/* Connection Status */}
             <div className="flex flex-col items-center gap-1" data-testid="status-indicators">
@@ -671,6 +659,13 @@ export default function Layout() {
                       data-testid="change-pin-btn">
                       <Lock size={14} /> Cambiar PIN
                     </button>
+                    {!hasPermission('close_shift') && (
+                      <button onClick={() => setClockOutDialogOpen(true)}
+                        className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-500/10 transition-all"
+                        data-testid="sidebar-clock-out-btn">
+                        <LogOutIcon size={14} /> Marcar Salida
+                      </button>
+                    )}
                     <button onClick={async () => {
                       try {
                         const token = localStorage.getItem('pos_token');
