@@ -1875,8 +1875,25 @@ export default function OrderScreen() {
               style={{ gridTemplateColumns: `repeat(${Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}
               data-testid="category-grid"
             >
-              {categories.map(cat => {
+              {categories.map((cat, idx) => {
                 const catProductCount = products.filter(p => p.category_id === cat.id).length;
+                
+                // Smart color palette — beautiful, solid, distinguishable
+                const AUTO_PALETTE = [
+                  '#2563EB', // Royal Blue
+                  '#DC2626', // Cherry Red
+                  '#059669', // Emerald
+                  '#D97706', // Amber
+                  '#7C3AED', // Violet
+                  '#DB2777', // Rose
+                  '#0891B2', // Cyan
+                  '#CA8A04', // Gold
+                  '#4F46E5', // Indigo
+                  '#E11D48', // Crimson
+                  '#0D9488', // Teal
+                  '#EA580C', // Burnt Orange
+                ];
+                const color = cat.color || AUTO_PALETTE[idx % AUTO_PALETTE.length];
                 
                 let catTouchStartY = 0;
                 let catTouchMoved = false;
@@ -1887,12 +1904,12 @@ export default function OrderScreen() {
                     onTouchStart={(e) => { catTouchStartY = e.touches?.[0]?.clientY || 0; catTouchMoved = false; }}
                     onTouchMove={(e) => { if (Math.abs((e.touches?.[0]?.clientY || 0) - catTouchStartY) > 10) catTouchMoved = true; }}
                     data-testid={`cat-card-${cat.id}`}
-                    className={`relative rounded-xl border-2 border-border hover:border-primary/50 transition-all active:scale-[0.97] ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
-                    style={{ backgroundColor: cat.color + (isMinimalist ? 'A0' : '15'), borderColor: cat.color + (isMinimalist ? 'DD' : '40') }}>
-                    <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`} style={{ color: cat.color }}>{cat.name}</span>
-                    <span className={`text-muted-foreground ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`}>{catProductCount} productos</span>
-                    <div className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`} style={{ backgroundColor: cat.color + '20' }}>
-                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-[10px]' : 'text-xs md:text-[9px]'}`} style={{ color: cat.color }}>{catProductCount}</span>
+                    className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
+                    style={{ backgroundColor: color }}>
+                    <span className={`font-bold leading-tight text-white drop-shadow-sm ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>{cat.name}</span>
+                    <span className={`text-white/70 ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`}>{catProductCount} productos</span>
+                    <div className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20 backdrop-blur-sm`}>
+                      <span className={`font-oswald font-bold text-white ${largeMode ? 'text-sm md:text-[10px]' : 'text-xs md:text-[9px]'}`}>{catProductCount}</span>
                     </div>
                   </button>
                 );
