@@ -1908,7 +1908,7 @@ export default function OrderScreen() {
                     style={{ backgroundColor: color }}>
                     <span className={`font-bold leading-tight drop-shadow-sm ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`} style={{ color: cat.text_color || '#FFFFFF' }}>{cat.name}</span>
                     <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`} style={{ color: (cat.text_color || '#FFFFFF') + 'B0' }}>{catProductCount} productos</span>
-                    <div className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20 backdrop-blur-sm`}>
+                    <div className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`} style={{ backgroundColor: (cat.text_color || '#FFFFFF') + '30' }}>
                       <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-[10px]' : 'text-xs md:text-[9px]'}`} style={{ color: cat.text_color || '#FFFFFF' }}>{catProductCount}</span>
                     </div>
                   </button>
