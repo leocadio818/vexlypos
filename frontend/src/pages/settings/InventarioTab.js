@@ -492,9 +492,25 @@ export default function InventarioTab() {
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" placeholder="Ej: Bebidas" />
             </div>
             <div>
-              <label className="text-sm font-medium">Color</label>
-              <input type="color" value={categoryDialog.color} onChange={e => setCategoryDialog({ ...categoryDialog, color: e.target.value })}
-                className="w-full h-10 mt-1 rounded-lg border border-border cursor-pointer" />
+              <label className="text-sm font-medium mb-2 block">Color</label>
+              <div className="grid grid-cols-6 gap-2 mb-2">
+                {[
+                  '#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED', '#DB2777',
+                  '#0891B2', '#CA8A04', '#4F46E5', '#E11D48', '#0D9488', '#EA580C',
+                  '#1D4ED8', '#9333EA', '#16A34A', '#B91C1C', '#0284C7', '#C026D3',
+                ].map(c => (
+                  <button key={c} type="button" onClick={() => setCategoryDialog({ ...categoryDialog, color: c })}
+                    className={`h-10 rounded-lg transition-all hover:scale-110 active:scale-95 ${categoryDialog.color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-background scale-110' : ''}`}
+                    style={{ backgroundColor: c }} />
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="color" value={categoryDialog.color} onChange={e => setCategoryDialog({ ...categoryDialog, color: e.target.value })}
+                  className="w-10 h-10 rounded-lg border border-border cursor-pointer shrink-0" />
+                <div className="flex-1 h-10 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: categoryDialog.color }}>
+                  Vista previa
+                </div>
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium">Canal de Impresión</label>
