@@ -56,9 +56,11 @@ export default function Login() {
     setLoading(true);
     loginInProgress.current = true;
     const currentPin = pin;
+    console.log('[LOGIN] Starting login with PIN length:', currentPin.length);
     try {
       // PASO 1: Autenticación primero
       const u = await login(currentPin);
+      console.log('[LOGIN] Login OK:', u.name);
       const route = u.permissions?.view_dashboard ? '/dashboard' : '/tables';
 
       // PASO 2: Verificar asistencia DESPUÉS de login exitoso
@@ -72,19 +74,22 @@ export default function Login() {
         if (statusRes.ok) {
           const statusData = await statusRes.json();
           needsClockIn = !statusData.clocked_in;
+          console.log('[LOGIN] Attendance check:', statusData);
         }
-      } catch {
-        // Si falla la consulta de asistencia, NO bloquear
+      } catch (attErr) {
+        console.error('[LOGIN] Attendance check failed:', attErr);
       }
 
       // PASO 3: Renderizado condicional
+      console.log('[LOGIN] needsClockIn:', needsClockIn);
       if (needsClockIn) {
         setAskClockIn({ user_name: u.name, route, pin: currentPin });
       } else {
         loginInProgress.current = false;
         navigate(route);
       }
-    } catch {
+    } catch (err) {
+      console.error('[LOGIN] Login failed:', err);
       loginInProgress.current = false;
       toast.error('PIN incorrecto');
       setPin('');
