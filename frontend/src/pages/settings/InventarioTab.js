@@ -344,7 +344,7 @@ export default function InventarioTab() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {prods.map(prod => (
-                    <a key={prod.id} href={`/product/${prod.id}?from=products`}
+                    <Link key={prod.id} to={`/product/${prod.id}?from=products`}
                       className="flex items-center justify-between p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors" data-testid={`product-${prod.id}`}>
                       <div>
                         <span className="font-semibold text-sm">{prod.name}</span>
@@ -354,7 +354,7 @@ export default function InventarioTab() {
                         <span className="font-oswald font-bold text-primary">${(prod.price || prod.price_a || 0).toLocaleString()}</span>
                         <Pencil size={14} className="text-muted-foreground" />
                       </div>
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>
