@@ -394,7 +394,7 @@ export default function Layout() {
             onClick={() => setBusinessDayDialogOpen(true)}
             data-testid="business-day-sidebar-btn"
             title={businessDay ? `Jornada: ${businessDay.business_date}` : 'Sin jornada abierta'}
-            className={`${isTablet ? 'w-10 h-10' : largeMode ? 'w-12 h-12' : 'w-10 h-10'} rounded-lg flex flex-col items-center justify-center mb-4 transition-all ${
+            className={`${isTablet ? 'w-12 h-14' : largeMode ? 'w-14 h-16' : 'w-12 h-14'} rounded-xl flex flex-col items-center justify-center mb-4 transition-all ${
               businessDayLoading ? 'animate-pulse' : ''
             } ${
               businessDay 
@@ -407,12 +407,12 @@ export default function Layout() {
             }`}
           >
             {businessDay ? (
-              <Sun size={isTablet ? 14 : largeMode ? 18 : 16} className="text-green-400" />
+              <Sun size={isTablet ? 16 : largeMode ? 20 : 18} className="text-green-400" />
             ) : (
-              <Moon size={isTablet ? 14 : largeMode ? 18 : 16} className="text-red-400" />
+              <Moon size={isTablet ? 16 : largeMode ? 20 : 18} className="text-red-400" />
             )}
             {businessDay && (
-              <span className={`font-mono ${isTablet ? 'text-[6px]' : largeMode ? 'text-[8px]' : 'text-[7px]'} text-green-400 mt-0.5`}>
+              <span className={`font-mono font-bold ${isTablet ? 'text-[9px]' : largeMode ? 'text-[11px]' : 'text-[10px]'} text-green-400 mt-0.5`}>
                 {businessDay.business_date?.slice(5)}
               </span>
             )}
