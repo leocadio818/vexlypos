@@ -196,3 +196,19 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Category color picker: 18 preset colors + custom picker + text color picker + live preview
 - "Buscar Cliente" modal: wider (`max-w-2xl`) for better spacing
 - Category edit modal: scrollable (`max-h-[90vh] overflow-y-auto`)
+
+### Reservations: "Registrado por" + Global Filters (2026-03-17)
+- `created_by` field saved on every new reservation (user name from session)
+- Backend `POST /reservations` stores `created_by: input.get("created_by", "")`
+- Report detail table shows "Registrado por" column
+- Existing reservations without `created_by` were backfilled with "Admin"
+- Report now uses GLOBAL date filters (Jornada, Ayer, Esta Semana, etc.) — NOT its own period buttons
+- Backend `GET /reports/reservations` accepts `date_from` + `date_to` parameters
+- ReservationsReport.jsx receives `data` prop like all other reports (no more self-managed fetch)
+- DO NOT: Re-add internal period buttons. DO NOT: Make reservations a "self-managed" report.
+
+### Table Movements Audit (2026-03-17)
+- `POST /orders/{id}/move` now logs to `table_movements` collection (single + merge)
+- Endpoint `GET /reports/table-movements` supports `date_from` + `date_to` range filter
+- Both simple moves and merges are logged with user, source/target table, type
+- Import: `from routers.tables import log_table_movement` in orders.py
