@@ -1906,10 +1906,10 @@ export default function OrderScreen() {
                     data-testid={`cat-card-${cat.id}`}
                     className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
                     style={{ backgroundColor: color }}>
-                    <span className={`font-bold leading-tight text-white drop-shadow-sm ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>{cat.name}</span>
-                    <span className={`text-white/70 ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`}>{catProductCount} productos</span>
+                    <span className={`font-bold leading-tight drop-shadow-sm ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`} style={{ color: cat.text_color || '#FFFFFF' }}>{cat.name}</span>
+                    <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`} style={{ color: (cat.text_color || '#FFFFFF') + 'B0' }}>{catProductCount} productos</span>
                     <div className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20 backdrop-blur-sm`}>
-                      <span className={`font-oswald font-bold text-white ${largeMode ? 'text-sm md:text-[10px]' : 'text-xs md:text-[9px]'}`}>{catProductCount}</span>
+                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-[10px]' : 'text-xs md:text-[9px]'}`} style={{ color: cat.text_color || '#FFFFFF' }}>{catProductCount}</span>
                     </div>
                   </button>
                 );
@@ -1985,9 +1985,12 @@ export default function OrderScreen() {
                       isOutOfStock 
                         ? 'bg-card/50 border-red-500/50 opacity-60 cursor-not-allowed' 
                         : isLowStock
-                          ? 'bg-card border-yellow-500/50 hover:border-yellow-500 active:scale-[0.97]'
-                          : 'bg-card border-border hover:border-primary/50 active:scale-[0.97]'
+                          ? 'border-yellow-500/50 hover:border-yellow-500 active:scale-[0.97]'
+                          : product.button_bg_color
+                            ? 'border-transparent hover:brightness-110 active:scale-[0.97] shadow-md'
+                            : 'bg-card border-border hover:border-primary/50 active:scale-[0.97]'
                     }`}
+                    style={product.button_bg_color && !isOutOfStock ? { backgroundColor: product.button_bg_color } : {}}
                   >
                     {/* Imagen o Icono del producto */}
                     {(product.image_url || product.icon) ? (
@@ -2008,8 +2011,8 @@ export default function OrderScreen() {
                       </div>
                     ) : null}
                     {/* Nombre arriba, precio al fondo */}
-                    <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
-                    <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : 'text-primary'}`}>{formatMoney(product.price)}</span>
+                    <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`} style={product.button_text_color && !isOutOfStock ? { color: product.button_text_color } : {}}>{product.name}</span>
+                    <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : product.button_text_color ? '' : 'text-primary'}`} style={product.button_text_color && !isOutOfStock ? { color: product.button_text_color } : {}}>{formatMoney(product.price)}</span>
                     {hasModifiers && !isOutOfStock && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
                     
                     {/* Out of Stock Badge */}

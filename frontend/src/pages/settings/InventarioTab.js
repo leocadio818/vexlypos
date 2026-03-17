@@ -39,7 +39,7 @@ export default function InventarioTab() {
   const [taxConfigs, setTaxConfigs] = useState([]);
   
   // Dialogs
-  const [categoryDialog, setCategoryDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '', tax_ids: [] });
+  const [categoryDialog, setCategoryDialog] = useState({ open: false, name: '', color: '#FF6600', text_color: '#FFFFFF', editId: null, print_channel: '', tax_ids: [] });
   const [warehouseDialog, setWarehouseDialog] = useState({ open: false, name: '', location: '', editId: null });
 
   // Modifier state - uses modifier-groups API (config.py)
@@ -129,7 +129,7 @@ export default function InventarioTab() {
   const handleSaveCategory = async () => {
     if (!categoryDialog.name.trim()) return;
     try {
-      const data = { name: categoryDialog.name, color: categoryDialog.color };
+      const data = { name: categoryDialog.name, color: categoryDialog.color, text_color: categoryDialog.text_color };
       let categoryId = categoryDialog.editId;
       
       if (categoryDialog.editId) {
@@ -174,6 +174,7 @@ export default function InventarioTab() {
           open: true, 
           name: cat.name, 
           color: cat.color || '#FF6600', 
+          text_color: cat.text_color || '#FFFFFF',
           editId: cat.id, 
           print_channel: channel,
           tax_ids: taxRes.data?.tax_ids || []
@@ -183,6 +184,7 @@ export default function InventarioTab() {
           open: true, 
           name: cat.name, 
           color: cat.color || '#FF6600', 
+          text_color: cat.text_color || '#FFFFFF',
           editId: cat.id, 
           print_channel: categoryChannels.find(cc => cc.category_id === cat.id)?.channel_code || '',
           tax_ids: []
@@ -492,7 +494,7 @@ export default function InventarioTab() {
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" placeholder="Ej: Bebidas" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Color</label>
+              <label className="text-sm font-medium mb-2 block">Color de Fondo</label>
               <div className="grid grid-cols-6 gap-2 mb-2">
                 {[
                   '#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED', '#DB2777',
@@ -507,9 +509,25 @@ export default function InventarioTab() {
               <div className="flex items-center gap-2">
                 <input type="color" value={categoryDialog.color} onChange={e => setCategoryDialog({ ...categoryDialog, color: e.target.value })}
                   className="w-10 h-10 rounded-lg border border-border cursor-pointer shrink-0" />
-                <div className="flex-1 h-10 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: categoryDialog.color }}>
-                  Vista previa
-                </div>
+                <span className="text-xs text-muted-foreground">Personalizado</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Color de Texto</label>
+              <div className="flex gap-2 mb-2">
+                {['#FFFFFF', '#000000', '#1E293B', '#F8FAFC', '#FDE68A'].map(c => (
+                  <button key={c} type="button" onClick={() => setCategoryDialog({ ...categoryDialog, text_color: c })}
+                    className={`w-10 h-10 rounded-lg border-2 transition-all hover:scale-110 active:scale-95 ${categoryDialog.text_color === c ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : 'border-border'}`}
+                    style={{ backgroundColor: c }} />
+                ))}
+                <input type="color" value={categoryDialog.text_color} onChange={e => setCategoryDialog({ ...categoryDialog, text_color: e.target.value })}
+                  className="w-10 h-10 rounded-lg border border-border cursor-pointer" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Vista Previa</label>
+              <div className="h-14 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg" style={{ backgroundColor: categoryDialog.color, color: categoryDialog.text_color }}>
+                {categoryDialog.name || 'Categoría'}
               </div>
             </div>
             <div>
