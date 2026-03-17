@@ -152,3 +152,47 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Tab title: "VexlyPOS" (set in index.html)
 - "Made with Emergent" badge: REMOVED (approved by Emergent support - Jen)
 - Demo PINs section: REMOVED from both Neumorphic and Glass login versions
+
+### 🔒 Employee Attendance / Clock-In Flow (LOCKED - 2026-03-17)
+- Login flow: authenticate FIRST → check attendance → show modal or navigate
+- `useCallback` for handleSubmit (React 19 stale closure fix)
+- Modals are INLINE overlays (`fixed z-[9999]`), NOT shadcn Dialog (portal gets hidden by glass backdrop-blur)
+- Both Neumorphic AND Glass returns have their own copy of the modals
+- Keyboard listener uses `[handleSubmit]` dependency array
+- No turno activo → Modal "Bienvenido! ¿Deseas marcar entrada?" → "Marcar Entrada" / "No"
+- "No" → clears token + `window.location.href = '/login'` (cannot enter system without clock-in)
+- "Marcar Entrada" → clock-in API → "Entrada Registrada!" modal → navigate to dashboard
+- Con turno activo → navigate directo (no modal)
+- Cajeros: auto clock-out en Cierre Z (CashRegister.js)
+- Meseros: botón "Marcar Salida" dentro del popover del usuario (Layout.js), NO en sidebar
+- Backend: `POST /api/attendance/check-status` (no modifica nada, solo verifica)
+- Múltiples turnos por día: si turno mañana es COMPLETED, turno tarde = nuevo ACTIVE
+- DO NOT: Use Dialog component for login modals. DO NOT remove useCallback. DO NOT put clock-in check BEFORE login.
+
+### 🔒 Sidebar Permissions (LOCKED - 2026-03-17)
+- Meseros: NO ven Reservas (`manage_reservations: false`), NO ven Config (0 config perms)
+- Cajeros: NO ven Cocina (`!isCashier` filter)
+- Jornada button: visible para todos, clickeable SOLO para Admin + roles con `close_day` permission
+- "Marcar Salida": dentro del popover del usuario, solo visible para no-cajeros
+
+### 🔒 Auto-Contrast System for Category/Product Cards (LOCKED - 2026-03-17)
+- `getContrastText(hex)` function in OrderScreen.js — WCAG luminance algorithm
+- Returns `#FFFFFF` (white) for dark backgrounds, `#1E293B` (dark) for light backgrounds
+- Applied via `data-contrast="light|dark"` attribute on card buttons
+- CSS in `index.css` uses `!important` — IMPOSSIBLE to override by any theme:
+  - `[data-contrast="light"] * { color: #FFFFFF !important; }`
+  - `[data-contrast="dark"] * { color: #1E293B !important; }`
+  - `[data-contrast="light"] { text-shadow: 0 1px 2px rgba(0,0,0,0.3); }`
+- Badge counters use `[data-badge]` with `!important` background + backdrop-blur
+- AUTO_PALETTE: 12 curated colors auto-assigned to categories without custom color
+- Works identically in Glass, Neumorphic Light, and Neumorphic Dark themes
+- DO NOT: Use inline `style={{ color }}` for card text. ALWAYS use data-contrast attribute.
+- DO NOT: Remove the `!important` rules from index.css.
+
+### Branding Enhancements (2026-03-17)
+- Sidebar logo: shows real restaurant logo from `pos_branding` localStorage (Layout.js)
+- Branding cached in localStorage (`pos_branding`) for instant render on refresh (no flash)
+- Business Day button: larger (`w-12 h-14`), bolder date text (`text-[10px] font-bold`)
+- Category color picker: 18 preset colors + custom picker + text color picker + live preview
+- "Buscar Cliente" modal: wider (`max-w-2xl`) for better spacing
+- Category edit modal: scrollable (`max-h-[90vh] overflow-y-auto`)
