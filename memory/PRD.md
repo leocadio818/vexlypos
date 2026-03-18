@@ -238,4 +238,15 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Los Canales de Impresión ya existen en Config > Impresión
 - Cada categoría ya se asigna a un canal
 - Falta: backend envíe el canal en el job de impresión + agente lea el canal y envíe a la IP correcta
+### PENDIENTE — Integración de IA (Próxima Sesión)
+- Asistente inteligente para VexlyPOS usando GPT-4o mini via Emergent Universal Key
+- Casos de uso priorizados:
+  1. Asistente de Inventario: predice agotamiento, sugiere pedidos
+  2. Análisis de Ventas en lenguaje natural: "¿Cuál fue mi producto más vendido?"
+  3. Sugerencias de Menú: combos, productos poco vendidos
+  4. Predicción de Demanda: personal necesario por día
+- Modelo recomendado: GPT-4o mini (económico, ~$10-20/mes de saldo)
+- Requiere: usuario agregue saldo en Perfil > Universal Key > Add Balance
+- Usar: emergentintegrations library + integration_playbook_expert_v2
+
 
