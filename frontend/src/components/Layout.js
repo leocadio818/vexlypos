@@ -835,16 +835,6 @@ export default function Layout() {
                   <span className="font-semibold text-sm">Config</span>
                 </button>
               )}
-              {hasPermission('view_reports') && (
-                <button onClick={() => { setOptionsMenuOpen(false); navigate('/reports'); }}
-                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-95"
-                  data-testid="opt-reportes">
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-                    <Receipt size={20} className="text-cyan-500" />
-                  </div>
-                  <span className="font-semibold text-sm">Reportes</span>
-                </button>
-              )}
             </div>
             <button onClick={() => setOptionsMenuOpen(false)}
               className="mt-5 w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-all">
