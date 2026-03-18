@@ -75,9 +75,9 @@ async def dashboard():
         jornada_start = today_start
         jornada_date = today_start[:10]
     
-    # Get ALL paid bills since the jornada started (not by calendar date)
-    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
-    today_bills = [b for b in bills if b.get("paid_at", "") >= jornada_start]
+    # Get paid bills since the jornada started (filtered at DB level)
+    bills = await db.bills.find({"status": "paid", "paid_at": {"$gte": jornada_start}}, {"_id": 0}).to_list(5000)
+    today_bills = bills
     
     # Payment methods for cash/card breakdown
     payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
@@ -138,7 +138,7 @@ async def dashboard():
     total_tables = len(tables)
     
     # Tables with active orders (regardless of table status)
-    orders = await db.orders.find({"status": {"$nin": ["delivered", "cancelled", "paid", "closed"]}}, {"_id": 0}).to_list(500)
+    orders = await db.orders.find({"status": {"$nin": ["delivered", "cancelled", "paid", "closed"]}}, {"_id": 0, "table_id": 1, "status": 1}).to_list(500)
     active_orders = len(orders)
     active_table_ids = set(o.get("table_id") for o in orders if o.get("table_id"))
     
@@ -150,7 +150,7 @@ async def dashboard():
     open_shifts = len(shifts)
     
     # Inventory alerts (low stock) - check directly on ingredients
-    ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
+    ingredients = await db.ingredients.find({}, {"_id": 0, "id": 1, "min_stock": 1, "current_stock": 1}).to_list(500)
     inventory_alerts = 0
     for ing in ingredients:
         min_stock = ing.get("min_stock", 0) or 0
@@ -188,7 +188,7 @@ async def dashboard():
     open_tables_list = []
     active_tables = [t for t in tables if t.get("status") in ("occupied", "billed") or t["id"] in active_table_ids]
     if active_tables:
-        all_orders = await db.orders.find({"status": {"$nin": ["cancelled", "paid", "closed"]}}, {"_id": 0}).to_list(500)
+        all_orders = await db.orders.find({"status": {"$nin": ["cancelled", "paid", "closed"]}}, {"_id": 0, "table_id": 1, "items": 1, "status": 1, "created_at": 1}).to_list(500)
         for t in active_tables:
             t_id = t.get("id", "")
             t_num = t.get("number", "?")

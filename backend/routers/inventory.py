@@ -66,7 +66,7 @@ def get_user_from_request(request: Request) -> tuple:
 @router.get("/ingredients")
 async def list_ingredients(category: Optional[str] = Query(None)):
     query = {"category": category} if category else {}
-    return await db.ingredients.find(query, {"_id": 0}).to_list(500)
+    return await db.ingredients.find(query, {"_id": 0}).to_list(1000)
 
 @router.get("/ingredients/{ingredient_id}")
 async def get_ingredient(ingredient_id: str):
