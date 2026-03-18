@@ -103,7 +103,9 @@ const HIDDEN_COLUMNS = [
   'warehouse_id', 'supplier_id', 'ingredient_id', 'id', 'reference_id',
   '_id', 'user_id', 'product_id', 'category_id', 'sparkline',
   'order_id', 'item_id', 'item_ids', 'requested_by_id', 'authorized_by_id',
-  'reason_id', 'void_type', 'required_manager_auth', 'business_date'
+  'reason_id', 'void_type', 'required_manager_auth', 'business_date',
+  'waiter_id', 'bill_id', 'table_id', 'session_id', 'movement_id',
+  'customer_id', 'area_id', 'terminal_id', 'opened_by', 'closed_by'
 ];
 
 // Column name translations for cleaner display
@@ -151,6 +153,23 @@ const COLUMN_TRANSLATIONS = {
   'status': 'Estado',
   'created_by': 'Registrado por',
   'notes': 'Notas',
+  'total_bills': 'Total Facturas',
+  'total_sales': 'Total Ventas',
+  'total_tips': 'Total Propinas',
+  'total_itbis': 'Total ITBIS',
+  'cash_total': 'Total Efectivo',
+  'card_total': 'Total Tarjeta',
+  'avg_ticket': 'Ticket Promedio',
+  'bills': 'Facturas',
+  'waiter_name': 'Mesero',
+  'cashier_name': 'Cajero',
+  'terminal_name': 'Terminal',
+  'opened_at': 'Apertura',
+  'closed_at': 'Cierre',
+  'opening_amount': 'Monto Apertura',
+  'closing_amount': 'Monto Cierre',
+  'expected_amount': 'Monto Esperado',
+  'difference': 'Diferencia',
 };
 
 // Format value for export (handles objects, arrays, currency, booleans)
