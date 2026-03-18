@@ -17,10 +17,6 @@ import '@/App.css';
 const navItems = [
   { to: '/dashboard', icon: Gauge, label: 'Panel' },
   { to: '/tables', icon: LayoutGrid, label: 'Mesas' },
-  { to: '/kitchen', icon: ChefHat, label: 'Cocina' },
-  { to: '/cash-register', icon: CircleDollarSign, label: 'Caja' },
-  { to: '/reservations', icon: CalendarDays, label: 'Reservas' },
-  { to: '/settings', icon: Settings, label: 'Config' },
 ];
 
 // Pages that should NOT have glassmorphism (for visibility in kitchen)
@@ -33,6 +29,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
+  const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
   const [clockOutDialogOpen, setClockOutDialogOpen] = useState(false);
   const [clockOutLoading, setClockOutLoading] = useState(false);
   const [changePinOpen, setChangePinOpen] = useState(false);
@@ -224,22 +221,6 @@ export default function Layout() {
 
   const filteredNav = navItems.filter(item => {
     if (item.to === '/dashboard') return hasPermission('view_dashboard');
-    if (item.to === '/reservations') return hasPermission('manage_reservations');
-    // Show Config if user has ANY config_ or manage_ permission
-    if (item.to === '/settings') {
-      const configPerms = [
-        'config_users','config_mesas','config_ventas','config_productos','config_inventario',
-        'config_impresion','config_estacion','config_reportes','config_clientes',
-        'config_impuestos','config_ncf','config_apariencia','config_sistema','config_descuentos',
-        'manage_users','manage_tables','manage_areas','manage_products','manage_payment_methods',
-        'manage_cancellation_reasons','manage_sale_types','manage_print_channels',
-        'manage_station_config','manage_inventory','manage_suppliers','manage_customers',
-      ];
-      return configPerms.some(p => hasPermission(p));
-    }
-    // Only show Caja for cashiers and admins
-    if (item.to === '/cash-register') return canAccessCash;
-    if (item.to === '/kitchen') return !isCashier;
     return true;
   });
 
@@ -352,6 +333,16 @@ export default function Layout() {
               </NavLink>
             ))}
             <button
+              onClick={() => setOptionsMenuOpen(true)}
+              data-testid="nav-opciones-mobile"
+              className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl transition-all min-w-[50px] ${
+                useGlassStyle ? 'text-white/60 hover:text-white' : 'text-muted-foreground'
+              }`}
+            >
+              <MoreHorizontal size={20} />
+              <span className="text-[9px] font-medium">Opciones</span>
+            </button>
+            <button
               onClick={handleLogout}
               className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl min-w-[50px] ${
                 useGlassStyle ? 'text-white/60 hover:text-red-400' : 'text-muted-foreground hover:text-destructive'
@@ -452,6 +443,20 @@ export default function Layout() {
                 <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[9px]'}`}>{label}</span>
               </NavLink>
             ))}
+
+            {/* Options Menu Button */}
+            <button
+              onClick={() => setOptionsMenuOpen(true)}
+              data-testid="nav-opciones"
+              className={`${isTablet ? 'w-12 h-12' : largeMode ? 'w-14 h-14 lg:w-16 lg:h-16' : 'w-12 h-12 lg:w-14 lg:h-14'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all btn-press ${
+                useGlassStyle
+                  ? 'text-white/60 hover:bg-white/10 hover:text-white'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <MoreHorizontal size={isTablet ? 18 : largeMode ? 24 : 20} />
+              <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[9px]'}`}>Opciones</span>
+            </button>
             
             {/* Functions Menu Button - Solo visible en pantalla de pedidos */}
             {location.pathname.startsWith('/order/') && (
@@ -765,6 +770,89 @@ export default function Layout() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Options Menu Modal */}
+      {optionsMenuOpen && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setOptionsMenuOpen(false)}>
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-oswald text-lg font-bold flex items-center gap-2">
+                <MoreHorizontal size={20} className="text-primary" /> Opciones
+              </h2>
+              <button onClick={() => setOptionsMenuOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-all">
+                <span className="text-muted-foreground text-lg">×</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-5">Selecciona una acción</p>
+            <div className="grid grid-cols-2 gap-3">
+              {!isCashier && (
+                <button onClick={() => { setOptionsMenuOpen(false); navigate('/kitchen'); }}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-95"
+                  data-testid="opt-cocina">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center">
+                    <ChefHat size={20} className="text-orange-500" />
+                  </div>
+                  <span className="font-semibold text-sm">Cocina</span>
+                </button>
+              )}
+              {(isAdmin || isCashier) && (
+                <button onClick={() => { setOptionsMenuOpen(false); navigate('/cash-register'); }}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-95"
+                  data-testid="opt-caja">
+                  <div className="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center">
+                    <CircleDollarSign size={20} className="text-green-500" />
+                  </div>
+                  <span className="font-semibold text-sm">Caja</span>
+                </button>
+              )}
+              {hasPermission('manage_reservations') && (
+                <button onClick={() => { setOptionsMenuOpen(false); navigate('/reservations'); }}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-95"
+                  data-testid="opt-reservas">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                    <CalendarDays size={20} className="text-blue-500" />
+                  </div>
+                  <span className="font-semibold text-sm">Reservas</span>
+                </button>
+              )}
+              {filteredNav.length >= 0 && (() => {
+                const configPerms = [
+                  'config_users','config_mesas','config_ventas','config_productos','config_inventario',
+                  'config_impresion','config_estacion','config_reportes','config_clientes',
+                  'config_impuestos','config_ncf','config_apariencia','config_sistema','config_descuentos',
+                  'manage_users','manage_tables','manage_areas','manage_products','manage_payment_methods',
+                  'manage_cancellation_reasons','manage_sale_types','manage_print_channels',
+                  'manage_station_config','manage_inventory','manage_suppliers','manage_customers',
+                ];
+                return configPerms.some(p => hasPermission(p));
+              })() && (
+                <button onClick={() => { setOptionsMenuOpen(false); navigate('/settings'); }}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-95"
+                  data-testid="opt-config">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center">
+                    <Settings size={20} className="text-purple-500" />
+                  </div>
+                  <span className="font-semibold text-sm">Config</span>
+                </button>
+              )}
+              {hasPermission('view_reports') && (
+                <button onClick={() => { setOptionsMenuOpen(false); navigate('/reports'); }}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-95"
+                  data-testid="opt-reportes">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+                    <Receipt size={20} className="text-cyan-500" />
+                  </div>
+                  <span className="font-semibold text-sm">Reportes</span>
+                </button>
+              )}
+            </div>
+            <button onClick={() => setOptionsMenuOpen(false)}
+              className="mt-5 w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-all">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Clock Out Dialog - No PIN needed, user is already authenticated */}
       <Dialog open={clockOutDialogOpen} onOpenChange={setClockOutDialogOpen}>
