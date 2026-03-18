@@ -62,8 +62,8 @@ export default function ChannelsTab() {
           <div key={ch.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border" data-testid={`channel-${ch.id}`}>
             <div>
               <span className="font-semibold">{ch.name}</span>
-              <Badge variant="secondary" className="ml-2 text-[9px]">{ch.type}</Badge>
-              <Badge variant="outline" className="ml-1 text-[9px]">{ch.target === 'screen' ? 'Pantalla' : ch.target === 'network' ? `Red: ${ch.ip}` : 'USB'}</Badge>
+              <Badge variant="secondary" className="ml-2 text-[11px]">{ch.type}</Badge>
+              <Badge variant="outline" className="ml-1 text-[11px]">{ch.target === 'screen' ? 'Pantalla' : ch.target === 'network' ? `Red: ${ch.ip}` : 'USB'}</Badge>
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"

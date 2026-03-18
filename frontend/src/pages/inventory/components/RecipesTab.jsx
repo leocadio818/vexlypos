@@ -48,7 +48,7 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
                   data-testid={`ingredient-option-${i.id}`}
                 >
                   {i.name}
-                  <span className="ml-auto text-[10px] text-muted-foreground">{i.unit}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{i.unit}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -402,7 +402,7 @@ export default function RecipesTab({
                   {filter.id === 'critical' && <AlertTriangle size={12} className="mr-1" />}
                   {filter.id === 'ok' && <Check size={12} className="mr-1" />}
                   {filter.label}
-                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
                     {count}
                   </Badge>
                 </Button>
@@ -992,7 +992,7 @@ export default function RecipesTab({
                       className="w-16 px-2 py-1 bg-card border border-border rounded text-sm"
                       placeholder="%"
                     />
-                    <span className="text-[10px] text-muted-foreground">% merma</span>
+                    <span className="text-xs text-muted-foreground">% merma</span>
                     <Button 
                       variant="ghost" 
                       size="icon" 

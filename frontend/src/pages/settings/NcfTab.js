@@ -184,7 +184,7 @@ export default function NcfTab() {
                     <h3 className="font-oswald font-bold text-sm">
                       {seq.ncf_types_config?.name || seq.ncf_type_code}
                     </h3>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {seq.ncf_types_config?.description}
                     </p>
                   </div>
@@ -264,20 +264,20 @@ export default function NcfTab() {
                     {seq.expiration_date}
                   </span>
                   {seq.days_until_expiry !== null && !seq.is_expired && seq.days_until_expiry < 60 && (
-                    <Badge className={`ml-1 text-[9px] ${seq.days_until_expiry < 30 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-muted'}`}>
+                    <Badge className={`ml-1 text-[11px] ${seq.days_until_expiry < 30 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-muted'}`}>
                       {seq.days_until_expiry} días
                     </Badge>
                   )}
                   {seq.is_expired && (
-                    <Badge className="ml-1 text-[9px] bg-red-500/20 text-red-400">VENCIDO</Badge>
+                    <Badge className="ml-1 text-[11px] bg-red-500/20 text-red-400">VENCIDO</Badge>
                   )}
                 </div>
                 {/* Alert Config Display */}
                 {seq.alert_threshold && (
                   <div className="col-span-2 flex items-center gap-1 pt-1 border-t border-border/50 mt-1">
                     <Bell size={12} className="text-amber-500" />
-                    <span className="text-muted-foreground text-[10px]">Alerta:</span>
-                    <span className="text-[10px] text-amber-400">
+                    <span className="text-muted-foreground text-xs">Alerta:</span>
+                    <span className="text-xs text-amber-400">
                       ≤{seq.alert_threshold} NCF
                       {seq.alert_interval && ` (cada ${seq.alert_interval} ventas)`}
                     </span>
@@ -298,7 +298,7 @@ export default function NcfTab() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {ncfTypes.map((type) => (
             <div key={type.id || type.code} className="flex items-center gap-2 text-xs p-2 bg-background rounded-lg">
-              <Badge variant="outline" className="font-mono text-[10px]">{type.id || type.code}</Badge>
+              <Badge variant="outline" className="font-mono text-xs">{type.id || type.code}</Badge>
               <span className="text-muted-foreground truncate">{type.description || type.name}</span>
             </div>
           ))}
@@ -356,7 +356,7 @@ export default function NcfTab() {
                 <Store size={14} className="text-blue-500" />
                 Autorizado para estos Tipos de Venta
               </label>
-              <p className="text-[10px] text-muted-foreground mb-2">
+              <p className="text-xs text-muted-foreground mb-2">
                 Esta secuencia se usará automáticamente al procesar pagos con estos tipos de venta
               </p>
               <div className="space-y-2 bg-background rounded-lg p-3 border border-border max-h-40 overflow-y-auto">
@@ -391,7 +391,7 @@ export default function NcfTab() {
                 <Bell size={14} className="text-amber-500" />
                 Configuración de Alertas
               </label>
-              <p className="text-[10px] text-muted-foreground mb-3">
+              <p className="text-xs text-muted-foreground mb-3">
                 Recibe notificaciones en checkout cuando los comprobantes estén por agotarse
               </p>
               <div className="grid grid-cols-2 gap-3">
@@ -405,7 +405,7 @@ export default function NcfTab() {
                     placeholder="Ej: 50"
                     min="1"
                   />
-                  <p className="text-[9px] text-muted-foreground mt-1">Alertar cuando queden ≤ este número</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Alertar cuando queden ≤ este número</p>
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Intervalo de Alerta</label>
@@ -417,7 +417,7 @@ export default function NcfTab() {
                     placeholder="Ej: 5"
                     min="1"
                   />
-                  <p className="text-[9px] text-muted-foreground mt-1">Mostrar alerta cada N ventas</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Mostrar alerta cada N ventas</p>
                 </div>
               </div>
             </div>

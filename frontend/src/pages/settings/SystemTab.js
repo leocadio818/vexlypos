@@ -382,7 +382,7 @@ export default function SystemTab() {
                 <div className="bg-white rounded-lg shadow-xl p-2 max-w-[320px]">
                   <div className="flex items-center justify-between px-2 py-1 bg-gray-100 rounded-t-lg mb-2">
                     <span className="text-xs text-gray-600 font-medium">Vista Previa del Ticket</span>
-                    <span className="text-[10px] text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Servidor</span>
+                    <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Servidor</span>
                   </div>
                   <ThermalTicket
                     order={demoOrder}
@@ -463,8 +463,8 @@ export default function SystemTab() {
                         className="rounded"
                       />
                       <span className="text-sm font-medium">{u.name} {u.last_name || ''}</span>
-                      <span className="text-[10px] text-muted-foreground ml-auto">{u.role} (N{u.role_level || '?'})</span>
-                      {isCurrentUser && <span className="text-[9px] text-green-400">(Tu)</span>}
+                      <span className="text-xs text-muted-foreground ml-auto">{u.role} (N{u.role_level || '?'})</span>
+                      {isCurrentUser && <span className="text-[11px] text-green-400">(Tu)</span>}
                     </label>
                   );
                 })}

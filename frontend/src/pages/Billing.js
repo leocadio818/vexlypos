@@ -194,7 +194,7 @@ export default function Billing() {
                     {/* NCF */}
                     <div className="text-center border-b border-dashed border-gray-300 pb-2 mb-3">
                       <p className="font-mono text-xs text-gray-500">NCF: {bill.ncf}</p>
-                      <p className="font-mono text-[10px] text-gray-400">RNC: 000-000000-0</p>
+                      <p className="font-mono text-xs text-gray-400">RNC: 000-000000-0</p>
                     </div>
 
                     {/* Items */}
@@ -270,7 +270,7 @@ export default function Billing() {
                     )}
                     {bill.status === 'paid' && (
                       <div className="mt-3 flex items-center justify-between">
-                        <span className="text-[10px] text-gray-400 font-mono">
+                        <span className="text-xs text-gray-400 font-mono">
                           Pagado: {new Date(bill.paid_at).toLocaleString('es-DO')} | {bill.payment_method === 'cash' ? 'Efectivo' : 'Tarjeta'}
                         </span>
                         <button onClick={async () => {
@@ -377,10 +377,10 @@ export default function Billing() {
 
             {/* Tip */}
             <div className="flex gap-1 items-center">
-              <span className="text-[10px] text-muted-foreground mr-1">Propina:</span>
+              <span className="text-xs text-muted-foreground mr-1">Propina:</span>
               {[0, 5, 10, 15, 18].map(p => (
                 <button key={p} onClick={() => setTipPct(p)}
-                  className={`px-2 py-1 rounded text-[10px] font-oswald font-bold ${tipPct === p ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>{p}%</button>
+                  className={`px-2 py-1 rounded text-xs font-oswald font-bold ${tipPct === p ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>{p}%</button>
               ))}
             </div>
 
@@ -403,7 +403,7 @@ export default function Billing() {
                       className={`flex-1 bg-background border rounded-lg px-2 py-1.5 text-sm font-oswald text-right ${isActive ? 'border-primary' : 'border-border'}`}
                       data-testid={`pay-amount-${method.id}`} />
                     {method.currency !== 'DOP' && rate > 1 && parseFloat(amt) > 0 && (
-                      <span className="text-[9px] text-muted-foreground w-20 text-right">= {formatMoney(inDOP)}</span>
+                      <span className="text-[11px] text-muted-foreground w-20 text-right">= {formatMoney(inDOP)}</span>
                     )}
                   </div>
                 );
@@ -453,7 +453,7 @@ export default function Billing() {
                   // Use active method if set, otherwise use first active DOP method
                   const targetMethod = activePayMethod || (paymentMethods.find(m => m.active && m.currency === 'DOP') || paymentMethods.find(m => m.active))?.name;
                   if (targetMethod) setPayAmounts(p => ({ ...p, [targetMethod]: String(amt) }));
-                }} className="px-2 py-1 rounded bg-muted text-[10px] font-oswald hover:bg-primary/20 transition-colors">
+                }} className="px-2 py-1 rounded bg-muted text-xs font-oswald hover:bg-primary/20 transition-colors">
                   {amt}
                 </button>
               ))}
@@ -461,7 +461,7 @@ export default function Billing() {
                 // Use active method if set, otherwise use first active DOP method
                 const targetMethod = activePayMethod || (paymentMethods.find(m => m.active && m.currency === 'DOP') || paymentMethods.find(m => m.active))?.name;
                 if (targetMethod) setPayAmounts(p => ({ ...p, [targetMethod]: String(payDialog.billTotal) }));
-              }} className="px-2 py-1 rounded bg-primary/20 text-primary text-[10px] font-oswald font-bold">
+              }} className="px-2 py-1 rounded bg-primary/20 text-primary text-xs font-oswald font-bold">
                 EXACTO
               </button>
             </div>

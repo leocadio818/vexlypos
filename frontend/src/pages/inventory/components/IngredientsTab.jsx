@@ -275,7 +275,7 @@ export default function IngredientsTab({
                 >
                   <div>
                     <span className="font-medium text-sm">{unit.name}</span>
-                    <Badge variant="secondary" className="ml-2 text-[10px]">{unit.abbreviation}</Badge>
+                    <Badge variant="secondary" className="ml-2 text-xs">{unit.abbreviation}</Badge>
                   </div>
                   <div className="flex gap-1">
                     <Button 
@@ -351,9 +351,9 @@ export default function IngredientsTab({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{ing.name}</span>
-                    <Badge variant="secondary" className="text-[9px]">{ing.unit}</Badge>
-                    {ing.is_subrecipe && <Badge className="text-[9px] bg-blue-500">Sub-receta</Badge>}
-                    {isLow && <Badge variant="destructive" className="text-[9px]">Stock bajo</Badge>}
+                    <Badge variant="secondary" className="text-[11px]">{ing.unit}</Badge>
+                    {ing.is_subrecipe && <Badge className="text-[11px] bg-blue-500">Sub-receta</Badge>}
+                    {isLow && <Badge variant="destructive" className="text-[11px]">Stock bajo</Badge>}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2">
                     <span>{getCategoryLabel(ing.category)}</span>
@@ -362,7 +362,7 @@ export default function IngredientsTab({
                     {ing.is_subrecipe && ing.cost_updated_at && (
                       <>
                         <span>•</span>
-                        <span className="text-blue-400 text-[10px]">Actualizado: {new Date(ing.cost_updated_at).toLocaleDateString()}</span>
+                        <span className="text-blue-400 text-xs">Actualizado: {new Date(ing.cost_updated_at).toLocaleDateString()}</span>
                       </>
                     )}
                     <span>•</span>
@@ -479,7 +479,7 @@ export default function IngredientsTab({
                     <div className="text-muted-foreground">
                       {log.old_value} → {log.new_value}
                     </div>
-                    <div className="text-primary text-[10px]">Por: {log.changed_by_name}</div>
+                    <div className="text-primary text-xs">Por: {log.changed_by_name}</div>
                   </div>
                 ))}
               </div>
@@ -496,7 +496,7 @@ export default function IngredientsTab({
                     <p className="text-xs font-medium text-red-500">
                       Completa todos los campos obligatorios para guardar
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Los campos marcados en rojo son necesarios para que tus órdenes de compra y costos sean exactos.
                     </p>
                   </div>
@@ -521,7 +521,7 @@ export default function IngredientsTab({
                 placeholder="Ej: Ron Brugal, Carne de Res..."
               />
               {validationAttempted && currentValidation.errors.name && (
-                <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.name}</p>
+                <p className="text-xs text-red-500 mt-1">{currentValidation.errors.name}</p>
               )}
             </div>
             
@@ -547,7 +547,7 @@ export default function IngredientsTab({
                   {customUnits.map(u => <option key={u.id} value={u.abbreviation}>{u.name} ({u.abbreviation})</option>)}
                 </select>
                 {validationAttempted && currentValidation.errors.unit && (
-                  <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.unit}</p>
+                  <p className="text-xs text-red-500 mt-1">{currentValidation.errors.unit}</p>
                 )}
               </div>
               <div>
@@ -566,7 +566,7 @@ export default function IngredientsTab({
                   {INGREDIENT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
                 {validationAttempted && currentValidation.errors.category && (
-                  <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.category}</p>
+                  <p className="text-xs text-red-500 mt-1">{currentValidation.errors.category}</p>
                 )}
               </div>
             </div>
@@ -583,7 +583,7 @@ export default function IngredientsTab({
                   <span className="font-medium text-sm">Conversión de Unidades *</span>
                 </div>
                 {validationAttempted && currentValidation.errors.dispatch_quantity && (
-                  <span className="text-[10px] text-red-500">{currentValidation.errors.dispatch_quantity}</span>
+                  <span className="text-xs text-red-500">{currentValidation.errors.dispatch_quantity}</span>
                 )}
               </div>
               
@@ -806,7 +806,7 @@ export default function IngredientsTab({
                     )}
                   </span>
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-2 opacity-70">
+                <p className="text-xs text-muted-foreground mt-2 opacity-70">
                   Cálculo: {formatMoney(ingredientDialog.data?.avg_cost || 0)} ÷ {ingredientDialog.data?.dispatch_quantity || 1} = {formatMoney((ingredientDialog.data?.avg_cost || 0) / (ingredientDialog.data?.conversion_factor || 1))} por unidad
                 </p>
               </div>
@@ -820,7 +820,7 @@ export default function IngredientsTab({
                       <p className="text-xs font-medium text-amber-600">
                         Este cambio afectará el costo de {affectedRecipes.count} receta(s) vinculada(s)
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {affectedRecipes.recipes.slice(0, 3).map(r => r.product_name).join(', ')}
                         {affectedRecipes.count > 3 && ` y ${affectedRecipes.count - 3} más...`}
                       </p>
@@ -851,7 +851,7 @@ export default function IngredientsTab({
                   placeholder="0"
                 />
                 {validationAttempted && currentValidation.errors.min_stock && (
-                  <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.min_stock}</p>
+                  <p className="text-xs text-red-500 mt-1">{currentValidation.errors.min_stock}</p>
                 )}
                 {/* Dynamic equivalence note */}
                 {ingredientDialog.data?.min_stock > 0 && ingredientDialog.data?.conversion_factor > 0 && (
@@ -903,10 +903,10 @@ export default function IngredientsTab({
                   placeholder="0.00"
                 />
                 {validationAttempted && currentValidation.errors.avg_cost && (
-                  <p className="text-[10px] text-red-500 mt-1">{currentValidation.errors.avg_cost}</p>
+                  <p className="text-xs text-red-500 mt-1">{currentValidation.errors.avg_cost}</p>
                 )}
                 {ingredientDialog.data?.is_subrecipe && (
-                  <p className="text-[10px] text-muted-foreground mt-1">Costo calculado desde sub-receta</p>
+                  <p className="text-xs text-muted-foreground mt-1">Costo calculado desde sub-receta</p>
                 )}
               </div>
             </div>
@@ -949,7 +949,7 @@ export default function IngredientsTab({
                   </span>
                 </div>
                 {validationAttempted && currentValidation.errors.default_supplier_id && (
-                  <span className="text-[10px] text-red-500">Obligatorio</span>
+                  <span className="text-xs text-red-500">Obligatorio</span>
                 )}
               </div>
               <select

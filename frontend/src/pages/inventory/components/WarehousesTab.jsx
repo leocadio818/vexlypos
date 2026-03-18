@@ -113,7 +113,7 @@ export default function WarehousesTab({
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">{itemCount} items</span>
                 {lowStockCount > 0 && (
-                  <Badge variant="destructive" className="text-[9px]">
+                  <Badge variant="destructive" className="text-[11px]">
                     <AlertTriangle size={10} className="mr-1" /> {lowStockCount} bajo stock
                   </Badge>
                 )}

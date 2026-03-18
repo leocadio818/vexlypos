@@ -35,7 +35,7 @@ function SnapshotPanel({ label, snapshot }) {
             <div key={i} className="flex items-center gap-2">
               <span className="font-medium">{ing.ingredient_name || '?'}</span>
               <span className="text-muted-foreground font-mono">{ing.quantity} {ing.unit}</span>
-              {ing.waste_percentage > 0 && <span className="text-red-400 text-[10px]">+{ing.waste_percentage}%</span>}
+              {ing.waste_percentage > 0 && <span className="text-red-400 text-xs">+{ing.waste_percentage}%</span>}
             </div>
           ))}
           {snapshot.notes && <div className="text-muted-foreground italic">"{snapshot.notes}"</div>}
@@ -104,7 +104,7 @@ export default function RecipeHistoryDialog({ open, onOpenChange, recipeId, reci
                     <div className="p-3 rounded-xl border border-border bg-card/50">
                       {/* Header */}
                       <div className="flex items-center justify-between mb-1.5">
-                        <Badge className={`text-[10px] ${cfg.color}`}>{cfg.label}</Badge>
+                        <Badge className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
                         <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                           <span className="flex items-center gap-1"><User size={10} /> {log.user_name}</span>
                           <span className="flex items-center gap-1"><Clock size={10} /> {dateStr} {timeStr}</span>

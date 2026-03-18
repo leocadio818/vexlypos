@@ -117,7 +117,7 @@ export default function Kitchen() {
           <ChefHat size={22} className="text-primary" />
           <h1 className="font-oswald text-xl font-bold tracking-wide">COCINA</h1>
           {/* Connection indicator */}
-          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono ${connected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-mono ${connected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
             {connected ? <Wifi size={10} /> : <WifiOff size={10} />}
             {connected ? 'EN VIVO' : 'RECONECTANDO...'}
           </div>
@@ -188,15 +188,15 @@ export default function Kitchen() {
                             {item.modifiers?.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {item.modifiers.map((m, i) => (
-                                  <span key={i} className="text-[10px] bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-medium">
+                                  <span key={i} className="text-xs bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-medium">
                                     {m.name}
                                   </span>
                                 ))}
                               </div>
                             )}
-                            {item.notes && <p className="text-[10px] text-gray-500 mt-1 italic">{item.notes}</p>}
+                            {item.notes && <p className="text-xs text-gray-500 mt-1 italic">{item.notes}</p>}
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] font-bold uppercase shrink-0 ml-2">
+                          <div className="flex items-center gap-1 text-xs font-bold uppercase shrink-0 ml-2">
                             <span>{statusLabels[item.status]}</span>
                             {statusFlow[item.status] && <ArrowRight size={12} />}
                           </div>

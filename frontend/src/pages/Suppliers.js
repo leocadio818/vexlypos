@@ -119,7 +119,7 @@ export default function Suppliers() {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-semibold">{s.name}</span>
-                      {s.rnc && <Badge variant="secondary" className="ml-2 text-[9px]">RNC: {s.rnc}</Badge>}
+                      {s.rnc && <Badge variant="secondary" className="ml-2 text-[11px]">RNC: {s.rnc}</Badge>}
                     </div>
                     <span className="text-xs text-muted-foreground">{s.phone}</span>
                   </div>
@@ -162,7 +162,7 @@ export default function Suppliers() {
                       <span key={i} className="inline-block mr-3">{item.quantity}x {item.product_name} ({item.received_quantity || 0} recibidos)</span>
                     ))}
                   </div>
-                  <div className="text-[10px] text-muted-foreground/60 mt-1 font-mono flex items-center gap-1">
+                  <div className="text-xs text-muted-foreground/60 mt-1 font-mono flex items-center gap-1">
                     <Clock size={10} /> {new Date(po.created_at).toLocaleString('es-DO')} | Por: {po.created_by}
                   </div>
                 </div>

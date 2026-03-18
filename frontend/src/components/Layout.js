@@ -329,7 +329,7 @@ export default function Layout() {
                 }
               >
                 <Icon size={20} />
-                <span className="text-[9px] font-medium">{label}</span>
+                <span className="text-[11px] font-medium">{label}</span>
               </NavLink>
             ))}
             <button
@@ -340,7 +340,7 @@ export default function Layout() {
               }`}
             >
               <MoreHorizontal size={20} />
-              <span className="text-[9px] font-medium">Opciones</span>
+              <span className="text-[11px] font-medium">Opciones</span>
             </button>
             <button
               onClick={handleLogout}
@@ -349,7 +349,7 @@ export default function Layout() {
               }`}
             >
               <LogOut size={20} />
-              <span className="text-[9px] font-medium">Salir</span>
+              <span className="text-[11px] font-medium">Salir</span>
             </button>
           </nav>
         </aside>
@@ -403,7 +403,7 @@ export default function Layout() {
               <Moon size={isTablet ? 16 : largeMode ? 20 : 18} className="text-red-400" />
             )}
             {businessDay && (
-              <span className={`font-mono font-bold ${isTablet ? 'text-[9px]' : largeMode ? 'text-[11px]' : 'text-[10px]'} text-green-400 mt-0.5`}>
+              <span className={`font-mono font-bold ${isTablet ? 'text-[11px]' : largeMode ? 'text-[11px]' : 'text-xs'} text-green-400 mt-0.5`}>
                 {businessDay.business_date?.slice(5)}
               </span>
             )}
@@ -440,7 +440,7 @@ export default function Layout() {
                 }
               >
                 <Icon size={isTablet ? 18 : largeMode ? 24 : 20} />
-                <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[9px]'}`}>{label}</span>
+                <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[11px]'}`}>{label}</span>
               </NavLink>
             ))}
 
@@ -455,7 +455,7 @@ export default function Layout() {
               }`}
             >
               <MoreHorizontal size={isTablet ? 18 : largeMode ? 24 : 20} />
-              <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[9px]'}`}>Opciones</span>
+              <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[11px]'}`}>Opciones</span>
             </button>
             
             {/* Functions Menu Button - Solo visible en pantalla de pedidos */}
@@ -471,7 +471,7 @@ export default function Layout() {
                   }`}
                 >
                   <Wrench size={isTablet ? 18 : largeMode ? 24 : 20} />
-                  <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[9px]'}`}>Funciones</span>
+                  <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[11px]'}`}>Funciones</span>
                 </button>
                 
                 {/* Modal Glassmorphism de Funciones */}
@@ -552,7 +552,7 @@ export default function Layout() {
                           </div>
                           <div className="flex flex-col items-start">
                             <span className="text-sm font-medium text-white/50">Reimprimir</span>
-                            <span className="text-[10px] text-white/30">Pronto</span>
+                            <span className="text-xs text-white/30">Pronto</span>
                           </div>
                         </button>
                         
@@ -567,7 +567,7 @@ export default function Layout() {
                           </div>
                           <div className="flex flex-col items-start">
                             <span className="text-sm font-medium text-white/50">Descuento</span>
-                            <span className="text-[10px] text-white/30">Pronto</span>
+                            <span className="text-xs text-white/30">Pronto</span>
                           </div>
                         </button>
                         
@@ -696,7 +696,7 @@ export default function Layout() {
                   </div>
                 </PopoverContent>
               </Popover>
-              <p className={`mt-1 text-[9px] max-w-[55px] truncate ${
+              <p className={`mt-1 text-[11px] max-w-[55px] truncate ${
                 useGlassStyle ? 'text-white/50' : 'text-muted-foreground'
               }`}>{user?.name}</p>
             </div>

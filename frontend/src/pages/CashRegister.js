@@ -571,67 +571,67 @@ export default function CashRegister() {
               <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-rd">
                   <Banknote size={20} className="mx-auto mb-1 text-green-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Efectivo RD$</p>
+                  <p className="text-xs text-white/50 uppercase">Efectivo RD$</p>
                   <p className="font-oswald text-lg font-bold text-green-400">{formatMoney(salesBreakdown?.cash_rd ?? currentSession.cash_sales)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-card">
                   <CreditCard size={20} className="mx-auto mb-1 text-blue-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Tarjeta</p>
+                  <p className="text-xs text-white/50 uppercase">Tarjeta</p>
                   <p className="font-oswald text-lg font-bold text-blue-400">{formatMoney(salesBreakdown?.card ?? currentSession.card_sales)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-transfer">
                   <RefreshCw size={20} className="mx-auto mb-1 text-purple-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Transferencia</p>
+                  <p className="text-xs text-white/50 uppercase">Transferencia</p>
                   <p className="font-oswald text-lg font-bold text-purple-400">{formatMoney(salesBreakdown?.transfer ?? currentSession.transfer_sales)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-usd">
                   <CircleDollarSign size={20} className="mx-auto mb-1 text-yellow-400" />
-                  <p className="text-[10px] text-white/50 uppercase">USD Dolar</p>
+                  <p className="text-xs text-white/50 uppercase">USD Dolar</p>
                   <p className="font-oswald text-lg font-bold text-yellow-400">{formatMoney(salesBreakdown?.usd ?? 0)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-eur">
                   <Coins size={20} className="mx-auto mb-1 text-cyan-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Euro</p>
+                  <p className="text-xs text-white/50 uppercase">Euro</p>
                   <p className="font-oswald text-lg font-bold text-cyan-400">{formatMoney(salesBreakdown?.eur ?? 0)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-total-sales">
                   <TrendingUp size={20} className="mx-auto mb-1 text-orange-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Total Ventas</p>
+                  <p className="text-xs text-white/50 uppercase">Total Ventas</p>
                   <p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(salesBreakdown?.total ?? totalSales)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-discounts">
                   <Tag size={20} className="mx-auto mb-1 text-rose-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Descuentos</p>
+                  <p className="text-xs text-white/50 uppercase">Descuentos</p>
                   <p className="font-oswald text-lg font-bold text-rose-400">-{formatMoney(salesBreakdown?.discounts ?? 0)}</p>
-                  <p className="text-[9px] text-white/40">{salesBreakdown?.discounts_count ?? 0} facturas</p>
+                  <p className="text-[11px] text-white/40">{salesBreakdown?.discounts_count ?? 0} facturas</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-in">
                   <ArrowUpCircle size={20} className="mx-auto mb-1 text-emerald-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Ingresos</p>
+                  <p className="text-xs text-white/50 uppercase">Ingresos</p>
                   <p className="font-oswald text-lg font-bold text-emerald-400">{formatMoney(currentSession.cash_in)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-out">
                   <ArrowDownCircle size={20} className="mx-auto mb-1 text-red-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Retiros</p>
+                  <p className="text-xs text-white/50 uppercase">Retiros</p>
                   <p className="font-oswald text-lg font-bold text-red-400">-{formatMoney(salesBreakdown?.withdrawals ?? currentSession.cash_out ?? 0)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-voids">
                   <XCircle size={20} className="mx-auto mb-1 text-orange-500" />
-                  <p className="text-[10px] text-white/50 uppercase">Anulaciones</p>
+                  <p className="text-xs text-white/50 uppercase">Anulaciones</p>
                   <p className="font-oswald text-lg font-bold text-orange-500">-{formatMoney(salesBreakdown?.voids_total ?? 0)}</p>
-                  <p className="text-[9px] text-white/40">{salesBreakdown?.voids_count ?? 0} anuladas</p>
+                  <p className="text-[11px] text-white/40">{salesBreakdown?.voids_count ?? 0} anuladas</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-credit-notes">
                   <FileText size={20} className="mx-auto mb-1 text-amber-400" />
-                  <p className="text-[10px] text-white/50 uppercase">Notas Credito</p>
+                  <p className="text-xs text-white/50 uppercase">Notas Credito</p>
                   <p className="font-oswald text-lg font-bold text-amber-400">-{formatMoney(salesBreakdown?.credit_notes_total ?? 0)}</p>
-                  <p className="text-[9px] text-white/40">{salesBreakdown?.credit_notes_count ?? 0} B04</p>
+                  <p className="text-[11px] text-white/40">{salesBreakdown?.credit_notes_count ?? 0} B04</p>
                 </div>
                 <div className="text-center p-3 rounded-lg backdrop-blur-md bg-green-500/10 border border-green-500/30" data-testid="stat-cash-balance">
                   <Wallet size={20} className="mx-auto mb-1 text-green-300" />
-                  <p className="text-[10px] text-green-300/70 uppercase font-bold">Balance Efectivo</p>
+                  <p className="text-xs text-green-300/70 uppercase font-bold">Balance Efectivo</p>
                   <p className="font-oswald text-xl font-bold text-green-300">{formatMoney(salesBreakdown?.cash_balance ?? 0)}</p>
-                  <p className="text-[9px] text-white/40">Apertura + Ventas - Retiros</p>
+                  <p className="text-[11px] text-white/40">Apertura + Ventas - Retiros</p>
                 </div>
               </div>
               
@@ -641,7 +641,7 @@ export default function CashRegister() {
                   <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-between">
                     <div>
                       <p className="text-sm text-yellow-400 font-medium">Efectivo Esperado en Caja</p>
-                      <p className="text-[10px] text-white/50">Apertura + Ventas Efectivo + Ingresos - Retiros</p>
+                      <p className="text-xs text-white/50">Apertura + Ventas Efectivo + Ingresos - Retiros</p>
                     </div>
                     <p className="font-oswald text-2xl font-bold text-yellow-400">{formatMoney(totalEsperado)}</p>
                   </div>
@@ -727,7 +727,7 @@ export default function CashRegister() {
                         )}
                         <div>
                           <p className="text-sm font-medium text-white">{(mov.description || '').replace(/\[BILL:[^\]]+\]\s*/g, '')}</p>
-                          <p className="text-[10px] text-white/50">{mov.ref} - {mov.payment_method} - {new Date(mov.created_at).toLocaleTimeString('es-DO')}</p>
+                          <p className="text-xs text-white/50">{mov.ref} - {mov.payment_method} - {new Date(mov.created_at).toLocaleTimeString('es-DO')}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -796,7 +796,7 @@ export default function CashRegister() {
                       <AlertTriangle size={14} className="text-yellow-400" />
                     ) : null}
                   </div>
-                  <p className="text-[10px] text-white/50 font-mono">
+                  <p className="text-xs text-white/50 font-mono">
                     {session.ref} | {new Date(session.opened_at).toLocaleString('es-DO')} → {session.closed_at ? new Date(session.closed_at).toLocaleTimeString('es-DO') : '-'}
                   </p>
                 </div>
@@ -816,7 +816,7 @@ export default function CashRegister() {
                       {formatMoney((session.cash_sales || 0) + (session.card_sales || 0) + (session.transfer_sales || 0))}
                     </p>
                     {session.total_difference && Math.abs(session.total_difference) > 0.01 && (
-                      <p className={`text-[10px] ${session.total_difference > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <p className={`text-xs ${session.total_difference > 0 ? 'text-green-400' : 'text-red-400'}`}>
                         Dif: {formatMoney(session.total_difference)}
                       </p>
                     )}
@@ -867,7 +867,7 @@ export default function CashRegister() {
                     >
                       <span className="block">{t.name}</span>
                       {isInUse && (
-                        <span className="text-[10px] block text-red-400/80 mt-0.5">
+                        <span className="text-xs block text-red-400/80 mt-0.5">
                           En uso: {inUseBy}
                         </span>
                       )}
@@ -876,7 +876,7 @@ export default function CashRegister() {
                 })}
               </div>
               {Object.keys(terminalsInUse).length > 0 && (
-                <p className="text-[10px] text-amber-400/70 mt-2 flex items-center gap-1">
+                <p className="text-xs text-amber-400/70 mt-2 flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-red-500/50"></span>
                   Las estaciones en rojo ya tienen un turno activo
                 </p>
@@ -891,7 +891,7 @@ export default function CashRegister() {
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-orange-400/50 focus:bg-white/10 outline-none transition-all"
                 data-testid="opening-amount-input"
               />
-              <p className="text-[10px] text-white/40 mt-1">Cantidad de efectivo inicial en la caja</p>
+              <p className="text-xs text-white/40 mt-1">Cantidad de efectivo inicial en la caja</p>
             </div>
             <button onClick={handleOpenSession} data-testid="confirm-open-session"
               className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold active:scale-95 transition-all flex items-center justify-center gap-2">
@@ -928,7 +928,7 @@ export default function CashRegister() {
               
               {/* Bills */}
               <div className="mb-4">
-                <p className="text-[10px] text-white/40 uppercase mb-2 flex items-center gap-1"><Banknote size={12} /> Billetes</p>
+                <p className="text-xs text-white/40 uppercase mb-2 flex items-center gap-1"><Banknote size={12} /> Billetes</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {DENOMINACIONES.filter(d => d.tipo === 'billete').map(denom => (
                     <div key={denom.valor} className="bg-white/5 border border-white/10 rounded-lg p-2">
@@ -950,7 +950,7 @@ export default function CashRegister() {
                           className="w-10 h-10 sm:w-8 sm:h-8 rounded bg-green-500/20 text-green-400 font-bold hover:bg-green-500/30 transition-all shrink-0"
                         >+</button>
                       </div>
-                      <p className="text-[10px] text-white/50 text-center mt-1">
+                      <p className="text-xs text-white/50 text-center mt-1">
                         = {formatMoney(denom.valor * denominationCounts[denom.valor])}
                       </p>
                     </div>
@@ -960,12 +960,12 @@ export default function CashRegister() {
               
               {/* Coins */}
               <div>
-                <p className="text-[10px] text-white/40 uppercase mb-2 flex items-center gap-1"><Coins size={12} /> Monedas</p>
+                <p className="text-xs text-white/40 uppercase mb-2 flex items-center gap-1"><Coins size={12} /> Monedas</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {DENOMINACIONES.filter(d => d.tipo === 'moneda').map(denom => (
                     <div key={denom.valor} className="bg-white/5 border border-white/10 rounded-lg p-2">
                       <div className="flex items-center justify-center mb-1">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${COLORES_DENOMINACION[denom.valor]} text-white`}>{denom.label}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${COLORES_DENOMINACION[denom.valor]} text-white`}>{denom.label}</span>
                       </div>
                       <div className="flex items-center justify-between gap-1">
                         <button 

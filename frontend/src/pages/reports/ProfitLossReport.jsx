@@ -7,19 +7,19 @@ export default function ProfitLossReport({ data }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-gradient-to-br from-emerald-500/20 to-green-600/10 border border-emerald-500/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-emerald-400 uppercase">Ingresos Netos</p>
+          <p className="text-xs text-emerald-400 uppercase">Ingresos Netos</p>
           <p className="font-oswald text-2xl font-bold text-emerald-400">{formatMoney(data.revenue.net_revenue)}</p>
         </div>
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-red-400 uppercase">Costo de Ventas</p>
+          <p className="text-xs text-red-400 uppercase">Costo de Ventas</p>
           <p className="font-oswald text-xl font-bold text-red-400">{formatMoney(data.costs.cost_of_goods_sold)}</p>
         </div>
         <div className={`${isProfit ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'} border rounded-xl p-4 text-center`}>
-          <p className={`text-[10px] ${isProfit ? 'text-green-400' : 'text-red-400'} uppercase`}>Ganancia Bruta</p>
+          <p className={`text-xs ${isProfit ? 'text-green-400' : 'text-red-400'} uppercase`}>Ganancia Bruta</p>
           <p className={`font-oswald text-2xl font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>{formatMoney(data.profit.gross_profit)}</p>
         </div>
         <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-primary uppercase">Margen Bruto</p>
+          <p className="text-xs text-primary uppercase">Margen Bruto</p>
           <p className="font-oswald text-2xl font-bold text-primary">{data.profit.gross_margin_pct}%</p>
         </div>
       </div>

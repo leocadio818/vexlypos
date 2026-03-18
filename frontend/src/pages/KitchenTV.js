@@ -190,7 +190,7 @@ export default function KitchenTV() {
           {orders.slice(0, 9).map((_, i) => (
             <span key={i} className={`px-2 py-0.5 rounded text-xs font-mono ${selectedOrder === i ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-500'}`}>{i + 1}</span>
           ))}
-          <span className="text-gray-600 text-[10px] ml-2">NUMPAD: seleccionar | FLECHAS: navegar | ENTER: avanzar | 0: avanzar todo</span>
+          <span className="text-gray-600 text-xs ml-2">NUMPAD: seleccionar | FLECHAS: navegar | ENTER: avanzar | 0: avanzar todo</span>
         </div>
       )}
 
@@ -213,14 +213,14 @@ export default function KitchenTV() {
                 order.is_critical ? 'bg-red-900' : order.is_urgent ? 'bg-yellow-900' : 'bg-gray-900'
               }`}>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] bg-white/10 px-1 rounded text-gray-400">{orderIdx + 1}</span>
+                  <span className="font-mono text-xs bg-white/10 px-1 rounded text-gray-400">{orderIdx + 1}</span>
                   <span className="font-oswald text-2xl font-bold">{order.table_number}</span>
                 </div>
                 <div className="text-right">
                   <span className={`font-mono text-sm font-bold ${order.is_critical ? 'text-red-400' : order.is_urgent ? 'text-yellow-400' : 'text-gray-400'}`}>
                     <Clock size={12} className="inline mr-1" />{Math.floor(order.elapsed_minutes)}m
                   </span>
-                  <p className="text-[9px] text-gray-500">{order.waiter_name}</p>
+                  <p className="text-[11px] text-gray-500">{order.waiter_name}</p>
                 </div>
               </div>
               <div className="bg-gray-950 p-2 space-y-1">
@@ -235,12 +235,12 @@ export default function KitchenTV() {
                         <span className="font-oswald text-lg font-bold mr-1">{item.quantity}x</span>
                         <span className="font-semibold">{item.product_name}</span>
                         {item.modifiers.length > 0 && (
-                          <div className="mt-0.5">{item.modifiers.map((m, i) => <span key={i} className="text-[9px] bg-white/10 px-1 rounded mr-0.5">{m}</span>)}</div>
+                          <div className="mt-0.5">{item.modifiers.map((m, i) => <span key={i} className="text-[11px] bg-white/10 px-1 rounded mr-0.5">{m}</span>)}</div>
                         )}
-                        {item.notes && <p className="text-[9px] italic opacity-70">{item.notes}</p>}
+                        {item.notes && <p className="text-[11px] italic opacity-70">{item.notes}</p>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0 ml-1">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                        <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
                           item.status === 'sent' ? 'bg-red-600 text-white' : item.status === 'preparing' ? 'bg-yellow-500 text-black' : 'bg-green-600 text-white'
                         }`}>{statusLabels[item.status]}</span>
                         {statusFlow[item.status] && <ArrowRight size={12} className="opacity-40" />}
@@ -300,13 +300,13 @@ export default function KitchenTV() {
             <div className="bg-gray-800 rounded-xl p-4">
               <h4 className="font-oswald text-sm font-bold text-orange-500 mb-2">INICIO AUTOMATICO (Modo Kiosco)</h4>
               <p className="text-xs text-gray-400 mb-2">Para iniciar automaticamente al encender PC:</p>
-              <div className="bg-black rounded-lg p-3 font-mono text-[10px] text-green-400 space-y-1">
+              <div className="bg-black rounded-lg p-3 font-mono text-xs text-green-400 space-y-1">
                 <p className="text-gray-500">Windows - Acceso directo en shell:startup:</p>
                 <p className="break-all">"chrome.exe" --kiosk "{window.location.origin}/kitchen-tv?pin=9999"</p>
                 <p className="text-gray-500 mt-2">Linux:</p>
                 <p className="break-all">chromium --kiosk "{window.location.origin}/kitchen-tv?pin=9999"</p>
               </div>
-              <p className="text-[9px] text-gray-500 mt-1">Reemplaza 9999 con el PIN de cocina.</p>
+              <p className="text-[11px] text-gray-500 mt-1">Reemplaza 9999 con el PIN de cocina.</p>
             </div>
           </div>
         </DialogContent>

@@ -160,11 +160,11 @@ export default function DescuentosTab() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-oswald font-bold text-sm truncate">{d.name}</span>
-                    <Badge variant={d.active ? 'default' : 'secondary'} className="text-[10px]">
+                    <Badge variant={d.active ? 'default' : 'secondary'} className="text-xs">
                       {d.active ? 'Activo' : 'Inactivo'}
                     </Badge>
                     {d.authorization_level === 'MANAGER_PIN_REQUIRED' && (
-                      <Badge variant="outline" className="text-[10px] border-amber-400/50 text-amber-400">
+                      <Badge variant="outline" className="text-xs border-amber-400/50 text-amber-400">
                         <Shield size={8} className="mr-1" /> PIN Gerente
                       </Badge>
                     )}

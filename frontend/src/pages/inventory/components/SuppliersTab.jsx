@@ -240,7 +240,7 @@ export default function SuppliersTab({
                 <p className="font-oswald text-sm font-bold text-primary truncate">
                   {summary.most_used_supplier || 'N/A'}
                 </p>
-                <p className="text-[10px] text-muted-foreground">{summary.most_used_count} órdenes</p>
+                <p className="text-xs text-muted-foreground">{summary.most_used_count} órdenes</p>
               </div>
             </div>
           </div>
@@ -418,7 +418,7 @@ export default function SuppliersTab({
                       className="flex items-center justify-between p-2 rounded-lg bg-yellow-600/10 border border-yellow-600/20"
                     >
                       <span className="text-sm truncate">{supplier.name}</span>
-                      <Badge className={`${catConfig.color} text-white text-[9px]`}>
+                      <Badge className={`${catConfig.color} text-white text-[11px]`}>
                         {catConfig.label}
                       </Badge>
                     </div>
@@ -546,7 +546,7 @@ export default function SuppliersTab({
               <div className="flex items-center gap-2 shrink-0">
                 {(sup.active_orders || 0) > 0 && (
                   <Badge 
-                    className="bg-blue-600 text-white font-oswald text-[10px] px-2"
+                    className="bg-blue-600 text-white font-oswald text-xs px-2"
                     data-testid={`active-orders-${sup.id}`}
                   >
                     <ShoppingCart size={10} className="mr-1" />
@@ -556,7 +556,7 @@ export default function SuppliersTab({
                 
                 <Badge 
                   variant="secondary" 
-                  className={`${catConfig.color} text-white text-[10px] px-2`}
+                  className={`${catConfig.color} text-white text-xs px-2`}
                 >
                   {catConfig.label}
                 </Badge>
@@ -696,7 +696,7 @@ export default function SuppliersTab({
                       data-testid={`category-select-${cat.id}`}
                     >
                       <Icon size={18} />
-                      <span className="text-[10px] font-medium">{cat.label}</span>
+                      <span className="text-xs font-medium">{cat.label}</span>
                     </button>
                   );
                 })}

@@ -396,7 +396,7 @@ export default function UserConfig() {
               <div>
                 <label className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
                   <Lock size={10} /> PIN de Acceso {isNew && <span className="text-red-400">*</span>}
-                  {!canEditPin && <Badge variant="outline" className="text-[9px] border-amber-500 text-amber-400 ml-1">Solo Admin</Badge>}
+                  {!canEditPin && <Badge variant="outline" className="text-[11px] border-amber-500 text-amber-400 ml-1">Solo Admin</Badge>}
                 </label>
                 {canEditPin ? (
                   <div className="relative">
@@ -413,7 +413,7 @@ export default function UserConfig() {
                         Limpiar
                       </button>
                     )}
-                    {user.pin && !validatePin(user.pin).valid && <p className="text-[10px] text-red-500 mt-1">{validatePin(user.pin).error}</p>}
+                    {user.pin && !validatePin(user.pin).valid && <p className="text-xs text-red-500 mt-1">{validatePin(user.pin).error}</p>}
                     <Dialog open={pinModalOpen} onOpenChange={setPinModalOpen}>
                       <DialogContent className="max-w-xs sm:max-w-sm mx-auto">
                         <DialogHeader>
@@ -453,8 +453,8 @@ export default function UserConfig() {
                 <div className="flex-1 text-sm">
                   <p className="font-oswald font-bold text-lg">{user.name || 'Nuevo'} {user.last_name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <Badge className={`${getRoleColor(user.role)} text-white text-[10px]`}>{currentRoleLabel}</Badge>
-                    {user.training_mode && <Badge className="bg-amber-500/20 text-amber-400 text-[10px]">Entrenamiento</Badge>}
+                    <Badge className={`${getRoleColor(user.role)} text-white text-xs`}>{currentRoleLabel}</Badge>
+                    {user.training_mode && <Badge className="bg-amber-500/20 text-amber-400 text-xs">Entrenamiento</Badge>}
                   </div>
                 </div>
               </div>
@@ -495,7 +495,7 @@ export default function UserConfig() {
             {/* Training Dashboard - Only shows if user has/had training */}
             {!isNew && (user.training_mode || (trainingStats && trainingStats.orders_count > 0)) && (
               <Section title="Progreso de Entrenamiento" icon={GraduationCap} defaultOpen={user.training_mode}
-                badge={user.training_mode ? <Badge className="bg-amber-500/20 text-amber-400 text-[9px] ml-2">Activo</Badge> : <Badge variant="secondary" className="text-[9px] ml-2">Historial</Badge>}
+                badge={user.training_mode ? <Badge className="bg-amber-500/20 text-amber-400 text-[11px] ml-2">Activo</Badge> : <Badge variant="secondary" className="text-[11px] ml-2">Historial</Badge>}
               >
                 {trainingStats ? (
                   <div className="space-y-3" data-testid="training-stats">
@@ -503,19 +503,19 @@ export default function UserConfig() {
                     <div className="grid grid-cols-2 gap-2">
                       <div className="bg-background rounded-lg p-3 text-center border border-border">
                         <p className="text-2xl font-oswald font-bold text-primary">{trainingStats.orders_count}</p>
-                        <p className="text-[10px] text-muted-foreground">Ordenes</p>
+                        <p className="text-xs text-muted-foreground">Ordenes</p>
                       </div>
                       <div className="bg-background rounded-lg p-3 text-center border border-border">
                         <p className="text-2xl font-oswald font-bold text-emerald-400">{trainingStats.bills_paid}</p>
-                        <p className="text-[10px] text-muted-foreground">Cobros Practicados</p>
+                        <p className="text-xs text-muted-foreground">Cobros Practicados</p>
                       </div>
                       <div className="bg-background rounded-lg p-3 text-center border border-border">
                         <p className="text-2xl font-oswald font-bold text-blue-400">{trainingStats.items_practiced}</p>
-                        <p className="text-[10px] text-muted-foreground">Items Procesados</p>
+                        <p className="text-xs text-muted-foreground">Items Procesados</p>
                       </div>
                       <div className="bg-background rounded-lg p-3 text-center border border-border">
                         <p className="text-2xl font-oswald font-bold text-amber-400">${trainingStats.total_amount_practiced.toLocaleString()}</p>
-                        <p className="text-[10px] text-muted-foreground">Monto Practicado</p>
+                        <p className="text-xs text-muted-foreground">Monto Practicado</p>
                       </div>
                     </div>
 
@@ -532,13 +532,13 @@ export default function UserConfig() {
                     {/* Recent Activity */}
                     {trainingStats.recent_activity?.length > 0 && (
                       <div>
-                        <p className="text-[10px] text-muted-foreground mb-1.5 font-bold uppercase">Actividad Reciente</p>
+                        <p className="text-xs text-muted-foreground mb-1.5 font-bold uppercase">Actividad Reciente</p>
                         <div className="space-y-1 max-h-32 overflow-y-auto">
                           {trainingStats.recent_activity.map((a, i) => (
                             <div key={i} className="flex items-center justify-between bg-background rounded px-2 py-1.5 text-xs border border-border">
                               <span className="text-muted-foreground">{a.date ? new Date(a.date).toLocaleString('es-DO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
                               <span>{a.items_count} items</span>
-                              <Badge variant={a.status === 'paid' ? 'default' : 'secondary'} className="text-[9px]">
+                              <Badge variant={a.status === 'paid' ? 'default' : 'secondary'} className="text-[11px]">
                                 {a.status === 'paid' ? 'Cobrado' : a.status === 'open' ? 'Abierto' : a.status}
                               </Badge>
                               <span className="font-mono font-bold">${a.total.toLocaleString()}</span>
@@ -611,7 +611,7 @@ export default function UserConfig() {
                     >
                       {isSelected && <Check size={14} />}
                       <span className="font-oswald">{role.name}</span>
-                      <span className={`text-[10px] ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
+                      <span className={`text-xs ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
                         {permCount}p {role.level != null ? `· N${role.level}` : ''}
                       </span>
                       {/* Edit/Delete for custom roles */}
@@ -650,7 +650,7 @@ export default function UserConfig() {
                 </h3>
                 <div className="flex items-center gap-2">
                   {specialCount > 0 && (
-                    <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px]">
+                    <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-xs">
                       <AlertTriangle size={10} className="mr-1" /> {specialCount} especial(es)
                     </Badge>
                   )}
@@ -681,9 +681,9 @@ export default function UserConfig() {
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-oswald font-bold text-sm">{cat.label}</span>
-                          <Badge variant="secondary" className="text-[10px]">{activeCount}/{catPerms.length}</Badge>
+                          <Badge variant="secondary" className="text-xs">{activeCount}/{catPerms.length}</Badge>
                           {specialInCat > 0 && (
-                            <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px]">{specialInCat} especial</Badge>
+                            <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-xs">{specialInCat} especial</Badge>
                           )}
                         </div>
                         {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -705,7 +705,7 @@ export default function UserConfig() {
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   <span className="text-sm truncate">{permLabel}</span>
-                                  {isSpecial && <span className="text-[9px] text-orange-400 flex-shrink-0">especial</span>}
+                                  {isSpecial && <span className="text-[11px] text-orange-400 flex-shrink-0">especial</span>}
                                 </div>
                                 <Switch
                                   checked={userHas}
@@ -724,7 +724,7 @@ export default function UserConfig() {
               </div>
 
               {/* Legend */}
-              <div className="mt-3 pt-3 border-t border-border flex items-center gap-4 text-[10px] text-muted-foreground">
+              <div className="mt-3 pt-3 border-t border-border flex items-center gap-4 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded border border-orange-500/40 bg-orange-500/10" />
                   <span>Permiso Especial (fuera del puesto)</span>
@@ -782,7 +782,7 @@ export default function UserConfig() {
                 <option value={20}>20 - Mesero</option>
                 <option value={10}>10 - Cocina/Apoyo</option>
               </select>
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Solo podra ver y gestionar usuarios con nivel inferior al suyo.
               </p>
             </div>

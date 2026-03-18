@@ -14,7 +14,7 @@ export default function TransfersReport({ data: reportData }) {
                   <Clock size={14} className="text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">{t.from_warehouse} → {t.to_warehouse}</p>
-                    <p className="text-[10px] text-muted-foreground">{t.created_at?.split('T')[0]} por {t.user_name}</p>
+                    <p className="text-xs text-muted-foreground">{t.created_at?.split('T')[0]} por {t.user_name}</p>
                   </div>
                 </div>
                 <Badge variant="outline">{t.items?.length || 0} items</Badge>

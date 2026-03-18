@@ -384,7 +384,7 @@ export default function ProductConfig() {
                     className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm font-mono"
                     data-testid="product-printed-name-input"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Cómo aparece en tickets y comandas (si está vacío, usa el nombre)
                   </p>
                 </div>
@@ -419,7 +419,7 @@ export default function ProductConfig() {
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Para agrupar en reportes fiscales y estadísticos
                   </p>
                 </div>
@@ -428,7 +428,7 @@ export default function ProductConfig() {
                 <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
                   <div>
                     <span className="text-sm font-semibold">Controlar Inventario</span>
-                    <p className="text-[10px] text-muted-foreground">Descontar stock al vender</p>
+                    <p className="text-xs text-muted-foreground">Descontar stock al vender</p>
                   </div>
                   <Switch 
                     checked={product.track_inventory}
@@ -443,7 +443,7 @@ export default function ProductConfig() {
                     <Printer size={14} className="text-orange-500" />
                     <span className="text-sm font-semibold">Canal de Impresión</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mb-3">
+                  <p className="text-xs text-muted-foreground mb-3">
                     Selecciona dónde se imprime la comanda. Si no seleccionas ninguno, usará el canal de la categoría.
                     Puedes seleccionar varios para combos (ej: comida a Cocina + bebida a Bar).
                   </p>
@@ -468,9 +468,9 @@ export default function ProductConfig() {
                       </div>
                       <div className="flex-1">
                         <span className="text-sm font-medium">Usar el de la Categoría</span>
-                        <p className="text-[10px] text-muted-foreground">Hereda el canal configurado para la categoría del producto</p>
+                        <p className="text-xs text-muted-foreground">Hereda el canal configurado para la categoría del producto</p>
                       </div>
-                      <Badge variant="secondary" className="text-[9px]">Por defecto</Badge>
+                      <Badge variant="secondary" className="text-[11px]">Por defecto</Badge>
                     </div>
 
                     {/* Lista de canales disponibles */}
@@ -508,12 +508,12 @@ export default function ProductConfig() {
                           <div className="flex-1">
                             <span className="text-sm font-medium">{channel.name}</span>
                             {channel.printer_name && (
-                              <p className="text-[10px] text-muted-foreground">Impresora: {channel.printer_name}</p>
+                              <p className="text-xs text-muted-foreground">Impresora: {channel.printer_name}</p>
                             )}
                           </div>
                           <Badge 
                             variant="outline" 
-                            className={`text-[9px] ${
+                            className={`text-[11px] ${
                               channel.code === 'kitchen' ? 'border-orange-500/50 text-orange-500' :
                               channel.code === 'bar' ? 'border-purple-500/50 text-purple-500' :
                               channel.code === 'receipt' ? 'border-green-500/50 text-green-500' :
@@ -530,11 +530,11 @@ export default function ProductConfig() {
                   {/* Indicador de canales seleccionados */}
                   {product.print_channels.length > 0 && (
                     <div className="mt-3 flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] text-muted-foreground">Imprimirá en:</span>
+                      <span className="text-xs text-muted-foreground">Imprimirá en:</span>
                       {product.print_channels.map(code => {
                         const ch = printChannels.find(c => c.code === code);
                         return (
-                          <Badge key={code} className="bg-orange-500/20 text-orange-400 text-[10px]">
+                          <Badge key={code} className="bg-orange-500/20 text-orange-400 text-xs">
                             {ch?.name || code}
                           </Badge>
                         );
@@ -549,7 +549,7 @@ export default function ProductConfig() {
                     <DollarSign size={14} className="text-green-500" />
                     <span className="text-sm font-semibold">Impuestos Aplicables</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mb-3">
+                  <p className="text-xs text-muted-foreground mb-3">
                     Configura qué impuestos aplican a este producto. Puedes heredar de la categoría o configurar individualmente.
                   </p>
                   
@@ -573,10 +573,10 @@ export default function ProductConfig() {
                       </div>
                       <div>
                         <span className="text-sm font-medium">Usar el de la Categoría</span>
-                        <p className="text-[10px] text-muted-foreground">Hereda configuración de impuestos de la categoría del producto</p>
+                        <p className="text-xs text-muted-foreground">Hereda configuración de impuestos de la categoría del producto</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className={`text-[9px] ${product.use_category_taxes ? 'border-green-500/50 text-green-500' : ''}`}>
+                    <Badge variant="outline" className={`text-[11px] ${product.use_category_taxes ? 'border-green-500/50 text-green-500' : ''}`}>
                       {product.use_category_taxes ? 'Por defecto' : ''}
                     </Badge>
                   </div>
@@ -619,12 +619,12 @@ export default function ProductConfig() {
                               </div>
                               <div>
                                 <span className="text-sm font-medium">{tax.description}</span>
-                                <p className="text-[10px] text-muted-foreground">{tax.rate}%</p>
+                                <p className="text-xs text-muted-foreground">{tax.rate}%</p>
                               </div>
                             </div>
                             <Badge 
                               variant="outline" 
-                              className={`text-[9px] ${
+                              className={`text-[11px] ${
                                 isApplied 
                                   ? 'border-green-500/50 text-green-500' 
                                   : 'border-red-500/50 text-red-500'
@@ -645,11 +645,11 @@ export default function ProductConfig() {
                       {/* Resumen de impuestos exentos */}
                       {(product.tax_exemptions || []).length > 0 && (
                         <div className="mt-3 flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] text-muted-foreground">Exento de:</span>
+                          <span className="text-xs text-muted-foreground">Exento de:</span>
                           {(product.tax_exemptions || []).map(taxId => {
                             const tax = taxConfig.find(t => t.id === taxId);
                             return (
-                              <Badge key={taxId} className="bg-red-500/20 text-red-400 text-[10px]">
+                              <Badge key={taxId} className="bg-red-500/20 text-red-400 text-xs">
                                 {tax?.name || taxId}
                               </Badge>
                             );
@@ -726,7 +726,7 @@ export default function ProductConfig() {
                       <Image size={16} className="text-primary" />
                       <span className="text-sm font-medium text-primary">Seleccionar imagen</span>
                     </label>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       JPG, PNG, WebP o GIF (máx. 5MB)
                     </span>
                   </div>
@@ -830,7 +830,7 @@ export default function ProductConfig() {
                     <div className="flex flex-wrap gap-1.5">
                       <button
                         onClick={() => setProduct(p => ({ ...p, button_bg_color: '' }))}
-                        className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center text-[10px] ${
+                        className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center text-xs ${
                           !product.button_bg_color ? 'border-primary' : 'border-border'
                         } bg-background`}
                         title="Predeterminado"
@@ -1026,7 +1026,7 @@ export default function ProductConfig() {
                     <h3 className="font-oswald text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       <ListChecks size={14} /> Preguntas Forzadas / Modificadores
                     </h3>
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Grupos de opciones que aparecerán al agregar este producto
                     </p>
                   </div>
@@ -1054,7 +1054,7 @@ export default function ProductConfig() {
                     <p className="text-sm text-muted-foreground">
                       No hay grupos de preguntas asignados
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Agregue grupos como "Endulzantes", "Tamaño", "Extras", etc.
                     </p>
                   </div>
@@ -1073,14 +1073,14 @@ export default function ProductConfig() {
                               {getModifierGroupName(assignment.group_id)}
                             </span>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <Badge variant="secondary" className="text-[9px]">
+                              <Badge variant="secondary" className="text-[11px]">
                                 Min: {assignment.min_selections}
                               </Badge>
-                              <Badge variant="secondary" className="text-[9px]">
+                              <Badge variant="secondary" className="text-[11px]">
                                 Max: {assignment.max_selections}
                               </Badge>
                               {assignment.allow_multiple && (
-                                <Badge variant="outline" className="text-[9px] border-green-500 text-green-400">
+                                <Badge variant="outline" className="text-[11px] border-green-500 text-green-400">
                                   Múltiple
                                 </Badge>
                               )}
@@ -1231,7 +1231,7 @@ export default function ProductConfig() {
                 className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
                 data-testid="min-selections-input"
               />
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 0 = Opcional, mayor que 0 = Obligatorio
               </p>
             </div>
@@ -1252,7 +1252,7 @@ export default function ProductConfig() {
             <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
               <div>
                 <span className="text-sm font-semibold">Permite Múltiples</span>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Puede seleccionar la misma opción varias veces
                 </p>
               </div>
@@ -1327,7 +1327,7 @@ export default function ProductConfig() {
                           data-testid={`option-name-${idx}`}
                         />
                         <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[10px] text-muted-foreground">RD$</span>
+                          <span className="text-xs text-muted-foreground">RD$</span>
                           <NumericInput label="Valor"
                             value={opt.price || 0}
                             onChange={e => updateOption(idx, 'price', parseFloat(e.target.value) || 0)}

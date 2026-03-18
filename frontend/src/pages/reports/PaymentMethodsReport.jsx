@@ -27,7 +27,7 @@ export default function PaymentMethodsReport({ data: reportData }) {
                   <Sparkline data={pm.sparkline || []} color={COLORS[i % COLORS.length]} />
                 </div>
                 <div className="flex items-center gap-3 text-xs">
-                  <Badge variant="outline" className="text-[9px]">{pm.percentage}%</Badge>
+                  <Badge variant="outline" className="text-[11px]">{pm.percentage}%</Badge>
                   <span className="font-oswald text-primary font-bold">{formatMoney(pm.total)}</span>
                 </div>
               </div>

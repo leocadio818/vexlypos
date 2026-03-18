@@ -200,11 +200,11 @@ export default function TicketDemo() {
             <p className="text-xs text-white/50 flex items-center gap-2">
               Vista previa y configuración
               {usingServerConfig ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px]">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs">
                   <Cloud size={10} /> Servidor
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px]">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs">
                   <CloudOff size={10} /> Demo
                 </span>
               )}

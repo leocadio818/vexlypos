@@ -6,11 +6,11 @@ export default function PurchaseOrdersReport({ data }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-gradient-to-br from-purple-500/20 to-violet-600/10 border border-purple-500/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-purple-400 uppercase">Total Compras</p>
+          <p className="text-xs text-purple-400 uppercase">Total Compras</p>
           <p className="font-oswald text-2xl font-bold text-purple-400">{formatMoney(data.summary.total_value)}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Total Órdenes</p>
+          <p className="text-xs text-muted-foreground uppercase">Total Órdenes</p>
           <p className="font-oswald text-2xl font-bold">{data.summary.total_orders}</p>
         </div>
       </div>

@@ -419,7 +419,7 @@ export default function PurchasesTab({
           <div className="text-xs text-muted-foreground mb-1">Por Estado</div>
           <div className="flex flex-wrap gap-1">
             {Object.entries(summaryStats.byStatus).map(([status, count]) => (
-              <Badge key={status} className={`${PO_STATUS[status]?.color} text-white text-[10px]`}>
+              <Badge key={status} className={`${PO_STATUS[status]?.color} text-white text-xs`}>
                 {PO_STATUS[status]?.label}: {count}
               </Badge>
             ))}
@@ -772,7 +772,7 @@ export default function PurchasesTab({
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-oswald font-bold">{po.supplier_name}</h3>
-                    <Badge className={`${status.color} text-white text-[9px]`}>{status.label}</Badge>
+                    <Badge className={`${status.color} text-white text-[11px]`}>{status.label}</Badge>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(po.created_at).toLocaleDateString()} • {po.items?.length} items • 
@@ -1008,7 +1008,7 @@ export default function PurchasesTab({
                       
                       <div className="flex items-center gap-2">
                         <div className="flex-1">
-                          <label className="text-[10px] text-muted-foreground">Cantidad ({getUnitLabel(item.purchase_unit || selectedIng?.purchase_unit)})</label>
+                          <label className="text-xs text-muted-foreground">Cantidad ({getUnitLabel(item.purchase_unit || selectedIng?.purchase_unit)})</label>
                           <NumericInput label="Valor"
                             value={item.quantity}
                             onChange={e => {
@@ -1025,7 +1025,7 @@ export default function PurchasesTab({
                           />
                         </div>
                         <div className="flex-1">
-                          <label className="text-[10px] text-muted-foreground">Precio por {getUnitLabel(item.purchase_unit || selectedIng?.purchase_unit)}</label>
+                          <label className="text-xs text-muted-foreground">Precio por {getUnitLabel(item.purchase_unit || selectedIng?.purchase_unit)}</label>
                           <NumericInput label="Valor"
                            
                             value={item.unit_price}
@@ -1043,7 +1043,7 @@ export default function PurchasesTab({
                           />
                         </div>
                         <div className="text-right min-w-[80px]">
-                          <label className="text-[10px] text-muted-foreground">Subtotal</label>
+                          <label className="text-xs text-muted-foreground">Subtotal</label>
                           <div className="font-oswald font-bold text-primary">
                             {formatMoney((item.quantity || 0) * (item.unit_price || 0))}
                           </div>
@@ -1053,7 +1053,7 @@ export default function PurchasesTab({
                       {/* Conversion info */}
                       {selectedIng && selectedIng.conversion_factor > 1 && item.quantity > 0 && (
                         <div className="mt-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
-                          <div className="flex items-center gap-1 text-[10px] text-emerald-400">
+                          <div className="flex items-center gap-1 text-xs text-emerald-400">
                             <ArrowLeftRight size={10} />
                             <span>
                               Al recibir: {item.quantity} {getUnitLabel(item.purchase_unit)} = {' '}
@@ -1187,7 +1187,7 @@ export default function PurchasesTab({
                             Se agregarán <span className="font-bold">{receivedInDispatchUnits.toFixed(2)} {getUnitLabel(dispatchUnit)}</span> al inventario
                           </span>
                         </div>
-                        <div className="text-[10px] text-muted-foreground mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           Cálculo: {receiveDialog.items[idx]?.received_quantity} {getUnitLabel(purchaseUnit)} × {conversionFactor} = {receivedInDispatchUnits.toFixed(2)} {getUnitLabel(dispatchUnit)}
                         </div>
                       </div>

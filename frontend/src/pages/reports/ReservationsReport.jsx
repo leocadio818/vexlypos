@@ -33,27 +33,27 @@ export default function ReservationsReport({ data }) {
         <div className="bg-card border border-border rounded-xl p-4 text-center">
           <CalendarDays size={20} className="text-primary mx-auto mb-1" />
           <p className="font-oswald text-2xl font-bold">{summary.total}</p>
-          <p className="text-[10px] text-muted-foreground">Total Reservaciones</p>
+          <p className="text-xs text-muted-foreground">Total Reservaciones</p>
         </div>
         <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
           <CheckCircle2 size={20} className="text-green-500 mx-auto mb-1" />
           <p className="font-oswald text-2xl font-bold text-green-600">{summary.confirmed + summary.seated + summary.completed}</p>
-          <p className="text-[10px] text-muted-foreground">Cumplidas</p>
+          <p className="text-xs text-muted-foreground">Cumplidas</p>
         </div>
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
           <XCircle size={20} className="text-red-500 mx-auto mb-1" />
           <p className="font-oswald text-2xl font-bold text-red-600">{summary.no_show}</p>
-          <p className="text-[10px] text-muted-foreground">No Show</p>
+          <p className="text-xs text-muted-foreground">No Show</p>
         </div>
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-center">
           <Users size={20} className="text-blue-500 mx-auto mb-1" />
           <p className="font-oswald text-2xl font-bold text-blue-600">{summary.total_guests}</p>
-          <p className="text-[10px] text-muted-foreground">Total Personas</p>
+          <p className="text-xs text-muted-foreground">Total Personas</p>
         </div>
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-center">
           <TrendingUp size={20} className="text-amber-500 mx-auto mb-1" />
           <p className="font-oswald text-2xl font-bold text-amber-600">{formatPct(summary.fulfillment_rate)}</p>
-          <p className="text-[10px] text-muted-foreground">Tasa Cumplimiento</p>
+          <p className="text-xs text-muted-foreground">Tasa Cumplimiento</p>
         </div>
       </div>
 
@@ -126,12 +126,12 @@ export default function ReservationsReport({ data }) {
                     </div>
                     <div>
                       <span className="font-medium text-sm">{c.name}</span>
-                      {c.phone && <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Phone size={8} />{c.phone}</p>}
+                      {c.phone && <p className="text-xs text-muted-foreground flex items-center gap-1"><Phone size={8} />{c.phone}</p>}
                     </div>
                   </div>
                   <div className="text-right">
                     <span className="font-oswald font-bold text-sm">{c.count}</span>
-                    <p className="text-[10px] text-muted-foreground">{c.total_guests} personas</p>
+                    <p className="text-xs text-muted-foreground">{c.total_guests} personas</p>
                   </div>
                 </div>
               ))}
@@ -173,7 +173,7 @@ export default function ReservationsReport({ data }) {
                     <td className="p-3 text-xs">{r.tables || '-'}</td>
                     <td className="p-3 text-xs">{r.area || '-'}</td>
                     <td className="p-3">
-                      <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || 'bg-gray-500/20 text-gray-500'}`}>
+                      <Badge className={`text-xs ${STATUS_COLORS[r.status] || 'bg-gray-500/20 text-gray-500'}`}>
                         {STATUS_LABELS[r.status] || r.status}
                       </Badge>
                     </td>

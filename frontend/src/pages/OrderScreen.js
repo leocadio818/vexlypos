@@ -1414,7 +1414,7 @@ export default function OrderScreen() {
                         disabled={moveItemsMode}
                       >
                         {moveItemsMode && isCurrentOrder ? 'Desde aquí →' : `Cuenta #${ord.account_number || 1}`}
-                        {!moveItemsMode && <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>}
+                        {!moveItemsMode && <span className="ml-1 text-[11px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>}
                       </button>
                     )}
                     {/* Print pre-check button for accounts with items */}
@@ -1497,7 +1497,7 @@ export default function OrderScreen() {
                       } ${canDelete ? 'pr-7' : ''}`}
                     >
                       Cuenta #{ord.account_number || 1}
-                      <span className="ml-1 text-[9px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
+                      <span className="ml-1 text-[11px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
                     </button>
                     {/* Delete button for empty accounts */}
                     {canDelete && (
@@ -1522,7 +1522,7 @@ export default function OrderScreen() {
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-1">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Selecciona items para mover
                   </p>
                   {activeItems.length > 0 && (
@@ -1534,7 +1534,7 @@ export default function OrderScreen() {
                           setSelectedSplitItems(activeItems.map(i => i.id));
                         }
                       }}
-                      className="text-[10px] text-primary hover:underline font-semibold"
+                      className="text-xs text-primary hover:underline font-semibold"
                     >
                       {selectedSplitItems.length === activeItems.length ? '✓ Deseleccionar todos' : '☐ Seleccionar todos'}
                     </button>
@@ -1601,7 +1601,7 @@ export default function OrderScreen() {
                   </div>
                 </>
               ) : (
-                <p className="text-[10px] text-muted-foreground text-center">
+                <p className="text-xs text-muted-foreground text-center">
                   Toca los items que deseas mover a otra cuenta
                 </p>
               )}
@@ -1662,7 +1662,7 @@ export default function OrderScreen() {
                             ))}
                           </div>
                         )}
-                        {item.notes && <p className="text-[10px] text-yellow-500 mt-1 italic">📝 {item.notes}</p>}
+                        {item.notes && <p className="text-xs text-yellow-500 mt-1 italic">📝 {item.notes}</p>}
                         <div className="mt-1">
                           {item.status === 'pending' && <Badge variant="outline" className="text-[8px] h-4 border-yellow-600 text-yellow-500">Pendiente</Badge>}
                           {item.status === 'sent' && <Badge variant="outline" className="text-[8px] h-4 border-blue-500 text-blue-400">Enviado</Badge>}
@@ -1839,7 +1839,7 @@ export default function OrderScreen() {
                 {presetQty > 0 && <span className="ml-0.5">{presetQty}</span>}
               </button>
             )}
-            <span className={`text-white/50 mx-1 lg:hidden ${largeMode ? 'text-xs' : 'text-[10px]'}`}>Col:</span>
+            <span className={`text-white/50 mx-1 lg:hidden ${largeMode ? 'text-xs' : 'text-xs'}`}>Col:</span>
             {[2, 3, 4, 5].map(num => (
               <button
                 key={num}
@@ -1920,9 +1920,9 @@ export default function OrderScreen() {
                     className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
                     style={{ backgroundColor: color }}>
                     <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>{cat.name}</span>
-                    <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[10px]'}`} style={{ opacity: 0.7 }}>{catProductCount} productos</span>
+                    <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.7 }}>{catProductCount} productos</span>
                     <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`}>
-                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-[10px]' : 'text-xs md:text-[9px]'}`}>{catProductCount}</span>
+                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{catProductCount}</span>
                     </div>
                   </button>
                 );
@@ -2203,7 +2203,7 @@ export default function OrderScreen() {
               <div key={group.id}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm font-bold">{group.name}</span>
-                  {isRequired && <Badge variant="destructive" className="text-[10px] h-5 px-2">Requerido</Badge>}
+                  {isRequired && <Badge variant="destructive" className="text-xs h-5 px-2">Requerido</Badge>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {group.options.map(opt => {
@@ -2457,16 +2457,16 @@ export default function OrderScreen() {
                         <span className="text-sm font-medium flex-1">{reason.name}</span>
                         <div className="flex items-center gap-1 shrink-0">
                           {reason.requires_manager_auth && (
-                            <Badge variant="outline" className="text-[9px] bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
+                            <Badge variant="outline" className="text-[11px] bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
                               <Lock size={8} className="mr-0.5" /> Auth
                             </Badge>
                           )}
                           {reason.return_to_inventory ? (
-                            <Badge variant="outline" className="text-[9px] bg-green-500/10 text-green-500 border-green-500/30">
+                            <Badge variant="outline" className="text-[11px] bg-green-500/10 text-green-500 border-green-500/30">
                               <RotateCcw size={10} className="mr-1" /> Retorna
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-[9px] bg-red-500/10 text-red-500 border-red-500/30">
+                            <Badge variant="outline" className="text-[11px] bg-red-500/10 text-red-500 border-red-500/30">
                               <Ban size={10} className="mr-1" /> Merma
                             </Badge>
                           )}
@@ -2491,7 +2491,7 @@ export default function OrderScreen() {
                         Autorizado por: {cancelDialog.authorizedBy.name}
                         {cancelDialog.authorizedBy.is_superuser && <span className="text-xs ml-1">(Superusuario)</span>}
                       </span>
-                      <Badge variant="outline" className="text-[9px] bg-green-500/20 text-green-400 border-green-500/40">
+                      <Badge variant="outline" className="text-[11px] bg-green-500/20 text-green-400 border-green-500/40">
                         ✓ Verificado
                       </Badge>
                     </>
@@ -2748,12 +2748,12 @@ export default function OrderScreen() {
               <div className="flex items-center justify-center gap-3">
                 <div className="px-3 py-2 rounded-lg bg-card border border-border">
                   <span className="font-oswald text-lg text-primary">Mesa #{table?.number}</span>
-                  <span className="block text-[10px] text-muted-foreground">{activeItems.length} items</span>
+                  <span className="block text-xs text-muted-foreground">{activeItems.length} items</span>
                 </div>
                 <MoveRight size={20} className="text-primary" />
                 <div className="px-3 py-2 rounded-lg bg-card border border-border">
                   <span className="font-oswald text-lg text-yellow-400">Mesa #{mergeConfirm.targetTableNumber}</span>
-                  <span className="block text-[10px] text-muted-foreground">Ocupada</span>
+                  <span className="block text-xs text-muted-foreground">Ocupada</span>
                 </div>
               </div>
             </div>
@@ -2832,7 +2832,7 @@ export default function OrderScreen() {
                   );
                 })}
             </div>
-            <p className="text-[10px] text-muted-foreground text-center">
+            <p className="text-xs text-muted-foreground text-center">
               Los items de la cuenta actual se moverán a la cuenta seleccionada
             </p>
             <Button 

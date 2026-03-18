@@ -9,11 +9,11 @@ export default function SystemAuditReport({ data, auditEventFilter, onFilterChan
     <div className="space-y-4" data-testid="system-audit-report">
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Total Actividades</p>
+          <p className="text-xs text-muted-foreground uppercase">Total Actividades</p>
           <p className="font-oswald text-2xl font-bold">{data.summary?.total_activities || 0}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Valor Total</p>
+          <p className="text-xs text-muted-foreground uppercase">Valor Total</p>
           <p className="font-oswald text-xl font-bold text-primary">{formatMoney(data.summary?.total_value || 0)}</p>
         </div>
       </div>
@@ -79,7 +79,7 @@ export default function SystemAuditReport({ data, auditEventFilter, onFilterChan
                         {act.timestamp?.split('T')[1]?.slice(0, 8) || act.timestamp?.slice(11, 19) || ''}
                       </td>
                       <td className="py-2">
-                        <Badge variant={isVoid ? 'destructive' : isAdjust ? 'secondary' : 'outline'} className="text-[9px] whitespace-nowrap">{act.type}</Badge>
+                        <Badge variant={isVoid ? 'destructive' : isAdjust ? 'secondary' : 'outline'} className="text-[11px] whitespace-nowrap">{act.type}</Badge>
                       </td>
                       <td className="py-2 max-w-[250px] truncate" title={act.description}>{act.description}</td>
                       <td className="py-2 font-medium">{act.user}</td>

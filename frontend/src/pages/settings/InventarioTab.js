@@ -287,7 +287,7 @@ export default function InventarioTab() {
                   </div>
                   <div>
                     <span className="font-oswald font-bold">{cat.name}</span>
-                    <p className="text-[10px] text-muted-foreground">{products.filter(p => p.category_id === cat.id).length} productos</p>
+                    <p className="text-xs text-muted-foreground">{products.filter(p => p.category_id === cat.id).length} productos</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -312,7 +312,7 @@ export default function InventarioTab() {
             <h2 className="font-oswald text-base font-bold flex items-center gap-2">
               <Package size={18} className="text-primary" />
               Productos
-              <Badge variant="secondary" className="text-[10px]">{products.length}</Badge>
+              <Badge variant="secondary" className="text-xs">{products.length}</Badge>
             </h2>
             <Link to="/product/new?from=products" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold" data-testid="add-product-btn">
               <Plus size={14} /> Nuevo Producto
@@ -342,7 +342,7 @@ export default function InventarioTab() {
                 <div className="flex items-center gap-2 mb-2" style={{ backgroundColor: color + '60', padding: '6px 12px', borderRadius: '8px', borderLeft: `4px solid ${color}` }}>
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                   <span className="font-oswald font-bold text-sm text-foreground">{catName}</span>
-                  <Badge variant="secondary" className="text-[9px]">{prods.length}</Badge>
+                  <Badge variant="secondary" className="text-[11px]">{prods.length}</Badge>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {prods.map(prod => (
@@ -392,8 +392,8 @@ export default function InventarioTab() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="font-oswald font-bold text-sm">{g.name}</span>
-                        {g.min_selection > 0 && <Badge variant="destructive" className="text-[10px]">Min: {g.min_selection}</Badge>}
-                        {g.max_selection > 0 && <Badge variant="outline" className="text-[10px]">Max: {g.max_selection}</Badge>}
+                        {g.min_selection > 0 && <Badge variant="destructive" className="text-xs">Min: {g.min_selection}</Badge>}
+                        {g.max_selection > 0 && <Badge variant="outline" className="text-xs">Max: {g.max_selection}</Badge>}
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEditModifier(g)} data-testid={`edit-modifier-${g.id}`}><Pencil size={14} /></Button>
@@ -545,7 +545,7 @@ export default function InventarioTab() {
                 <Receipt size={14} className="text-primary" />
                 Impuestos Aplicables
               </label>
-              <p className="text-[10px] text-muted-foreground mb-2">
+              <p className="text-xs text-muted-foreground mb-2">
                 Los productos de esta categoría heredarán estos impuestos (si no tienen configuración propia)
               </p>
               <div className="space-y-2 bg-background rounded-lg p-3 border border-border">
@@ -565,7 +565,7 @@ export default function InventarioTab() {
                         />
                         <div>
                           <span className="text-sm font-medium">{tax.name}</span>
-                          <span className="text-[10px] text-muted-foreground ml-2">({tax.rate}%)</span>
+                          <span className="text-xs text-muted-foreground ml-2">({tax.rate}%)</span>
                         </div>
                       </div>
                       {tax.is_dine_in_only && (

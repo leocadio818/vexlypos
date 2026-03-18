@@ -561,7 +561,7 @@ export default function InventoryManager() {
                     
                     <div className="flex flex-col items-center">
                       <ChevronRight size={24} className="text-emerald-500" />
-                      <div className="text-[10px] text-emerald-400 font-mono">
+                      <div className="text-xs text-emerald-400 font-mono">
                         ×{conversionAnalysis.data.ingredient?.conversion_factor}
                       </div>
                     </div>
@@ -623,7 +623,7 @@ export default function InventoryManager() {
                           <div className="font-oswald font-bold text-emerald-400">
                             {formatMoney(recipe.cost_with_waste)}
                           </div>
-                          <div className="text-[10px] text-muted-foreground font-mono">
+                          <div className="text-xs text-muted-foreground font-mono">
                             {formatMoney(recipe.cost_per_unit)} × {recipe.quantity_used}
                           </div>
                         </div>
@@ -879,7 +879,7 @@ export default function InventoryManager() {
                       )}
                     </span>
                   </div>
-                  <div className="text-[10px] text-muted-foreground mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     = {differenceDialog.data.quantity} {differenceDialog.data.input_unit} 
                     {differenceDialog.data.input_unit === differenceDialog.data.purchase_unit && 
                       ` × ${differenceDialog.data.conversion_factor} = ${(differenceDialog.data.quantity * differenceDialog.data.conversion_factor).toFixed(2)} ${differenceDialog.data.dispatch_unit}`

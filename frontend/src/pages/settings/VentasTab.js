@@ -192,7 +192,7 @@ export default function VentasTab() {
                   )}
                   <span className="font-oswald font-bold text-sm text-center">{m.name}</span>
                   {m.currency && m.currency !== 'DOP' && (
-                    <span className="text-[10px] opacity-70 mt-1">1 = {m.exchange_rate}</span>
+                    <span className="text-xs opacity-70 mt-1">1 = {m.exchange_rate}</span>
                   )}
                 </div>
                 
@@ -341,13 +341,13 @@ export default function VentasTab() {
               <div key={reason.id} className={`flex items-center justify-between p-4 rounded-lg bg-card border border-border ${reason.active === false ? 'opacity-50' : ''}`}>
                 <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
                   <span className="font-semibold text-sm">{reason.name}</span>
-                  <Badge variant={reason.return_to_inventory || reason.affects_inventory ? 'default' : 'destructive'} className="text-[9px]">
+                  <Badge variant={reason.return_to_inventory || reason.affects_inventory ? 'default' : 'destructive'} className="text-[11px]">
                     {reason.return_to_inventory || reason.affects_inventory ? 'Retorna inventario' : 'No retorna'}
                   </Badge>
                   {reason.allowed_roles && reason.allowed_roles.length < 5 && (
-                    <Badge variant="outline" className="text-[9px]">{reason.allowed_roles.length} roles</Badge>
+                    <Badge variant="outline" className="text-[11px]">{reason.allowed_roles.length} roles</Badge>
                   )}
-                  {reason.active === false && <Badge className="text-[9px] bg-red-500/20 text-red-500">INACTIVA</Badge>}
+                  {reason.active === false && <Badge className="text-[11px] bg-red-500/20 text-red-500">INACTIVA</Badge>}
                 </div>
                 <div className="flex items-center gap-6 shrink-0">
                   <Switch checked={reason.active !== false}
@@ -397,14 +397,14 @@ export default function VentasTab() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold">{st.name}</span>
                     {st.default_ncf_type_id && (
-                      <Badge variant="outline" className="text-[9px] border-blue-500/50 text-blue-400 bg-blue-500/10">
+                      <Badge variant="outline" className="text-[11px] border-blue-500/50 text-blue-400 bg-blue-500/10">
                         <FileText size={10} className="mr-1" />
                         {st.default_ncf_type_id}
                         {ncfType && <span className="ml-1 opacity-70">({ncfType.description?.split(' ')[0] || ''})</span>}
                       </Badge>
                     )}
                     {exemptCount > 0 && (
-                      <Badge variant="outline" className="text-[9px] border-muted-foreground/50 text-muted-foreground">
+                      <Badge variant="outline" className="text-[11px] border-muted-foreground/50 text-muted-foreground">
                         {exemptCount} no aplica(n)
                       </Badge>
                     )}
@@ -494,12 +494,12 @@ export default function VentasTab() {
               <Switch checked={reasonDialog.affects_inventory} onCheckedChange={(v) => setReasonDialog({ ...reasonDialog, affects_inventory: v })} />
               <div>
                 <label className="text-sm font-medium">Afecta Inventario</label>
-                <p className="text-[10px] text-muted-foreground">Si se activa, los productos anulados retornan al stock</p>
+                <p className="text-xs text-muted-foreground">Si se activa, los productos anulados retornan al stock</p>
               </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Puestos Autorizados</label>
-              <p className="text-[10px] text-muted-foreground mb-2">Solo estos roles pueden usar esta razon sin autorizacion de un superior</p>
+              <p className="text-xs text-muted-foreground mb-2">Solo estos roles pueden usar esta razon sin autorizacion de un superior</p>
               <div className="flex flex-wrap gap-2">
                 {[
                   { id: 'admin', label: 'Admin' },

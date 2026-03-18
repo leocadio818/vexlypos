@@ -167,7 +167,7 @@ export default function AnulacionesReport() {
                 <span className="text-xs font-semibold text-muted-foreground uppercase">Total Anulado</span>
               </div>
               <p className="font-oswald text-2xl font-bold text-destructive">{formatMoney(reportData.summary.total_voided)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{reportData.summary.total_count} anulaciones - {getPeriodLabel()}</p>
+              <p className="text-xs text-muted-foreground mt-1">{reportData.summary.total_count} anulaciones - {getPeriodLabel()}</p>
             </div>
 
             {/* Recovered */}
@@ -179,7 +179,7 @@ export default function AnulacionesReport() {
                 <span className="text-xs font-semibold text-muted-foreground uppercase">Recuperado</span>
               </div>
               <p className="font-oswald text-2xl font-bold text-green-500">{formatMoney(reportData.summary.recovered_value)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">Devuelto a inventario</p>
+              <p className="text-xs text-muted-foreground mt-1">Devuelto a inventario</p>
             </div>
 
             {/* Loss */}
@@ -191,7 +191,7 @@ export default function AnulacionesReport() {
                 <span className="text-xs font-semibold text-muted-foreground uppercase">Pérdida/Merma</span>
               </div>
               <p className="font-oswald text-2xl font-bold text-red-500">{formatMoney(reportData.summary.loss_value)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">Sin recuperar</p>
+              <p className="text-xs text-muted-foreground mt-1">Sin recuperar</p>
             </div>
 
             {/* Recovery Rate */}
@@ -207,7 +207,7 @@ export default function AnulacionesReport() {
                   ? `${((reportData.summary.recovered_value / reportData.summary.total_voided) * 100).toFixed(1)}%`
                   : '0%'}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">Del valor anulado</p>
+              <p className="text-xs text-muted-foreground mt-1">Del valor anulado</p>
             </div>
           </div>
 
@@ -335,32 +335,32 @@ export default function AnulacionesReport() {
                           {log.product_name || (log.items_cancelled || []).map(i => i.product_name).join(', ')}
                         </span>
                         {log.restored_to_inventory ? (
-                          <Badge variant="outline" className="text-[9px] bg-green-500/10 text-green-500 border-green-500/30 shrink-0">
+                          <Badge variant="outline" className="text-[11px] bg-green-500/10 text-green-500 border-green-500/30 shrink-0">
                             <RotateCcw size={10} className="mr-1" /> Retornado
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[9px] bg-red-500/10 text-red-500 border-red-500/30 shrink-0">
+                          <Badge variant="outline" className="text-[11px] bg-red-500/10 text-red-500 border-red-500/30 shrink-0">
                             <Ban size={10} className="mr-1" /> Merma
                           </Badge>
                         )}
                         {log.authorized_by_name && (
-                          <Badge variant="outline" className="text-[9px] bg-blue-500/10 text-blue-500 border-blue-500/30 shrink-0">
+                          <Badge variant="outline" className="text-[11px] bg-blue-500/10 text-blue-500 border-blue-500/30 shrink-0">
                             Auth: {log.authorized_by_name}
                           </Badge>
                         )}
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {log.reason} • Por: {log.requested_by_name || log.user_name} • {new Date(log.created_at).toLocaleString('es-DO')}
                       </p>
                       {log.comments && (
-                        <p className="text-[10px] text-muted-foreground/70 mt-0.5 italic">"{log.comments}"</p>
+                        <p className="text-xs text-muted-foreground/70 mt-0.5 italic">"{log.comments}"</p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
                       <p className="font-oswald font-bold text-destructive">
                         {formatMoney(log.total_value || (log.unit_price * log.quantity))}
                       </p>
-                      <p className="text-[9px] text-muted-foreground">
+                      <p className="text-[11px] text-muted-foreground">
                         x{log.quantity || (log.items_cancelled || []).reduce((s, i) => s + i.quantity, 0)}
                       </p>
                     </div>

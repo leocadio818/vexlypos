@@ -35,7 +35,7 @@ export default function InventoryLevelsReport({ data: reportData }) {
                     <td className="py-2 text-right text-muted-foreground">{item.min_stock}</td>
                     <td className="py-2 text-right font-oswald">{formatMoney(item.value)}</td>
                     <td className="py-2 text-center">
-                      {item.is_low ? <Badge variant="destructive" className="text-[9px]">Bajo</Badge> : <Badge variant="secondary" className="text-[9px]">OK</Badge>}
+                      {item.is_low ? <Badge variant="destructive" className="text-[11px]">Bajo</Badge> : <Badge variant="secondary" className="text-[11px]">OK</Badge>}
                     </td>
                   </tr>
                 ))}

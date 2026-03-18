@@ -20,7 +20,7 @@ function ColorPicker({ label, value, onChange, description }) {
   return (
     <div>
       <label className="text-xs font-semibold mb-1 block">{label}</label>
-      {description && <p className="text-[10px] text-muted-foreground mb-2">{description}</p>}
+      {description && <p className="text-xs text-muted-foreground mb-2">{description}</p>}
       <div className="flex gap-2 items-center">
         <input
           type="color"
@@ -119,7 +119,7 @@ export default function ThemeTab() {
               <Moon size={20} className="text-purple-400" />
               <span className="font-oswald font-bold text-white text-sm">Tema Original</span>
             </div>
-            <p className="text-[10px] text-white/50">Glassmorphism oscuro con efectos de luz neon</p>
+            <p className="text-xs text-white/50">Glassmorphism oscuro con efectos de luz neon</p>
             <div className="flex gap-1.5 mt-3">
               <div className="w-4 h-4 rounded-full bg-purple-500/60" />
               <div className="w-4 h-4 rounded-full bg-blue-500/60" />
@@ -155,7 +155,7 @@ export default function ThemeTab() {
               <Sun size={20} className="text-slate-700" />
               <span className="font-oswald font-bold text-slate-800 text-sm">Minimalista</span>
             </div>
-            <p className="text-[10px] text-slate-500">Neumorfismo claro con botones 3D y luces tenues</p>
+            <p className="text-xs text-slate-500">Neumorfismo claro con botones 3D y luces tenues</p>
             <div className="flex gap-1.5 mt-3">
               <div className="w-4 h-4 rounded-full" style={{ backgroundColor: neoColors.neoBgColor, boxShadow: '2px 2px 4px #c8cfd8, -2px -2px 4px #fff' }} />
               <div className="w-4 h-4 rounded-full" style={{ backgroundColor: neoColors.neoGlowColor }} />

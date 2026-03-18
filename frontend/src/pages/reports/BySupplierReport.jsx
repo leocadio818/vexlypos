@@ -5,7 +5,7 @@ export default function BySupplierReport({ data }) {
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-br from-purple-500/20 to-violet-600/10 border border-purple-500/30 rounded-xl p-4 text-center">
-        <p className="text-[10px] text-purple-400 uppercase">Total Gastado en Período</p>
+        <p className="text-xs text-purple-400 uppercase">Total Gastado en Período</p>
         <p className="font-oswald text-3xl font-bold text-purple-400">{formatMoney(data.total)}</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -36,7 +36,7 @@ export default function BySupplierReport({ data }) {
                 <tr key={i} className="border-b border-border/30">
                   <td className="py-2 font-medium">{s.name}</td>
                   <td className="py-2 text-right text-muted-foreground">{s.orders}</td>
-                  <td className="py-2 text-right"><Badge variant="outline" className="text-[9px]">{s.percentage}%</Badge></td>
+                  <td className="py-2 text-right"><Badge variant="outline" className="text-[11px]">{s.percentage}%</Badge></td>
                   <td className="py-2 text-right font-oswald text-primary">{formatMoney(s.total)}</td>
                 </tr>
               ))}

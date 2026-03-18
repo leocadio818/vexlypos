@@ -30,22 +30,22 @@ export default function CashCloseReport({ data }) {
         <div className="bg-gradient-to-br from-emerald-500/20 to-green-600/10 border border-emerald-500/30 rounded-xl p-4 text-center">
           <Banknote size={20} className="text-emerald-500 mx-auto mb-1" />
           <p className="font-oswald text-2xl font-bold text-emerald-500">{formatMoney(s.total_sales)}</p>
-          <p className="text-[10px] text-muted-foreground">Total Ventas</p>
+          <p className="text-xs text-muted-foreground">Total Ventas</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
           <Banknote size={20} className="text-green-500 mx-auto mb-1" />
           <p className="font-oswald text-xl font-bold text-green-500">{formatMoney(s.cash_total)}</p>
-          <p className="text-[10px] text-muted-foreground">Efectivo</p>
+          <p className="text-xs text-muted-foreground">Efectivo</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
           <CreditCard size={20} className="text-purple-500 mx-auto mb-1" />
           <p className="font-oswald text-xl font-bold text-purple-500">{formatMoney(s.card_total)}</p>
-          <p className="text-[10px] text-muted-foreground">Tarjeta/Otros</p>
+          <p className="text-xs text-muted-foreground">Tarjeta/Otros</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
           <Receipt size={20} className="text-blue-500 mx-auto mb-1" />
           <p className="font-oswald text-xl font-bold text-blue-500">{formatMoney(s.net_sales || s.total_sales)}</p>
-          <p className="text-[10px] text-muted-foreground">Venta Neta</p>
+          <p className="text-xs text-muted-foreground">Venta Neta</p>
         </div>
       </div>
 
@@ -71,7 +71,7 @@ export default function CashCloseReport({ data }) {
                   <tr key={i} className="border-b border-border/30 hover:bg-muted/30">
                     <td className="p-2 font-medium">{pm.name}</td>
                     <td className="p-2 text-center">
-                      <Badge variant={pm.is_cash ? 'default' : 'secondary'} className="text-[10px]">
+                      <Badge variant={pm.is_cash ? 'default' : 'secondary'} className="text-xs">
                         {pm.is_cash ? 'Efectivo' : 'Electrónico'}
                       </Badge>
                     </td>
@@ -101,23 +101,23 @@ export default function CashCloseReport({ data }) {
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="p-3 rounded-lg bg-background border border-border/50 text-center">
-            <p className="text-[10px] text-muted-foreground">Subtotal</p>
+            <p className="text-xs text-muted-foreground">Subtotal</p>
             <p className="font-oswald font-bold">{formatMoney(s.subtotal)}</p>
           </div>
           <div className="p-3 rounded-lg bg-background border border-border/50 text-center">
-            <p className="text-[10px] text-muted-foreground">ITBIS</p>
+            <p className="text-xs text-muted-foreground">ITBIS</p>
             <p className="font-oswald font-bold text-blue-500">{formatMoney(s.total_itbis)}</p>
           </div>
           <div className="p-3 rounded-lg bg-background border border-border/50 text-center">
-            <p className="text-[10px] text-muted-foreground">Propina Legal</p>
+            <p className="text-xs text-muted-foreground">Propina Legal</p>
             <p className="font-oswald font-bold text-amber-500">{formatMoney(s.total_tips)}</p>
           </div>
           <div className="p-3 rounded-lg bg-background border border-border/50 text-center">
-            <p className="text-[10px] text-muted-foreground">Descuentos</p>
+            <p className="text-xs text-muted-foreground">Descuentos</p>
             <p className="font-oswald font-bold text-red-500">-{formatMoney(s.total_discounts || 0)}</p>
           </div>
           <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 text-center">
-            <p className="text-[10px] text-primary">Total Neto</p>
+            <p className="text-xs text-primary">Total Neto</p>
             <p className="font-oswald font-bold text-lg text-primary">{formatMoney(s.net_sales || s.total_sales)}</p>
           </div>
         </div>
@@ -132,11 +132,11 @@ export default function CashCloseReport({ data }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-oswald font-bold text-red-500">{s.total_voids || 0}</p>
-              <p className="text-[10px] text-muted-foreground">Anulaciones</p>
+              <p className="text-xs text-muted-foreground">Anulaciones</p>
             </div>
             <div className="text-right">
               <p className="text-xl font-oswald font-bold text-red-500">{formatMoney(s.total_void_amount || 0)}</p>
-              <p className="text-[10px] text-muted-foreground">Monto Anulado</p>
+              <p className="text-xs text-muted-foreground">Monto Anulado</p>
             </div>
           </div>
         </div>
@@ -147,11 +147,11 @@ export default function CashCloseReport({ data }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-oswald font-bold text-amber-500">{s.discount_count || 0}</p>
-              <p className="text-[10px] text-muted-foreground">Descuentos Aplicados</p>
+              <p className="text-xs text-muted-foreground">Descuentos Aplicados</p>
             </div>
             <div className="text-right">
               <p className="text-xl font-oswald font-bold text-amber-500">{formatMoney(s.total_discounts || 0)}</p>
-              <p className="text-[10px] text-muted-foreground">Monto Descontado</p>
+              <p className="text-xs text-muted-foreground">Monto Descontado</p>
             </div>
           </div>
         </div>
@@ -185,7 +185,7 @@ export default function CashCloseReport({ data }) {
                 {data.bills_detail.map((b, i) => (
                   <tr key={i} className="border-b border-border/30 hover:bg-muted/30">
                     <td className="p-3 font-mono text-xs">{b.time || '-'}</td>
-                    <td className="p-3 text-center"><Badge variant="outline" className="text-[10px] font-mono">T-{b.transaction}</Badge></td>
+                    <td className="p-3 text-center"><Badge variant="outline" className="text-xs font-mono">T-{b.transaction}</Badge></td>
                     <td className="p-3 text-center font-oswald">{b.table || '-'}</td>
                     <td className="p-3 text-xs">{b.waiter || '-'}</td>
                     <td className="p-3 text-xs">{b.cashier || '-'}</td>

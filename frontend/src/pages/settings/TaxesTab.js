@@ -132,11 +132,11 @@ export default function TaxesTab() {
                   <div>
                     <h3 className="font-oswald font-bold">{tax.name}</h3>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="outline" className="text-[10px]">{tax.code}</Badge>
+                      <Badge variant="outline" className="text-xs">{tax.code}</Badge>
                       <span>{tax.rate}%</span>
                       {tax.dgii_code && <span className="text-muted-foreground">DGII: {tax.dgii_code}</span>}
                       {tax.is_dine_in_only && (
-                        <Badge className="bg-blue-500/20 text-blue-400 text-[10px]">Solo Local</Badge>
+                        <Badge className="bg-blue-500/20 text-blue-400 text-xs">Solo Local</Badge>
                       )}
                     </div>
                   </div>

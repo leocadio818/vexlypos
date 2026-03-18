@@ -7,9 +7,9 @@ export default function ByTypeReport({ data: reportData }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {data.slice(0, 4).map((t, i) => (
           <div key={i} className="bg-card border border-border rounded-xl p-4 text-center">
-            <p className="text-[10px] text-muted-foreground uppercase truncate">{t.name}</p>
+            <p className="text-xs text-muted-foreground uppercase truncate">{t.name}</p>
             <p className="font-oswald text-xl font-bold text-primary">{formatMoney(t.total)}</p>
-            <p className="text-[10px] text-muted-foreground">{t.count} transacciones</p>
+            <p className="text-xs text-muted-foreground">{t.count} transacciones</p>
           </div>
         ))}
       </div>

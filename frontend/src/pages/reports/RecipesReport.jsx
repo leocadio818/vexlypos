@@ -8,11 +8,11 @@ export default function RecipesReport({ data }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-gradient-to-br from-teal-500/20 to-cyan-600/10 border border-teal-500/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-teal-400 uppercase">Valor Total Inventario</p>
+          <p className="text-xs text-teal-400 uppercase">Valor Total Inventario</p>
           <p className="font-oswald text-2xl font-bold text-teal-400">{formatMoney(data.total_value || 0)}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Total Ingredientes</p>
+          <p className="text-xs text-muted-foreground uppercase">Total Ingredientes</p>
           <p className="font-oswald text-2xl font-bold">{items.length}</p>
         </div>
       </div>
@@ -27,7 +27,7 @@ export default function RecipesReport({ data }) {
                   <span className="text-sm font-medium capitalize">{cat.category}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-[10px]">{cat.items} items</Badge>
+                  <Badge variant="secondary" className="text-xs">{cat.items} items</Badge>
                   <span className="font-oswald text-primary font-bold text-sm">{formatMoney(cat.value)}</span>
                 </div>
               </div>

@@ -129,7 +129,7 @@ export default function MesasTab() {
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: area.color }} />
                   <span className="font-semibold">{area.name}</span>
-                  <Badge variant="secondary" className="text-[10px]">{tables.filter(t => t.area_id === area.id).length} mesas</Badge>
+                  <Badge variant="secondary" className="text-xs">{tables.filter(t => t.area_id === area.id).length} mesas</Badge>
                 </div>
                 <div className="flex gap-1">
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"

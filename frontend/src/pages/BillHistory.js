@@ -264,11 +264,11 @@ export default function BillHistory() {
                       </div>
                       <span className="text-xs text-muted-foreground">{bill.label || `Mesa ${bill.table_number}`}</span>
                     </div>
-                    <Badge className={`${getBillStatusColor(bill)} text-white text-[10px]`}>
+                    <Badge className={`${getBillStatusColor(bill)} text-white text-xs`}>
                       {getBillStatusLabel(bill)}
                     </Badge>
                     {hasCreditNote && (
-                      <Badge variant="outline" className="text-[10px] border-red-500/50 text-red-500">
+                      <Badge variant="outline" className="text-xs border-red-500/50 text-red-500">
                         <FileText size={10} className="mr-1" />
                         {bill.credit_note_ncf || 'NC'}
                       </Badge>
@@ -278,7 +278,7 @@ export default function BillHistory() {
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="font-oswald font-bold text-lg">{formatMoney(bill.total)}</p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {new Date(bill.paid_at || bill.created_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' })}
                       </p>
                     </div>
@@ -511,7 +511,7 @@ export default function BillHistory() {
                     >
                       <span className="font-semibold text-xs block">{reason.name}</span>
                       {reason.description && (
-                        <span className="text-[10px] text-muted-foreground">{reason.description}</span>
+                        <span className="text-xs text-muted-foreground">{reason.description}</span>
                       )}
                       {reason.requires_authorization && (
                         <Badge variant="outline" className="mt-1 text-[8px]">Req. Autorización</Badge>

@@ -1163,7 +1163,7 @@ export default function PaymentScreen() {
                 <span className={`font-oswald font-bold ${isMobile ? 'text-sm' : 'text-lg'} ${selectedCustomer ? 'text-purple-300' : 'text-white/80'}`}>
                   {selectedCustomer ? selectedCustomer.name.split(' ')[0] : 'CLIENTE'}
                 </span>
-                <span className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-white/50`}>
+                <span className={`${isMobile ? 'text-xs' : 'text-xs'} text-white/50`}>
                   {selectedCustomer ? `${selectedCustomer.points || 0} pts` : 'Sin seleccionar'}
                 </span>
               </div>
@@ -1193,7 +1193,7 @@ export default function PaymentScreen() {
                 <span className={`font-oswald font-bold text-cyan-300 ${isMobile ? 'text-sm' : 'text-lg'}`}>
                   {selectedFiscalType}
                 </span>
-                <span className={`text-white/60 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
+                <span className={`text-white/60 ${isMobile ? 'text-xs' : 'text-xs'}`}>
                   {selectedServiceType?.name || 'Dine In'}
                 </span>
               </div>
@@ -1223,7 +1223,7 @@ export default function PaymentScreen() {
                 <ScrollArea className={isMobile ? 'max-h-20' : 'max-h-36'}>
                   <div className="space-y-1 pr-2">
                     {bill.items?.map((item, i) => (
-                      <div key={i} className={`flex justify-between items-center ${isMobile ? 'text-[10px]' : 'text-sm'}`}>
+                      <div key={i} className={`flex justify-between items-center ${isMobile ? 'text-xs' : 'text-sm'}`}>
                         <span className="text-white/70 flex-1 truncate">
                           <span className={`font-oswald font-bold text-cyan-400 ${isMobile ? '' : 'text-base'}`}>{item.quantity}x</span> {item.product_name}
                         </span>
@@ -1409,7 +1409,7 @@ export default function PaymentScreen() {
                   
                   {/* Exchange rate badge */}
                   {isForeignCurrency && (
-                    <span className={`absolute bottom-2 right-2 px-2 py-0.5 rounded-full font-oswald font-bold ${isMobile ? 'text-[8px]' : 'text-[10px]'}`}
+                    <span className={`absolute bottom-2 right-2 px-2 py-0.5 rounded-full font-oswald font-bold ${isMobile ? 'text-[8px]' : 'text-xs'}`}
                       style={{ backgroundColor: method.text_color || '#1f2937', color: method.bg_color || '#fff', opacity: 0.8 }}>
                       1 = {method.exchange_rate}
                     </span>
@@ -1596,7 +1596,7 @@ export default function PaymentScreen() {
                       </div>
                       <div className="text-right">
                         <p className="font-oswald font-bold text-purple-300">{customer.points}</p>
-                        <p className="text-white/40 text-[10px]">puntos</p>
+                        <p className="text-white/40 text-xs">puntos</p>
                       </div>
                     </button>
                   ))
@@ -1772,7 +1772,7 @@ export default function PaymentScreen() {
                     data-testid={`ncf-dialog-${ft.code}`}
                   >
                     <span className="font-oswald font-bold text-sm">{ft.code}</span>
-                    <p className="text-[9px] mt-0.5 opacity-70">{ft.short}</p>
+                    <p className="text-[11px] mt-0.5 opacity-70">{ft.short}</p>
                   </button>
                 ))}
               </div>
@@ -1783,9 +1783,9 @@ export default function PaymentScreen() {
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <p className="text-xs text-cyan-300 font-medium">{fiscalData.razonSocial}</p>
-                      <p className="text-[10px] text-white/60 font-mono">{fiscalData.fiscalIdType}: {fiscalData.fiscalIdFormatted}</p>
+                      <p className="text-xs text-white/60 font-mono">{fiscalData.fiscalIdType}: {fiscalData.fiscalIdFormatted}</p>
                       {fiscalData.email && (
-                        <p className="text-[10px] text-cyan-400/70 flex items-center gap-1">
+                        <p className="text-xs text-cyan-400/70 flex items-center gap-1">
                           <Mail size={10} /> {fiscalData.email}
                         </p>
                       )}
@@ -1795,7 +1795,7 @@ export default function PaymentScreen() {
                         setPendingFiscalType(selectedFiscalType);
                         setFiscalDrawerOpen(true);
                       }}
-                      className="text-[10px] text-cyan-400 hover:text-cyan-300 underline"
+                      className="text-xs text-cyan-400 hover:text-cyan-300 underline"
                     >
                       Cambiar
                     </button>
@@ -1849,9 +1849,9 @@ export default function PaymentScreen() {
                       <div className="flex-1 text-left">
                         <span className="font-semibold">{st.name}</span>
                         {st.description && (
-                          <p className="text-[10px] text-white/40">{st.description}</p>
+                          <p className="text-xs text-white/40">{st.description}</p>
                         )}
-                        <p className={`text-[10px] ${hasPropinaExemption ? 'text-amber-400/80' : 'text-green-400/80'}`}>
+                        <p className={`text-xs ${hasPropinaExemption ? 'text-amber-400/80' : 'text-green-400/80'}`}>
                           {hasPropinaExemption ? 'Sin propina de ley' : 'Con propina de ley'}
                         </p>
                       </div>
@@ -1864,7 +1864,7 @@ export default function PaymentScreen() {
                 {saleTypes.filter(st => st.default_ncf_type_id === selectedFiscalType).length === 0 && (
                   <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
                     <p className="text-white/40 text-sm">No hay tipos de venta configurados para {selectedFiscalType}</p>
-                    <p className="text-[10px] text-white/30 mt-1">Configura en Settings → Ventas → Tipos de Venta</p>
+                    <p className="text-xs text-white/30 mt-1">Configura en Settings → Ventas → Tipos de Venta</p>
                   </div>
                 )}
               </div>
@@ -1955,7 +1955,7 @@ export default function PaymentScreen() {
                   <Lock size={16} className="text-amber-400 mt-0.5" />
                   <div>
                     <p className="text-amber-300 text-xs font-medium">Autorización Requerida</p>
-                    <p className="text-white/50 text-[10px]">Esta acción requiere un PIN de administrador con permisos de ajuste fiscal.</p>
+                    <p className="text-white/50 text-xs">Esta acción requiere un PIN de administrador con permisos de ajuste fiscal.</p>
                   </div>
                 </div>
               </div>
@@ -2023,7 +2023,7 @@ export default function PaymentScreen() {
                         />
                         <div>
                           <p className="text-white text-sm font-medium">{tax.name}</p>
-                          <p className="text-white/40 text-[10px]">
+                          <p className="text-white/40 text-xs">
                             {tax.rate}% {tax.is_dine_in_only && '(Solo local)'}
                             {exemptedBySaleType && ' - Excluido por tipo de venta'}
                           </p>

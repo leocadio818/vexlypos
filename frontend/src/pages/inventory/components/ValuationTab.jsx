@@ -627,12 +627,12 @@ export default function ValuationTab({ warehouses }) {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{item.name}</span>
                           {item.is_dead_stock && (
-                            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">
+                            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
                               Stock Muerto
                             </Badge>
                           )}
                           {item.is_low_stock && (
-                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">
+                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
                               Stock Bajo
                             </Badge>
                           )}

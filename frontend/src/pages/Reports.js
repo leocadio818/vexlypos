@@ -817,7 +817,7 @@ export default function Reports() {
             </select>
             {selectedBusinessDay && (
               <>
-                <Badge className="bg-amber-500/20 text-amber-300 text-[10px]">
+                <Badge className="bg-amber-500/20 text-amber-300 text-xs">
                   Jornada: {selectedBusinessDay.business_date}
                 </Badge>
                 <Button
@@ -868,7 +868,7 @@ export default function Reports() {
                         data-testid={`report-${report.id}`}
                       >
                         <p className="font-medium">{report.name}</p>
-                        <p className="text-[10px] opacity-70 mt-0.5">{report.description}</p>
+                        <p className="text-xs opacity-70 mt-0.5">{report.description}</p>
                       </button>
                     ))}
                   </div>

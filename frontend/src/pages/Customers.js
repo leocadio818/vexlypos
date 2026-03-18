@@ -109,17 +109,17 @@ export default function Customers() {
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-card border border-border rounded-xl p-4 text-center">
               <Star size={20} className="mx-auto mb-1 text-yellow-400" />
-              <p className="text-[10px] text-muted-foreground uppercase">Puntos por RD$100</p>
+              <p className="text-xs text-muted-foreground uppercase">Puntos por RD$100</p>
               <p className="font-oswald text-2xl font-bold">{config.points_per_hundred}</p>
             </div>
             <div className="bg-card border border-border rounded-xl p-4 text-center">
               <Gift size={20} className="mx-auto mb-1 text-green-400" />
-              <p className="text-[10px] text-muted-foreground uppercase">Valor del Punto</p>
+              <p className="text-xs text-muted-foreground uppercase">Valor del Punto</p>
               <p className="font-oswald text-2xl font-bold">RD$ {config.point_value_rd}</p>
             </div>
             <div className="bg-card border border-border rounded-xl p-4 text-center">
               <Heart size={20} className="mx-auto mb-1 text-primary" />
-              <p className="text-[10px] text-muted-foreground uppercase">Min para Canjeo</p>
+              <p className="text-xs text-muted-foreground uppercase">Min para Canjeo</p>
               <p className="font-oswald text-2xl font-bold">{config.min_redemption} pts</p>
             </div>
           </div>
@@ -139,7 +139,7 @@ export default function Customers() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{c.name}</span>
-                      <Badge variant="outline" className="text-[9px] border-yellow-500 text-yellow-400">
+                      <Badge variant="outline" className="text-[11px] border-yellow-500 text-yellow-400">
                         <Star size={8} className="mr-0.5" /> {c.points} pts
                       </Badge>
                     </div>

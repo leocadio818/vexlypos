@@ -162,7 +162,7 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
   
   // Font sizes based on device
   const numberSize = device?.isMobile ? 'text-base' : largeMode ? 'text-xl' : 'text-lg';
-  const capacitySize = device?.isMobile ? 'text-[10px]' : largeMode ? 'text-xs' : 'text-[9px]';
+  const capacitySize = device?.isMobile ? 'text-xs' : largeMode ? 'text-xs' : 'text-[11px]';
   const iconSize = device?.isMobile ? 10 : largeMode ? 12 : 9;
 
   useEffect(() => { setPos({ x: pxX, y: pxY }); }, [pxX, pxY]);
@@ -248,7 +248,7 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
       
       {/* Divided badge */}
       {isDivided && !editMode && (
-        <div className={`absolute -top-2 -right-2 ${device?.isMobile ? 'w-5 h-5 text-[10px]' : largeMode ? 'w-6 h-6 text-xs' : 'w-5 h-5 text-[10px]'} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-background ${isOtherUser ? 'bg-yellow-500' : 'bg-orange-500'} z-10`}>
+        <div className={`absolute -top-2 -right-2 ${device?.isMobile ? 'w-5 h-5 text-xs' : largeMode ? 'w-6 h-6 text-xs' : 'w-5 h-5 text-xs'} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-background ${isOtherUser ? 'bg-yellow-500' : 'bg-orange-500'} z-10`}>
           ÷
         </div>
       )}
@@ -256,7 +256,7 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
         {table.number}
       </span>
       {editMode && (
-        <span className={`text-primary mt-0.5 ${device?.isMobile ? 'text-[9px]' : largeMode ? 'text-[10px]' : 'text-[8px]'}`}>
+        <span className={`text-primary mt-0.5 ${device?.isMobile ? 'text-[11px]' : largeMode ? 'text-xs' : 'text-[8px]'}`}>
           <Maximize2 size={device?.isMobile ? 9 : largeMode ? 10 : 8} className="inline" />
         </span>
       )}
@@ -426,7 +426,7 @@ export default function TableMap() {
       {/* Table Canvas - Glassmorphism */}
       <div ref={containerRef} className="flex-1 relative backdrop-blur-xl bg-white/5 mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-b-xl rounded-tr-xl border border-white/10 overflow-hidden" data-testid="table-canvas">
         {editMode && (
-          <div className={`absolute top-2 left-2 z-50 backdrop-blur-xl bg-white/20 text-white border border-white/30 ${isMobile ? 'text-[10px] px-3 py-1' : largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
+          <div className={`absolute top-2 left-2 z-50 backdrop-blur-xl bg-white/20 text-white border border-white/30 ${isMobile ? 'text-xs px-3 py-1' : largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
             {isMobile ? 'MODO EDICION' : 'MODO EDICION - Arrastra o toca para redimensionar'}
           </div>
         )}

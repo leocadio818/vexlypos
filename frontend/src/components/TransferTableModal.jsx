@@ -144,7 +144,7 @@ export default function TransferTableModal({ open, onClose, tableId, currentUser
           </div>
 
           {/* Info */}
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-xs text-muted-foreground text-center">
             <Lock size={10} className="inline mr-1" />
             Esta accion queda registrada en el historial de auditoria de cada orden.
           </p>

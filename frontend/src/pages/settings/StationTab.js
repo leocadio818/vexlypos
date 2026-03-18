@@ -111,7 +111,7 @@ export default function StationTab() {
           <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
             <div>
               <span className="text-sm font-semibold">Turno obligatorio para vender</span>
-              <p className="text-[10px] text-muted-foreground">El cajero debe abrir turno antes de procesar ventas</p>
+              <p className="text-xs text-muted-foreground">El cajero debe abrir turno antes de procesar ventas</p>
             </div>
             <Switch checked={stationConfig.require_shift_to_sell}
               onCheckedChange={(v) => setStationConfig(p => ({ ...p, require_shift_to_sell: v }))} />
@@ -119,7 +119,7 @@ export default function StationTab() {
           <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
             <div>
               <span className="text-sm font-semibold">Arqueo de caja obligatorio</span>
-              <p className="text-[10px] text-muted-foreground">Requiere conteo de efectivo al cerrar turno</p>
+              <p className="text-xs text-muted-foreground">Requiere conteo de efectivo al cerrar turno</p>
             </div>
             <Switch checked={stationConfig.require_cash_count}
               onCheckedChange={(v) => setStationConfig(p => ({ ...p, require_cash_count: v }))} />
@@ -127,7 +127,7 @@ export default function StationTab() {
           <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
             <div>
               <span className="text-sm font-semibold">Envio automatico al cerrar sesion</span>
-              <p className="text-[10px] text-muted-foreground">Envia comandas pendientes al hacer logout</p>
+              <p className="text-xs text-muted-foreground">Envia comandas pendientes al hacer logout</p>
             </div>
             <Switch checked={stationConfig.auto_send_on_logout}
               onCheckedChange={(v) => setStationConfig(p => ({ ...p, auto_send_on_logout: v }))} />
@@ -171,7 +171,7 @@ export default function StationTab() {
                     <Monitor size={20} className={terminal.is_active !== false ? 'text-primary' : 'text-muted-foreground'} />
                     <div>
                       <h3 className="font-semibold text-sm">{terminal.name}</h3>
-                      <p className="text-[10px] text-muted-foreground">Código: {terminal.code}</p>
+                      <p className="text-xs text-muted-foreground">Código: {terminal.code}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -241,13 +241,13 @@ export default function StationTab() {
                 maxLength={10}
                 data-testid="terminal-code-input"
               />
-              <p className="text-[10px] text-muted-foreground mt-1">Se genera automáticamente si no se especifica</p>
+              <p className="text-xs text-muted-foreground mt-1">Se genera automáticamente si no se especifica</p>
             </div>
             
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
               <div>
                 <span className="text-sm font-medium">Terminal Activo</span>
-                <p className="text-[10px] text-muted-foreground">Los terminales inactivos no aparecen al abrir turno</p>
+                <p className="text-xs text-muted-foreground">Los terminales inactivos no aparecen al abrir turno</p>
               </div>
               <Switch 
                 checked={terminalForm.is_active}

@@ -6,19 +6,19 @@ export default function TaxesReport({ data }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Subtotal</p>
+          <p className="text-xs text-muted-foreground uppercase">Subtotal</p>
           <p className="font-oswald text-xl font-bold">{formatMoney(data.summary.total_subtotal)}</p>
         </div>
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-blue-400 uppercase">ITBIS 18%</p>
+          <p className="text-xs text-blue-400 uppercase">ITBIS 18%</p>
           <p className="font-oswald text-xl font-bold text-blue-400">{formatMoney(data.summary.total_itbis)}</p>
         </div>
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-yellow-400 uppercase">Propina Legal 10%</p>
+          <p className="text-xs text-yellow-400 uppercase">Propina Legal 10%</p>
           <p className="font-oswald text-xl font-bold text-yellow-400">{formatMoney(data.summary.total_tips)}</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-500/20 to-green-600/10 border border-emerald-500/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-emerald-400 uppercase">Total Recaudado</p>
+          <p className="text-xs text-emerald-400 uppercase">Total Recaudado</p>
           <p className="font-oswald text-xl font-bold text-emerald-400">{formatMoney(data.summary.total_sales)}</p>
         </div>
       </div>

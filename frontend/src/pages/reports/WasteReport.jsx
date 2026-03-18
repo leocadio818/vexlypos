@@ -6,11 +6,11 @@ export default function WasteReport({ data }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-red-400 uppercase">Valor Total Mermas</p>
+          <p className="text-xs text-red-400 uppercase">Valor Total Mermas</p>
           <p className="font-oswald text-2xl font-bold text-red-400">{formatMoney(data.summary.total_waste_value)}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Total Movimientos</p>
+          <p className="text-xs text-muted-foreground uppercase">Total Movimientos</p>
           <p className="font-oswald text-2xl font-bold">{data.summary.total_movements}</p>
         </div>
       </div>

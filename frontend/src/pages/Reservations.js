@@ -279,7 +279,7 @@ export default function Reservations() {
               <p className="text-xs font-semibold text-purple-400">⏰ Configuración de Tiempos</p>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-white/50 mb-1 block">Activar (min antes)</label>
+                  <label className="text-xs text-white/50 mb-1 block">Activar (min antes)</label>
                   <select value={dialog.activation_minutes} onChange={e => setDialog(p => ({ ...p, activation_minutes: parseInt(e.target.value) }))}
                     className="w-full bg-slate-800 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-white/30 outline-none" style={{ colorScheme: 'dark' }}>
                     <option value={15}>15 minutos</option>
@@ -291,7 +291,7 @@ export default function Reservations() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] text-white/50 mb-1 block">Tolerancia si no llega</label>
+                  <label className="text-xs text-white/50 mb-1 block">Tolerancia si no llega</label>
                   <select value={dialog.tolerance_minutes} onChange={e => setDialog(p => ({ ...p, tolerance_minutes: parseInt(e.target.value) }))}
                     className="w-full bg-slate-800 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-white/30 outline-none" style={{ colorScheme: 'dark' }}>
                     <option value={10}>10 minutos</option>

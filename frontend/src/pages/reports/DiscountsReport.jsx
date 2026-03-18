@@ -8,11 +8,11 @@ export default function DiscountsReport({ data }) {
     <div className="space-y-4" data-testid="discounts-report">
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-center">
-          <p className="text-[10px] text-amber-400 uppercase">Total Descuentos</p>
+          <p className="text-xs text-amber-400 uppercase">Total Descuentos</p>
           <p className="font-oswald text-2xl font-bold text-amber-400">{formatMoney(summary?.total_descuentos)}</p>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Facturas con Descuento</p>
+          <p className="text-xs text-muted-foreground uppercase">Facturas con Descuento</p>
           <p className="font-oswald text-2xl font-bold">{summary?.cantidad_facturas || 0}</p>
         </div>
       </div>
@@ -41,7 +41,7 @@ export default function DiscountsReport({ data }) {
                   <td className="p-3 text-center text-xs">{row.Mesa}</td>
                   <td className="p-3 text-xs">{row.Mesero}</td>
                   <td className="p-3">
-                    <Badge className="bg-amber-500/20 text-amber-300 text-[10px]">
+                    <Badge className="bg-amber-500/20 text-amber-300 text-xs">
                       <Percent size={10} className="mr-1" />{row.Descuento}
                     </Badge>
                   </td>

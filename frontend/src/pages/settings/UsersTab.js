@@ -201,14 +201,14 @@ export default function UsersTab() {
                 </div>
                 <div>
                   <span className="font-semibold">{user.name} {user.last_name || ''}</span>
-                  <Badge variant="secondary" className={`ml-2 text-[9px] ${
+                  <Badge variant="secondary" className={`ml-2 text-[11px] ${
                     user.role === 'admin' ? 'bg-red-500/10 text-red-500' :
                     user.role === 'waiter' ? 'bg-blue-500/10 text-blue-500' :
                     user.role === 'cashier' ? 'bg-green-500/10 text-green-500' :
                     user.role === 'kitchen' ? 'bg-orange-500/10 text-orange-500' : ''
                   }`}>{ROLE_LABELS[user.role] || user.role}</Badge>
-                  {user.active === false && <Badge className="ml-1 text-[9px] bg-red-500/20 text-red-500 border-red-500/30">INACTIVO</Badge>}
-                  {user.training_mode && <Badge variant="outline" className="ml-1 text-[9px] border-yellow-500 text-yellow-400">Entrenamiento</Badge>}
+                  {user.active === false && <Badge className="ml-1 text-[11px] bg-red-500/20 text-red-500 border-red-500/30">INACTIVO</Badge>}
+                  {user.training_mode && <Badge variant="outline" className="ml-1 text-[11px] border-yellow-500 text-yellow-400">Entrenamiento</Badge>}
                 </div>
               </div>
               <div className="flex items-center gap-3">

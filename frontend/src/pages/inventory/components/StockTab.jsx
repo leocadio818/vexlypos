@@ -189,7 +189,7 @@ export default function StockTab({
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{item.ingredient_name}</span>
                       {item.is_low_stock && (
-                        <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">Stock Bajo</Badge>
+                        <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">Stock Bajo</Badge>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">{getCategoryLabel(item.category)}</div>
@@ -213,7 +213,7 @@ export default function StockTab({
                         </>
                       )}
                     </div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">1 {item.purchase_unit} = {item.conversion_factor} {item.dispatch_unit}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">1 {item.purchase_unit} = {item.conversion_factor} {item.dispatch_unit}</div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className={`font-mono ${item.is_low_stock ? 'text-red-400' : ''}`}>{item.current_stock.toFixed(2)}</span>
@@ -266,7 +266,7 @@ export default function StockTab({
             return (
               <div key={mov.id} className="flex items-center justify-between p-2 rounded-lg bg-card/50 border border-border/50 text-sm" data-testid={`movement-${mov.id}`}>
                 <div className="flex items-center gap-2">
-                  <Badge variant={mov.quantity > 0 ? 'default' : 'destructive'} className="text-[9px]">{movLabel}</Badge>
+                  <Badge variant={mov.quantity > 0 ? 'default' : 'destructive'} className="text-[11px]">{movLabel}</Badge>
                   <span>{ing?.name || mov.ingredient_name || '?'}</span>
                   <span className="text-muted-foreground">@ {wh?.name || '?'}</span>
                 </div>

@@ -43,7 +43,7 @@ function SubrecipeIngredientSelect({ ingredients, value, onChange }) {
                   onSelect={() => { onChange(i.id); setOpen(false); }}
                 >
                   {i.name}
-                  <span className="ml-auto text-[10px] text-muted-foreground">{i.unit}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{i.unit}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -308,7 +308,7 @@ export default function ProductionTab({
                       </div>
                     </div>
                   </div>
-                  <Badge variant="destructive" className="text-[10px]">Urgente</Badge>
+                  <Badge variant="destructive" className="text-xs">Urgente</Badge>
                 </div>
                 
                 <div className="flex items-center justify-between mb-3">
@@ -378,7 +378,7 @@ export default function ProductionTab({
                       </div>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="text-[10px] bg-green-500/20 text-green-500">OK</Badge>
+                  <Badge variant="secondary" className="text-xs bg-green-500/20 text-green-500">OK</Badge>
                 </div>
                 
                 <div className="flex gap-2">
@@ -450,7 +450,7 @@ export default function ProductionTab({
                 </div>
                 <div className="text-right">
                   <div className="font-oswald font-bold text-primary">{formatMoney(prod.total_cost)}</div>
-                  <div className="text-[10px] text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     {new Date(prod.produced_at).toLocaleDateString()}
                   </div>
                 </div>
