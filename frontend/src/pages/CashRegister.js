@@ -531,7 +531,7 @@ export default function CashRegister() {
               <Calendar size={16} /> CIERRE Z
             </button>
           )}
-          {currentSession && (
+          {currentSession && (hasPermission('cash_movement_income') || hasPermission('cash_movement_withdrawal')) && (
             <button onClick={() => setMovementDialog(true)} data-testid="add-movement-btn"
               className="px-3 py-2 rounded-xl bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30 text-blue-400 font-medium text-sm flex items-center gap-2 transition-all">
               <Wallet size={16} /> Movimiento
@@ -1055,30 +1055,22 @@ export default function CashRegister() {
             <div>
               <label className="text-sm font-semibold text-white/60 mb-2 block">Tipo de Movimiento</label>
               <div className="grid grid-cols-2 gap-2">
+                {hasPermission('cash_movement_income') && (
                 <button onClick={() => setMovementForm({...movementForm, movement_type: 'cash_in'})}
                   className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
                     movementForm.movement_type === 'cash_in' ? 'border-green-400 bg-green-400/20 text-green-400' : 'border-white/10 bg-white/5 text-white/70'
                   }`}>
                   <ArrowUpCircle size={16} /> Ingreso
                 </button>
+                )}
+                {hasPermission('cash_movement_withdrawal') && (
                 <button onClick={() => setMovementForm({...movementForm, movement_type: 'cash_out'})}
                   className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
                     movementForm.movement_type === 'cash_out' ? 'border-red-400 bg-red-400/20 text-red-400' : 'border-white/10 bg-white/5 text-white/70'
                   }`}>
                   <ArrowDownCircle size={16} /> Retiro
                 </button>
-                <button onClick={() => setMovementForm({...movementForm, movement_type: 'deposit'})}
-                  className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
-                    movementForm.movement_type === 'deposit' ? 'border-blue-400 bg-blue-400/20 text-blue-400' : 'border-white/10 bg-white/5 text-white/70'
-                  }`}>
-                  <Banknote size={16} /> Depósito
-                </button>
-                <button onClick={() => setMovementForm({...movementForm, movement_type: 'petty_cash'})}
-                  className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
-                    movementForm.movement_type === 'petty_cash' ? 'border-yellow-400 bg-yellow-400/20 text-yellow-400' : 'border-white/10 bg-white/5 text-white/70'
-                  }`}>
-                  <Wallet size={16} /> Caja Chica
-                </button>
+                )}
               </div>
             </div>
             
