@@ -75,8 +75,8 @@ async def dashboard():
         jornada_start = today_start
         jornada_date = today_start[:10]
     
-    # Get paid bills since the jornada started (filtered at DB level)
-    bills = await db.bills.find({"status": "paid", "paid_at": {"$gte": jornada_start}}, {"_id": 0}).to_list(5000)
+    # Get paid bills for this business day (filtered by business_date, NOT paid_at)
+    bills = await db.bills.find({"status": "paid", "business_date": jornada_date}, {"_id": 0}).to_list(5000)
     today_bills = bills
     
     # Payment methods for cash/card breakdown
@@ -320,7 +320,7 @@ async def daily_sales_report(
     d_to = date_to or d_from
     
     bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(10000)
-    filtered = [b for b in bills if d_from <= b.get("paid_at", "")[:10] <= d_to]
+    filtered = [b for b in bills if d_from <= b.get("business_date", b.get("paid_at", "")[:10]) <= d_to]
     
     payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
     pm_map, pm_name_map = build_pm_maps(payment_methods)
@@ -403,7 +403,7 @@ async def sales_by_category_report(
     d_to = date_to or d_from
     
     bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(10000)
-    filtered = [b for b in bills if d_from <= b.get("paid_at", "")[:10] <= d_to]
+    filtered = [b for b in bills if d_from <= b.get("business_date", b.get("paid_at", "")[:10]) <= d_to]
     
     # Get all products for category mapping
     products = await db.products.find({}, {"_id": 0}).to_list(5000)
@@ -451,7 +451,7 @@ async def sales_by_waiter_report(
     d_to = date_to or d_from
     
     bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(10000)
-    filtered = [b for b in bills if d_from <= b.get("paid_at", "")[:10] <= d_to]
+    filtered = [b for b in bills if d_from <= b.get("business_date", b.get("paid_at", "")[:10]) <= d_to]
     
     waiters = {}
     for bill in filtered:
@@ -539,9 +539,9 @@ async def cash_close_report(date: Optional[str] = Query(None)):
     if not date:
         date = await get_active_business_date()
     
-    # Get all paid bills for the date
-    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
-    day_bills = [b for b in bills if b.get("paid_at", "").startswith(date)]
+    # Get all paid bills for the business date
+    bills = await db.bills.find({"status": "paid", "business_date": date}, {"_id": 0}).to_list(5000)
+    day_bills = bills
     
     # Get payment methods
     payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
@@ -682,7 +682,7 @@ async def top_products_extended(
     bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
     filtered_bills = [
         b for b in bills 
-        if b.get("paid_at", "")[:10] >= date_from and b.get("paid_at", "")[:10] <= date_to
+        if b.get("business_date", b.get("paid_at", "")[:10]) >= date_from and b.get("business_date", b.get("paid_at", "")[:10]) <= date_to
     ]
     
     product_sales = {}
@@ -701,7 +701,7 @@ async def top_products_extended(
     sparkline_data = {}
     for i in range(7):
         day = (datetime.now(timezone.utc) - timedelta(days=6-i)).strftime("%Y-%m-%d")
-        day_bills = [b for b in bills if b.get("paid_at", "").startswith(day)]
+        day_bills = [b for b in bills if b.get("business_date", b.get("paid_at", "")[:10]) == day]
         for prod in sorted_products:
             if prod["name"] not in sparkline_data:
                 sparkline_data[prod["name"]] = []
@@ -740,7 +740,7 @@ async def sales_by_type_report(
     bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
     filtered_bills = [
         b for b in bills 
-        if b.get("paid_at", "")[:10] >= date_from and b.get("paid_at", "")[:10] <= date_to
+        if b.get("business_date", b.get("paid_at", "")[:10]) >= date_from and b.get("business_date", b.get("paid_at", "")[:10]) <= date_to
     ]
     
     # Get sale types
@@ -784,7 +784,7 @@ async def payment_methods_breakdown(
     bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
     filtered_bills = [
         b for b in bills 
-        if b.get("paid_at", "")[:10] >= date_from and b.get("paid_at", "")[:10] <= date_to
+        if b.get("business_date", b.get("paid_at", "")[:10]) >= date_from and b.get("business_date", b.get("paid_at", "")[:10]) <= date_to
     ]
     
     payment_methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
@@ -812,7 +812,7 @@ async def payment_methods_breakdown(
     sparklines = {}
     for i in range(7):
         day = (datetime.now(timezone.utc) - timedelta(days=6-i)).strftime("%Y-%m-%d")
-        day_bills = [b for b in bills if b.get("paid_at", "").startswith(day)]
+        day_bills = [b for b in bills if b.get("business_date", b.get("paid_at", "")[:10]) == day]
         for method in by_method.keys():
             if method not in sparklines:
                 sparklines[method] = []
@@ -1275,7 +1275,7 @@ async def taxes_report(
     bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
     filtered = [
         b for b in bills
-        if b.get("paid_at", "")[:10] >= date_from and b.get("paid_at", "")[:10] <= date_to
+        if b.get("business_date", b.get("paid_at", "")[:10]) >= date_from and b.get("business_date", b.get("paid_at", "")[:10]) <= date_to
     ]
     
     total_subtotal = 0
@@ -1336,7 +1336,7 @@ async def profit_loss_report(
     bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
     filtered_bills = [
         b for b in bills
-        if b.get("paid_at", "")[:10] >= date_from and b.get("paid_at", "")[:10] <= date_to
+        if b.get("business_date", b.get("paid_at", "")[:10]) >= date_from and b.get("business_date", b.get("paid_at", "")[:10]) <= date_to
     ]
     
     total_revenue = sum(b.get("total", 0) for b in filtered_bills)
@@ -1415,7 +1415,7 @@ async def daily_sparklines(days: int = Query(7, ge=1, le=30)):
     result = []
     for i in range(days):
         day = (datetime.now(timezone.utc) - timedelta(days=days-1-i)).strftime("%Y-%m-%d")
-        day_bills = [b for b in bills if b.get("paid_at", "").startswith(day)]
+        day_bills = [b for b in bills if b.get("business_date", b.get("paid_at", "")[:10]) == day]
         total = sum(b.get("total", 0) for b in day_bills)
         result.append({
             "date": day,
@@ -1442,7 +1442,7 @@ async def hourly_sales_report(
     bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(10000)
     filtered = [
         b for b in bills
-        if b.get("paid_at", "")[:10] >= date_from and b.get("paid_at", "")[:10] <= date_to
+        if b.get("business_date", b.get("paid_at", "")[:10]) >= date_from and b.get("business_date", b.get("paid_at", "")[:10]) <= date_to
     ]
     
     hourly = {}
