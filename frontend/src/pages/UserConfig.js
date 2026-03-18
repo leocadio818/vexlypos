@@ -53,6 +53,8 @@ const PERMISSION_CATEGORIES = {
       open_shift: 'Abrir Turno',
       close_shift: 'Cerrar Turno',
       close_day: 'Cierre de Dia',
+      cash_movement_income: 'Mov. Caja: Ingreso',
+      cash_movement_withdrawal: 'Mov. Caja: Retiro',
       view_reports: 'Ver Reportes',
       export_dgii: 'Exportar DGII',
       manage_reservations: 'Gestionar Reservaciones',
