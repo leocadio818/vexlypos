@@ -231,6 +231,11 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
   6. Detalle de Facturas: Hora, Trans#, Mesa, Mesero, Cajero, Método, Subtotal, ITBIS, Propina, Total
   7. Firmas: Espacio para Firma Cajero + Firma Supervisor
 - DO NOT: Remove any section. DO NOT: Show UUIDs in the bill detail table.
+### 🔒 REGLA: Nunca agregar permisos default sin autorización del usuario (LOCKED)
+- TODOS los permisos nuevos se crean SIN defaults (false para todos los roles)
+- El dueño del negocio decide a quién asignarlos desde Config > Usuarios
+- DO NOT: Agregar permisos como `True` en DEFAULT_PERMISSIONS sin autorización explícita
+
 ### PENDIENTE — Print Agent Multi-Impresora (Próxima Sesión)
 - Implementar Opción A: Un solo Print Agent que maneja TODAS las impresoras por IP de red
 - Config.txt con secciones por impresora: [cocina] IP=x.x.x.x CANAL=cocina
