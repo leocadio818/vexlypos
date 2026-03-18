@@ -101,7 +101,9 @@ let BUSINESS_INFO = {
 // Columns to hide in exports (technical IDs)
 const HIDDEN_COLUMNS = [
   'warehouse_id', 'supplier_id', 'ingredient_id', 'id', 'reference_id',
-  '_id', 'user_id', 'product_id', 'category_id', 'sparkline'
+  '_id', 'user_id', 'product_id', 'category_id', 'sparkline',
+  'order_id', 'item_id', 'item_ids', 'requested_by_id', 'authorized_by_id',
+  'reason_id', 'void_type', 'required_manager_auth', 'business_date'
 ];
 
 // Column name translations for cleaner display
@@ -131,7 +133,24 @@ const COLUMN_TRANSLATIONS = {
   'date': 'Fecha',
   'subtotal': 'Subtotal',
   'itbis': 'ITBIS',
-  'tips': 'Propinas'
+  'tips': 'Propinas',
+  'items_cancelled': 'Producto Anulado',
+  'requested_by_name': 'Solicitado por',
+  'authorized_by_name': 'Autorizado por',
+  'restored_to_inventory': 'Retornado a Inventario',
+  'comments': 'Comentarios',
+  'logs': 'Detalle de Anulaciones',
+  'by_reason': 'Por Razón',
+  'by_user': 'Por Usuario',
+  'by_authorizer': 'Autorizadores',
+  'customer_name': 'Cliente',
+  'phone': 'Teléfono',
+  'party_size': 'Personas',
+  'tables': 'Mesas',
+  'area': 'Área',
+  'status': 'Estado',
+  'created_by': 'Registrado por',
+  'notes': 'Notas',
 };
 
 // Format value for export (handles objects, arrays, currency, booleans)
@@ -171,11 +190,15 @@ const formatExportValue = (value, key) => {
     if (currencyKeys.some(k => key.toLowerCase().includes(k))) {
       return `RD$ ${value.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
-    // Format percentages
     if (key.toLowerCase().includes('percent') || key.toLowerCase().includes('margin')) {
       return `${value.toFixed(1)}%`;
     }
     return value.toLocaleString('es-DO');
+  }
+  
+  // Format ISO dates to readable format
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+    try { return new Date(value).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' }); } catch {}
   }
   
   return value;
