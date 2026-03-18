@@ -212,3 +212,22 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Endpoint `GET /reports/table-movements` supports `date_from` + `date_to` range filter
 - Both simple moves and merges are logged with user, source/target table, type
 - Import: `from routers.tables import log_table_movement` in orders.py
+
+### PDF/Export Cleanup — Professional Reports (2026-03-17)
+- HIDDEN_COLUMNS expanded: all UUIDs (order_id, item_id, waiter_id, bill_id, etc.), void_type, required_manager_auth, business_date
+- COLUMN_TRANSLATIONS expanded: 40+ Spanish translations for all report fields
+- ISO timestamps auto-formatted to `dd/mm/yyyy hh:mm` in exports
+- Booleans formatted as `Sí/No`
+- DO NOT: Show UUIDs or internal IDs in any PDF/Excel/Print export
+
+### 🔒 Cash Close Report — Professional Redesign (LOCKED - 2026-03-17)
+- Backend `GET /reports/cash-close` now returns: bills_detail, cashiers, voids summary, discounts summary, net_sales
+- Frontend `CashCloseReport.jsx` — 7 professional sections:
+  1. Header: Fecha, Cajero(s), Total Facturas
+  2. KPI Cards: Total Ventas, Efectivo, Tarjeta, Venta Neta
+  3. Ingresos por Forma de Pago: tabla con tipo, transacciones, propinas, total
+  4. Resumen Fiscal: Subtotal, ITBIS, Propina Legal, Descuentos, Total Neto
+  5. Auditoría de Excepciones: Anulaciones (count + monto) + Descuentos (count + monto)
+  6. Detalle de Facturas: Hora, Trans#, Mesa, Mesero, Cajero, Método, Subtotal, ITBIS, Propina, Total
+  7. Firmas: Espacio para Firma Cajero + Firma Supervisor
+- DO NOT: Remove any section. DO NOT: Show UUIDs in the bill detail table.
