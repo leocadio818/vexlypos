@@ -597,6 +597,52 @@ async def cash_close_report(date: Optional[str] = Query(None)):
     cash_total = sum(v["total"] for v in by_payment_method.values() if v["is_cash"])
     card_total = sum(v["total"] for v in by_payment_method.values() if not v["is_cash"])
     
+    # Bill details for the detailed table
+    bills_detail = []
+    total_discounts = 0
+    total_discount_count = 0
+    for b in day_bills:
+        paid_time = ""
+        try:
+            paid_time = b.get("paid_at", "")
+            if "T" in paid_time:
+                from datetime import datetime as dt2
+                paid_time = dt2.fromisoformat(paid_time.replace("Z","")).strftime("%I:%M %p")
+        except: pass
+        
+        discount_amt = b.get("discount_applied", {}).get("amount", 0) if isinstance(b.get("discount_applied"), dict) else 0
+        if discount_amt > 0:
+            total_discounts += discount_amt
+            total_discount_count += 1
+        
+        pm_names = []
+        for p in b.get("payments", []):
+            pm_names.append(p.get("payment_method_name", ""))
+        if not pm_names:
+            pm_names = [b.get("payment_method_name", b.get("payment_method", ""))]
+        
+        bills_detail.append({
+            "time": paid_time,
+            "transaction": b.get("transaction_number", ""),
+            "table": b.get("table_number", ""),
+            "waiter": b.get("waiter_name", ""),
+            "cashier": b.get("cashier_name", b.get("paid_by_name", "")),
+            "payment_method": ", ".join(pm_names),
+            "subtotal": round(b.get("subtotal", 0), 2),
+            "itbis": round(b.get("itbis", 0), 2),
+            "tips": round(b.get("propina_legal", 0), 2),
+            "discount": round(discount_amt, 2),
+            "total": round(b.get("total", 0), 2),
+        })
+    
+    # Voids for the day
+    void_logs = await db.void_audit_logs.find({"business_date": date}, {"_id": 0}).to_list(100)
+    total_voids = len(void_logs)
+    total_void_amount = sum(v.get("total_value", 0) for v in void_logs)
+    
+    # Get cashier names from bills
+    cashiers = list(set(b.get("cashier_name", b.get("paid_by_name", "")) for b in day_bills if b.get("cashier_name") or b.get("paid_by_name")))
+    
     return {
         "date": date,
         "summary": {
@@ -606,9 +652,16 @@ async def cash_close_report(date: Optional[str] = Query(None)):
             "total_itbis": round(total_itbis, 2),
             "cash_total": round(cash_total, 2),
             "card_total": round(card_total, 2),
-            "subtotal": round(total_sales - total_itbis - total_tips, 2)
+            "subtotal": round(total_sales - total_itbis - total_tips, 2),
+            "total_discounts": round(total_discounts, 2),
+            "discount_count": total_discount_count,
+            "total_voids": total_voids,
+            "total_void_amount": round(total_void_amount, 2),
+            "net_sales": round(total_sales - total_discounts, 2),
         },
+        "cashiers": cashiers,
         "by_payment_method": list(by_payment_method.values()),
+        "bills_detail": bills_detail,
         "shifts": shifts
     }
 
