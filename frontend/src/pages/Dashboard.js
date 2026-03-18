@@ -69,29 +69,29 @@ export default function Dashboard() {
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/10 rounded-bl-full" />
               <DollarSign size={16} className="text-orange-400 mb-2" />
-              <p className="text-[10px] text-white/50 uppercase tracking-wider">Ventas Hoy</p>
+              <p className="text-xs text-white/80 uppercase tracking-wider font-semibold">Ventas Hoy</p>
               <p className="font-oswald text-2xl font-bold text-orange-400 mt-1">{formatMoney(today.total_sales)}</p>
-              <p className="text-[10px] text-white/50 mt-1">{today.bills_count} facturas | Promedio: {formatMoney(today.avg_ticket)}</p>
+              <p className="text-xs text-white/70 mt-1">{today.bills_count} facturas | Promedio: {formatMoney(today.avg_ticket)}</p>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/10 rounded-bl-full" />
               <Banknote size={16} className="text-green-400 mb-2" />
-              <p className="text-[10px] text-white/50 uppercase tracking-wider">Efectivo</p>
+              <p className="text-xs text-white/80 uppercase tracking-wider font-semibold">Efectivo</p>
               <p className="font-oswald text-2xl font-bold text-green-400 mt-1">{formatMoney(today.cash)}</p>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-bl-full" />
               <TrendingUp size={16} className="text-blue-400 mb-2" />
-              <p className="text-[10px] text-white/50 uppercase tracking-wider">ITBIS Recaudado</p>
+              <p className="text-xs text-white/80 uppercase tracking-wider font-semibold">ITBIS Recaudado</p>
               <p className="font-oswald text-2xl font-bold text-blue-400 mt-1">{formatMoney(today.itbis)}</p>
-              <p className="text-[10px] text-white/50 mt-1">Propinas: {formatMoney(today.tips)}</p>
+              <p className="text-xs text-white/70 mt-1">Propinas: {formatMoney(today.tips)}</p>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-500/10 rounded-bl-full" />
               <Utensils size={16} className="text-yellow-400 mb-2" />
-              <p className="text-[10px] text-white/50 uppercase tracking-wider">Ocupacion</p>
+              <p className="text-xs text-white/80 uppercase tracking-wider font-semibold">Ocupacion</p>
               <p className="font-oswald text-2xl font-bold text-yellow-400 mt-1">{operations.occupancy_pct}%</p>
-              <p className="text-[10px] text-white/50 mt-1">{operations.occupied_tables}/{operations.total_tables} mesas ocupadas</p>
+              <p className="text-xs text-white/70 mt-1">{operations.occupied_tables}/{operations.total_tables} mesas ocupadas</p>
             </div>
           </div>
 
@@ -103,7 +103,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-oswald text-lg font-bold text-blue-500">{formatMoney(today.card)}</p>
-                <p className="text-[10px] text-muted-foreground">Tarjeta</p>
+                <p className="text-xs text-muted-foreground font-medium">Tarjeta</p>
               </div>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
@@ -112,7 +112,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-oswald text-lg font-bold text-purple-500">{formatMoney(today.transfer || 0)}</p>
-                <p className="text-[10px] text-muted-foreground">Transferencia</p>
+                <p className="text-xs text-muted-foreground font-medium">Transferencia</p>
               </div>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
@@ -121,7 +121,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-oswald text-lg font-bold text-amber-500">{formatMoney(today.tips)}</p>
-                <p className="text-[10px] text-muted-foreground">Propinas</p>
+                <p className="text-xs text-muted-foreground font-medium">Propinas</p>
               </div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-oswald text-xl font-bold text-rose-400">-{formatMoney(today.discounts || 0)}</p>
-                <p className="text-[10px] text-white/50">Descuentos ({today.discounts_count || 0})</p>
+                <p className="text-xs text-white/70 font-medium">Descuentos ({today.discounts_count || 0})</p>
               </div>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
@@ -144,7 +144,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-oswald text-xl font-bold text-white">{operations.active_orders}</p>
-                <p className="text-[10px] text-white/50">Ordenes Activas</p>
+                <p className="text-xs text-white/70 font-medium">Ordenes Activas</p>
               </div>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
@@ -153,7 +153,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-oswald text-xl font-bold text-red-400">-{formatMoney(voidsToday.total)}</p>
-                <p className="text-[10px] text-white/50">Anulaciones ({voidsToday.count})</p>
+                <p className="text-xs text-white/70 font-medium">Anulaciones ({voidsToday.count})</p>
               </div>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
@@ -162,16 +162,16 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-oswald text-xl font-bold text-white">{operations.open_shifts}</p>
-                <p className="text-[10px] text-white/50">Turnos Abiertos</p>
+                <p className="text-xs text-white/70 font-medium">Turnos Abiertos</p>
               </div>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${operations.inventory_alerts > 0 ? 'bg-red-500/20' : 'bg-white/5'}`}>
-                <AlertTriangle size={18} className={operations.inventory_alerts > 0 ? 'text-red-400' : 'text-white/40'} />
+                <AlertTriangle size={18} className={operations.inventory_alerts > 0 ? 'text-red-400' : 'text-white/60'} />
               </div>
               <div>
                 <p className={`font-oswald text-xl font-bold ${operations.inventory_alerts > 0 ? 'text-red-400' : 'text-white'}`}>{operations.inventory_alerts}</p>
-                <p className="text-[10px] text-white/50">Alertas Inventario</p>
+                <p className="text-xs text-white/70 font-medium">Alertas Inventario</p>
               </div>
             </div>
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
@@ -180,7 +180,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-oswald text-xl font-bold text-white">{loyalty.total_customers}</p>
-                <p className="text-[10px] text-white/50">Clientes Fidelidad</p>
+                <p className="text-xs text-white/70 font-medium">Clientes Fidelidad</p>
               </div>
             </div>
           </div>
@@ -212,10 +212,10 @@ export default function Dashboard() {
                           <div>
                             <p className="text-xs text-white/70">{t.waiter || 'Sin mesero'} {t.transaction_number ? <span className="text-green-400 font-mono">T-{t.transaction_number}</span> : ''}</p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <Clock size={10} className="text-white/40" />
-                              <span className="text-[10px] text-white/40 font-mono">{timeStr}</span>
-                              <span className="text-[10px] text-white/30">|</span>
-                              <span className="text-[10px] text-white/40">{t.items_count} items</span>
+                              <Clock size={10} className="text-white/60" />
+                              <span className="text-xs text-white/60 font-mono">{timeStr}</span>
+                              <span className="text-xs text-white/50">|</span>
+                              <span className="text-xs text-white/60">{t.items_count} items</span>
                             </div>
                           </div>
                         </div>
@@ -256,7 +256,7 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <p className="text-xs text-white/70">{t.bills_count} factura{t.bills_count > 1 ? 's' : ''}</p>
-                            {paidTime && <p className="text-[10px] text-white/40 font-mono mt-0.5">{paidTime}</p>}
+                            {paidTime && <p className="text-xs text-white/60 font-mono mt-0.5">{paidTime}</p>}
                           </div>
                         </div>
                         <p className="font-oswald text-base font-bold text-blue-400">{formatMoney(t.total)}</p>
@@ -286,17 +286,17 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Hoy */}
                 <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                  <p className="text-[10px] text-red-300/60 uppercase font-bold mb-1">Hoy (Tiempo Real)</p>
+                  <p className="text-xs text-red-300/80 uppercase font-bold mb-1">Hoy (Tiempo Real)</p>
                   <div className="flex items-baseline gap-2">
                     <span className="font-oswald text-2xl font-bold text-red-400">{voidsToday.count}</span>
-                    <span className="text-xs text-white/40">anulaciones</span>
+                    <span className="text-xs text-white/60">anulaciones</span>
                   </div>
                   <p className="font-oswald text-base font-bold text-red-400 mt-1">{formatMoney(voidsToday.total)}</p>
                   {voidsToday.by_reason.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {voidsToday.by_reason.map((r, i) => (
-                        <div key={i} className="flex justify-between text-[11px]">
-                          <span className="text-white/50 truncate mr-2">{r.reason}</span>
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="text-white/70 truncate mr-2">{r.reason}</span>
                           <span className="text-red-400 font-mono shrink-0">{r.count}x {formatMoney(r.total)}</span>
                         </div>
                       ))}
@@ -305,17 +305,17 @@ export default function Dashboard() {
                 </div>
                 {/* Jornada */}
                 <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                  <p className="text-[10px] text-orange-300/60 uppercase font-bold mb-1">Jornada Operativa</p>
+                  <p className="text-xs text-orange-300/80 uppercase font-bold mb-1">Jornada Operativa</p>
                   <div className="flex items-baseline gap-2">
                     <span className="font-oswald text-2xl font-bold text-orange-400">{voidsJornada.count}</span>
-                    <span className="text-xs text-white/40">anulaciones</span>
+                    <span className="text-xs text-white/60">anulaciones</span>
                   </div>
                   <p className="font-oswald text-base font-bold text-orange-400 mt-1">{formatMoney(voidsJornada.total)}</p>
                   {voidsJornada.by_reason.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {voidsJornada.by_reason.map((r, i) => (
-                        <div key={i} className="flex justify-between text-[11px]">
-                          <span className="text-white/50 truncate mr-2">{r.reason}</span>
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="text-white/70 truncate mr-2">{r.reason}</span>
                           <span className="text-orange-400 font-mono shrink-0">{r.count}x {formatMoney(r.total)}</span>
                         </div>
                       ))}
@@ -326,17 +326,17 @@ export default function Dashboard() {
               {/* Last voided items */}
               {voidsJornada.items.length > 0 && (
                 <div className="mt-3 pt-2 border-t border-white/10">
-                  <p className="text-[10px] text-white/30 uppercase font-bold mb-1.5">Items Anulados Recientes</p>
+                  <p className="text-xs text-white/50 uppercase font-bold mb-1.5">Items Anulados Recientes</p>
                   <div className="space-y-1 max-h-[120px] overflow-y-auto">
                     {voidsJornada.items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-[11px] py-0.5" data-testid={`void-item-${i}`}>
+                      <div key={i} className="flex items-center justify-between text-xs py-0.5" data-testid={`void-item-${i}`}>
                         <div className="flex items-center gap-2">
                           <span className="text-red-400 font-mono">x{item.quantity}</span>
                           <span className="text-white/70">{item.product_name}</span>
                           <span className="text-white/30">— {item.reason}</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-white/40">{item.requested_by}</span>
+                          <span className="text-white/60">{item.requested_by}</span>
                           <span className="text-red-400 font-mono">{formatMoney(item.unit_price * item.quantity)}</span>
                         </div>
                       </div>
@@ -366,7 +366,7 @@ export default function Dashboard() {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-40 text-white/40 text-sm">
+              <div className="flex items-center justify-center h-40 text-white/60 text-sm">
                 Las ventas del dia se mostraran aqui en tiempo real
               </div>
             )}
