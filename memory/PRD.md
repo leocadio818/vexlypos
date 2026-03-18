@@ -231,3 +231,11 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
   6. Detalle de Facturas: Hora, Trans#, Mesa, Mesero, Cajero, Método, Subtotal, ITBIS, Propina, Total
   7. Firmas: Espacio para Firma Cajero + Firma Supervisor
 - DO NOT: Remove any section. DO NOT: Show UUIDs in the bill detail table.
+### PENDIENTE — Print Agent Multi-Impresora (Próxima Sesión)
+- Implementar Opción A: Un solo Print Agent que maneja TODAS las impresoras por IP de red
+- Config.txt con secciones por impresora: [cocina] IP=x.x.x.x CANAL=cocina
+- El agente recibe trabajos y los enruta a la impresora correcta según el canal de impresión
+- Los Canales de Impresión ya existen en Config > Impresión
+- Cada categoría ya se asigna a un canal
+- Falta: backend envíe el canal en el job de impresión + agente lea el canal y envíe a la IP correcta
+
