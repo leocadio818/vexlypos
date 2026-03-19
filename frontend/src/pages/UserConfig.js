@@ -31,6 +31,7 @@ const PERMISSION_CATEGORIES = {
       apply_discount: 'Aplicar Descuentos',
       modify_price: 'Modificar Precios',
       reprint_receipt: 'Reimprimir Recibo',
+      reprint_precuenta: 'Reimprimir Pre-Cuenta',
     }
   },
   mesas: {

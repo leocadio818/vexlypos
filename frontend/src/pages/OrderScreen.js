@@ -44,7 +44,7 @@ function getContrastText(hex) {
 export default function OrderScreen() {
   const { tableId } = useParams();
   const navigate = useNavigate();
-  const { user, largeMode } = useAuth();
+  const { user, largeMode, hasPermission } = useAuth();
   const { isMinimalist } = useTheme();
   const [table, setTable] = useState(null);
   const [order, setOrder] = useState(null);
@@ -955,8 +955,14 @@ export default function OrderScreen() {
 
   const handlePrintPreCheck = async () => {
     if (!order) return;
-    // If already printed, require manager PIN
+    // If already printed, check permission
     if (preCheckCount > 0) {
+      // User has reprint_precuenta permission → reprint directly, no PIN needed
+      if (hasPermission('reprint_precuenta')) {
+        await doPrintPreCheck();
+        return;
+      }
+      // No permission → require manager PIN
       setManagerPinDialog({ open: true, pin: '' });
       return;
     }

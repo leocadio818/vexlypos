@@ -99,6 +99,7 @@ ALL_PERMISSIONS = {
     "view_reports": "Ver Reportes", "export_dgii": "Exportar DGII",
     "open_shift": "Abrir Turno", "close_shift": "Cerrar Turno", "close_day": "Cierre de Dia",
     "cash_movement_income": "Mov. Caja: Ingreso", "cash_movement_withdrawal": "Mov. Caja: Retiro",
+    "reprint_precuenta": "Reimprimir Pre-Cuenta",
     "release_reserved_table": "Desbloquear Mesa Reservada",
     "transfer_tables": "Transferir Mesas entre Usuarios",
     "create_b04": "Crear Nota de Credito (B04)",
