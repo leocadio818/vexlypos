@@ -777,6 +777,16 @@ export default function Layout() {
                   <span className="font-semibold text-sm">Config</span>
                 </button>
               )}
+              {hasPermission('close_day') && (
+                <button onClick={() => { setOptionsMenuOpen(false); setBusinessDayDialogOpen(true); }}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-red-500/50 hover:bg-red-500/5 transition-all active:scale-95"
+                  data-testid="opt-cierre-dia">
+                  <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center">
+                    <Lock size={20} className="text-red-500" />
+                  </div>
+                  <span className="font-semibold text-sm">Cierre de Día</span>
+                </button>
+              )}
             </div>
             <button onClick={() => setOptionsMenuOpen(false)}
               className="mt-5 w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-all">
