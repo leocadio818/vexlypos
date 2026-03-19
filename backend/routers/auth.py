@@ -158,9 +158,14 @@ def get_permissions(role, custom=None):
     return base
 
 
-def can_access_table_orders(user: dict, orders: list) -> bool:
+async def can_access_table_orders(user: dict, orders: list) -> bool:
     """Check if user can access orders on a table based on ownership and permissions"""
-    perms = get_permissions(user.get("role", "waiter"), user.get("permissions"))
+    # Fetch real user permissions from DB (JWT doesn't carry permissions)
+    db_user = await db.users.find_one({"id": user.get("user_id")}, {"_id": 0, "role": 1, "permissions": 1})
+    if db_user:
+        perms = get_permissions(db_user.get("role", "waiter"), db_user.get("permissions"))
+    else:
+        perms = get_permissions(user.get("role", "waiter"))
     
     if perms.get("access_all_tables", False):
         return True

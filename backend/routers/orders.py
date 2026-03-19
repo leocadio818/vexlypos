@@ -1185,7 +1185,7 @@ async def get_table_orders(table_id: str, user: dict = Depends(get_current_user)
         {"_id": 0}
     ).sort("account_number", 1).to_list(50)
     
-    if orders and not can_access_table_orders(user, orders):
+    if orders and not await can_access_table_orders(user, orders):
         owner_name = get_table_owner_name(orders)
         raise HTTPException(
             status_code=403, 
