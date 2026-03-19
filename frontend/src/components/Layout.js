@@ -344,6 +344,18 @@ export default function Layout() {
               <span className="text-[11px] font-medium">Opciones</span>
             </button>
             )}
+            {location.pathname.startsWith('/order/') && (
+            <button
+              onClick={() => setFunctionsMenuOpen(true)}
+              data-testid="nav-funciones-mobile"
+              className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl transition-all min-w-[50px] ${
+                useGlassStyle ? 'text-white/60 hover:text-white' : 'text-muted-foreground'
+              }`}
+            >
+              <Wrench size={20} />
+              <span className="text-[11px] font-medium">Funciones</span>
+            </button>
+            )}
             <button
               onClick={handleLogout}
               className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl min-w-[50px] ${
