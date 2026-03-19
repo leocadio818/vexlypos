@@ -108,20 +108,15 @@ async def health_check():
 @api.get("/modifier-groups-with-options")
 async def list_modifier_groups_with_options():
     """Return all modifier GROUPS with enriched options for ProductConfig dropdown."""
-    # Old-style: modifiers collection docs without group_id (they ARE groups with embedded options)
-    old_groups = []
-    async for doc in db.modifiers.find({}, {"_id": 0}):
-        gid = doc.get("group_id", "")
-        if not gid or not gid.strip():
-            old_groups.append(doc)
+    # Fetch all modifiers once
+    all_modifiers = await db.modifiers.find({}, {"_id": 0}).to_list(500)
+    
+    # Old-style: modifiers without group_id (they ARE groups)
+    old_groups = [doc for doc in all_modifiers if not (doc.get("group_id", "") or "").strip()]
     
     # New-style: modifier_groups collection + enrich with their options
     new_groups = await db.modifier_groups.find({}, {"_id": 0}).to_list(100)
-    all_options = []
-    async for doc in db.modifiers.find({}, {"_id": 0}):
-        gid = doc.get("group_id", "")
-        if gid and gid.strip():
-            all_options.append(doc)
+    all_options = [doc for doc in all_modifiers if (doc.get("group_id", "") or "").strip()]
     for g in new_groups:
         g["options"] = [o for o in all_options if o.get("group_id") == g["id"]]
     
@@ -789,11 +784,8 @@ async def create_reservation(input: dict):
     table_ids = input.get("table_ids", [])
     if input.get("table_id") and input["table_id"] not in table_ids:
         table_ids.append(input["table_id"])
-    table_numbers = []
-    for tid in table_ids:
-        t = await db.tables.find_one({"id": tid}, {"_id": 0})
-        if t:
-            table_numbers.append(t["number"])
+    tables_found = await db.tables.find({"id": {"$in": table_ids}}, {"_id": 0, "id": 1, "number": 1}).to_list(len(table_ids) or 1)
+    table_numbers = [t["number"] for t in tables_found]
     
     activation_minutes = input.get("activation_minutes", 60)
     tolerance_minutes = input.get("tolerance_minutes", 15)
