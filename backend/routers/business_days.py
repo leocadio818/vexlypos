@@ -414,6 +414,40 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
         except Exception as e:
             print(f"Warning: Could not force close sessions: {e}")
     
+    # Auto clock-out ALL active attendance records on day close
+    try:
+        from routers.attendance import now_local
+        local_now = now_local()
+        config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+        is_12h = config.get("time_format", "12h") == "12h"
+        display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
+        
+        active_records = await db.attendance.find({"status": "ACTIVE"}, {"_id": 0}).to_list(100)
+        for record in active_records:
+            try:
+                from datetime import datetime
+                clock_in_dt = datetime.fromisoformat(record["clock_in"])
+                diff = local_now - clock_in_dt.replace(tzinfo=local_now.tzinfo) if clock_in_dt.tzinfo is None else local_now - clock_in_dt
+                hours = round(diff.total_seconds() / 3600, 2)
+            except:
+                hours = 0
+            hours_display = f"{int(hours)}h {int((hours % 1) * 60)}m"
+            
+            await db.attendance.update_one(
+                {"id": record["id"]},
+                {"$set": {
+                    "clock_out": local_now.isoformat(),
+                    "clock_out_display": display_time,
+                    "hours_worked": hours,
+                    "hours_display": hours_display,
+                    "status": "COMPLETED",
+                }}
+            )
+        if active_records:
+            print(f"Auto clock-out: {len(active_records)} attendance records closed on day close")
+    except Exception as e:
+        print(f"Warning: Could not auto clock-out attendance: {e}")
+    
     return {
         "ok": True,
         "message": f"Jornada {business_day['ref']} cerrada exitosamente",
