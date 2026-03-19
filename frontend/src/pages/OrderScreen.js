@@ -1359,6 +1359,9 @@ export default function OrderScreen() {
             <h2 className="font-oswald text-lg lg:text-base font-bold text-white">
               {accessDenied ? `Mesa ${table?.number || '?'}` : splitMode ? 'EDITAR CUENTA' : `Mesa ${table?.number || '?'}${order?.transaction_number ? ` | T-${order.transaction_number}` : ''}`}
             </h2>
+            {order?.waiter_name && !splitMode && !accessDenied && (
+              <p className="text-xs text-white/60 ml-1">Mesero: {order.waiter_name}</p>
+            )}
           </div>
         </div>
 
