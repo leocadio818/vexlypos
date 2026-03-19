@@ -651,7 +651,7 @@ export default function Layout() {
 
       {/* Business Day Management Dialog - Global */}
       <Dialog open={businessDayDialogOpen} onOpenChange={setBusinessDayDialogOpen}>
-        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-lg">
+        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-lg max-h-[90vh] overflow-y-auto">
           <BusinessDayManager 
             showStatsInline={true} 
             onDayStatusChange={(hasDay, day) => {
