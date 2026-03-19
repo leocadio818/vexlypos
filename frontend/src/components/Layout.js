@@ -489,132 +489,6 @@ export default function Layout() {
                   <Wrench size={isTablet ? 18 : largeMode ? 24 : 20} />
                   <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[11px]'}`}>Funciones</span>
                 </button>
-                
-                {/* Modal Glassmorphism de Funciones */}
-                <Dialog open={functionsMenuOpen} onOpenChange={setFunctionsMenuOpen}>
-                  <DialogContent 
-                    className="max-w-md p-0 border-0 bg-transparent shadow-none"
-                    data-testid="sidebar-functions-menu"
-                  >
-                    {/* Glassmorphism Container with animation */}
-                    <div className="relative backdrop-blur-xl bg-slate-900/80 border border-white/20 rounded-2xl p-5 shadow-2xl animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300">
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10 rounded-2xl pointer-events-none" />
-                      
-                      {/* Header */}
-                      <div className="relative mb-4 pb-3 border-b border-white/10">
-                        <h3 className="text-lg font-oswald font-bold text-white flex items-center gap-2">
-                          <Wrench size={20} className="text-blue-400" />
-                          Funciones de Mesa
-                        </h3>
-                        <p className="text-xs text-white/50 mt-1">Selecciona una acción</p>
-                      </div>
-                      
-                      {/* Grid de botones tipo píldora */}
-                      <div className="relative grid grid-cols-2 gap-3">
-                        {/* Mover Mesa */}
-                        <button 
-                          onClick={() => { 
-                            setFunctionsMenuOpen(false); 
-                            window.dispatchEvent(new CustomEvent('openMoveTableDialog'));
-                          }}
-                          className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-blue-500/20 border border-white/10 hover:border-blue-400/50 transition-all duration-200 group active:scale-95"
-                          data-testid="sidebar-fn-move-table"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
-                            <MoveRight size={16} className="text-blue-400" />
-                          </div>
-                          <span className="text-sm font-medium text-white/90 group-hover:text-white">Mover Mesa</span>
-                        </button>
-                        
-                        {/* Transferir Mesa */}
-                        <button 
-                          onClick={() => { 
-                            setFunctionsMenuOpen(false); 
-                            window.dispatchEvent(new CustomEvent('openTransferTableDialog'));
-                          }}
-                          className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-purple-500/20 border border-white/10 hover:border-purple-400/50 transition-all duration-200 group active:scale-95"
-                          data-testid="sidebar-fn-transfer-table"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
-                            <ArrowRightLeft size={16} className="text-purple-400" />
-                          </div>
-                          <span className="text-sm font-medium text-white/90 group-hover:text-white">Transferir Mesa</span>
-                        </button>
-                        
-                        {/* Dividir Cuenta */}
-                        <button 
-                          onClick={() => { 
-                            setFunctionsMenuOpen(false); 
-                            window.dispatchEvent(new CustomEvent('enterSplitMode'));
-                          }}
-                          className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-green-500/20 border border-white/10 hover:border-green-400/50 transition-all duration-200 group active:scale-95"
-                          data-testid="sidebar-fn-split-bill"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
-                            <SplitSquareHorizontal size={16} className="text-green-400" />
-                          </div>
-                          <span className="text-sm font-medium text-white/90 group-hover:text-white">Dividir Cuenta</span>
-                        </button>
-                        
-                        {/* Reimprimir Comanda */}
-                        <button 
-                          className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed"
-                          disabled
-                          data-testid="sidebar-fn-reprint-order"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
-                            <RefreshCw size={16} className="text-orange-400" />
-                          </div>
-                          <div className="flex flex-col items-start">
-                            <span className="text-sm font-medium text-white/50">Reimprimir</span>
-                            <span className="text-xs text-white/30">Pronto</span>
-                          </div>
-                        </button>
-                        
-                        {/* Descuento Especial */}
-                        <button 
-                          className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed"
-                          disabled
-                          data-testid="sidebar-fn-apply-discount"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                            <Percent size={16} className="text-purple-400" />
-                          </div>
-                          <div className="flex flex-col items-start">
-                            <span className="text-sm font-medium text-white/50">Descuento</span>
-                            <span className="text-xs text-white/30">Pronto</span>
-                          </div>
-                        </button>
-                        
-                        {/* Anular Cuenta Entera - ACCIÓN CRÍTICA - Span completo */}
-                        <button 
-                          onClick={() => { 
-                            setFunctionsMenuOpen(false); 
-                            window.dispatchEvent(new CustomEvent('voidEntireOrder'));
-                          }}
-                          className="col-span-2 flex items-center justify-center gap-3 px-4 py-3.5 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-400/50 transition-all duration-200 group active:scale-95"
-                          data-testid="sidebar-fn-void-order"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center group-hover:bg-red-500/30 transition-colors">
-                            <Ban size={16} className="text-red-400" />
-                          </div>
-                          <span className="text-sm font-semibold text-red-400 group-hover:text-red-300">Anular Cuenta Entera</span>
-                        </button>
-                      </div>
-                      
-                      {/* Footer */}
-                      <div className="relative mt-4 pt-3 border-t border-white/10 flex justify-end">
-                        <button 
-                          onClick={() => setFunctionsMenuOpen(false)}
-                          className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-sm font-medium transition-all active:scale-95"
-                        >
-                          Cerrar
-                        </button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
               </>
             )}
           </nav>
@@ -783,6 +657,58 @@ export default function Layout() {
               <LogOut size={16} className="mr-2" />
               Cerrar Sesión
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Functions Menu Modal - Global (works on mobile + desktop) */}
+      <Dialog open={functionsMenuOpen} onOpenChange={setFunctionsMenuOpen}>
+        <DialogContent className="max-w-md p-0 border-0 bg-transparent shadow-none" data-testid="sidebar-functions-menu">
+          <div className="relative backdrop-blur-xl bg-slate-900/80 border border-white/20 rounded-2xl p-5 shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10 rounded-2xl pointer-events-none" />
+            <div className="relative mb-4 pb-3 border-b border-white/10">
+              <h3 className="text-lg font-oswald font-bold text-white flex items-center gap-2">
+                <Wrench size={20} className="text-blue-400" /> Funciones de Mesa
+              </h3>
+              <p className="text-xs text-white/50 mt-1">Selecciona una acción</p>
+            </div>
+            <div className="relative grid grid-cols-2 gap-3">
+              <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('openMoveTableDialog')); }}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-blue-500/20 border border-white/10 hover:border-blue-400/50 transition-all duration-200 group active:scale-95"
+                data-testid="sidebar-fn-move-table">
+                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors"><MoveRight size={16} className="text-blue-400" /></div>
+                <span className="text-sm font-medium text-white/90 group-hover:text-white">Mover Mesa</span>
+              </button>
+              <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('openTransferTableDialog')); }}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-purple-500/20 border border-white/10 hover:border-purple-400/50 transition-all duration-200 group active:scale-95"
+                data-testid="sidebar-fn-transfer-table">
+                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors"><ArrowRightLeft size={16} className="text-purple-400" /></div>
+                <span className="text-sm font-medium text-white/90 group-hover:text-white">Transferir Mesa</span>
+              </button>
+              <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('enterSplitMode')); }}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-green-500/20 border border-white/10 hover:border-green-400/50 transition-all duration-200 group active:scale-95"
+                data-testid="sidebar-fn-split-bill">
+                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors"><SplitSquareHorizontal size={16} className="text-green-400" /></div>
+                <span className="text-sm font-medium text-white/90 group-hover:text-white">Dividir Cuenta</span>
+              </button>
+              <button className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed" disabled data-testid="sidebar-fn-reprint-order">
+                <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center"><RefreshCw size={16} className="text-orange-400" /></div>
+                <div className="flex flex-col items-start"><span className="text-sm font-medium text-white/50">Reimprimir</span><span className="text-xs text-white/30">Pronto</span></div>
+              </button>
+              <button className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed" disabled data-testid="sidebar-fn-apply-discount">
+                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center"><Percent size={16} className="text-purple-400" /></div>
+                <div className="flex flex-col items-start"><span className="text-sm font-medium text-white/50">Descuento</span><span className="text-xs text-white/30">Pronto</span></div>
+              </button>
+              <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('voidEntireOrder')); }}
+                className="col-span-2 flex items-center justify-center gap-3 px-4 py-3.5 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-400/50 transition-all duration-200 group active:scale-95"
+                data-testid="sidebar-fn-void-order">
+                <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center group-hover:bg-red-500/30 transition-colors"><Ban size={16} className="text-red-400" /></div>
+                <span className="text-sm font-semibold text-red-400 group-hover:text-red-300">Anular Cuenta Entera</span>
+              </button>
+            </div>
+            <div className="relative mt-4 pt-3 border-t border-white/10 flex justify-end">
+              <button onClick={() => setFunctionsMenuOpen(false)} className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-sm font-medium transition-all active:scale-95">Cerrar</button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
