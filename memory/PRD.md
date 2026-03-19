@@ -51,12 +51,14 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Meseros: botón "Marcar Salida" dentro del popover del usuario
 - DO NOT: Use Dialog component for login modals. DO NOT remove useCallback.
 
-### 🔒 Sidebar Permissions (LOCKED - 2026-03-17)
+### 🔒 Sidebar & Navigation (LOCKED - 2026-03-19)
+- navItems: only Panel + Mesas in sidebar
+- **"Opciones" modal**: Cocina, Caja, Reservas, Config, Cierre de Día — hidden inside mesas (`/order/`)
+- **"Funciones" modal**: GLOBAL (mobile+desktop) — visible only inside mesas (`/order/`)
+- **Business Day Dialog**: GLOBAL (moved out of desktop sidebar block)
 - Meseros: NO ven Reservas, NO ven Config
 - Cajeros: NO ven Cocina
 - Jornada button: visible para todos, clickeable SOLO para roles con `close_day` permission
-- "Opciones" modal: oculto dentro de mesas (`/order/`), visible fuera
-- "Funciones" modal: visible solo dentro de mesas, GLOBAL (mobile+desktop)
 
 ### 🔒 Auto-Contrast System for Category/Product Cards (LOCKED - 2026-03-17)
 - `getContrastText(hex)` function — WCAG luminance algorithm
@@ -70,6 +72,14 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Auto-authorization: if user has `close_day`, skips PIN for Cierre de Día (`authorizer_pin='self'`)
 - `get_authorizer_by_pin` accepts `current_user` parameter for self-auth
 
+### 🔒 Cierre de Día — Intelligent Validation (LOCKED - 2026-03-19)
+- **Mesas/cuentas abiertas → SIEMPRE bloquea** (force_close NO las salta)
+- **Turnos POS sin mesas → force_close los cierra** automáticamente
+- **Auto clock-out de TODOS los registros de asistencia** al cerrar día
+- Status "sent" included in open orders check (not just "active")
+- After close: ALL users see "Bienvenido" modal on next login
+- DO NOT: Allow force_close to skip open orders/tables validation
+
 ## Credentials
 - Admin PIN: 10000
 - OSCAR (Cajero): 1111
@@ -79,6 +89,7 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 ## Branding & White-Label (2026-03-14)
 - Login screen loads restaurant name + logo from `/api/system/branding`
 - Logo cached in localStorage (`pos_branding`) for instant render
+- Sidebar logo shows real restaurant logo from localStorage
 - Tab title: "VexlyPOS"
 - "Made with Emergent" badge: REMOVED
 
@@ -110,6 +121,16 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - ALL reports filter by `business_date` field, NOT `paid_at`
 - Fallback: `b.get("business_date", b.get("paid_at", "")[:10])`
 
+## UI Improvements (2026-03-19)
+- text-[10px] → text-xs across ALL 56 files (bigger labels globally)
+- Dialog X button: `right-2 top-2 z-10` (no overlap with content)
+- Mesero name visible in OrderScreen header: "Mesa 1 | T-1013 Mesero: Admin"
+- Access Denied screen works on mobile (inline div, not inside hidden desktop panel)
+- Category color picker: 18 presets + custom + text color + live preview
+- Category edit modal: scrollable `max-h-[90vh]`
+- "Buscar Cliente" modal: wider `max-w-2xl`
+- BusinessDay dialog: `max-h-[90vh] overflow-y-auto` for mobile
+
 ## PENDING — Print Agent Multi-Impresora (Próxima Sesión)
 - Opción A: Un solo Print Agent, múltiples IPs por canal
 - Config.txt con secciones por impresora
@@ -117,10 +138,11 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 ## PENDING — Integración de IA (Próxima Sesión)
 - GPT-4o mini via Emergent Universal Key
 - Asistente de Inventario, Análisis de Ventas, Sugerencias de Menú, Predicción de Demanda
+- Requiere: usuario agregue saldo en Perfil > Universal Key > Add Balance
 
 ## Next Tasks
 - P1: Print Agent Multi-Impresora
-- P1: Integración IA
+- P1: Integración IA (GPT-4o mini)
 - P1: Reporte de Horas Trabajadas
 - P1: Envío Automático de Facturas por Email
 - P2: DGII Report 608, Cache imágenes offline
