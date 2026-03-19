@@ -188,7 +188,7 @@ async def dashboard():
     open_tables_list = []
     active_tables = [t for t in tables if t.get("status") in ("occupied", "billed") or t["id"] in active_table_ids]
     if active_tables:
-        all_orders = await db.orders.find({"status": {"$nin": ["cancelled", "paid", "closed"]}}, {"_id": 0, "table_id": 1, "items": 1, "status": 1, "created_at": 1}).to_list(500)
+        all_orders = await db.orders.find({"status": {"$nin": ["cancelled", "paid", "closed"]}}, {"_id": 0, "table_id": 1, "items": 1, "status": 1, "created_at": 1, "waiter_name": 1, "transaction_number": 1}).to_list(500)
         for t in active_tables:
             t_id = t.get("id", "")
             t_num = t.get("number", "?")
