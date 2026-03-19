@@ -423,18 +423,6 @@ export default function Layout() {
             )}
           </button>
           
-          {/* Business Day Management Dialog */}
-          <Dialog open={businessDayDialogOpen} onOpenChange={setBusinessDayDialogOpen}>
-            <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-lg">
-              <BusinessDayManager 
-                showStatsInline={true} 
-                onDayStatusChange={(hasDay, day) => {
-                  setBusinessDay(hasDay ? day : null);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-
           <nav className="flex-1 flex flex-col gap-1.5 lg:gap-2">
             {filteredNav.map(({ to, icon: Icon, label }) => (
               <NavLink
@@ -658,6 +646,18 @@ export default function Layout() {
               Cerrar Sesión
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Business Day Management Dialog - Global */}
+      <Dialog open={businessDayDialogOpen} onOpenChange={setBusinessDayDialogOpen}>
+        <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-lg">
+          <BusinessDayManager 
+            showStatsInline={true} 
+            onDayStatusChange={(hasDay, day) => {
+              setBusinessDay(hasDay ? day : null);
+            }}
+          />
         </DialogContent>
       </Dialog>
 
