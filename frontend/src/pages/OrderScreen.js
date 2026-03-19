@@ -1807,6 +1807,20 @@ export default function OrderScreen() {
         )}
       </div>
 
+      {/* Access Denied - Mobile fullscreen */}
+      {accessDenied && !mobileAccountExpanded && (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center lg:hidden">
+          <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+            <Lock size={32} className="text-red-500" />
+          </div>
+          <h3 className="font-oswald text-lg font-bold text-red-500 mb-2">Acceso Denegado</h3>
+          <p className="text-sm text-muted-foreground mb-6">{accessDenied}</p>
+          <button onClick={() => navigate('/tables')} className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted flex items-center gap-2 transition-all">
+            <ArrowLeft size={14} /> Volver a Mesas
+          </button>
+        </div>
+      )}
+
       {/* Right (visually): Categories & Products - Now rendered first but appears on right */}
       {/* Hide on mobile when account is expanded */}
       {!splitMode && !accessDenied && !mobileAccountExpanded && (
