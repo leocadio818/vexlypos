@@ -332,6 +332,7 @@ export default function Layout() {
                 <span className="text-[11px] font-medium">{label}</span>
               </NavLink>
             ))}
+            {!location.pathname.startsWith('/order/') && (
             <button
               onClick={() => setOptionsMenuOpen(true)}
               data-testid="nav-opciones-mobile"
@@ -342,6 +343,7 @@ export default function Layout() {
               <MoreHorizontal size={20} />
               <span className="text-[11px] font-medium">Opciones</span>
             </button>
+            )}
             <button
               onClick={handleLogout}
               className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl min-w-[50px] ${
@@ -444,7 +446,8 @@ export default function Layout() {
               </NavLink>
             ))}
 
-            {/* Options Menu Button */}
+            {/* Options Menu Button - Hidden inside orders */}
+            {!location.pathname.startsWith('/order/') && (
             <button
               onClick={() => setOptionsMenuOpen(true)}
               data-testid="nav-opciones"
@@ -457,6 +460,7 @@ export default function Layout() {
               <MoreHorizontal size={isTablet ? 18 : largeMode ? 24 : 20} />
               <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[11px]'}`}>Opciones</span>
             </button>
+            )}
             
             {/* Functions Menu Button - Solo visible en pantalla de pedidos */}
             {location.pathname.startsWith('/order/') && (
