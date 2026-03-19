@@ -83,8 +83,21 @@ class AuthorizeDayActionInput(BaseModel):
 
 # ─── HELPER FUNCTIONS ───
 
-async def get_authorizer_by_pin(pin: str):
-    """Verifica PIN y retorna usuario si tiene permiso de close_day"""
+async def get_authorizer_by_pin(pin: str, current_user: dict = None):
+    """Verifica PIN y retorna usuario si tiene permiso de close_day.
+    If pin=='self' and current_user provided, self-authorize if user has permission."""
+    # Self-authorization: user already logged in with close_day permission
+    if pin == 'self' and current_user:
+        user_id = current_user.get("user_id")
+        db_user = await db.users.find_one({"id": user_id, "active": True}, {"_id": 0})
+        if db_user:
+            role = db_user.get("role", "")
+            perms = db_user.get("permissions", {})
+            if role in ["admin", "manager"] or perms.get("close_day", False):
+                db_user["user_id"] = db_user.get("id")
+                return db_user
+        raise HTTPException(status_code=403, detail="No tiene permiso para autorizar")
+    
     users = await db.users.find({"active": True}, {"_id": 0}).to_list(100)
     pin_hash = hash_pin(pin)
     
@@ -213,7 +226,7 @@ async def open_business_day(input: OpenBusinessDayInput, user=Depends(get_curren
     - La fecha de negocio se fija hasta el cierre
     """
     # Verificar autorización
-    authorizer = await get_authorizer_by_pin(input.authorizer_pin)
+    authorizer = await get_authorizer_by_pin(input.authorizer_pin, user)
     
     # Verificar que no haya jornada abierta
     existing = await get_current_business_day()
@@ -292,7 +305,7 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
     - Se recomienda cerrar todos los turnos primero (o usar force_close)
     """
     # Verificar autorización
-    authorizer = await get_authorizer_by_pin(input.authorizer_pin)
+    authorizer = await get_authorizer_by_pin(input.authorizer_pin, user)
     
     # Obtener jornada activa
     business_day = await get_current_business_day()

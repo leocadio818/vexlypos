@@ -27,7 +27,7 @@ export default function BusinessDayManager({
   onDayStatusChange,
   showStatsInline = false 
 }) {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const [businessDay, setBusinessDay] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -172,6 +172,18 @@ export default function BusinessDayManager({
 
   // Iniciar proceso de apertura/cierre
   const startAction = (action) => {
+    // If user already has close_day permission, skip PIN authorization
+    if (hasPermission('close_day')) {
+      setAuthorizer({ name: user?.name, id: user?.id });
+      setAuthorizerPin('self');
+      if (action === 'open') {
+        setBusinessDate(new Date().toISOString().split('T')[0]);
+        setOpenDayDialog(true);
+      } else if (action === 'close') {
+        setCloseDayDialog(true);
+      }
+      return;
+    }
     setAuthorizerPin('');
     setAuthorizer(null);
     setPinDialog({ open: true, action });
