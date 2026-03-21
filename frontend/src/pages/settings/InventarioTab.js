@@ -33,7 +33,10 @@ const SubTabButton = ({ active, onClick, icon: Icon, label }) => (
 export default function InventarioTab() {
   const { categories, products, printChannels, categoryChannels, inventorySettings, setInventorySettings, warehouses, fetchAll } = useSettings();
   const [confirmProps, showConfirm] = useConfirmDialog();
-  const [inventarioSubTab, setInventarioSubTab] = useState('categorias');
+  const [inventarioSubTab, setInventarioSubTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('subtab') || 'categorias';
+  });
   const [productSearch, setProductSearch] = useState('');
   const [showInactiveProducts, setShowInactiveProducts] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);

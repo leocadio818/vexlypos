@@ -321,35 +321,6 @@ export default function ProductConfig() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          {!isNew && (
-            <button
-              onClick={async () => {
-                const newActive = !(product.active !== false);
-                setProduct(p => ({ ...p, active: newActive }));
-                try {
-                  const token = localStorage.getItem('pos_token');
-                  await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/products/${productId}`, {
-                    method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({ active: newActive })
-                  });
-                  // Audit log
-                  await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/system-audit-log`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({ event_type: newActive ? 'product_activated' : 'product_deactivated', entity_type: 'product', entity_id: productId, entity_name: product.name, details: `Producto ${newActive ? 'activado' : 'desactivado'}: ${product.name}` })
-                  }).catch(() => {});
-                  toast.success(newActive ? 'Producto activado' : 'Producto desactivado');
-                } catch { toast.error('Error al cambiar estado'); }
-              }}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                product.active !== false
-                  ? 'bg-green-500/20 text-green-500 border border-green-500/30'
-                  : 'bg-red-500/20 text-red-500 border border-red-500/30'
-              }`}
-              data-testid="toggle-product-active"
-            >
-              {product.active !== false ? 'Activo' : 'Inactivo'}
-            </button>
-          )}
           <Button 
             variant="outline"
             onClick={handleGoBack} 
@@ -375,7 +346,8 @@ export default function ProductConfig() {
       <div className="flex-1 p-4 overflow-auto">
         <div className="max-w-3xl mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-card border border-border mb-4 w-full justify-start gap-1 p-1">
+            <div className="flex items-center gap-3 mb-4">
+            <TabsList className="bg-card border border-border justify-start gap-1 p-1">
               <TabsTrigger 
                 value="general" 
                 className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald"
@@ -405,6 +377,35 @@ export default function ProductConfig() {
                 <ListChecks size={14} className="mr-1" /> Asignar Modificadores
               </TabsTrigger>
             </TabsList>
+            {!isNew && (
+              <button
+                onClick={async () => {
+                  const newActive = !(product.active !== false);
+                  setProduct(p => ({ ...p, active: newActive }));
+                  try {
+                    const token = localStorage.getItem('pos_token');
+                    await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/products/${productId}`, {
+                      method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({ active: newActive })
+                    });
+                    await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/system-audit-log`, {
+                      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({ event_type: newActive ? 'product_activated' : 'product_deactivated', entity_type: 'product', entity_id: productId, entity_name: product.name, details: `Producto ${newActive ? 'activado' : 'desactivado'}: ${product.name}` })
+                    }).catch(() => {});
+                    toast.success(newActive ? 'Producto activado' : 'Producto desactivado');
+                  } catch { toast.error('Error al cambiar estado'); }
+                }}
+                className={`ml-auto px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                  product.active !== false
+                    ? 'bg-green-500/20 text-green-500 border border-green-500/30 hover:bg-green-500/30'
+                    : 'bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500/30'
+                }`}
+                data-testid="toggle-product-active"
+              >
+                {product.active !== false ? 'Activo' : 'Inactivo'}
+              </button>
+            )}
+            </div>
 
             {/* GENERAL TAB */}
             <TabsContent value="general" className="space-y-4">
