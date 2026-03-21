@@ -175,13 +175,19 @@ export default function ProductConfig() {
     // Validate barcode uniqueness
     if (product.barcode && product.barcode.trim()) {
       try {
-        const checkRes = await fetch(`${API}/products/check-barcode/${product.barcode.trim()}?exclude_id=${productId || ''}`, { headers: hdrs() });
+        const token = localStorage.getItem('pos_token');
+        const checkRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/products/check-barcode/${product.barcode.trim()}?exclude_id=${productId || ''}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         const checkData = await checkRes.json();
         if (checkData.exists && checkData.products?.length > 0) {
           setBarcodeConflict(checkData.products);
+          setSaving(false);
           return;
         }
-      } catch {}
+      } catch (err) {
+        console.error('Barcode check failed:', err);
+      }
     }
 
     setSaving(true);
@@ -218,6 +224,7 @@ export default function ProductConfig() {
           modifier_assignments: [],
           button_bg_color: '#6366f1', 
           button_text_color: '#ffffff', 
+          barcode: '',
           printed_name: '',
           track_inventory: false,
           print_channels: [],
