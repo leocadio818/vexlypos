@@ -129,6 +129,17 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Category color picker: 18 presets + custom + text color + live preview
 - Category edit modal: scrollable `max-h-[90vh]`
 - "Buscar Cliente" modal: wider `max-w-2xl`
+### 🔒 Barcode Scanner System (LOCKED - 2026-03-21)
+- Products have `barcode` field (string) — set in ProductConfig.js
+- Backend: `GET /products/by-barcode/{code}` endpoint for lookup
+- OrderScreen.js: invisible `keypress` listener detects rapid typing (< 100ms between chars) + Enter
+- If barcode found → `handleProductClick(product)` immediately (no modal)
+- If barcode NOT found → centered modal with code + "Producto No Encontrado"
+- Ignores input when INPUT/TEXTAREA/SELECT is focused (no interference with forms)
+- Buffer resets after 100ms of no input (distinguishes scanner from human typing)
+- Works simultaneously with touch — if scanner breaks, touch still works
+- DO NOT: Change the 100ms threshold. DO NOT: Add success modal (product adds instantly).
+
 - BusinessDay dialog: `max-h-[90vh] overflow-y-auto` for mobile
 
 ## PENDING — Print Agent Multi-Impresora (Próxima Sesión)
