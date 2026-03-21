@@ -246,9 +246,11 @@ export default function InventarioTab() {
   const filteredProducts = useMemo(() => {
     let list = products.filter(p => showInactiveProducts ? p.active === false : p.active !== false);
     if (productSearch) {
+      const q = productSearch.toLowerCase();
       list = list.filter(p => 
-        p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        categories.find(c => c.id === p.category_id)?.name.toLowerCase().includes(productSearch.toLowerCase())
+        p.name.toLowerCase().includes(q) ||
+        (p.barcode && p.barcode.toLowerCase().includes(q)) ||
+        categories.find(c => c.id === p.category_id)?.name.toLowerCase().includes(q)
       );
     }
     return list;
