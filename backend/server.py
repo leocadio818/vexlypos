@@ -399,6 +399,17 @@ async def get_product_by_barcode(barcode: str):
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return product
 
+@api.get("/products/check-barcode/{barcode}")
+async def check_barcode_duplicate(barcode: str, exclude_id: Optional[str] = Query(None)):
+    """Check if a barcode is already in use by another product"""
+    if not barcode or not barcode.strip():
+        return {"exists": False}
+    query = {"barcode": barcode, "active": True}
+    if exclude_id:
+        query["id"] = {"$ne": exclude_id}
+    products = await db.products.find(query, {"_id": 0, "id": 1, "name": 1}).to_list(10)
+    return {"exists": len(products) > 0, "products": products}
+
 # ─── UPLOAD DE IMÁGENES DE PRODUCTOS ───
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB

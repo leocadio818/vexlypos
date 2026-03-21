@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { productsAPI, categoriesAPI, modifiersAPI, reportCategoriesAPI } from '@/lib/api';
-import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List, Printer, Check, Image, ImageIcon, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, X, Pencil } from 'lucide-react';
+import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List, Printer, Check, Image, ImageIcon, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, X, Pencil, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -53,6 +53,7 @@ export default function ProductConfig() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [barcodeConflict, setBarcodeConflict] = useState(null); // { products: [{id, name}] }
   const [categories, setCategories] = useState([]);
   const [reportCategories, setReportCategories] = useState([]);
   const [modifierGroups, setModifierGroups] = useState([]);
@@ -169,6 +170,18 @@ export default function ProductConfig() {
     if (!product.category_id) {
       toast.error('La categoría es requerida');
       return;
+    }
+
+    // Validate barcode uniqueness
+    if (product.barcode && product.barcode.trim()) {
+      try {
+        const checkRes = await fetch(`${API}/products/check-barcode/${product.barcode.trim()}?exclude_id=${productId || ''}`, { headers: hdrs() });
+        const checkData = await checkRes.json();
+        if (checkData.exists && checkData.products?.length > 0) {
+          setBarcodeConflict(checkData.products);
+          return;
+        }
+      } catch {}
     }
 
     setSaving(true);
@@ -1478,6 +1491,35 @@ export default function ProductConfig() {
         </div>
       )}
     <ConfirmDialog {...confirmProps} />
+
+    {/* Barcode Conflict Modal */}
+    {barcodeConflict && (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setBarcodeConflict(null)}>
+        <div className="bg-card border border-border rounded-2xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center bg-amber-500/20">
+            <AlertTriangle size={40} className="text-amber-500" />
+          </div>
+          <h2 className="font-oswald text-xl font-bold mb-2 text-foreground">Código de Barras Duplicado</h2>
+          <p className="text-muted-foreground text-sm mb-4">
+            El código <strong className="text-primary font-mono">{product.barcode}</strong> ya está asignado a:
+          </p>
+          <div className="space-y-2 mb-6">
+            {barcodeConflict.map((p, i) => (
+              <div key={i} className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 font-semibold text-amber-600 dark:text-amber-400">
+                {p.name}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Cada código de barras debe ser único. Cambia el código o quítalo del otro producto primero.
+          </p>
+          <button onClick={() => setBarcodeConflict(null)}
+            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold text-base transition-all active:scale-95">
+            Entendido
+          </button>
+        </div>
+      </div>
+    )}
     </div>
     );
 }
