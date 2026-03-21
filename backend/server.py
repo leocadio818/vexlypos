@@ -410,6 +410,25 @@ async def check_barcode_duplicate(barcode: str, exclude_id: Optional[str] = Quer
     products = await db.products.find(query, {"_id": 0, "id": 1, "name": 1}).to_list(10)
     return {"exists": len(products) > 0, "products": products}
 
+# ─── SYSTEM AUDIT LOG ───
+@api.post("/system-audit-log")
+async def create_audit_log(input: dict, user: dict = Depends(get_current_user)):
+    """Create a system audit log entry"""
+    from datetime import datetime, timezone
+    log = {
+        "id": gen_id(),
+        "event_type": input.get("event_type", "unknown"),
+        "entity_type": input.get("entity_type", ""),
+        "entity_id": input.get("entity_id", ""),
+        "entity_name": input.get("entity_name", ""),
+        "details": input.get("details", ""),
+        "user_id": user.get("user_id"),
+        "user_name": user.get("name"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.system_audit_logs.insert_one(log)
+    return {"ok": True}
+
 # ─── UPLOAD DE IMÁGENES DE PRODUCTOS ───
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB

@@ -35,6 +35,7 @@ export default function InventarioTab() {
   const [confirmProps, showConfirm] = useConfirmDialog();
   const [inventarioSubTab, setInventarioSubTab] = useState('categorias');
   const [productSearch, setProductSearch] = useState('');
+  const [showInactiveProducts, setShowInactiveProducts] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [taxConfigs, setTaxConfigs] = useState([]);
   
@@ -240,12 +241,15 @@ export default function InventarioTab() {
 
   // Filter products
   const filteredProducts = useMemo(() => {
-    if (!productSearch) return products;
-    return products.filter(p => 
-      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-      categories.find(c => c.id === p.category_id)?.name.toLowerCase().includes(productSearch.toLowerCase())
-    );
-  }, [products, productSearch, categories]);
+    let list = products.filter(p => showInactiveProducts ? p.active === false : p.active !== false);
+    if (productSearch) {
+      list = list.filter(p => 
+        p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        categories.find(c => c.id === p.category_id)?.name.toLowerCase().includes(productSearch.toLowerCase())
+      );
+    }
+    return list;
+  }, [products, productSearch, categories, showInactiveProducts]);
 
   // Group products by category
   const productsByCategory = useMemo(() => {
@@ -319,6 +323,20 @@ export default function InventarioTab() {
             </Link>
           </div>
           
+          {/* Active/Inactive Tabs */}
+          <div className="flex gap-2 mb-4">
+            <button onClick={() => setShowInactiveProducts(false)}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${!showInactiveProducts ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+              data-testid="products-active-tab">
+              Activos ({products.filter(p => p.active !== false).length})
+            </button>
+            <button onClick={() => setShowInactiveProducts(true)}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${showInactiveProducts ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'}`}
+              data-testid="products-inactive-tab">
+              Inactivos ({products.filter(p => p.active === false).length})
+            </button>
+          </div>
+
           {/* Search */}
           <div className={`relative mb-5 transition-all ${searchFocused ? 'scale-[1.01]' : ''}`}>
             <div className={`relative flex items-center bg-background border-2 rounded-2xl overflow-hidden transition-all ${searchFocused ? 'border-primary shadow-lg' : 'border-border'}`}>
