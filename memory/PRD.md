@@ -153,6 +153,12 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 
 ## Next Tasks
 - P1: Print Agent Multi-Impresora
+### PENDIENTE — Envío de Facturas por Email (LISTO PARA IMPLEMENTAR)
+- Resend API Key configurada en backend/.env: `RESEND_API_KEY=re_9oVHosHY_...`
+- Dominio `vexlyapp.com` VERIFICADO en Resend (DKIM + SPF + DMARC)
+- From: `facturas@vexlyapp.com`
+- Implementar: endpoint enviar factura + template HTML + campo email en clientes + opción en Config > Sistema
+
 - P1: Integración IA (GPT-4o mini)
 - P1: Reporte de Horas Trabajadas
 - P1: Envío Automático de Facturas por Email
