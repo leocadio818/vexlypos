@@ -75,6 +75,7 @@ export default function ProductConfig() {
     price_e: 0,
     button_bg_color: '',
     button_text_color: '#FFFFFF',
+    barcode: '',
     image_url: '',  // URL de imagen del producto
     icon: '',       // Icono de Lucide (ej: 'pizza', 'coffee', 'sandwich')
     track_inventory: false,
@@ -132,6 +133,7 @@ export default function ProductConfig() {
           price_e: p.price_e || 0,
           button_bg_color: p.button_bg_color || '',
           button_text_color: p.button_text_color || '#FFFFFF',
+          barcode: p.barcode || '',
           image_url: p.image_url || '',
           icon: p.icon || '',
           track_inventory: p.track_inventory || false,
@@ -386,6 +388,23 @@ export default function ProductConfig() {
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Cómo aparece en tickets y comandas (si está vacío, usa el nombre)
+                  </p>
+                </div>
+
+                {/* Código de Barras */}
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                    Código de Barras
+                  </label>
+                  <input 
+                    value={product.barcode}
+                    onChange={e => setProduct(p => ({ ...p, barcode: e.target.value }))}
+                    placeholder="Escanea o escribe el código"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm font-mono tracking-wider"
+                    data-testid="product-barcode-input"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Escanea con el lector o escribe manualmente. Se usa para agregar productos rápidamente.
                   </p>
                 </div>
 

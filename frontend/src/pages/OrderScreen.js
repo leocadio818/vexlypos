@@ -166,6 +166,11 @@ export default function OrderScreen() {
   const orderRef = useRef(null);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
+  // Barcode scanner state
+  const [barcodeNotFound, setBarcodeNotFound] = useState(null); // scanned code that wasn't found
+  const barcodeBuffer = useRef('');
+  const barcodeTimer = useRef(null);
+
   const [accessDenied, setAccessDenied] = useState(null); // Stores error message if access denied
 
   const fetchOrder = useCallback(async () => {
@@ -940,6 +945,42 @@ export default function OrderScreen() {
       return { ...prev, qty: val };
     });
   };
+
+  // ═══ BARCODE SCANNER LISTENER ═══
+  // Barcode scanners act as keyboards — they type fast + Enter
+  // Detect rapid keystrokes (< 50ms between chars) ending with Enter
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Ignore if any input/textarea is focused (user is typing)
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      
+      if (e.key === 'Enter' && barcodeBuffer.current.length >= 3) {
+        const scannedCode = barcodeBuffer.current;
+        barcodeBuffer.current = '';
+        
+        // Find product by barcode in loaded products
+        const found = products.find(p => p.barcode === scannedCode && p.active !== false);
+        if (found) {
+          handleProductClick(found);
+        } else {
+          setBarcodeNotFound(scannedCode);
+          setTimeout(() => setBarcodeNotFound(null), 4000);
+        }
+        return;
+      }
+      
+      // Only accept printable chars (digits, letters)
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        barcodeBuffer.current += e.key;
+        clearTimeout(barcodeTimer.current);
+        // Reset buffer after 100ms of no input (human typing is slower)
+        barcodeTimer.current = setTimeout(() => { barcodeBuffer.current = ''; }, 100);
+      }
+    };
+    window.addEventListener('keypress', handleKeyPress);
+    return () => window.removeEventListener('keypress', handleKeyPress);
+  }, [products, handleProductClick]);
 
   // Pre-check (pre-cuenta) functions
   const fetchPreCheckCount = async () => {
@@ -1806,6 +1847,24 @@ export default function OrderScreen() {
           </>
         )}
       </div>
+
+      {/* Barcode Not Found Modal */}
+      {barcodeNotFound && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setBarcodeNotFound(null)}>
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center bg-red-500/20">
+              <AlertTriangle size={40} className="text-red-500" />
+            </div>
+            <h2 className="font-oswald text-xl font-bold mb-2 text-foreground">Producto No Encontrado</h2>
+            <p className="text-muted-foreground text-sm mb-2">El código escaneado no coincide con ningún producto activo.</p>
+            <p className="font-mono text-lg font-bold text-primary bg-muted rounded-lg py-2 px-4 inline-block mb-4">{barcodeNotFound}</p>
+            <button onClick={() => setBarcodeNotFound(null)}
+              className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold text-base transition-all active:scale-95">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Access Denied - Mobile fullscreen */}
       {accessDenied && !mobileAccountExpanded && (

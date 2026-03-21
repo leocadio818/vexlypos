@@ -378,6 +378,7 @@ async def create_product(input: dict):
         "track_inventory": input.get("track_inventory", False),
         "print_channels": input.get("print_channels", []),  # Array of channel codes for multi-channel printing
         "tax_exemptions": input.get("tax_exemptions", []),  # Array of tax IDs this product is exempt from
+        "barcode": input.get("barcode", ""),  # Barcode for scanner
         "active": True
     }
     await db.products.insert_one(doc)
@@ -389,6 +390,14 @@ async def update_product(product_id: str, input: dict):
         del input["_id"]
     await db.products.update_one({"id": product_id}, {"$set": input})
     return {"ok": True}
+
+@api.get("/products/by-barcode/{barcode}")
+async def get_product_by_barcode(barcode: str):
+    """Find a product by its barcode"""
+    product = await db.products.find_one({"barcode": barcode, "active": True}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return product
 
 # ─── UPLOAD DE IMÁGENES DE PRODUCTOS ───
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
