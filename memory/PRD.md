@@ -183,6 +183,14 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Cierre fiscal mensual y anual con ajustes
 - Base ya existe: ITBIS, Propina Legal, NCF, Reportes 606/607, Cierres de caja
 
+## FUTURO — Manuales de Usuario (cuando el proyecto esté completo)
+- Manual del Mesero: login, entrada, mesas, pedidos, modificadores, cocina, pre-cuenta, transferir, salida
+- Manual del Cajero: + turno/caja, cobrar, formas de pago, NCF, reimprimir, movimientos, cierre Z
+- Manual del Gerente: + jornada, reportes, autorizar anulaciones, descuentos, acceso total mesas
+- Manual del Administrador: + config sistema, usuarios, permisos, productos, impresoras, estaciones, impuestos
+- Manual de Instalación (IT): deploy, dominio, print agent, impresoras, red
+- Formato: PDF con capturas de pantalla reales, paso a paso numerado, lenguaje simple
+
 
 ## Next Tasks
 - P1: Print Agent Multi-Impresora
