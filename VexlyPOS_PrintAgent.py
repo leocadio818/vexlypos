@@ -225,8 +225,8 @@ def format_receipt(data):
         
         # Modifiers
         for mod in item.get("modifiers", []):
-            mod_name = mod.get("name", "")
-            mod_price = mod.get("price", 0)
+            mod_name = mod.get("name", "") if isinstance(mod, dict) else str(mod)
+            mod_price = mod.get("price", 0) if isinstance(mod, dict) else 0
             if mod_price > 0:
                 buf += encode_text(f"  + {mod_name}  ${mod_price:,.2f}") + FEED
             else:
@@ -315,7 +315,8 @@ def format_comanda(data):
             buf += encode_text(f"    ** {notes}") + FEED
         
         for mod in item.get("modifiers", []):
-            buf += encode_text(f"    + {mod.get('name', '')}") + FEED
+            mod_text = mod.get('name', '') if isinstance(mod, dict) else str(mod)
+            buf += encode_text(f"    + {mod_text}") + FEED
     
     buf += encode_text("=" * 42) + FEED
     buf += ALIGN_CENTER + encode_text(f"Total items: {len(items)}") + FEED
