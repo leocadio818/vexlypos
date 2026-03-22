@@ -266,8 +266,12 @@ async def delete_category(cat_id: str):
 
 # ─── PRODUCTS ───
 @router.get("/products")
-async def list_products(category_id: Optional[str] = Query(None)):
-    query = {"category_id": category_id} if category_id else {}
+async def list_products(category_id: Optional[str] = Query(None), include_inactive: bool = Query(False)):
+    query = {}
+    if category_id:
+        query["category_id"] = category_id
+    if not include_inactive:
+        query["active"] = True
     return await db.products.find(query, {"_id": 0}).to_list(500)
 
 @router.get("/products/{product_id}")

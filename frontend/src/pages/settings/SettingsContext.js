@@ -73,7 +73,7 @@ export function SettingsProvider({ children }) {
   const fetchAll = useCallback(async () => {
     try {
       const [aRes, tRes, rRes, cRes, pRes, uRes, pmRes, modRes] = await Promise.all([
-        areasAPI.list(), tablesAPI.list(), reasonsAPI.list(), categoriesAPI.list(), productsAPI.list(),
+        areasAPI.list(), tablesAPI.list(), reasonsAPI.list(), categoriesAPI.list(), productsAPI.listAll(),
         axios.get(`${API}/users`, { headers: hdrs() }),
         axios.get(`${API}/payment-methods`, { headers: hdrs() }),
         axios.get(`${API}/modifiers`, { headers: hdrs() }),

@@ -85,6 +85,7 @@ export const categoriesAPI = {
 // Products
 export const productsAPI = {
   list: (categoryId) => api.get('/products', { params: categoryId ? { category_id: categoryId } : {} }),
+  listAll: () => api.get('/products', { params: { include_inactive: true } }),
   get: (id) => api.get(`/products/${id}`),
   create: (data) => api.post('/products', data),
   update: (id, data) => api.put(`/products/${id}`, data),
