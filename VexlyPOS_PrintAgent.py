@@ -519,27 +519,36 @@ class PrintAgent:
                 raw_bytes = format_commands(commands)
             elif job_type == "test":
                 raw_bytes = format_test(data)
-            elif job_type == "comanda":
+            elif job_type == "comanda" and data.get("items"):
                 raw_bytes = format_comanda(data)
-            elif job_type == "pre-check":
+            elif job_type == "pre-check" and data.get("items"):
                 raw_bytes = format_precheck(data)
-            else:
+            elif job_type == "receipt" and data.get("items"):
                 raw_bytes = format_receipt(data)
+            else:
+                # Empty job — skip
+                logger.warning(f"Job {job_id}: Empty data, skipping")
+                self.complete_job(job_id, True)
+                return
         except Exception as e:
             logger.error(f"Job {job_id}: Format error: {e}")
             self.complete_job(job_id, False)
             return
         
-        # Send to printer
-        logger.info(f"Job {job_id}: Sending {job_type} to {ip} (channel: {channel})")
-        success, msg = send_to_printer(ip, raw_bytes, self.config.network_port)
+        # Send to printer (with copies support)
+        copies = job.get("copies", 1) or 1
+        logger.info(f"Job {job_id}: Sending {job_type} to {ip} (channel: {channel}, copies: {copies})")
         
-        if success:
-            logger.info(f"Job {job_id}: Printed successfully on {ip}")
-            self.jobs_printed += 1
-        else:
-            logger.error(f"Job {job_id}: Print failed on {ip}: {msg}")
-            self.errors += 1
+        for copy_num in range(copies):
+            success, msg = send_to_printer(ip, raw_bytes, self.config.network_port)
+            if not success:
+                logger.error(f"Job {job_id}: Print failed on {ip} (copy {copy_num+1}): {msg}")
+                self.errors += 1
+                self.complete_job(job_id, False)
+                return
+        
+        logger.info(f"Job {job_id}: Printed successfully on {ip} ({copies} copies)")
+        self.jobs_printed += 1
         
         self.complete_job(job_id, success)
     
