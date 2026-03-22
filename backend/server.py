@@ -2401,7 +2401,7 @@ async def send_test_print(channel_code: str):
 
 # ─── PRINT TO QUEUE HELPERS ───
 @api.post("/print/receipt/{bill_id}/send")
-async def send_receipt_to_printer(bill_id: str):
+async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current_user)):
     """Envia un recibo/factura directamente a la impresora (red) o a la cola (USB)"""
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
@@ -2420,10 +2420,26 @@ async def send_receipt_to_printer(bill_id: str):
     else:
         biz_addr = str(addr) if addr else ''
     
-    # Obtener configuración de impresora de recibos
-    receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+    # Obtener impresora según turno activo del cajero
+    receipt_channel_code = "receipt"
+    try:
+        from routers.pos_sessions import supabase_client
+        if supabase_client:
+            session = supabase_client.table("pos_sessions").select("terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+            if session.data and len(session.data) > 0:
+                terminal_name = session.data[0].get("terminal_name", "")
+                if terminal_name:
+                    terminal = await db.pos_terminals.find_one({"name": terminal_name}, {"_id": 0, "print_channel": 1})
+                    if terminal and terminal.get("print_channel"):
+                        receipt_channel_code = terminal["print_channel"]
+    except Exception as e:
+        print(f"Warning: Could not resolve terminal printer: {e}")
+    
+    receipt_channel = await db.print_channels.find_one({"code": receipt_channel_code}, {"_id": 0})
+    if not receipt_channel:
+        receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
     printer_target = receipt_channel.get("target", "usb") if receipt_channel else "usb"
-    printer_ip = receipt_channel.get("ip", "") if receipt_channel else ""
+    printer_ip = receipt_channel.get("ip", receipt_channel.get("ip_address", "")) if receipt_channel else ""
     
     commands = []
     
@@ -2658,7 +2674,7 @@ async def send_comanda_to_printer(order_id: str):
     return {"ok": True, "job_id": job["id"], "copies": copies, "message": "Comanda enviada a impresora"}
 
 @api.post("/print/pre-check/{order_id}/send")
-async def send_precheck_to_printer(order_id: str):
+async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_current_user)):
     """Envia una pre-cuenta directamente a la impresora (red) o a la cola (USB)"""
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
@@ -2699,10 +2715,26 @@ async def send_precheck_to_printer(order_id: str):
         "printed_at": now_iso()
     })
     
-    # Obtener configuración de impresora de recibos
-    receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+    # Obtener impresora según turno activo del cajero
+    receipt_channel_code = "receipt"
+    try:
+        from routers.pos_sessions import supabase_client
+        if supabase_client:
+            session = supabase_client.table("pos_sessions").select("terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+            if session.data and len(session.data) > 0:
+                terminal_name = session.data[0].get("terminal_name", "")
+                if terminal_name:
+                    terminal = await db.pos_terminals.find_one({"name": terminal_name}, {"_id": 0, "print_channel": 1})
+                    if terminal and terminal.get("print_channel"):
+                        receipt_channel_code = terminal["print_channel"]
+    except Exception as e:
+        print(f"Warning: Could not resolve terminal printer: {e}")
+    
+    receipt_channel = await db.print_channels.find_one({"code": receipt_channel_code}, {"_id": 0})
+    if not receipt_channel:
+        receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
     printer_target = receipt_channel.get("target", "usb") if receipt_channel else "usb"
-    printer_ip = receipt_channel.get("ip", "") if receipt_channel else ""
+    printer_ip = receipt_channel.get("ip", receipt_channel.get("ip_address", "")) if receipt_channel else ""
     
     # Construir comandos ESC/POS
     commands = []
