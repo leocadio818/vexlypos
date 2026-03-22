@@ -142,9 +142,22 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 
 - BusinessDay dialog: `max-h-[90vh] overflow-y-auto` for mobile
 
-## PENDING — Print Agent Multi-Impresora (Próxima Sesión)
-- Opción A: Un solo Print Agent, múltiples IPs por canal
-- Config.txt con secciones por impresora
+### 🔒 Print Agent Multi-Impresora & Printing System (LOCKED - 2026-03-22)
+- **VexlyPOS_PrintAgent.py**: Agente multi-impresora, soporta `commands` array + `data` dict + test print + copias + skip jobs vacíos
+- **Modifiers**: Maneja strings ("Frio") y dicts ({"name": "Frio"}) — DO NOT assume dict only
+- **Terminal → Impresora**: Cada caja vinculada a un print_channel. Backend resuelve: user → session → terminal → print_channel → IP
+- **Supabase lookup**: Usa `create_client()` directo, NO importar `supabase_client` de pos_sessions (no se exporta)
+- **Pre-cuenta routing**: Si user tiene sesión POS → imprime en su caja. Si NO tiene → modal selector de impresora
+- **Selector de impresora**: Cierra dialog pre-cuenta ANTES de abrir selector (evita z-index issues)
+- **Auto-send comandas**: `handleLogoutWithComandas` en TODOS los botones de salida (logo + Salir móvil)
+- **Dentro de mesa**: detecta ruta `/order/{tableId}` y envía órdenes de ESA mesa
+- **Endpoints protegidos**: `send_precheck_to_printer` y `send_receipt_to_printer` requieren `Depends(get_current_user)`
+- **channel_override**: Pre-cuenta acepta `?channel_override=` para selección manual de impresora
+- **config.txt**: `PRINTER_[CANAL]=IP` — canal en mayúscula, código en sistema en minúscula, deben coincidir
+- **DO NOT**: Modificar VexlyPOS_PrintAgent.py, format_comanda, format_commands, format_receipt, format_precheck, format_test
+- **DO NOT**: Cambiar endpoints de impresión (print/pre-check/send, print/receipt/send, print/send-comanda, print/queue, print/config)
+- **DO NOT**: Alterar la lógica de resolución terminal → print_channel en server.py
+- **DO NOT**: Tocar la función send_comanda_to_print_queue en orders.py
 
 ## PENDING — Integración de IA (Próxima Sesión)
 - GPT-4o mini via Emergent Universal Key
