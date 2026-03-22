@@ -164,6 +164,16 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Asistente de Inventario, Análisis de Ventas, Sugerencias de Menú, Predicción de Demanda
 - Requiere: usuario agregue saldo en Perfil > Universal Key > Add Balance
 
+## FUTURO — CRM (Customer Relationship Management)
+- Perfil completo del cliente (historial compras, frecuencia, ticket promedio)
+- Sistema de puntos/fidelización (acumula puntos, canjea descuentos)
+- Segmentación (VIP, frecuentes, inactivos, nuevos)
+- Comunicación (ofertas por email/WhatsApp via Resend)
+- Cumpleaños/Aniversarios (alertas automáticas)
+- Encuestas de satisfacción (QR en factura)
+- Dashboard CRM (retención, frecuencia, métricas)
+- Base ya existe: clientes, reservaciones, historial de compras, top clientes
+
 ## Next Tasks
 - P1: Print Agent Multi-Impresora
 ### PENDIENTE — Envío de Facturas por Email (LISTO PARA IMPLEMENTAR)
