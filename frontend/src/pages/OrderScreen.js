@@ -1037,7 +1037,8 @@ export default function OrderScreen() {
         if (data.ok) setPreCheckOpen(false);
       } catch { toast.error('Error al imprimir'); }
     } else {
-      // Sin turno → mostrar selector de impresora
+      // Sin turno → cerrar pre-cuenta y mostrar selector de impresora
+      setPreCheckOpen(false);
       await fetchAvailablePrinters();
       setPrinterSelectDialog({ open: true, pendingOrderId: order?.id });
     }
