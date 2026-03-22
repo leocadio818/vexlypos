@@ -173,6 +173,16 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Encuestas de satisfacción (QR en factura)
 - Dashboard CRM (retención, frecuencia, métricas)
 - Base ya existe: clientes, reservaciones, historial de compras, top clientes
+## FUTURO — Módulo Contable (Contabilidad RD - DGII)
+- **Fase 1**: Cuentas por Pagar/Cobrar (facturas proveedores, crédito clientes, vencimientos)
+- **Fase 2**: Asientos automáticos (cada venta/compra/pago genera asiento contable)
+- **Fase 3**: Estados financieros + reportes DGII (Balance General, Estado de Resultados, 608, 609, IT-1)
+- **Fase 4**: Conciliación bancaria (comparar banco vs sistema)
+- Catálogo de cuentas estándar RD (Activos, Pasivos, Capital, Ingresos, Gastos)
+- Retenciones ISR, ITBIS, retenciones 30% proveedores informales
+- Cierre fiscal mensual y anual con ajustes
+- Base ya existe: ITBIS, Propina Legal, NCF, Reportes 606/607, Cierres de caja
+
 
 ## Next Tasks
 - P1: Print Agent Multi-Impresora
