@@ -12,16 +12,16 @@ const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')
 
 export default function ChannelsTab() {
   const { printChannels, fetchAll } = useSettings();
-  const [channelDialog, setChannelDialog] = useState({ open: false, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null });
+  const [channelDialog, setChannelDialog] = useState({ open: false, name: '', code: '', type: 'kitchen', target: 'screen', ip: '', editId: null });
 
   const handleSaveChannel = async () => {
     if (!channelDialog.name) return;
     try {
-      const data = { name: channelDialog.name, type: channelDialog.type, target: channelDialog.target, ip: channelDialog.ip };
+      const data = { name: channelDialog.name, code: channelDialog.code || channelDialog.name.toLowerCase().replace(/\s+/g, '_'), type: channelDialog.type, target: channelDialog.target, ip: channelDialog.ip };
       if (channelDialog.editId) await axios.put(`${API}/print-channels/${channelDialog.editId}`, data, { headers: hdrs() });
       else await axios.post(`${API}/print-channels`, data, { headers: hdrs() });
       toast.success(channelDialog.editId ? 'Actualizado' : 'Creado');
-      setChannelDialog({ open: false, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null }); fetchAll();
+      setChannelDialog({ open: false, name: '', code: '', type: 'kitchen', target: 'screen', ip: '', editId: null }); fetchAll();
     } catch { toast.error('Error'); }
   };
 
@@ -52,7 +52,7 @@ export default function ChannelsTab() {
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-oswald text-base font-bold">Canales de Impresion (Pantalla)</h2>
-        <Button onClick={() => setChannelDialog({ open: true, name: '', type: 'kitchen', target: 'screen', ip: '', editId: null })} size="sm"
+        <Button onClick={() => setChannelDialog({ open: true, name: '', code: '', type: 'kitchen', target: 'screen', ip: '', editId: null })} size="sm"
           className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-channel-btn">
           <Plus size={14} className="mr-1" /> Agregar
         </Button>
@@ -67,7 +67,7 @@ export default function ChannelsTab() {
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                onClick={() => setChannelDialog({ open: true, name: ch.name, type: ch.type, target: ch.target, ip: ch.ip, editId: ch.id })}>
+                onClick={() => setChannelDialog({ open: true, name: ch.name, code: ch.code || '', type: ch.type, target: ch.target, ip: ch.ip || ch.ip_address || '', editId: ch.id })}>
                 <Pencil size={14} />
               </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-green-500"
@@ -105,12 +105,18 @@ export default function ChannelsTab() {
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" placeholder="Ej: Cocina Principal" />
             </div>
             <div>
+              <label className="text-sm font-medium">Código</label>
+              <input type="text" value={channelDialog.code} onChange={e => setChannelDialog({ ...channelDialog, code: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm font-mono" placeholder="Ej: caja2, cocina, bar" />
+              <p className="text-xs text-muted-foreground mt-1">Identificador único. Debe coincidir con la línea PRINTER_[CODIGO] en config.txt del agente.</p>
+            </div>
+            <div>
               <label className="text-sm font-medium">Tipo</label>
               <select value={channelDialog.type} onChange={e => setChannelDialog({ ...channelDialog, type: e.target.value })}
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm">
                 <option value="kitchen">Cocina</option>
                 <option value="bar">Bar</option>
-                <option value="receipt">Recibo</option>
+                <option value="receipt">Recibo/Caja</option>
               </select>
             </div>
             <div>
