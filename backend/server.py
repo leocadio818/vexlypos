@@ -45,6 +45,7 @@ from routers.credit_notes import router as credit_notes_router, set_db as credit
 from routers.business_days import router as business_days_router, set_db as business_days_set_db, init_supabase as business_days_init_supabase
 from routers.dgii import router as dgii_router
 from routers.discounts import router as discounts_router, set_db as discounts_set_db
+from routers.email import router as email_router, set_db as email_set_db
 from utils.timezone import get_system_timezone_name, get_system_now, invalidate_cache as tz_invalidate_cache
 
 ROOT_DIR = Path(__file__).parent
@@ -75,6 +76,7 @@ config_set_db(db)
 business_days_set_db(db)
 business_days_init_supabase()  # Initialize Supabase for business days
 discounts_set_db(db)
+email_set_db(db)
 
 # Connect KDS notifier to orders
 set_kds_notifier(notify_kds)
@@ -132,6 +134,7 @@ api.include_router(credit_notes_router)
 api.include_router(business_days_router)
 api.include_router(dgii_router)
 api.include_router(discounts_router)
+api.include_router(email_router, prefix="/email")
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()
