@@ -721,6 +721,7 @@ async def create_print_channel(input: dict):
         "name": name, 
         "code": code,
         "printer_name": input.get("printer_name", ""),
+        "ip_address": input.get("ip_address", input.get("ip", "")),
         "active": input.get("active", True),
         "category_ids": input.get("category_ids", [])
     }
@@ -730,6 +731,9 @@ async def create_print_channel(input: dict):
 @api.put("/print-channels/{cid}")
 async def update_print_channel(cid: str, input: dict):
     if "_id" in input: del input["_id"]
+    # Map 'ip' field from frontend to 'ip_address'
+    if "ip" in input:
+        input["ip_address"] = input.pop("ip")
     await db.print_channels.update_one({"id": cid}, {"$set": input})
     return {"ok": True}
 
@@ -1964,6 +1968,19 @@ async def print_shift_report(input: dict, user=Depends(get_current_user)):
 
 
 # ─── PRINT QUEUE ENDPOINTS FOR AGENT ───
+@api.get("/print/config")
+async def get_print_config():
+    """Get printer configuration for the print agent — maps channels to IPs"""
+    channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(50)
+    return {
+        "channels": [{
+            "code": c.get("code", ""),
+            "name": c.get("name", ""),
+            "printer_name": c.get("printer_name", ""),
+            "ip_address": c.get("ip_address", c.get("ip", "")),
+        } for c in channels]
+    }
+
 @api.get("/print/queue")
 async def get_print_queue():
     """Get pending print jobs for the local agent"""
