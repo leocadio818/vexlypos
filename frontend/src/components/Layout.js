@@ -169,32 +169,42 @@ export default function Layout() {
   // Logout with auto-send pending comandas
   const handleLogoutWithComandas = async () => {
     try {
-      // Send pending comandas for all user's orders
-      // Fetch all orders without status filter to include 'sent' status orders
-      const res = await ordersAPI.list();
-      const allOrders = res.data || [];
-      const userOrders = allOrders.filter(o => 
-        o.waiter_id === user?.id && 
-        ['active', 'sent'].includes(o.status) &&
-        o.items?.some(i => i.status === 'pending')
-      );
-      
-      if (userOrders?.length > 0) {
-        let sentCount = 0;
-        for (const order of userOrders) {
-          try {
-            await ordersAPI.sendToKitchen(order.id);
-            sentCount++;
-            console.log('Logout: Comanda enviada para orden', order.id);
-          } catch (e) {
-            console.error('Logout: Error enviando orden', order.id, e);
+      // If on an order page, send pending items for that specific order
+      const orderMatch = location.pathname.match(/\/order\/([^/]+)/);
+      if (orderMatch) {
+        const tableId = orderMatch[1];
+        try {
+          const token = localStorage.getItem('pos_token');
+          const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/tables/${tableId}/orders`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const orders = await res.json();
+            for (const order of (Array.isArray(orders) ? orders : [])) {
+              if (order.items?.some(i => i.status === 'pending')) {
+                try {
+                  await ordersAPI.sendToKitchen(order.id);
+                } catch {}
+              }
+            }
           }
-        }
-        console.log('Logout: Enviadas', sentCount, 'comandas pendientes');
+        } catch {}
+      } else {
+        // Not on order page — send all user's pending orders
+        try {
+          const res = await ordersAPI.list();
+          const allOrders = res.data || [];
+          const userOrders = allOrders.filter(o => 
+            (o.waiter_id === user?.id || o.waiter_id === user?.user_id) && 
+            ['active', 'sent'].includes(o.status) &&
+            o.items?.some(i => i.status === 'pending')
+          );
+          for (const order of userOrders) {
+            try { await ordersAPI.sendToKitchen(order.id); } catch {}
+          }
+        } catch {}
       }
-    } catch (e) {
-      console.error('Logout: Error obteniendo órdenes', e);
-    }
+    } catch {}
     
     logout();
     navigate('/login');
