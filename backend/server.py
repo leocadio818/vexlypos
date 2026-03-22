@@ -2423,9 +2423,12 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     # Obtener impresora según turno activo del cajero
     receipt_channel_code = "receipt"
     try:
-        from routers.pos_sessions import supabase_client
-        if supabase_client:
-            session = supabase_client.table("pos_sessions").select("terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+        from supabase import create_client as sc
+        sb_url = os.environ.get("SUPABASE_URL", "")
+        sb_key = os.environ.get("SUPABASE_ANON_KEY", "")
+        if sb_url and sb_key:
+            sb = sc(sb_url, sb_key)
+            session = sb.table("pos_sessions").select("terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
             if session.data and len(session.data) > 0:
                 terminal_name = session.data[0].get("terminal_name", "")
                 if terminal_name:
@@ -2433,7 +2436,7 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
                     if terminal and terminal.get("print_channel"):
                         receipt_channel_code = terminal["print_channel"]
     except Exception as e:
-        print(f"Warning: Could not resolve terminal printer: {e}")
+        print(f"Warning: Could not resolve terminal printer for receipt: {e}")
     
     receipt_channel = await db.print_channels.find_one({"code": receipt_channel_code}, {"_id": 0})
     if not receipt_channel:
@@ -2718,9 +2721,12 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
     # Obtener impresora según turno activo del cajero
     receipt_channel_code = "receipt"
     try:
-        from routers.pos_sessions import supabase_client
-        if supabase_client:
-            session = supabase_client.table("pos_sessions").select("terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+        from supabase import create_client as sc
+        sb_url = os.environ.get("SUPABASE_URL", "")
+        sb_key = os.environ.get("SUPABASE_ANON_KEY", "")
+        if sb_url and sb_key:
+            sb = sc(sb_url, sb_key)
+            session = sb.table("pos_sessions").select("terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
             if session.data and len(session.data) > 0:
                 terminal_name = session.data[0].get("terminal_name", "")
                 if terminal_name:
@@ -2728,7 +2734,7 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
                     if terminal and terminal.get("print_channel"):
                         receipt_channel_code = terminal["print_channel"]
     except Exception as e:
-        print(f"Warning: Could not resolve terminal printer: {e}")
+        print(f"Warning: Could not resolve terminal printer for pre-check: {e}")
     
     receipt_channel = await db.print_channels.find_one({"code": receipt_channel_code}, {"_id": 0})
     if not receipt_channel:
