@@ -254,8 +254,8 @@ export default function StationTab() {
                 data-testid="terminal-print-channel"
               >
                 <option value="">Sin asignar</option>
-                {printChannels.filter(ch => ch.type === 'receipt').map(ch => (
-                  <option key={ch.id} value={ch.code || ch.id}>{ch.name} {ch.ip ? `(${ch.ip})` : ''}</option>
+                {printChannels.map(ch => (
+                  <option key={ch.id} value={ch.code || ch.id}>{ch.name} {ch.ip ? `(${ch.ip})` : ch.ip_address ? `(${ch.ip_address})` : ''}</option>
                 ))}
               </select>
               <p className="text-xs text-muted-foreground mt-1">La factura se imprimirá en esta impresora cuando el cajero use esta caja</p>
