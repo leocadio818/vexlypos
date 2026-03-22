@@ -70,6 +70,21 @@ export default function ChannelsTab() {
                 onClick={() => setChannelDialog({ open: true, name: ch.name, type: ch.type, target: ch.target, ip: ch.ip, editId: ch.id })}>
                 <Pencil size={14} />
               </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-green-500"
+                onClick={async () => {
+                  try {
+                    await axios.post(`${API}/print/queue`, {
+                      type: 'test',
+                      channel: ch.code || ch.type,
+                      printer_name: ch.printer_name || ch.name,
+                      data: { channel_name: ch.name, test: true }
+                    }, { headers: hdrs() });
+                    toast.success(`Test enviado a ${ch.name}`);
+                  } catch { toast.error('Error al enviar test'); }
+                }}
+                data-testid={`test-print-${ch.id}`}>
+                <Printer size={14} />
+              </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
                 onClick={() => handleDeleteChannel(ch.id)}><Trash2 size={14} /></Button>
             </div>

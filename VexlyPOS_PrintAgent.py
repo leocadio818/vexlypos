@@ -381,6 +381,30 @@ def format_precheck(data):
     
     return bytes(buf)
 
+# ============ TEST PRINT FORMATTER ============
+def format_test(data):
+    """Format a test print ticket"""
+    buf = bytearray()
+    buf += INIT
+    buf += ALIGN_CENTER
+    buf += FEED
+    buf += DOUBLE_SIZE + BOLD_ON
+    buf += encode_text("** TEST PRINT **") + FEED
+    buf += NORMAL_SIZE + BOLD_OFF
+    buf += FEED
+    channel_name = data.get("channel_name", "UNKNOWN")
+    buf += DOUBLE_SIZE
+    buf += encode_text(f"TEST {channel_name.upper()}") + FEED
+    buf += NORMAL_SIZE
+    buf += FEED
+    buf += encode_text("=" * 42) + FEED
+    buf += encode_text(f"VexlyPOS Print Agent") + FEED
+    buf += encode_text(f"Conexion exitosa!") + FEED
+    buf += encode_text(datetime.now().strftime("%d/%m/%Y %I:%M:%S %p")) + FEED
+    buf += encode_text("=" * 42) + FEED
+    buf += FEED + FEED + CUT
+    return bytes(buf)
+
 # ============ MAIN AGENT ============
 class PrintAgent:
     def __init__(self):
@@ -428,7 +452,9 @@ class PrintAgent:
         
         # Format the print data
         try:
-            if job_type == "comanda":
+            if job_type == "test":
+                raw_bytes = format_test(data)
+            elif job_type == "comanda":
                 raw_bytes = format_comanda(data)
             elif job_type == "pre-check":
                 raw_bytes = format_precheck(data)
