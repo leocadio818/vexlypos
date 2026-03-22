@@ -2595,6 +2595,7 @@ async def send_receipt_to_printer(bill_id: str):
     job = {
         "id": gen_id(),
         "type": "receipt",
+        "channel": receipt_channel.get("code", "receipt") if receipt_channel else "receipt",
         "reference_id": bill_id,
         "commands": commands,
         "printer_name": receipt_channel.get("printer_name", "") if receipt_channel else "",
@@ -2779,6 +2780,7 @@ async def send_precheck_to_printer(order_id: str):
     job = {
         "id": gen_id(),
         "type": "pre-check",
+        "channel": receipt_channel.get("code", "receipt") if receipt_channel else "receipt",
         "reference_id": order_id,
         "commands": commands,
         "printer_name": receipt_channel.get("printer_name", "") if receipt_channel else "",
