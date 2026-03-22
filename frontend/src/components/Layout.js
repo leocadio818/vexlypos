@@ -357,7 +357,7 @@ export default function Layout() {
             </button>
             )}
             <button
-              onClick={handleLogout}
+              onClick={handleLogoutWithComandas}
               className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl min-w-[50px] ${
                 useGlassStyle ? 'text-white/60 hover:text-red-400' : 'text-muted-foreground hover:text-destructive'
               }`}
