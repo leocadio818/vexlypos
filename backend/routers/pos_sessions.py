@@ -582,6 +582,7 @@ class TerminalInput(BaseModel):
     name: str
     code: Optional[str] = None
     is_active: bool = True
+    print_channel: Optional[str] = ""
 
 
 @router.post("/terminals")
@@ -598,6 +599,7 @@ async def create_terminal(input: TerminalInput):
             "name": input.name,
             "code": input.code or input.name.upper().replace(" ", "")[:6],
             "is_active": input.is_active,
+            "print_channel": input.print_channel or "",
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         
@@ -626,6 +628,7 @@ async def update_terminal(terminal_id: str, input: TerminalInput):
                 "name": input.name,
                 "code": input.code or input.name.upper().replace(" ", "")[:6],
                 "is_active": input.is_active,
+                "print_channel": input.print_channel or "",
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )

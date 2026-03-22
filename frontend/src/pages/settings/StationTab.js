@@ -13,14 +13,14 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
 
 export default function StationTab() {
-  const { stationConfig, setStationConfig } = useSettings();
+  const { stationConfig, setStationConfig, printChannels } = useSettings();
   
   // Estado para gestión de terminales
   const [confirmProps, showConfirm] = useConfirmDialog();
   const [terminals, setTerminals] = useState([]);
   const [loadingTerminals, setLoadingTerminals] = useState(true);
   const [terminalDialog, setTerminalDialog] = useState({ open: false, mode: 'create', terminal: null });
-  const [terminalForm, setTerminalForm] = useState({ name: '', code: '', is_active: true });
+  const [terminalForm, setTerminalForm] = useState({ name: '', code: '', is_active: true, print_channel: '' });
   const [saving, setSaving] = useState(false);
 
   // Cargar terminales
@@ -50,7 +50,7 @@ export default function StationTab() {
 
   // Abrir diálogo para crear terminal
   const openCreateDialog = () => {
-    setTerminalForm({ name: '', code: '', is_active: true });
+    setTerminalForm({ name: '', code: '', is_active: true, print_channel: '' });
     setTerminalDialog({ open: true, mode: 'create', terminal: null });
   };
 
@@ -59,7 +59,8 @@ export default function StationTab() {
     setTerminalForm({ 
       name: terminal.name, 
       code: terminal.code || '', 
-      is_active: terminal.is_active !== false 
+      is_active: terminal.is_active !== false,
+      print_channel: terminal.print_channel || ''
     });
     setTerminalDialog({ open: true, mode: 'edit', terminal });
   };
@@ -242,6 +243,22 @@ export default function StationTab() {
                 data-testid="terminal-code-input"
               />
               <p className="text-xs text-muted-foreground mt-1">Se genera automáticamente si no se especifica</p>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Impresora de Recibos</label>
+              <select
+                value={terminalForm.print_channel}
+                onChange={(e) => setTerminalForm(p => ({ ...p, print_channel: e.target.value }))}
+                className="w-full h-11 px-3 rounded-lg bg-background border border-border text-sm"
+                data-testid="terminal-print-channel"
+              >
+                <option value="">Sin asignar</option>
+                {printChannels.filter(ch => ch.type === 'receipt').map(ch => (
+                  <option key={ch.id} value={ch.code || ch.id}>{ch.name} {ch.ip ? `(${ch.ip})` : ''}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">La factura se imprimirá en esta impresora cuando el cajero use esta caja</p>
             </div>
             
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
