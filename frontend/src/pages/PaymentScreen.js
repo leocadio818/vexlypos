@@ -153,6 +153,7 @@ export default function PaymentScreen() {
   // Dialog states
   const [ncfDialogOpen, setNcfDialogOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [emailSentModal, setEmailSentModal] = useState(null); // { email, success, error }
   const [paidBill, setPaidBill] = useState(null);
   
   // NCF Alert Modal state
@@ -903,11 +904,14 @@ export default function PaymentScreen() {
             const sysConfig = await fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
             const cfg = await sysConfig.json();
             if (cfg.auto_email_invoice) {
-              await fetch(`${API_BASE}/api/email/send-invoice/${res.data.id}`, {
+              const emailResp = await fetch(`${API_BASE}/api/email/send-invoice/${res.data.id}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
               });
-              toast.success(`Factura enviada a ${custEmail}`);
+              const emailData = await emailResp.json();
+              if (emailData.ok) {
+                setEmailSentModal({ email: custEmail, success: true });
+              }
             }
           } catch {}
         }
@@ -1943,9 +1947,9 @@ export default function PaymentScreen() {
                       });
                       const data = await resp.json();
                       if (data.ok) {
-                        toast.success(`Factura enviada a ${paidBill.customer_email}`);
+                        setEmailSentModal({ email: paidBill.customer_email, success: true });
                       } else {
-                        toast.error(data.detail || 'Error enviando email');
+                        setEmailSentModal({ email: paidBill.customer_email, success: false, error: data.detail || 'Error enviando email' });
                       }
                     } catch { toast.error('Error de conexión'); }
                   }}
@@ -1968,6 +1972,33 @@ export default function PaymentScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Email Sent Modal */}
+      {emailSentModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl">
+            <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${emailSentModal.success ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+              {emailSentModal.success 
+                ? <Mail size={40} className="text-green-500" />
+                : <AlertTriangle size={40} className="text-red-500" />
+              }
+            </div>
+            <h2 className="font-oswald text-xl font-bold mb-2 text-foreground">
+              {emailSentModal.success ? 'Factura Enviada!' : 'Error de Envío'}
+            </h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              {emailSentModal.success 
+                ? <>La factura fue enviada exitosamente a<br/><strong className="text-primary">{emailSentModal.email}</strong></>
+                : emailSentModal.error
+              }
+            </p>
+            <button onClick={() => setEmailSentModal(null)}
+              className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold text-base transition-all active:scale-95">
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tax Override Dialog */}
       <Dialog open={taxOverrideDialog.open} onOpenChange={(o) => !o && setTaxOverrideDialog({ open: false, step: 'pin' })}>

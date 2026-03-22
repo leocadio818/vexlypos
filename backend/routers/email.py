@@ -173,7 +173,7 @@ def build_invoice_html(bill: dict, config: dict) -> str:
                 </table>
                 <div style="margin-top:12px;padding:16px 12px;background:#1a1a2e;border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
                     <span style="color:#fff;font-size:16px;font-weight:bold;">TOTAL</span>
-                    <span style="color:#10b981;font-size:24px;font-weight:bold;">RD$ {bill.get("total",0):,.2f}</span>
+                    <span style="color:#fff;font-size:24px;font-weight:bold;">RD$ {bill.get("total",0):,.2f}</span>
                 </div>
             </div>
             
