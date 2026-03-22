@@ -381,6 +381,67 @@ def format_precheck(data):
     
     return bytes(buf)
 
+# ============ COMMANDS ARRAY FORMATTER ============
+def format_commands(commands):
+    """Convert commands array (from server) to ESC/POS bytes"""
+    buf = bytearray()
+    buf += INIT
+    
+    for cmd in commands:
+        ctype = cmd.get("type", "")
+        
+        if ctype == "text":
+            text = cmd.get("text", "")
+            align = cmd.get("align", "left")
+            bold = cmd.get("bold", False)
+            size = cmd.get("size", 1)
+            
+            if align == "center":
+                buf += ALIGN_CENTER
+            elif align == "right":
+                buf += ALIGN_RIGHT
+            else:
+                buf += ALIGN_LEFT
+            
+            if bold:
+                buf += BOLD_ON
+            if size and size >= 2:
+                buf += DOUBLE_SIZE
+            
+            buf += encode_text(text) + FEED
+            
+            if size and size >= 2:
+                buf += NORMAL_SIZE
+            if bold:
+                buf += BOLD_OFF
+            buf += ALIGN_LEFT
+        
+        elif ctype == "columns":
+            left = cmd.get("left", "")
+            right = cmd.get("right", "")
+            buf += ALIGN_LEFT
+            width = 42
+            padding = width - len(left) - len(right)
+            if padding < 1:
+                padding = 1
+            buf += encode_text(f"{left}{' ' * padding}{right}") + FEED
+        
+        elif ctype == "divider":
+            buf += encode_text("-" * 42) + FEED
+        
+        elif ctype == "feed":
+            lines = cmd.get("lines", 1)
+            buf += FEED * lines
+        
+        elif ctype == "cut":
+            buf += CUT
+    
+    # Ensure cut at end
+    if not commands or commands[-1].get("type") != "cut":
+        buf += FEED + FEED + CUT
+    
+    return bytes(buf)
+
 # ============ TEST PRINT FORMATTER ============
 def format_test(data):
     """Format a test print ticket"""
@@ -452,7 +513,11 @@ class PrintAgent:
         
         # Format the print data
         try:
-            if job_type == "test":
+            commands = job.get("commands", [])
+            if commands:
+                # Server sent pre-formatted commands array
+                raw_bytes = format_commands(commands)
+            elif job_type == "test":
                 raw_bytes = format_test(data)
             elif job_type == "comanda":
                 raw_bytes = format_comanda(data)
