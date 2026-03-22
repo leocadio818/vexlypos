@@ -233,19 +233,6 @@ export default function StationTab() {
             </div>
             
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Código (opcional)</label>
-              <Input
-                value={terminalForm.code}
-                onChange={(e) => setTerminalForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
-                placeholder="Ej: POS1, BAR, TERR"
-                className="h-11 font-mono"
-                maxLength={10}
-                data-testid="terminal-code-input"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Se genera automáticamente si no se especifica</p>
-            </div>
-            
-            <div>
               <label className="text-sm font-medium mb-1.5 block">Impresora de Recibos</label>
               <select
                 value={terminalForm.print_channel}
