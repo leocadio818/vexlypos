@@ -554,6 +554,20 @@ async def get_terminals():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/my-session")
+async def get_my_session(user: dict = Depends(get_current_user)):
+    """Check if current user has an active POS session"""
+    try:
+        sb = get_supabase()
+        session = sb.table("pos_sessions").select("id,status,terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+        if session.data and len(session.data) > 0:
+            return session.data[0]
+        return {"status": "none"}
+    except:
+        return {"status": "none"}
+
+
+
 @router.get("/terminals/all")
 async def get_all_terminals():
     """Obtiene TODOS los terminales (activos e inactivos) para gestión"""

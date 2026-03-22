@@ -167,7 +167,9 @@ export default function OrderScreen() {
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
   // Barcode scanner state
-  const [barcodeNotFound, setBarcodeNotFound] = useState(null); // scanned code that wasn't found
+  const [barcodeNotFound, setBarcodeNotFound] = useState(null);
+  const [printerSelectDialog, setPrinterSelectDialog] = useState({ open: false, pendingOrderId: null, isReprint: false });
+  const [availablePrinters, setAvailablePrinters] = useState([]);
   const barcodeBuffer = useRef('');
   const barcodeTimer = useRef(null);
 
@@ -981,6 +983,65 @@ export default function OrderScreen() {
     window.addEventListener('keypress', handleKeyPress);
     return () => window.removeEventListener('keypress', handleKeyPress);
   }, [products, handleProductClick]);
+
+  const sendToSpecificPrinter = async (orderId, channelCode) => {
+    try {
+      const resp = await fetch(`${API_BASE}/api/print/pre-check/${orderId}/send?channel_override=${channelCode}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        toast.success('Pre-cuenta enviada a impresora');
+        setPreCheckOpen(false);
+        setPrinterSelectDialog({ open: false, pendingOrderId: null });
+      }
+    } catch { toast.error('Error al imprimir'); }
+  };
+
+  const checkUserHasActiveShift = async () => {
+    try {
+      const r = await fetch(`${API_BASE}/api/pos-sessions/my-session`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+      });
+      if (r.ok) {
+        const d = await r.json();
+        return d && d.status === 'open';
+      }
+    } catch {}
+    return false;
+  };
+
+  const fetchAvailablePrinters = async () => {
+    try {
+      const r = await fetch(`${API_BASE}/api/print-channels`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+      });
+      if (r.ok) {
+        const channels = await r.json();
+        setAvailablePrinters(channels.filter(c => c.active !== false && (c.ip || c.ip_address)));
+      }
+    } catch {}
+  };
+
+  const handlePrintPreCheckToPhysical = async () => {
+    const hasShift = await checkUserHasActiveShift();
+    if (hasShift) {
+      // Cajero con turno abierto → imprime directo en su caja
+      try {
+        const resp = await fetch(`${API_BASE}/api/print/pre-check/${order?.id}/send`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+        });
+        const data = await resp.json();
+        if (data.ok) setPreCheckOpen(false);
+      } catch { toast.error('Error al imprimir'); }
+    } else {
+      // Sin turno → mostrar selector de impresora
+      await fetchAvailablePrinters();
+      setPrinterSelectDialog({ open: true, pendingOrderId: order?.id });
+    }
+  };
 
   // Pre-check (pre-cuenta) functions
   const fetchPreCheckCount = async () => {
@@ -1848,6 +1909,38 @@ export default function OrderScreen() {
         )}
       </div>
 
+      {/* Printer Selection Modal */}
+      {printerSelectDialog.open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPrinterSelectDialog({ open: false, pendingOrderId: null })}>
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full mx-4 p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-blue-500/20">
+              <Printer size={32} className="text-blue-500" />
+            </div>
+            <h2 className="font-oswald text-xl font-bold mb-1 text-center text-foreground">Selecciona Impresora</h2>
+            <p className="text-muted-foreground text-sm text-center mb-5">¿En cuál impresora deseas imprimir la pre-cuenta?</p>
+            <div className="space-y-2">
+              {availablePrinters.map(ch => (
+                <button key={ch.id} onClick={() => sendToSpecificPrinter(printerSelectDialog.pendingOrderId, ch.code || ch.id)}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-95"
+                  data-testid={`select-printer-${ch.code}`}>
+                  <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                    <Printer size={20} className="text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-semibold text-sm">{ch.name}</span>
+                    <p className="text-xs text-muted-foreground">{ch.ip || ch.ip_address}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setPrinterSelectDialog({ open: false, pendingOrderId: null })}
+              className="mt-4 w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-all">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Barcode Not Found Modal */}
       {barcodeNotFound && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setBarcodeNotFound(null)}>
@@ -2647,23 +2740,7 @@ export default function OrderScreen() {
         <DialogContent className="max-w-sm bg-white text-black" data-testid="pre-check-dialog">
           <DialogHeader><DialogTitle className="text-black font-oswald">Pre-Cuenta</DialogTitle></DialogHeader>
           <div className="receipt-paper p-2" style={{maxWidth: '72mm', margin: '0 auto'}} dangerouslySetInnerHTML={{ __html: preCheckHtml }} />
-          <Button onClick={async () => {
-            try {
-              // Enviar directamente a la impresora
-              const resp = await fetch(`${API_BASE}/api/print/pre-check/${order?.id}/send`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-              });
-              const data = await resp.json();
-              if (data.ok) {
-                setPreCheckOpen(false);
-              } else {
-                console.warn(data.message || 'Error al imprimir');
-              }
-            } catch (e) {
-              console.error('Error de conexión:', e);
-            }
-          }} className="w-full h-11 bg-gray-900 text-white font-oswald font-bold active:scale-95" data-testid="print-precheck-btn">
+          <Button onClick={handlePrintPreCheckToPhysical} className="w-full h-11 bg-gray-900 text-white font-oswald font-bold active:scale-95" data-testid="print-precheck-btn">
             <Printer size={16} className="mr-2" /> IMPRIMIR PRE-CUENTA
           </Button>
         </DialogContent>
