@@ -896,6 +896,21 @@ export default function PaymentScreen() {
         } catch (printErr) {
           console.warn('Auto-print error:', printErr);
         }
+        // Auto-send email if enabled and customer has email
+        const custEmail = fiscalData?.email || selectedCustomer?.email;
+        if (custEmail) {
+          try {
+            const sysConfig = await fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+            const cfg = await sysConfig.json();
+            if (cfg.auto_email_invoice) {
+              await fetch(`${API_BASE}/api/email/send-invoice/${res.data.id}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+              });
+              toast.success(`Factura enviada a ${custEmail}`);
+            }
+          } catch {}
+        }
       }
     } catch (err) {
       // Handle specific error from backend

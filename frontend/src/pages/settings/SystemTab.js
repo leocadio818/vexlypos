@@ -176,6 +176,23 @@ export default function SystemTab() {
           />
         </div>
 
+        {/* Email Automático */}
+        <div className="bg-card border border-border rounded-xl p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">Envío Automático de Facturas por Email</h3>
+              <p className="text-xs text-muted-foreground mt-1">Si está activado, al cobrar una cuenta de un cliente con email registrado, la factura se envía automáticamente.</p>
+            </div>
+            <button
+              onClick={() => setSystemConfig(p => ({ ...p, auto_email_invoice: !p.auto_email_invoice }))}
+              className={`w-12 h-6 rounded-full transition-all relative ${systemConfig.auto_email_invoice ? 'bg-green-500' : 'bg-muted'}`}
+              data-testid="toggle-auto-email"
+            >
+              <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${systemConfig.auto_email_invoice ? 'left-6' : 'left-0.5'}`} />
+            </button>
+          </div>
+        </div>
+
         {/* Timezone - IANA Selector */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
