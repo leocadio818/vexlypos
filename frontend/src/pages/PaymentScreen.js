@@ -1918,6 +1918,29 @@ export default function PaymentScreen() {
               >
                 CERRAR
               </button>
+              {paidBill?.customer_email && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const resp = await fetch(`${API_BASE}/api/email/send-invoice/${paidBill.id}`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+                      });
+                      const data = await resp.json();
+                      if (data.ok) {
+                        toast.success(`Factura enviada a ${paidBill.customer_email}`);
+                      } else {
+                        toast.error(data.detail || 'Error enviando email');
+                      }
+                    } catch { toast.error('Error de conexión'); }
+                  }}
+                  className="flex-1 h-14 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-blue-500/30 transition-all active:scale-95"
+                  data-testid="send-email-btn"
+                >
+                  <Mail size={18} />
+                  EMAIL
+                </button>
+              )}
               <button
                 onClick={handlePrintTicket}
                 className="flex-[2] h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all active:scale-95"
