@@ -153,7 +153,13 @@ export default function PaymentScreen() {
   // Dialog states
   const [ncfDialogOpen, setNcfDialogOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
-  const [emailSentModal, setEmailSentModal] = useState(null); // { email, success, error }
+  const [emailSentModal, setEmailSentModal] = useState(null);
+  const [emailFlowOpen, setEmailFlowOpen] = useState(false);
+  const [emailFlowStep, setEmailFlowStep] = useState('search'); // search, create, manual
+  const [emailSearch, setEmailSearch] = useState('');
+  const [manualEmail, setManualEmail] = useState('');
+  const [newCustomerForm, setNewCustomerForm] = useState({ name: '', phone: '', email: '' });
+  const [emailSending, setEmailSending] = useState(false); // { email, success, error }
   const [paidBill, setPaidBill] = useState(null);
   
   // NCF Alert Modal state
@@ -928,18 +934,47 @@ export default function PaymentScreen() {
 
   const handlePrintTicket = async () => {
     try {
-      // Enviar directamente a la impresora térmica
       const resp = await fetch(`${API_BASE}/api/print/receipt/${paidBill?.id}/send`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
       });
       const data = await resp.json();
-      // Removed success/error toasts - silent print operation
-      if (!data.ok) {
-        console.warn('Print error:', data.message);
-      }
+      if (!data.ok) console.warn('Print error:', data.message);
     } catch (e) {
       console.error('Print connection error:', e);
+    }
+    setPrintDialogOpen(false);
+    navigate('/tables');
+  };
+
+  const handleSendEmailAndNavigate = async (email) => {
+    if (!email || !paidBill?.id) return;
+    setEmailSending(true);
+    try {
+      // Update the bill with the email
+      await fetch(`${API_BASE}/api/bills/${paidBill.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+        body: JSON.stringify({ customer_email: email })
+      }).catch(() => {});
+      const resp = await fetch(`${API_BASE}/api/email/send-invoice/${paidBill.id}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+      });
+      const data = await resp.json();
+      setEmailSending(false);
+      setEmailFlowOpen(false);
+      setPrintDialogOpen(false);
+      if (data.ok) {
+        setEmailSentModal({ email, success: true });
+      } else {
+        setEmailSentModal({ email, success: false, error: data.detail || 'Error enviando email' });
+      }
+    } catch {
+      setEmailSending(false);
+      setEmailFlowOpen(false);
+      setPrintDialogOpen(false);
+      setEmailSentModal({ email, success: false, error: 'Error de conexión' });
     }
   };
 
@@ -1933,35 +1968,20 @@ export default function PaymentScreen() {
             {/* Action buttons */}
             <div className="flex gap-3">
               <button
-                onClick={handleCloseAndNavigate}
-                className="flex-1 h-14 rounded-xl bg-white/5 border border-white/10 text-white/70 font-oswald font-bold hover:bg-white/10 transition-all"
+                onClick={() => {
+                  setPrintDialogOpen(false);
+                  setEmailFlowOpen(true);
+                  setEmailFlowStep('search');
+                  setEmailSearch('');
+                  setManualEmail('');
+                  setNewCustomerForm({ name: '', phone: '', email: '' });
+                }}
+                className="flex-1 h-14 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-blue-500/30 transition-all active:scale-95"
+                data-testid="send-email-btn"
               >
-                CERRAR
+                <Mail size={18} />
+                EMAIL
               </button>
-              {paidBill?.customer_email && (
-                <button
-                  onClick={async () => {
-                    try {
-                      setPrintDialogOpen(false);
-                      const resp = await fetch(`${API_BASE}/api/email/send-invoice/${paidBill.id}`, {
-                        method: 'POST',
-                        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-                      });
-                      const data = await resp.json();
-                      if (data.ok) {
-                        setEmailSentModal({ email: paidBill.customer_email, success: true });
-                      } else {
-                        setEmailSentModal({ email: paidBill.customer_email, success: false, error: data.detail || 'Error enviando email' });
-                      }
-                    } catch { toast.error('Error de conexión'); }
-                  }}
-                  className="flex-1 h-14 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-blue-500/30 transition-all active:scale-95"
-                  data-testid="send-email-btn"
-                >
-                  <Mail size={18} />
-                  EMAIL
-                </button>
-              )}
               <button
                 onClick={handlePrintTicket}
                 className="flex-[2] h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all active:scale-95"
@@ -1974,6 +1994,132 @@ export default function PaymentScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Email Flow Modal — Search customer / Create new / Manual email */}
+      {emailFlowOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full mx-4 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="p-5 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h2 className="font-oswald text-lg font-bold flex items-center gap-2 text-foreground">
+                  <Mail size={20} className="text-blue-500" /> Enviar Factura por Email
+                </h2>
+                <button onClick={() => { setEmailFlowOpen(false); setPrintDialogOpen(true); }}
+                  className="text-muted-foreground hover:text-foreground text-lg">×</button>
+              </div>
+              {/* Step tabs */}
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => setEmailFlowStep('search')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${emailFlowStep === 'search' ? 'bg-blue-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                  Buscar Cliente
+                </button>
+                <button onClick={() => setEmailFlowStep('create')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${emailFlowStep === 'create' ? 'bg-blue-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                  Nuevo Cliente
+                </button>
+                <button onClick={() => setEmailFlowStep('manual')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${emailFlowStep === 'manual' ? 'bg-blue-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                  Solo Email
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5 flex-1 overflow-y-auto">
+              {/* STEP 1: Search existing customer */}
+              {emailFlowStep === 'search' && (
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-3 text-muted-foreground" />
+                    <input value={emailSearch} onChange={e => setEmailSearch(e.target.value)}
+                      placeholder="Buscar por nombre, teléfono o email..."
+                      className="w-full bg-background border border-border rounded-xl pl-10 pr-3 py-2.5 text-sm"
+                      autoFocus />
+                  </div>
+                  <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                    {customers.filter(c => {
+                      if (!emailSearch) return c.email;
+                      const q = emailSearch.toLowerCase();
+                      return (c.name?.toLowerCase().includes(q) || c.phone?.includes(q) || c.email?.toLowerCase().includes(q));
+                    }).slice(0, 10).map(c => (
+                      <button key={c.id} onClick={() => c.email ? handleSendEmailAndNavigate(c.email) : null}
+                        disabled={!c.email || emailSending}
+                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all active:scale-95 ${c.email ? 'bg-background border-border hover:border-blue-500/50 cursor-pointer' : 'bg-muted/30 border-border/50 opacity-60 cursor-not-allowed'}`}>
+                        <div className="text-left">
+                          <span className="font-semibold text-sm">{c.name}</span>
+                          {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
+                        </div>
+                        {c.email ? (
+                          <span className="text-xs text-blue-500 font-medium">{c.email}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Sin email</span>
+                        )}
+                      </button>
+                    ))}
+                    {customers.filter(c => emailSearch ? (c.name?.toLowerCase().includes(emailSearch.toLowerCase()) || c.phone?.includes(emailSearch) || c.email?.toLowerCase().includes(emailSearch.toLowerCase())) : c.email).length === 0 && (
+                      <p className="text-center text-muted-foreground text-sm py-6">No se encontraron clientes{emailSearch ? ` con "${emailSearch}"` : ' con email'}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: Create new customer */}
+              {emailFlowStep === 'create' && (
+                <div className="space-y-3">
+                  <input value={newCustomerForm.name} onChange={e => setNewCustomerForm(p => ({ ...p, name: e.target.value }))}
+                    placeholder="Nombre del cliente *" className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm" autoFocus />
+                  <input value={newCustomerForm.phone} onChange={e => setNewCustomerForm(p => ({ ...p, phone: e.target.value }))}
+                    placeholder="Teléfono (opcional)" className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm" />
+                  <input value={newCustomerForm.email} onChange={e => setNewCustomerForm(p => ({ ...p, email: e.target.value }))}
+                    placeholder="Email *" type="email" className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm" />
+                  <button
+                    onClick={async () => {
+                      if (!newCustomerForm.name || !newCustomerForm.email) { toast.error('Nombre y email son requeridos'); return; }
+                      try {
+                        await fetch(`${API_BASE}/api/customers`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+                          body: JSON.stringify(newCustomerForm)
+                        });
+                        handleSendEmailAndNavigate(newCustomerForm.email);
+                      } catch { toast.error('Error creando cliente'); }
+                    }}
+                    disabled={!newCustomerForm.name || !newCustomerForm.email || emailSending}
+                    className="w-full h-12 rounded-xl bg-blue-600 text-white font-oswald font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {emailSending ? 'Enviando...' : <><User size={16} /> Crear y Enviar Factura</>}
+                  </button>
+                </div>
+              )}
+
+              {/* STEP 3: Manual email only */}
+              {emailFlowStep === 'manual' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">Escribe el email donde deseas enviar la factura. No se registrará como cliente.</p>
+                  <input value={manualEmail} onChange={e => setManualEmail(e.target.value)}
+                    placeholder="email@ejemplo.com" type="email"
+                    className="w-full bg-background border border-border rounded-xl px-3 py-3 text-sm text-center font-mono text-lg"
+                    autoFocus />
+                  <button
+                    onClick={() => handleSendEmailAndNavigate(manualEmail)}
+                    disabled={!manualEmail || !manualEmail.includes('@') || emailSending}
+                    className="w-full h-12 rounded-xl bg-blue-600 text-white font-oswald font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {emailSending ? 'Enviando...' : <><Mail size={16} /> Enviar Factura</>}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {emailSending && (
+              <div className="p-4 border-t border-border text-center">
+                <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">Enviando factura...</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Email Sent Modal */}
       {emailSentModal && (
@@ -1994,7 +2140,7 @@ export default function PaymentScreen() {
                 : emailSentModal.error
               }
             </p>
-            <button onClick={() => setEmailSentModal(null)}
+            <button onClick={() => { setEmailSentModal(null); navigate('/tables'); }}
               className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold text-base transition-all active:scale-95">
               Aceptar
             </button>
