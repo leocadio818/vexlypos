@@ -910,6 +910,7 @@ export default function PaymentScreen() {
               });
               const emailData = await emailResp.json();
               if (emailData.ok) {
+                setPrintDialogOpen(false);
                 setEmailSentModal({ email: custEmail, success: true });
               }
             }
@@ -1941,6 +1942,7 @@ export default function PaymentScreen() {
                 <button
                   onClick={async () => {
                     try {
+                      setPrintDialogOpen(false);
                       const resp = await fetch(`${API_BASE}/api/email/send-invoice/${paidBill.id}`, {
                         method: 'POST',
                         headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
