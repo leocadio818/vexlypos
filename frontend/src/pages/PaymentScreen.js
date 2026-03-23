@@ -951,13 +951,7 @@ export default function PaymentScreen() {
     if (!email || !paidBill?.id) return;
     setEmailSending(true);
     try {
-      // Update the bill with the email
-      await fetch(`${API_BASE}/api/bills/${paidBill.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
-        body: JSON.stringify({ customer_email: email })
-      }).catch(() => {});
-      const resp = await fetch(`${API_BASE}/api/email/send-invoice/${paidBill.id}`, {
+      const resp = await fetch(`${API_BASE}/api/email/send-invoice/${paidBill.id}?email_override=${encodeURIComponent(email)}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
       });

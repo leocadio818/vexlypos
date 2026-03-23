@@ -4,7 +4,8 @@ Sends professional HTML invoices via Resend API
 """
 import os
 import resend
-from fastapi import APIRouter, HTTPException
+from typing import Optional
+from fastapi import APIRouter, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorClient
 
 router = APIRouter()
@@ -199,7 +200,7 @@ def build_invoice_html(bill: dict, config: dict) -> str:
 
 
 @router.post("/send-invoice/{bill_id}")
-async def send_invoice_email(bill_id: str):
+async def send_invoice_email(bill_id: str, email_override: Optional[str] = Query(None)):
     """Send invoice by email to the customer"""
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="API de email no configurada")
@@ -208,9 +209,13 @@ async def send_invoice_email(bill_id: str):
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
-    customer_email = bill.get("customer_email", "")
+    customer_email = email_override or bill.get("customer_email", "")
     if not customer_email:
         raise HTTPException(status_code=400, detail="El cliente no tiene email registrado")
+    
+    # Update bill with email if provided
+    if email_override:
+        await db.bills.update_one({"id": bill_id}, {"$set": {"customer_email": email_override}})
     
     # Get system config for business name
     config = await db.system_config.find_one({}, {"_id": 0}) or {}
