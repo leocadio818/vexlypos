@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { formatMoney } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Heart, Plus, Search, Gift, Star, Phone, Mail } from 'lucide-react';
+import { Heart, Plus, Search, Gift, Star, Phone, Mail, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
@@ -18,6 +19,7 @@ const ADMIN_ROLES = ['admin', 'gerente', 'propietario', 'manager', 'owner'];
 
 export default function Customers() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [allCustomers, setAllCustomers] = useState([]);
   const [search, setSearch] = useState('');
@@ -87,6 +89,9 @@ export default function Customers() {
     <div className="h-full flex flex-col" data-testid="customers-page">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
         <div className="flex items-center gap-2">
+          <button onClick={() => navigate('/settings')} className="p-2 hover:bg-muted rounded-lg transition-colors" data-testid="customers-back-btn">
+            <ArrowLeft size={20} />
+          </button>
           <Heart size={22} className="text-primary" />
           <h1 className="font-oswald text-xl font-bold tracking-wide">CLIENTES & FIDELIDAD</h1>
         </div>
