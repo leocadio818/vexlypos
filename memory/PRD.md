@@ -202,6 +202,7 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - **Fase 3**: Crear cuenta Alanube + integrar API (envío e-CF) + guardar e_ncf + trackId en factura + certificado digital
 - **Fase 4**: Webhook receptor para confirmación de Alanube + lógica de reintentos/timeout + manejo de rechazos DGII
 - Requiere: cuenta Alanube (alanube.co) + certificado digital de la empresa
+- **Switch dual**: Config > Sistema > "Modo e-CF: Activado/Desactivado" — cada cliente decide si usa e-CF o NCF local. POS funciona en ambos modos simultáneamente
 
 - P1: Print Agent Multi-Impresora
 ### PENDIENTE — Envío de Facturas por Email (LISTO PARA IMPLEMENTAR)
