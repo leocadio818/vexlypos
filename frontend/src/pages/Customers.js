@@ -86,8 +86,8 @@ export default function Customers() {
   };
 
   return (
-    <div className="flex flex-col" data-testid="customers-page">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
+    <div className="absolute inset-0 flex flex-col" data-testid="customers-page">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50 shrink-0">
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('/settings')} className="p-2 hover:bg-muted rounded-lg transition-colors" data-testid="customers-back-btn">
             <ArrowLeft size={20} />
@@ -108,7 +108,7 @@ export default function Customers() {
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-4xl mx-auto">
           {/* Loyalty Info */}
           <div className="grid grid-cols-3 gap-3 mb-6">
@@ -137,7 +137,7 @@ export default function Customers() {
           </div>
 
           {/* Customer List */}
-          <ScrollArea className="max-h-[60vh]">
+          <ScrollArea className="h-[calc(100vh-320px)]">
             <div className="space-y-2">
               {customers.map(c => (
                 <div key={c.id} className="p-4 rounded-xl bg-card border border-border flex items-center justify-between" data-testid={`customer-${c.id}`}>
