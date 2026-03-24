@@ -86,7 +86,7 @@ export default function Customers() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden" data-testid="customers-page">
+    <div className="flex flex-col" data-testid="customers-page">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('/settings')} className="p-2 hover:bg-muted rounded-lg transition-colors" data-testid="customers-back-btn">
@@ -108,7 +108,7 @@ export default function Customers() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 overflow-y-auto">
+      <div className="p-4">
         <div className="max-w-4xl mx-auto">
           {/* Loyalty Info */}
           <div className="grid grid-cols-3 gap-3 mb-6">
