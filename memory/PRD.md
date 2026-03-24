@@ -200,6 +200,10 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - **Fase 1**: Completar datos emisor (dirección, teléfono) + mapear métodos de pago a códigos DGII (01=Efectivo, 02=Cheque, 03=Tarjeta, 04=Transferencia)
 - **Fase 2**: Soporte ITBIS múltiples tasas (18%, 16%, 0%) + separar montos gravados vs exentos por tasa + indicador de facturación por item
 - **Fase 3**: Crear cuenta Alanube + integrar API (envío e-CF) + guardar e_ncf + trackId en factura + certificado digital
+  - Módulo de Mapeo: función que convierte factura MongoDB → JSON formato Alanube (Diccionario de Datos)
+  - Módulo de Timbrado: recibe respuesta de Alanube (e-NCF, código QR, URL QR, trackId) → guarda en factura
+  - Módulo de Logs: registro de cada intento (enviado, aprobado, rechazado, timeout) → soporte técnico
+  - Llamadas a Alanube son async (no bloquean al cajero) — FastAPI ventaja nativa
 - **Fase 4**: Webhook receptor para confirmación de Alanube + lógica de reintentos/timeout + manejo de rechazos DGII
 - Requiere: cuenta Alanube (alanube.co) + certificado digital de la empresa
 - **Switch dual**: Config > Sistema > "Modo e-CF: Activado/Desactivado" — cada cliente decide si usa e-CF o NCF local. POS funciona en ambos modos simultáneamente
