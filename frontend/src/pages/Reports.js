@@ -4,7 +4,7 @@ import { formatMoney, businessDaysAPI } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  BarChart3, TrendingUp, Calendar, Mail, Users, ArrowRightLeft, 
+  BarChart3, TrendingUp, Calendar, Mail, Users, ArrowRightLeft, ArrowLeft, 
   Table2, Clock, ChevronDown, ChevronRight, FileText, Download,
   Printer, Send, DollarSign, Package, ShoppingCart, AlertTriangle,
   Percent, Receipt, Building2, ArrowUpRight, ArrowDownRight, Minus,
@@ -753,6 +753,9 @@ export default function Reports() {
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-3 bg-card/50">
         <div className="flex items-center gap-2">
+          <button onClick={() => navigate('/settings')} className="p-2 hover:bg-muted rounded-lg transition-colors" data-testid="reports-back-btn">
+            <ArrowLeft size={20} />
+          </button>
           <BarChart3 size={22} className="text-primary" />
           <h1 className="font-oswald text-xl font-bold tracking-wide">REPORTES</h1>
         </div>
