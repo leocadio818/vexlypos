@@ -193,6 +193,16 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 
 
 ## Next Tasks
+## FUTURO — Integración e-CF con Alanube (Facturación Electrónica DGII)
+- **Score actual: 65% Ready** — estructura de facturación sólida, falta adaptación e-CF
+- **Auditoría completa realizada: 2026-03-24**
+- **Ya tiene**: RNC emisor, NCF B01-B15, ITBIS 18%, Propina 10%, tax_breakdown, exenciones, fiscal_id, pagos múltiples, monedas
+- **Fase 1**: Completar datos emisor (dirección, teléfono) + mapear métodos de pago a códigos DGII (01=Efectivo, 02=Cheque, 03=Tarjeta, 04=Transferencia)
+- **Fase 2**: Soporte ITBIS múltiples tasas (18%, 16%, 0%) + separar montos gravados vs exentos por tasa + indicador de facturación por item
+- **Fase 3**: Crear cuenta Alanube + integrar API (envío e-CF) + guardar e_ncf + trackId en factura + certificado digital
+- **Fase 4**: Webhook receptor para confirmación de Alanube + lógica de reintentos/timeout + manejo de rechazos DGII
+- Requiere: cuenta Alanube (alanube.co) + certificado digital de la empresa
+
 - P1: Print Agent Multi-Impresora
 ### PENDIENTE — Envío de Facturas por Email (LISTO PARA IMPLEMENTAR)
 - Resend API Key configurada en backend/.env: `RESEND_API_KEY=re_9oVHosHY_...`
