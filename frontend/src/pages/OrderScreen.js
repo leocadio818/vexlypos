@@ -353,18 +353,19 @@ export default function OrderScreen() {
   }, [order]);
 
   // Auto-send pending items to kitchen when leaving the page
+  const alreadySentRef = useRef(false);
   const sendPendingToKitchenSilently = useCallback(async (showToast = false) => {
+    if (alreadySentRef.current) return false;
     const currentOrder = orderRef.current;
     if (!currentOrder) return false;
     const pendingItems = currentOrder.items?.filter(i => i.status === 'pending') || [];
     if (pendingItems.length === 0) return false;
     try {
+      alreadySentRef.current = true;
       await ordersAPI.sendToKitchen(currentOrder.id);
-      // Removed toast - silent auto-send
-      console.log('Auto-enviado a cocina:', pendingItems.length, 'items');
       return true;
     } catch (e) {
-      console.error('Error auto-enviando a cocina:', e);
+      alreadySentRef.current = false;
       return false;
     }
   }, []);
@@ -372,28 +373,21 @@ export default function OrderScreen() {
   // Intercept all navigation clicks to send pending items first
   useEffect(() => {
     const handleNavClick = async (e) => {
-      // Check if click is on a navigation link
       const link = e.target.closest('a[href]');
       if (!link) return;
       
       const href = link.getAttribute('href');
-      // Only intercept internal navigation away from order screen
       if (href && !href.startsWith('/order/') && href !== '#') {
         const currentOrder = orderRef.current;
-        console.log('Nav click intercepted, order:', currentOrder?.id, 'pending:', currentOrder?.items?.filter(i => i.status === 'pending')?.length);
-        if (currentOrder) {
+        if (currentOrder && !alreadySentRef.current) {
           const pendingItems = currentOrder.items?.filter(i => i.status === 'pending') || [];
           if (pendingItems.length > 0) {
             e.preventDefault();
             e.stopPropagation();
+            alreadySentRef.current = true;
             try {
               await ordersAPI.sendToKitchen(currentOrder.id);
-              // Removed toast - silent auto-send
-              console.log('Comanda enviada exitosamente');
-            } catch (err) {
-              console.error('Error enviando a cocina:', err);
-            }
-            // Navigate after sending
+            } catch {}
             navigate(href);
             return;
           }
