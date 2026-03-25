@@ -1978,11 +1978,18 @@ export default function PaymentScreen() {
               </button>
               <button
                 onClick={handlePrintTicket}
-                className="flex-[2] h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all active:scale-95"
-                data-testid="print-ticket-btn"
+                className="flex-1 h-14 rounded-xl bg-white/5 border border-white/10 text-white/70 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-95"
+                data-testid="reprint-ticket-btn"
               >
-                <Printer size={20} />
-                IMPRIMIR TICKET
+                <Printer size={16} />
+                REIMPRIMIR
+              </button>
+              <button
+                onClick={() => { setPrintDialogOpen(false); navigate('/tables'); }}
+                className="flex-[2] h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all active:scale-95"
+                data-testid="back-to-tables-btn"
+              >
+                VOLVER A MESAS
               </button>
             </div>
           </div>
