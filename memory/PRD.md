@@ -215,6 +215,12 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Funcionamiento offline básico (cache de menú, productos)
 - manifest.json + service worker
 
+## FUTURO — Optimización de Rendimiento (App-like Experience)
+- **Fase 1**: Cache de datos con React Query — no re-descarga datos que ya tiene
+- **Fase 2**: Transiciones suaves entre pantallas (slide/fade como iOS)
+- **Fase 3**: Service Worker — cachea toda la app, abre en 0.5s
+- Combinar con PWA para experiencia nativa completa
+
 - P1: Print Agent Multi-Impresora
 ### PENDIENTE — Envío de Facturas por Email (LISTO PARA IMPLEMENTAR)
 - Resend API Key configurada en backend/.env: `RESEND_API_KEY=re_9oVHosHY_...`
