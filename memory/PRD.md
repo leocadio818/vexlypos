@@ -208,6 +208,13 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Requiere: cuenta Alanube (alanube.co) + certificado digital de la empresa
 - **Switch dual**: Config > Sistema > "Modo e-CF: Activado/Desactivado" — cada cliente decide si usa e-CF o NCF local. POS funciona en ambos modos simultáneamente
 
+## FUTURO — PWA (Progressive Web App)
+- Ícono personalizado VexlyPOS en Home Screen
+- Splash screen con logo y marca al abrir
+- Pantalla completa sin barra de Safari
+- Funcionamiento offline básico (cache de menú, productos)
+- manifest.json + service worker
+
 - P1: Print Agent Multi-Impresora
 ### PENDIENTE — Envío de Facturas por Email (LISTO PARA IMPLEMENTAR)
 - Resend API Key configurada en backend/.env: `RESEND_API_KEY=re_9oVHosHY_...`
