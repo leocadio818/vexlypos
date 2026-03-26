@@ -160,6 +160,7 @@ export default function PaymentScreen() {
   const [manualEmail, setManualEmail] = useState('');
   const [newCustomerForm, setNewCustomerForm] = useState({ name: '', phone: '', email: '' });
   const [emailSending, setEmailSending] = useState(false); // { email, success, error }
+  const [ecfModal, setEcfModal] = useState(null);
   const [paidBill, setPaidBill] = useState(null);
   
   // NCF Alert Modal state
@@ -1960,7 +1961,7 @@ export default function PaymentScreen() {
             </div>
 
             {/* Action buttons */}
-            <div className="flex gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => {
                   setPrintDialogOpen(false);
@@ -1970,15 +1971,41 @@ export default function PaymentScreen() {
                   setManualEmail('');
                   setNewCustomerForm({ name: '', phone: '', email: '' });
                 }}
-                className="flex-1 h-14 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-blue-500/30 transition-all active:scale-95"
+                className="h-14 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-blue-500/30 transition-all active:scale-95"
                 data-testid="send-email-btn"
               >
-                <Mail size={18} />
+                <Mail size={16} />
                 EMAIL
               </button>
               <button
+                onClick={async () => {
+                  if (!paidBill?.id) return;
+                  setPrintDialogOpen(false);
+                  setEcfModal({ sending: true });
+                  try {
+                    const resp = await fetch(`${API_BASE}/api/ecf/send/${paidBill.id}`, {
+                      method: 'POST',
+                      headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+                    });
+                    const data = await resp.json();
+                    if (data.ok) {
+                      setEcfModal({ sending: false, success: true, data });
+                    } else {
+                      setEcfModal({ sending: false, success: false, error: data.message || 'Error al enviar e-CF' });
+                    }
+                  } catch {
+                    setEcfModal({ sending: false, success: false, error: 'Error de conexión' });
+                  }
+                }}
+                className="h-14 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-emerald-500/30 transition-all active:scale-95"
+                data-testid="send-ecf-btn"
+              >
+                <FileText size={16} />
+                e-CF
+              </button>
+              <button
                 onClick={handlePrintTicket}
-                className="flex-1 h-14 rounded-xl bg-white/5 border border-white/10 text-white/70 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-95"
+                className="h-14 rounded-xl bg-white/5 border border-white/10 text-white/70 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-95"
                 data-testid="reprint-ticket-btn"
               >
                 <Printer size={16} />
@@ -1986,7 +2013,7 @@ export default function PaymentScreen() {
               </button>
               <button
                 onClick={() => { setPrintDialogOpen(false); navigate('/tables'); }}
-                className="flex-[2] h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all active:scale-95"
+                className="h-14 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all active:scale-95"
                 data-testid="back-to-tables-btn"
               >
                 VOLVER A MESAS
@@ -2117,6 +2144,50 @@ export default function PaymentScreen() {
                 <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
                 <p className="text-xs text-muted-foreground">Enviando factura...</p>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* e-CF Result Modal */}
+      {ecfModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl max-w-sm w-full mx-4 p-8 text-center shadow-2xl">
+            {ecfModal.sending ? (
+              <>
+                <div className="animate-spin w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
+                <h2 className="font-oswald text-xl font-bold text-foreground">Enviando a la DGII...</h2>
+                <p className="text-muted-foreground text-sm mt-2">Conectando con Alanube</p>
+              </>
+            ) : ecfModal.success ? (
+              <>
+                <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center bg-emerald-500/20">
+                  <Check size={40} className="text-emerald-500" />
+                </div>
+                <h2 className="font-oswald text-xl font-bold mb-2 text-foreground">e-CF Enviado!</h2>
+                <p className="text-muted-foreground text-sm mb-3">Factura electrónica registrada en la DGII</p>
+                <div className="bg-muted rounded-xl p-3 text-left space-y-1 mb-4">
+                  <p className="text-xs"><span className="text-muted-foreground">e-NCF:</span> <strong className="text-primary font-mono">{ecfModal.data?.encf}</strong></p>
+                  <p className="text-xs"><span className="text-muted-foreground">Status:</span> <strong className="text-emerald-500">{ecfModal.data?.status}</strong></p>
+                  <p className="text-xs"><span className="text-muted-foreground">Código:</span> <strong>{ecfModal.data?.security_code}</strong></p>
+                </div>
+                <button onClick={() => { setEcfModal(null); navigate('/tables'); }}
+                  className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold transition-all active:scale-95">
+                  Aceptar
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center bg-red-500/20">
+                  <AlertTriangle size={40} className="text-red-500" />
+                </div>
+                <h2 className="font-oswald text-xl font-bold mb-2 text-foreground">Error e-CF</h2>
+                <p className="text-muted-foreground text-sm mb-4">{ecfModal.error}</p>
+                <button onClick={() => { setEcfModal(null); setPrintDialogOpen(true); }}
+                  className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold transition-all active:scale-95">
+                  Volver
+                </button>
+              </>
             )}
           </div>
         </div>
