@@ -187,6 +187,7 @@ def build_invoice_html(bill: dict, config: dict) -> str:
             
             <!-- Footer -->
             <div style="background:#f8f9fa;border-radius:0 0 16px 16px;padding:24px;text-align:center;border:1px solid #e5e7eb;border-top:0;">
+                {'<div style="margin-bottom:16px;"><p style="margin:0 0 8px;font-size:12px;color:#666;font-weight:bold;">FACTURACIÓN ELECTRÓNICA</p><p style="margin:0 0 4px;font-size:13px;font-weight:bold;">' + (bill.get("ecf_encf") or "") + '</p><p style="margin:0 0 8px;font-size:11px;color:#888;">Código: ' + (bill.get("ecf_security_code") or "") + '</p><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + (bill.get("ecf_stamp_url") or "").replace("&", "%26") + '" width="150" height="150" style="margin:0 auto;" /><p style="margin:8px 0 0;font-size:10px;color:#aaa;">Escanea para verificar en la DGII</p></div>' if bill.get("ecf_stamp_url") else ''}
                 <p style="margin:0;font-size:14px;font-weight:bold;color:#333;">Gracias por su visita!</p>
                 <p style="margin:8px 0 0;font-size:11px;color:#999;">Este documento fue generado electrónicamente por {biz_name}</p>
                 <p style="margin:4px 0 0;font-size:11px;color:#999;">Conserve este comprobante para fines fiscales (DGII)</p>

@@ -2601,6 +2601,23 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     
     commands.append({"type": "divider"})
     
+    # e-CF info (if sent to Alanube)
+    ecf_stamp = bill.get("ecf_stamp_url", "")
+    ecf_encf = bill.get("ecf_encf", "")
+    ecf_code = bill.get("ecf_security_code", "")
+    if ecf_stamp or ecf_encf:
+        commands.append({"type": "text", "text": "FACTURACION ELECTRONICA", "align": "center", "bold": True})
+        if ecf_encf:
+            commands.append({"type": "text", "text": f"e-NCF: {ecf_encf}", "align": "center"})
+        if ecf_code:
+            commands.append({"type": "text", "text": f"Codigo: {ecf_code}", "align": "center"})
+        if ecf_stamp:
+            commands.append({"type": "text", "text": "Verifica en:", "align": "center"})
+            # Split long URL into lines of 42 chars
+            for i in range(0, len(ecf_stamp), 42):
+                commands.append({"type": "text", "text": ecf_stamp[i:i+42], "align": "center"})
+        commands.append({"type": "divider"})
+    
     # Footer messages
     for i in range(1, 5):
         msg = config.get(f'ticket_footer_msg{i}', '')
