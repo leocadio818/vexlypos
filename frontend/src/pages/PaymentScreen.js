@@ -2171,7 +2171,17 @@ export default function PaymentScreen() {
                   <p className="text-xs"><span className="text-muted-foreground">Status:</span> <strong className="text-emerald-500">{ecfModal.data?.status}</strong></p>
                   <p className="text-xs"><span className="text-muted-foreground">Código:</span> <strong>{ecfModal.data?.security_code}</strong></p>
                 </div>
-                <button onClick={() => { setEcfModal(null); navigate('/tables'); }}
+                <button onClick={async () => {
+                  // Print ticket with e-CF data
+                  try {
+                    await fetch(`${API_BASE}/api/print/receipt/${paidBill?.id}/send`, {
+                      method: 'POST',
+                      headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+                    });
+                  } catch {}
+                  setEcfModal(null);
+                  navigate('/tables');
+                }}
                   className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-oswald font-bold transition-all active:scale-95">
                   Aceptar
                 </button>
