@@ -2612,10 +2612,8 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
         if ecf_code:
             commands.append({"type": "text", "text": f"Codigo: {ecf_code}", "align": "center"})
         if ecf_stamp:
-            commands.append({"type": "text", "text": "Verifica en:", "align": "center"})
-            # Split long URL into lines of 42 chars
-            for i in range(0, len(ecf_stamp), 42):
-                commands.append({"type": "text", "text": ecf_stamp[i:i+42], "align": "center"})
+            commands.append({"type": "qr", "data": ecf_stamp})
+            commands.append({"type": "text", "text": "Escanea para verificar en DGII", "align": "center"})
         commands.append({"type": "divider"})
     
     # Footer messages

@@ -129,6 +129,61 @@ def encode_text(text):
         except:
             return text.encode('ascii', errors='replace')
 
+def generate_qr_escpos(data_str, size=6):
+    """Generate QR code as ESC/POS bitmap bytes"""
+    try:
+        import qrcode
+        from PIL import Image
+        import io
+        
+        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=size, border=2)
+        qr.add_data(data_str)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white").convert('1')
+        
+        # Resize to max 384px width (standard 80mm thermal printer)
+        if img.width > 384:
+            ratio = 384 / img.width
+            img = img.resize((384, int(img.height * ratio)))
+        
+        # Convert to ESC/POS raster bitmap
+        width = img.width
+        height = img.height
+        
+        # Ensure width is multiple of 8
+        if width % 8 != 0:
+            new_width = width + (8 - width % 8)
+            new_img = Image.new('1', (new_width, height), 1)
+            new_img.paste(img, (0, 0))
+            img = new_img
+            width = new_width
+        
+        bytes_per_line = width // 8
+        
+        buf = bytearray()
+        buf += ALIGN_CENTER
+        
+        # GS v 0 — raster bit image
+        buf += GS + b'v0' + b'\x00'
+        buf += bytes([bytes_per_line & 0xFF, (bytes_per_line >> 8) & 0xFF])
+        buf += bytes([height & 0xFF, (height >> 8) & 0xFF])
+        
+        pixels = img.load()
+        for y in range(height):
+            for x_byte in range(bytes_per_line):
+                byte_val = 0
+                for bit in range(8):
+                    x = x_byte * 8 + bit
+                    if x < img.width and pixels[x, y] == 0:
+                        byte_val |= (0x80 >> bit)
+                buf += bytes([byte_val])
+        
+        buf += ALIGN_LEFT
+        return bytes(buf)
+    except Exception as e:
+        logger.warning(f"QR generation failed: {e}")
+        return None
+
 # ============ NETWORK PRINTER ============
 def send_to_printer(ip, data_bytes, port=9100, timeout=10):
     """Send raw bytes to a network printer via TCP socket"""
@@ -429,6 +484,13 @@ def format_commands(commands):
         
         elif ctype == "divider":
             buf += encode_text("-" * 42) + FEED
+        
+        elif ctype == "qr":
+            qr_data = cmd.get("data", "")
+            if qr_data:
+                qr_bytes = generate_qr_escpos(qr_data)
+                if qr_bytes:
+                    buf += qr_bytes + FEED
         
         elif ctype == "feed":
             lines = cmd.get("lines", 1)
