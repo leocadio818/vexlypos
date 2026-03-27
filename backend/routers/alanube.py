@@ -358,16 +358,10 @@ async def send_ecf(bill_id: str):
     prefix = ncf[:3] if isinstance(ncf, str) and len(ncf) >= 3 else "B02"
     ecf_prefix = {"B01": "E31", "B02": "E32", "B14": "E34", "B15": "E31"}.get(prefix, "E32")
     
-    # Get next sequence for e-CF
-    seq = await db.ecf_sequences.find_one_and_update(
-        {"prefix": ecf_prefix},
-        {"$inc": {"current": 1}},
-        upsert=True,
-        return_document=True,
-        projection={"_id": 0}
-    )
-    seq_num = seq.get("current", 1)
-    encf = f"{ecf_prefix}{str(seq_num).zfill(10)}"
+    # Generate unique e-NCF number using timestamp to avoid sandbox collisions
+    import time
+    unique_suffix = int(time.time()) % 10000000000  # 10 digits from timestamp
+    encf = f"{ecf_prefix}{str(unique_suffix).zfill(10)}"
     
     # Build payload
     payload = build_alanube_payload(bill, config, encf)
