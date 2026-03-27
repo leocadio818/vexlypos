@@ -270,7 +270,7 @@ async def send_to_alanube(payload: dict) -> dict:
                     "alanube_id": data.get("id"),
                     "status": data.get("status"),
                     "legal_status": data.get("legalStatus"),
-                    "encf": data.get("documentNumber"),
+                    "encf": data.get("encf", data.get("documentNumber")),
                     "signature_date": data.get("signatureDate"),
                     "security_code": data.get("securityCode"),
                     "stamp_url": data.get("documentStampUrl"),
