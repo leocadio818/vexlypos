@@ -63,6 +63,7 @@ class CreateBillInput(BaseModel):
     tip_percentage: float = 10
     payment_method: str = "cash"
     customer_id: str = ""
+    ecf_type: Optional[str] = None
 
 class PaymentEntry(BaseModel):
     """Entrada individual de pago para pagos múltiples"""
@@ -346,6 +347,7 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
         "waiter_id": order.get("waiter_id", ""),
         "waiter_name": order.get("waiter_name", ""),
         "training_mode": is_training,
+        "ecf_type": input.ecf_type,
         "status": "open", "created_at": now_iso(), "paid_at": None
     }
     await db.bills.insert_one(bill)
