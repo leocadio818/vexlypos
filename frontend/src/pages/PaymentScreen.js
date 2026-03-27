@@ -162,12 +162,6 @@ export default function PaymentScreen() {
   const [emailSending, setEmailSending] = useState(false); // { email, success, error }
   const [ecfModal, setEcfModal] = useState(null);
   const [ecfEnabled, setEcfEnabled] = useState(false);
-  
-  // Check if e-CF is enabled
-  useEffect(() => {
-    fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } })
-      .then(r => r.json()).then(d => setEcfEnabled(!!d.ecf_enabled)).catch(() => {});
-  }, [API_BASE]);
   const [paidBill, setPaidBill] = useState(null);
   
   // NCF Alert Modal state
@@ -211,6 +205,13 @@ export default function PaymentScreen() {
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
   const isMobile = device?.isMobile;
+
+  // Check if e-CF is enabled
+  useEffect(() => {
+    fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } })
+      .then(r => r.json()).then(d => setEcfEnabled(!!d.ecf_enabled)).catch(() => {});
+  }, [API_BASE]);
+
   const isTablet = device?.isTablet;
   const isLandscape = device?.isLandscape;
 
