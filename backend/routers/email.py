@@ -76,22 +76,32 @@ def build_invoice_html(bill: dict, config: dict) -> str:
             <td style="padding:4px 12px;text-align:right;color:#e53e3e;">-RD$ {discount["amount"]:,.2f}</td>
         </tr>'''
     
-    # NCF info
+    # NCF info — use e-NCF if available, otherwise local NCF
     ncf_html = ""
-    ncf = bill.get("ncf", "")
-    if isinstance(ncf, dict) and ncf.get("full_ncf"):
+    ecf_encf = bill.get("ecf_encf", "")
+    ecf_code = bill.get("ecf_security_code", "")
+    if ecf_encf:
         ncf_html = f'''
         <div style="background:#f8f9fa;border-radius:8px;padding:12px;margin:16px 0;">
-            <p style="margin:0;font-size:12px;color:#666;">Comprobante Fiscal (NCF)</p>
-            <p style="margin:4px 0 0;font-weight:bold;font-size:16px;">{ncf.get("full_ncf","")}</p>
-            <p style="margin:2px 0 0;font-size:11px;color:#888;">Válido hasta: {ncf.get("expiry_date","")}</p>
+            <p style="margin:0;font-size:12px;color:#666;">Comprobante Fiscal Electrónico (e-NCF)</p>
+            <p style="margin:4px 0 0;font-weight:bold;font-size:16px;">{ecf_encf}</p>
+            <p style="margin:2px 0 0;font-size:11px;color:#888;">Código: {ecf_code}</p>
         </div>'''
-    elif isinstance(ncf, str) and ncf:
-        ncf_html = f'''
-        <div style="background:#f8f9fa;border-radius:8px;padding:12px;margin:16px 0;">
-            <p style="margin:0;font-size:12px;color:#666;">Comprobante Fiscal (NCF)</p>
-            <p style="margin:4px 0 0;font-weight:bold;font-size:16px;">{ncf}</p>
-        </div>'''
+    else:
+        ncf = bill.get("ncf", "")
+        if isinstance(ncf, dict) and ncf.get("full_ncf"):
+            ncf_html = f'''
+            <div style="background:#f8f9fa;border-radius:8px;padding:12px;margin:16px 0;">
+                <p style="margin:0;font-size:12px;color:#666;">Comprobante Fiscal (NCF)</p>
+                <p style="margin:4px 0 0;font-weight:bold;font-size:16px;">{ncf.get("full_ncf","")}</p>
+                <p style="margin:2px 0 0;font-size:11px;color:#888;">Válido hasta: {ncf.get("expiry_date","")}</p>
+            </div>'''
+        elif isinstance(ncf, str) and ncf:
+            ncf_html = f'''
+            <div style="background:#f8f9fa;border-radius:8px;padding:12px;margin:16px 0;">
+                <p style="margin:0;font-size:12px;color:#666;">Comprobante Fiscal (NCF)</p>
+                <p style="margin:4px 0 0;font-weight:bold;font-size:16px;">{ncf}</p>
+            </div>'''
     
     # Customer info
     customer_html = ""
