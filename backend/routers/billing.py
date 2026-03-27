@@ -96,6 +96,7 @@ class PayBillInput(BaseModel):
     razon_social: Optional[str] = None  # Nombre del cliente fiscal
     customer_email: Optional[str] = None  # Email para envío de factura
     send_email: bool = False  # Si enviar factura por email
+    ecf_type: Optional[str] = None  # E32, E31, E34, E33 (when e-CF enabled)
     # Descuento aplicado
     discount_applied: Optional[dict] = None
 
@@ -453,6 +454,7 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         "razon_social": input.razon_social,
         "customer_email": input.customer_email,
         "send_email": input.send_email,
+        "ecf_type": input.ecf_type,
         # Doble marcación de tiempo (Jornada de Trabajo)
         "business_date": business_date,  # Fecha contable (jornada)
         "business_day_id": business_day["id"],  # Referencia a la jornada
