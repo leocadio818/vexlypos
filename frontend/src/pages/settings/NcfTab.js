@@ -17,11 +17,34 @@ const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')
 export default function NcfTab() {
   const { ncfTypes, ncfSequences, ncfAlerts, refreshNCFData } = useSettings();
   const [saleTypes, setSaleTypes] = useState([]);
+  const [ecfEnabled, setEcfEnabled] = useState(false);
   const [ncfDialog, setNcfDialog] = useState({ 
     open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, 
     range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null,
     authorized_sale_types: [], alert_threshold: '', alert_interval: ''
   });
+
+  // Check e-CF mode
+  useEffect(() => {
+    fetch(`${API}/system/config`, { headers: hdrs() })
+      .then(r => r.json()).then(d => setEcfEnabled(!!d.ecf_enabled)).catch(() => {});
+  }, []);
+
+  // e-CF types reference
+  const ECF_TYPES = [
+    { id: 'E31', code: 'E31', name: 'Factura de Crédito Fiscal Electrónica', description: 'Factura de Crédito Fiscal Electrónica' },
+    { id: 'E32', code: 'E32', name: 'Factura de Consumo Electrónica', description: 'Factura de Consumo Electrónica' },
+    { id: 'E33', code: 'E33', name: 'Nota de Débito Electrónica', description: 'Nota de Débito Electrónica' },
+    { id: 'E34', code: 'E34', name: 'Nota de Crédito Electrónica', description: 'Nota de Crédito Electrónica' },
+    { id: 'E41', code: 'E41', name: 'Comprobante de Compras Electrónico', description: 'Comprobante de Compras Electrónico' },
+    { id: 'E43', code: 'E43', name: 'Gastos Menores Electrónico', description: 'Gastos Menores Electrónico' },
+    { id: 'E44', code: 'E44', name: 'Régimen Especial Electrónico', description: 'Régimen Especial Electrónico' },
+    { id: 'E45', code: 'E45', name: 'Gubernamental Electrónico', description: 'Gubernamental Electrónico' },
+    { id: 'E46', code: 'E46', name: 'Exportaciones Electrónico', description: 'Exportaciones Electrónico' },
+    { id: 'E47', code: 'E47', name: 'Pagos al Exterior Electrónico', description: 'Pagos al Exterior Electrónico' },
+  ];
+
+  const displayTypes = ecfEnabled ? ECF_TYPES : ncfTypes;
 
   // Load sale types
   useEffect(() => {
@@ -104,11 +127,11 @@ export default function NcfTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-oswald text-lg font-bold flex items-center gap-2">
-            <FileText size={20} className="text-blue-500" />
-            Comprobantes Fiscales (NCF)
+            <FileText size={20} className={ecfEnabled ? "text-emerald-500" : "text-blue-500"} />
+            {ecfEnabled ? 'Comprobantes Fiscales Electrónicos (e-CF)' : 'Comprobantes Fiscales (NCF)'}
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Gestiona las secuencias de comprobantes fiscales DGII - Serie B
+            {ecfEnabled ? 'Gestiona las secuencias de comprobantes electrónicos DGII — Serie E (via Alanube)' : 'Gestiona las secuencias de comprobantes fiscales DGII — Serie B'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -117,7 +140,7 @@ export default function NcfTab() {
           </Button>
           <Button 
             size="sm" 
-            onClick={() => setNcfDialog({ open: true, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' })}
+            onClick={() => setNcfDialog({ open: true, ncf_type_code: '', serie: ecfEnabled ? 'E' : 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' })}
             className="bg-blue-600 hover:bg-blue-700 text-white"
             data-testid="add-ncf-btn"
           >
@@ -278,7 +301,7 @@ export default function NcfTab() {
                     <Bell size={12} className="text-amber-500" />
                     <span className="text-muted-foreground text-xs">Alerta:</span>
                     <span className="text-xs text-amber-400">
-                      ≤{seq.alert_threshold} NCF
+                      ≤{seq.alert_threshold} {ecfEnabled ? 'e-CF' : 'NCF'}
                       {seq.alert_interval && ` (cada ${seq.alert_interval} ventas)`}
                     </span>
                   </div>
@@ -292,13 +315,13 @@ export default function NcfTab() {
       {/* NCF Types Reference */}
       <div className="bg-card/50 border border-border rounded-xl p-4">
         <h3 className="font-oswald font-bold text-sm mb-3 flex items-center gap-2">
-          <ListChecks size={16} className="text-blue-500" />
-          Tipos de Comprobantes DGII (Serie B)
+          <ListChecks size={16} className={ecfEnabled ? "text-emerald-500" : "text-blue-500"} />
+          {ecfEnabled ? 'Tipos de Comprobantes Electrónicos DGII (Serie E)' : 'Tipos de Comprobantes DGII (Serie B)'}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {ncfTypes.map((type) => (
+          {displayTypes.map((type) => (
             <div key={type.id || type.code} className="flex items-center gap-2 text-xs p-2 bg-background rounded-lg">
-              <Badge variant="outline" className="font-mono text-xs">{type.id || type.code}</Badge>
+              <Badge variant="outline" className={`font-mono text-xs ${ecfEnabled ? 'border-emerald-500/50 text-emerald-500' : ''}`}>{type.id || type.code}</Badge>
               <span className="text-muted-foreground truncate">{type.description || type.name}</span>
             </div>
           ))}
@@ -309,7 +332,7 @@ export default function NcfTab() {
       <Dialog open={ncfDialog.open} onOpenChange={(o) => !o && setNcfDialog({ ...ncfDialog, open: false })}>
         <DialogContent className="sm:max-w-md bg-card border-border max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-oswald">{ncfDialog.editId ? 'Editar Secuencia NCF' : 'Nueva Secuencia NCF'}</DialogTitle>
+            <DialogTitle className="font-oswald">{ncfDialog.editId ? 'Editar Secuencia' : 'Nueva Secuencia'} {ecfEnabled ? 'e-CF' : 'NCF'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -317,7 +340,7 @@ export default function NcfTab() {
               <select value={ncfDialog.ncf_type_code} onChange={e => setNcfDialog({ ...ncfDialog, ncf_type_code: e.target.value })}
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" disabled={!!ncfDialog.editId}>
                 <option value="">Seleccionar...</option>
-                {ncfTypes.map(t => (
+                {displayTypes.map(t => (
                   <option key={t.id || t.code} value={t.id || t.code}>{t.id || t.code} - {t.description || t.name}</option>
                 ))}
               </select>
