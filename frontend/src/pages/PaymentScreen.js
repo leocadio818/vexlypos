@@ -899,27 +899,36 @@ export default function PaymentScreen() {
         });
         // Don't print yet - wait for alert acknowledgment, then auto-print
       } else {
-        // No alert needed, print automatically and show dialog
+        // No alert needed, show dialog
         setPrintDialogOpen(true);
-        // Auto-print the receipt
-        try {
-          const printResp = await fetch(`${API_BASE}/api/print/receipt/${res.data.id}/send`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-          });
-          const printData = await printResp.json();
-          // Removed success toast - silent print
-        } catch (printErr) {
-          console.warn('Auto-print error:', printErr);
-        }
-        // Auto-send email if enabled and customer has email
-        const custEmail = fiscalData?.email || selectedCustomer?.email;
+        
+        // Get system config
         let sysConfigData = {};
         try {
           const sysConfig = await fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
           sysConfigData = await sysConfig.json();
         } catch {}
         
+        // STEP 1: Auto e-CF FIRST (before printing, so ticket has e-CF data)
+        if (sysConfigData.ecf_enabled) {
+          try {
+            await fetch(`${API_BASE}/api/ecf/send/${res.data.id}`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+            });
+          } catch {}
+        }
+        
+        // STEP 2: Print receipt (now with e-CF data if enabled)
+        try {
+          await fetch(`${API_BASE}/api/print/receipt/${res.data.id}/send`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+          });
+        } catch {}
+        
+        // STEP 3: Auto-send email if enabled and customer has email
+        const custEmail = fiscalData?.email || selectedCustomer?.email;
         if (custEmail && sysConfigData.auto_email_invoice) {
           try {
             const emailResp = await fetch(`${API_BASE}/api/email/send-invoice/${res.data.id}`, {
@@ -930,26 +939,6 @@ export default function PaymentScreen() {
             if (emailData.ok) {
               setPrintDialogOpen(false);
               setEmailSentModal({ email: custEmail, success: true });
-            }
-          } catch {}
-        }
-        
-        // Auto e-CF if enabled
-        if (sysConfigData.ecf_enabled) {
-          try {
-            const ecfResp = await fetch(`${API_BASE}/api/ecf/send/${res.data.id}`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-            });
-            const ecfData = await ecfResp.json();
-            if (ecfData.ok) {
-              // Re-print ticket with e-CF data
-              try {
-                await fetch(`${API_BASE}/api/print/receipt/${res.data.id}/send`, {
-                  method: 'POST',
-                  headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-                });
-              } catch {}
             }
           } catch {}
         }
