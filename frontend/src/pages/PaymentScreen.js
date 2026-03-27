@@ -146,7 +146,7 @@ export default function PaymentScreen() {
   // Tax type selection state
   const [saleTypes, setSaleTypes] = useState([]);
   const [taxConfig, setTaxConfig] = useState([]);
-  const [selectedFiscalType, setSelectedFiscalType] = useState('B02');
+  const [selectedFiscalType, setSelectedFiscalType] = useState(null);
   const [selectedServiceType, setSelectedServiceType] = useState(null);
   const [adjustedBill, setAdjustedBill] = useState(null);
   
@@ -195,8 +195,13 @@ export default function PaymentScreen() {
   const [discountPinDialog, setDiscountPinDialog] = useState({ open: false, discount: null });
   const [discountPin, setDiscountPin] = useState('');
 
-  // NCF Fiscal Types
-  const fiscalTypes = [
+  // NCF Fiscal Types — changes based on e-CF mode
+  const fiscalTypes = ecfEnabled ? [
+    { code: 'E32', name: 'Consumidor Final', short: 'CF' },
+    { code: 'E31', name: 'Crédito Fiscal', short: 'CF' },
+    { code: 'E34', name: 'Nota de Crédito', short: 'NC' },
+    { code: 'E33', name: 'Nota de Débito', short: 'ND' }
+  ] : [
     { code: 'B02', name: 'Consumidor Final', short: 'CF' },
     { code: 'B01', name: 'Crédito Fiscal', short: 'CF' },
     { code: 'B14', name: 'Gubernamental', short: 'GOB' },
@@ -209,7 +214,10 @@ export default function PaymentScreen() {
   // Check if e-CF is enabled
   useEffect(() => {
     fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } })
-      .then(r => r.json()).then(d => setEcfEnabled(!!d.ecf_enabled)).catch(() => {});
+      .then(r => r.json()).then(d => {
+        setEcfEnabled(!!d.ecf_enabled);
+        setSelectedFiscalType(d.ecf_enabled ? 'E32' : 'B02');
+      }).catch(() => { setSelectedFiscalType('B02'); });
   }, [API_BASE]);
 
   const isTablet = device?.isTablet;
@@ -790,9 +798,9 @@ export default function PaymentScreen() {
       // El cambio siempre se da en RD$ (pesos dominicanos)
       // Si se pagó con moneda extranjera, el cambio es: (total recibido en DOP) - (total a pagar)
       
-      // Generate NCF based on sale type
+      // Generate NCF based on sale type (skip if e-CF enabled — Alanube handles it)
       let generatedNcf = null;
-      if (selectedServiceType?.id) {
+      if (selectedServiceType?.id && !ecfEnabled) {
         try {
           const ncfRes = await fetch(`${API_BASE}/api/ncf/generate-for-sale?sale_type_id=${selectedServiceType.id}&bill_total=${billTotal}`, {
             method: 'POST',
@@ -852,7 +860,8 @@ export default function PaymentScreen() {
       
       const pts = res.data?.points_earned;
       let msg = '✓ Pago procesado';
-      if (generatedNcf?.ncf) msg += ` | NCF: ${generatedNcf.ncf}`;
+      if (ecfEnabled) msg += ' | e-CF pendiente';
+      else if (generatedNcf?.ncf) msg += ` | NCF: ${generatedNcf.ncf}`;
       if (change > 0) msg += ` | Cambio: ${formatMoney(change)}`;
       if (cardTip > 0) msg += ` | Propina: ${formatMoney(cardTip)}`;
       if (pts > 0) msg += ` | +${pts} pts fidelidad`;
@@ -1820,8 +1829,8 @@ export default function PaymentScreen() {
                   <button
                     key={ft.code}
                     onClick={() => {
-                      // Si es B01, B14 o B15, abrir el drawer de datos fiscales
-                      if (['B01', 'B14', 'B15'].includes(ft.code)) {
+                      // Si requiere datos fiscales (receptor RNC/nombre)
+                      if (['B01', 'B14', 'B15', 'E31'].includes(ft.code)) {
                         setPendingFiscalType(ft.code);
                         setFiscalDrawerOpen(true);
                       } else {
@@ -1847,7 +1856,7 @@ export default function PaymentScreen() {
               </div>
               
               {/* Mostrar datos fiscales si fueron capturados */}
-              {fiscalData && ['B01', 'B14', 'B15'].includes(selectedFiscalType) && (
+              {fiscalData && ['B01', 'B14', 'B15', 'E31'].includes(selectedFiscalType) && (
                 <div className="mt-3 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -1884,7 +1893,13 @@ export default function PaymentScreen() {
               </h4>
               <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
                 {saleTypes
-                  .filter(st => st.default_ncf_type_id === selectedFiscalType)
+                  .filter(st => {
+                    const ncfId = st.default_ncf_type_id;
+                    // Map E-types to B-types for sale type matching
+                    const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E33': 'B14', 'E34': 'B14' };
+                    const matchType = ECF_TO_NCF[selectedFiscalType] || selectedFiscalType;
+                    return ncfId === selectedFiscalType || ncfId === matchType;
+                  })
                   .map(st => {
                   const isSelected = selectedServiceType?.id === st.id;
                   // Check if PROPINA tax is exempted for this sale type
@@ -1930,7 +1945,12 @@ export default function PaymentScreen() {
                     </button>
                   );
                 })}
-                {saleTypes.filter(st => st.default_ncf_type_id === selectedFiscalType).length === 0 && (
+                {saleTypes.filter(st => {
+                  const ncfId = st.default_ncf_type_id;
+                  const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E33': 'B14', 'E34': 'B14' };
+                  const matchType = ECF_TO_NCF[selectedFiscalType] || selectedFiscalType;
+                  return ncfId === selectedFiscalType || ncfId === matchType;
+                }).length === 0 && (
                   <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
                     <p className="text-white/40 text-sm">No hay tipos de venta configurados para {selectedFiscalType}</p>
                     <p className="text-xs text-white/30 mt-1">Configura en Settings → Ventas → Tipos de Venta</p>
