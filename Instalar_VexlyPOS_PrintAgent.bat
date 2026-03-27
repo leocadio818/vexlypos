@@ -48,7 +48,7 @@ echo.
 
 :: Instalar dependencias
 echo [3/5] Instalando dependencias...
-python -m pip install requests --quiet --disable-pip-version-check
+python -m pip install requests qrcode Pillow --quiet --disable-pip-version-check
 echo       [OK] requests instalado
 echo.
 
