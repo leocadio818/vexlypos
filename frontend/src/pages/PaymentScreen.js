@@ -161,6 +161,13 @@ export default function PaymentScreen() {
   const [newCustomerForm, setNewCustomerForm] = useState({ name: '', phone: '', email: '' });
   const [emailSending, setEmailSending] = useState(false); // { email, success, error }
   const [ecfModal, setEcfModal] = useState(null);
+  const [ecfEnabled, setEcfEnabled] = useState(false);
+  
+  // Check if e-CF is enabled
+  useEffect(() => {
+    fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } })
+      .then(r => r.json()).then(d => setEcfEnabled(!!d.ecf_enabled)).catch(() => {});
+  }, [API_BASE]);
   const [paidBill, setPaidBill] = useState(null);
   
   // NCF Alert Modal state
@@ -906,20 +913,42 @@ export default function PaymentScreen() {
         }
         // Auto-send email if enabled and customer has email
         const custEmail = fiscalData?.email || selectedCustomer?.email;
-        if (custEmail) {
+        let sysConfigData = {};
+        try {
+          const sysConfig = await fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
+          sysConfigData = await sysConfig.json();
+        } catch {}
+        
+        if (custEmail && sysConfigData.auto_email_invoice) {
           try {
-            const sysConfig = await fetch(`${API_BASE}/api/system/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
-            const cfg = await sysConfig.json();
-            if (cfg.auto_email_invoice) {
-              const emailResp = await fetch(`${API_BASE}/api/email/send-invoice/${res.data.id}`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-              });
-              const emailData = await emailResp.json();
-              if (emailData.ok) {
-                setPrintDialogOpen(false);
-                setEmailSentModal({ email: custEmail, success: true });
-              }
+            const emailResp = await fetch(`${API_BASE}/api/email/send-invoice/${res.data.id}`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+            });
+            const emailData = await emailResp.json();
+            if (emailData.ok) {
+              setPrintDialogOpen(false);
+              setEmailSentModal({ email: custEmail, success: true });
+            }
+          } catch {}
+        }
+        
+        // Auto e-CF if enabled
+        if (sysConfigData.ecf_enabled) {
+          try {
+            const ecfResp = await fetch(`${API_BASE}/api/ecf/send/${res.data.id}`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+            });
+            const ecfData = await ecfResp.json();
+            if (ecfData.ok) {
+              // Re-print ticket with e-CF data
+              try {
+                await fetch(`${API_BASE}/api/print/receipt/${res.data.id}/send`, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+                });
+              } catch {}
             }
           } catch {}
         }
@@ -1977,6 +2006,7 @@ export default function PaymentScreen() {
                 <Mail size={16} />
                 EMAIL
               </button>
+              {!ecfEnabled && (
               <button
                 onClick={async () => {
                   if (!paidBill?.id) return;
@@ -2003,6 +2033,7 @@ export default function PaymentScreen() {
                 <FileText size={16} />
                 e-CF
               </button>
+              )}
               <button
                 onClick={handlePrintTicket}
                 className="h-14 rounded-xl bg-white/5 border border-white/10 text-white/70 font-oswald font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-95"

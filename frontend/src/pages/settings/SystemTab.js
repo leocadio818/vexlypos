@@ -193,6 +193,23 @@ export default function SystemTab() {
           </div>
         </div>
 
+        {/* Modo e-CF */}
+        <div className="bg-card border border-border rounded-xl p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">Facturación Electrónica (e-CF)</h3>
+              <p className="text-xs text-muted-foreground mt-1">Si está activado, las facturas se envían automáticamente a la DGII via Alanube al cobrar. El ticket impreso incluirá e-NCF y código de verificación.</p>
+            </div>
+            <button
+              onClick={() => setSystemConfig(p => ({ ...p, ecf_enabled: !p.ecf_enabled }))}
+              className={`w-12 h-6 rounded-full transition-all relative shrink-0 ml-3 ${systemConfig.ecf_enabled ? 'bg-emerald-500' : 'bg-muted'}`}
+              data-testid="toggle-ecf"
+            >
+              <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${systemConfig.ecf_enabled ? 'left-6' : 'left-0.5'}`} />
+            </button>
+          </div>
+        </div>
+
         {/* Timezone - IANA Selector */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
