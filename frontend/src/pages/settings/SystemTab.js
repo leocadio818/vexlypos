@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { useAuth } from '../../context/AuthContext';
-import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe, Clock } from 'lucide-react';
+import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe, Clock, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -34,6 +34,7 @@ export default function SystemTab() {
   const { user: currentUser } = useAuth();
   const [showTicketPreview, setShowTicketPreview] = useState(false);
   const [resetDialog, setResetDialog] = useState(false);
+  const [cleanupSelections, setCleanupSelections] = useState({});
   const [resetConfirmText, setResetConfirmText] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [keepUsers, setKeepUsers] = useState([]);
@@ -446,6 +447,67 @@ export default function SystemTab() {
       {/* System Reset - Only for System Admin */}
       {isSystemAdmin && (
         <div className="mt-8 pt-6 border-t border-red-500/30">
+          {/* Selective Cleanup Panel */}
+          <div className="bg-card border border-border rounded-xl p-6 mb-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <Trash2 size={20} className="text-amber-500" />
+              </div>
+              <div>
+                <h2 className="font-oswald text-base font-bold">Limpieza Selectiva</h2>
+                <p className="text-xs text-muted-foreground">Elige qué datos quieres eliminar. Usuarios, productos y configuración NO se borran.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+              {[
+                { key: 'bills', label: 'Ventas / Facturas', desc: 'bills, payments' },
+                { key: 'orders', label: 'Órdenes', desc: 'orders' },
+                { key: 'business_days', label: 'Jornadas', desc: 'business_days' },
+                { key: 'pos_sessions', label: 'Turnos / Sesiones POS', desc: 'pos_sessions (Supabase)' },
+                { key: 'attendance', label: 'Asistencia', desc: 'clock-in/out' },
+                { key: 'reservations', label: 'Reservaciones', desc: 'reservations' },
+                { key: 'print_queue', label: 'Cola de Impresión', desc: 'print_queue' },
+                { key: 'audit_logs', label: 'Auditoría / Logs', desc: 'audit_logs, ecf_logs' },
+                { key: 'ncf_reset', label: 'Secuencias NCF (resetear a 0)', desc: 'ncf_sequences' },
+                { key: 'stock_movements', label: 'Movimientos de Inventario', desc: 'stock_movements' },
+              ].map(item => (
+                <label key={item.key} className="flex items-center gap-3 p-3 rounded-lg bg-background border border-border hover:border-primary/30 cursor-pointer transition-all">
+                  <input type="checkbox" checked={!!cleanupSelections[item.key]}
+                    onChange={e => setCleanupSelections(p => ({ ...p, [item.key]: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-amber-500" />
+                  <div>
+                    <span className="text-sm font-medium">{item.label}</span>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+            {Object.values(cleanupSelections).some(v => v) && (
+              <Button variant="outline" className="font-oswald font-bold border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                onClick={async () => {
+                  const selected = Object.entries(cleanupSelections).filter(([k,v]) => v).map(([k]) => k);
+                  if (!selected.length) return;
+                  if (!window.confirm(`¿Seguro que quieres eliminar: ${selected.join(', ')}?`)) return;
+                  try {
+                    const resp = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/system/selective-cleanup`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+                      body: JSON.stringify({ collections: selected })
+                    });
+                    const data = await resp.json();
+                    if (data.ok) {
+                      toast.success(`Limpieza completada: ${data.deleted} registros eliminados`);
+                      setCleanupSelections({});
+                    } else { toast.error(data.detail || 'Error'); }
+                  } catch { toast.error('Error de conexión'); }
+                }}
+                data-testid="selective-cleanup-btn">
+                <Trash2 size={16} className="mr-2" /> LIMPIAR SELECCIONADOS ({Object.values(cleanupSelections).filter(v => v).length})
+              </Button>
+            )}
+          </div>
+
+          {/* Full System Reset */}
           <div className="bg-red-500/5 border-2 border-red-500/30 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">

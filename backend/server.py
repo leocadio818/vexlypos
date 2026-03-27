@@ -1705,6 +1705,68 @@ async def factory_reset(request: FactoryResetRequest):
         logging.error(f"Factory reset failed: {e}")
         raise HTTPException(status_code=500, detail=f"Error durante el reset: {str(e)}")
 
+
+# ─── SELECTIVE CLEANUP ───
+@api.post("/system/selective-cleanup")
+async def selective_cleanup(input: dict, user: dict = Depends(get_current_user)):
+    """Selective data cleanup — users, products, config are NEVER deleted"""
+    collections = input.get("collections", [])
+    if not collections:
+        raise HTTPException(status_code=400, detail="No hay colecciones seleccionadas")
+    
+    total_deleted = 0
+    
+    COLLECTION_MAP = {
+        "bills": ["bills"],
+        "orders": ["orders"],
+        "business_days": ["business_days"],
+        "attendance": ["attendance", "time_logs"],
+        "reservations": ["reservations"],
+        "print_queue": ["print_queue"],
+        "audit_logs": ["system_audit_logs", "ecf_logs", "audit_logs", "void_audit_logs"],
+        "stock_movements": ["stock_movements"],
+    }
+    
+    for key in collections:
+        if key in COLLECTION_MAP:
+            for col_name in COLLECTION_MAP[key]:
+                try:
+                    result = await db[col_name].delete_many({})
+                    total_deleted += result.deleted_count
+                except:
+                    pass
+        
+        elif key == "pos_sessions":
+            # Clear Supabase pos_sessions
+            try:
+                from supabase import create_client as sc
+                sb = sc(os.environ.get("SUPABASE_URL",""), os.environ.get("SUPABASE_ANON_KEY",""))
+                sb.table("pos_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+                total_deleted += 1
+            except:
+                pass
+        
+        elif key == "ncf_reset":
+            # Reset NCF sequences to 0
+            try:
+                from supabase import create_client as sc
+                sb = sc(os.environ.get("SUPABASE_URL",""), os.environ.get("SUPABASE_ANON_KEY",""))
+                seqs = sb.table("ncf_sequences").select("id").execute()
+                for seq in seqs.data:
+                    sb.table("ncf_sequences").update({"current_number": 0}).eq("id", seq["id"]).execute()
+                # Also reset MongoDB ecf_sequences
+                await db.ecf_sequences.delete_many({})
+                total_deleted += len(seqs.data)
+            except:
+                pass
+    
+    # Reset tables to free if orders were deleted
+    if "orders" in collections:
+        await db.tables.update_many({}, {"$set": {"status": "free", "active_order_id": None}})
+    
+    return {"ok": True, "deleted": total_deleted, "collections": collections}
+
+
 # ─── SCHEDULER ───
 async def scheduled_stock_alert_job():
     logging.info("Running scheduled stock alert check...")
