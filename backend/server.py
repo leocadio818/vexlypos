@@ -2468,7 +2468,9 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     # NCF Section — show e-NCF if available, otherwise local NCF
     ecf_encf = bill.get('ecf_encf', '')
     if ecf_encf:
-        commands.append({"type": "text", "text": "COMPROBANTE FISCAL ELECTRONICO", "align": "center", "bold": True})
+        ECF_LABELS = {'E31': 'Credito Fiscal Electronico', 'E32': 'Factura de Consumo Electronico', 'E33': 'Nota de Debito Electronica', 'E34': 'Nota de Credito Electronica'}
+        ecf_label = ECF_LABELS.get(ecf_encf[:3], 'Comprobante Fiscal Electronico')
+        commands.append({"type": "text", "text": ecf_label, "align": "center", "bold": True})
         commands.append({"type": "text", "text": ecf_encf, "align": "center", "bold": True})
     else:
         commands.append({"type": "text", "text": "COMPROBANTE FISCAL", "align": "center", "bold": True})
