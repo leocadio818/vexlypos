@@ -847,6 +847,8 @@ export default function PaymentScreen() {
         razon_social: fiscalData?.razonSocial || selectedCustomer?.name || null,
         customer_email: fiscalData?.email || selectedCustomer?.email || null,
         send_email: fiscalData?.sendEmail || false,
+        // e-CF type (E32, E31, etc.)
+        ecf_type: ecfEnabled ? selectedFiscalType : null,
         // Discount applied
         discount_applied: appliedDiscount ? {
           id: appliedDiscount.discount_id,

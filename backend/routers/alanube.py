@@ -75,10 +75,14 @@ def map_payment_type(method_name: str) -> int:
 def build_alanube_payload(bill: dict, system_config: dict, encf: str) -> dict:
     """Convert a VexlyPOS bill to Alanube e-CF JSON"""
     
-    # Determine invoice type from NCF prefix
-    ncf = bill.get("ncf", "")
-    prefix = ncf[:3] if isinstance(ncf, str) and len(ncf) >= 3 else "B02"
-    invoice_type = INVOICE_TYPE_MAP.get(prefix, 32)
+    # Determine invoice type — from ecf_type field or NCF prefix
+    ecf_type = bill.get("ecf_type", "")
+    if ecf_type:
+        invoice_type = INVOICE_TYPE_MAP.get(ecf_type, 32)
+    else:
+        ncf = bill.get("ncf", "")
+        prefix = ncf[:3] if isinstance(ncf, str) and len(ncf) >= 3 else "B02"
+        invoice_type = INVOICE_TYPE_MAP.get(prefix, 32)
     
     # Stamp date
     now = datetime.now(timezone.utc)
@@ -354,9 +358,14 @@ async def send_ecf(bill_id: str):
     config = await db.system_config.find_one({}, {"_id": 0}) or {}
     
     # Generate e-NCF number
-    ncf = bill.get("ncf", "")
-    prefix = ncf[:3] if isinstance(ncf, str) and len(ncf) >= 3 else "B02"
-    ecf_prefix = {"B01": "E31", "B02": "E32", "B14": "E34", "B15": "E31"}.get(prefix, "E32")
+    # Generate e-NCF prefix from ecf_type or NCF
+    ecf_type = bill.get("ecf_type", "")
+    if ecf_type and ecf_type.startswith("E"):
+        ecf_prefix = ecf_type
+    else:
+        ncf = bill.get("ncf", "")
+        prefix = ncf[:3] if isinstance(ncf, str) and len(ncf) >= 3 else "B02"
+        ecf_prefix = {"B01": "E31", "B02": "E32", "B14": "E34", "B15": "E31"}.get(prefix, "E32")
     
     # Generate unique e-NCF number using random to avoid sandbox collisions
     import random
