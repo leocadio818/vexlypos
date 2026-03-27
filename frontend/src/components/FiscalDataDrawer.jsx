@@ -189,9 +189,39 @@ const FiscalDataDrawer = ({
     }
   }, [fiscalId]);
   
-  // Auto-search DGII when RNC is valid (debounced)
+  // Auto-search local customers when validation is valid
   useEffect(() => {
-    if (validation.valid && validation.type === 'RNC' && !customerFound && !dgiiData) {
+    if (validation.valid && validation.cleaned.length >= 9 && !customerFound && !searching) {
+      const timer = setTimeout(async () => {
+        setSearching(true);
+        try {
+          const res = await fetch(
+            `${apiBase}/api/customers?rnc=${validation.cleaned}`,
+            { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }
+          );
+          const customers = await res.json();
+          const found = customers.find(c => c.rnc?.replace(/\D/g, '') === validation.cleaned);
+          
+          if (found) {
+            setCustomerFound(found);
+            setRazonSocial(found.name || '');
+            setEmail(found.email || '');
+            setIsNewCustomer(false);
+            setDgiiData(null);
+          } else {
+            setCustomerFound(null);
+            setIsNewCustomer(true);
+          }
+        } catch {}
+        setSearching(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [validation.valid, validation.cleaned, apiBase]);
+  
+  // Auto-search DGII when RNC is valid and no local customer found
+  useEffect(() => {
+    if (validation.valid && validation.type === 'RNC' && isNewCustomer && !dgiiData) {
       const timer = setTimeout(async () => {
         setDgiiSearching(true);
         try {
