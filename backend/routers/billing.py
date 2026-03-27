@@ -307,6 +307,9 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
     
     if is_training:
         ncf = "ENTRENAMIENTO"
+    elif input.ecf_type:
+        # e-CF mode — don't consume local NCF, Alanube handles it
+        ncf = f"PENDING-{input.ecf_type}"
     else:
         ncf_doc = await db.ncf_sequences.find_one_and_update(
             {"prefix": "B01"},

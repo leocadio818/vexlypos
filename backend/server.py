@@ -2465,10 +2465,15 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     commands.append({"type": "text", "text": f"Tel: {biz_phone}", "align": "center"})
     commands.append({"type": "divider"})
     
-    # NCF Section (tamaño reducido)
-    commands.append({"type": "text", "text": "COMPROBANTE FISCAL", "align": "center", "bold": True})
-    commands.append({"type": "text", "text": bill.get('ncf', ''), "align": "center", "bold": True})
-    commands.append({"type": "text", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}", "align": "center"})
+    # NCF Section — show e-NCF if available, otherwise local NCF
+    ecf_encf = bill.get('ecf_encf', '')
+    if ecf_encf:
+        commands.append({"type": "text", "text": "COMPROBANTE FISCAL ELECTRONICO", "align": "center", "bold": True})
+        commands.append({"type": "text", "text": ecf_encf, "align": "center", "bold": True})
+    else:
+        commands.append({"type": "text", "text": "COMPROBANTE FISCAL", "align": "center", "bold": True})
+        commands.append({"type": "text", "text": bill.get('ncf', ''), "align": "center", "bold": True})
+        commands.append({"type": "text", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}", "align": "center"})
     commands.append({"type": "divider"})
     
     # ─── DATOS FISCALES DEL CLIENTE (B01, B14, B15) ───
