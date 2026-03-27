@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Heart, Plus, Search, Gift, Star, Phone, Mail, ArrowLeft } from 'lucide-react';
+import { Heart, Plus, Search, Gift, Star, Phone, Mail, ArrowLeft, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
@@ -26,6 +26,7 @@ export default function Customers() {
   const [config, setConfig] = useState({ points_per_hundred: 10, point_value_rd: 1, min_redemption: 50 });
   const [addDialog, setAddDialog] = useState({ open: false, name: '', phone: '', email: '' });
   const [redeemDialog, setRedeemDialog] = useState({ open: false, customer: null, points: '' });
+  const [editDialog, setEditDialog] = useState({ open: false, customer: null, name: '', phone: '', email: '', rnc: '' });
   const [configDialog, setConfigDialog] = useState(false);
 
   // Check if current user has admin privileges
@@ -155,11 +156,17 @@ export default function Customers() {
                       <span>Consumo: {formatMoney(c.total_spent)}</span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setRedeemDialog({ open: true, customer: c, points: '' })}
-                    disabled={c.points < config.min_redemption}
-                    className="text-xs border-primary/50 text-primary" data-testid={`redeem-${c.id}`}>
-                    <Gift size={14} className="mr-1" /> Canjear
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setEditDialog({ open: true, customer: c, name: c.name, phone: c.phone || '', email: c.email || '', rnc: c.rnc || '' })}
+                      className="text-xs text-muted-foreground hover:text-primary" data-testid={`edit-${c.id}`}>
+                      <Pencil size={14} />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setRedeemDialog({ open: true, customer: c, points: '' })}
+                      disabled={c.points < config.min_redemption}
+                      className="text-xs border-primary/50 text-primary" data-testid={`redeem-${c.id}`}>
+                      <Gift size={14} className="mr-1" /> Canjear
+                    </Button>
+                  </div>
                 </div>
               ))}
               {customers.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No hay clientes registrados</p>}
@@ -203,6 +210,49 @@ export default function Customers() {
             )}
             <Button onClick={handleRedeem} className="w-full h-11 bg-green-600 text-white font-oswald font-bold active:scale-95" data-testid="confirm-redeem">
               <Gift size={16} className="mr-2" /> CANJEAR
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={editDialog.open} onOpenChange={(v) => !v && setEditDialog({ open: false, customer: null, name: '', phone: '', email: '', rnc: '' })}>
+        <DialogContent className="max-w-sm bg-card border-border" data-testid="edit-customer-dialog">
+          <DialogHeader><DialogTitle className="font-oswald">Editar Cliente</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Nombre / Razón Social</label>
+              <input value={editDialog.name} onChange={e => setEditDialog(p => ({ ...p, name: e.target.value }))}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mt-1" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">RNC / Cédula</label>
+              <input value={editDialog.rnc} onChange={e => setEditDialog(p => ({ ...p, rnc: e.target.value }))}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mt-1 font-mono" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Teléfono</label>
+              <input value={editDialog.phone} onChange={e => setEditDialog(p => ({ ...p, phone: e.target.value }))}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mt-1" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Email</label>
+              <input value={editDialog.email} onChange={e => setEditDialog(p => ({ ...p, email: e.target.value }))}
+                type="email" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mt-1" />
+            </div>
+            <Button className="w-full" disabled={!editDialog.name} onClick={async () => {
+              try {
+                await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/customers/${editDialog.customer?.id}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+                  body: JSON.stringify({ name: editDialog.name, phone: editDialog.phone, email: editDialog.email, rnc: editDialog.rnc })
+                });
+                setEditDialog({ open: false, customer: null, name: '', phone: '', email: '', rnc: '' });
+                fetchAll();
+                toast.success('Cliente actualizado');
+              } catch { toast.error('Error al actualizar'); }
+            }}>
+              Guardar Cambios
             </Button>
           </div>
         </DialogContent>
