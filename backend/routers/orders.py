@@ -1017,24 +1017,34 @@ async def send_to_kitchen(order_id: str, user: dict = Depends(get_current_user))
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
-    # Atomically claim pending items to prevent duplicate sends
-    pending_items = []
-    for item in order["items"]:
-        if item["status"] == "pending":
-            result = await db.orders.update_one(
-                {"id": order_id, "items": {"$elemMatch": {"id": item["id"], "status": "pending"}}},
-                {"$set": {
-                    "items.$.status": "sent",
-                    "items.$.sent_to_kitchen": True,
-                    "items.$.sent_at": now_iso(),
-                    "items.$.inventory_deducted": False
-                }}
-            )
-            if result.modified_count > 0:
-                pending_items.append(item)
+    # Mark pending items as sent and collect them for comanda
+    pending_items = [i for i in order["items"] if i["status"] == "pending"]
     
     if not pending_items:
         return await db.orders.find_one({"id": order_id}, {"_id": 0})
+    
+    # Update all pending items to sent in one operation
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            f"items.{idx}.status": "sent",
+            f"items.{idx}.sent_to_kitchen": True,
+            f"items.{idx}.sent_at": now_iso(),
+            f"items.{idx}.inventory_deducted": False,
+        } for idx, item in enumerate(order["items"]) if item["status"] == "pending"}
+    ) if False else None  # Placeholder - use loop below
+    
+    for idx, item in enumerate(order["items"]):
+        if item["status"] == "pending":
+            await db.orders.update_one(
+                {"id": order_id},
+                {"$set": {
+                    f"items.{idx}.status": "sent",
+                    f"items.{idx}.sent_to_kitchen": True,
+                    f"items.{idx}.sent_at": now_iso(),
+                    f"items.{idx}.inventory_deducted": False,
+                }}
+            )
     
     await db.orders.update_one({"id": order_id}, {"$set": {"status": "sent", "updated_at": now_iso()}})
     
