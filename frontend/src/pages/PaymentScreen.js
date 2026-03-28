@@ -1898,7 +1898,7 @@ export default function PaymentScreen() {
                   .filter(st => {
                     const ncfId = st.default_ncf_type_id;
                     // Map E-types to B-types for sale type matching
-                    const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E44': 'B15', 'E45': 'B14' };
+                    const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E33': 'B14', 'E34': 'B14', 'E44': 'B15', 'E45': 'B14' };
                     const matchType = ECF_TO_NCF[selectedFiscalType] || selectedFiscalType;
                     return ncfId === selectedFiscalType || ncfId === matchType;
                   })
@@ -1949,7 +1949,7 @@ export default function PaymentScreen() {
                 })}
                 {saleTypes.filter(st => {
                   const ncfId = st.default_ncf_type_id;
-                  const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E44': 'B15', 'E45': 'B14' };
+                  const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E33': 'B14', 'E34': 'B14', 'E44': 'B15', 'E45': 'B14' };
                   const matchType = ECF_TO_NCF[selectedFiscalType] || selectedFiscalType;
                   return ncfId === selectedFiscalType || ncfId === matchType;
                 }).length === 0 && (
