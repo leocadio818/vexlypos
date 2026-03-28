@@ -32,6 +32,7 @@ const PERMISSION_CATEGORIES = {
       modify_price: 'Modificar Precios',
       reprint_receipt: 'Reimprimir Recibo',
       reprint_precuenta: 'Reimprimir Pre-Cuenta',
+      view_ecf_dashboard: 'Ver Dashboard e-CF',
     }
   },
   mesas: {
