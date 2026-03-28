@@ -927,10 +927,12 @@ export default function PaymentScreen() {
               method: 'POST',
               headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
             });
+            // Small delay to ensure MongoDB has saved the e-CF data
+            await new Promise(r => setTimeout(r, 1000));
           } catch {}
         }
         
-        // STEP 2: Print receipt (now with e-CF data if enabled)
+        // STEP 2: Print receipt (now with e-CF data if enabled) — SINGLE PRINT ONLY
         try {
           await fetch(`${API_BASE}/api/print/receipt/${res.data.id}/send`, {
             method: 'POST',
@@ -2217,13 +2219,6 @@ export default function PaymentScreen() {
                   <p className="text-xs"><span className="text-muted-foreground">Código:</span> <strong>{ecfModal.data?.security_code}</strong></p>
                 </div>
                 <button onClick={async () => {
-                  // Print ticket with e-CF data
-                  try {
-                    await fetch(`${API_BASE}/api/print/receipt/${paidBill?.id}/send`, {
-                      method: 'POST',
-                      headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-                    });
-                  } catch {}
                   setEcfModal(null);
                   navigate('/tables');
                 }}
