@@ -9,7 +9,7 @@ const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')
 
 const STATUS_MAP = {
   FINISHED: { label: 'Aprobada', color: 'bg-green-500/20 text-green-500', icon: CheckCircle2 },
-  REGISTERED: { label: 'Registrada', color: 'bg-blue-500/20 text-blue-500', icon: Clock },
+  REGISTERED: { label: 'Pendiente', color: 'bg-blue-500/20 text-blue-500', icon: Clock },
   CONTINGENCIA: { label: 'Contingencia', color: 'bg-amber-500/20 text-amber-500', icon: AlertTriangle },
   REJECTED: { label: 'Rechazada', color: 'bg-red-500/20 text-red-500', icon: XCircle },
   ERROR: { label: 'Error', color: 'bg-red-500/20 text-red-500', icon: XCircle },
@@ -124,7 +124,7 @@ export default function EcfDashboard({ data }) {
         <button onClick={() => setFilter('REGISTERED')} className={`bg-blue-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'REGISTERED' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-blue-500/30'}`}>
           <Clock size={20} className="text-blue-500 mx-auto mb-1" />
           <p className="font-oswald text-2xl font-bold text-blue-500">{summary.registered || 0}</p>
-          <p className="text-xs text-muted-foreground">Registradas</p>
+          <p className="text-xs text-muted-foreground">Pendientes</p>
         </button>
         <button onClick={() => setFilter('CONTINGENCIA')} className={`bg-amber-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'CONTINGENCIA' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-amber-500/30'}`}>
           <AlertTriangle size={20} className="text-amber-500 mx-auto mb-1" />
