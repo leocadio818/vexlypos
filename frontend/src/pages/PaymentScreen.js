@@ -1840,7 +1840,9 @@ export default function PaymentScreen() {
                         setSelectedFiscalType(ft.code);
                         setFiscalData(null); // Limpiar datos fiscales previos
                         // Auto-select first service type for this NCF
-                        const firstMatch = saleTypes.find(st => st.default_ncf_type_id === ft.code);
+                        const ECF_MAP = { 'E31': 'B01', 'E32': 'B02', 'E33': 'B14', 'E34': 'B14', 'E44': 'B15', 'E45': 'B14' };
+                        const mapped = ECF_MAP[ft.code] || ft.code;
+                        const firstMatch = saleTypes.find(st => st.default_ncf_type_id === ft.code || st.default_ncf_type_id === mapped);
                         if (firstMatch) setSelectedServiceType(firstMatch);
                       }
                     }}
