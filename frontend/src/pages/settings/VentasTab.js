@@ -549,7 +549,7 @@ export default function VentasTab() {
               <select value={saleDialog.default_ncf_type_id} onChange={e => setSaleDialog({ ...saleDialog, default_ncf_type_id: e.target.value })}
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm">
                 {ncfTypes.map(n => (
-                  <option key={n.id} value={n.code}>{n.code} - {n.description}</option>
+                  <option key={n.id} value={n.id}>{n.id} - {n.description}</option>
                 ))}
               </select>
             </div>
