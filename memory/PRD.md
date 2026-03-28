@@ -33,13 +33,21 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 ### 🔒 Cierre de Día — force_close NEVER skips open orders, auto clock-out — LOCKED
 ### 🔒 Barcode Scanner System — keypress listener 100ms threshold — LOCKED
 
-### 🔒 Print Agent Multi-Impresora & Printing System (LOCKED - 2026-03-22)
+### 🔒 Print Agent Multi-Impresora & Printing System (LOCKED - 2026-03-28)
 - VexlyPOS_PrintAgent.py: format_commands + format_test + format_comanda + format_receipt + QR code
 - Modifiers: handles strings AND dicts
 - Terminal→Impresora routing via Supabase session lookup (create_client direct, NOT import)
 - Printer selector for waiters without POS session
-- alreadySentRef prevents duplicate comanda send
-- DO NOT modify printing system without explicit approval
+- **ANTI-DUPLICATE NUCLEAR (LOCKED)**:
+  - Backend send-kitchen: ATOMIC update per item (`items.$.status: "pending"` → "sent") — if already "sent", `modified_count=0` → skips → no duplicate job
+  - Backend print queue: ATOMIC claim (`find_one_and_update` status "pending"→"claimed") — only 1 agent processes each job
+  - Multiple callers (OrderScreen, Layout, AuthContext) can call sendToKitchen simultaneously — backend guarantees idempotency
+- DO NOT: Remove atomic claims from print queue endpoints
+- DO NOT: Remove atomic item status check from send-kitchen
+- DO NOT: Add new print calls without verifying they don't duplicate
+- DO NOT: Modify VexlyPOS_PrintAgent.py, format_comanda, format_commands, format_receipt, format_precheck, format_test
+- DO NOT: Change endpoints: print/pre-check/send, print/receipt/send, print/send-comanda, print/queue, print/config, print-queue/pending
+- DO NOT: Alter terminal→print_channel resolution in server.py
 
 ### 🔒 e-CF Alanube Integration (LOCKED - 2026-03-28)
 - **Modules**: Mapeo (bill→JSON), Timbrado (save response), Logs (every attempt)
