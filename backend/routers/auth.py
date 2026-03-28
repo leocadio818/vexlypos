@@ -101,6 +101,8 @@ ALL_PERMISSIONS = {
     "cash_movement_income": "Mov. Caja: Ingreso", "cash_movement_withdrawal": "Mov. Caja: Retiro",
     "reprint_precuenta": "Reimprimir Pre-Cuenta",
     "view_ecf_dashboard": "Ver Dashboard e-CF",
+    "edit_exchange_rate": "Editar Tasa de Cambio",
+    "manage_sale_config": "Gestionar Ventas y Formas de Pago",
     "release_reserved_table": "Desbloquear Mesa Reservada",
     "transfer_tables": "Transferir Mesas entre Usuarios",
     "create_b04": "Crear Nota de Credito (B04)",

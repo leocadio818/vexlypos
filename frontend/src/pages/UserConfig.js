@@ -33,6 +33,8 @@ const PERMISSION_CATEGORIES = {
       reprint_receipt: 'Reimprimir Recibo',
       reprint_precuenta: 'Reimprimir Pre-Cuenta',
       view_ecf_dashboard: 'Ver Dashboard e-CF',
+      edit_exchange_rate: 'Editar Tasa de Cambio',
+      manage_sale_config: 'Gestionar Ventas y Formas de Pago',
     }
   },
   mesas: {

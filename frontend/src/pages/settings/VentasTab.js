@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSettings } from './SettingsContext';
+import { useAuth } from '@/context/AuthContext';
 import { reasonsAPI } from '@/lib/api';
 import { CreditCard, AlertTriangle, ShoppingBag, Plus, Trash2, Pencil, Banknote, X, Check, Smartphone, Building2, DollarSign, FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,6 +31,9 @@ const SubTabButton = ({ active, onClick, icon: Icon, label }) => (
 
 export default function VentasTab() {
   const { payMethods, saleTypes, reasons, ncfTypes, taxConfig, systemConfig, setSystemConfig, fetchAll } = useSettings();
+  const { user, hasPermission, isAdmin } = useAuth();
+  const canManageSaleConfig = isAdmin || hasPermission('manage_sale_config');
+  const canEditExchangeRate = isAdmin || hasPermission('edit_exchange_rate') || canManageSaleConfig;
   const [ventasSubTab, setVentasSubTab] = useState('pagos');
   const [quickAmountInput, setQuickAmountInput] = useState('');
   
@@ -157,6 +161,7 @@ export default function VentasTab() {
         <>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-oswald text-base font-bold">Formas de Pago</h2>
+            {canManageSaleConfig && (
             <Button onClick={() => setPayDialog({ 
               open: true, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
               bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null 
@@ -164,6 +169,7 @@ export default function VentasTab() {
               className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-payment-btn">
               <Plus size={14} className="mr-1" /> Agregar
             </Button>
+            )}
           </div>
           
           {/* Payment Methods Grid */}
@@ -197,6 +203,7 @@ export default function VentasTab() {
                 </div>
                 
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  {(canManageSaleConfig || (canEditExchangeRate && m.currency !== 'DOP')) && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -217,6 +224,8 @@ export default function VentasTab() {
                   >
                     <Pencil size={16} />
                   </Button>
+                  )}
+                  {canManageSaleConfig && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -225,6 +234,7 @@ export default function VentasTab() {
                   >
                     <Trash2 size={16} />
                   </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -383,10 +393,12 @@ export default function VentasTab() {
         <>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-oswald text-base font-bold">Tipos de Venta</h2>
+            {canManageSaleConfig && (
             <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null })} size="sm"
               className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-saletype-btn">
               <Plus size={14} className="mr-1" /> Agregar
             </Button>
+            )}
           </div>
           <div className="space-y-2">
             {saleTypes.map(st => {
@@ -409,6 +421,7 @@ export default function VentasTab() {
                       </Badge>
                     )}
                   </div>
+                  {canManageSaleConfig && (
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
                       onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_exemptions: st.tax_exemptions || [], default_ncf_type_id: st.default_ncf_type_id || 'B02', editId: st.id })}>
@@ -417,6 +430,7 @@ export default function VentasTab() {
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
                       onClick={() => handleDeleteSaleType(st.id)}><Trash2 size={14} /></Button>
                   </div>
+                  )}
                 </div>
               );
             })}
