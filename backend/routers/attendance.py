@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
 import uuid
+import os
 
 router = APIRouter(tags=["attendance"])
 
@@ -28,7 +29,7 @@ class PinInput(BaseModel):
 
 @router.post("/attendance/check-status")
 async def check_attendance_status(input: PinInput):
-    """Check if user has active clock-in today (without modifying anything)"""
+    """Check if user has active clock-in today OR active POS session (without modifying anything)"""
     from routers.auth import hash_pin
     pin_hash = hash_pin(input.pin)
     user = await db.users.find_one({"pin_hash": pin_hash, "active": True}, {"_id": 0})
@@ -39,7 +40,47 @@ async def check_attendance_status(input: PinInput):
         {"user_id": user["id"], "date": today, "status": "ACTIVE"},
         {"_id": 0}
     )
-    return {"clocked_in": existing is not None, "user_name": user["name"]}
+    if existing:
+        return {"clocked_in": True, "user_name": user["name"]}
+    
+    # Also check if user has an active POS session (open cash register)
+    try:
+        from supabase import create_client as sc
+        sb_url = os.environ.get("SUPABASE_URL", "")
+        sb_key = os.environ.get("SUPABASE_ANON_KEY", "")
+        if sb_url and sb_key:
+            sb = sc(sb_url, sb_key)
+            session = sb.table("pos_sessions").select("id").eq("opened_by", user["id"]).eq("status", "open").limit(1).execute()
+            if session.data and len(session.data) > 0:
+                # Has open POS session — auto clock-in and let them through
+                await auto_clock_in_for_active_session(user, today)
+                return {"clocked_in": True, "user_name": user["name"]}
+    except:
+        pass
+    
+    return {"clocked_in": False, "user_name": user["name"]}
+
+
+async def auto_clock_in_for_active_session(user, today):
+    """Auto create attendance record for user with active POS session"""
+    existing = await db.attendance.find_one({"user_id": user["id"], "date": today, "status": "ACTIVE"})
+    if existing:
+        return
+    import uuid
+    local_now = now_local()
+    await db.attendance.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "user_name": user["name"],
+        "role": user.get("role", ""),
+        "date": today,
+        "clock_in": local_now.isoformat(),
+        "clock_in_display": local_now.strftime("%I:%M %p"),
+        "clock_out": None,
+        "clock_out_display": None,
+        "hours_worked": None,
+        "status": "ACTIVE",
+    })
 
 
 @router.post("/attendance/clock-in")
