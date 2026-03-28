@@ -1821,12 +1821,23 @@ async def get_scheduler_status():
 # ─── PRINT QUEUE (Cola de Impresión para Agente USB) ───
 @api.get("/print-queue/pending")
 async def get_pending_print_jobs():
-    """Obtiene trabajos de impresión pendientes para el agente USB"""
+    """Obtiene trabajos de impresión pendientes — atomically claims to prevent duplicates"""
     jobs = await db.print_queue.find(
         {"status": "pending"},
         {"_id": 0}
     ).sort("created_at", 1).to_list(10)
-    return jobs
+    
+    claimed = []
+    for job in jobs:
+        result = await db.print_queue.find_one_and_update(
+            {"id": job["id"], "status": "pending"},
+            {"$set": {"status": "claimed", "claimed_at": now_iso()}},
+        )
+        if result:
+            job["status"] = "claimed"
+            claimed.append(job)
+    
+    return claimed
 
 @api.post("/print-queue")
 async def add_print_job(input: dict):
@@ -2051,12 +2062,24 @@ async def get_print_config():
 
 @api.get("/print/queue")
 async def get_print_queue():
-    """Get pending print jobs for the local agent"""
+    """Get pending print jobs — atomically claims them to prevent duplicates"""
     jobs = await db.print_queue.find(
         {"status": "pending"},
         {"_id": 0}
     ).sort("created_at", 1).to_list(20)
-    return jobs
+    
+    # Atomically claim each job
+    claimed = []
+    for job in jobs:
+        result = await db.print_queue.find_one_and_update(
+            {"id": job["id"], "status": "pending"},
+            {"$set": {"status": "claimed", "claimed_at": now_iso()}},
+        )
+        if result:
+            job["status"] = "claimed"
+            claimed.append(job)
+    
+    return claimed
 
 @api.post("/print/queue")
 async def add_to_print_queue(input: dict):
