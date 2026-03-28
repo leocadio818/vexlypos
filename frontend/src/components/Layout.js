@@ -35,12 +35,30 @@ export default function Layout() {
   const [ecfDashboardData, setEcfDashboardData] = useState(null);
   const [ecfDateFrom, setEcfDateFrom] = useState('');
   const [ecfDateTo, setEcfDateTo] = useState('');
+  const [ecfPeriod, setEcfPeriod] = useState('jornada');
   
-  const fetchEcfDashboard = async (from, to) => {
+  const getEcfDates = (period) => {
+    const today = new Date();
+    const fmt = d => d.toISOString().split('T')[0];
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 7);
+    const monthAgo = new Date(today); monthAgo.setDate(today.getDate() - 30);
+    switch (period) {
+      case 'jornada': return { from: fmt(today), to: fmt(today) };
+      case 'ayer': return { from: fmt(yesterday), to: fmt(yesterday) };
+      case 'semana': return { from: fmt(weekAgo), to: fmt(today) };
+      case 'mes': return { from: fmt(monthAgo), to: fmt(today) };
+      case 'custom': return { from: ecfDateFrom, to: ecfDateTo };
+      default: return { from: '', to: '' };
+    }
+  };
+  
+  const fetchEcfDashboard = async (period) => {
+    const dates = period === 'custom' ? { from: ecfDateFrom, to: ecfDateTo } : getEcfDates(period || ecfPeriod);
     try {
       const params = {};
-      if (from) params.date_from = from;
-      if (to) params.date_to = to;
+      if (dates.from) params.date_from = dates.from;
+      if (dates.to) params.date_to = dates.to;
       const r = await api.get('/ecf/dashboard', { params });
       setEcfDashboardData(r.data);
     } catch {}
@@ -678,31 +696,47 @@ export default function Layout() {
       {ecfDashboardOpen && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEcfDashboardOpen(false)}>
           <div className="bg-card border border-border rounded-2xl w-[95vw] max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between shrink-0 flex-wrap gap-3">
-              <h2 className="font-oswald text-lg font-bold flex items-center gap-2">
-                <FileText size={20} className="text-emerald-500" /> e-CF Dashboard
-              </h2>
-              <div className="flex items-center gap-2 flex-wrap">
-                <input type="date" value={ecfDateFrom} onChange={e => setEcfDateFrom(e.target.value)}
-                  className="bg-background border border-border rounded-lg px-2 py-1.5 text-xs" />
-                <span className="text-xs text-muted-foreground">—</span>
-                <input type="date" value={ecfDateTo} onChange={e => setEcfDateTo(e.target.value)}
-                  className="bg-background border border-border rounded-lg px-2 py-1.5 text-xs" />
-                <button onClick={() => fetchEcfDashboard(ecfDateFrom, ecfDateTo)}
-                  className="text-xs text-primary font-bold px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-all">
-                  Filtrar
-                </button>
-                <button onClick={() => { setEcfDateFrom(''); setEcfDateTo(''); fetchEcfDashboard('', ''); }}
-                  className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-lg hover:bg-muted transition-all">
-                  Limpiar
-                </button>
+            <div className="px-5 py-4 border-b border-border shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-oswald text-lg font-bold flex items-center gap-2">
+                  <FileText size={20} className="text-emerald-500" /> e-CF Dashboard
+                </h2>
                 <button onClick={() => setEcfDashboardOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-all">
                   <span className="text-muted-foreground text-lg">×</span>
                 </button>
               </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {[
+                  { id: 'jornada', label: 'Jornada' },
+                  { id: 'ayer', label: 'Ayer' },
+                  { id: 'semana', label: 'Semana' },
+                  { id: 'mes', label: 'Mes' },
+                  { id: 'custom', label: 'Personalizado' },
+                ].map(p => (
+                  <button key={p.id} onClick={async () => {
+                    setEcfPeriod(p.id);
+                    if (p.id !== 'custom') await fetchEcfDashboard(p.id);
+                  }} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${ecfPeriod === p.id ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}>
+                    {p.label}
+                  </button>
+                ))}
+                {ecfPeriod === 'custom' && (
+                  <>
+                    <input type="date" value={ecfDateFrom} onChange={e => setEcfDateFrom(e.target.value)}
+                      className="bg-background border border-border rounded-lg px-2 py-1.5 text-xs" />
+                    <span className="text-xs text-muted-foreground">—</span>
+                    <input type="date" value={ecfDateTo} onChange={e => setEcfDateTo(e.target.value)}
+                      className="bg-background border border-border rounded-lg px-2 py-1.5 text-xs" />
+                    <button onClick={() => fetchEcfDashboard('custom')}
+                      className="text-xs text-emerald-500 font-bold px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                      Filtrar
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-5">
-              <EcfDashboardInline data={ecfDashboardData} onRefresh={() => fetchEcfDashboard(ecfDateFrom, ecfDateTo)} />
+              <EcfDashboardInline data={ecfDashboardData} onRefresh={() => fetchEcfDashboard(ecfPeriod)} />
             </div>
           </div>
         </div>
@@ -849,7 +883,8 @@ export default function Layout() {
               {(isAdmin || hasPermission('view_ecf_dashboard')) && (
                 <button onClick={async () => {
                   setOptionsMenuOpen(false);
-                  await fetchEcfDashboard(ecfDateFrom, ecfDateTo);
+                  setEcfPeriod('jornada');
+                  await fetchEcfDashboard('jornada');
                   setEcfDashboardOpen(true);
                 }}
                   className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95"
