@@ -33,6 +33,18 @@ export default function Layout() {
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
   const [ecfDashboardOpen, setEcfDashboardOpen] = useState(false);
   const [ecfDashboardData, setEcfDashboardData] = useState(null);
+  const [ecfDateFrom, setEcfDateFrom] = useState('');
+  const [ecfDateTo, setEcfDateTo] = useState('');
+  
+  const fetchEcfDashboard = async (from, to) => {
+    try {
+      const params = {};
+      if (from) params.date_from = from;
+      if (to) params.date_to = to;
+      const r = await api.get('/ecf/dashboard', { params });
+      setEcfDashboardData(r.data);
+    } catch {}
+  };
   const [clockOutDialogOpen, setClockOutDialogOpen] = useState(false);
   const [clockOutLoading, setClockOutLoading] = useState(false);
   const [changePinOpen, setChangePinOpen] = useState(false);
@@ -666,18 +678,23 @@ export default function Layout() {
       {ecfDashboardOpen && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEcfDashboardOpen(false)}>
           <div className="bg-card border border-border rounded-2xl w-[95vw] max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between shrink-0">
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between shrink-0 flex-wrap gap-3">
               <h2 className="font-oswald text-lg font-bold flex items-center gap-2">
                 <FileText size={20} className="text-emerald-500" /> e-CF Dashboard
               </h2>
-              <div className="flex items-center gap-2">
-                <button onClick={async () => {
-                  try {
-                    const r = await api.get('/ecf/dashboard');
-                    setEcfDashboardData(r.data);
-                  } catch {}
-                }} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-all">
-                  Actualizar
+              <div className="flex items-center gap-2 flex-wrap">
+                <input type="date" value={ecfDateFrom} onChange={e => setEcfDateFrom(e.target.value)}
+                  className="bg-background border border-border rounded-lg px-2 py-1.5 text-xs" />
+                <span className="text-xs text-muted-foreground">—</span>
+                <input type="date" value={ecfDateTo} onChange={e => setEcfDateTo(e.target.value)}
+                  className="bg-background border border-border rounded-lg px-2 py-1.5 text-xs" />
+                <button onClick={() => fetchEcfDashboard(ecfDateFrom, ecfDateTo)}
+                  className="text-xs text-primary font-bold px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-all">
+                  Filtrar
+                </button>
+                <button onClick={() => { setEcfDateFrom(''); setEcfDateTo(''); fetchEcfDashboard('', ''); }}
+                  className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-lg hover:bg-muted transition-all">
+                  Limpiar
                 </button>
                 <button onClick={() => setEcfDashboardOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-all">
                   <span className="text-muted-foreground text-lg">×</span>
@@ -685,9 +702,7 @@ export default function Layout() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-5">
-              <EcfDashboardInline data={ecfDashboardData} onRefresh={async () => {
-                try { const r = await api.get('/ecf/dashboard'); setEcfDashboardData(r.data); } catch {}
-              }} />
+              <EcfDashboardInline data={ecfDashboardData} onRefresh={() => fetchEcfDashboard(ecfDateFrom, ecfDateTo)} />
             </div>
           </div>
         </div>
@@ -834,10 +849,7 @@ export default function Layout() {
               {(isAdmin || hasPermission('view_ecf_dashboard')) && (
                 <button onClick={async () => {
                   setOptionsMenuOpen(false);
-                  try {
-                    const r = await api.get('/ecf/dashboard');
-                    setEcfDashboardData(r.data);
-                  } catch {}
+                  await fetchEcfDashboard(ecfDateFrom, ecfDateTo);
                   setEcfDashboardOpen(true);
                 }}
                   className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95"
