@@ -2550,10 +2550,16 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     commands.append({"type": "text", "text": f"Tel: {biz_phone}", "align": "center"})
     commands.append({"type": "divider"})
     
-    # NCF Section — show e-NCF if available, otherwise local NCF
+    # NCF Section — show e-NCF if available, contingencia, or local NCF
     ecf_encf = bill.get('ecf_encf', '')
-    if ecf_encf:
-        ECF_LABELS = {'E31': 'Credito Fiscal Electronico', 'E32': 'Factura de Consumo Electronico', 'E33': 'Nota de Debito Electronica', 'E34': 'Nota de Credito Electronica'}
+    ecf_status = (bill.get('ecf_status') or '').upper()
+    ECF_LABELS = {'E31': 'Credito Fiscal Electronico', 'E32': 'Factura de Consumo Electronico', 'E33': 'Nota de Debito Electronica', 'E34': 'Nota de Credito Electronica', 'E44': 'Regimen Especial Electronico', 'E45': 'Gubernamental Electronico'}
+    if ecf_status == 'CONTINGENCIA':
+        ecf_label = ECF_LABELS.get((bill.get('ecf_type') or '')[:3], 'Comprobante Fiscal Electronico')
+        commands.append({"type": "text", "text": ecf_label, "align": "center", "bold": True})
+        commands.append({"type": "text", "text": "** MODO CONTINGENCIA **", "align": "center", "bold": True, "size": 2})
+        commands.append({"type": "text", "text": "Pendiente de validacion DGII", "align": "center"})
+    elif ecf_encf:
         ecf_label = ECF_LABELS.get(ecf_encf[:3], 'Comprobante Fiscal Electronico')
         commands.append({"type": "text", "text": ecf_label, "align": "center", "bold": True})
         commands.append({"type": "text", "text": ecf_encf, "align": "center", "bold": True})

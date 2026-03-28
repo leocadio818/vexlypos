@@ -923,13 +923,20 @@ export default function PaymentScreen() {
         // STEP 1: Auto e-CF FIRST (before printing, so ticket has e-CF data)
         if (sysConfigData.ecf_enabled) {
           try {
-            await fetch(`${API_BASE}/api/ecf/send/${res.data.id}`, {
+            const ecfResp = await fetch(`${API_BASE}/api/ecf/send/${res.data.id}`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
             });
+            const ecfData = await ecfResp.json();
+            if (!ecfData.ok) {
+              // e-CF failed — bill is in CONTINGENCIA mode
+              toast.error('e-CF en Modo Contingencia — se reintentará automáticamente');
+            }
             // Wait for MongoDB to fully persist the e-CF data before printing
             await new Promise(r => setTimeout(r, 2500));
-          } catch {}
+          } catch {
+            toast.error('e-CF en Modo Contingencia — sin conexión');
+          }
         }
         
         // STEP 2: Print receipt (now with e-CF data if enabled) — SINGLE PRINT ONLY

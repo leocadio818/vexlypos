@@ -22,6 +22,7 @@ import {
   DiscountsReport
 } from './reports';
 import ReservationsReport from './reports/ReservationsReport';
+import EcfDashboard from './reports/EcfDashboard';
 import { COLORS } from './reports/reportUtils';
 import { NeoDatePicker, NeoTimePicker } from '@/components/DateTimePicker';
 
@@ -85,6 +86,7 @@ const REPORT_CATEGORIES = [
       { id: 'profit-loss', name: 'Ganancias y Pérdidas', description: 'Estado de resultados' },
       { id: 'table-movements', name: 'Movimientos de Mesas', description: 'Trazabilidad de usuario' },
       { id: 'reservations', name: 'Reservaciones', description: 'Análisis de reservas, no-shows y clientes frecuentes' },
+      { id: 'ecf-dashboard', name: 'e-CF Dashboard', description: 'Facturas electrónicas: aprobadas, contingencia, rechazadas' },
       { id: 'system-audit', name: 'Auditoría General del Sistema', description: 'Historial de actividades' },
     ]
   },
@@ -599,6 +601,7 @@ export default function Reports() {
       'stock-adjustments': '/reports/stock-adjustments',
       'discounts': '/reports/discounts',
       'reservations': '/reports/reservations',
+      'ecf-dashboard': '/ecf/dashboard',
     };
     
     const endpoint = endpoints[reportId];
@@ -743,6 +746,8 @@ export default function Reports() {
         return <DiscountsReport data={reportData} />;
       case 'reservations':
         return <ReservationsReport data={reportData} />;
+      case 'ecf-dashboard':
+        return <EcfDashboard data={reportData} />;
       default:
         return <pre className="text-xs overflow-auto">{JSON.stringify(reportData, null, 2)}</pre>;
     }

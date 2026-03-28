@@ -302,22 +302,29 @@ async def send_to_alanube(payload: dict) -> dict:
 
 async def save_alanube_response(bill_id: str, result: dict):
     """Save Alanube response to the bill document"""
-    update = {
-        "ecf_status": result.get("status", "ERROR"),
-        "ecf_legal_status": result.get("legal_status"),
-        "ecf_alanube_id": result.get("alanube_id"),
-        "ecf_encf": result.get("encf"),
-        "ecf_security_code": result.get("security_code"),
-        "ecf_stamp_url": result.get("stamp_url"),
-        "ecf_pdf_url": result.get("pdf_url"),
-        "ecf_signature_date": result.get("signature_date"),
-        "ecf_sent_at": datetime.now(timezone.utc).isoformat(),
-    }
-    if result.get("government_response"):
-        update["ecf_government_response"] = result["government_response"]
-    if not result.get("ok"):
-        update["ecf_error"] = result.get("error", "")
-        update["ecf_errors"] = result.get("errors", [])
+    if result.get("ok"):
+        update = {
+            "ecf_status": result.get("status", "REGISTERED"),
+            "ecf_legal_status": result.get("legal_status"),
+            "ecf_alanube_id": result.get("alanube_id"),
+            "ecf_encf": result.get("encf"),
+            "ecf_security_code": result.get("security_code"),
+            "ecf_stamp_url": result.get("stamp_url"),
+            "ecf_pdf_url": result.get("pdf_url"),
+            "ecf_signature_date": result.get("signature_date"),
+            "ecf_sent_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if result.get("government_response"):
+            update["ecf_government_response"] = result["government_response"]
+    else:
+        # Failed — mark as CONTINGENCIA
+        update = {
+            "ecf_status": "CONTINGENCIA",
+            "ecf_error": result.get("error", ""),
+            "ecf_errors": result.get("errors", []),
+            "ecf_sent_at": datetime.now(timezone.utc).isoformat(),
+            "ecf_retry_count": 0,
+        }
     
     await db.bills.update_one({"id": bill_id}, {"$set": update})
 
@@ -451,3 +458,176 @@ async def get_ecf_config():
         "is_sandbox": config["is_sandbox"],
         "base_url": config["base_url"],
     }
+
+
+
+# ═══════════════════════════════════════════════════════════════
+# MODULE 4: CONTINGENCIA — Retry + Dashboard + Status Refresh
+# ═══════════════════════════════════════════════════════════════
+
+@router.post("/retry/{bill_id}")
+async def retry_ecf(bill_id: str):
+    """Retry sending a CONTINGENCIA bill to Alanube"""
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    
+    if bill.get("ecf_status") not in ["CONTINGENCIA", "ERROR", None]:
+        return {"ok": False, "message": f"Esta factura tiene status '{bill.get('ecf_status')}' — no requiere reintento"}
+    
+    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    
+    ecf_type = bill.get("ecf_type", "E32")
+    ecf_prefix = ecf_type if ecf_type.startswith("E") else "E32"
+    
+    import random
+    unique_suffix = random.randint(1000000000, 9999999999)
+    encf = f"{ecf_prefix}{unique_suffix}"
+    
+    payload = build_alanube_payload(bill, config, encf)
+    result = await send_to_alanube(payload)
+    await save_alanube_response(bill_id, result)
+    
+    retry_count = (bill.get("ecf_retry_count") or 0) + 1
+    await db.bills.update_one({"id": bill_id}, {"$set": {"ecf_retry_count": retry_count}})
+    
+    await log_ecf_attempt(bill_id, encf, "retry", result)
+    
+    if result["ok"]:
+        return {
+            "ok": True,
+            "message": "e-CF enviado exitosamente (reintento)",
+            "encf": result.get("encf"),
+            "status": result.get("status"),
+        }
+    else:
+        return {
+            "ok": False,
+            "message": f"Reintento fallido: {result.get('error', '')}",
+            "retry_count": retry_count,
+        }
+
+
+@router.post("/retry-all")
+async def retry_all_contingencia():
+    """Retry ALL bills in CONTINGENCIA status"""
+    bills = await db.bills.find({"ecf_status": "CONTINGENCIA"}, {"_id": 0, "id": 1}).to_list(100)
+    
+    results = {"total": len(bills), "success": 0, "failed": 0}
+    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    
+    for bill_doc in bills:
+        bill = await db.bills.find_one({"id": bill_doc["id"]}, {"_id": 0})
+        if not bill:
+            continue
+        
+        ecf_type = bill.get("ecf_type", "E32")
+        ecf_prefix = ecf_type if ecf_type.startswith("E") else "E32"
+        
+        import random
+        unique_suffix = random.randint(1000000000, 9999999999)
+        encf = f"{ecf_prefix}{unique_suffix}"
+        
+        payload = build_alanube_payload(bill, config, encf)
+        result = await send_to_alanube(payload)
+        await save_alanube_response(bill_doc["id"], result)
+        await log_ecf_attempt(bill_doc["id"], encf, "retry-all", result)
+        
+        if result["ok"]:
+            results["success"] += 1
+        else:
+            results["failed"] += 1
+    
+    return {"ok": True, **results}
+
+
+@router.get("/refresh-status/{bill_id}")
+async def refresh_ecf_status(bill_id: str):
+    """Refresh e-CF status from Alanube (check if approved/rejected)"""
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    
+    alanube_id = bill.get("ecf_alanube_id")
+    if not alanube_id:
+        return {"ok": False, "message": "No tiene ID de Alanube"}
+    
+    cfg = get_config()
+    if not cfg["token"]:
+        return {"ok": False, "message": "Token no configurado"}
+    
+    # Determine endpoint from invoice type
+    ecf_type = bill.get("ecf_type", "E32")
+    ENDPOINT_MAP = {
+        "E31": "fiscal-invoices", "E32": "invoices", "E33": "debit-notes",
+        "E34": "credit-notes", "E44": "special-regime", "E45": "government",
+    }
+    endpoint = ENDPOINT_MAP.get(ecf_type, "invoices")
+    
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                f"{cfg['base_url']}/{endpoint}/{alanube_id}",
+                headers={"Authorization": f"Bearer {cfg['token']}", "Accept": "application/json"}
+            )
+            if response.status_code == 200:
+                data = response.json()
+                update = {
+                    "ecf_status": data.get("status", bill.get("ecf_status")),
+                    "ecf_legal_status": data.get("legalStatus"),
+                    "ecf_encf": data.get("encf", data.get("documentNumber", bill.get("ecf_encf"))),
+                    "ecf_security_code": data.get("securityCode", bill.get("ecf_security_code")),
+                    "ecf_stamp_url": data.get("documentStampUrl", bill.get("ecf_stamp_url")),
+                }
+                gov = data.get("governmentResponse")
+                if gov:
+                    update["ecf_government_response"] = gov
+                    if gov.get("status") == "REJECTED":
+                        messages = [m.get("value", "") for m in gov.get("messages", [])]
+                        update["ecf_reject_reason"] = "; ".join(messages) if messages else "Rechazado por DGII"
+                
+                await db.bills.update_one({"id": bill_id}, {"$set": update})
+                return {"ok": True, "status": update.get("ecf_status"), "legal_status": update.get("ecf_legal_status"), "reject_reason": update.get("ecf_reject_reason", "")}
+            else:
+                return {"ok": False, "message": f"Alanube respondió {response.status_code}"}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+
+
+@router.get("/dashboard")
+async def ecf_dashboard(date_from: Optional[str] = Query(None), date_to: Optional[str] = Query(None)):
+    """Dashboard with all e-CF bills grouped by status"""
+    query = {"ecf_type": {"$exists": True, "$ne": None}}
+    if date_from:
+        query["paid_at"] = {"$gte": date_from}
+    if date_to:
+        if "paid_at" in query:
+            query["paid_at"]["$lte"] = date_to + "T23:59:59"
+        else:
+            query["paid_at"] = {"$lte": date_to + "T23:59:59"}
+    
+    bills = await db.bills.find(query, {
+        "_id": 0, "id": 1, "transaction_number": 1, "total": 1, "ncf": 1,
+        "ecf_type": 1, "ecf_status": 1, "ecf_encf": 1, "ecf_alanube_id": 1,
+        "ecf_stamp_url": 1, "ecf_security_code": 1, "ecf_error": 1,
+        "ecf_reject_reason": 1, "ecf_retry_count": 1, "ecf_sent_at": 1,
+        "ecf_legal_status": 1, "paid_at": 1, "table_number": 1,
+        "waiter_name": 1, "cashier_name": 1, "razon_social": 1,
+    }).sort("paid_at", -1).to_list(500)
+    
+    # Group by status
+    summary = {"total": len(bills), "approved": 0, "contingencia": 0, "rejected": 0, "pending": 0, "registered": 0}
+    for b in bills:
+        status = (b.get("ecf_status") or "").upper()
+        if status == "FINISHED":
+            summary["approved"] += 1
+        elif status == "CONTINGENCIA":
+            summary["contingencia"] += 1
+        elif status == "REJECTED" or b.get("ecf_reject_reason"):
+            summary["rejected"] += 1
+        elif status == "REGISTERED":
+            summary["registered"] += 1
+        else:
+            summary["pending"] += 1
+    
+    return {"summary": summary, "bills": bills}
