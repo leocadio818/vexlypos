@@ -20,6 +20,12 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 ### 🔒 Business Day Filtering — ALL reports use business_date not paid_at — LOCKED
 ### 🔒 Zero Native Date/Time Inputs — LOCKED
 ### 🔒 Never add default permissions without user authorization — LOCKED
+### 🔒 Asistencia Nocturna — NO auto-cierre a medianoche (LOCKED)
+- Restaurantes/bares/discotecas cruzan medianoche frecuentemente
+- Un turno ACTIVE permanece abierto hasta: salida manual del empleado O Cierre de Día por admin
+- PROHIBIDO implementar auto-corte a las 12:00 AM
+- Si usuario tiene POS session abierta → check-status retorna clocked_in=true + auto clock-in para hoy
+
 ### 🔒 Employee Attendance / Clock-In Flow — useCallback, inline overlays z-[9999] — LOCKED
 ### 🔒 Sidebar & Navigation — Opciones/Funciones modals, permissions — LOCKED
 ### 🔒 Auto-Contrast System — data-contrast + CSS !important — LOCKED
