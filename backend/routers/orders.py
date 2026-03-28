@@ -1017,19 +1017,25 @@ async def send_to_kitchen(order_id: str, user: dict = Depends(get_current_user))
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
     
-    pending_items = [i for i in order["items"] if i["status"] == "pending"]
-    pending_ids = [i["id"] for i in pending_items]
+    # Atomically claim pending items to prevent duplicate sends
+    pending_items = []
+    for item in order["items"]:
+        if item["status"] == "pending":
+            result = await db.orders.update_one(
+                {"id": order_id, "items.id": item["id"], "items.$.status": "pending"},
+                {"$set": {
+                    "items.$.status": "sent",
+                    "items.$.sent_to_kitchen": True,
+                    "items.$.sent_at": now_iso(),
+                    "items.$.inventory_deducted": False
+                }}
+            )
+            if result.modified_count > 0:
+                pending_items.append(item)
     
-    for pid in pending_ids:
-        await db.orders.update_one(
-            {"id": order_id, "items.id": pid},
-            {"$set": {
-                "items.$.status": "sent", 
-                "items.$.sent_to_kitchen": True,
-                "items.$.sent_at": now_iso(),
-                "items.$.inventory_deducted": False
-            }}
-        )
+    if not pending_items:
+        return await db.orders.find_one({"id": order_id}, {"_id": 0})
+    
     await db.orders.update_one({"id": order_id}, {"$set": {"status": "sent", "updated_at": now_iso()}})
     
     inventory_config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
