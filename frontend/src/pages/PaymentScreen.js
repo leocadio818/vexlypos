@@ -927,8 +927,8 @@ export default function PaymentScreen() {
               method: 'POST',
               headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
             });
-            // Small delay to ensure MongoDB has saved the e-CF data
-            await new Promise(r => setTimeout(r, 1000));
+            // Wait for MongoDB to fully persist the e-CF data before printing
+            await new Promise(r => setTimeout(r, 2500));
           } catch {}
         }
         
