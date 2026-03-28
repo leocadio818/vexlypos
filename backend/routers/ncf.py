@@ -367,8 +367,7 @@ async def delete_ncf_sequence(seq_id: str):
     
     try:
         supabase_client.table("ncf_sequences").update({
-            "is_active": False,
-            "updated_at": now_iso()
+            "is_active": False
         }).eq("id", seq_id).execute()
         
         return {"ok": True}

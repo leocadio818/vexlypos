@@ -184,7 +184,10 @@ export default function NcfTab() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {ncfSequences.map((seq) => (
+          {ncfSequences.filter(seq => {
+            const code = seq.ncf_type_code || seq.ncf_type_id || '';
+            return ecfEnabled ? code.startsWith('E') : !code.startsWith('E');
+          }).map((seq) => (
             <div 
               key={seq.id} 
               className={`bg-card border rounded-xl p-4 transition-colors ${
