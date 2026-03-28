@@ -211,6 +211,25 @@ export default function SystemTab() {
           </div>
         </div>
 
+        {/* Auto-retry e-CF */}
+        {systemConfig.ecf_enabled && (
+        <div className="bg-card border border-border rounded-xl p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">Reintento Automático de e-CF</h3>
+              <p className="text-xs text-muted-foreground mt-1">Si está activado, el sistema reintentará enviar las facturas en modo contingencia automáticamente cada 5 minutos.</p>
+            </div>
+            <button
+              onClick={() => setSystemConfig(p => ({ ...p, ecf_auto_retry: !p.ecf_auto_retry }))}
+              className={`w-12 h-6 rounded-full transition-all relative shrink-0 ml-3 ${systemConfig.ecf_auto_retry ? 'bg-emerald-500' : 'bg-muted'}`}
+              data-testid="toggle-ecf-auto-retry"
+            >
+              <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${systemConfig.ecf_auto_retry ? 'left-6' : 'left-0.5'}`} />
+            </button>
+          </div>
+        </div>
+        )}
+
         {/* Timezone - IANA Selector */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">

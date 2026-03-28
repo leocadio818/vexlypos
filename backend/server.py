@@ -1806,6 +1806,49 @@ async def update_alert_schedule():
     await update_scheduler_from_config()
     return {"ok": True, "message": "Scheduler actualizado"}
 
+# ─── e-CF AUTO-RETRY SCHEDULER ───
+async def ecf_auto_retry_job():
+    """Automatically retry all CONTINGENCIA e-CF bills"""
+    config = await db.system_config.find_one({}, {"_id": 0})
+    if not config or not config.get("ecf_auto_retry"):
+        return
+    
+    bills = await db.bills.find({"ecf_status": "CONTINGENCIA"}, {"_id": 0, "id": 1}).to_list(100)
+    if not bills:
+        return
+    
+    logging.info(f"e-CF auto-retry: {len(bills)} bills in CONTINGENCIA")
+    from routers.alanube import build_alanube_payload, send_to_alanube, save_alanube_response, log_ecf_attempt
+    import random
+    
+    success = 0
+    for bill_doc in bills:
+        bill = await db.bills.find_one({"id": bill_doc["id"]}, {"_id": 0})
+        if not bill:
+            continue
+        ecf_type = bill.get("ecf_type", "E32")
+        ecf_prefix = ecf_type if ecf_type.startswith("E") else "E32"
+        encf = f"{ecf_prefix}{random.randint(1000000000, 9999999999)}"
+        
+        payload = build_alanube_payload(bill, config, encf)
+        result = await send_to_alanube(payload)
+        await save_alanube_response(bill_doc["id"], result)
+        await log_ecf_attempt(bill_doc["id"], encf, "auto-retry", result)
+        
+        if result.get("ok"):
+            success += 1
+    
+    logging.info(f"e-CF auto-retry complete: {success}/{len(bills)} successful")
+
+# Start e-CF retry scheduler (every 5 minutes)
+scheduler.add_job(
+    ecf_auto_retry_job,
+    'interval',
+    minutes=5,
+    id="ecf_auto_retry",
+    replace_existing=True
+)
+
 @api.get("/inventory/scheduler-status")
 async def get_scheduler_status():
     job = scheduler.get_job("stock_alert")
