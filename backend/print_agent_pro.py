@@ -43,7 +43,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://minimalist-pos.preview.emergentagent.com"
+SERVER_URL = "https://dominicanpos.preview.emergentagent.com"
 
 DEFAULT_PRINTER = "Caja"
 

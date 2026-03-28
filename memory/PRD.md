@@ -107,7 +107,7 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Production and Preview have DIFFERENT databases
 - When fixing data (sale_types, bills, etc.), must fix BOTH
 - Production API: https://vexlyapp.com/api
-- Preview API: https://minimalist-pos.preview.emergentagent.com/api
+- Preview API: https://dominicanpos.preview.emergentagent.com/api
 
 ## PENDING Tasks
 - Print Agent Multi-Impresora: Installer needs qrcode+Pillow
