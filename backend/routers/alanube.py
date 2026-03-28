@@ -597,7 +597,13 @@ async def refresh_ecf_status(bill_id: str):
 @router.get("/dashboard")
 async def ecf_dashboard(date_from: Optional[str] = Query(None), date_to: Optional[str] = Query(None)):
     """Dashboard with all e-CF bills grouped by status"""
-    query = {"ecf_type": {"$exists": True, "$ne": None}}
+    query = {"$or": [
+        {"ecf_type": {"$exists": True, "$ne": None}},
+        {"ecf_encf": {"$exists": True, "$ne": None}},
+        {"ecf_status": {"$exists": True}},
+        {"ncf": {"$regex": "^PENDING-E"}},
+        {"ncf": {"$regex": "^E3"}},
+    ]}
     if date_from:
         query["paid_at"] = {"$gte": date_from}
     if date_to:

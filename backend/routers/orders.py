@@ -1022,7 +1022,7 @@ async def send_to_kitchen(order_id: str, user: dict = Depends(get_current_user))
     for item in order["items"]:
         if item["status"] == "pending":
             result = await db.orders.update_one(
-                {"id": order_id, "items.id": item["id"], "items.$.status": "pending"},
+                {"id": order_id, "items": {"$elemMatch": {"id": item["id"], "status": "pending"}}},
                 {"$set": {
                     "items.$.status": "sent",
                     "items.$.sent_to_kitchen": True,
