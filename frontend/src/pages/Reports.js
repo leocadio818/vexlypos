@@ -462,7 +462,10 @@ export default function Reports() {
     to: new Date().toISOString().slice(0, 10)
   });
   const [expandedCategories, setExpandedCategories] = useState(['sales']);
-  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('report') || null;
+  });
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [emailTo, setEmailTo] = useState('');

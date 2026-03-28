@@ -797,6 +797,16 @@ export default function Layout() {
                   <span className="font-semibold text-sm">Cierre de Día</span>
                 </button>
               )}
+              {isAdmin && (
+                <button onClick={() => { setOptionsMenuOpen(false); navigate('/reports?report=ecf-dashboard'); }}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95"
+                  data-testid="opt-ecf-dashboard">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                    <FileText size={20} className="text-emerald-500" />
+                  </div>
+                  <span className="font-semibold text-sm">e-CF Dashboard</span>
+                </button>
+              )}
             </div>
             <button onClick={() => setOptionsMenuOpen(false)}
               className="mt-5 w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-all">
