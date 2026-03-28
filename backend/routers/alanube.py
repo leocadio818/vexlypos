@@ -60,6 +60,8 @@ INVOICE_TYPE_MAP = {
     "E32": 32,
     "E33": 33,
     "E34": 34,
+    "E44": 44,  # Régimen Especial
+    "E45": 45,  # Gubernamental
 }
 
 
@@ -252,6 +254,8 @@ async def send_to_alanube(payload: dict) -> dict:
         32: "invoices",          # E32 Consumo
         33: "debit-notes",       # E33 Nota de Débito
         34: "credit-notes",      # E34 Nota de Crédito
+        44: "special-regime",    # E44 Régimen Especial
+        45: "government",        # E45 Gubernamental
     }
     invoice_type = payload.get("idDoc", {}).get("invoiceType", 32)
     endpoint = ENDPOINT_MAP.get(invoice_type, "invoices")

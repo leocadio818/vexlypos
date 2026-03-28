@@ -199,8 +199,8 @@ export default function PaymentScreen() {
   const fiscalTypes = ecfEnabled ? [
     { code: 'E32', name: 'Consumidor Final', short: 'CF' },
     { code: 'E31', name: 'Crédito Fiscal', short: 'CF' },
-    { code: 'E34', name: 'Nota de Crédito', short: 'NC' },
-    { code: 'E33', name: 'Nota de Débito', short: 'ND' }
+    { code: 'E44', name: 'Régimen Especial', short: 'RE' },
+    { code: 'E45', name: 'Gubernamental', short: 'GOB' },
   ] : [
     { code: 'B02', name: 'Consumidor Final', short: 'CF' },
     { code: 'B01', name: 'Crédito Fiscal', short: 'CF' },
@@ -1832,7 +1832,7 @@ export default function PaymentScreen() {
                     key={ft.code}
                     onClick={() => {
                       // Si requiere datos fiscales (receptor RNC/nombre)
-                      if (['B01', 'B14', 'B15', 'E31'].includes(ft.code)) {
+                      if (['B01', 'B14', 'B15', 'E31', 'E44', 'E45'].includes(ft.code)) {
                         setPendingFiscalType(ft.code);
                         setFiscalDrawerOpen(true);
                       } else {
@@ -1858,7 +1858,7 @@ export default function PaymentScreen() {
               </div>
               
               {/* Mostrar datos fiscales si fueron capturados */}
-              {fiscalData && ['B01', 'B14', 'B15', 'E31'].includes(selectedFiscalType) && (
+              {fiscalData && ['B01', 'B14', 'B15', 'E31', 'E44', 'E45'].includes(selectedFiscalType) && (
                 <div className="mt-3 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -1898,7 +1898,7 @@ export default function PaymentScreen() {
                   .filter(st => {
                     const ncfId = st.default_ncf_type_id;
                     // Map E-types to B-types for sale type matching
-                    const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E33': 'B14', 'E34': 'B14' };
+                    const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E44': 'B15', 'E45': 'B14' };
                     const matchType = ECF_TO_NCF[selectedFiscalType] || selectedFiscalType;
                     return ncfId === selectedFiscalType || ncfId === matchType;
                   })
@@ -1949,7 +1949,7 @@ export default function PaymentScreen() {
                 })}
                 {saleTypes.filter(st => {
                   const ncfId = st.default_ncf_type_id;
-                  const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E33': 'B14', 'E34': 'B14' };
+                  const ECF_TO_NCF = { 'E31': 'B01', 'E32': 'B02', 'E44': 'B15', 'E45': 'B14' };
                   const matchType = ECF_TO_NCF[selectedFiscalType] || selectedFiscalType;
                   return ncfId === selectedFiscalType || ncfId === matchType;
                 }).length === 0 && (
