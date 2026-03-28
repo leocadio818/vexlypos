@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api, { businessDaysAPI, ordersAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import BusinessDayManager from '@/components/BusinessDayManager';
+import EcfDashboardInline from '@/pages/reports/EcfDashboard';
 import '@/App.css';
 
 const navItems = [
@@ -30,6 +31,8 @@ export default function Layout() {
   const location = useLocation();
   const [functionsMenuOpen, setFunctionsMenuOpen] = useState(false);
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const [ecfDashboardOpen, setEcfDashboardOpen] = useState(false);
+  const [ecfDashboardData, setEcfDashboardData] = useState(null);
   const [clockOutDialogOpen, setClockOutDialogOpen] = useState(false);
   const [clockOutLoading, setClockOutLoading] = useState(false);
   const [changePinOpen, setChangePinOpen] = useState(false);
@@ -659,6 +662,37 @@ export default function Layout() {
         </DialogContent>
       </Dialog>
 
+      {/* e-CF Dashboard Modal - Independent from Reports */}
+      {ecfDashboardOpen && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEcfDashboardOpen(false)}>
+          <div className="bg-card border border-border rounded-2xl w-[95vw] max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between shrink-0">
+              <h2 className="font-oswald text-lg font-bold flex items-center gap-2">
+                <FileText size={20} className="text-emerald-500" /> e-CF Dashboard
+              </h2>
+              <div className="flex items-center gap-2">
+                <button onClick={async () => {
+                  try {
+                    const r = await api.get('/ecf/dashboard');
+                    setEcfDashboardData(r.data);
+                  } catch {}
+                }} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-all">
+                  Actualizar
+                </button>
+                <button onClick={() => setEcfDashboardOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-all">
+                  <span className="text-muted-foreground text-lg">×</span>
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              <EcfDashboardInline data={ecfDashboardData} onRefresh={async () => {
+                try { const r = await api.get('/ecf/dashboard'); setEcfDashboardData(r.data); } catch {}
+              }} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Business Day Management Dialog - Global */}
       <Dialog open={businessDayDialogOpen} onOpenChange={setBusinessDayDialogOpen}>
         <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/10 max-w-lg max-h-[90vh] overflow-y-auto">
@@ -798,7 +832,14 @@ export default function Layout() {
                 </button>
               )}
               {(isAdmin || hasPermission('view_ecf_dashboard')) && (
-                <button onClick={() => { setOptionsMenuOpen(false); navigate('/reports?report=ecf-dashboard'); }}
+                <button onClick={async () => {
+                  setOptionsMenuOpen(false);
+                  try {
+                    const r = await api.get('/ecf/dashboard');
+                    setEcfDashboardData(r.data);
+                  } catch {}
+                  setEcfDashboardOpen(true);
+                }}
                   className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95"
                   data-testid="opt-ecf-dashboard">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
