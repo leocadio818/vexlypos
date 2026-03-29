@@ -320,39 +320,39 @@ export default function RecipesTab({
   return (
     <div data-testid="recipes-tab">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div>
           <h2 className="font-oswald text-lg font-bold">Recetas</h2>
           <p className="text-xs text-muted-foreground">Vincula productos con ingredientes y controla tus márgenes</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* View Toggle */}
           <div className="flex bg-muted rounded-lg p-1">
             <Button
               variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('list')}
-              className="h-8 px-3"
+              className="h-8 px-2 sm:px-3"
               data-testid="view-list-btn"
             >
-              <List size={14} className="mr-1" /> Lista
+              <List size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Lista</span>
             </Button>
             <Button
               variant={viewMode === 'report' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('report')}
-              className="h-8 px-3"
+              className="h-8 px-2 sm:px-3"
               data-testid="view-report-btn"
             >
-              <BarChart3 size={14} className="mr-1" /> Reporte
+              <BarChart3 size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Reporte</span>
             </Button>
           </div>
           <Button 
             onClick={() => openRecipeDialog({ product_id: '', product_name: '', ingredients: [], yield_quantity: 1, notes: '' })}
-            className="bg-primary text-primary-foreground font-oswald"
+            className="bg-primary text-primary-foreground font-oswald text-xs sm:text-sm"
             data-testid="add-recipe-btn"
           >
-            <Plus size={16} className="mr-1" /> Nueva Receta
+            <Plus size={16} className="mr-1" /> Nueva
           </Button>
         </div>
       </div>
@@ -360,14 +360,14 @@ export default function RecipesTab({
       {/* ─── SEARCH AND FILTERS BAR ─── */}
       <div className="space-y-3 mb-4">
         {/* Search Bar */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por plato o ingrediente (ej: Churrasco, Camarones)..."
+              placeholder="Buscar plato o ingrediente..."
               className="w-full pl-9 pr-9 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               data-testid="recipe-search-input"
             />
@@ -383,7 +383,7 @@ export default function RecipesTab({
           </div>
 
           {/* Health Filter Buttons */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
             {HEALTH_FILTERS.map(filter => {
               const isActive = healthFilter === filter.id;
               const count = filter.id === 'all' 
@@ -396,13 +396,14 @@ export default function RecipesTab({
                   variant={isActive ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setHealthFilter(healthFilter === filter.id ? 'all' : filter.id)}
-                  className={`font-oswald text-xs ${isActive ? filter.color + ' text-white border-transparent' : ''}`}
+                  className={`font-oswald text-xs whitespace-nowrap ${isActive ? filter.color + ' text-white border-transparent' : ''}`}
                   data-testid={`health-filter-${filter.id}`}
                 >
                   {filter.id === 'critical' && <AlertTriangle size={12} className="mr-1" />}
                   {filter.id === 'ok' && <Check size={12} className="mr-1" />}
-                  {filter.label}
-                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
+                  <span className="hidden sm:inline">{filter.label}</span>
+                  <span className="sm:hidden">{filter.id === 'all' ? 'All' : filter.id === 'critical' ? 'Crit' : filter.id === 'warning' ? 'Adv' : 'OK'}</span>
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                     {count}
                   </Badge>
                 </Button>
@@ -502,7 +503,8 @@ export default function RecipesTab({
 
           {/* Margin Table */}
           <div className="rounded-xl border border-border overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left p-3 font-medium">Producto</th>
@@ -606,10 +608,11 @@ export default function RecipesTab({
                 )}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground pt-2">
+          <div className="flex items-center justify-center gap-3 sm:gap-6 text-xs text-muted-foreground pt-2 flex-wrap">
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded-full bg-red-500"></span>
               Crítico: &lt;{MARGIN_CRITICAL}% margen
@@ -659,21 +662,21 @@ export default function RecipesTab({
                         <CatIcon size={18} className="text-white" />
                       </div>
                       <div>
-                        <h3 className="font-oswald font-bold text-lg flex items-center gap-2 flex-wrap">
+                        <h3 className="font-oswald font-bold text-base sm:text-lg flex items-center gap-2 flex-wrap">
                           {rec.product_name}
                           <Badge className={`text-xs ${marginBadgeClass}`}>
-                            {rec.margin}% margen
+                            {rec.margin}%
                           </Badge>
                         </h3>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                          <span>Rinde: {rec.yield_quantity} {rec.yield_unit || 'unidades'}</span>
-                          <span>•</span>
-                          <span>Costo: {formatMoney(rec.cost)}</span>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <span>Rinde: {rec.yield_quantity}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span>C: {formatMoney(rec.cost)}</span>
                           <span>•</span>
                           <span>PVP: {formatMoney(rec.price)}</span>
-                          <span>•</span>
-                          <span className={rec.status === 'critical' ? 'text-red-400' : rec.status === 'warning' ? 'text-amber-400' : 'text-green-400'}>
-                            Ganancia: {formatMoney(rec.profit)}
+                          <span className="hidden sm:inline">•</span>
+                          <span className={`${rec.status === 'critical' ? 'text-red-400' : rec.status === 'warning' ? 'text-amber-400' : 'text-green-400'}`}>
+                            G: {formatMoney(rec.profit)}
                           </span>
                         </div>
                       </div>
@@ -709,7 +712,7 @@ export default function RecipesTab({
                       </Button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {rec.ingredients?.map((ing, idx) => {
                       const ingredient = ingredients.find(i => i.id === ing.ingredient_id);
                       // Highlight if matches search

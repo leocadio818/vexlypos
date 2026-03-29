@@ -349,44 +349,46 @@ export default function PurchasesTab({
 
   return (
     <div data-testid="purchases-tab">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <h2 className="font-oswald text-lg font-bold">Órdenes de Compra</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           {/* View Toggle */}
           <div className="flex bg-muted rounded-lg p-1">
             <Button
               variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('list')}
-              className="h-8 px-3"
+              className="h-8 px-2 sm:px-3"
               data-testid="view-list-btn"
             >
-              <List size={14} className="mr-1" /> Lista
+              <List size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Lista</span>
             </Button>
             <Button
               variant={viewMode === 'chart' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('chart')}
-              className="h-8 px-3"
+              className="h-8 px-2 sm:px-3"
               data-testid="view-chart-btn"
             >
-              <BarChart3 size={14} className="mr-1" /> Gráficos
+              <BarChart3 size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Gráficos</span>
             </Button>
           </div>
           <Button 
             variant="outline"
+            size="sm"
             onClick={handleExport}
             disabled={filteredPOs.length === 0}
             data-testid="export-btn"
           >
-            <Download size={14} className="mr-1" /> Exportar
+            <Download size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Exportar</span>
           </Button>
           <Button 
+            size="sm"
             onClick={() => setPODialog({ open: true, data: { supplier_id: '', warehouse_id: '', items: [], notes: '', expected_date: '' } })}
             className="bg-primary text-primary-foreground font-oswald"
             data-testid="add-po-btn"
           >
-            <Plus size={16} className="mr-1" /> Nueva Orden
+            <Plus size={14} className="mr-1" /> Nueva
           </Button>
         </div>
       </div>
@@ -448,17 +450,17 @@ export default function PurchasesTab({
       </div>
 
       {/* ─── ADVANCED FILTERS ─── */}
-      <div className="p-4 rounded-xl bg-muted/30 border border-border mb-4 space-y-3">
+      <div className="p-3 sm:p-4 rounded-xl bg-muted/30 border border-border mb-4 space-y-3">
         {/* Quick Period Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <Calendar size={12} /> Periodo:
           </span>
           {[
             { id: 'today', label: 'Hoy' },
             { id: 'yesterday', label: 'Ayer' },
-            { id: 'week', label: 'Esta Semana' },
-            { id: 'month', label: 'Mes Actual' },
+            { id: 'week', label: 'Semana' },
+            { id: 'month', label: 'Mes' },
             { id: 'all', label: 'Todo' },
           ].map(period => (
             <Button
@@ -466,7 +468,7 @@ export default function PurchasesTab({
               variant={activePeriod === period.id ? 'default' : 'outline'}
               size="sm"
               onClick={() => applyPeriod(period.id)}
-              className="h-7 text-xs"
+              className="h-7 text-xs px-2 sm:px-3"
               data-testid={`period-${period.id}`}
             >
               {period.label}
@@ -475,28 +477,28 @@ export default function PurchasesTab({
         </div>
 
         {/* Date Range Picker + Status + Supplier Filters */}
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-2 sm:gap-3">
           {/* Custom Date Range */}
           <div className="flex items-center gap-2">
-            <div>
+            <div className="flex-1">
               <label className="text-xs text-muted-foreground">Desde</label>
               <NeoDatePicker value={formatDateInput(dateRange.start)} onChange={e => handleDateChange('start', e.target.value)}
-                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm" />
+                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm w-full" />
             </div>
-            <div>
+            <div className="flex-1">
               <label className="text-xs text-muted-foreground">Hasta</label>
               <NeoDatePicker value={formatDateInput(dateRange.end)} onChange={e => handleDateChange('end', e.target.value)}
-                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm" />
+                className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm w-full" />
             </div>
           </div>
 
           {/* Status Filter */}
-          <div>
+          <div className="flex-1 min-w-0">
             <label className="text-xs text-muted-foreground">Estado</label>
             <select
               value={poStatusFilter}
               onChange={e => setPOStatusFilter(e.target.value)}
-              className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm min-w-[140px]"
+              className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm w-full"
               data-testid="po-status-filter"
             >
               <option value="">Todos los estados</option>
@@ -507,14 +509,14 @@ export default function PurchasesTab({
           </div>
 
           {/* Supplier Filter */}
-          <div>
+          <div className="flex-1 min-w-0">
             <label className="text-xs text-muted-foreground flex items-center gap-1">
               <Building2 size={10} /> Proveedor
             </label>
             <select
               value={supplierFilter}
               onChange={e => setSupplierFilter(e.target.value)}
-              className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm min-w-[180px]"
+              className="block mt-1 px-3 py-1.5 bg-background border border-border rounded-lg text-sm w-full"
               data-testid="supplier-filter"
             >
               <option value="">Todos los proveedores</option>

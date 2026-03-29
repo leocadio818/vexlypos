@@ -97,24 +97,25 @@ export default function AuditTab() {
   return (
     <div data-testid="audit-tab">
       {/* Header con estilo Keep Money (Dorado y Oscuro) */}
-      <div className="bg-gradient-to-r from-amber-900/30 via-amber-800/20 to-amber-900/30 border border-amber-600/30 rounded-xl p-4 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center">
-              <History size={24} className="text-white" />
+      <div className="bg-gradient-to-r from-amber-900/30 via-amber-800/20 to-amber-900/30 border border-amber-600/30 rounded-xl p-3 sm:p-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shrink-0">
+              <History size={20} className="text-white" />
             </div>
-            <div>
-              <h2 className="font-oswald text-xl font-bold text-amber-100">Historial de Auditoría de Insumos</h2>
-              <p className="text-amber-200/70 text-sm">Registro cronológico de todos los cambios realizados</p>
+            <div className="min-w-0">
+              <h2 className="font-oswald text-base sm:text-xl font-bold text-amber-100">Auditoría de Insumos</h2>
+              <p className="text-amber-200/70 text-xs sm:text-sm">Registro de cambios realizados</p>
             </div>
           </div>
           <Button 
             onClick={exportAuditToExcel}
-            className="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-oswald"
+            size="sm"
+            className="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-oswald shrink-0"
             disabled={allAuditLogs.length === 0}
             data-testid="export-audit-btn"
           >
-            <Download size={16} className="mr-2" /> Exportar Historial
+            <Download size={14} className="mr-1" /> Exportar
           </Button>
         </div>
         

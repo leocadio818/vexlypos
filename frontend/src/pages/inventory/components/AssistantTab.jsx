@@ -213,41 +213,41 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
   return (
     <div data-testid="assistant-tab">
       {/* Header with stats */}
-      <div className="mb-6 bg-gradient-to-r from-cyan-950/50 via-cyan-900/30 to-cyan-950/50 rounded-xl p-4 border border-cyan-600/30">
-        <div className="flex items-center justify-between">
+      <div className="mb-6 bg-gradient-to-r from-cyan-950/50 via-cyan-900/30 to-cyan-950/50 rounded-xl p-3 sm:p-4 border border-cyan-600/30">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="font-oswald text-xl font-bold text-cyan-400 flex items-center gap-2">
-              <ShoppingCart className="w-6 h-6" /> Asistente de Compras Inteligente
+            <h2 className="font-oswald text-lg sm:text-xl font-bold text-cyan-400 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" /> Asistente de Compras
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Sugerencias de reorden basadas en consumo y control de márgenes
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Sugerencias de reorden y control de márgenes
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2 flex-wrap">
             <Button
               variant={assistantView === 'suggestions' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setAssistantView('suggestions')}
-              className={assistantView === 'suggestions' ? 'bg-cyan-600 hover:bg-cyan-700' : ''}
+              className={`text-xs ${assistantView === 'suggestions' ? 'bg-cyan-600 hover:bg-cyan-700' : ''}`}
             >
-              <ShoppingCart size={14} className="mr-1" /> Sugerencias
+              <ShoppingCart size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Sugerencias</span>
             </Button>
             <Button
               variant={assistantView === 'alerts' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setAssistantView('alerts')}
-              className={assistantView === 'alerts' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+              className={`text-xs ${assistantView === 'alerts' ? 'bg-orange-600 hover:bg-orange-700' : ''}`}
             >
-              <TrendingUp size={14} className="mr-1" /> Alertas Precio
+              <TrendingUp size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Alertas</span>
               {priceAlerts.summary?.total_alerts > 0 && (
-                <Badge className="ml-1 bg-red-500 text-white">{priceAlerts.summary.total_alerts}</Badge>
+                <Badge className="ml-1 bg-red-500 text-white text-xs">{priceAlerts.summary.total_alerts}</Badge>
               )}
             </Button>
             <Button
               variant={assistantView === 'margins' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setAssistantView('margins')}
-              className={assistantView === 'margins' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+              className={`text-xs ${assistantView === 'margins' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
             >
               <Target size={14} className="mr-1" /> Márgenes
             </Button>
@@ -259,55 +259,58 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
       {assistantView === 'suggestions' && (
         <div data-testid="assistant-suggestions-view">
           {/* Filters */}
-          <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-card border border-border">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 p-3 rounded-lg bg-card border border-border">
+            <div className="flex-1 min-w-0">
               <label className="text-xs text-muted-foreground">Proveedor</label>
               <select
                 value={assistantFilters.supplier_id}
                 onChange={e => setAssistantFilters(f => ({ ...f, supplier_id: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
               >
-                <option value="">Todos los proveedores</option>
+                <option value="">Todos proveedores</option>
                 {suppliers.filter(s => s.active !== false).map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
             </div>
-            <div className="flex-1">
-              <label className="text-xs text-muted-foreground">Almacén de destino</label>
+            <div className="flex-1 min-w-0">
+              <label className="text-xs text-muted-foreground">Almacén destino</label>
               <select
                 value={assistantFilters.warehouse_id}
                 onChange={e => setAssistantFilters(f => ({ ...f, warehouse_id: e.target.value }))}
                 className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
               >
-                <option value="">Seleccionar almacén...</option>
+                <option value="">Seleccionar...</option>
                 {warehouses.map(w => (
                   <option key={w.id} value={w.id}>{w.name}</option>
                 ))}
               </select>
             </div>
-            <div className="flex flex-col">
-              <label className="text-xs text-muted-foreground mb-1">Incluir OK</label>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={assistantFilters.include_ok_stock}
-                  onCheckedChange={c => setAssistantFilters(f => ({ ...f, include_ok_stock: c }))}
-                />
-                <span className="text-xs">{assistantFilters.include_ok_stock ? 'Sí' : 'No'}</span>
+            <div className="flex items-end gap-2">
+              <div className="flex flex-col">
+                <label className="text-xs text-muted-foreground mb-1">Incluir OK</label>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={assistantFilters.include_ok_stock}
+                    onCheckedChange={c => setAssistantFilters(f => ({ ...f, include_ok_stock: c }))}
+                  />
+                  <span className="text-xs">{assistantFilters.include_ok_stock ? 'Sí' : 'No'}</span>
+                </div>
               </div>
+              <Button
+                onClick={() => fetchPurchaseSuggestions(assistantFilters)}
+                disabled={loadingAssistant}
+                size="sm"
+                className="bg-cyan-600 hover:bg-cyan-700"
+              >
+                {loadingAssistant ? <RefreshCw size={14} className="animate-spin mr-1" /> : <Search size={14} className="mr-1" />}
+                Buscar
+              </Button>
             </div>
-            <Button
-              onClick={() => fetchPurchaseSuggestions(assistantFilters)}
-              disabled={loadingAssistant}
-              className="bg-cyan-600 hover:bg-cyan-700"
-            >
-              {loadingAssistant ? <RefreshCw size={14} className="animate-spin mr-1" /> : <Search size={14} className="mr-1" />}
-              Buscar
-            </Button>
           </div>
 
           {/* Summary cards */}
-          <div className="grid grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
             <div className="bg-gradient-to-br from-red-950/40 to-red-900/20 rounded-xl p-4 border border-red-600/30">
               <div className="text-2xl font-bold text-red-400">{purchaseSuggestions.summary?.out_of_stock_items || 0}</div>
               <div className="text-xs text-red-300/70">Agotados</div>
@@ -341,16 +344,16 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
             const itemsWithoutSupplier = selectedItems.filter(s => !s.default_supplier_id).length;
             
             return (
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={selectAllSuggestions}>
-                    <Check size={12} className="mr-1" /> Seleccionar Todo
+                    <Check size={12} className="mr-1" /> Todo
                   </Button>
                   <Button variant="outline" size="sm" onClick={deselectAllSuggestions}>
-                    <X size={12} className="mr-1" /> Deseleccionar
+                    <X size={12} className="mr-1" /> Ninguno
                   </Button>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {selectedSuggestions.length > 0 && supplierCount > 1 && (
                     <span className="text-xs text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-full border border-cyan-500/30">
                       {supplierCount} proveedores = {supplierCount} OCs
@@ -388,7 +391,7 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[700px]">
                 <thead className="bg-cyan-900/30">
                   <tr>
                     <th className="px-3 py-2 text-left w-10"></th>

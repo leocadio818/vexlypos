@@ -65,33 +65,37 @@ export default function StockTab({
   return (
     <div data-testid="stock-tab">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-oswald text-lg font-bold">Stock Multinivel & Diferencias</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onFetchMultilevelStock} disabled={loadingMultilevel} data-testid="refresh-stock-btn">
-            <RefreshCw size={16} className={`mr-1 ${loadingMultilevel ? 'animate-spin' : ''}`} /> Actualizar
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <h2 className="font-oswald text-lg font-bold">Stock Multinivel</h2>
+        <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={onFetchMultilevelStock} disabled={loadingMultilevel} data-testid="refresh-stock-btn">
+            <RefreshCw size={14} className={loadingMultilevel ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline ml-1">Actualizar</span>
           </Button>
-          <Button variant="outline" onClick={onOpenAlertDialog} data-testid="alert-config-btn">
-            <Bell size={16} className="mr-1" /> Alertas
+          <Button variant="outline" size="sm" onClick={onOpenAlertDialog} data-testid="alert-config-btn">
+            <Bell size={14} />
+            <span className="hidden sm:inline ml-1">Alertas</span>
           </Button>
-          <Button variant="outline" onClick={onOpenTransferDialog} data-testid="transfer-btn">
-            <ArrowLeftRight size={16} className="mr-1" /> Transferir
+          <Button variant="outline" size="sm" onClick={onOpenTransferDialog} data-testid="transfer-btn">
+            <ArrowLeftRight size={14} />
+            <span className="hidden sm:inline ml-1">Transferir</span>
           </Button>
-          <Button variant="outline" onClick={onOpenAdjustDialog} data-testid="adjust-btn">
-            <Package size={16} className="mr-1" /> Ajustar
+          <Button variant="outline" size="sm" onClick={onOpenAdjustDialog} data-testid="adjust-btn">
+            <Package size={14} />
+            <span className="hidden sm:inline ml-1">Ajustar</span>
           </Button>
         </div>
       </div>
 
       {/* Search & Filters Bar */}
       <div className="bg-card border border-border rounded-xl p-3 mb-4" data-testid="stock-filters">
-        <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex flex-col gap-2">
           {/* Search input */}
-          <div className="relative flex-1">
+          <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Buscar por insumo, almacén o categoría..."
+              placeholder="Buscar insumo, almacén..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-9 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -103,35 +107,37 @@ export default function StockTab({
               </button>
             )}
           </div>
-          {/* Warehouse filter */}
-          <select
-            value={filterWarehouse}
-            onChange={e => setFilterWarehouse(e.target.value)}
-            className="px-3 py-2 bg-background border border-border rounded-lg text-sm min-w-[180px]"
-            data-testid="stock-filter-warehouse"
-          >
-            <option value="">Todos los almacenes</option>
-            {warehouses.map(wh => (
-              <option key={wh.id} value={wh.id}>{wh.name}</option>
-            ))}
-          </select>
-          {/* Category filter */}
-          <select
-            value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
-            className="px-3 py-2 bg-background border border-border rounded-lg text-sm min-w-[160px]"
-            data-testid="stock-filter-category"
-          >
-            <option value="">Todas las categorías</option>
-            {activeCategories.map(cat => (
-              <option key={cat} value={cat}>{getCategoryLabel(cat)}</option>
-            ))}
-          </select>
-          {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setFilterWarehouse(''); setFilterCategory(''); }} className="text-muted-foreground">
-              <X size={14} className="mr-1" /> Limpiar
-            </Button>
-          )}
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Warehouse filter */}
+            <select
+              value={filterWarehouse}
+              onChange={e => setFilterWarehouse(e.target.value)}
+              className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+              data-testid="stock-filter-warehouse"
+            >
+              <option value="">Todos almacenes</option>
+              {warehouses.map(wh => (
+                <option key={wh.id} value={wh.id}>{wh.name}</option>
+              ))}
+            </select>
+            {/* Category filter */}
+            <select
+              value={filterCategory}
+              onChange={e => setFilterCategory(e.target.value)}
+              className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+              data-testid="stock-filter-category"
+            >
+              <option value="">Todas categorías</option>
+              {activeCategories.map(cat => (
+                <option key={cat} value={cat}>{getCategoryLabel(cat)}</option>
+              ))}
+            </select>
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(''); setFilterWarehouse(''); setFilterCategory(''); }} className="text-muted-foreground shrink-0">
+                <X size={14} className="mr-1" /> Limpiar
+              </Button>
+            )}
+          </div>
         </div>
         {hasFilters && (
           <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
@@ -167,7 +173,8 @@ export default function StockTab({
         </div>
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
-          <table className="w-full text-sm" data-testid="multilevel-stock-table">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[700px]" data-testid="multilevel-stock-table">
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-4 py-3 text-left font-oswald font-medium">Insumo</th>
@@ -245,6 +252,7 @@ export default function StockTab({
               ))}
             </tbody>
           </table>
+          </div>
           {filteredStock.length === 0 && (
             <div className="text-center py-12 text-muted-foreground" data-testid="no-stock">
               <Package size={40} className="mx-auto mb-3 opacity-30" />
@@ -264,13 +272,13 @@ export default function StockTab({
             const typeLabels = { purchase: 'compra', sale: 'venta', waste: 'merma', difference: 'diferencia', adjustment: 'ajuste', transfer_in: 'entrada', transfer_out: 'salida', production_consume: 'producción', production_output: 'producción' };
             const movLabel = typeLabels[mov.movement_type] || mov.movement_type;
             return (
-              <div key={mov.id} className="flex items-center justify-between p-2 rounded-lg bg-card/50 border border-border/50 text-sm" data-testid={`movement-${mov.id}`}>
-                <div className="flex items-center gap-2">
-                  <Badge variant={mov.quantity > 0 ? 'default' : 'destructive'} className="text-[11px]">{movLabel}</Badge>
-                  <span>{ing?.name || mov.ingredient_name || '?'}</span>
-                  <span className="text-muted-foreground">@ {wh?.name || '?'}</span>
+              <div key={mov.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-2 rounded-lg bg-card/50 border border-border/50 text-sm" data-testid={`movement-${mov.id}`}>
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <Badge variant={mov.quantity > 0 ? 'default' : 'destructive'} className="text-[11px] shrink-0">{movLabel}</Badge>
+                  <span className="truncate">{ing?.name || mov.ingredient_name || '?'}</span>
+                  <span className="text-muted-foreground text-xs truncate">@ {wh?.name || '?'}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className={`font-oswald font-bold ${mov.quantity > 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {mov.quantity > 0 ? '+' : ''}{mov.quantity}
                   </span>
