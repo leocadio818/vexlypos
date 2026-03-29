@@ -13,17 +13,19 @@ const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_toke
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [fetchAttempted, setFetchAttempted] = useState(false);
   const { isOnline } = useAuth();
 
   const fetchDashboard = useCallback(async () => {
     try {
-      await getSystemTimezone(); // ensure timezone is cached
-      const res = await axios.get(`${API}/reports/dashboard`, { headers: headers() });
+      await getSystemTimezone();
+      const res = await axios.get(`${API}/reports/dashboard`, { headers: headers(), timeout: 8000 });
       setData(res.data);
       setLoadFailed(false);
     } catch {
-      if (!navigator.onLine) setLoadFailed(true);
+      setLoadFailed(true);
     }
+    setFetchAttempted(true);
   }, []);
 
   useEffect(() => {
@@ -34,11 +36,11 @@ export default function Dashboard() {
 
   // Retry when coming back online
   useEffect(() => {
-    if (isOnline && !data) fetchDashboard();
+    if (isOnline && loadFailed) fetchDashboard();
   }, [isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!data) {
-    if (loadFailed || !navigator.onLine) {
+    if (fetchAttempted && loadFailed) {
       return (
         <div className="h-full flex flex-col items-center justify-center gap-4 text-white/60" data-testid="dashboard-offline">
           <WifiOff size={48} className="text-amber-400" />

@@ -169,13 +169,23 @@ export function AuthProvider({ children }) {
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem('pos_token');
     if (!token) {
-      // Check for offline session
+      // No token — try offline session with cached user
       const offlineUser = localStorage.getItem('pos_offline_user');
-      if (offlineUser && !navigator.onLine) {
+      if (offlineUser) {
+        // Try a quick server ping to decide
         try {
-          setUser(JSON.parse(offlineUser));
-          setIsOfflineSession(true);
-        } catch {}
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 3000);
+          await fetch(`${API_BASE}/api/health`, { signal: ctrl.signal, cache: 'no-store' });
+          clearTimeout(t);
+          // Server reachable but no token → go to login
+        } catch {
+          // Server unreachable → use cached user for offline session
+          try {
+            setUser(JSON.parse(offlineUser));
+            setIsOfflineSession(true);
+          } catch {}
+        }
       }
       setLoading(false);
       return;
@@ -184,26 +194,34 @@ export function AuthProvider({ children }) {
       const res = await authAPI.me();
       setUser(res.data);
       setIsOfflineSession(false);
-      // Cache data after successful auth
       cacheForOffline();
     } catch {
-      // If offline and we have cached user data, use it
-      if (!navigator.onLine) {
-        const offlineUser = localStorage.getItem('pos_offline_user');
-        if (offlineUser) {
+      // API call failed — could be offline or invalid token
+      const offlineUser = localStorage.getItem('pos_offline_user');
+      if (offlineUser) {
+        // Check if server is truly unreachable vs bad token
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 3000);
+          await fetch(`${API_BASE}/api/health`, { signal: ctrl.signal, cache: 'no-store' });
+          clearTimeout(t);
+          // Server reachable but token invalid → clear and go to login
+          localStorage.removeItem('pos_token');
+        } catch {
+          // Server unreachable → offline mode with cached user
           try {
             setUser(JSON.parse(offlineUser));
             setIsOfflineSession(true);
-          } catch {}
-        } else {
-          localStorage.removeItem('pos_token');
+          } catch {
+            localStorage.removeItem('pos_token');
+          }
         }
       } else {
         localStorage.removeItem('pos_token');
       }
     }
     setLoading(false);
-  }, [cacheForOffline]);
+  }, [cacheForOffline, API_BASE]);
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
@@ -236,28 +254,27 @@ export function AuthProvider({ children }) {
       
       return res.data.user;
     } catch (onlineError) {
-      // If offline, try local cached login
-      if (!navigator.onLine) {
-        const cachedUser = await offlineDB.offlineLogin(pin);
-        if (cachedUser) {
-          const userData = { ...cachedUser };
-          delete userData.pin_hash; // Don't expose hash in state
-          localStorage.setItem('pos_offline_user', JSON.stringify(userData));
-          setUser(userData);
-          setIsOfflineSession(true);
-          
-          if (userData.ui_preferences) {
-            applyUserPreferences(userData.ui_preferences);
-          }
-          
-          toast.info('Sesion offline iniciada', {
-            description: `${userData.name} — Los cambios se sincronizaran al reconectar`
-          });
-          
-          return userData;
+      // Online login failed — try offline login regardless of navigator.onLine
+      // (navigator.onLine is unreliable in many browsers)
+      const cachedUser = await offlineDB.offlineLogin(pin);
+      if (cachedUser) {
+        const userData = { ...cachedUser };
+        delete userData.pin_hash;
+        localStorage.setItem('pos_offline_user', JSON.stringify(userData));
+        setUser(userData);
+        setIsOfflineSession(true);
+        
+        if (userData.ui_preferences) {
+          applyUserPreferences(userData.ui_preferences);
         }
-        throw new Error('PIN incorrecto o usuario no cacheado para uso offline');
+        
+        toast.info('Sesion offline iniciada', {
+          description: `${userData.name} — Los cambios se sincronizaran al reconectar`
+        });
+        
+        return userData;
       }
+      // No cached user found — re-throw original error
       throw onlineError;
     }
   };
