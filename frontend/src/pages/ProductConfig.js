@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { productsAPI, categoriesAPI, modifiersAPI, reportCategoriesAPI } from '@/lib/api';
-import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List, Printer, Check, Image, ImageIcon, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, X, Pencil, AlertTriangle } from 'lucide-react';
+import { productsAPI, categoriesAPI, modifiersAPI, reportCategoriesAPI, recipesAPI, formatMoney } from '@/lib/api';
+import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List, Printer, Check, Image, ImageIcon, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, X, Pencil, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -58,6 +58,10 @@ export default function ProductConfig() {
   const [reportCategories, setReportCategories] = useState([]);
   const [modifierGroups, setModifierGroups] = useState([]);
   const [activeTab, setActiveTab] = useState('general');
+  
+  // Recipe data (read-only from inventory)
+  const [recipeData, setRecipeData] = useState(null);
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
   
   // Price keypad state
   const [priceKeypad, setPriceKeypad] = useState({ open: false, field: null, value: '' });
@@ -161,6 +165,17 @@ export default function ProductConfig() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Load recipe when switching to receta tab or when product loads
+  useEffect(() => {
+    if (activeTab === 'receta' && productId && !isNew) {
+      setLoadingRecipe(true);
+      recipesAPI.get(productId)
+        .then(res => setRecipeData(res.data && res.data.id ? res.data : null))
+        .catch(() => setRecipeData(null))
+        .finally(() => setLoadingRecipe(false));
+    }
+  }, [activeTab, productId, isNew]);
 
   const handleSave = async () => {
     if (!product.name.trim()) {
@@ -1058,30 +1073,59 @@ export default function ProductConfig() {
                   </h3>
                 </div>
                 
-                <div className="text-center py-8 border border-dashed border-border rounded-xl bg-background/50">
-                  <Tag size={32} className="mx-auto mb-2 text-muted-foreground/40" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    La receta se configura en el módulo de Inventario Maestro
-                  </p>
-                  <a 
-                    href="/inventory-manager?tab=recipes" 
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
-                  >
-                    <Tag size={14} /> Ir a Inventario Maestro
-                  </a>
-                </div>
-
-                {product.recipe_ingredients && product.recipe_ingredients.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-xs font-semibold text-muted-foreground mb-2">Ingredientes actuales:</h4>
-                    <div className="space-y-1">
-                      {product.recipe_ingredients.map((ing, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 rounded bg-background border border-border/50">
-                          <span className="text-sm">{ing.ingredient_name}</span>
-                          <span className="text-xs text-muted-foreground">{ing.quantity} {ing.unit}</span>
+                {loadingRecipe ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw size={24} className="animate-spin text-primary" />
+                  </div>
+                ) : recipeData && recipeData.ingredients?.length > 0 ? (
+                  <div className="space-y-3">
+                    {/* Recipe ingredients list */}
+                    <div className="space-y-2">
+                      {recipeData.ingredients.map((ing, i) => (
+                        <div key={ing.id || i} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border/50">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium">{ing.ingredient_name || '?'}</span>
+                            {ing.waste_percentage > 0 && (
+                              <span className="text-xs text-amber-400 ml-2">+{ing.waste_percentage}% merma</span>
+                            )}
+                          </div>
+                          <span className="text-sm text-muted-foreground font-mono shrink-0 ml-2">
+                            {ing.quantity} {ing.unit}
+                          </span>
                         </div>
                       ))}
                     </div>
+
+                    {/* Recipe summary */}
+                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Ingredientes:</span>
+                        <span className="font-bold">{recipeData.ingredients.length}</span>
+                      </div>
+                      {recipeData.yield_quantity > 1 && (
+                        <div className="flex items-center justify-between text-sm mt-1">
+                          <span className="text-muted-foreground">Rendimiento:</span>
+                          <span className="font-bold">{recipeData.yield_quantity} unidades</span>
+                        </div>
+                      )}
+                      {recipeData.notes && (
+                        <p className="text-xs text-muted-foreground mt-2 italic">{recipeData.notes}</p>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-muted-foreground text-center">
+                      Para editar esta receta, ve a Config &gt; Inventario Maestro &gt; Recetas
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border border-dashed border-border rounded-xl bg-background/50">
+                    <Tag size={32} className="mx-auto mb-2 text-muted-foreground/40" />
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Este producto no tiene receta vinculada
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Puedes crear una en Config &gt; Inventario Maestro &gt; Recetas
+                    </p>
                   </div>
                 )}
               </div>
