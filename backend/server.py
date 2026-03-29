@@ -3766,6 +3766,25 @@ async def startup_event():
     if not existing_tz:
         await db.system_config.insert_one({"id": "timezone", "timezone": "America/Santo_Domingo"})
         logger.info("Timezone config seeded: America/Santo_Domingo")
+    
+    # Create MongoDB indexes for faster queries
+    try:
+        await db.bills.create_index([("status", 1), ("business_date", 1)])
+        await db.bills.create_index("paid_at")
+        await db.orders.create_index("status")
+        await db.orders.create_index("table_id")
+        await db.products.create_index([("category_id", 1), ("active", 1)])
+        await db.products.create_index("barcode")
+        await db.ingredients.create_index("category")
+        await db.stock.create_index("ingredient_id")
+        await db.stock.create_index("warehouse_id")
+        await db.stock_movements.create_index("created_at")
+        await db.void_audit_logs.create_index("created_at")
+        await db.customers.create_index("phone")
+        await db.tables.create_index("status")
+        logger.info("MongoDB indexes created successfully")
+    except Exception as e:
+        logger.warning(f"Index creation warning (non-fatal): {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
