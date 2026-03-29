@@ -1526,7 +1526,36 @@ export default function ProductConfig() {
 
       {/* Beautiful Price Keypad Modal */}
       {priceKeypad.open && (
-        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 99999 }}>
+        <div 
+          className="fixed inset-0 flex items-center justify-center p-4" 
+          style={{ zIndex: 99999 }}
+          tabIndex={0}
+          ref={el => el && el.focus()}
+          onKeyDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const key = e.key;
+            if (key >= '0' && key <= '9') {
+              setPriceKeypad(p => ({ ...p, value: p.value + key }));
+            } else if (key === '.' || key === ',') {
+              if (!priceKeypad.value.includes('.')) {
+                setPriceKeypad(p => ({ ...p, value: p.value + '.' }));
+              }
+            } else if (key === 'Backspace') {
+              setPriceKeypad(p => ({ ...p, value: p.value.slice(0, -1) }));
+            } else if (key === 'Escape') {
+              setPriceKeypad({ open: false, field: null, value: '' });
+            } else if (key === 'Enter') {
+              const val = parseFloat(priceKeypad.value) || 0;
+              if (priceKeypad.field === 'price_a') {
+                setProduct(p => ({ ...p, price_a: val, price: val }));
+              } else {
+                setProduct(p => ({ ...p, [priceKeypad.field]: val }));
+              }
+              setPriceKeypad({ open: false, field: null, value: '' });
+            }
+          }}
+        >
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
