@@ -1,11 +1,14 @@
 # VexlyPOS — Changelog
 
-## 2026-03-29 — PWA & Performance Optimization
+## 2026-03-29 — PWA & Performance Optimization + Offline Mode
 - **PWA Instalable**: manifest.json, íconos 192/512/apple-touch, Service Worker con cache de assets estáticos + API responses
-- **Offline Avanzado**: IndexedDB (idb) para cache de productos, categorías, mesas, config, clientes. Cola de sincronización con reintentos (hasta 5x). Auto-cache después de login. Sync automático al reconectar
+- **Offline Avanzado**: IndexedDB v2 (idb) para cache de productos, categorías, mesas, config, clientes, USUARIOS. Cola de sincronización con reintentos (hasta 5x). Auto-cache después de login. Sync automático al reconectar
+- **Login Offline**: PINs hasheados (SHA-256) cacheados en IndexedDB. Login local cuando no hay internet. Endpoint `/api/auth/offline-users` para cache de credenciales
+- **Órdenes Offline**: Wrappers createOrderOffline/addItemsOffline/sendToKitchenOffline que generan respuestas locales y encolan acciones para sync post-reconexión
+- **Fallback datos**: OrderScreen carga productos/categorías desde IndexedDB cache si API no disponible
 - **React Query**: @tanstack/react-query v5 con staleTime 2min, gcTime 10min, refetchOnReconnect
 - **Transiciones fluidas**: framer-motion AnimatePresence en Layout.js Outlet (0.15s fade+slide entre páginas)
-- **ConnectionStatus**: Indicador flotante offline/syncing (rojo pulsante sin conexión, ámbar sincronizando)
+- **ConnectionStatus**: Banner fijo "MODO OFFLINE" (ámbar), indicador offline flotante (rojo pulsante), sincronización pendiente
 - **Google Translate Protection**: translate="no", meta notranslate, clase notranslate en PinPad + PaymentScreen totals
 
 ## 2026-03-26 — Alanube e-CF + Email + Print Agent
