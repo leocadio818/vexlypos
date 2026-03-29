@@ -188,7 +188,6 @@ export function AuthProvider({ children }) {
       localStorage.setItem('pos_token', res.data.token);
       localStorage.setItem('pos_offline_user', JSON.stringify(res.data.user));
       setUser(res.data.user);
-      setIsOfflineSession(false);
       
       // Apply user's UI preferences (theme/mode)
       if (res.data.user?.ui_preferences) {
