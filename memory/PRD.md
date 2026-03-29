@@ -115,10 +115,10 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - Reporte de Horas Trabajadas
 - CRM (fidelización, segmentación, comunicación)
 - Módulo Contable RD (4 fases)
-- PWA + Optimización rendimiento
 - Manuales de usuario por puesto
 - The Factory evaluation (alternative to Alanube)
 - DGII Report 608, Cache imágenes, Audit Trail export
 
 ## COMPLETED (Latest)
+- 2026-03-29: PWA & Performance Optimization (manifest.json, Service Worker, IndexedDB offline cache, React Query, framer-motion page transitions, ConnectionStatus indicator)
 - 2026-03-29: Google Translate Protection (translate="no", meta notranslate, clase notranslate en PinPad + PaymentScreen totals)

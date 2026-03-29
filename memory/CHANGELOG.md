@@ -1,9 +1,12 @@
 # VexlyPOS — Changelog
 
-## 2026-03-29 — Google Translate Protection
-- **HTML**: `<html lang="es" translate="no">` para prevenir traducción automática de Chrome
-- **Meta tag**: `<meta name="google" content="notranslate" />` en `<head>`
-- **Componentes críticos**: Clase `notranslate` en PinPad (ambos modos: teclado físico y táctil) y totales de factura en PaymentScreen (header total + total general)
+## 2026-03-29 — PWA & Performance Optimization
+- **PWA Instalable**: manifest.json, íconos 192/512/apple-touch, Service Worker con cache de assets estáticos + API responses
+- **Offline Avanzado**: IndexedDB (idb) para cache de productos, categorías, mesas, config, clientes. Cola de sincronización con reintentos (hasta 5x). Auto-cache después de login. Sync automático al reconectar
+- **React Query**: @tanstack/react-query v5 con staleTime 2min, gcTime 10min, refetchOnReconnect
+- **Transiciones fluidas**: framer-motion AnimatePresence en Layout.js Outlet (0.15s fade+slide entre páginas)
+- **ConnectionStatus**: Indicador flotante offline/syncing (rojo pulsante sin conexión, ámbar sincronizando)
+- **Google Translate Protection**: translate="no", meta notranslate, clase notranslate en PinPad + PaymentScreen totals
 
 ## 2026-03-26 — Alanube e-CF + Email + Print Agent
 - **Alanube e-CF Integration**: Full module (Mapeo + Timbrado + Logs). First electronic invoice sent to DGII sandbox successfully. Endpoints: /api/ecf/send, /api/ecf/status, /api/ecf/logs. E-CF button in post-payment dialog.
