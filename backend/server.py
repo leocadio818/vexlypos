@@ -349,9 +349,9 @@ async def delete_category(cat_id: str):
 
 # ─── PRODUCTS ───
 @api.get("/products")
-async def list_products(category_id: Optional[str] = Query(None)):
+async def list_products(category_id: Optional[str] = Query(None), skip: int = Query(0, ge=0), limit: int = Query(300, ge=1, le=500)):
     query = {"category_id": category_id, "active": True} if category_id else {"active": True}
-    return await db.products.find(query, {"_id": 0}).to_list(500)
+    return await db.products.find(query, {"_id": 0}).skip(skip).to_list(limit)
 
 @api.get("/products/{product_id}")
 async def get_product(product_id: str):

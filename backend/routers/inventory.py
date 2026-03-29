@@ -64,9 +64,9 @@ def get_user_from_request(request: Request) -> tuple:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/ingredients")
-async def list_ingredients(category: Optional[str] = Query(None)):
+async def list_ingredients(category: Optional[str] = Query(None), skip: int = Query(0, ge=0), limit: int = Query(500, ge=1, le=1000)):
     query = {"category": category} if category else {}
-    return await db.ingredients.find(query, {"_id": 0}).to_list(1000)
+    return await db.ingredients.find(query, {"_id": 0}).skip(skip).to_list(limit)
 
 @router.get("/ingredients/{ingredient_id}")
 async def get_ingredient(ingredient_id: str):

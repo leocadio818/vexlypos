@@ -76,7 +76,14 @@ async def dashboard():
         jornada_date = today_start[:10]
     
     # Get paid bills for this business day (filtered by business_date, NOT paid_at)
-    bills = await db.bills.find({"status": "paid", "business_date": jornada_date}, {"_id": 0}).to_list(5000)
+    # Optimized: only fetch fields needed for dashboard calculations
+    bills_projection = {
+        "_id": 0, "total": 1, "itbis": 1, "propina_legal": 1,
+        "discount_applied": 1, "change_amount": 1, "payments": 1,
+        "payment_method_id": 1, "payment_method": 1, "paid_at": 1,
+        "table_number": 1, "waiter_id": 1, "waiter_name": 1
+    }
+    bills = await db.bills.find({"status": "paid", "business_date": jornada_date}, bills_projection).to_list(5000)
     today_bills = bills
     
     # Payment methods for cash/card breakdown
@@ -133,12 +140,12 @@ async def dashboard():
             else:
                 card_total += bill_total
     
-    # Operations data
-    tables = await db.tables.find({}, {"_id": 0}).to_list(200)
+    # Operations data - only fetch id and status for occupancy calc
+    tables = await db.tables.find({}, {"_id": 0, "id": 1, "status": 1, "number": 1}).to_list(200)
     total_tables = len(tables)
     
     # Tables with active orders (regardless of table status)
-    orders = await db.orders.find({"status": {"$nin": ["delivered", "cancelled", "paid", "closed"]}}, {"_id": 0, "table_id": 1, "status": 1}).to_list(500)
+    orders = await db.orders.find({"status": {"$nin": ["delivered", "cancelled", "paid", "closed"]}}, {"_id": 0, "table_id": 1, "status": 1}).to_list(200)
     active_orders = len(orders)
     active_table_ids = set(o.get("table_id") for o in orders if o.get("table_id"))
     
@@ -232,11 +239,15 @@ async def dashboard():
     for ct in closed_tables_list:
         ct["total"] = round(ct["total"], 2)
 
-    # Voids/Anulaciones - filtered by active jornada
-    all_voids = await db.void_audit_logs.find({}, {"_id": 0}).to_list(5000)
+    # Voids/Anulaciones - filtered by active jornada with projection
+    void_projection = {
+        "_id": 0, "total_value": 1, "reason": 1, "items_cancelled": 1,
+        "requested_by_name": 1, "authorized_by_name": 1, "created_at": 1
+    }
+    all_voids = await db.void_audit_logs.find({"created_at": {"$gte": jornada_start}}, void_projection).to_list(1000)
 
-    # Filter voids for current jornada
-    jornada_voids = [v for v in all_voids if v.get("created_at", "") >= jornada_start]
+    # Filter voids for current jornada (already filtered in query)
+    jornada_voids = all_voids
     today_voids = jornada_voids  # Same as jornada (jornada IS "today")
 
     def summarize_voids(voids_list):
