@@ -851,7 +851,7 @@ export default function Reports() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Report Categories */}
-        <div className="w-72 border-r border-border bg-card/30 overflow-y-auto">
+        <div className="w-72 border-r border-border bg-card/30 overflow-y-auto pb-28 sm:pb-0">
           <div className="p-3">
             {REPORT_CATEGORIES.map(category => (
               <div key={category.id} className="mb-2">
@@ -957,7 +957,7 @@ export default function Reports() {
           )}
 
           {/* Report Content */}
-          <div className="flex-1 p-4 overflow-y-auto">
+          <div className="flex-1 p-4 pb-28 sm:pb-4 overflow-y-auto">
             <div className="max-w-5xl mx-auto">
               {renderReportContent()}
             </div>

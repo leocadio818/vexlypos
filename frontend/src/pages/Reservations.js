@@ -154,7 +154,7 @@ export default function Reservations() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 p-4 pb-28 sm:pb-4 overflow-auto">
         <div className="max-w-3xl mx-auto">
           {reservations.length === 0 ? (
             <div className="text-center py-12 text-white/40">

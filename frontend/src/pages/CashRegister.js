@@ -551,7 +551,7 @@ export default function CashRegister() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 p-4 pb-28 sm:pb-4 overflow-auto">
         {/* Current Session Card */}
         {currentSession && (
           <div className="max-w-3xl mx-auto mb-8" data-testid="current-session">

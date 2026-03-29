@@ -72,7 +72,7 @@ function SettingsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 p-4 md:p-6 pb-28 sm:pb-6">
       <div className="max-w-6xl mx-auto">
         <header className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">

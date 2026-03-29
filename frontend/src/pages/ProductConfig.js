@@ -343,7 +343,7 @@ export default function ProductConfig() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 p-4 pb-28 sm:pb-4 overflow-auto">
         <div className="max-w-3xl mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="flex items-center gap-3 mb-4">

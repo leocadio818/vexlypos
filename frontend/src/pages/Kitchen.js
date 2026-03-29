@@ -130,7 +130,7 @@ export default function Kitchen() {
         </a>
       </div>
 
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 p-4 pb-28 sm:pb-4 overflow-auto">
         {orders.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <div className="text-center">

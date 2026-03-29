@@ -109,7 +109,7 @@ export default function Customers() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-28 sm:pb-4">
         <div className="max-w-4xl mx-auto">
           {/* Loyalty Info */}
           <div className="grid grid-cols-3 gap-3 mb-6">

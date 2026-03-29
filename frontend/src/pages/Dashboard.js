@@ -62,7 +62,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 p-4 pb-28 sm:pb-4 overflow-auto">
         <div className="max-w-6xl mx-auto space-y-4">
           {/* Top KPI Row - Glassmorphism */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="kpi-cards">
