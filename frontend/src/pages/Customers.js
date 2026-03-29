@@ -88,23 +88,23 @@ export default function Customers() {
 
   return (
     <div className="absolute inset-0 flex flex-col" data-testid="customers-page">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50 shrink-0">
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate('/settings')} className="p-2 hover:bg-muted rounded-lg transition-colors" data-testid="customers-back-btn">
-            <ArrowLeft size={20} />
+      <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-border flex items-center justify-between bg-card/50 shrink-0 gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <button onClick={() => navigate('/settings')} className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors shrink-0" data-testid="customers-back-btn">
+            <ArrowLeft size={18} />
           </button>
-          <Heart size={22} className="text-primary" />
-          <h1 className="font-oswald text-xl font-bold tracking-wide">CLIENTES & FIDELIDAD</h1>
+          <Heart size={18} className="text-primary shrink-0 hidden sm:block" />
+          <h1 className="font-oswald text-base sm:text-xl font-bold tracking-wide truncate">CLIENTES</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 shrink-0">
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => setConfigDialog(true)} className="text-xs" data-testid="loyalty-config-btn">
-              <Star size={14} className="mr-1" /> Config Puntos
+            <Button variant="outline" size="sm" onClick={() => setConfigDialog(true)} className="text-xs h-8 px-2" data-testid="loyalty-config-btn">
+              <Star size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Config</span>
             </Button>
           )}
           <Button size="sm" onClick={() => setAddDialog({ open: true, name: '', phone: '', email: '' })}
-            className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-customer-btn">
-            <Plus size={14} className="mr-1" /> Nuevo Cliente
+            className="bg-primary text-primary-foreground font-bold active:scale-95 h-8 px-2 sm:px-3 text-xs" data-testid="add-customer-btn">
+            <Plus size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Nuevo</span>
           </Button>
         </div>
       </div>
@@ -138,34 +138,36 @@ export default function Customers() {
           </div>
 
           {/* Customer List */}
-          <ScrollArea className="h-[calc(100vh-320px)]">
+          <ScrollArea className="h-[calc(100vh-320px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
             <div className="space-y-2">
               {customers.map(c => (
-                <div key={c.id} className="p-4 rounded-xl bg-card border border-border flex items-center justify-between" data-testid={`customer-${c.id}`}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{c.name}</span>
-                      <Badge variant="outline" className="text-[11px] border-yellow-500 text-yellow-400">
-                        <Star size={8} className="mr-0.5" /> {c.points} pts
-                      </Badge>
+                <div key={c.id} className="p-3 sm:p-4 rounded-xl bg-card border border-border" data-testid={`customer-${c.id}`}>
+                  <div className="flex items-start sm:items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold truncate">{c.name}</span>
+                        <Badge variant="outline" className="text-[11px] border-yellow-500 text-yellow-400 shrink-0">
+                          <Star size={8} className="mr-0.5" /> {c.points} pts
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                        {c.phone && <span className="flex items-center gap-1"><Phone size={10} /> {c.phone}</span>}
+                        {c.email && <span className="flex items-center gap-1 truncate"><Mail size={10} /> {c.email}</span>}
+                        <span>V: {c.visits}</span>
+                        <span>{formatMoney(c.total_spent)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                      {c.phone && <span className="flex items-center gap-1"><Phone size={10} /> {c.phone}</span>}
-                      {c.email && <span className="flex items-center gap-1"><Mail size={10} /> {c.email}</span>}
-                      <span>Visitas: {c.visits}</span>
-                      <span>Consumo: {formatMoney(c.total_spent)}</span>
+                    <div className="flex gap-1.5 shrink-0">
+                      <Button variant="ghost" size="sm" onClick={() => setEditDialog({ open: true, customer: c, name: c.name, phone: c.phone || '', email: c.email || '', rnc: c.rnc || '' })}
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-primary" data-testid={`edit-${c.id}`}>
+                        <Pencil size={14} />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setRedeemDialog({ open: true, customer: c, points: '' })}
+                        disabled={c.points < config.min_redemption}
+                        className="h-8 text-xs border-primary/50 text-primary px-2" data-testid={`redeem-${c.id}`}>
+                        <Gift size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Canjear</span>
+                      </Button>
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setEditDialog({ open: true, customer: c, name: c.name, phone: c.phone || '', email: c.email || '', rnc: c.rnc || '' })}
-                      className="text-xs text-muted-foreground hover:text-primary" data-testid={`edit-${c.id}`}>
-                      <Pencil size={14} />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setRedeemDialog({ open: true, customer: c, points: '' })}
-                      disabled={c.points < config.min_redemption}
-                      className="text-xs border-primary/50 text-primary" data-testid={`redeem-${c.id}`}>
-                      <Gift size={14} className="mr-1" /> Canjear
-                    </Button>
                   </div>
                 </div>
               ))}

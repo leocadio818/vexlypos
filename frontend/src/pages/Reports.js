@@ -8,7 +8,7 @@ import {
   Table2, Clock, ChevronDown, ChevronRight, FileText, Download,
   Printer, Send, DollarSign, Package, ShoppingCart, AlertTriangle,
   Percent, Receipt, Building2, ArrowUpRight, ArrowDownRight, Minus,
-  Filter, RefreshCw, X, Loader2, FileSpreadsheet, File, Sun
+  Filter, RefreshCw, X, Loader2, FileSpreadsheet, File, Sun, Menu
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -481,6 +481,7 @@ export default function Reports() {
   const [reportZOpen, setReportZOpen] = useState(false);
   const [reportZDayId, setReportZDayId] = useState(null);
   const [auditEventFilter, setAuditEventFilter] = useState('Todos');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Load active business date on mount
   useEffect(() => {
@@ -850,8 +851,85 @@ export default function Reports() {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Report Categories */}
-        <div className="w-72 border-r border-border bg-card/30 overflow-y-auto pb-28 sm:pb-0">
+        {/* Mobile Report Selector */}
+        <div className="md:hidden flex flex-col flex-1 overflow-hidden">
+          {/* Mobile category/report selector */}
+          {!selectedReport || mobileMenuOpen ? (
+            <div className="flex-1 overflow-y-auto p-3 pb-28">
+              {mobileMenuOpen && selectedReport && (
+                <button onClick={() => setMobileMenuOpen(false)} className="mb-3 flex items-center gap-2 text-sm text-primary">
+                  <ArrowLeft size={14} /> Volver al reporte
+                </button>
+              )}
+              {REPORT_CATEGORIES.map(category => (
+                <div key={category.id} className="mb-2">
+                  <button
+                    onClick={() => toggleCategory(category.id)}
+                    className={`w-full flex items-center gap-2 p-3 rounded-lg transition-all ${expandedCategories.includes(category.id) ? category.bgColor : 'hover:bg-card'}`}
+                    data-testid={`category-${category.id}`}
+                  >
+                    {expandedCategories.includes(category.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <div className={`p-1.5 rounded-md bg-gradient-to-br ${category.color}`}>
+                      <category.icon size={14} className="text-white" />
+                    </div>
+                    <span className="text-sm font-semibold flex-1 text-left">{category.name}</span>
+                  </button>
+                  {expandedCategories.includes(category.id) && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {category.reports.map(report => (
+                        <button
+                          key={report.id}
+                          onClick={() => { report.link ? navigate(report.link) : loadReport(report.id); setMobileMenuOpen(false); }}
+                          className={`w-full text-left p-3 rounded-lg text-sm transition-all ${selectedReport === report.id ? 'bg-primary/20 border border-primary/40 text-primary' : 'hover:bg-card text-muted-foreground hover:text-foreground'}`}
+                          data-testid={`report-${report.id}`}
+                        >
+                          <p className="font-medium">{report.name}</p>
+                          <p className="text-xs opacity-70 mt-0.5">{report.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Mobile report header with menu button */}
+              <div className="px-3 py-2 border-b border-border bg-card/50 flex items-center justify-between gap-2">
+                <button onClick={() => setMobileMenuOpen(true)} className="flex items-center gap-2 text-sm text-primary font-medium shrink-0">
+                  <Menu size={16} /> Reportes
+                </button>
+                <h2 className="font-oswald text-xs font-bold uppercase truncate">
+                  {REPORT_CATEGORIES.flatMap(c => c.reports).find(r => r.id === selectedReport)?.name}
+                </h2>
+                {loading && <Loader2 size={14} className="animate-spin text-primary shrink-0" />}
+              </div>
+              {/* Mobile action buttons */}
+              {reportData && (
+                <div className="px-3 py-2 border-b border-border flex items-center gap-2 overflow-x-auto">
+                  <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => exportToExcel(selectedReport, reportData, dateRange)} data-testid="export-excel-btn">
+                    <FileSpreadsheet size={12} className="mr-1" /> Excel
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={printReport} data-testid="export-pdf-btn">
+                    <File size={12} className="mr-1" /> PDF
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => window.print()} data-testid="print-btn">
+                    <Printer size={12} />
+                  </Button>
+                </div>
+              )}
+              {/* Mobile report content - FULL WIDTH */}
+              <div className="flex-1 p-3 pb-28 overflow-y-auto">
+                <div className="max-w-5xl mx-auto">
+                  {renderReportContent()}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop/Tablet Sidebar - Hidden on mobile */}
+        <div className="hidden md:block w-72 border-r border-border bg-card/30 overflow-y-auto pb-28 sm:pb-0">
           <div className="p-3">
             {REPORT_CATEGORIES.map(category => (
               <div key={category.id} className="mb-2">
@@ -889,8 +967,8 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Main Content - Desktop only */}
+        <div className="hidden md:flex flex-1 flex-col overflow-hidden">
           {/* Report Actions Bar */}
           {selectedReport && (
             <div className="px-4 py-2 border-b border-border bg-card/50 flex items-center justify-between flex-wrap gap-2">
