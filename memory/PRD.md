@@ -11,7 +11,7 @@ Full-stack POS (Point of Sale) application for restaurants in the Dominican Repu
 ## What's Been Implemented
 - Full POS with table management, orders, kitchen display, cashier
 - Role-based access (Admin, Gerente, Cajero, Mesero) with PIN login
-- Complete Inventory system (11 tabs): Insumos, Producción, Almacenes, Proveedores, Recetas, Stock, Compras, Valorización, Auditoría, Config, Asistente
+- Complete Inventory system (11 tabs)
 - E-CF/DGII electronic billing via Alanube (sandbox)
 - Resend email integration for alerts
 - PWA with manifest, service worker, React Query caching
@@ -21,21 +21,19 @@ Full-stack POS (Point of Sale) application for restaurants in the Dominican Repu
 - Time Clock module for employee hours
 - Multi-theme UI system
 - Mobile-optimized order screen (2 fixed columns, no column selector on phones)
+- Product search within category (magnifying glass button)
 
 ## Completed Tasks (Recent)
-- [2026-03-29] Mobile order screen: Fixed 2 columns on mobile, hidden column selector (Col: 2,3,4,5) on phones only. Tablet/desktop keeps the selector. File: OrderScreen.js
-- [2026-03-29] Fixed bottom nav bar overlapping inventory content + horizontal overflow fix
+- [2026-03-29] Product search button: Added magnifying glass icon button next to # button in order screen. Opens search bar to filter products within current category. Only visible inside categories, not in category list view.
+- [2026-03-29] Mobile order screen: Fixed 2 columns on mobile, hidden column selector
+- [2026-03-29] Fixed bottom nav bar overlapping inventory content + horizontal overflow
 - [2026-03-29] Mobile responsive layouts for all 11 inventory tabs
 
 ## Backlog (Prioritized)
 
 ### P1
 - Reporte de Horas Trabajadas: Dashboard for managers to view/approve Time Clock hours
-- Módulo Contable RD (Phased):
-  - Fase 1: Cuentas por Pagar/Cobrar
-  - Fase 2: Asientos automáticos desde ventas/compras
-  - Fase 3: Estados financieros + reportes DGII completos
-  - Fase 4: Conciliación bancaria
+- Módulo Contable RD (Phased): Cuentas por Pagar/Cobrar → Asientos → Estados financieros → Conciliación
 - Manuales de Usuario: PDF manuals per role
 - Integración IA (GPT-4o mini): Inventory assistant, sales analysis, menu suggestions
 - CRM: Customer loyalty, segmentation, communication
@@ -43,15 +41,15 @@ Full-stack POS (Point of Sale) application for restaurants in the Dominican Repu
 ### P2
 - Reporte DGII 608 (NCF Anulados)
 - Caché de imágenes offline
-- Print Agent Installer update (.bat with qrcode + Pillow)
+- Print Agent Installer update
 
 ### P3
 - Exportar Audit Trail (Excel/CSV)
-- Modo Offline Completo (PAUSED - navigator.onLine unreliable)
+- Modo Offline Completo (PAUSED)
 
 ## Important Notes
 - DO NOT implement offline ordering/syncing
 - All new UI with numbers must use `notranslate` class
 - Respond in Spanish to user
-- Radix ScrollArea fix: `[&_[data-radix-scroll-area-viewport]>div]:!block` prevents horizontal overflow
+- Radix ScrollArea fix: `[&_[data-radix-scroll-area-viewport]>div]:!block`
 - Mobile detection: `device?.isMobile` from `useAuth()` context (width < 768px)

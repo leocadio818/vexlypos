@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ordersAPI, categoriesAPI, productsAPI, modifiersAPI, reasonsAPI, tablesAPI, areasAPI, billsAPI, inventorySettingsAPI, posSessionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake } from 'lucide-react';
+import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -94,6 +94,11 @@ export default function OrderScreen() {
   const [showQtyKeypad, setShowQtyKeypad] = useState(false); // Floating keypad
   const [qtyKeypadExtended, setQtyKeypadExtended] = useState(false); // Extended mode for 10+ or decimals
   const [qtyKeypadValue, setQtyKeypadValue] = useState(''); // Current value in extended mode
+  
+  // Product search within category
+  const [showProductSearch, setShowProductSearch] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+  const productSearchRef = useRef(null);
   
   // Move Table Dialog
   const [moveDialog, setMoveDialog] = useState({ open: false });
@@ -518,7 +523,13 @@ export default function OrderScreen() {
     navigate('/tables'); 
   };
 
-  const filteredProducts = activeCat ? products.filter(p => p.category_id === activeCat) : [];
+  const filteredProducts = activeCat ? products.filter(p => {
+    if (p.category_id !== activeCat) return false;
+    if (productSearchQuery.trim()) {
+      return p.name?.toLowerCase().includes(productSearchQuery.toLowerCase().trim());
+    }
+    return true;
+  }) : [];
 
   const handleProductClick = (product) => {
     // Block if no active business day
@@ -1976,7 +1987,7 @@ export default function OrderScreen() {
         <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-white/10 backdrop-blur-xl bg-white/5`}>
           <div className="flex items-center gap-2">
             {activeCat ? (
-              <button onClick={() => setActiveCat(null)} className={`flex items-center gap-2 bg-primary text-primary-foreground font-oswald font-bold rounded-xl px-4 transition-all active:scale-95 ${largeMode ? 'h-12 text-base' : 'h-10 text-sm'}`} data-testid="back-to-categories">
+              <button onClick={() => { setActiveCat(null); setShowProductSearch(false); setProductSearchQuery(''); }} className={`flex items-center gap-2 bg-primary text-primary-foreground font-oswald font-bold rounded-xl px-4 transition-all active:scale-95 ${largeMode ? 'h-12 text-base' : 'h-10 text-sm'}`} data-testid="back-to-categories">
                 <ArrowLeft size={largeMode ? 20 : 16} /> Categorias
               </button>
             ) : (
@@ -1989,7 +2000,26 @@ export default function OrderScreen() {
             )}
           </div>
           {/* Column controls and Quantity button */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2.5">
+            {/* Search Button - only when inside a category */}
+            {activeCat && (
+              <button
+                onClick={() => {
+                  setShowProductSearch(!showProductSearch);
+                  setProductSearchQuery('');
+                  setTimeout(() => productSearchRef.current?.focus(), 100);
+                }}
+                className={`${largeMode ? 'w-10 h-8' : 'w-9 h-8'} rounded-lg font-bold transition-colors flex items-center justify-center ${
+                  showProductSearch
+                    ? 'bg-cyan-500 text-white'
+                    : 'bg-white/10 hover:bg-cyan-500/20 text-white/60'
+                }`}
+                title="Buscar producto"
+                data-testid="product-search-btn"
+              >
+                <Search size={largeMode ? 16 : 14} />
+              </button>
+            )}
             {/* Quick Quantity Button */}
             {activeCat && (
               <button
@@ -2035,6 +2065,34 @@ export default function OrderScreen() {
             )}
           </div>
         </div>
+
+        {/* Product Search Bar */}
+        {showProductSearch && activeCat && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 border-b border-cyan-500/30">
+            <Search size={16} className="text-cyan-400 shrink-0" />
+            <input
+              ref={productSearchRef}
+              type="text"
+              value={productSearchQuery}
+              onChange={e => setProductSearchQuery(e.target.value)}
+              placeholder="Buscar producto..."
+              className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-white/40"
+              data-testid="product-search-input"
+              autoFocus
+            />
+            {productSearchQuery && (
+              <button onClick={() => setProductSearchQuery('')} className="text-white/50 hover:text-white">
+                <X size={14} />
+              </button>
+            )}
+            <button
+              onClick={() => { setShowProductSearch(false); setProductSearchQuery(''); }}
+              className="text-cyan-400/70 hover:text-cyan-400 text-xs font-medium"
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
 
         {/* Preset Qty Indicator */}
         {presetQty > 0 && activeCat && (
