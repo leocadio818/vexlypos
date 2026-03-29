@@ -1446,7 +1446,7 @@ export default function OrderScreen() {
       {/* Left (visually): Order Summary - Now rendered second but appears on left due to flex-row-reverse */}
       {/* Responsive: 35% on large screens, 45% on tablets, fullscreen on mobile when expanded */}
       <div className={`
-        ${mobileAccountExpanded ? 'fixed inset-0 z-40 pb-16' : 'hidden lg:flex'} 
+        ${mobileAccountExpanded || splitMode ? 'fixed inset-0 z-40 pb-16' : 'hidden lg:flex'} 
         w-full lg:w-[45%] xl:w-[35%] 
         border-b lg:border-b-0 lg:border-l border-white/10 
         flex flex-col backdrop-blur-xl bg-background/95 lg:bg-white/5 shrink-0
@@ -1456,10 +1456,11 @@ export default function OrderScreen() {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => {
-                if (mobileAccountExpanded) {
-                  setMobileAccountExpanded(false);
-                } else if (splitMode) {
+                if (splitMode) {
                   exitSplitMode();
+                  setMobileAccountExpanded(false);
+                } else if (mobileAccountExpanded) {
+                  setMobileAccountExpanded(false);
                 } else {
                   handleBack();
                 }
