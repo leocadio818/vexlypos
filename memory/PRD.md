@@ -120,5 +120,4 @@ Full-stack POS (Point of Sale) application for restaurants in Dominican Republic
 - DGII Report 608, Cache imágenes, Audit Trail export
 
 ## COMPLETED (Latest)
-- 2026-03-29: PWA + Offline Mode Option B (manifest, SW, IndexedDB v2, offline login SHA-256, offline orders with sync queue, React Query, framer-motion, ConnectionStatus banner)
-- 2026-03-29: Google Translate Protection
+- 2026-03-29: Google Translate Protection + PWA Base (manifest, SW estático, React Query, framer-motion transitions). Offline completo REVERTIDO por incompatibilidad

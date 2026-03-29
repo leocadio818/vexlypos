@@ -12,7 +12,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [isOfflineSession, setIsOfflineSession] = useState(false);
   
   // Offline sync state
   const [isSyncing, setIsSyncing] = useState(false);
@@ -168,60 +167,17 @@ export function AuthProvider({ children }) {
 
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem('pos_token');
-    if (!token) {
-      // No token — try offline session with cached user
-      const offlineUser = localStorage.getItem('pos_offline_user');
-      if (offlineUser) {
-        // Try a quick server ping to decide
-        try {
-          const ctrl = new AbortController();
-          const t = setTimeout(() => ctrl.abort(), 3000);
-          await fetch(`${API_BASE}/api/health`, { signal: ctrl.signal, cache: 'no-store' });
-          clearTimeout(t);
-          // Server reachable but no token → go to login
-        } catch {
-          // Server unreachable → use cached user for offline session
-          try {
-            setUser(JSON.parse(offlineUser));
-            setIsOfflineSession(true);
-          } catch {}
-        }
-      }
-      setLoading(false);
-      return;
-    }
+    if (!token) { setLoading(false); return; }
     try {
       const res = await authAPI.me();
       setUser(res.data);
-      setIsOfflineSession(false);
+      // Cache data after successful auth
       cacheForOffline();
     } catch {
-      // API call failed — could be offline or invalid token
-      const offlineUser = localStorage.getItem('pos_offline_user');
-      if (offlineUser) {
-        // Check if server is truly unreachable vs bad token
-        try {
-          const ctrl = new AbortController();
-          const t = setTimeout(() => ctrl.abort(), 3000);
-          await fetch(`${API_BASE}/api/health`, { signal: ctrl.signal, cache: 'no-store' });
-          clearTimeout(t);
-          // Server reachable but token invalid → clear and go to login
-          localStorage.removeItem('pos_token');
-        } catch {
-          // Server unreachable → offline mode with cached user
-          try {
-            setUser(JSON.parse(offlineUser));
-            setIsOfflineSession(true);
-          } catch {
-            localStorage.removeItem('pos_token');
-          }
-        }
-      } else {
-        localStorage.removeItem('pos_token');
-      }
+      localStorage.removeItem('pos_token');
     }
     setLoading(false);
-  }, [cacheForOffline, API_BASE]);
+  }, [cacheForOffline]);
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
@@ -254,27 +210,6 @@ export function AuthProvider({ children }) {
       
       return res.data.user;
     } catch (onlineError) {
-      // Online login failed — try offline login regardless of navigator.onLine
-      // (navigator.onLine is unreliable in many browsers)
-      const cachedUser = await offlineDB.offlineLogin(pin);
-      if (cachedUser) {
-        const userData = { ...cachedUser };
-        delete userData.pin_hash;
-        localStorage.setItem('pos_offline_user', JSON.stringify(userData));
-        setUser(userData);
-        setIsOfflineSession(true);
-        
-        if (userData.ui_preferences) {
-          applyUserPreferences(userData.ui_preferences);
-        }
-        
-        toast.info('Sesion offline iniciada', {
-          description: `${userData.name} — Los cambios se sincronizaran al reconectar`
-        });
-        
-        return userData;
-      }
-      // No cached user found — re-throw original error
       throw onlineError;
     }
   };
@@ -290,30 +225,26 @@ export function AuthProvider({ children }) {
       await syncPendingOperations();
     }
     
-    // Auto-send all pending orders before logout (only if online)
-    if (navigator.onLine) {
-      try {
-        const token = localStorage.getItem('pos_token');
-        if (token) {
-          const res = await fetch(`${API_BASE}/api/orders?status=active`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const orders = await res.json();
-          for (const order of orders) {
-            const pending = order.items?.filter(i => i.status === 'pending') || [];
-            if (pending.length > 0) {
-              await fetch(`${API_BASE}/api/orders/${order.id}/send-kitchen`, {
-                method: 'POST', headers: { Authorization: `Bearer ${token}` }
-              });
-            }
+    // Auto-send all pending orders before logout
+    try {
+      const token = localStorage.getItem('pos_token');
+      if (token) {
+        const res = await fetch(`${API_BASE}/api/orders?status=active`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const orders = await res.json();
+        for (const order of orders) {
+          const pending = order.items?.filter(i => i.status === 'pending') || [];
+          if (pending.length > 0) {
+            await fetch(`${API_BASE}/api/orders/${order.id}/send-kitchen`, {
+              method: 'POST', headers: { Authorization: `Bearer ${token}` }
+            });
           }
         }
-      } catch {}
-    }
+      }
+    } catch {}
     localStorage.removeItem('pos_token');
-    localStorage.removeItem('pos_offline_user');
     setUser(null);
-    setIsOfflineSession(false);
     resetThemeOnLogout();
   };
 
@@ -328,7 +259,6 @@ export function AuthProvider({ children }) {
     lastSyncTime,
     syncNow: syncPendingOperations,
     cacheData: cacheForOffline,
-    isOfflineSession,
   };
 
   return (
@@ -338,7 +268,6 @@ export function AuthProvider({ children }) {
       logout, 
       loading, 
       isOnline, 
-      isOfflineSession,
       ensureSeed, 
       hasPermission, 
       largeMode, 

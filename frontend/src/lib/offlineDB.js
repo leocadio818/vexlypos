@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'vexlypos-offline';
-const DB_VERSION = 2;
+const DB_VERSION = 1;
 
 const STORES = {
   PRODUCTS: 'products',
@@ -10,7 +10,6 @@ const STORES = {
   CONFIG: 'config',
   CUSTOMERS: 'customers',
   SYNC_QUEUE: 'sync_queue',
-  USERS: 'users',
 };
 
 let dbPromise = null;
@@ -33,17 +32,11 @@ function getDB() {
           const store = db.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id', autoIncrement: true });
           store.createIndex('status', 'status');
         }
-        if (!db.objectStoreNames.contains(STORES.USERS)) {
-          const uStore = db.createObjectStore(STORES.USERS, { keyPath: 'id' });
-          uStore.createIndex('pin_hash', 'pin_hash', { unique: true });
-        }
       },
     });
   }
   return dbPromise;
 }
-
-// ═══ Generic helpers ═══
 
 async function cacheData(storeName, items) {
   const db = await getDB();
@@ -54,23 +47,6 @@ async function cacheData(storeName, items) {
     await store.put(item);
   }
   await tx.done;
-}
-
-async function getCachedData(storeName) {
-  const db = await getDB();
-  return db.getAll(storeName);
-}
-
-// ═══ Sync Queue ═══
-
-async function addToSyncQueue(action) {
-  const db = await getDB();
-  await db.add(STORES.SYNC_QUEUE, {
-    ...action,
-    status: 'pending',
-    created_at: new Date().toISOString(),
-    retry_count: 0,
-  });
 }
 
 async function getSyncQueueCount() {
@@ -133,11 +109,8 @@ async function cacheEssentialData(apiBase, token) {
         const data = await res.json();
         if (Array.isArray(data)) await cacheData(store, data);
       }
-    } catch {
-      // Silently fail — cache what we can
-    }
+    } catch {}
   }
-  // Config is a single object
   try {
     const res = await fetch(`${apiBase}/api/system/config`, { headers });
     if (res.ok) {
@@ -146,14 +119,6 @@ async function cacheEssentialData(apiBase, token) {
       const tx = db.transaction(STORES.CONFIG, 'readwrite');
       await tx.objectStore(STORES.CONFIG).put({ key: 'system', ...data });
       await tx.done;
-    }
-  } catch {}
-  // Cache users for offline login
-  try {
-    const res = await fetch(`${apiBase}/api/auth/offline-users`, { headers });
-    if (res.ok) {
-      const users = await res.json();
-      if (Array.isArray(users)) await cacheUsersForOffline(users);
     }
   } catch {}
 }
@@ -171,65 +136,11 @@ async function cleanupSyncedData() {
   } catch {}
 }
 
-// ═══ Named exports for direct use ═══
-export { STORES, cacheData, getCachedData, addToSyncQueue, getSyncQueueCount };
-
-export async function getCachedProducts() { return getCachedData(STORES.PRODUCTS); }
-export async function getCachedCategories() { return getCachedData(STORES.CATEGORIES); }
-export async function getCachedTables() { return getCachedData(STORES.TABLES); }
-export async function getCachedCustomers() { return getCachedData(STORES.CUSTOMERS); }
-export async function getCachedConfig() {
-  const db = await getDB();
-  return db.get(STORES.CONFIG, 'system');
-}
-
-// ═══ Offline Login: cache users with pin_hash ═══
-
-async function hashPinSHA256(pin) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pin);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function cacheUsersForOffline(users) {
-  const db = await getDB();
-  const tx = db.transaction(STORES.USERS, 'readwrite');
-  const store = tx.objectStore(STORES.USERS);
-  await store.clear();
-  for (const u of users) {
-    await store.put(u);
-  }
-  await tx.done;
-}
-
-async function offlineLogin(pin) {
-  const hash = await hashPinSHA256(pin);
-  const db = await getDB();
-  const tx = db.transaction(STORES.USERS, 'readonly');
-  const index = tx.objectStore(STORES.USERS).index('pin_hash');
-  const user = await index.get(hash);
-  if (!user || !user.active) return null;
-  return user;
-}
-
-export { hashPinSHA256, cacheUsersForOffline, offlineLogin };
-
-// ═══ Default export for AuthContext compatibility ═══
 const offlineDB = {
   getSyncQueueCount,
   syncWithServer,
   cacheEssentialData,
   cleanupSyncedData,
-  addToSyncQueue,
-  getCachedProducts,
-  getCachedCategories,
-  getCachedTables,
-  getCachedCustomers,
-  getCachedConfig,
-  cacheUsersForOffline,
-  offlineLogin,
 };
 
 export default offlineDB;
