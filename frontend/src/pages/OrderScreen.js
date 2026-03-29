@@ -44,7 +44,7 @@ function getContrastText(hex) {
 export default function OrderScreen() {
   const { tableId } = useParams();
   const navigate = useNavigate();
-  const { user, largeMode, hasPermission } = useAuth();
+  const { user, largeMode, hasPermission, device } = useAuth();
   const { isMinimalist } = useTheme();
   const [table, setTable] = useState(null);
   const [order, setOrder] = useState(null);
@@ -2009,6 +2009,8 @@ export default function OrderScreen() {
                 {presetQty > 0 && <span className="ml-0.5">{presetQty}</span>}
               </button>
             )}
+            {!device?.isMobile && (
+            <>
             <span className={`text-white/50 mx-1 lg:hidden ${largeMode ? 'text-xs' : 'text-xs'}`}>Col:</span>
             {[2, 3, 4, 5].map(num => (
               <button
@@ -2029,6 +2031,8 @@ export default function OrderScreen() {
                 {num}
               </button>
             ))}
+            </>
+            )}
           </div>
         </div>
 
@@ -2053,7 +2057,7 @@ export default function OrderScreen() {
           {!activeCat && (
             <div 
               className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
-              style={{ gridTemplateColumns: `repeat(${Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}
               data-testid="category-grid"
             >
               {categories.map((cat, idx) => {
@@ -2105,7 +2109,7 @@ export default function OrderScreen() {
           {activeCat && (
             <div 
               className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
-              style={{ gridTemplateColumns: `repeat(${Math.min(gridSettings.productColumns, 3)}, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.productColumns, 3)}, minmax(0, 1fr))` }}
               data-testid="product-grid"
             >
               {filteredProducts.map(product => {
