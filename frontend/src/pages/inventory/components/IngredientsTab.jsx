@@ -204,26 +204,26 @@ export default function IngredientsTab({
   return (
     <div data-testid="ingredients-tab">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-oswald text-lg font-bold">Insumos / Ingredientes</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <h2 className="font-oswald text-base sm:text-lg font-bold">Insumos / Ingredientes</h2>
         <div className="flex gap-2">
           <Button 
             variant="outline"
             onClick={() => setShowUnitsManager(!showUnitsManager)}
-            className="font-oswald text-xs"
+            className="font-oswald text-xs flex-1 sm:flex-none"
             data-testid="manage-units-btn"
           >
-            <ArrowLeftRight size={14} className="mr-1" /> Gestionar Unidades
+            <ArrowLeftRight size={14} className="mr-1" /> Unidades
           </Button>
           <Button 
             onClick={() => {
               setValidationAttempted(false);
               setIngredientDialog({ open: true, data: { name: '', unit: 'unidad', category: 'general', min_stock: 0, avg_cost: 0, purchase_unit: '', purchase_quantity: 1, dispatch_quantity: 1, conversion_factor: 1 } });
             }}
-            className="bg-primary text-primary-foreground font-oswald"
+            className="bg-primary text-primary-foreground font-oswald text-xs flex-1 sm:flex-none"
             data-testid="add-ingredient-btn"
           >
-            <Plus size={16} className="mr-1" /> Nuevo Insumo
+            <Plus size={14} className="mr-1" /> Nuevo
           </Button>
         </div>
       </div>
@@ -305,7 +305,7 @@ export default function IngredientsTab({
       )}
 
       {/* Search and filter */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -337,90 +337,87 @@ export default function IngredientsTab({
           return (
             <div 
               key={ing.id} 
-              className={`flex items-center justify-between p-3 rounded-xl border ${isLow ? 'border-red-500/50 bg-red-500/10' : ing.is_subrecipe ? 'border-blue-500/30 bg-blue-500/5' : 'border-border bg-card'}`}
+              className={`p-2 sm:p-3 rounded-xl border ${isLow ? 'border-red-500/50 bg-red-500/10' : ing.is_subrecipe ? 'border-blue-500/30 bg-blue-500/5' : 'border-border bg-card'}`}
               data-testid={`ingredient-${ing.id}`}
             >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${ing.is_subrecipe ? 'bg-blue-500/20' : 'bg-primary/10'}`}>
-                  {ing.is_subrecipe ? (
-                    <FileText size={18} className="text-blue-500" />
-                  ) : (
-                    <Package size={18} className="text-primary" />
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{ing.name}</span>
-                    <Badge variant="secondary" className="text-[11px]">{ing.unit}</Badge>
-                    {ing.is_subrecipe && <Badge className="text-[11px] bg-blue-500">Sub-receta</Badge>}
-                    {isLow && <Badge variant="destructive" className="text-[11px]">Stock bajo</Badge>}
-                  </div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span>{getCategoryLabel(ing.category)}</span>
-                    <span>•</span>
-                    <span>Costo: {formatMoney(ing.avg_cost)}</span>
-                    {ing.is_subrecipe && ing.cost_updated_at && (
-                      <>
-                        <span>•</span>
-                        <span className="text-blue-400 text-xs">Actualizado: {new Date(ing.cost_updated_at).toLocaleDateString()}</span>
-                      </>
+              {/* Top row: icon + name + stock */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${ing.is_subrecipe ? 'bg-blue-500/20' : 'bg-primary/10'}`}>
+                    {ing.is_subrecipe ? (
+                      <FileText size={16} className="text-blue-500" />
+                    ) : (
+                      <Package size={16} className="text-primary" />
                     )}
-                    <span>•</span>
-                    <span>Min: {ing.min_stock} {ing.unit}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="font-semibold text-sm truncate">{ing.name}</span>
+                      <Badge variant="secondary" className="text-[10px] shrink-0">{ing.unit}</Badge>
+                      {ing.is_subrecipe && <Badge className="text-[10px] bg-blue-500 shrink-0">Sub-receta</Badge>}
+                      {isLow && <Badge variant="destructive" className="text-[10px] shrink-0">Bajo</Badge>}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1 flex-wrap">
+                      <span>{getCategoryLabel(ing.category)}</span>
+                      <span>•</span>
+                      <span>{formatMoney(ing.avg_cost)}</span>
+                      <span>•</span>
+                      <span>Min: {ing.min_stock}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <span className={`font-oswald text-lg font-bold ${isLow ? 'text-red-500' : 'text-primary'}`}>
+                {/* Stock number */}
+                <div className="text-right shrink-0">
+                  <span className={`font-oswald text-base sm:text-lg font-bold ${isLow ? 'text-red-500' : 'text-primary'}`}>
                     {totalStock.toFixed(2)}
                   </span>
-                  <span className="text-xs text-muted-foreground ml-1">{ing.unit}</span>
-                </div>
-                <div className="flex gap-1">
-                  {ing.is_subrecipe && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-8 text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
-                      onClick={() => onNavigateToProduction?.()}
-                      data-testid={`produce-${ing.id}`}
-                      title="Ir a Producción"
-                    >
-                      <Factory size={14} className="mr-1" /> Producir
-                    </Button>
-                  )}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-emerald-500 hover:text-emerald-400"
-                    onClick={() => onLoadConversionAnalysis?.(ing.id)}
-                    title="Ver Análisis de Conversión"
-                    data-testid={`conversion-analysis-btn-${ing.id}`}
-                  >
-                    <Calculator size={14} />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={() => {
-                      setValidationAttempted(false);
-                      setIngredientDialog({ open: true, data: { ...ing } });
-                    }}
-                  >
-                    <Pencil size={14} />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-destructive"
-                    onClick={() => handleDeleteIngredient(ing.id)}
-                  >
-                    <Trash2 size={14} />
-                  </Button>
+                  <span className="text-[10px] text-muted-foreground ml-0.5">{ing.unit}</span>
                 </div>
               </div>
+              {/* Bottom row: action buttons */}
+              <div className="flex items-center justify-end gap-1 mt-1.5 border-t border-border/50 pt-1.5">
+                {ing.is_subrecipe && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-xs text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
+                    onClick={() => onNavigateToProduction?.()}
+                    data-testid={`produce-${ing.id}`}
+                    title="Ir a Producción"
+                  >
+                    <Factory size={12} className="mr-1" /> Producir
+                  </Button>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 text-emerald-500 hover:text-emerald-400"
+                  onClick={() => onLoadConversionAnalysis?.(ing.id)}
+                  title="Ver Análisis de Conversión"
+                  data-testid={`conversion-analysis-btn-${ing.id}`}
+                >
+                  <Calculator size={13} />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7"
+                  onClick={() => {
+                    setValidationAttempted(false);
+                    setIngredientDialog({ open: true, data: { ...ing } });
+                  }}
+                >
+                  <Pencil size={13} />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 text-destructive"
+                  onClick={() => handleDeleteIngredient(ing.id)}
+                >
+                  <Trash2 size={13} />
+                  </Button>
+                </div>
             </div>
           );
         })}

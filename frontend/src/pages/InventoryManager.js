@@ -352,23 +352,23 @@ export default function InventoryManager() {
   return (
     <div className="h-full flex flex-col" data-testid="inventory-manager">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50">
-        <div className="flex items-center gap-2">
-          <Link to="/settings?tab=inventario" className="p-2 hover:bg-muted rounded-lg transition-colors">
-            <ArrowLeft size={20} />
+      <div className="px-2 sm:px-4 py-2 sm:py-3 border-b border-border flex items-center justify-between bg-card/50">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <Link to="/settings?tab=inventario" className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors shrink-0">
+            <ArrowLeft size={18} />
           </Link>
-          <Package size={22} className="text-primary" />
-          <h1 className="font-oswald text-xl font-bold tracking-wide">INVENTARIO MAESTRO</h1>
+          <Package size={18} className="text-primary shrink-0 hidden sm:block" />
+          <h1 className="font-oswald text-base sm:text-xl font-bold tracking-wide truncate">INVENTARIO</h1>
         </div>
-        <Button variant="ghost" size="icon" onClick={fetchAll}>
-          <RefreshCw size={18} />
+        <Button variant="ghost" size="icon" onClick={fetchAll} className="shrink-0 h-8 w-8">
+          <RefreshCw size={16} />
         </Button>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="px-4 py-2 border-b border-border bg-background/50">
-          <TabsList className="bg-card border border-border">
+        <div className="px-2 sm:px-4 py-2 border-b border-border bg-background/50 overflow-x-auto">
+          <TabsList className="bg-card border border-border w-max">
             <TabsTrigger value="ingredients" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs">
               <Package size={14} className="mr-1" /> Insumos
             </TabsTrigger>
@@ -406,7 +406,7 @@ export default function InventoryManager() {
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="p-4 max-w-6xl mx-auto">
+          <div className="p-2 sm:p-4 max-w-6xl mx-auto">
             {/* ─── INGREDIENTS TAB ─── */}
             <TabsContent value="ingredients" className="mt-0">
               <IngredientsTab
