@@ -349,11 +349,11 @@ export default function ValuationTab({ warehouses }) {
                 <TrendingUp size={16} className="text-emerald-500" />
                 <span className="font-oswald font-medium text-sm">Evolución del Capital</span>
               </div>
-              <div className="h-[300px]" data-testid="valuation-line-chart">
+              <div className="h-[300px] overflow-hidden" data-testid="valuation-line-chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsLineChart 
                     data={trendsData.daily_valuations}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                     <XAxis 
@@ -604,7 +604,7 @@ export default function ValuationTab({ warehouses }) {
           {/* Tabla de Valorización */}
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm" data-testid="valuation-table">
+              <table className="w-full text-sm min-w-[700px]" data-testid="valuation-table">
                 <thead className="bg-gradient-to-r from-emerald-900/50 to-emerald-800/50 text-emerald-100">
                   <tr>
                     <th className="px-4 py-3 text-left font-oswald font-medium">Insumo</th>

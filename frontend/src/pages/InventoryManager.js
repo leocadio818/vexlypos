@@ -405,8 +405,8 @@ export default function InventoryManager() {
           </TabsList>
         </div>
 
-        <ScrollArea className="flex-1">
-          <div className="p-2 sm:p-4 max-w-6xl mx-auto">
+        <ScrollArea className="flex-1 [&_[data-radix-scroll-area-viewport]>div]:!block">
+          <div className="p-2 sm:p-4 pb-28 sm:pb-4 max-w-6xl mx-auto w-full box-border">
             {/* ─── INGREDIENTS TAB ─── */}
             <TabsContent value="ingredients" className="mt-0">
               <IngredientsTab
