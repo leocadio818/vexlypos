@@ -17,15 +17,17 @@ Full-stack POS (Point of Sale) application for restaurants in the Dominican Repu
 - PWA with manifest, service worker, React Query caching
 - Google Translate protection (notranslate classes)
 - Framer Motion page transitions
-- Mobile-responsive inventory module (ALL 11 tabs verified)
+- Mobile-responsive inventory module (ALL 11 tabs verified with scroll testing)
 - Time Clock module for employee hours
 - Multi-theme UI system
 
 ## Completed Tasks (Recent)
-- [2026-03-29] Mobile responsiveness fix for ALL inventory tabs (RecipesTab, StockTab, PurchasesTab, AssistantTab, AuditTab) - Verified by testing agent 100% pass
-- [Previous] PWA implementation (manifest, service worker, React Query)
-- [Previous] Google Translate protection
-- [Previous] Offline mode attempted and reverted (navigator.onLine unreliable)
+- [2026-03-29] CRITICAL: Fixed bottom nav bar overlapping inventory content on mobile
+  - Added `pb-28 sm:pb-4` to ScrollArea content div for bottom padding
+  - Added `[&_[data-radix-scroll-area-viewport]>div]:!block` to fix Radix ScrollArea horizontal overflow
+  - Fixed mobile layouts in RecipesTab, StockTab, PurchasesTab, AssistantTab, AuditTab
+  - Added `overflow-x-auto` + `min-w-[700px]` to tables for horizontal scrolling
+  - All 11 tabs verified by testing agent (iteration_106) with scroll-to-bottom testing - 100% pass
 
 ## Backlog (Prioritized)
 
@@ -53,3 +55,4 @@ Full-stack POS (Point of Sale) application for restaurants in the Dominican Repu
 - DO NOT implement offline ordering/syncing
 - All new UI with numbers must use `notranslate` class
 - Respond in Spanish to user
+- The Radix ScrollArea has an inner div with `display: table` that causes horizontal overflow on mobile. Use `[&_[data-radix-scroll-area-viewport]>div]:!block` to override this.
