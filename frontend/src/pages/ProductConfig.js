@@ -170,10 +170,16 @@ export default function ProductConfig() {
   useEffect(() => {
     if (activeTab === 'receta' && productId && !isNew) {
       setLoadingRecipe(true);
-      recipesAPI.get(productId)
-        .then(res => setRecipeData(res.data && res.data.id ? res.data : null))
-        .catch(() => setRecipeData(null))
-        .finally(() => setLoadingRecipe(false));
+      Promise.all([
+        recipesAPI.get(productId).then(res => res.data && res.data.id ? res.data : null).catch(() => null),
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/inventory/recipe-cost/${productId}`)
+          .then(r => r.ok ? r.json() : null).catch(() => null)
+      ]).then(([recipe, costData]) => {
+        if (recipe && costData) {
+          recipe._costData = costData;
+        }
+        setRecipeData(recipe);
+      }).finally(() => setLoadingRecipe(false));
     }
   }, [activeTab, productId, isNew]);
 
@@ -1079,21 +1085,66 @@ export default function ProductConfig() {
                   </div>
                 ) : recipeData && recipeData.ingredients?.length > 0 ? (
                   <div className="space-y-3">
+                    {/* Financial summary card */}
+                    {(() => {
+                      const cost = recipeData._costData?.total_cost || 0;
+                      const pvp = parseFloat(product.price_a) || parseFloat(product.price) || 0;
+                      const margin = pvp > 0 ? ((pvp - cost) / pvp) * 100 : 0;
+                      const profit = pvp - cost;
+                      const yieldQty = recipeData.yield_quantity || 1;
+                      
+                      let marginColor = 'text-green-400';
+                      let marginBg = 'bg-green-500/10 border-green-500/30';
+                      if (margin < 15) { marginColor = 'text-red-400'; marginBg = 'bg-red-500/10 border-red-500/30'; }
+                      else if (margin < 30) { marginColor = 'text-amber-400'; marginBg = 'bg-amber-500/10 border-amber-500/30'; }
+                      
+                      return (
+                        <div className={`p-4 rounded-xl border ${marginBg}`}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <h4 className="font-oswald font-bold text-lg">{recipeData.product_name || product.name}</h4>
+                            <Badge className={`${marginColor} ${marginBg} font-oswald font-bold text-sm`}>
+                              {margin.toFixed(1)}%
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm flex-wrap">
+                            <span className="text-muted-foreground">Rinde: <strong className="text-foreground">{yieldQty}</strong></span>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-muted-foreground">C: <strong className="text-foreground">{formatMoney(cost)}</strong></span>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-muted-foreground">PVP: <strong className="text-foreground">{formatMoney(pvp)}</strong></span>
+                            <span className="text-muted-foreground">•</span>
+                            <span className={`font-bold ${marginColor}`}>G: {formatMoney(profit)}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Recipe ingredients list */}
                     <div className="space-y-2">
-                      {recipeData.ingredients.map((ing, i) => (
-                        <div key={ing.id || i} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border/50">
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium">{ing.ingredient_name || '?'}</span>
-                            {ing.waste_percentage > 0 && (
-                              <span className="text-xs text-amber-400 ml-2">+{ing.waste_percentage}% merma</span>
-                            )}
+                      {recipeData.ingredients.map((ing, i) => {
+                        const costInfo = recipeData._costData?.breakdown?.find(b => b.ingredient_id === ing.ingredient_id);
+                        return (
+                          <div key={ing.id || i} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border/50">
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium">{ing.ingredient_name || '?'}</span>
+                              {ing.waste_percentage > 0 && (
+                                <span className="text-xs text-amber-400 ml-2">+{ing.waste_percentage}% merma</span>
+                              )}
+                              {costInfo?.is_subrecipe && (
+                                <Badge variant="outline" className="ml-2 text-[10px] border-blue-500/50 text-blue-400">Sub-receta</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0 ml-2">
+                              {costInfo && (
+                                <span className="text-xs text-muted-foreground font-mono">{formatMoney(costInfo.total_cost)}</span>
+                              )}
+                              <span className="text-sm text-muted-foreground font-mono">
+                                {ing.quantity} {ing.unit}
+                              </span>
+                            </div>
                           </div>
-                          <span className="text-sm text-muted-foreground font-mono shrink-0 ml-2">
-                            {ing.quantity} {ing.unit}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Recipe summary */}
