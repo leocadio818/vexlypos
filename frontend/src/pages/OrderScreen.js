@@ -531,6 +531,11 @@ export default function OrderScreen() {
     return true;
   }) : [];
 
+  // Global search results (when searching from categories view)
+  const globalSearchResults = !activeCat && showProductSearch && productSearchQuery.trim()
+    ? products.filter(p => p.active !== false && p.name?.toLowerCase().includes(productSearchQuery.toLowerCase().trim()))
+    : [];
+
   const handleProductClick = (product) => {
     // Block if no active business day
     if (!hasActiveDay) {
@@ -2001,25 +2006,23 @@ export default function OrderScreen() {
           </div>
           {/* Column controls and Quantity button */}
           <div className="flex items-center gap-2.5">
-            {/* Search Button - only when inside a category */}
-            {activeCat && (
-              <button
-                onClick={() => {
-                  setShowProductSearch(!showProductSearch);
-                  setProductSearchQuery('');
-                  setTimeout(() => productSearchRef.current?.focus(), 100);
-                }}
-                className={`${largeMode ? 'w-10 h-8' : 'w-9 h-8'} rounded-lg font-bold transition-colors flex items-center justify-center ${
-                  showProductSearch
-                    ? 'bg-cyan-500 text-white'
-                    : 'bg-white/10 hover:bg-cyan-500/20 text-white/60'
-                }`}
-                title="Buscar producto"
-                data-testid="product-search-btn"
-              >
-                <Search size={largeMode ? 16 : 14} />
-              </button>
-            )}
+            {/* Search Button - always visible */}
+            <button
+              onClick={() => {
+                setShowProductSearch(!showProductSearch);
+                setProductSearchQuery('');
+                setTimeout(() => productSearchRef.current?.focus(), 100);
+              }}
+              className={`${largeMode ? 'w-10 h-8' : 'w-9 h-8'} rounded-lg font-bold transition-colors flex items-center justify-center ${
+                showProductSearch
+                  ? 'bg-cyan-500 text-white'
+                  : 'bg-white/10 hover:bg-cyan-500/20 text-white/60'
+              }`}
+              title="Buscar producto"
+              data-testid="product-search-btn"
+            >
+              <Search size={largeMode ? 16 : 14} />
+            </button>
             {/* Quick Quantity Button */}
             {activeCat && (
               <button
@@ -2067,7 +2070,7 @@ export default function OrderScreen() {
         </div>
 
         {/* Product Search Bar */}
-        {showProductSearch && activeCat && (
+        {showProductSearch && (
           <div className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 border-b border-cyan-500/30">
             <Search size={16} className="text-cyan-400 shrink-0" />
             <input
@@ -2075,7 +2078,7 @@ export default function OrderScreen() {
               type="text"
               value={productSearchQuery}
               onChange={e => setProductSearchQuery(e.target.value)}
-              placeholder="Buscar producto..."
+              placeholder={activeCat ? "Buscar en esta categoría..." : "Buscar producto en todas las categorías..."}
               className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-white/40"
               data-testid="product-search-input"
               autoFocus
@@ -2110,9 +2113,68 @@ export default function OrderScreen() {
         )}
 
         <ScrollArea className="flex-1">
-          {/* Category Grid (when no category selected) */}
-          {/* Dynamic columns: max 3 on wider panel to avoid cramping */}
-          {!activeCat && (
+          {/* Global Search Results (searching from categories view) */}
+          {!activeCat && globalSearchResults.length > 0 && (
+            <div 
+              className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
+              style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.productColumns, 3)}, minmax(0, 1fr))` }}
+              data-testid="global-search-grid"
+            >
+              {globalSearchResults.map(product => {
+                const assignmentIds = (product.modifier_assignments || []).map(a => a.group_id);
+                const legacyIds = product.modifier_group_ids || [];
+                const hasModifiers = [...new Set([...assignmentIds, ...legacyIds])].length > 0;
+                let pressTimer = null;
+                const productStock = stockStatus[product.id];
+                const isOutOfStock = !allowSaleWithoutStock && productStock && !productStock.in_stock;
+                const isLowStock = productStock?.is_low_stock && !isOutOfStock;
+                let touchStartY = 0;
+                let touchMoved = false;
+                const catName = categories.find(c => c.id === product.category_id)?.name || '';
+
+                return (
+                  <button 
+                    key={product.id} 
+                    onClick={(e) => { if (touchMoved) { e.preventDefault(); return; } if (!isOutOfStock) handleProductClick(product); }}
+                    onTouchStart={(e) => { touchStartY = e.touches?.[0]?.clientY || 0; touchMoved = false; pressTimer = setTimeout(() => { if (!touchMoved) handleProductLongPress(product); }, 500); }}
+                    onTouchMove={(e) => { if (Math.abs((e.touches?.[0]?.clientY || 0) - touchStartY) > 10) { touchMoved = true; if (pressTimer) clearTimeout(pressTimer); } }}
+                    onTouchEnd={() => { if (pressTimer) clearTimeout(pressTimer); }}
+                    onTouchCancel={() => { if (pressTimer) clearTimeout(pressTimer); }}
+                    disabled={isOutOfStock}
+                    data-testid={`search-product-${product.id}`}
+                    className={`group relative border-2 transition-all rounded-xl flex flex-col justify-between ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[5.625rem] text-left ${
+                      isOutOfStock 
+                        ? 'bg-card/50 border-red-500/50 opacity-60 cursor-not-allowed' 
+                        : product.button_bg_color
+                          ? 'border-transparent hover:brightness-110 active:scale-[0.97] shadow-md'
+                          : 'bg-card border-border hover:border-primary/50 active:scale-[0.97]'
+                    }`}
+                    style={product.button_bg_color && !isOutOfStock ? { backgroundColor: product.button_bg_color } : {}}
+                  >
+                    <span className={`font-semibold leading-tight line-clamp-2 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{product.name}</span>
+                    <span className={`text-[10px] text-muted-foreground truncate block`}>{catName}</span>
+                    <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${product.button_bg_color ? '' : 'text-primary'}`}>{formatMoney(product.price)}</span>
+                    {isOutOfStock && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="px-3 py-1.5 rounded-lg bg-red-600/90 text-white text-xs font-bold uppercase">Agotado</span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* No results message */}
+          {!activeCat && showProductSearch && productSearchQuery.trim() && globalSearchResults.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Search size={32} className="mb-2 opacity-30" />
+              <p className="text-sm">No se encontró "{productSearchQuery}"</p>
+            </div>
+          )}
+
+          {/* Category Grid (when no category selected and not searching) */}
+          {!activeCat && !(showProductSearch && productSearchQuery.trim()) && (
             <div 
               className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
               style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}
