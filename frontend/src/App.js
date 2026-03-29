@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { queryClient, QueryClientProvider } from "@/lib/queryClient";
+import ConnectionStatus from "@/components/ConnectionStatus";
 import { Toaster } from "@/components/ui/sonner";
 import React, { Suspense } from "react";
 import PageSkeleton from "@/components/PageSkeleton";
@@ -71,13 +73,16 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-          <Toaster position="top-right" richColors duration={4000} visibleToasts={1} />
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+            <ConnectionStatus />
+            <Toaster position="top-right" richColors duration={4000} visibleToasts={1} />
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

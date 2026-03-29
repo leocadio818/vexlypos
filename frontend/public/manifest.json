@@ -1,0 +1,26 @@
+{
+  "short_name": "VexlyPOS",
+  "name": "VexlyPOS — Sistema de Punto de Venta",
+  "description": "Sistema POS para restaurantes en República Dominicana",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0c0f1e",
+  "background_color": "#0c0f1e",
+  "categories": ["business", "finance"],
+  "lang": "es-DO"
+}
