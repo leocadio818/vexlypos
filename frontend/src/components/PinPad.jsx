@@ -99,7 +99,7 @@ export function PinPad({ value = '', onChange, onSubmit, maxLength = 10, placeho
   // Has keyboard AND not forced → input field + optional keypad
   if (!showTouchPad) {
     return (
-      <div className="space-y-3" data-testid="pin-pad-component">
+      <div className="space-y-3 notranslate" data-testid="pin-pad-component">
         {label && <p className="text-sm font-medium text-center">{label}</p>}
         <div className="flex gap-1 items-center">
           <input
@@ -124,7 +124,7 @@ export function PinPad({ value = '', onChange, onSubmit, maxLength = 10, placeho
 
   // Touch-only OR user clicked keypad icon → show full keypad
   return (
-    <div className="space-y-3" data-testid="pin-pad-component">
+    <div className="space-y-3 notranslate" data-testid="pin-pad-component">
       {label && <p className="text-sm font-medium text-center">{label}</p>}
       <PinDots />
       <KeypadGrid />

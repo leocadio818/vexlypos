@@ -1,5 +1,10 @@
 # VexlyPOS — Changelog
 
+## 2026-03-29 — Google Translate Protection
+- **HTML**: `<html lang="es" translate="no">` para prevenir traducción automática de Chrome
+- **Meta tag**: `<meta name="google" content="notranslate" />` en `<head>`
+- **Componentes críticos**: Clase `notranslate` en PinPad (ambos modos: teclado físico y táctil) y totales de factura en PaymentScreen (header total + total general)
+
 ## 2026-03-26 — Alanube e-CF + Email + Print Agent
 - **Alanube e-CF Integration**: Full module (Mapeo + Timbrado + Logs). First electronic invoice sent to DGII sandbox successfully. Endpoints: /api/ecf/send, /api/ecf/status, /api/ecf/logs. E-CF button in post-payment dialog.
 - **QR Code**: e-CF stamp URL printed on ticket (text) + QR image in email HTML (via api.qrserver.com)

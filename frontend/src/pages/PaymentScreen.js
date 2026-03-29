@@ -1219,7 +1219,7 @@ export default function PaymentScreen() {
               <p className={`text-white/50 ${isMobile ? 'text-xs' : 'text-sm'}`}>{bill.label}</p>
             </div>
           </div>
-          <div className={`${glassStyles.card} rounded-2xl px-4 py-2`}>
+          <div className={`${glassStyles.card} rounded-2xl px-4 py-2 notranslate`}>
             <p className={`font-oswald font-bold bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent ${isMobile ? 'text-xl' : 'text-2xl'}`}>
               {formatMoney(billTotal)}
             </p>
@@ -1413,7 +1413,7 @@ export default function PaymentScreen() {
                   </div>
                   
                   {/* TOTAL GENERAL - Elemento más grande y visible */}
-                  <div className={`flex justify-between items-center text-white font-bold pt-3 mt-2 border-t-2 border-cyan-400/30 ${isMobile ? 'text-base' : ''}`}>
+                  <div className={`flex justify-between items-center text-white font-bold pt-3 mt-2 border-t-2 border-cyan-400/30 notranslate ${isMobile ? 'text-base' : ''}`}>
                     <span className={`font-oswald tracking-wide ${isMobile ? '' : 'text-2xl'}`}>TOTAL</span>
                     <span className={`font-oswald bg-gradient-to-r from-cyan-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent drop-shadow-lg ${isMobile ? 'text-xl' : 'text-4xl'}`}>
                       {formatMoney(adjustedBill?.total ?? bill.total)}
