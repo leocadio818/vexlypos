@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { formatMoney } from '@/lib/api';
 import { getSystemTimezone, formatSystemDate } from '@/lib/timezone';
+import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Users, ShoppingCart, DollarSign, Utensils, AlertTriangle, Clock, CreditCard, Banknote, BarChart3, Heart, UtensilsCrossed, CheckCircle2, XCircle, Tag, ArrowLeftRight, Wallet } from 'lucide-react';
+import { TrendingUp, Users, ShoppingCart, DollarSign, Utensils, AlertTriangle, Clock, CreditCard, Banknote, BarChart3, Heart, UtensilsCrossed, CheckCircle2, XCircle, Tag, ArrowLeftRight, Wallet, WifiOff } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 
@@ -11,13 +12,18 @@ const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_toke
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const { isOnline } = useAuth();
 
   const fetchDashboard = useCallback(async () => {
     try {
       await getSystemTimezone(); // ensure timezone is cached
       const res = await axios.get(`${API}/reports/dashboard`, { headers: headers() });
       setData(res.data);
-    } catch {}
+      setLoadFailed(false);
+    } catch {
+      if (!navigator.onLine) setLoadFailed(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -26,11 +32,27 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [fetchDashboard]);
 
-  if (!data) return (
-    <div className="h-full flex items-center justify-center">
-      <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
-    </div>
-  );
+  // Retry when coming back online
+  useEffect(() => {
+    if (isOnline && !data) fetchDashboard();
+  }, [isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!data) {
+    if (loadFailed || !navigator.onLine) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center gap-4 text-white/60" data-testid="dashboard-offline">
+          <WifiOff size={48} className="text-amber-400" />
+          <h2 className="font-oswald text-xl font-bold text-white/80">MODO OFFLINE</h2>
+          <p className="text-sm text-center max-w-md">El panel de control necesita conexion a internet para mostrar datos en tiempo real. Puedes navegar a <strong className="text-amber-400">Mesas</strong> para tomar ordenes offline.</p>
+        </div>
+      );
+    }
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   const { today, operations, loyalty, hourly_sales, open_tables = [], closed_tables = [], voids = {}, jornada = {} } = data;
   const voidsToday = voids.today || { count: 0, total: 0, by_reason: [], items: [] };

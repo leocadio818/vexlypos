@@ -307,16 +307,32 @@ export default function TableMap() {
 
   const fetchData = useCallback(async () => {
     try {
-      // Check reservation activations first
-      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reservations/check-activations`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-      });
+      // Check reservation activations first (skip if offline)
+      if (navigator.onLine) {
+        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/reservations/check-activations`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+        });
+      }
       
       const [areasRes, tablesRes] = await Promise.all([areasAPI.list(), tablesAPI.list()]);
       setAreas(areasRes.data);
       setTables(tablesRes.data);
       if (!activeArea && areasRes.data.length > 0) setActiveArea(areasRes.data[0].id);
-    } catch { console.warn('Error cargando datos de mesas'); }
+    } catch {
+      // Offline fallback: load from IndexedDB
+      if (!navigator.onLine) {
+        try {
+          const { getCachedTables } = await import('@/lib/offlineDB');
+          const cached = await getCachedTables();
+          if (cached?.length) {
+            setTables(cached);
+            // Extract unique areas from cached tables
+            const areaIds = [...new Set(cached.map(t => t.area_id).filter(Boolean))];
+            if (areaIds.length > 0 && !activeArea) setActiveArea(areaIds[0]);
+          }
+        } catch {}
+      }
+    }
   }, [activeArea]);
 
   useEffect(() => { fetchData(); }, [fetchData]);

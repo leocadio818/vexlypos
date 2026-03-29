@@ -187,10 +187,9 @@ export default function OrderScreen() {
         const ordersRes = await ordersAPI.getTableOrders(tableId);
         const orders = ordersRes.data || [];
         setTableOrders(orders);
-        setAccessDenied(null); // Clear any previous access denied
+        setAccessDenied(null);
         
         if (orders.length > 0) {
-          // If there's an active order selected, keep it; otherwise select first
           const currentOrder = activeOrderId 
             ? orders.find(o => o.id === activeOrderId) 
             : orders[0];
@@ -200,7 +199,6 @@ export default function OrderScreen() {
             orderRef.current = currentOrder;
           }
         } else if (t?.active_order_id) {
-          // Fallback: try to get order from table reference
           try {
             const orderRes = await ordersAPI.get(t.active_order_id);
             setOrder(orderRes.data);
@@ -210,14 +208,23 @@ export default function OrderScreen() {
           } catch {}
         }
       } catch (orderError) {
-        // Check if it's a 403 Forbidden error
         if (orderError.response?.status === 403) {
           setAccessDenied(orderError.response?.data?.detail || 'No tienes permiso para acceder a esta mesa');
           setOrder(null);
           setTableOrders([]);
         }
       }
-    } catch {}
+    } catch {
+      // Offline fallback: load table from cache
+      if (!navigator.onLine) {
+        try {
+          const { getCachedTables } = await import('@/lib/offlineDB');
+          const cached = await getCachedTables();
+          const t = cached?.find(tb => tb.id === tableId);
+          if (t) setTable(t);
+        } catch {}
+      }
+    }
   }, [tableId, activeOrderId]);
 
   useEffect(() => {
