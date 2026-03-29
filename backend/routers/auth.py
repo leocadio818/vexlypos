@@ -401,6 +401,29 @@ async def get_user(user_id: str, caller=Depends(get_current_user)):
     return user
 
 
+@router.get("/auth/offline-users")
+async def get_offline_users(user=Depends(get_current_user)):
+    """Return active users with pin_hash for offline login cache.
+    Only includes: id, name, role, active, pin_hash, permissions, ui_preferences."""
+    users = await db.users.find({"active": True}, {"_id": 0}).to_list(500)
+    result = []
+    for u in users:
+        perms = get_permissions(u["role"], u.get("permissions"))
+        role_level = await get_role_level_async(u["role"])
+        result.append({
+            "id": u["id"],
+            "name": u["name"],
+            "role": u["role"],
+            "active": u["active"],
+            "pin_hash": u.get("pin_hash", ""),
+            "permissions": perms,
+            "role_level": role_level,
+            "ui_preferences": u.get("ui_preferences", {}),
+            "training_mode": u.get("training_mode", False),
+        })
+    return result
+
+
 @router.post("/users")
 async def create_user(input: dict, caller=Depends(get_current_user)):
     pin = input.get("pin", "")

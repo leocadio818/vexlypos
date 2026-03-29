@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ordersAPI, categoriesAPI, productsAPI, modifiersAPI, reasonsAPI, tablesAPI, areasAPI, billsAPI, inventorySettingsAPI, posSessionsAPI } from '@/lib/api';
+import { createOrderOffline, addItemsOffline, sendToKitchenOffline } from '@/lib/offlineOrders';
 import { formatMoney } from '@/lib/api';
 import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -221,25 +222,35 @@ export default function OrderScreen() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [catRes, prodRes, modRes, reasonRes] = await Promise.all([
-        categoriesAPI.list(), productsAPI.list(), modifiersAPI.list(), reasonsAPI.list()
-      ]);
-      setCategories(catRes.data); setProducts(prodRes.data);
-      setCancelReasons((reasonRes.data || []).filter(r => r.active !== false));
-      // Merge old modifier system with new modifier_groups system
-      const oldGroups = modRes.data.filter(m => m.options && m.options.length > 0);
       try {
-        const newRes = await fetch(`${API_BASE}/api/modifier-groups-with-options`);
-        const newGroups = await newRes.json();
-        // Normalize new groups to match old format (options field)
-        const normalizedNew = newGroups.filter(g => g.options && g.options.length > 0).map(g => ({
-          ...g, required: g.required || (g.min_selection > 0), max_selections: g.max_selections || g.max_selection || 1
-        }));
-        // Merge: old groups + new groups (avoid duplicates by id)
-        const oldIds = new Set(oldGroups.map(g => g.id));
-        const merged = [...oldGroups, ...normalizedNew.filter(g => !oldIds.has(g.id))];
-        setModifierGroups(merged);
-      } catch { setModifierGroups(oldGroups); }
+        const [catRes, prodRes, modRes, reasonRes] = await Promise.all([
+          categoriesAPI.list(), productsAPI.list(), modifiersAPI.list(), reasonsAPI.list()
+        ]);
+        setCategories(catRes.data); setProducts(prodRes.data);
+        setCancelReasons((reasonRes.data || []).filter(r => r.active !== false));
+        // Merge old modifier system with new modifier_groups system
+        const oldGroups = modRes.data.filter(m => m.options && m.options.length > 0);
+        try {
+          const newRes = await fetch(`${API_BASE}/api/modifier-groups-with-options`);
+          const newGroups = await newRes.json();
+          const normalizedNew = newGroups.filter(g => g.options && g.options.length > 0).map(g => ({
+            ...g, required: g.required || (g.min_selection > 0), max_selections: g.max_selections || g.max_selection || 1
+          }));
+          const oldIds = new Set(oldGroups.map(g => g.id));
+          const merged = [...oldGroups, ...normalizedNew.filter(g => !oldIds.has(g.id))];
+          setModifierGroups(merged);
+        } catch { setModifierGroups(oldGroups); }
+      } catch {
+        // Offline fallback: load from IndexedDB cache
+        if (!navigator.onLine) {
+          try {
+            const { getCachedProducts, getCachedCategories } = await import('@/lib/offlineDB');
+            const [cachedCats, cachedProds] = await Promise.all([getCachedCategories(), getCachedProducts()]);
+            if (cachedCats?.length) setCategories(cachedCats);
+            if (cachedProds?.length) setProducts(cachedProds);
+          } catch {}
+        }
+      }
       // Fetch tax config
       try {
         const taxRes = await fetch(`${API_BASE}/api/tax-config`);
@@ -554,10 +565,13 @@ export default function OrderScreen() {
     const item = { product_id: product.id, product_name: product.name, quantity: qty, unit_price: product.price, modifiers: mods, notes };
     try {
       if (!order) {
-        const res = await ordersAPI.create({ table_id: tableId, items: [item] });
+        const res = await createOrderOffline({
+          table_id: tableId, items: [item],
+          table_number: table?.number, waiter_id: user?.id, waiter_name: user?.name,
+        });
         setOrder(res.data);
       } else {
-        const res = await ordersAPI.addItems(order.id, [item]);
+        const res = await addItemsOffline(order.id, [item], order);
         setOrder(res.data);
       }
     } catch { console.warn('Error agregando item'); }
@@ -599,7 +613,7 @@ export default function OrderScreen() {
     const pendingItems = order.items.filter(i => i.status === 'pending');
     if (pendingItems.length === 0) return; // Silent - no items to send
     try {
-      const res = await ordersAPI.sendToKitchen(order.id);
+      const res = await sendToKitchenOffline(order.id, order);
       setOrder(res.data);
     } catch { console.warn('Error enviando a cocina'); }
   };

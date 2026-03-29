@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'vexlypos-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const STORES = {
   PRODUCTS: 'products',
@@ -10,6 +10,7 @@ const STORES = {
   CONFIG: 'config',
   CUSTOMERS: 'customers',
   SYNC_QUEUE: 'sync_queue',
+  USERS: 'users',
 };
 
 let dbPromise = null;
@@ -31,6 +32,10 @@ function getDB() {
         if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
           const store = db.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id', autoIncrement: true });
           store.createIndex('status', 'status');
+        }
+        if (!db.objectStoreNames.contains(STORES.USERS)) {
+          const uStore = db.createObjectStore(STORES.USERS, { keyPath: 'id' });
+          uStore.createIndex('pin_hash', 'pin_hash', { unique: true });
         }
       },
     });
@@ -143,6 +148,14 @@ async function cacheEssentialData(apiBase, token) {
       await tx.done;
     }
   } catch {}
+  // Cache users for offline login
+  try {
+    const res = await fetch(`${apiBase}/api/auth/offline-users`, { headers });
+    if (res.ok) {
+      const users = await res.json();
+      if (Array.isArray(users)) await cacheUsersForOffline(users);
+    }
+  } catch {}
 }
 
 async function cleanupSyncedData() {
@@ -170,6 +183,39 @@ export async function getCachedConfig() {
   return db.get(STORES.CONFIG, 'system');
 }
 
+// ═══ Offline Login: cache users with pin_hash ═══
+
+async function hashPinSHA256(pin) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pin);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function cacheUsersForOffline(users) {
+  const db = await getDB();
+  const tx = db.transaction(STORES.USERS, 'readwrite');
+  const store = tx.objectStore(STORES.USERS);
+  await store.clear();
+  for (const u of users) {
+    await store.put(u);
+  }
+  await tx.done;
+}
+
+async function offlineLogin(pin) {
+  const hash = await hashPinSHA256(pin);
+  const db = await getDB();
+  const tx = db.transaction(STORES.USERS, 'readonly');
+  const index = tx.objectStore(STORES.USERS).index('pin_hash');
+  const user = await index.get(hash);
+  if (!user || !user.active) return null;
+  return user;
+}
+
+export { hashPinSHA256, cacheUsersForOffline, offlineLogin };
+
 // ═══ Default export for AuthContext compatibility ═══
 const offlineDB = {
   getSyncQueueCount,
@@ -182,6 +228,8 @@ const offlineDB = {
   getCachedTables,
   getCachedCustomers,
   getCachedConfig,
+  cacheUsersForOffline,
+  offlineLogin,
 };
 
 export default offlineDB;

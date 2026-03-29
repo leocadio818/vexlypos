@@ -12,6 +12,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOfflineSession, setIsOfflineSession] = useState(false);
   
   // Offline sync state
   const [isSyncing, setIsSyncing] = useState(false);
@@ -167,14 +168,39 @@ export function AuthProvider({ children }) {
 
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem('pos_token');
-    if (!token) { setLoading(false); return; }
+    if (!token) {
+      // Check for offline session
+      const offlineUser = localStorage.getItem('pos_offline_user');
+      if (offlineUser && !navigator.onLine) {
+        try {
+          setUser(JSON.parse(offlineUser));
+          setIsOfflineSession(true);
+        } catch {}
+      }
+      setLoading(false);
+      return;
+    }
     try {
       const res = await authAPI.me();
       setUser(res.data);
+      setIsOfflineSession(false);
       // Cache data after successful auth
       cacheForOffline();
     } catch {
-      localStorage.removeItem('pos_token');
+      // If offline and we have cached user data, use it
+      if (!navigator.onLine) {
+        const offlineUser = localStorage.getItem('pos_offline_user');
+        if (offlineUser) {
+          try {
+            setUser(JSON.parse(offlineUser));
+            setIsOfflineSession(true);
+          } catch {}
+        } else {
+          localStorage.removeItem('pos_token');
+        }
+      } else {
+        localStorage.removeItem('pos_token');
+      }
     }
     setLoading(false);
   }, [cacheForOffline]);
@@ -182,30 +208,58 @@ export function AuthProvider({ children }) {
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
   const login = async (pin) => {
-    const res = await authAPI.login(pin);
-    localStorage.setItem('pos_token', res.data.token);
-    setUser(res.data.user);
-    
-    // Apply user's UI preferences (theme/mode)
-    if (res.data.user?.ui_preferences) {
-      applyUserPreferences(res.data.user.ui_preferences);
+    // Try online login first
+    try {
+      const res = await authAPI.login(pin);
+      localStorage.setItem('pos_token', res.data.token);
+      localStorage.setItem('pos_offline_user', JSON.stringify(res.data.user));
+      setUser(res.data.user);
+      setIsOfflineSession(false);
+      
+      // Apply user's UI preferences (theme/mode)
+      if (res.data.user?.ui_preferences) {
+        applyUserPreferences(res.data.user.ui_preferences);
+      }
+      
+      // Cache data after login
+      setTimeout(cacheForOffline, 1000);
+      
+      // Notify if business day was auto-opened
+      if (res.data.business_day_opened) {
+        setTimeout(() => {
+          const { toast } = require('sonner');
+          toast.success('Nueva jornada de trabajo iniciada', {
+            description: `Abierta automáticamente al hacer login como ${res.data.user.name}`
+          });
+        }, 500);
+      }
+      
+      return res.data.user;
+    } catch (onlineError) {
+      // If offline, try local cached login
+      if (!navigator.onLine) {
+        const cachedUser = await offlineDB.offlineLogin(pin);
+        if (cachedUser) {
+          const userData = { ...cachedUser };
+          delete userData.pin_hash; // Don't expose hash in state
+          localStorage.setItem('pos_offline_user', JSON.stringify(userData));
+          setUser(userData);
+          setIsOfflineSession(true);
+          
+          if (userData.ui_preferences) {
+            applyUserPreferences(userData.ui_preferences);
+          }
+          
+          toast.info('Sesion offline iniciada', {
+            description: `${userData.name} — Los cambios se sincronizaran al reconectar`
+          });
+          
+          return userData;
+        }
+        throw new Error('PIN incorrecto o usuario no cacheado para uso offline');
+      }
+      throw onlineError;
     }
-    
-    // Cache data after login
-    setTimeout(cacheForOffline, 1000);
-    
-    // Notify if business day was auto-opened
-    if (res.data.business_day_opened) {
-      // Use a small delay so the login completes first
-      setTimeout(() => {
-        const { toast } = require('sonner');
-        toast.success('Nueva jornada de trabajo iniciada', {
-          description: `Abierta automáticamente al hacer login como ${res.data.user.name}`
-        });
-      }, 500);
-    }
-    
-    return res.data.user;
   };
 
   const hasPermission = (perm) => {
@@ -219,26 +273,30 @@ export function AuthProvider({ children }) {
       await syncPendingOperations();
     }
     
-    // Auto-send all pending orders before logout
-    try {
-      const token = localStorage.getItem('pos_token');
-      if (token) {
-        const res = await fetch(`${API_BASE}/api/orders?status=active`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const orders = await res.json();
-        for (const order of orders) {
-          const pending = order.items?.filter(i => i.status === 'pending') || [];
-          if (pending.length > 0) {
-            await fetch(`${API_BASE}/api/orders/${order.id}/send-kitchen`, {
-              method: 'POST', headers: { Authorization: `Bearer ${token}` }
-            });
+    // Auto-send all pending orders before logout (only if online)
+    if (navigator.onLine) {
+      try {
+        const token = localStorage.getItem('pos_token');
+        if (token) {
+          const res = await fetch(`${API_BASE}/api/orders?status=active`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const orders = await res.json();
+          for (const order of orders) {
+            const pending = order.items?.filter(i => i.status === 'pending') || [];
+            if (pending.length > 0) {
+              await fetch(`${API_BASE}/api/orders/${order.id}/send-kitchen`, {
+                method: 'POST', headers: { Authorization: `Bearer ${token}` }
+              });
+            }
           }
         }
-      }
-    } catch {}
+      } catch {}
+    }
     localStorage.removeItem('pos_token');
+    localStorage.removeItem('pos_offline_user');
     setUser(null);
+    setIsOfflineSession(false);
     resetThemeOnLogout();
   };
 
@@ -253,6 +311,7 @@ export function AuthProvider({ children }) {
     lastSyncTime,
     syncNow: syncPendingOperations,
     cacheData: cacheForOffline,
+    isOfflineSession,
   };
 
   return (
@@ -262,6 +321,7 @@ export function AuthProvider({ children }) {
       logout, 
       loading, 
       isOnline, 
+      isOfflineSession,
       ensureSeed, 
       hasPermission, 
       largeMode, 
