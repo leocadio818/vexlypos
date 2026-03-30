@@ -1125,6 +1125,19 @@ export default function OrderScreen() {
     await doPrintPreCheck(orderId);
   };
 
+  // Print pre-check for ALL accounts on this table
+  const handlePrintAllAccounts = async () => {
+    const ordersWithItems = tableOrders.filter(o => 
+      o.items?.some(i => i.status !== 'cancelled')
+    );
+    if (ordersWithItems.length === 0) return;
+    
+    for (const ord of ordersWithItems) {
+      await doPrintPreCheck(ord.id);
+    }
+    toast.success(`${ordersWithItems.length} pre-cuentas generadas`);
+  };
+
   const handleManagerAuth = async () => {
     try {
       const r = await fetch(`${API_BASE}/api/auth/verify-manager`, {
@@ -1529,7 +1542,6 @@ export default function OrderScreen() {
               {tableOrders.map(ord => {
                 const isEmpty = isOrderEmpty(ord);
                 const canDelete = isEmpty && tableOrders.length > 1 && !moveItemsMode;
-                const hasItems = !isEmpty;
                 const isCurrentOrder = activeOrderId === ord.id;
                 const canMoveHere = moveItemsMode && !isCurrentOrder;
                 
@@ -1556,24 +1568,6 @@ export default function OrderScreen() {
                       >
                         {moveItemsMode && isCurrentOrder ? 'Desde →' : `#${ord.account_number || 1}`}
                         {!moveItemsMode && <span className="text-[11px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>}
-                      </button>
-                    )}
-                    {/* Print pre-check icon button */}
-                    {hasItems && tableOrders.length > 1 && !moveItemsMode && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePrintAccountPreCheck(ord.id, ord.account_number || 1);
-                        }}
-                        data-testid={`print-precheck-${ord.account_number || 1}`}
-                        className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                          isCurrentOrder 
-                            ? 'bg-primary-foreground/20 hover:bg-primary-foreground/40 text-primary-foreground' 
-                            : 'bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400'
-                        }`}
-                        title={`Pre-cuenta #${ord.account_number || 1}`}
-                      >
-                        <Printer size={10} />
                       </button>
                     )}
                     {/* Delete empty account */}
@@ -1876,6 +1870,12 @@ export default function OrderScreen() {
                         <FileText size={16} className="mr-1.5" /> Pre-Cuenta
                         {preCheckCount > 0 && <Lock size={10} className="ml-1 text-yellow-500" />}
                       </Button>
+                      {tableOrders.length > 1 && (
+                        <Button onClick={handlePrintAllAccounts} variant="outline" size="lg" data-testid="print-all-accounts-btn"
+                          className="h-12 text-sm border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 flex-1">
+                          <Printer size={16} className="mr-1.5" /> Todas
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1916,19 +1916,35 @@ export default function OrderScreen() {
                         </Button>
                       ) : (
                         /* State: Initial - Show PRE-CUENTA */
-                        <Button 
-                          onClick={() => {
-                            triggerHaptic('medium'); // Medium feedback for pre-check
-                            handlePrintPreCheck();
-                          }} 
-                          variant="outline" 
-                          size="lg" 
-                          data-testid="pre-check-btn-mobile"
-                          className="h-14 w-full text-base border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 font-oswald font-bold"
-                        >
-                          <FileText size={18} className="mr-2" /> PRE-CUENTA
-                          {preCheckCount > 0 && <Lock size={12} className="ml-2 text-yellow-500" />}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={() => {
+                              triggerHaptic('medium');
+                              handlePrintPreCheck();
+                            }} 
+                            variant="outline" 
+                            size="lg" 
+                            data-testid="pre-check-btn-mobile"
+                            className={`h-14 text-base border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 font-oswald font-bold ${tableOrders.length > 1 ? 'flex-1' : 'w-full'}`}
+                          >
+                            <FileText size={18} className="mr-2" /> PRE-CUENTA
+                            {preCheckCount > 0 && <Lock size={12} className="ml-2 text-yellow-500" />}
+                          </Button>
+                          {tableOrders.length > 1 && (
+                            <Button 
+                              onClick={() => {
+                                triggerHaptic('medium');
+                                handlePrintAllAccounts();
+                              }} 
+                              variant="outline" 
+                              size="lg" 
+                              data-testid="print-all-accounts-btn-mobile"
+                              className="h-14 text-sm border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 font-oswald font-bold px-3"
+                            >
+                              <Printer size={16} className="mr-1" /> TODAS
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </>
                   )}
