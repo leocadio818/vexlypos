@@ -455,25 +455,9 @@ async def create_reservation(input: ReservationInput):
     await db.reservations.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
-@router.put("/reservations/{rid}")
-async def update_reservation(rid: str, input: dict):
-    if "_id" in input: del input["_id"]
-    await db.reservations.update_one({"id": rid}, {"$set": input})
-    return {"ok": True}
-
 @router.delete("/reservations/{rid}")
 async def delete_reservation(rid: str):
     await db.reservations.delete_one({"id": rid})
-    return {"ok": True}
-
-@router.post("/reservations/{rid}/cancel")
-async def cancel_reservation(rid: str):
-    await db.reservations.update_one({"id": rid}, {"$set": {"status": "cancelled"}})
-    return {"ok": True}
-
-@router.post("/reservations/{rid}/complete")
-async def complete_reservation(rid: str):
-    await db.reservations.update_one({"id": rid}, {"$set": {"status": "completed"}})
     return {"ok": True}
 
 # ─── THEME CONFIG ───
