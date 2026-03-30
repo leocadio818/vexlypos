@@ -921,7 +921,27 @@ async def check_reservation_activations():
         except Exception as e:
             print(f"Error processing reservation {res.get('id')}: {e}")
     
-    return {"activated": activated, "expired": expired, "checked": len(reservations)}
+    # Cleanup: Find tables stuck as "reserved" with no valid active reservation
+    cleaned = []
+    stuck_tables = await db.tables.find({"status": "reserved"}, {"_id": 0, "id": 1, "reservation_id": 1, "number": 1}).to_list(100)
+    active_reservation_ids = set(r["id"] for r in reservations if r["id"] in activated)
+    
+    for table in stuck_tables:
+        table_res_id = table.get("reservation_id")
+        # If table has no reservation_id, or its reservation no longer exists/is not confirmed, free it
+        if not table_res_id or table_res_id not in active_reservation_ids:
+            # Double-check: does this reservation still exist and is confirmed?
+            if table_res_id:
+                res_exists = await db.reservations.find_one({"id": table_res_id, "status": "confirmed"}, {"_id": 0, "id": 1})
+                if res_exists:
+                    continue  # Reservation exists and is confirmed, keep reserved
+            await db.tables.update_one(
+                {"id": table["id"]}, 
+                {"$set": {"status": "free", "reservation_id": None, "pending_reservation_id": None}}
+            )
+            cleaned.append(table.get("number", table["id"]))
+    
+    return {"activated": activated, "expired": expired, "checked": len(reservations), "cleaned_tables": cleaned}
 
 @api.put("/reservations/{rid}")
 async def update_reservation(rid: str, input: dict):
