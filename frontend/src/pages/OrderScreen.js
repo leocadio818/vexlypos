@@ -1525,7 +1525,7 @@ export default function OrderScreen() {
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-1 p-2 border-b border-white/10 overflow-x-auto bg-white/5">
+            <div className="flex items-center gap-1.5 p-2 border-b border-white/10 overflow-x-auto bg-white/5">
               {tableOrders.map(ord => {
                 const isEmpty = isOrderEmpty(ord);
                 const canDelete = isEmpty && tableOrders.length > 1 && !moveItemsMode;
@@ -1534,31 +1534,31 @@ export default function OrderScreen() {
                 const canMoveHere = moveItemsMode && !isCurrentOrder;
                 
                 return (
-                  <div key={ord.id} className="relative flex items-center group">
+                  <div key={ord.id} className="flex items-center gap-0.5 shrink-0">
                     {canMoveHere ? (
                       <button
                         onClick={() => moveItemsToAccount(ord.id)}
                         className="px-3 py-2 rounded-lg text-xs font-oswald whitespace-nowrap transition-all bg-purple-600 hover:bg-purple-500 text-white font-bold border-2 border-purple-400 animate-pulse"
                       >
-                        → Mover aquí (#{ord.account_number || 1})
+                        → #{ord.account_number || 1}
                       </button>
                     ) : (
                       <button
                         onClick={() => !moveItemsMode && selectOrder(ord.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all flex items-center gap-1 ${
                           isCurrentOrder 
                             ? moveItemsMode 
                               ? 'bg-yellow-600 text-black font-bold border-2 border-yellow-400' 
                               : 'bg-primary text-primary-foreground font-bold' 
                             : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
-                        } ${canDelete ? 'pr-7' : ''} ${hasItems && tableOrders.length > 1 && !moveItemsMode ? 'pr-8' : ''}`}
+                        }`}
                         disabled={moveItemsMode}
                       >
-                        {moveItemsMode && isCurrentOrder ? 'Desde aquí →' : `Cuenta #${ord.account_number || 1}`}
-                        {!moveItemsMode && <span className="ml-1 text-[11px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>}
+                        {moveItemsMode && isCurrentOrder ? 'Desde →' : `#${ord.account_number || 1}`}
+                        {!moveItemsMode && <span className="text-[11px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>}
                       </button>
                     )}
-                    {/* Print pre-check button for accounts with items */}
+                    {/* Print pre-check icon button */}
                     {hasItems && tableOrders.length > 1 && !moveItemsMode && (
                       <button
                         onClick={(e) => {
@@ -1566,17 +1566,17 @@ export default function OrderScreen() {
                           handlePrintAccountPreCheck(ord.id, ord.account_number || 1);
                         }}
                         data-testid={`print-precheck-${ord.account_number || 1}`}
-                        className={`absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                        className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${
                           isCurrentOrder 
                             ? 'bg-primary-foreground/20 hover:bg-primary-foreground/40 text-primary-foreground' 
                             : 'bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400'
                         }`}
-                        title={`Imprimir pre-cuenta de Cuenta #${ord.account_number || 1}`}
+                        title={`Pre-cuenta #${ord.account_number || 1}`}
                       >
                         <Printer size={10} />
                       </button>
                     )}
-                    {/* Delete button for empty accounts */}
+                    {/* Delete empty account */}
                     {canDelete && (
                       <button
                         onClick={(e) => {
@@ -1584,7 +1584,7 @@ export default function OrderScreen() {
                           deleteEmptyAccount(ord.id, ord.account_number || 1);
                         }}
                         data-testid={`delete-account-${ord.account_number || 1}`}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-colors shadow-sm"
+                        className="w-6 h-6 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shrink-0 transition-colors"
                         title="Eliminar cuenta vacía"
                       >
                         <X size={10} />
