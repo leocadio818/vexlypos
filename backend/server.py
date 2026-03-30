@@ -866,11 +866,8 @@ async def create_reservation(input: dict):
 
 @api.get("/reservations/check-activations")
 async def check_reservation_activations():
-    config = await db.system_config.find_one({}, {"_id": 0})
-    tz_offset_hours = config.get("timezone_offset", -4) if config else -4
-    
-    TZ_OFFSET = timedelta(hours=tz_offset_hours)
-    LOCAL_TZ = timezone(TZ_OFFSET)
+    from zoneinfo import ZoneInfo
+    LOCAL_TZ = ZoneInfo("America/Santo_Domingo")
     
     now = datetime.now(LOCAL_TZ)
     today = now.strftime("%Y-%m-%d")
