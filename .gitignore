@@ -128,19 +128,3 @@ frontend/node_modules/.cache/default-development/54.pack
 frontend/node_modules/.cache/default-development/56.pack
 frontend/node_modules/.cache/default-development/72.pack
 frontend/node_modules/.cache/default-development/45.pack
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
