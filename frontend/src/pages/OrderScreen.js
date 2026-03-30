@@ -169,6 +169,7 @@ export default function OrderScreen() {
   const [hasActiveDay, setHasActiveDay] = useState(true); // Assume true until checked
   
   const orderRef = useRef(null);
+  const tableOrdersRef = useRef([]);
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
 
   // Barcode scanner state
@@ -191,6 +192,7 @@ export default function OrderScreen() {
         const ordersRes = await ordersAPI.getTableOrders(tableId);
         const orders = ordersRes.data || [];
         setTableOrders(orders);
+        tableOrdersRef.current = orders;
         setAccessDenied(null); // Clear any previous access denied
         
         if (orders.length > 0) {
@@ -361,13 +363,21 @@ export default function OrderScreen() {
   const alreadySentRef = useRef(false);
   const sendPendingToKitchenSilently = useCallback(async (showToast = false) => {
     if (alreadySentRef.current) return false;
-    const currentOrder = orderRef.current;
-    if (!currentOrder) return false;
-    const pendingItems = currentOrder.items?.filter(i => i.status === 'pending') || [];
-    if (pendingItems.length === 0) return false;
+    
+    // Send pending items for ALL orders on this table, not just the active one
+    const allOrders = tableOrdersRef.current || [];
+    const ordersWithPending = allOrders.filter(o => 
+      o.items?.some(i => i.status === 'pending')
+    );
+    
+    if (ordersWithPending.length === 0) return false;
+    
     try {
       alreadySentRef.current = true;
-      await ordersAPI.sendToKitchen(currentOrder.id);
+      // Send all orders with pending items in parallel
+      await Promise.all(
+        ordersWithPending.map(o => ordersAPI.sendToKitchen(o.id))
+      );
       return true;
     } catch (e) {
       alreadySentRef.current = false;
@@ -383,19 +393,23 @@ export default function OrderScreen() {
       
       const href = link.getAttribute('href');
       if (href && !href.startsWith('/order/') && href !== '#') {
-        const currentOrder = orderRef.current;
-        if (currentOrder && !alreadySentRef.current) {
-          const pendingItems = currentOrder.items?.filter(i => i.status === 'pending') || [];
-          if (pendingItems.length > 0) {
-            e.preventDefault();
-            e.stopPropagation();
-            alreadySentRef.current = true;
-            try {
-              await ordersAPI.sendToKitchen(currentOrder.id);
-            } catch {}
-            navigate(href);
-            return;
-          }
+        // Check ALL orders on the table for pending items
+        const allOrders = tableOrdersRef.current || [];
+        const ordersWithPending = allOrders.filter(o => 
+          o.items?.some(i => i.status === 'pending')
+        );
+        
+        if (ordersWithPending.length > 0 && !alreadySentRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          alreadySentRef.current = true;
+          try {
+            await Promise.all(
+              ordersWithPending.map(o => ordersAPI.sendToKitchen(o.id))
+            );
+          } catch {}
+          navigate(href);
+          return;
         }
       }
     };
