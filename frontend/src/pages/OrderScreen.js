@@ -1201,14 +1201,16 @@ export default function OrderScreen() {
   // Create new order from selected items
   const createNewOrderFromItems = async (label = '') => {
     if (selectedSplitItems.length === 0) {
-      return; // Silent - no items selected
+      toast.error('Selecciona al menos un item');
+      return;
     }
     if (!order) return;
     
-    // Check if ALL items are selected - not allowed
+    // Check if ALL items are selected - not allowed (account would be empty)
     const allItemIds = activeItems.map(i => i.id);
     if (selectedSplitItems.length === allItemIds.length) {
-      return; // Silent - use "Mover Mesa" instead
+      toast.error('No puedes mover todos los items. Deselecciona al menos uno para que la cuenta original no quede vacía.');
+      return;
     }
 
     try {
@@ -1227,11 +1229,13 @@ export default function OrderScreen() {
   // Open label dialog for split
   const openSplitLabelDialog = () => {
     if (selectedSplitItems.length === 0) {
-      return; // Silent - no items selected
+      toast.error('Selecciona al menos un item');
+      return;
     }
     const allItemIds = activeItems.map(i => i.id);
     if (selectedSplitItems.length === allItemIds.length) {
-      return; // Silent - use "Mover Mesa" instead
+      toast.error('No puedes mover todos los items. Deselecciona al menos uno.');
+      return;
     }
     setAccountLabelDialog({ open: true, label: '', action: 'split', itemIds: selectedSplitItems });
   };
