@@ -249,7 +249,7 @@ const FiscalDataDrawer = ({
       
       return () => clearTimeout(timer);
     }
-  }, [validation.valid, validation.type, validation.cleaned, apiBase, customerFound, dgiiData, razonSocial]);
+  }, [validation.valid, validation.type, validation.cleaned, apiBase, isNewCustomer, dgiiData, razonSocial]);
   
   // Buscar cliente en la base de datos
   const searchCustomer = useCallback(async () => {
