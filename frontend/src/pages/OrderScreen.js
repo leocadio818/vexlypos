@@ -1538,7 +1538,7 @@ export default function OrderScreen() {
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-1.5 p-2 border-b border-white/10 overflow-x-auto bg-white/5">
+            <div className="flex items-center gap-1.5 p-2 border-b border-white/10 overflow-x-auto bg-white/5" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {tableOrders.map(ord => {
                 const isEmpty = isOrderEmpty(ord);
                 const canDelete = isEmpty && tableOrders.length > 1 && !moveItemsMode;
