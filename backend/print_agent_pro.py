@@ -43,7 +43,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://sistema-ventas-rd.preview.emergentagent.com"
+SERVER_URL = "https://facturacion-dgii.preview.emergentagent.com"
 
 DEFAULT_PRINTER = "Caja"
 
