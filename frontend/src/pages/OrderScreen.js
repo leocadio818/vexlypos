@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ordersAPI, categoriesAPI, productsAPI, modifiersAPI, reasonsAPI, tablesAPI, areasAPI, billsAPI, inventorySettingsAPI, posSessionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search } from 'lucide-react';
+import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -122,6 +122,9 @@ export default function OrderScreen() {
   // Move Items Mode
   const [moveItemsMode, setMoveItemsMode] = useState(false);
   const [selectedItemsToMove, setSelectedItemsToMove] = useState([]);
+  
+  // Rename Account Dialog
+  const [renameDialog, setRenameDialog] = useState({ open: false, value: '' });
   
   // Selected Items for Void/Cancel
   const [selectedItems, setSelectedItems] = useState([]);
@@ -1298,6 +1301,20 @@ export default function OrderScreen() {
     setAccountLabelDialog({ open: true, label: '', action: 'new', itemIds: [] });
   };
 
+  // Rename current account
+  const handleRenameAccount = async () => {
+    if (!order) return;
+    try {
+      await fetch(`${API_BASE}/api/orders/${order.id}/label`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+        body: JSON.stringify({ label: renameDialog.value.trim() })
+      });
+      setRenameDialog({ open: false, value: '' });
+      await fetchOrder();
+    } catch { console.warn('Error renombrando cuenta'); }
+  };
+
   // Handle label dialog confirm
   const handleAccountLabelConfirm = () => {
     const label = accountLabelDialog.label.trim();
@@ -2147,6 +2164,7 @@ export default function OrderScreen() {
             )}
             {/* Button to go back to account selector when table has multiple accounts */}
             {tableOrders.length > 1 && !activeCat && (
+              <>
               <button
                 onClick={async () => { await sendPendingToKitchenSilently(true); await fetchOrder(); setShowAccountSelector(true); }}
                 className={`flex items-center gap-1.5 bg-orange-500/20 text-orange-400 border border-orange-500/40 hover:bg-orange-500/30 font-oswald font-bold rounded-xl px-3 transition-all active:scale-95 ${largeMode ? 'h-10 text-sm' : 'h-8 text-xs'}`}
@@ -2154,6 +2172,14 @@ export default function OrderScreen() {
               >
                 <Users size={largeMode ? 16 : 14} /> Cuentas
               </button>
+              <button
+                onClick={() => setRenameDialog({ open: true, value: order?.account_label || '' })}
+                className={`flex items-center gap-1.5 bg-white/10 text-white/60 border border-white/20 hover:bg-white/20 hover:text-white font-oswald rounded-xl px-3 transition-all active:scale-95 ${largeMode ? 'h-10 text-sm' : 'h-8 text-xs'}`}
+                data-testid="rename-account-btn"
+              >
+                <Pencil size={largeMode ? 14 : 12} /> {order?.account_label ? 'Editar Nombre' : 'Nombrar'}
+              </button>
+              </>
             )}
             {activeCat && (
               <>
@@ -3423,6 +3449,36 @@ export default function OrderScreen() {
               data-testid="confirm-account-label-btn"
             >
               Crear Cuenta
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* ═══ RENAME ACCOUNT DIALOG ═══ */}
+    <Dialog open={renameDialog.open} onOpenChange={(o) => !o && setRenameDialog({ open: false, value: '' })}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="font-oswald flex items-center gap-2">
+            <Pencil size={16} className="text-primary" /> {order?.account_label ? 'Editar Nombre' : 'Nombrar Cuenta'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <input
+            type="text"
+            value={renameDialog.value}
+            onChange={(e) => setRenameDialog(prev => ({ ...prev, value: e.target.value }))}
+            placeholder="Ej: Juan, María..."
+            className="w-full px-4 py-3 rounded-lg border border-border bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary"
+            autoFocus
+            data-testid="rename-account-input"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={() => setRenameDialog({ open: false, value: '' })} className="font-oswald">
+              Cancelar
+            </Button>
+            <Button onClick={handleRenameAccount} className="bg-primary hover:bg-primary/90 text-primary-foreground font-oswald font-bold" data-testid="confirm-rename-btn">
+              Guardar
             </Button>
           </div>
         </div>

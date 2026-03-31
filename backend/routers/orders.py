@@ -389,6 +389,13 @@ async def add_items_to_order(order_id: str, input: AddItemsInput):
     
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
+@router.put("/orders/{order_id}/label")
+async def update_order_label(order_id: str, input: dict):
+    label = input.get("label", "")
+    await db.orders.update_one({"id": order_id}, {"$set": {"account_label": label}})
+    return {"ok": True}
+
+
 @router.put("/orders/{order_id}/items/{item_id}")
 async def update_order_item(order_id: str, item_id: str, input: dict):
     update_fields = {f"items.$.{k}": v for k, v in input.items()}
