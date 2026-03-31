@@ -144,6 +144,10 @@ export default function OrderScreen() {
   // Merge Accounts Dialog
   const [mergeAccountsDialog, setMergeAccountsDialog] = useState({ open: false, sourceOrderId: null });
   
+  // Merge mode for account selector (visual merge)
+  const [selectorMergeMode, setSelectorMergeMode] = useState(false);
+  const [selectorMergeSource, setSelectorMergeSource] = useState(null);
+  
   // Transfer Table Dialog
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
@@ -1366,6 +1370,20 @@ export default function OrderScreen() {
     setMergeAccountsDialog({ open: true, sourceOrderId: orderId });
   };
 
+  // Handle merge from account selector
+  const handleSelectorMerge = async (targetOrderId) => {
+    if (!selectorMergeSource || !targetOrderId || selectorMergeSource === targetOrderId) return;
+    try {
+      await ordersAPI.mergeOrders(selectorMergeSource, targetOrderId);
+      setSelectorMergeMode(false);
+      setSelectorMergeSource(null);
+      await fetchOrder();
+      toast.success('Cuentas unidas exitosamente');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Error uniendo cuentas');
+    }
+  };
+
   // Direct billing - create bill and go to payment
   const handleDirectBilling = async () => {
     try {
@@ -1517,6 +1535,19 @@ export default function OrderScreen() {
               >
                 <Plus size={14} /> Nueva
               </button>
+              {tableOrders.length >= 2 && (
+                <button
+                  onClick={() => { setSelectorMergeMode(!selectorMergeMode); setSelectorMergeSource(null); }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-oswald font-bold transition-all active:scale-95 ${
+                    selectorMergeMode
+                      ? 'bg-purple-600 border border-purple-400 text-white'
+                      : 'bg-purple-600/20 border border-purple-600/50 text-purple-400 hover:bg-purple-600/30'
+                  }`}
+                  data-testid="merge-from-selector"
+                >
+                  <Merge size={14} /> {selectorMergeMode ? 'Cancelar' : 'Unir'}
+                </button>
+              )}
               <button
                 onClick={handlePrintAllAccounts}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-oswald font-bold bg-cyan-600/20 border border-cyan-600/50 text-cyan-400 hover:bg-cyan-600/30 transition-all active:scale-95"
@@ -1529,26 +1560,64 @@ export default function OrderScreen() {
 
           {/* Account Cards - Full screen grid */}
           <div className="flex-1 p-3 sm:p-5 lg:p-8 overflow-y-auto">
-            <p className="text-sm text-white/50 mb-4 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
+            {selectorMergeMode ? (
+              <p className="text-sm text-purple-400 mb-4 text-center font-semibold">
+                {selectorMergeSource 
+                  ? `Ahora toca la cuenta DESTINO para unir con Cuenta #${tableOrders.find(o => o.id === selectorMergeSource)?.account_number || '?'}`
+                  : 'Toca la cuenta ORIGEN que deseas mover'}
+              </p>
+            ) : (
+              <p className="text-sm text-white/50 mb-4 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
               {tableOrders.map(ord => {
                 const items = ord.items?.filter(i => i.status !== 'cancelled') || [];
                 const total = getOrderTotal(ord);
                 const isEmpty = items.length === 0;
+                const isSource = selectorMergeSource === ord.id;
+                const isTarget = selectorMergeMode && selectorMergeSource && !isSource;
                 
                 return (
                   <button
                     key={ord.id}
                     onClick={() => {
-                      setActiveOrderId(ord.id);
-                      setOrder(ord);
-                      orderRef.current = ord;
-                      setShowAccountSelector(false);
-                      setMobileAccountExpanded(false);
+                      if (selectorMergeMode) {
+                        if (!selectorMergeSource) {
+                          setSelectorMergeSource(ord.id);
+                        } else if (ord.id !== selectorMergeSource) {
+                          handleSelectorMerge(ord.id);
+                        }
+                      } else {
+                        setActiveOrderId(ord.id);
+                        setOrder(ord);
+                        orderRef.current = ord;
+                        setShowAccountSelector(false);
+                        setMobileAccountExpanded(false);
+                      }
                     }}
                     data-testid={`select-account-${ord.account_number || 1}`}
-                    className="p-4 sm:p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10 transition-all text-left active:scale-[0.97] backdrop-blur-sm"
+                    className={`p-4 sm:p-5 rounded-2xl border-2 transition-all text-left active:scale-[0.97] backdrop-blur-sm ${
+                      isSource
+                        ? 'border-purple-500 bg-purple-500/20 ring-2 ring-purple-500/50 scale-[1.02]'
+                        : isTarget
+                          ? 'border-green-500/70 bg-green-500/10 hover:bg-green-500/20 hover:border-green-400'
+                          : selectorMergeMode
+                            ? 'border-purple-500/50 bg-white/5 hover:border-purple-400 animate-pulse'
+                            : 'border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10'
+                    }`}
+                    style={selectorMergeMode && !isSource ? { animationDuration: '2s' } : {}}
                   >
+                    {/* Merge mode badges */}
+                    {isSource && (
+                      <div className="mb-2">
+                        <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-purple-600 text-white uppercase">Origen</span>
+                      </div>
+                    )}
+                    {isTarget && (
+                      <div className="mb-2">
+                        <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-green-600 text-white uppercase">Toca para unir aquí</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <span className="font-oswald text-xl sm:text-2xl font-bold text-primary">
