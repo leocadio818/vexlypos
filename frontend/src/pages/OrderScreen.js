@@ -1476,25 +1476,26 @@ export default function OrderScreen() {
       {showAccountSelector && tableOrders.length > 1 && (
         <div className="h-full flex flex-col" data-testid="account-selector">
           {/* Header */}
-          <div className="px-3 py-3 border-b border-white/10 backdrop-blur-xl bg-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={async () => { await sendPendingToKitchenSilently(true); navigate('/tables'); }}
-                className="h-10 w-10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all"
-                data-testid="back-to-tables-from-selector"
-              >
-                <ArrowLeft size={18} />
-              </button>
-              <h2 className="font-oswald text-lg font-bold text-white">
-                Mesa {table?.number || '?'} — {tableOrders.length} Cuentas
+          <div className="px-4 py-4 border-b border-white/10 backdrop-blur-xl bg-white/5 flex items-center gap-3">
+            <button 
+              onClick={async () => { await sendPendingToKitchenSilently(true); navigate('/tables'); }}
+              className="h-10 w-10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all shrink-0"
+              data-testid="back-to-tables-from-selector"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <h2 className="font-oswald text-xl font-bold text-white">
+                Mesa {table?.number || '?'}
               </h2>
+              <p className="text-xs text-white/40">{tableOrders.length} cuentas abiertas</p>
             </div>
           </div>
 
-          {/* Account Cards */}
-          <div className="flex-1 p-4 overflow-y-auto">
-            <p className="text-sm text-white/50 mb-4 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto">
+          {/* Account Cards - Full screen centered */}
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 overflow-y-auto">
+            <p className="text-sm text-white/50 mb-6 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full max-w-4xl">
               {tableOrders.map(ord => {
                 const items = ord.items?.filter(i => i.status !== 'cancelled') || [];
                 const total = getOrderTotal(ord);
@@ -1511,33 +1512,35 @@ export default function OrderScreen() {
                       setMobileAccountExpanded(false);
                     }}
                     data-testid={`select-account-${ord.account_number || 1}`}
-                    className="p-4 rounded-xl border-2 border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10 transition-all text-left active:scale-[0.97]"
+                    className="p-5 sm:p-6 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10 transition-all text-left active:scale-[0.97] backdrop-blur-sm"
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-oswald text-xl font-bold text-primary">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="font-oswald text-2xl sm:text-3xl font-bold text-primary">
                         Cuenta #{ord.account_number || 1}
                       </span>
-                      <span className="font-oswald text-lg font-bold text-white">
+                      <span className="font-oswald text-xl sm:text-2xl font-bold text-white">
                         {formatMoney(total)}
                       </span>
                     </div>
-                    {isEmpty ? (
-                      <p className="text-xs text-white/30">Sin productos</p>
-                    ) : (
-                      <div className="space-y-1">
-                        {items.slice(0, 4).map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs">
-                            <span className="text-white/70 truncate flex-1">{item.quantity}x {item.product_name}</span>
-                            <span className="text-white/50 ml-2 shrink-0">{formatMoney(item.unit_price * item.quantity)}</span>
-                          </div>
-                        ))}
-                        {items.length > 4 && (
-                          <p className="text-xs text-white/30">+{items.length - 4} más...</p>
-                        )}
-                      </div>
-                    )}
+                    <div className="border-t border-white/10 pt-3">
+                      {isEmpty ? (
+                        <p className="text-sm text-white/30 py-2">Sin productos</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {items.slice(0, 5).map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-sm">
+                              <span className="text-white/70 truncate flex-1">{item.quantity}x {item.product_name}</span>
+                              <span className="text-white/50 ml-3 shrink-0 font-mono">{formatMoney(item.unit_price * item.quantity)}</span>
+                            </div>
+                          ))}
+                          {items.length > 5 && (
+                            <p className="text-xs text-white/30 pt-1">+{items.length - 5} más...</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     {ord.label && (
-                      <p className="mt-2 text-xs text-primary/70 italic">{ord.label}</p>
+                      <p className="mt-3 text-xs text-primary/70 italic border-t border-white/5 pt-2">{ord.label}</p>
                     )}
                   </button>
                 );
@@ -2121,6 +2124,16 @@ export default function OrderScreen() {
               </button>
             ) : (
               <span className={`font-semibold flex items-center gap-1.5 ${largeMode ? 'text-base' : 'text-sm'}`}><Grid3X3 size={largeMode ? 18 : 14} /> Categorias</span>
+            )}
+            {/* Button to go back to account selector when table has multiple accounts */}
+            {tableOrders.length > 1 && !activeCat && (
+              <button
+                onClick={async () => { await sendPendingToKitchenSilently(true); setShowAccountSelector(true); }}
+                className={`flex items-center gap-1.5 bg-orange-500/20 text-orange-400 border border-orange-500/40 hover:bg-orange-500/30 font-oswald font-bold rounded-xl px-3 transition-all active:scale-95 ${largeMode ? 'h-10 text-sm' : 'h-8 text-xs'}`}
+                data-testid="back-to-accounts-btn"
+              >
+                <Users size={largeMode ? 16 : 14} /> Cuentas
+              </button>
             )}
             {activeCat && (
               <>
