@@ -8,7 +8,14 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - Backend: FastAPI + MongoDB
 - External: Supabase, Alanube (e-CF), Resend (emails)
 
-## Completed Tasks (Recent - 2026-03-29)
+## Completed Tasks (Recent - 2026-03-31)
+- **Refactoring OrderScreen.js**: Extraídos ~244 líneas de JSX a 2 componentes independientes:
+  - `AccountSelectorLobby.js` — Grid de cuentas divididas (selector de cuenta, merge visual, nueva cuenta, imprimir todas)
+  - `SplitCheckView.js` — Modo Dividir Cuenta (checkboxes, seleccionar todos, nueva cuenta, mover a cuenta)
+- **Bug fix verifyManagerPin**: Corregido referencia a `axios` no importado → ahora usa `fetch` API correctamente
+- OrderScreen.js reducido de 3563 a 3319 líneas (-7%)
+
+## Completed Tasks (Previous - 2026-03-29)
 - **Reports mobile redesign**: Full-width menu replaces sidebar on mobile. Full-width report content with ☰ button to return to menu. All report types tested (Cierre, Mesero, Categoría)
 - **Clientes page fix**: Compact header, icon-only buttons on mobile, customer cards with visible edit/canjear buttons  
 - **Bottom padding global**: `pb-28` on ALL scrollable pages (Settings, Reports, Dashboard, CashRegister, Customers, Kitchen, Reservations, InventoryManager, ProductConfig)
@@ -22,13 +29,16 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - Módulo Contable RD (Fase 1: Cuentas por Pagar/Cobrar)
 - Manuales de Usuario PDF
 - Integración IA (GPT-4o mini)
+
+### P3
+- Exportar Audit Trail, Modo Offline (PAUSED)
 - CRM
 
 ### P2
 - Reporte DGII 608, Caché imágenes, Print Agent Installer
 
-### P3
-- Exportar Audit Trail, Modo Offline (PAUSED)
+### Refactoring
+- ~~Componentizar OrderScreen.js (Account Selector + Split Check)~~ ✅ DONE
 
 ## Important Notes
 - DO NOT implement offline ordering/syncing

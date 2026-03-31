@@ -1,5 +1,11 @@
 # VexlyPOS — Changelog
 
+## 2026-03-31 — Refactoring OrderScreen.js
+- **Componentización**: Extraído `AccountSelectorLobby.js` (~145 líneas JSX) y `SplitCheckView.js` (~142 líneas JSX) como componentes independientes
+- **Bug fix**: `verifyManagerPin` usaba `axios` sin import → corregido a `fetch` API nativa
+- OrderScreen.js: 3563 → 3319 líneas (-7%)
+- Testing: 100% pass rate (login, mesas, orden, account selector, split check, pre-cuenta, facturar, mobile)
+
 ## 2026-03-29 — Google Translate Protection + PWA Base
 - **Google Translate Protection**: `<html lang="es" translate="no">`, meta `notranslate`, clase `notranslate` en PinPad + PaymentScreen totals
 - **PWA Instalable**: manifest.json, íconos 192/512/apple-touch, meta tags iOS/Android, Service Worker (cache estático)
