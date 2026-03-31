@@ -1476,26 +1476,42 @@ export default function OrderScreen() {
       {showAccountSelector && tableOrders.length > 1 && (
         <div className="h-full flex flex-col" data-testid="account-selector">
           {/* Header */}
-          <div className="px-4 py-4 border-b border-white/10 backdrop-blur-xl bg-white/5 flex items-center gap-3">
-            <button 
-              onClick={async () => { await sendPendingToKitchenSilently(true); navigate('/tables'); }}
-              className="h-10 w-10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all shrink-0"
-              data-testid="back-to-tables-from-selector"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <div>
-              <h2 className="font-oswald text-xl font-bold text-white">
-                Mesa {table?.number || '?'}
-              </h2>
-              <p className="text-xs text-white/40">{tableOrders.length} cuentas abiertas</p>
+          <div className="px-4 py-3 border-b border-white/10 backdrop-blur-xl bg-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={async () => { await sendPendingToKitchenSilently(true); navigate('/tables'); }}
+                className="h-10 w-10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all shrink-0"
+                data-testid="back-to-tables-from-selector"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div>
+                <h2 className="font-oswald text-lg sm:text-xl font-bold text-white">Mesa {table?.number || '?'}</h2>
+                <p className="text-xs text-white/40">{tableOrders.length} cuentas abiertas</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={openNewAccountLabelDialog}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-oswald font-bold bg-green-600/20 border border-green-600/50 text-green-400 hover:bg-green-600/30 transition-all active:scale-95"
+                data-testid="new-account-from-selector"
+              >
+                <Plus size={14} /> Nueva
+              </button>
+              <button
+                onClick={handlePrintAllAccounts}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-oswald font-bold bg-cyan-600/20 border border-cyan-600/50 text-cyan-400 hover:bg-cyan-600/30 transition-all active:scale-95"
+                data-testid="print-all-from-selector"
+              >
+                <Printer size={14} /> Todas
+              </button>
             </div>
           </div>
 
-          {/* Account Cards - Full screen centered */}
-          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 overflow-y-auto">
-            <p className="text-sm text-white/50 mb-6 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full max-w-4xl">
+          {/* Account Cards - Full screen grid */}
+          <div className="flex-1 p-3 sm:p-5 lg:p-8 overflow-y-auto">
+            <p className="text-sm text-white/50 mb-4 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
               {tableOrders.map(ord => {
                 const items = ord.items?.filter(i => i.status !== 'cancelled') || [];
                 const total = getOrderTotal(ord);
@@ -1512,21 +1528,21 @@ export default function OrderScreen() {
                       setMobileAccountExpanded(false);
                     }}
                     data-testid={`select-account-${ord.account_number || 1}`}
-                    className="p-5 sm:p-6 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10 transition-all text-left active:scale-[0.97] backdrop-blur-sm"
+                    className="p-4 sm:p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10 transition-all text-left active:scale-[0.97] backdrop-blur-sm"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="font-oswald text-2xl sm:text-3xl font-bold text-primary">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-oswald text-xl sm:text-2xl font-bold text-primary">
                         Cuenta #{ord.account_number || 1}
                       </span>
-                      <span className="font-oswald text-xl sm:text-2xl font-bold text-white">
+                      <span className="font-oswald text-lg sm:text-xl font-bold text-white">
                         {formatMoney(total)}
                       </span>
                     </div>
-                    <div className="border-t border-white/10 pt-3">
+                    <div className="border-t border-white/10 pt-2">
                       {isEmpty ? (
-                        <p className="text-sm text-white/30 py-2">Sin productos</p>
+                        <p className="text-sm text-white/30 py-1">Sin productos</p>
                       ) : (
-                        <div className="space-y-1.5">
+                        <div className="space-y-1">
                           {items.slice(0, 5).map((item, idx) => (
                             <div key={idx} className="flex items-center justify-between text-sm">
                               <span className="text-white/70 truncate flex-1">{item.quantity}x {item.product_name}</span>
@@ -1540,7 +1556,7 @@ export default function OrderScreen() {
                       )}
                     </div>
                     {ord.label && (
-                      <p className="mt-3 text-xs text-primary/70 italic border-t border-white/5 pt-2">{ord.label}</p>
+                      <p className="mt-2 text-xs text-primary/70 italic border-t border-white/5 pt-2">{ord.label}</p>
                     )}
                   </button>
                 );
