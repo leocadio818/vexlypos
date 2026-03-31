@@ -2087,71 +2087,65 @@ export default function OrderScreen() {
                   )}
                 </div>
 
-                {/* Mobile view: State-based button flow */}
-                {/* State logic based on mobileButtonState: */}
-                {/* - 'initial': Show PRE-CUENTA (default, or after interruption rule) */}
-                {/* - 'editing': Show ANULAR (when items selected - always interrupts) */}
-                {/* - 'closing': Show FACTURAR (after PRE-CUENTA printed, until interrupted) */}
-                <div className="lg:hidden">
+                {/* Mobile view: PRE-CUENTA + FACTURAR side by side (no state machine) */}
+                <div className="lg:hidden space-y-2">
                   {activeItems.length > 0 && (
                     <>
-                      {/* State: Editing - Show ANULAR (when items selected) - highest priority */}
-                      {selectedItems.length > 0 ? (
+                      {/* ANULAR - only when items selected */}
+                      {selectedItems.length > 0 && (
                         <Button 
                           onClick={() => {
-                            triggerHaptic('strong'); // Strong feedback for void action
+                            triggerHaptic('strong');
                             handleSmartVoid(selectedItems);
                           }}
                           size="lg" 
                           data-testid="void-selected-btn-mobile"
-                          className="h-14 w-full bg-red-600 hover:bg-red-700 text-white font-oswald text-base font-bold"
+                          className="h-12 w-full bg-red-600 hover:bg-red-700 text-white font-oswald text-sm font-bold"
                         >
-                          <Ban size={18} className="mr-2" /> ANULAR ({selectedItems.length})
+                          <Ban size={16} className="mr-1.5" /> ANULAR ({selectedItems.length})
                         </Button>
-                      ) : mobileButtonState === 'closing' ? (
-                        /* State: Closing - Show FACTURAR */
+                      )}
+                      {/* PRE-CUENTA + FACTURAR always visible */}
+                      <div className="flex gap-2">
                         <Button 
                           onClick={() => {
-                            triggerHaptic('double'); // Double tap feedback for billing
+                            triggerHaptic('medium');
+                            handlePrintPreCheck();
+                          }} 
+                          variant="outline" 
+                          size="lg" 
+                          data-testid="pre-check-btn-mobile"
+                          className="h-14 flex-1 text-sm border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 font-oswald font-bold"
+                        >
+                          <FileText size={16} className="mr-1.5" /> PRE-CUENTA
+                          {preCheckCount > 0 && <Lock size={10} className="ml-1 text-yellow-500" />}
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            triggerHaptic('double');
                             handleDirectBilling();
                           }} 
                           size="lg" 
                           data-testid="go-to-billing-mobile"
-                          className="h-14 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-base font-bold"
+                          className="h-14 flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-oswald text-sm font-bold"
                         >
-                          <Receipt size={18} className="mr-2" /> FACTURAR
+                          <Receipt size={16} className="mr-1.5" /> FACTURAR
                         </Button>
-                      ) : (
-                        /* State: Initial - Show PRE-CUENTA */
-                        <div className="flex gap-2">
-                          <Button 
-                            onClick={() => {
-                              triggerHaptic('medium');
-                              handlePrintPreCheck();
-                            }} 
-                            variant="outline" 
-                            size="lg" 
-                            data-testid="pre-check-btn-mobile"
-                            className={`h-14 text-base border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 font-oswald font-bold ${tableOrders.length > 1 ? 'flex-1' : 'w-full'}`}
-                          >
-                            <FileText size={18} className="mr-2" /> PRE-CUENTA
-                            {preCheckCount > 0 && <Lock size={12} className="ml-2 text-yellow-500" />}
-                          </Button>
-                          {tableOrders.length > 1 && (
-                            <Button 
-                              onClick={() => {
-                                triggerHaptic('medium');
-                                handlePrintAllAccounts();
-                              }} 
-                              variant="outline" 
-                              size="lg" 
-                              data-testid="print-all-accounts-btn-mobile"
-                              className="h-14 text-sm border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 font-oswald font-bold px-3"
-                            >
-                              <Printer size={16} className="mr-1" /> TODAS
-                            </Button>
-                          )}
-                        </div>
+                      </div>
+                      {/* TODAS - only when multiple accounts */}
+                      {tableOrders.length > 1 && (
+                        <Button 
+                          onClick={() => {
+                            triggerHaptic('medium');
+                            handlePrintAllAccounts();
+                          }} 
+                          variant="outline" 
+                          size="sm" 
+                          data-testid="print-all-accounts-btn-mobile"
+                          className="w-full h-9 text-xs border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 font-oswald font-bold"
+                        >
+                          <Printer size={14} className="mr-1" /> IMPRIMIR TODAS LAS CUENTAS
+                        </Button>
                       )}
                     </>
                   )}
