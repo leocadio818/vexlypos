@@ -1471,7 +1471,7 @@ export default function OrderScreen() {
   };
 
   return (
-    <div className="h-full flex flex-col lg:flex-row-reverse" data-testid="order-screen">
+    <div className={`h-full flex flex-col ${showAccountSelector && tableOrders.length > 1 ? '' : 'lg:flex-row-reverse'}`} data-testid="order-screen">
       {/* ═══ ACCOUNT SELECTOR - Shows when table has multiple divided accounts ═══ */}
       {showAccountSelector && tableOrders.length > 1 && (
         <div className="h-full flex flex-col" data-testid="account-selector">
