@@ -541,6 +541,7 @@ export default function OrderScreen() {
     // If table has multiple accounts, go back to account selector first
     if (tableOrders.length > 1 && !showAccountSelector) {
       await sendPendingToKitchenSilently(true);
+      await fetchOrder(); // Refresh data before showing selector
       setShowAccountSelector(true);
       return;
     }
@@ -1532,9 +1533,14 @@ export default function OrderScreen() {
                     className="p-4 sm:p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10 transition-all text-left active:scale-[0.97] backdrop-blur-sm"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className="font-oswald text-xl sm:text-2xl font-bold text-primary">
-                        Cuenta #{ord.account_number || 1}
-                      </span>
+                      <div>
+                        <span className="font-oswald text-xl sm:text-2xl font-bold text-primary">
+                          Cuenta #{ord.account_number || 1}
+                        </span>
+                        {(ord.account_label || ord.label) && (
+                          <span className="ml-2 text-sm text-white/50">({ord.account_label || ord.label})</span>
+                        )}
+                      </div>
                       <span className="font-oswald text-lg sm:text-xl font-bold text-white">
                         {formatMoney(total)}
                       </span>
@@ -1556,9 +1562,6 @@ export default function OrderScreen() {
                         </div>
                       )}
                     </div>
-                    {ord.label && (
-                      <p className="mt-2 text-xs text-primary/70 italic border-t border-white/5 pt-2">{ord.label}</p>
-                    )}
                   </button>
                 );
               })}
@@ -2145,7 +2148,7 @@ export default function OrderScreen() {
             {/* Button to go back to account selector when table has multiple accounts */}
             {tableOrders.length > 1 && !activeCat && (
               <button
-                onClick={async () => { await sendPendingToKitchenSilently(true); setShowAccountSelector(true); }}
+                onClick={async () => { await sendPendingToKitchenSilently(true); await fetchOrder(); setShowAccountSelector(true); }}
                 className={`flex items-center gap-1.5 bg-orange-500/20 text-orange-400 border border-orange-500/40 hover:bg-orange-500/30 font-oswald font-bold rounded-xl px-3 transition-all active:scale-95 ${largeMode ? 'h-10 text-sm' : 'h-8 text-xs'}`}
                 data-testid="back-to-accounts-btn"
               >
