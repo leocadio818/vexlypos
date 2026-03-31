@@ -13,6 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { useTheme } from '@/context/ThemeContext';
 import TransferTableModal from '@/components/TransferTableModal';
+import AccountSelectorLobby from '@/components/AccountSelectorLobby';
+import SplitCheckView from '@/components/SplitCheckView';
 
 // Mapa de iconos de producto
 const PRODUCT_ICON_MAP = {
@@ -816,12 +818,16 @@ export default function OrderScreen() {
   // Verify manager PIN — check against reason's allowed_roles
   const verifyManagerPin = async () => {
     try {
-      const res = await axios.post(`${API_BASE}/api/auth/verify-manager`, {
-        pin: cancelDialog.managerPin,
-        permission: 'void_items'
-      }, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
-      
-      const data = res.data;
+      const res = await fetch(`${API_BASE}/api/auth/verify-manager`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('pos_token')}` },
+        body: JSON.stringify({ pin: cancelDialog.managerPin, permission: 'void_items' })
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw { response: { data: errData } };
+      }
+      const data = await res.json();
       // Check if the authorizing user's role is in the reason's allowed_roles
       const allowedRoles = cancelDialog.reasonAllowedRoles || ['admin','supervisor'];
       if (data.role && !allowedRoles.includes(data.role) && !data.is_superuser) {
@@ -1509,151 +1515,29 @@ export default function OrderScreen() {
 
   return (
     <div className={`h-full flex flex-col ${showAccountSelector && tableOrders.length > 1 ? '' : 'lg:flex-row-reverse'}`} data-testid="order-screen">
-      {/* ═══ ACCOUNT SELECTOR - Shows when table has multiple divided accounts ═══ */}
+      {/* ═══ ACCOUNT SELECTOR — Componente extraído ═══ */}
       {showAccountSelector && tableOrders.length > 1 && (
-        <div className="h-full flex flex-col" data-testid="account-selector">
-          {/* Header */}
-          <div className="px-4 py-3 border-b border-white/10 backdrop-blur-xl bg-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={async () => { await sendPendingToKitchenSilently(true); navigate('/tables'); }}
-                className="h-10 w-10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all shrink-0"
-                data-testid="back-to-tables-from-selector"
-              >
-                <ArrowLeft size={18} />
-              </button>
-              <div>
-                <h2 className="font-oswald text-lg sm:text-xl font-bold text-white">Mesa {table?.number || '?'}</h2>
-                <p className="text-xs text-white/40">{tableOrders.length} cuentas abiertas</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={openNewAccountLabelDialog}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-oswald font-bold bg-green-600/20 border border-green-600/50 text-green-400 hover:bg-green-600/30 transition-all active:scale-95"
-                data-testid="new-account-from-selector"
-              >
-                <Plus size={14} /> Nueva
-              </button>
-              {tableOrders.length >= 2 && (
-                <button
-                  onClick={() => { setSelectorMergeMode(!selectorMergeMode); setSelectorMergeSource(null); }}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-oswald font-bold transition-all active:scale-95 ${
-                    selectorMergeMode
-                      ? 'bg-purple-600 border border-purple-400 text-white'
-                      : 'bg-purple-600/20 border border-purple-600/50 text-purple-400 hover:bg-purple-600/30'
-                  }`}
-                  data-testid="merge-from-selector"
-                >
-                  <Merge size={14} /> {selectorMergeMode ? 'Cancelar' : 'Unir'}
-                </button>
-              )}
-              <button
-                onClick={handlePrintAllAccounts}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-oswald font-bold bg-cyan-600/20 border border-cyan-600/50 text-cyan-400 hover:bg-cyan-600/30 transition-all active:scale-95"
-                data-testid="print-all-from-selector"
-              >
-                <Printer size={14} /> Todas
-              </button>
-            </div>
-          </div>
-
-          {/* Account Cards - Full screen grid */}
-          <div className="flex-1 p-3 sm:p-5 lg:p-8 overflow-y-auto">
-            {selectorMergeMode ? (
-              <p className="text-sm text-purple-400 mb-4 text-center font-semibold">
-                {selectorMergeSource 
-                  ? `Ahora toca la cuenta DESTINO para unir con Cuenta #${tableOrders.find(o => o.id === selectorMergeSource)?.account_number || '?'}`
-                  : 'Toca la cuenta ORIGEN que deseas mover'}
-              </p>
-            ) : (
-              <p className="text-sm text-white/50 mb-4 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
-              {tableOrders.map(ord => {
-                const items = ord.items?.filter(i => i.status !== 'cancelled') || [];
-                const total = getOrderTotal(ord);
-                const isEmpty = items.length === 0;
-                const isSource = selectorMergeSource === ord.id;
-                const isTarget = selectorMergeMode && selectorMergeSource && !isSource;
-                
-                return (
-                  <button
-                    key={ord.id}
-                    onClick={() => {
-                      if (selectorMergeMode) {
-                        if (!selectorMergeSource) {
-                          setSelectorMergeSource(ord.id);
-                        } else if (ord.id !== selectorMergeSource) {
-                          handleSelectorMerge(ord.id);
-                        }
-                      } else {
-                        setActiveOrderId(ord.id);
-                        setOrder(ord);
-                        orderRef.current = ord;
-                        setShowAccountSelector(false);
-                        setMobileAccountExpanded(false);
-                      }
-                    }}
-                    data-testid={`select-account-${ord.account_number || 1}`}
-                    className={`p-4 sm:p-5 rounded-2xl border-2 transition-all text-left active:scale-[0.97] backdrop-blur-sm ${
-                      isSource
-                        ? 'border-purple-500 bg-purple-500/20 ring-2 ring-purple-500/50 scale-[1.02]'
-                        : isTarget
-                          ? 'border-green-500/70 bg-green-500/10 hover:bg-green-500/20 hover:border-green-400'
-                          : selectorMergeMode
-                            ? 'border-purple-500/50 bg-white/5 hover:border-purple-400 animate-pulse'
-                            : 'border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10'
-                    }`}
-                    style={selectorMergeMode && !isSource ? { animationDuration: '2s' } : {}}
-                  >
-                    {/* Merge mode badges */}
-                    {isSource && (
-                      <div className="mb-2">
-                        <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-purple-600 text-white uppercase">Origen</span>
-                      </div>
-                    )}
-                    {isTarget && (
-                      <div className="mb-2">
-                        <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-green-600 text-white uppercase">Toca para unir aquí</span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <span className="font-oswald text-xl sm:text-2xl font-bold text-primary">
-                          Cuenta #{ord.account_number || 1}
-                        </span>
-                        {(ord.account_label || ord.label) && (
-                          <span className="ml-2 text-sm text-white/50">({ord.account_label || ord.label})</span>
-                        )}
-                      </div>
-                      <span className="font-oswald text-lg sm:text-xl font-bold text-white">
-                        {formatMoney(total)}
-                      </span>
-                    </div>
-                    <div className="border-t border-white/10 pt-2">
-                      {isEmpty ? (
-                        <p className="text-sm text-white/30 py-1">Sin productos</p>
-                      ) : (
-                        <div className="space-y-1">
-                          {items.slice(0, 5).map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between text-sm">
-                              <span className="text-white/70 truncate flex-1">{item.quantity}x {item.product_name}</span>
-                              <span className="text-white/50 ml-3 shrink-0 font-mono">{formatMoney(item.unit_price * item.quantity)}</span>
-                            </div>
-                          ))}
-                          {items.length > 5 && (
-                            <p className="text-xs text-white/30 pt-1">+{items.length - 5} más...</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <AccountSelectorLobby
+          tableOrders={tableOrders}
+          table={table}
+          selectorMergeMode={selectorMergeMode}
+          setSelectorMergeMode={setSelectorMergeMode}
+          selectorMergeSource={selectorMergeSource}
+          setSelectorMergeSource={setSelectorMergeSource}
+          onBack={async () => { await sendPendingToKitchenSilently(true); navigate('/tables'); }}
+          onSelectAccount={(ord) => {
+            setActiveOrderId(ord.id);
+            setOrder(ord);
+            orderRef.current = ord;
+            setShowAccountSelector(false);
+            setMobileAccountExpanded(false);
+          }}
+          onNewAccount={openNewAccountLabelDialog}
+          onPrintAll={handlePrintAllAccounts}
+          onMerge={handleSelectorMerge}
+          getOrderTotal={getOrderTotal}
+          isOrderEmpty={isOrderEmpty}
+        />
       )}
 
       {/* ═══ NORMAL ORDER VIEW (hidden when account selector is shown) ═══ */}
@@ -1811,150 +1695,23 @@ export default function OrderScreen() {
           </div>
         )}
 
-        {/* Split Mode View - Multiple Orders/Accounts */}
+        {/* Split Mode View — Componente extraído */}
         {splitMode ? (
-          <div className="flex-1 flex flex-col">
-            {/* Orders/Accounts Tabs */}
-            <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto">
-              {tableOrders.map(ord => {
-                const isEmpty = isOrderEmpty(ord);
-                const canDelete = isEmpty && tableOrders.length > 1;
-                return (
-                  <div key={ord.id} className="relative flex items-center">
-                    <button
-                      onClick={() => selectOrder(ord.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-oswald whitespace-nowrap transition-all ${
-                        activeOrderId === ord.id 
-                          ? 'bg-primary text-primary-foreground font-bold' 
-                          : 'bg-card border border-border text-muted-foreground hover:border-primary/50'
-                      } ${canDelete ? 'pr-7' : ''}`}
-                    >
-                      Cuenta #{ord.account_number || 1}
-                      <span className="ml-1 text-[11px] opacity-70">({ord.items?.filter(i => i.status !== 'cancelled').length || 0})</span>
-                    </button>
-                    {/* Delete button for empty accounts */}
-                    {canDelete && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteEmptyAccount(ord.id, ord.account_number || 1);
-                        }}
-                        data-testid={`delete-account-split-${ord.account_number || 1}`}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center transition-colors shadow-sm"
-                        title="Eliminar cuenta vacía"
-                      >
-                        <X size={10} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Current Order Items - Select to move */}
-            <ScrollArea className="flex-1">
-              <div className="p-2 space-y-1">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-muted-foreground">
-                    Selecciona items para mover
-                  </p>
-                  {activeItems.length > 0 && (
-                    <button
-                      onClick={() => {
-                        if (selectedSplitItems.length === activeItems.length) {
-                          setSelectedSplitItems([]);
-                        } else {
-                          setSelectedSplitItems(activeItems.map(i => i.id));
-                        }
-                      }}
-                      className="text-xs text-primary hover:underline font-semibold"
-                    >
-                      {selectedSplitItems.length === activeItems.length ? '✓ Deseleccionar todos' : '☐ Seleccionar todos'}
-                    </button>
-                  )}
-                </div>
-                {activeItems.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users size={24} className="mx-auto mb-2 text-muted-foreground/30" />
-                    <p className="text-xs text-muted-foreground">Esta cuenta está vacía</p>
-                  </div>
-                ) : (
-                  activeItems.map(item => {
-                    const isSelected = selectedSplitItems.includes(item.id);
-                    return (
-                    <div 
-                      key={item.id} 
-                      onClick={() => toggleSplitItem(item.id)}
-                      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
-                        isSelected
-                          ? 'bg-red-500/20 border-red-500'
-                          : 'bg-background/50 border-border/50 hover:border-primary/50'
-                      }`}
-                    >
-                      {/* Checkbox */}
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected ? 'bg-red-500 border-red-500' : 'border-muted-foreground/40'
-                      }`}>
-                        {isSelected && <Check size={12} className="text-white" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="font-oswald text-xs font-bold text-primary">{item.quantity}x</span>
-                          <span className="text-xs font-medium truncate">{item.product_name}</span>
-                        </div>
-                        {item.modifiers?.length > 0 && (
-                          <div className="flex flex-wrap gap-0.5 mt-0.5">
-                            {item.modifiers.map((m, i) => <Badge key={i} variant="secondary" className="text-[7px] h-3.5 px-1">{m.name}</Badge>)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-oswald text-[11px]">{formatMoney(item.unit_price * item.quantity)}</span>
-                      </div>
-                    </div>
-                    );
-                  })
-                )}
-              </div>
-            </ScrollArea>
-
-            {/* Action bar */}
-            <div className="p-3 border-t border-border bg-card space-y-2">
-              {selectedSplitItems.length > 0 ? (
-                <>
-                  <p className="text-xs text-center font-semibold text-red-400">
-                    {selectedSplitItems.length} item(s) seleccionado(s)
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button 
-                      onClick={openSplitLabelDialog}
-                      className="h-10 bg-green-600 hover:bg-green-700 text-white font-oswald font-bold text-xs"
-                    >
-                      <SplitSquareHorizontal size={12} className="mr-1" /> Nueva Cuenta
-                    </Button>
-                    {tableOrders.length > 1 && (
-                      <Button 
-                        onClick={enterMoveItemsMode}
-                        className="h-10 bg-purple-600 hover:bg-purple-700 text-white font-oswald font-bold text-xs"
-                      >
-                        <MoveRight size={12} className="mr-1" /> Mover a Cuenta
-                      </Button>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center">
-                  Toca los items que deseas mover a otra cuenta
-                </p>
-              )}
-              <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                <span className="text-xs text-muted-foreground">Total Cuenta #{order?.account_number || 1}</span>
-                <span className="font-oswald text-lg font-bold text-primary">
-                  {formatMoney(getOrderTotal(order))}
-                </span>
-              </div>
-            </div>
-          </div>
+          <SplitCheckView
+            tableOrders={tableOrders}
+            activeOrderId={activeOrderId}
+            order={order}
+            activeItems={activeItems}
+            selectedSplitItems={selectedSplitItems}
+            setSelectedSplitItems={setSelectedSplitItems}
+            onToggleSplitItem={toggleSplitItem}
+            onSelectOrder={selectOrder}
+            onDeleteEmptyAccount={deleteEmptyAccount}
+            onSplitToNewAccount={openSplitLabelDialog}
+            onMoveToAccount={enterMoveItemsMode}
+            getOrderTotal={getOrderTotal}
+            isOrderEmpty={isOrderEmpty}
+          />
         ) : (
           /* Normal Order View */
           <>
