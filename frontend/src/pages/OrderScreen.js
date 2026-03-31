@@ -1879,16 +1879,24 @@ export default function OrderScreen() {
                     <p className="text-xs text-muted-foreground">Esta cuenta está vacía</p>
                   </div>
                 ) : (
-                  activeItems.map(item => (
+                  activeItems.map(item => {
+                    const isSelected = selectedSplitItems.includes(item.id);
+                    return (
                     <div 
                       key={item.id} 
                       onClick={() => toggleSplitItem(item.id)}
-                      className={`flex items-start gap-1.5 p-1.5 rounded-lg border cursor-pointer transition-all ${
-                        selectedSplitItems.includes(item.id)
+                      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
+                        isSelected
                           ? 'bg-red-500/20 border-red-500'
                           : 'bg-background/50 border-border/50 hover:border-primary/50'
                       }`}
                     >
+                      {/* Checkbox */}
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected ? 'bg-red-500 border-red-500' : 'border-muted-foreground/40'
+                      }`}>
+                        {isSelected && <Check size={12} className="text-white" />}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1">
                           <span className="font-oswald text-xs font-bold text-primary">{item.quantity}x</span>
@@ -1904,7 +1912,8 @@ export default function OrderScreen() {
                         <span className="font-oswald text-[11px]">{formatMoney(item.unit_price * item.quantity)}</span>
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>
