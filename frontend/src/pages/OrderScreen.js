@@ -156,6 +156,7 @@ export default function OrderScreen() {
   // Multiple orders per table support
   const [tableOrders, setTableOrders] = useState([]); // All orders for this table
   const [activeOrderId, setActiveOrderId] = useState(null); // Currently selected order
+  const [showAccountSelector, setShowAccountSelector] = useState(false); // Show account picker for divided tables
   
   // Required modifiers alert modal
   const [requiredAlert, setRequiredAlert] = useState({ open: false, missingGroups: [] });
@@ -204,6 +205,10 @@ export default function OrderScreen() {
             setOrder(currentOrder);
             setActiveOrderId(currentOrder.id);
             orderRef.current = currentOrder;
+          }
+          // Show account selector if table has multiple accounts and none was explicitly chosen
+          if (orders.length > 1 && !activeOrderId) {
+            setShowAccountSelector(true);
           }
         } else if (t?.active_order_id) {
           // Fallback: try to get order from table reference
@@ -533,6 +538,12 @@ export default function OrderScreen() {
   }, []);
 
   const handleBack = async () => { 
+    // If table has multiple accounts, go back to account selector first
+    if (tableOrders.length > 1 && !showAccountSelector) {
+      await sendPendingToKitchenSilently(true);
+      setShowAccountSelector(true);
+      return;
+    }
     await sendPendingToKitchenSilently(true); 
     navigate('/tables'); 
   };
@@ -1461,6 +1472,84 @@ export default function OrderScreen() {
 
   return (
     <div className="h-full flex flex-col lg:flex-row-reverse" data-testid="order-screen">
+      {/* ═══ ACCOUNT SELECTOR - Shows when table has multiple divided accounts ═══ */}
+      {showAccountSelector && tableOrders.length > 1 && (
+        <div className="h-full flex flex-col" data-testid="account-selector">
+          {/* Header */}
+          <div className="px-3 py-3 border-b border-white/10 backdrop-blur-xl bg-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={async () => { await sendPendingToKitchenSilently(true); navigate('/tables'); }}
+                className="h-10 w-10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all"
+                data-testid="back-to-tables-from-selector"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <h2 className="font-oswald text-lg font-bold text-white">
+                Mesa {table?.number || '?'} — {tableOrders.length} Cuentas
+              </h2>
+            </div>
+          </div>
+
+          {/* Account Cards */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            <p className="text-sm text-white/50 mb-4 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto">
+              {tableOrders.map(ord => {
+                const items = ord.items?.filter(i => i.status !== 'cancelled') || [];
+                const total = getOrderTotal(ord);
+                const isEmpty = items.length === 0;
+                
+                return (
+                  <button
+                    key={ord.id}
+                    onClick={() => {
+                      setActiveOrderId(ord.id);
+                      setOrder(ord);
+                      orderRef.current = ord;
+                      setShowAccountSelector(false);
+                      setMobileAccountExpanded(false);
+                    }}
+                    data-testid={`select-account-${ord.account_number || 1}`}
+                    className="p-4 rounded-xl border-2 border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10 transition-all text-left active:scale-[0.97]"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-oswald text-xl font-bold text-primary">
+                        Cuenta #{ord.account_number || 1}
+                      </span>
+                      <span className="font-oswald text-lg font-bold text-white">
+                        {formatMoney(total)}
+                      </span>
+                    </div>
+                    {isEmpty ? (
+                      <p className="text-xs text-white/30">Sin productos</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {items.slice(0, 4).map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-xs">
+                            <span className="text-white/70 truncate flex-1">{item.quantity}x {item.product_name}</span>
+                            <span className="text-white/50 ml-2 shrink-0">{formatMoney(item.unit_price * item.quantity)}</span>
+                          </div>
+                        ))}
+                        {items.length > 4 && (
+                          <p className="text-xs text-white/30">+{items.length - 4} más...</p>
+                        )}
+                      </div>
+                    )}
+                    {ord.label && (
+                      <p className="mt-2 text-xs text-primary/70 italic">{ord.label}</p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ NORMAL ORDER VIEW (hidden when account selector is shown) ═══ */}
+      {(!showAccountSelector || tableOrders.length <= 1) && (
+      <>
       {/* Mobile: Floating button to show account when collapsed */}
       {!mobileAccountExpanded && !splitMode && !accessDenied && activeItems.length > 0 && (
         <button
@@ -3303,6 +3392,8 @@ export default function OrderScreen() {
         currentUserName={user?.name}
       />
 
+    </>
+    )}
     </div>
   );
 }
