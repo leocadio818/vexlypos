@@ -1,5 +1,11 @@
 # VexlyPOS — Changelog
 
+## 2026-03-31 — Fix: Contraste de textos en light theme
+- **Account Selector**: Cambiados todos los text-white/XX a text-foreground/text-muted-foreground en cards de cuentas, totales, items, header
+- **CashRegister (Caja/Turnos)**: Corregidos ~50+ instancias en header, Turno Activo, stat cards, movimientos, historial de turnos, y TODOS los diálogos (Abrir Turno, Cerrar Turno, Movimiento de Caja, Cierre de Día)
+- También: bg-white/XX → bg-muted/50/bg-card, border-white/XX → border-border
+- Testing: 100% pass (desktop + mobile)
+
 ## 2026-03-31 — Bug Fix: Auto-envío comandas al presionar "Mesas"
 - **Fix**: Items pendientes ahora se envían automáticamente a cocina al presionar "Mesas" en el bottom nav
 - **Causa raíz**: (1) `tableOrdersRef` no se sincronizaba con cambios locales de `order` state, (2) `alreadySentRef` no se reseteaba tras envío exitoso
