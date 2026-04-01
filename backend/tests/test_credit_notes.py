@@ -11,7 +11,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://facturacion-dgii.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://factura-resto-rd.preview.emergentagent.com')
 
 class TestReturnReasons:
     """Tests for return reasons endpoint"""

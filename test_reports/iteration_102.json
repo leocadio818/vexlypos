@@ -21,7 +21,7 @@
     "service_worker": {
       "accessible": true,
       "registers_correctly": true,
-      "console_log": "[SW] Registered: https://facturacion-dgii.preview.emergentagent.com/"
+      "console_log": "[SW] Registered: https://factura-resto-rd.preview.emergentagent.com/"
     },
     "html_meta_tags": {
       "translate_no": true,

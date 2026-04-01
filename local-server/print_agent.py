@@ -12,7 +12,7 @@ import argparse
 from datetime import datetime
 
 # Configuracion por defecto
-DEFAULT_API_URL = "https://facturacion-dgii.preview.emergentagent.com/api"
+DEFAULT_API_URL = "https://factura-resto-rd.preview.emergentagent.com/api"
 POLL_INTERVAL = 3  # segundos
 
 # Mapeo de canales a impresoras Windows
