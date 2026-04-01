@@ -48,6 +48,7 @@ from routers.dgii import router as dgii_router
 from routers.discounts import router as discounts_router, set_db as discounts_set_db
 from routers.email import router as email_router, set_db as email_set_db
 from routers.alanube import router as alanube_router, set_db as alanube_set_db
+from routers.ecf_dispatcher import router as ecf_dispatcher_router, set_db as ecf_dispatcher_set_db
 from utils.timezone import get_system_timezone_name, get_system_now, invalidate_cache as tz_invalidate_cache
 
 ROOT_DIR = Path(__file__).parent
@@ -80,6 +81,7 @@ business_days_init_supabase()  # Initialize Supabase for business days
 discounts_set_db(db)
 email_set_db(db)
 alanube_set_db(db)
+ecf_dispatcher_set_db(db)
 
 # Connect KDS notifier to orders
 set_kds_notifier(notify_kds)
@@ -138,7 +140,7 @@ api.include_router(business_days_router)
 api.include_router(dgii_router)
 api.include_router(discounts_router)
 api.include_router(email_router, prefix="/email")
-api.include_router(alanube_router, prefix="/ecf")
+api.include_router(ecf_dispatcher_router, prefix="/ecf")
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()
@@ -1826,7 +1828,7 @@ async def update_alert_schedule():
 
 # ─── e-CF AUTO-RETRY SCHEDULER ───
 async def ecf_auto_retry_job():
-    """Automatically retry all CONTINGENCIA e-CF bills"""
+    """Automatically retry all CONTINGENCIA e-CF bills via the active provider"""
     config = await db.system_config.find_one({}, {"_id": 0})
     if not config or not config.get("ecf_auto_retry"):
         return
@@ -1835,8 +1837,8 @@ async def ecf_auto_retry_job():
     if not bills:
         return
     
-    logging.info(f"e-CF auto-retry: {len(bills)} bills in CONTINGENCIA")
-    from routers.alanube import build_alanube_payload, send_to_alanube, save_alanube_response, log_ecf_attempt
+    provider = config.get("ecf_provider", "alanube")
+    logging.info(f"e-CF auto-retry: {len(bills)} bills in CONTINGENCIA (provider: {provider})")
     import random
     
     success = 0
@@ -1848,10 +1850,24 @@ async def ecf_auto_retry_job():
         ecf_prefix = ecf_type if ecf_type.startswith("E") else "E32"
         encf = f"{ecf_prefix}{random.randint(1000000000, 9999999999)}"
         
-        payload = build_alanube_payload(bill, config, encf)
-        result = await send_to_alanube(payload)
-        await save_alanube_response(bill_doc["id"], result)
-        await log_ecf_attempt(bill_doc["id"], encf, "auto-retry", result)
+        if provider == "thefactory":
+            from routers.thefactory import (
+                authenticate, build_thefactory_payload, send_to_thefactory,
+                save_thefactory_response, log_ecf_attempt as tf_log
+            )
+            auth = await authenticate()
+            if not auth["ok"]:
+                continue
+            payload = build_thefactory_payload(bill, config, encf, auth["token"])
+            result = await send_to_thefactory(payload)
+            await save_thefactory_response(bill_doc["id"], result, encf)
+            await tf_log(bill_doc["id"], encf, "auto-retry", result)
+        else:
+            from routers.alanube import build_alanube_payload, send_to_alanube, save_alanube_response, log_ecf_attempt
+            payload = build_alanube_payload(bill, config, encf)
+            result = await send_to_alanube(payload)
+            await save_alanube_response(bill_doc["id"], result)
+            await log_ecf_attempt(bill_doc["id"], encf, "auto-retry", result)
         
         if result.get("ok"):
             success += 1

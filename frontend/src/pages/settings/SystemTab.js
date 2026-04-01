@@ -199,7 +199,7 @@ export default function SystemTab() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold">Facturación Electrónica (e-CF)</h3>
-              <p className="text-xs text-muted-foreground mt-1">Si está activado, las facturas se envían automáticamente a la DGII via Alanube al cobrar. El ticket impreso incluirá e-NCF y código de verificación.</p>
+              <p className="text-xs text-muted-foreground mt-1">Si está activado, las facturas se envían automáticamente a la DGII al cobrar. El ticket impreso incluirá e-NCF y código de verificación.</p>
             </div>
             <button
               onClick={() => setSystemConfig(p => ({ ...p, ecf_enabled: !p.ecf_enabled }))}
@@ -210,6 +210,48 @@ export default function SystemTab() {
             </button>
           </div>
         </div>
+
+        {/* Proveedor e-CF */}
+        {systemConfig.ecf_enabled && (
+        <div className="bg-card border border-border rounded-xl p-4 mb-4">
+          <h3 className="text-sm font-semibold mb-2">Proveedor e-CF</h3>
+          <p className="text-xs text-muted-foreground mb-3">Selecciona el proveedor de facturación electrónica que procesará los e-CF ante la DGII.</p>
+          <div className="flex gap-2">
+            {[
+              { id: 'alanube', label: 'Alanube', desc: 'Alanube.co' },
+              { id: 'thefactory', label: 'The Factory HKA', desc: 'TheFactoryHKA.com.do' },
+            ].map(p => (
+              <button
+                key={p.id}
+                onClick={() => setSystemConfig(prev => ({ ...prev, ecf_provider: p.id }))}
+                className={`flex-1 p-3 rounded-lg border-2 transition-all text-left ${
+                  (systemConfig.ecf_provider || 'alanube') === p.id
+                    ? 'border-emerald-500 bg-emerald-500/10'
+                    : 'border-border hover:border-muted-foreground/30'
+                }`}
+                data-testid={`ecf-provider-${p.id}`}
+              >
+                <div className="text-sm font-semibold">{p.label}</div>
+                <div className="text-xs text-muted-foreground">{p.desc}</div>
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                const r = await fetch(`${API}/ecf/test-connection`, { method: 'POST', headers: hdrs() });
+                const d = await r.json();
+                if (d.ok) toast.success(d.message);
+                else toast.error(d.message || 'Error de conexión');
+              } catch { toast.error('Error de conexión'); }
+            }}
+            className="mt-3 text-xs text-blue-400 hover:underline"
+            data-testid="ecf-test-connection"
+          >
+            Probar conexión con {(systemConfig.ecf_provider || 'alanube') === 'thefactory' ? 'The Factory HKA' : 'Alanube'}
+          </button>
+        </div>
+        )}
 
         {/* Auto-retry e-CF */}
         {systemConfig.ecf_enabled && (
