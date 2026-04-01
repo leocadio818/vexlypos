@@ -1,0 +1,95 @@
+{
+  "summary": "Tested e-CF credential management feature (Settings > Sistema tab). All 10 backend API tests passed. Frontend UI verified: e-CF toggle, provider selector (Alanube vs The Factory HKA), credential form with provider-specific fields, environment toggle (Sandbox/Production), save button, and test connection - all working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "backend_api_tests": {
+      "status": "PASS",
+      "tests_run": 10,
+      "tests_passed": 10,
+      "endpoints_verified": [
+        "GET /api/system/ecf-credentials/thefactory - Returns The Factory credentials (password masked with ****)",
+        "GET /api/system/ecf-credentials/alanube - Returns Alanube credentials (token masked with ****)",
+        "PUT /api/system/ecf-credentials - Save The Factory credentials with provider='thefactory'",
+        "PUT /api/system/ecf-credentials - Save Alanube credentials with provider='alanube'",
+        "PUT /api/system/ecf-credentials - Validates provider must be 'alanube' or 'thefactory' (returns 400 for invalid)",
+        "POST /api/ecf/test-connection - Works with DB-stored credentials",
+        "GET /api/ecf/config - Shows both providers status including DB-stored credentials",
+        "GET /api/system/config - Masks sensitive e-CF credentials before returning"
+      ],
+      "key_findings": {
+        "thefactory_credentials": {
+          "user": "xfsbrucwcqtr_tfhka",
+          "password_masked": "********4gg,",
+          "rnc": "130178984",
+          "company_name": "PORTERHOUSE SRL",
+          "environment": "sandbox",
+          "has_credentials": true
+        },
+        "alanube_credentials": {
+          "token_masked": true,
+          "rnc": "132109122",
+          "environment": "sandbox"
+        },
+        "test_connection_result": "Conexión exitosa con The Factory HKA"
+      }
+    },
+    "frontend_ui_tests": {
+      "status": "PASS",
+      "tests_run": 12,
+      "tests_passed": 12,
+      "elements_verified": [
+        "Login with Admin PIN 10000 - SUCCESS",
+        "Navigation to Config > Sistema tab - SUCCESS",
+        "e-CF toggle (data-testid='toggle-ecf') - FOUND and ENABLED",
+        "Alanube provider button (data-testid='ecf-provider-alanube') - FOUND",
+        "The Factory HKA provider button (data-testid='ecf-provider-thefactory') - FOUND and SELECTED",
+        "Credentials form (data-testid='ecf-credentials-form') - FOUND",
+        "TF User field (data-testid='ecf-tf-user') - FOUND, value: xfsbrucwcqtr_tfhka",
+        "TF Password field (data-testid='ecf-tf-password') - FOUND, value masked",
+        "TF RNC field (data-testid='ecf-tf-rnc') - FOUND, value: 130178984",
+        "TF Company field (data-testid='ecf-tf-company') - FOUND, value: PORTERHOUSE SRL",
+        "Environment buttons (sandbox/production) - FOUND, sandbox selected",
+        "Save credentials button (data-testid='ecf-save-credentials') - FOUND",
+        "Provider switch to Alanube - Alanube Token and RNC fields appear",
+        "Test connection button (data-testid='ecf-test-connection') - SUCCESS toast shown"
+      ]
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ecf_credentials_management.py",
+    "/app/test_reports/pytest/ecf_credentials_management_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "EcfCredentialsForm component correctly renders provider-specific fields based on selected provider",
+    "Password masking works correctly - values starting with **** are not saved to DB",
+    "Environment toggle shows warning for Production mode",
+    "DB-first credential resolution implemented correctly in thefactory.py and alanube.py",
+    "All data-testid attributes properly implemented for testing"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_ecf_credentials_management.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin_pin": "10000",
+    "thefactory_user": "xfsbrucwcqtr_tfhka",
+    "thefactory_rnc": "130178984"
+  },
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "e-CF credential management feature fully tested. The EcfCredentialsForm component in SystemTab.js renders when ecf_enabled is true. Provider-specific fields change based on selected provider (Alanube shows Token+RNC, The Factory shows User+Password+RNC+Company). Credentials are stored in system_config collection with keys like ecf_tf_user, ecf_tf_password, ecf_alanube_token. The backend reads DB credentials first, then falls back to .env. Test connection works with DB-stored credentials.",
+  "rca_of_the_issue": null
+}

@@ -88,7 +88,14 @@ TIMEZONE_OPTIONS = [
 @router.get("/system/config")
 async def get_system_config():
     config = await db.system_config.find_one({}, {"_id": 0})
-    return config or {"timezone_offset": -4, "restaurant_name": "Mi Restaurante", "currency": "RD$", "rnc": "000-000000-0"}
+    if not config:
+        config = {"timezone_offset": -4, "restaurant_name": "Mi Restaurante", "currency": "RD$", "rnc": "000-000000-0"}
+    # Mask sensitive e-CF credentials before returning
+    for key in ["ecf_alanube_token", "ecf_tf_password"]:
+        val = config.get(key)
+        if val and len(val) > 4:
+            config[key] = "*" * (len(val) - 4) + val[-4:]
+    return config
 
 @router.get("/system/branding")
 async def get_system_branding():
@@ -98,9 +105,83 @@ async def get_system_branding():
 
 @router.put("/system/config")
 async def update_system_config(input: dict):
-    if "_id" in input: del input["_id"]
+    if "_id" in input:
+        del input["_id"]
+    # Don't save masked credential values (starts with ****)
+    for key in ["ecf_alanube_token", "ecf_tf_password"]:
+        val = input.get(key, "")
+        if isinstance(val, str) and val.startswith("****"):
+            del input[key]
     await db.system_config.update_one({}, {"$set": input}, upsert=True)
     return {"ok": True}
+
+@router.put("/system/ecf-credentials")
+async def update_ecf_credentials(input: dict):
+    """Save e-CF provider credentials — only Admin/IT can access"""
+    provider = input.get("provider")
+    if provider not in ("alanube", "thefactory"):
+        raise HTTPException(400, "Proveedor inválido")
+
+    update = {}
+    if provider == "alanube":
+        if input.get("token"):
+            update["ecf_alanube_token"] = input["token"]
+        if input.get("rnc"):
+            update["ecf_alanube_rnc"] = input["rnc"]
+        if "environment" in input:
+            update["ecf_alanube_env"] = input["environment"]
+    else:
+        if input.get("user"):
+            update["ecf_tf_user"] = input["user"]
+        if input.get("password"):
+            update["ecf_tf_password"] = input["password"]
+        if input.get("rnc"):
+            update["ecf_tf_rnc"] = input["rnc"]
+        if input.get("company_name"):
+            update["ecf_tf_company"] = input["company_name"]
+        if "environment" in input:
+            update["ecf_tf_env"] = input["environment"]
+
+    if update:
+        await db.system_config.update_one({}, {"$set": update}, upsert=True)
+        # Invalidate The Factory token cache on credential change
+        if provider == "thefactory":
+            from routers.thefactory import invalidate_token
+            invalidate_token()
+
+    return {"ok": True, "message": f"Credenciales de {provider} guardadas"}
+
+@router.get("/system/ecf-credentials/{provider}")
+async def get_ecf_credentials(provider: str):
+    """Get e-CF credentials (masked) for display in settings"""
+    if provider not in ("alanube", "thefactory"):
+        raise HTTPException(400, "Proveedor inválido")
+
+    config = await db.system_config.find_one({}, {"_id": 0})
+    if not config:
+        config = {}
+
+    def mask(val):
+        if not val or len(val) <= 4:
+            return val or ""
+        return "*" * (len(val) - 4) + val[-4:]
+
+    if provider == "alanube":
+        return {
+            "token": mask(config.get("ecf_alanube_token", "")),
+            "rnc": config.get("ecf_alanube_rnc", ""),
+            "environment": config.get("ecf_alanube_env", "sandbox"),
+            "has_token": bool(config.get("ecf_alanube_token")),
+        }
+    else:
+        return {
+            "user": config.get("ecf_tf_user", ""),
+            "password": mask(config.get("ecf_tf_password", "")),
+            "rnc": config.get("ecf_tf_rnc", ""),
+            "company_name": config.get("ecf_tf_company", ""),
+            "environment": config.get("ecf_tf_env", "sandbox"),
+            "has_credentials": bool(config.get("ecf_tf_user") and config.get("ecf_tf_password")),
+        }
 
 @router.get("/system/timezones")
 async def get_timezone_options():

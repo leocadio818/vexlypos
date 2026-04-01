@@ -122,23 +122,26 @@ async def _send_via_thefactory(bill, config, encf, bill_id, fecha_venc="31-12-20
     """Send via The Factory HKA"""
     from routers.thefactory import (
         authenticate, build_thefactory_payload, send_to_thefactory,
-        save_thefactory_response, log_ecf_attempt as tf_log, invalidate_token
+        save_thefactory_response, log_ecf_attempt as tf_log, invalidate_token,
+        get_config_from_db, get_config as tf_env_config
     )
+
+    # Resolve e-CF provider config (DB first, then .env)
+    ecf_config = await get_config_from_db() or tf_env_config()
 
     # Step 1: Authenticate
     auth = await authenticate()
     if not auth["ok"]:
-        # Save as CONTINGENCIA
         fail_result = {"ok": False, "error": f"Auth failed: {auth.get('error', '')}"}
         await save_thefactory_response(bill_id, fail_result, encf)
         await tf_log(bill_id, encf, "send", fail_result)
         return fail_result
 
-    # Step 2: Build payload
-    payload = build_thefactory_payload(bill, config, encf, auth["token"], fecha_venc)
+    # Step 2: Build payload (pass resolved ecf_config)
+    payload = build_thefactory_payload(bill, config, encf, auth["token"], fecha_venc, ecf_config)
 
     # Step 3: Send
-    result = await send_to_thefactory(payload)
+    result = await send_to_thefactory(payload, ecf_config)
 
     # If auth error, invalidate token and retry once
     if not result["ok"] and result.get("codigo") in [-1, 401, 403]:
@@ -350,11 +353,11 @@ async def get_all_ecf_logs(limit: int = Query(50)):
 @router.get("/config")
 async def get_ecf_config():
     """Check which provider is configured and active"""
-    from routers.alanube import get_config as alanube_config
-    from routers.thefactory import get_config as tf_config
+    from routers.alanube import get_config_from_db as al_db_config, get_config as alanube_env_config
+    from routers.thefactory import get_config_from_db as tf_db_config, get_config as tf_env_config
 
-    al_cfg = alanube_config()
-    tf_cfg = tf_config()
+    al_cfg = (await al_db_config()) or alanube_env_config()
+    tf_cfg = (await tf_db_config()) or tf_env_config()
 
     sys_config = await db.system_config.find_one({}, {"_id": 0, "ecf_provider": 1, "ecf_enabled": 1})
     active_provider = (sys_config or {}).get("ecf_provider", "alanube")
@@ -363,14 +366,14 @@ async def get_ecf_config():
         "active_provider": active_provider,
         "ecf_enabled": (sys_config or {}).get("ecf_enabled", False),
         "alanube": {
-            "configured": bool(al_cfg["token"]),
-            "is_sandbox": al_cfg["is_sandbox"],
+            "configured": bool(al_cfg.get("token")),
+            "is_sandbox": al_cfg.get("is_sandbox", True),
         },
         "thefactory": {
-            "configured": bool(tf_cfg["user"] and tf_cfg["password"]),
-            "is_sandbox": tf_cfg["is_sandbox"],
-            "rnc": tf_cfg["rnc"],
-            "company": tf_cfg["company_name"],
+            "configured": bool(tf_cfg.get("user") and tf_cfg.get("password")),
+            "is_sandbox": tf_cfg.get("is_sandbox", True),
+            "rnc": tf_cfg.get("rnc", ""),
+            "company": tf_cfg.get("company_name", ""),
         },
     }
 
@@ -446,9 +449,9 @@ async def test_ecf_connection():
                 "message": f"Error: {result.get('error', '')}",
             }
     else:
-        from routers.alanube import get_config as alanube_config
-        cfg = alanube_config()
-        if cfg["token"]:
+        from routers.alanube import get_config_from_db as al_db, get_config as alanube_env
+        cfg = (await al_db()) or alanube_env()
+        if cfg.get("token"):
             return {"ok": True, "provider": "alanube", "message": "Token de Alanube configurado"}
         else:
             return {"ok": False, "provider": "alanube", "message": "Token de Alanube no configurado"}

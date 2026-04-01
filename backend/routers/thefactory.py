@@ -46,7 +46,7 @@ async def get_series() -> list:
     if not auth["ok"]:
         return []
 
-    config = get_config()
+    config = await get_config_from_db() or get_config()
     url = f"{config['base_url']}/api/Series"
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -110,8 +110,28 @@ async def get_next_ncf(tipo_documento: str) -> dict:
     ncf = f"{prefix}{str(current).zfill(10)}"
     return {"ncf": ncf, "fecha_venc": fecha_venc}
 
+async def get_config_from_db():
+    """Try to get The Factory config from system_config DB"""
+    if db is None:
+        return None
+    config = await db.system_config.find_one({}, {
+        "_id": 0, "ecf_tf_user": 1, "ecf_tf_password": 1,
+        "ecf_tf_rnc": 1, "ecf_tf_company": 1, "ecf_tf_env": 1,
+    })
+    if config and config.get("ecf_tf_user") and config.get("ecf_tf_password"):
+        is_sandbox = config.get("ecf_tf_env", "sandbox") == "sandbox"
+        return {
+            "user": config["ecf_tf_user"],
+            "password": config["ecf_tf_password"],
+            "rnc": config.get("ecf_tf_rnc", ""),
+            "base_url": "https://demoemision.thefactoryhka.com.do" if is_sandbox else "https://emision.thefactoryhka.com.do",
+            "company_name": config.get("ecf_tf_company", ""),
+            "is_sandbox": is_sandbox,
+        }
+    return None
+
 def get_config():
-    """Get The Factory HKA config from environment"""
+    """Get The Factory HKA config from environment (sync fallback)"""
     is_sandbox = bool(os.environ.get("THEFACTORY_SANDBOX_USER"))
     if is_sandbox:
         return {
@@ -157,7 +177,8 @@ async def authenticate() -> dict:
         except Exception:
             pass
 
-    config = get_config()
+    # Try DB config first, then fall back to .env
+    config = await get_config_from_db() or get_config()
     if not config["user"] or not config["password"]:
         return {"ok": False, "error": "Credenciales de The Factory HKA no configuradas"}
 
@@ -235,7 +256,7 @@ def format_date_tf(iso_date: str = None) -> str:
     return datetime.now(timezone.utc).strftime("%d-%m-%Y")
 
 
-def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: str, fecha_venc: str = "31-12-2028") -> dict:
+def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: str, fecha_venc: str = "31-12-2028", ecf_config: dict = None) -> dict:
     """Convert a VexlyPOS bill to The Factory HKA e-CF JSON"""
 
     # Determine document type from ecf_type or NCF prefix
@@ -248,8 +269,7 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
         prefix = ncf[:3] if isinstance(ncf, str) and len(ncf) >= 3 else "B02"
         tipo_documento = {"B01": "31", "B02": "32", "B14": "34", "B15": "31"}.get(prefix, "32")
 
-    now = datetime.now(timezone.utc)
-    config = get_config()
+    config = ecf_config or get_config()
     fecha_emision = format_date_tf(bill.get("paid_at"))
 
     # ── Items & Tax calculation ──
@@ -460,12 +480,12 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
 # MODULE 3: ENVÍO — Send to The Factory & process response
 # ═══════════════════════════════════════════════════════════════
 
-async def send_to_thefactory(payload: dict) -> dict:
+async def send_to_thefactory(payload: dict, ecf_config: dict = None) -> dict:
     """
     Send e-CF to The Factory HKA API.
     POST /api/Enviar
     """
-    config = get_config()
+    config = ecf_config or (await get_config_from_db()) or get_config()
     url = f"{config['base_url']}/api/Enviar"
 
     try:
@@ -506,7 +526,7 @@ async def check_status_thefactory(encf: str) -> dict:
     if not auth["ok"]:
         return auth
 
-    config = get_config()
+    config = await get_config_from_db() or get_config()
     url = f"{config['base_url']}/api/EstatusDocumento"
     payload = {
         "token": auth["token"],
@@ -605,7 +625,7 @@ async def anular_secuencias(tipo_documento: str, ncf_desde: str, ncf_hasta: str)
     if not auth["ok"]:
         return auth
 
-    config = get_config()
+    config = await get_config_from_db() or get_config()
     url = f"{config['base_url']}/api/Anulacion"
 
     now = datetime.now(timezone.utc)

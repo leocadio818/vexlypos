@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { useAuth } from '../../context/AuthContext';
-import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe, Clock, Trash2 } from 'lucide-react';
+import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe, Clock, Trash2, Save, Key } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -11,6 +11,186 @@ import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
+
+// ── e-CF Credentials Form Component ──
+function EcfCredentialsForm({ provider }) {
+  const [creds, setCreds] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const r = await fetch(`${API}/system/ecf-credentials/${provider}`, { headers: hdrs() });
+        if (r.ok) setCreds(await r.json());
+      } catch {}
+      setLoading(false);
+    })();
+  }, [provider]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const body = { provider };
+      if (provider === 'alanube') {
+        if (creds.token && !creds.token.startsWith('****')) body.token = creds.token;
+        body.rnc = creds.rnc || '';
+        body.environment = creds.environment || 'sandbox';
+      } else {
+        body.user = creds.user || '';
+        if (creds.password && !creds.password.startsWith('****')) body.password = creds.password;
+        body.rnc = creds.rnc || '';
+        body.company_name = creds.company_name || '';
+        body.environment = creds.environment || 'sandbox';
+      }
+      const r = await fetch(`${API}/system/ecf-credentials`, {
+        method: 'PUT', headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (d.ok) toast.success(d.message || 'Credenciales guardadas');
+      else toast.error('Error al guardar');
+    } catch { toast.error('Error de conexión'); }
+    setSaving(false);
+  };
+
+  if (loading) return <div className="bg-card border border-border rounded-xl p-4 mb-4 animate-pulse h-24" />;
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-4 mb-4" data-testid="ecf-credentials-form">
+      <div className="flex items-center gap-2 mb-3">
+        <Key size={14} className="text-muted-foreground" />
+        <h3 className="text-sm font-semibold">
+          Credenciales {provider === 'thefactory' ? 'The Factory HKA' : 'Alanube'}
+        </h3>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        {provider === 'thefactory'
+          ? 'Ingresa las credenciales proporcionadas por The Factory HKA.'
+          : 'Ingresa el API Token proporcionado por Alanube.'
+        }
+      </p>
+
+      <div className="space-y-2">
+        {provider === 'alanube' ? (
+          <>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">API Token</label>
+              <input
+                type={showPwd ? 'text' : 'password'}
+                value={creds.token || ''}
+                onChange={e => setCreds(p => ({ ...p, token: e.target.value }))}
+                placeholder="Pega tu token de Alanube aquí"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+                data-testid="ecf-alanube-token"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">RNC</label>
+              <input
+                value={creds.rnc || ''}
+                onChange={e => setCreds(p => ({ ...p, rnc: e.target.value }))}
+                placeholder="000000000"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+                data-testid="ecf-alanube-rnc"
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">TokenUsuario</label>
+              <input
+                value={creds.user || ''}
+                onChange={e => setCreds(p => ({ ...p, user: e.target.value }))}
+                placeholder="usuario_tfhka"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+                data-testid="ecf-tf-user"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">TokenPassword</label>
+              <div className="relative">
+                <input
+                  type={showPwd ? 'text' : 'password'}
+                  value={creds.password || ''}
+                  onChange={e => setCreds(p => ({ ...p, password: e.target.value }))}
+                  placeholder="Contraseña"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground pr-10"
+                  data-testid="ecf-tf-password"
+                />
+                <button
+                  onClick={() => setShowPwd(!showPwd)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  type="button"
+                >
+                  {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">RNC</label>
+                <input
+                  value={creds.rnc || ''}
+                  onChange={e => setCreds(p => ({ ...p, rnc: e.target.value }))}
+                  placeholder="000000000"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+                  data-testid="ecf-tf-rnc"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Nombre Empresa</label>
+                <input
+                  value={creds.company_name || ''}
+                  onChange={e => setCreds(p => ({ ...p, company_name: e.target.value }))}
+                  placeholder="Mi Empresa SRL"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+                  data-testid="ecf-tf-company"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Ambiente</label>
+          <div className="flex gap-2">
+            {['sandbox', 'production'].map(env => (
+              <button
+                key={env}
+                onClick={() => setCreds(p => ({ ...p, environment: env }))}
+                className={`flex-1 py-1.5 px-3 text-xs rounded-lg border transition-all ${
+                  (creds.environment || 'sandbox') === env
+                    ? env === 'production' ? 'border-amber-500 bg-amber-500/10 text-amber-600 font-semibold' : 'border-emerald-500 bg-emerald-500/10 text-emerald-600 font-semibold'
+                    : 'border-border text-muted-foreground'
+                }`}
+                data-testid={`ecf-env-${env}`}
+              >
+                {env === 'sandbox' ? 'Sandbox (Pruebas)' : 'Producción'}
+              </button>
+            ))}
+          </div>
+          {(creds.environment === 'production') && (
+            <p className="text-xs text-amber-500 mt-1">Las facturas en producción son reales y se enviarán a la DGII.</p>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={save}
+        disabled={saving}
+        className="mt-3 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+        data-testid="ecf-save-credentials"
+      >
+        <Save size={14} />
+        {saving ? 'Guardando...' : 'Guardar Credenciales'}
+      </button>
+    </div>
+  );
+}
 
 // Common IANA timezones relevant for the Americas
 const IANA_TIMEZONES = [
@@ -252,6 +432,9 @@ export default function SystemTab() {
           </button>
         </div>
         )}
+
+        {/* Credenciales e-CF */}
+        {systemConfig.ecf_enabled && <EcfCredentialsForm provider={systemConfig.ecf_provider || 'alanube'} />}
 
         {/* Auto-retry e-CF */}
         {systemConfig.ecf_enabled && (

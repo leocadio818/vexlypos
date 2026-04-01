@@ -27,8 +27,22 @@ def set_db(database):
 SANDBOX_URL = "https://sandbox.alanube.co/dom/v1"
 PRODUCTION_URL = "https://api.alanube.co/dom/v1"
 
+async def get_config_from_db():
+    """Try to get Alanube config from system_config DB"""
+    if db is None:
+        return None
+    config = await db.system_config.find_one({}, {"_id": 0, "ecf_alanube_token": 1, "ecf_alanube_rnc": 1, "ecf_alanube_env": 1})
+    if config and config.get("ecf_alanube_token"):
+        is_sandbox = config.get("ecf_alanube_env", "sandbox") == "sandbox"
+        return {
+            "token": config["ecf_alanube_token"],
+            "base_url": SANDBOX_URL if is_sandbox else PRODUCTION_URL,
+            "is_sandbox": is_sandbox,
+        }
+    return None
+
 def get_config():
-    """Get Alanube config from environment"""
+    """Get Alanube config from environment (sync fallback — used when DB not available)"""
     token = os.environ.get("ALANUBE_SANDBOX_TOKEN", os.environ.get("ALANUBE_TOKEN", ""))
     is_sandbox = bool(os.environ.get("ALANUBE_SANDBOX_TOKEN"))
     base_url = SANDBOX_URL if is_sandbox else PRODUCTION_URL
