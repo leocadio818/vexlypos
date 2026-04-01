@@ -22,6 +22,7 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **e-CF Provider Dispatcher** (DONE): Unified router that dispatches to Alanube or The Factory based on system_config.ecf_provider. Auto-retry scheduler supports both providers.
 - **Frontend Provider Selector** (DONE): Settings > Sistema tab with visual toggle buttons for Alanube vs The Factory HKA, plus "Probar conexión" button.
 - **NCF Tracking** (DONE): Sequential NCF counter in MongoDB to prevent duplicates across shared sandbox environments.
+- **e-CF Credentials Self-Service UI** (DONE): Business owners can configure e-CF provider credentials directly from Settings > Sistema without needing a developer. System reads DB first, falls back to .env. Passwords are masked in the UI and API responses. Supports Alanube (token+RNC) and The Factory (user+password+RNC+company). Includes Sandbox/Production environment toggle.
 
 ## Completed Tasks (2026-03-31)
 - Refactoring OrderScreen.js → AccountSelectorLobby.js + SplitCheckView.js
