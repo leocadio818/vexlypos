@@ -240,6 +240,16 @@ export default function OrderScreen() {
     } catch {}
   }, [tableId, activeOrderId]);
 
+  // Keep tableOrdersRef in sync with local order state changes (e.g. after adding items)
+  useEffect(() => {
+    if (order && tableOrdersRef.current.length > 0) {
+      tableOrdersRef.current = tableOrdersRef.current.map(o =>
+        o.id === order.id ? order : o
+      );
+    }
+  }, [order]);
+
+
   useEffect(() => {
     const fetchAll = async () => {
       const [catRes, prodRes, modRes, reasonRes] = await Promise.all([
@@ -392,6 +402,8 @@ export default function OrderScreen() {
       await Promise.all(
         ordersWithPending.map(o => ordersAPI.sendToKitchen(o.id))
       );
+      // Reset after short delay to allow future sends (e.g. user adds more items)
+      setTimeout(() => { alreadySentRef.current = false; }, 1500);
       return true;
     } catch (e) {
       alreadySentRef.current = false;

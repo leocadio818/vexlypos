@@ -1,0 +1,92 @@
+{
+  "summary": "Bug fix verified: Auto-send pending items when clicking 'Mesas' button now works correctly. The fix addresses two root causes: (1) tableOrdersRef.current now syncs with local order state changes via useEffect, and (2) alreadySentRef.current resets after 1500ms to allow subsequent sends.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "bug_fix_verification": {
+      "status": "PASS",
+      "description": "Auto-send pending items when clicking 'Mesas' button",
+      "root_cause": "Dual issue: (1) tableOrdersRef.current was not syncing with local order state changes after adding items, (2) alreadySentRef.current was not resetting after successful send",
+      "fix_applied": [
+        "Added useEffect (lines 243-250) to sync tableOrdersRef.current when order state changes",
+        "Added setTimeout (line 406) to reset alreadySentRef.current after 1500ms"
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Add item → Click Mesas → Re-enter table",
+          "result": "PASS - Item status changed from 'Pendiente' to 'Enviado'"
+        },
+        {
+          "scenario": "Send items → Add MORE items → Click Mesas → Re-enter table",
+          "result": "PASS - All items (including newly added) have 'Enviado' status"
+        }
+      ]
+    },
+    "mobile_viewport_test": {
+      "viewport": "390x844",
+      "status": "PASS",
+      "bottom_nav_buttons": ["Panel", "Mesas", "Funciones", "Salir"],
+      "all_buttons_visible": true
+    },
+    "backend_api_tests": {
+      "status": "PASS",
+      "tests_run": 4,
+      "tests_passed": 4,
+      "endpoints_verified": [
+        "POST /api/orders/{id}/send-kitchen",
+        "GET /api/tables/{id}/orders",
+        "GET /api/orders",
+        "POST /api/orders/{id}/items"
+      ]
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_auto_send_kitchen.py",
+    "/app/test_reports/iteration_109.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Bug fix correctly implemented at lines 243-250 (useEffect for tableOrdersRef sync)",
+    "Bug fix correctly implemented at line 406 (setTimeout for alreadySentRef reset)",
+    "Navigation interceptor (lines 414-445) properly checks tableOrdersRef.current for pending items",
+    "sendPendingToKitchenSilently function sends ALL orders with pending items in parallel"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin_pin": "10000",
+    "oscar_pin": "1111",
+    "carlos_pin": "100"
+  },
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Bug fix for auto-send pending items when clicking 'Mesas' button verified. The fix involves syncing tableOrdersRef with order state changes and resetting alreadySentRef after successful sends. All tests pass on mobile viewport (390x844).",
+  "rca_of_the_issue": {
+    "bug_description": "When user pressed 'Mesas' button in bottom nav to return to tables screen, pending items (status 'pending') were NOT being sent to kitchen automatically. However, the 'Salir' button WAS sending correctly.",
+    "root_cause": "Dual issue: (1) tableOrdersRef.current was not being updated when items were added locally to the order state - it only got updated on initial fetch. (2) alreadySentRef.current was set to true after first send but never reset, preventing subsequent sends.",
+    "fix_details": [
+      "Added useEffect at line 243-250 that watches 'order' state and updates tableOrdersRef.current whenever order changes",
+      "Added setTimeout at line 406 that resets alreadySentRef.current to false after 1500ms delay, allowing future sends"
+    ],
+    "reproduction_steps": [
+      "Login with PIN 10000",
+      "Enter an available table",
+      "Add a product (click category then product)",
+      "WITHOUT clicking ENVIAR, click 'Mesas' in bottom nav",
+      "Re-enter the same table",
+      "Verify item status is 'Enviado' (not 'Pendiente')"
+    ],
+    "verification": "Both Playwright UI tests and backend API tests confirm the fix is working correctly"
+  }
+}
