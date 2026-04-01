@@ -494,13 +494,13 @@ export default function CashRegister() {
   return (
     <div className="h-full flex flex-col" data-testid="cash-register-page">
       {/* Header */}
-      <div className="px-4 py-3 backdrop-blur-xl bg-white/5 border-b border-white/10 flex items-center justify-between">
+      <div className="px-4 py-3 backdrop-blur-xl bg-card/80 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CircleDollarSign size={22} className="text-orange-400" />
-          <h1 className="font-oswald text-xl font-bold tracking-wide text-white">CAJA / TURNOS</h1>
+          <h1 className="font-oswald text-xl font-bold tracking-wide text-foreground">CAJA / TURNOS</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <button onClick={fetchData} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all">
+          <button onClick={fetchData} className="p-2 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
             <RefreshCw size={16} />
           </button>
           {/* Botón Nota de Crédito B04 - SIEMPRE visible */}
@@ -555,7 +555,7 @@ export default function CashRegister() {
         {/* Current Session Card */}
         {currentSession && (
           <div className="max-w-3xl mx-auto mb-8" data-testid="current-session">
-            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl overflow-hidden">
+            <div className="backdrop-blur-xl bg-card border border-border rounded-xl overflow-hidden">
               <div className="bg-green-500/20 border-b border-green-500/30 px-6 py-4 flex items-center justify-between">
                 <div>
                   <h2 className="font-oswald text-lg font-bold text-foreground">Turno Activo</h2>
@@ -563,75 +563,75 @@ export default function CashRegister() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className="bg-green-500 animate-pulse text-white">En Curso</Badge>
-                  <span className="text-xs text-muted-foreground font-bold">{currentSession.opened_by_name}</span>
+                  <span className="text-xs text-foreground font-bold">{currentSession.opened_by_name}</span>
                 </div>
               </div>
               
               {/* Stats Grid */}
               <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-rd">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-cash-rd">
                   <Banknote size={20} className="mx-auto mb-1 text-green-400" />
-                  <p className="text-xs text-white/50 uppercase">Efectivo RD$</p>
+                  <p className="text-xs text-muted-foreground uppercase">Efectivo RD$</p>
                   <p className="font-oswald text-lg font-bold text-green-400">{formatMoney(salesBreakdown?.cash_rd ?? currentSession.cash_sales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-card">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-card">
                   <CreditCard size={20} className="mx-auto mb-1 text-blue-400" />
-                  <p className="text-xs text-white/50 uppercase">Tarjeta</p>
+                  <p className="text-xs text-muted-foreground uppercase">Tarjeta</p>
                   <p className="font-oswald text-lg font-bold text-blue-400">{formatMoney(salesBreakdown?.card ?? currentSession.card_sales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-transfer">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-transfer">
                   <RefreshCw size={20} className="mx-auto mb-1 text-purple-400" />
-                  <p className="text-xs text-white/50 uppercase">Transferencia</p>
+                  <p className="text-xs text-muted-foreground uppercase">Transferencia</p>
                   <p className="font-oswald text-lg font-bold text-purple-400">{formatMoney(salesBreakdown?.transfer ?? currentSession.transfer_sales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-usd">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-usd">
                   <CircleDollarSign size={20} className="mx-auto mb-1 text-yellow-400" />
-                  <p className="text-xs text-white/50 uppercase">USD Dolar</p>
+                  <p className="text-xs text-muted-foreground uppercase">USD Dolar</p>
                   <p className="font-oswald text-lg font-bold text-yellow-400">{formatMoney(salesBreakdown?.usd ?? 0)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-eur">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-eur">
                   <Coins size={20} className="mx-auto mb-1 text-cyan-400" />
-                  <p className="text-xs text-white/50 uppercase">Euro</p>
+                  <p className="text-xs text-muted-foreground uppercase">Euro</p>
                   <p className="font-oswald text-lg font-bold text-cyan-400">{formatMoney(salesBreakdown?.eur ?? 0)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-total-sales">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-total-sales">
                   <TrendingUp size={20} className="mx-auto mb-1 text-orange-400" />
-                  <p className="text-xs text-white/50 uppercase">Total Ventas</p>
+                  <p className="text-xs text-muted-foreground uppercase">Total Ventas</p>
                   <p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(salesBreakdown?.total ?? totalSales)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-discounts">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-discounts">
                   <Tag size={20} className="mx-auto mb-1 text-rose-400" />
-                  <p className="text-xs text-white/50 uppercase">Descuentos</p>
+                  <p className="text-xs text-muted-foreground uppercase">Descuentos</p>
                   <p className="font-oswald text-lg font-bold text-rose-400">-{formatMoney(salesBreakdown?.discounts ?? 0)}</p>
-                  <p className="text-[11px] text-white/40">{salesBreakdown?.discounts_count ?? 0} facturas</p>
+                  <p className="text-[11px] text-muted-foreground">{salesBreakdown?.discounts_count ?? 0} facturas</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-in">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-cash-in">
                   <ArrowUpCircle size={20} className="mx-auto mb-1 text-emerald-400" />
-                  <p className="text-xs text-white/50 uppercase">Ingresos</p>
+                  <p className="text-xs text-muted-foreground uppercase">Ingresos</p>
                   <p className="font-oswald text-lg font-bold text-emerald-400">{formatMoney(currentSession.cash_in)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-cash-out">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-cash-out">
                   <ArrowDownCircle size={20} className="mx-auto mb-1 text-red-400" />
-                  <p className="text-xs text-white/50 uppercase">Retiros</p>
+                  <p className="text-xs text-muted-foreground uppercase">Retiros</p>
                   <p className="font-oswald text-lg font-bold text-red-400">-{formatMoney(salesBreakdown?.withdrawals ?? currentSession.cash_out ?? 0)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-voids">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-voids">
                   <XCircle size={20} className="mx-auto mb-1 text-orange-500" />
-                  <p className="text-xs text-white/50 uppercase">Anulaciones</p>
+                  <p className="text-xs text-muted-foreground uppercase">Anulaciones</p>
                   <p className="font-oswald text-lg font-bold text-orange-500">-{formatMoney(salesBreakdown?.voids_total ?? 0)}</p>
-                  <p className="text-[11px] text-white/40">{salesBreakdown?.voids_count ?? 0} anuladas</p>
+                  <p className="text-[11px] text-muted-foreground">{salesBreakdown?.voids_count ?? 0} anuladas</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-white/5 border border-white/10" data-testid="stat-credit-notes">
+                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-credit-notes">
                   <FileText size={20} className="mx-auto mb-1 text-amber-400" />
-                  <p className="text-xs text-white/50 uppercase">Notas Credito</p>
+                  <p className="text-xs text-muted-foreground uppercase">Notas Credito</p>
                   <p className="font-oswald text-lg font-bold text-amber-400">-{formatMoney(salesBreakdown?.credit_notes_total ?? 0)}</p>
-                  <p className="text-[11px] text-white/40">{salesBreakdown?.credit_notes_count ?? 0} B04</p>
+                  <p className="text-[11px] text-muted-foreground">{salesBreakdown?.credit_notes_count ?? 0} B04</p>
                 </div>
-                <div className="text-center p-3 rounded-lg backdrop-blur-md bg-green-500/10 border border-green-500/30" data-testid="stat-cash-balance">
-                  <Wallet size={20} className="mx-auto mb-1 text-green-300" />
-                  <p className="text-xs text-green-300/70 uppercase font-bold">Balance Efectivo</p>
-                  <p className="font-oswald text-xl font-bold text-green-300">{formatMoney(salesBreakdown?.cash_balance ?? 0)}</p>
-                  <p className="text-[11px] text-white/40">Apertura + Ventas - Retiros</p>
+                <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/30" data-testid="stat-cash-balance">
+                  <Wallet size={20} className="mx-auto mb-1 text-green-500" />
+                  <p className="text-xs text-green-600 dark:text-green-300/70 uppercase font-bold">Balance Efectivo</p>
+                  <p className="font-oswald text-xl font-bold text-green-500">{formatMoney(salesBreakdown?.cash_balance ?? 0)}</p>
+                  <p className="text-[11px] text-muted-foreground">Apertura + Ventas - Retiros</p>
                 </div>
               </div>
               
@@ -641,7 +641,7 @@ export default function CashRegister() {
                   <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-between">
                     <div>
                       <p className="text-sm text-yellow-400 font-medium">Efectivo Esperado en Caja</p>
-                      <p className="text-xs text-white/50">Apertura + Ventas Efectivo + Ingresos - Retiros</p>
+                      <p className="text-xs text-muted-foreground">Apertura + Ventas Efectivo + Ingresos - Retiros</p>
                     </div>
                     <p className="font-oswald text-2xl font-bold text-yellow-400">{formatMoney(totalEsperado)}</p>
                   </div>
@@ -649,7 +649,7 @@ export default function CashRegister() {
               )}
               
               {/* Footer info */}
-              <div className="px-6 pb-4 flex items-center justify-between text-xs text-white/50">
+              <div className="px-6 pb-4 flex items-center justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock size={12} /> Abierto: {new Date(currentSession.opened_at).toLocaleString('es-DO')}
                 </span>
@@ -665,25 +665,25 @@ export default function CashRegister() {
             {/* Recent Movements with Search and Reprint */}
             {movements.length > 0 && (
               <div className="mt-4">
-                <h3 className="font-oswald text-sm font-bold text-white/50 mb-3 uppercase tracking-wider flex items-center gap-2">
+                <h3 className="font-oswald text-sm font-bold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
                   <History size={14} /> Movimientos del Turno
                 </h3>
                 
                 {/* Buscador Inteligente */}
                 <div className="relative mb-3">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Buscar por NCF, # orden, monto, descripción..."
                     value={movementSearch}
                     onChange={(e) => setMovementSearch(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white text-sm placeholder:text-white/30 focus:border-orange-400/50 focus:outline-none transition-all"
+                    className="w-full bg-muted/50 border border-border rounded-lg pl-10 pr-4 py-2 text-foreground text-sm placeholder:text-muted-foreground/60 focus:border-orange-400/50 focus:outline-none transition-all"
                     data-testid="movement-search"
                   />
                   {movementSearch && (
                     <button 
                       onClick={() => setMovementSearch('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       <X size={14} />
                     </button>
@@ -715,7 +715,7 @@ export default function CashRegister() {
                       className={`backdrop-blur-xl border rounded-lg p-3 flex items-center justify-between cursor-pointer transition-all ${
                         selectedMovement?.id === mov.id 
                           ? 'bg-orange-500/20 border-orange-500/50 ring-1 ring-orange-400/30' 
-                          : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                          : 'bg-card border-border hover:bg-muted hover:border-border'
                       }`}
                       data-testid={`movement-${mov.id}`}
                     >
@@ -726,8 +726,8 @@ export default function CashRegister() {
                           <ArrowDownCircle size={18} className="text-red-400" />
                         )}
                         <div>
-                          <p className="text-sm font-medium text-white">{(mov.description || '').replace(/\[BILL:[^\]]+\]\s*/g, '')}</p>
-                          <p className="text-xs text-white/50">{mov.ref} - {mov.payment_method} - {new Date(mov.created_at).toLocaleTimeString('es-DO')}</p>
+                          <p className="text-sm font-medium text-foreground">{(mov.description || '').replace(/\[BILL:[^\]]+\]\s*/g, '')}</p>
+                          <p className="text-xs text-muted-foreground">{mov.ref} - {mov.payment_method} - {new Date(mov.created_at).toLocaleTimeString('es-DO')}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -753,7 +753,7 @@ export default function CashRegister() {
                       transNum.includes(search)
                     );
                   }).length === 0 && (
-                    <p className="text-center text-white/40 text-sm py-4">No se encontraron movimientos</p>
+                    <p className="text-center text-muted-foreground text-sm py-4">No se encontraron movimientos</p>
                   )}
                 </div>
               </div>
@@ -764,10 +764,10 @@ export default function CashRegister() {
         {/* No Session - Show prompt */}
         {!currentSession && (
           <div className="max-w-md mx-auto mt-12 text-center">
-            <div className="backdrop-blur-xl bg-white/5 border border-white/20 rounded-xl p-8">
+            <div className="backdrop-blur-xl bg-card border border-border rounded-xl p-8">
               <CircleDollarSign size={48} className="mx-auto mb-4 text-orange-400/50" />
-              <h2 className="font-oswald text-xl font-bold text-white mb-2">Sin Turno Abierto</h2>
-              <p className="text-sm text-white/60 mb-6">
+              <h2 className="font-oswald text-xl font-bold text-foreground mb-2">Sin Turno Abierto</h2>
+              <p className="text-sm text-muted-foreground mb-6">
                 Abre un turno para comenzar a registrar ventas y movimientos de caja.
               </p>
               <button onClick={() => setOpenDialog(true)}
@@ -780,23 +780,23 @@ export default function CashRegister() {
 
         {/* Session History */}
         <div className="max-w-3xl mx-auto mt-8">
-          <h3 className="font-oswald text-sm font-bold text-white/50 mb-3 uppercase tracking-wider">Historial de Turnos</h3>
+          <h3 className="font-oswald text-sm font-bold text-muted-foreground mb-3 uppercase tracking-wider">Historial de Turnos</h3>
           <div className="space-y-2">
             {sessions.map(session => (
               <div key={session.id} data-testid={`session-${session.id}`}
-                className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-4 flex items-center justify-between">
+                className="backdrop-blur-xl bg-card border border-border rounded-lg p-4 flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-white">{session.opened_by_name}</p>
-                    <span className="text-white/30">-</span>
-                    <p className="text-sm text-white/70">{session.terminal_name}</p>
+                    <p className="text-sm font-semibold text-foreground">{session.opened_by_name}</p>
+                    <span className="text-muted-foreground/50">-</span>
+                    <p className="text-sm text-muted-foreground">{session.terminal_name}</p>
                     {session.status === 'closed' ? (
                       <CheckCircle2 size={14} className="text-green-400" />
                     ) : session.status === 'pending_approval' ? (
                       <AlertTriangle size={14} className="text-yellow-400" />
                     ) : null}
                   </div>
-                  <p className="text-xs text-white/50 font-mono">
+                  <p className="text-xs text-muted-foreground font-mono">
                     {session.ref} | {new Date(session.opened_at).toLocaleString('es-DO')} → {session.closed_at ? new Date(session.closed_at).toLocaleTimeString('es-DO') : '-'}
                   </p>
                 </div>
@@ -805,7 +805,7 @@ export default function CashRegister() {
                     <button 
                       onClick={() => setReprintSessionId(session.id)}
                       data-testid={`reprint-report-${session.id}`}
-                      className="p-2 rounded-lg bg-white/5 hover:bg-white/15 text-white/40 hover:text-cyan-400 transition-all"
+                      className="p-2 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-cyan-400 transition-all"
                       title="Re-imprimir Reporte X"
                     >
                       <Printer size={14} />
@@ -825,7 +825,7 @@ export default function CashRegister() {
               </div>
             ))}
             {sessions.length === 0 && (
-              <p className="text-sm text-white/40 text-center py-4">No hay turnos cerrados</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No hay turnos cerrados</p>
             )}
           </div>
         </div>
@@ -835,12 +835,12 @@ export default function CashRegister() {
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent className="max-w-sm sm:max-w-md mx-auto" data-testid="open-session-dialog">
           <DialogHeader>
-            <DialogTitle className="font-oswald text-white">Abrir Turno</DialogTitle>
-            <DialogDescription className="text-white/60">Selecciona la estación e ingresa el monto inicial</DialogDescription>
+            <DialogTitle className="font-oswald text-foreground">Abrir Turno</DialogTitle>
+            <DialogDescription className="text-muted-foreground">Selecciona la estación e ingresa el monto inicial</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-2 block">Estación / Terminal</label>
+              <label className="text-sm font-semibold text-muted-foreground mb-2 block">Estación / Terminal</label>
               <div className="grid grid-cols-2 gap-2">
                 {terminals.map(t => {
                   const isInUse = t.in_use || terminalsInUse[t.name];
@@ -862,7 +862,7 @@ export default function CashRegister() {
                           ? 'border-red-500/30 bg-red-500/10 text-red-400/60 cursor-not-allowed'
                           : isSelected 
                             ? 'border-orange-400 bg-orange-400/20 text-orange-400' 
-                            : 'border-white/10 bg-white/5 text-white/70 hover:border-white/30'
+                            : 'border-border bg-muted/50 text-foreground/70 hover:border-foreground/30'
                       }`}
                     >
                       <span className="block">{t.name}</span>
@@ -883,15 +883,15 @@ export default function CashRegister() {
               )}
             </div>
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-1 block">Monto de Apertura (RD$)</label>
+              <label className="text-sm font-semibold text-muted-foreground mb-1 block">Monto de Apertura (RD$)</label>
               <NumericInput label="Valor"
                 value={openingAmount}
                 onChange={e => setOpeningAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-orange-400/50 focus:bg-white/10 outline-none transition-all"
+                className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-foreground font-oswald text-lg focus:border-orange-400/50 focus:bg-muted outline-none transition-all"
                 data-testid="opening-amount-input"
               />
-              <p className="text-xs text-white/40 mt-1">Cantidad de efectivo inicial en la caja</p>
+              <p className="text-xs text-muted-foreground mt-1">Cantidad de efectivo inicial en la caja</p>
             </div>
             <button onClick={handleOpenSession} data-testid="confirm-open-session"
               className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-oswald font-bold active:scale-95 transition-all flex items-center justify-center gap-2">
@@ -905,11 +905,11 @@ export default function CashRegister() {
       <Dialog open={closeDialog} onOpenChange={setCloseDialog}>
         <DialogContent className="max-w-2xl mx-auto max-h-[90vh] overflow-y-auto" data-testid="close-session-dialog">
           <DialogHeader>
-            <DialogTitle className="font-oswald text-white flex items-center gap-2">
+            <DialogTitle className="font-oswald text-foreground flex items-center gap-2">
               <Calculator size={20} className="text-orange-400" />
               Arqueo de Caja
             </DialogTitle>
-            <DialogDescription className="text-white/60">Cuenta los billetes y monedas para cerrar el turno</DialogDescription>
+            <DialogDescription className="text-muted-foreground">Cuenta los billetes y monedas para cerrar el turno</DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6">
@@ -922,16 +922,16 @@ export default function CashRegister() {
 
             {/* Denomination Counter */}
             <div>
-              <h4 className="text-sm font-semibold text-white/70 mb-3 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground/70 mb-3 flex items-center gap-2">
                 <Coins size={16} /> Conteo de Efectivo
               </h4>
               
               {/* Bills */}
               <div className="mb-4">
-                <p className="text-xs text-white/40 uppercase mb-2 flex items-center gap-1"><Banknote size={12} /> Billetes</p>
+                <p className="text-xs text-muted-foreground uppercase mb-2 flex items-center gap-1"><Banknote size={12} /> Billetes</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {DENOMINACIONES.filter(d => d.tipo === 'billete').map(denom => (
-                    <div key={denom.valor} className="bg-white/5 border border-white/10 rounded-lg p-2">
+                    <div key={denom.valor} className="bg-muted/50 border border-border rounded-lg p-2">
                       <div className="flex items-center justify-between mb-1">
                         <span className={`text-xs font-bold px-2 py-0.5 rounded ${COLORES_DENOMINACION[denom.valor]} text-white`}>{denom.label}</span>
                       </div>
@@ -943,14 +943,14 @@ export default function CashRegister() {
                         <NumericInput label="Valor"
                           value={denominationCounts[denom.valor]}
                           onChange={e => setDenominationCounts(prev => ({...prev, [denom.valor]: Math.max(0, parseInt(e.target.value) || 0)}))}
-                          className="w-12 text-center bg-transparent text-white font-oswald text-lg border-none outline-none"
+                          className="w-12 text-center bg-transparent text-foreground font-oswald text-lg border-none outline-none"
                         />
                         <button 
                           onClick={() => updateDenomination(denom.valor, 1)}
                           className="w-10 h-10 sm:w-8 sm:h-8 rounded bg-green-500/20 text-green-400 font-bold hover:bg-green-500/30 transition-all shrink-0"
                         >+</button>
                       </div>
-                      <p className="text-xs text-white/50 text-center mt-1">
+                      <p className="text-xs text-muted-foreground text-center mt-1">
                         = {formatMoney(denom.valor * denominationCounts[denom.valor])}
                       </p>
                     </div>
@@ -960,10 +960,10 @@ export default function CashRegister() {
               
               {/* Coins */}
               <div>
-                <p className="text-xs text-white/40 uppercase mb-2 flex items-center gap-1"><Coins size={12} /> Monedas</p>
+                <p className="text-xs text-muted-foreground uppercase mb-2 flex items-center gap-1"><Coins size={12} /> Monedas</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {DENOMINACIONES.filter(d => d.tipo === 'moneda').map(denom => (
-                    <div key={denom.valor} className="bg-white/5 border border-white/10 rounded-lg p-2">
+                    <div key={denom.valor} className="bg-muted/50 border border-border rounded-lg p-2">
                       <div className="flex items-center justify-center mb-1">
                         <span className={`text-xs font-bold px-2 py-0.5 rounded ${COLORES_DENOMINACION[denom.valor]} text-white`}>{denom.label}</span>
                       </div>
@@ -975,7 +975,7 @@ export default function CashRegister() {
                         <NumericInput label="Valor"
                           value={denominationCounts[denom.valor]}
                           onChange={e => setDenominationCounts(prev => ({...prev, [denom.valor]: Math.max(0, parseInt(e.target.value) || 0)}))}
-                          className="w-10 text-center bg-transparent text-white font-oswald border-none outline-none"
+                          className="w-10 text-center bg-transparent text-foreground font-oswald border-none outline-none"
                         />
                         <button 
                           onClick={() => updateDenomination(denom.valor, 1)}
@@ -989,50 +989,50 @@ export default function CashRegister() {
             </div>
 
             {/* Total Counted - Solo muestra el total sin comparaciones */}
-            <div className="p-4 rounded-lg border bg-white/5 border-white/10">
+            <div className="p-4 rounded-lg border bg-muted/50 border-border">
               <div className="flex items-center justify-between">
-                <span className="text-white/70 font-medium">Total Efectivo Contado</span>
-                <span className="font-oswald text-2xl font-bold text-white">{formatMoney(totalDeclarado)}</span>
+                <span className="text-foreground/70 font-medium">Total Efectivo Contado</span>
+                <span className="font-oswald text-2xl font-bold text-foreground">{formatMoney(totalDeclarado)}</span>
               </div>
             </div>
 
             {/* Other payment methods - Teclado flotante */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-semibold text-white/60 mb-1 block flex items-center gap-1">
+                <label className="text-sm font-semibold text-muted-foreground mb-1 block flex items-center gap-1">
                   <CreditCard size={14} /> Tarjeta Declarado
                 </label>
                 <button
                   type="button"
                   onClick={() => setFloatingKeypad({ open: true, field: 'card', value: cardDeclared || '' })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-left text-white font-oswald hover:border-blue-400/50 transition-all"
+                  className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2.5 text-left text-foreground font-oswald hover:border-blue-400/50 transition-all"
                   data-testid="card-declared-btn"
                 >
-                  {cardDeclared || <span className="text-white/30">0.00</span>}
+                  {cardDeclared || <span className="text-muted-foreground">0.00</span>}
                 </button>
               </div>
               <div>
-                <label className="text-sm font-semibold text-white/60 mb-1 block">Transferencias</label>
+                <label className="text-sm font-semibold text-muted-foreground mb-1 block">Transferencias</label>
                 <button
                   type="button"
                   onClick={() => setFloatingKeypad({ open: true, field: 'transfer', value: transferDeclared || '' })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-left text-white font-oswald hover:border-cyan-400/50 transition-all"
+                  className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2.5 text-left text-foreground font-oswald hover:border-cyan-400/50 transition-all"
                   data-testid="transfer-declared-btn"
                 >
-                  {transferDeclared || <span className="text-white/30">0.00</span>}
+                  {transferDeclared || <span className="text-muted-foreground">0.00</span>}
                 </button>
               </div>
             </div>
 
             {/* Notes - Siempre visible para que el cajero pueda agregar comentarios */}
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-1 block">Notas del cierre (opcional)</label>
+              <label className="text-sm font-semibold text-muted-foreground mb-1 block">Notas del cierre (opcional)</label>
               <textarea
                 value={differenceNotes}
                 onChange={e => setDifferenceNotes(e.target.value)}
                 placeholder="Agregar comentarios..."
                 rows={2}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
+                className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
               />
             </div>
 
@@ -1049,16 +1049,16 @@ export default function CashRegister() {
       <Dialog open={movementDialog} onOpenChange={setMovementDialog}>
         <DialogContent className="max-w-sm sm:max-w-md mx-auto" data-testid="movement-dialog">
           <DialogHeader>
-            <DialogTitle className="font-oswald text-white">Nuevo Movimiento de Caja</DialogTitle>
+            <DialogTitle className="font-oswald text-foreground">Nuevo Movimiento de Caja</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-2 block">Tipo de Movimiento</label>
+              <label className="text-sm font-semibold text-muted-foreground mb-2 block">Tipo de Movimiento</label>
               <div className="grid grid-cols-2 gap-2">
                 {hasPermission('cash_movement_income') && (
                 <button onClick={() => setMovementForm({...movementForm, movement_type: 'cash_in'})}
                   className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
-                    movementForm.movement_type === 'cash_in' ? 'border-green-400 bg-green-400/20 text-green-400' : 'border-white/10 bg-white/5 text-white/70'
+                    movementForm.movement_type === 'cash_in' ? 'border-green-400 bg-green-400/20 text-green-400' : 'border-border bg-muted/50 text-foreground/70'
                   }`}>
                   <ArrowUpCircle size={16} /> Ingreso
                 </button>
@@ -1066,7 +1066,7 @@ export default function CashRegister() {
                 {hasPermission('cash_movement_withdrawal') && (
                 <button onClick={() => setMovementForm({...movementForm, movement_type: 'cash_out'})}
                   className={`p-3 rounded-lg text-sm font-medium transition-all border flex items-center justify-center gap-2 ${
-                    movementForm.movement_type === 'cash_out' ? 'border-red-400 bg-red-400/20 text-red-400' : 'border-white/10 bg-white/5 text-white/70'
+                    movementForm.movement_type === 'cash_out' ? 'border-red-400 bg-red-400/20 text-red-400' : 'border-border bg-muted/50 text-foreground/70'
                   }`}>
                   <ArrowDownCircle size={16} /> Retiro
                 </button>
@@ -1075,36 +1075,36 @@ export default function CashRegister() {
             </div>
             
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-1 block">Monto (RD$)</label>
+              <label className="text-sm font-semibold text-muted-foreground mb-1 block">Monto (RD$)</label>
               <NumericInput label="Valor"
                 value={movementForm.amount}
                 onChange={e => setMovementForm({...movementForm, amount: e.target.value})}
                 placeholder="0.00"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white font-oswald text-lg focus:border-orange-400/50 outline-none transition-all"
+                className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-foreground font-oswald text-lg focus:border-orange-400/50 outline-none transition-all"
                 data-testid="movement-amount-input"
               />
             </div>
             
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-1 block">Descripción</label>
+              <label className="text-sm font-semibold text-muted-foreground mb-1 block">Descripción</label>
               <input
                 type="text"
                 value={movementForm.description}
                 onChange={e => setMovementForm({...movementForm, description: e.target.value})}
                 placeholder="Ej: Reposición de cambio, Pago a proveedor..."
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all"
+                className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-orange-400/50 outline-none transition-all"
                 data-testid="movement-description-input"
               />
             </div>
             
             <div>
-              <label className="text-sm font-semibold text-white/60 mb-1 block">Notas (opcional)</label>
+              <label className="text-sm font-semibold text-muted-foreground mb-1 block">Notas (opcional)</label>
               <textarea
                 value={movementForm.notes}
                 onChange={e => setMovementForm({...movementForm, notes: e.target.value})}
                 placeholder="Detalles adicionales..."
                 rows={2}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
+                className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-orange-400/50 outline-none transition-all resize-none"
               />
             </div>
             
@@ -1240,21 +1240,21 @@ export default function CashRegister() {
               <Calendar size={20} />
               Cierre de Día (Z)
             </DialogTitle>
-            <DialogDescription className="text-white/60 text-sm">
+            <DialogDescription className="text-muted-foreground text-sm">
               Esto cerrará la jornada de trabajo. Todos los turnos deben estar cerrados y no debe haber cuentas abiertas.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <PinPad value={closeDayPin} onChange={setCloseDayPin} label="PIN de Autorizacion (Admin)" placeholder="PIN del administrador" forceKeypad />
             <div>
-              <label className="text-white/60 text-xs mb-1 block">Notas de cierre (opcional)</label>
+              <label className="text-muted-foreground text-xs mb-1 block">Notas de cierre (opcional)</label>
               <textarea
                 value={closeDayNotes}
                 onChange={(e) => setCloseDayNotes(e.target.value)}
                 placeholder="Observaciones del día..."
                 data-testid="close-day-notes"
                 rows={2}
-                className="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 text-sm focus:ring-2 focus:ring-amber-500/50 outline-none resize-none"
+                className="w-full px-4 py-2 rounded-xl bg-muted/50 border border-border text-foreground placeholder-muted-foreground text-sm focus:ring-2 focus:ring-amber-500/50 outline-none resize-none"
               />
             </div>
             <button

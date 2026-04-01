@@ -23,18 +23,18 @@ export default function AccountSelectorLobby({
   return (
     <div className="h-full flex flex-col" data-testid="account-selector">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-white/10 backdrop-blur-xl bg-white/5 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-border backdrop-blur-xl bg-card/80 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="h-10 w-10 rounded-lg text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all shrink-0"
+            className="h-10 w-10 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center transition-all shrink-0"
             data-testid="back-to-tables-from-selector"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h2 className="font-oswald text-lg sm:text-xl font-bold text-white">Mesa {table?.number || '?'}</h2>
-            <p className="text-xs text-white/40">{tableOrders.length} cuentas abiertas</p>
+            <h2 className="font-oswald text-lg sm:text-xl font-bold text-foreground">Mesa {table?.number || '?'}</h2>
+            <p className="text-xs text-muted-foreground">{tableOrders.length} cuentas abiertas</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ export default function AccountSelectorLobby({
               : 'Toca la cuenta ORIGEN que deseas mover'}
           </p>
         ) : (
-          <p className="text-sm text-white/50 mb-4 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
+          <p className="text-sm text-muted-foreground mb-4 text-center">Selecciona la cuenta a la que deseas agregar productos</p>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
           {tableOrders.map(ord => {
@@ -102,14 +102,14 @@ export default function AccountSelectorLobby({
                   }
                 }}
                 data-testid={`select-account-${ord.account_number || 1}`}
-                className={`p-4 sm:p-5 rounded-2xl border-2 transition-all text-left active:scale-[0.97] backdrop-blur-sm ${
+                className={`p-4 sm:p-5 rounded-2xl border-2 transition-all text-left active:scale-[0.97] ${
                   isSource
                     ? 'border-purple-500 bg-purple-500/20 ring-2 ring-purple-500/50 scale-[1.02]'
                     : isTarget
                       ? 'border-green-500/70 bg-green-500/10 hover:bg-green-500/20 hover:border-green-400'
                       : selectorMergeMode
-                        ? 'border-purple-500/50 bg-white/5 hover:border-purple-400 animate-pulse'
-                        : 'border-white/10 bg-white/5 hover:border-primary/60 hover:bg-primary/10'
+                        ? 'border-purple-500/50 bg-muted/50 hover:border-purple-400 animate-pulse'
+                        : 'border-border bg-card hover:border-primary/60 hover:bg-primary/10'
                 }`}
                 style={selectorMergeMode && !isSource ? { animationDuration: '2s' } : {}}
               >
@@ -130,26 +130,26 @@ export default function AccountSelectorLobby({
                       Cuenta #{ord.account_number || 1}
                     </span>
                     {(ord.account_label || ord.label) && (
-                      <span className="ml-2 text-sm text-white/50">({ord.account_label || ord.label})</span>
+                      <span className="ml-2 text-sm text-muted-foreground">({ord.account_label || ord.label})</span>
                     )}
                   </div>
-                  <span className="font-oswald text-lg sm:text-xl font-bold text-white">
+                  <span className="font-oswald text-lg sm:text-xl font-bold text-foreground">
                     {formatMoney(total)}
                   </span>
                 </div>
-                <div className="border-t border-white/10 pt-2">
+                <div className="border-t border-border pt-2">
                   {isEmpty ? (
-                    <p className="text-sm text-white/30 py-1">Sin productos</p>
+                    <p className="text-sm text-muted-foreground py-1">Sin productos</p>
                   ) : (
                     <div className="space-y-1">
                       {items.slice(0, 5).map((item, idx) => (
                         <div key={idx} className="flex items-center justify-between text-sm">
-                          <span className="text-white/70 truncate flex-1">{item.quantity}x {item.product_name}</span>
-                          <span className="text-white/50 ml-3 shrink-0 font-mono">{formatMoney(item.unit_price * item.quantity)}</span>
+                          <span className="text-foreground/70 truncate flex-1">{item.quantity}x {item.product_name}</span>
+                          <span className="text-muted-foreground ml-3 shrink-0 font-mono">{formatMoney(item.unit_price * item.quantity)}</span>
                         </div>
                       ))}
                       {items.length > 5 && (
-                        <p className="text-xs text-white/30 pt-1">+{items.length - 5} más...</p>
+                        <p className="text-xs text-muted-foreground pt-1">+{items.length - 5} más...</p>
                       )}
                     </div>
                   )}
