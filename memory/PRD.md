@@ -93,10 +93,27 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **The Factory funciona bien una vez configurado**, pero la integración fue ~5x más difícil por documentación pobre y sandbox compartido.
 - **Ambos están integrados** — se cambia entre proveedores con un click en Settings > Sistema.
 
-## Important Notes
+## REGLAS OBLIGATORIAS DEL PROYECTO (NO NEGOCIABLES)
+
+### Compatibilidad de Dispositivos
+- TODO debe funcionar en TODOS los dispositivos: Android, iPhone, iPad, Tablet, PC, Laptop
+- Sistemas operativos: Android e iOS obligatorio
+- Navegadores: Chrome, Safari (iOS), Samsung Internet
+- Responsive: Mobile (< 768px), Tablet (768-1024px), Desktop (> 1024px)
+- NO se acepta que algo funcione en desktop y falle en móvil o viceversa
+
+### Testing Obligatorio
+- SIEMPRE hacer flujo de pruebas completo antes de entregar cualquier cambio
+- Verificar que el cambio fue aplicado correctamente en el flujo real
+- Probar el escenario afectado end-to-end, no solo el punto del cambio
+- NO SE ACEPTAN ERRORES — cada entrega debe estar probada y funcionando
+- Si es un bug fix: reproducir el bug primero, aplicar fix, verificar que el bug no existe más
+
+### Reglas Técnicas
+- Respond in Spanish
 - DO NOT implement offline ordering/syncing
 - Use `notranslate` class on numbers
-- Respond in Spanish
+- Never hardcode `text-white` — use theme variables (`text-foreground`, `text-muted-foreground`)
 - Radix ScrollArea fix: `[&_[data-radix-scroll-area-viewport]>div]:!block`
 - Mobile detection: `device?.isMobile` from useAuth() (width < 768px)
 - The Factory HKA sandbox: shared environment, NCFs get consumed by other users. Start counters at 100+

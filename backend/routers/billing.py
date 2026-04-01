@@ -628,13 +628,13 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
             if table_id:
                 other_active_orders = await db.orders.count_documents({
                     "table_id": table_id,
-                    "status": {"$in": ["open", "in_progress", "divided"]},
+                    "status": {"$in": ["active", "sent"]},
                     "id": {"$ne": order_id}
                 })
                 if other_active_orders > 0:
                     # Still has active orders — keep table as divided/occupied
                     remaining = await db.orders.find(
-                        {"table_id": table_id, "status": {"$in": ["open", "in_progress", "divided"]}},
+                        {"table_id": table_id, "status": {"$in": ["active", "sent"]}},
                         {"_id": 0, "id": 1}
                     ).to_list(10)
                     new_status = "divided" if len(remaining) > 1 else "occupied"
