@@ -31,6 +31,85 @@ def set_db(database):
 # CONFIG
 # ═══════════════════════════════════════════════════════════════
 
+# Series config cache
+_series_cache = {"data": None, "fetched_at": None}
+
+async def get_series() -> list:
+    """Fetch NCF series from The Factory (cached for 1 hour)"""
+    global _series_cache
+    import time
+    now = time.time()
+    if _series_cache["data"] and _series_cache["fetched_at"] and (now - _series_cache["fetched_at"]) < 3600:
+        return _series_cache["data"]
+
+    auth = await authenticate()
+    if not auth["ok"]:
+        return []
+
+    config = get_config()
+    url = f"{config['base_url']}/api/Series"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            r = await client.post(url, json={"token": auth["token"], "rnc": config["rnc"]})
+            data = r.json()
+            if data.get("codigo") == 0:
+                _series_cache["data"] = data.get("serie", [])
+                _series_cache["fetched_at"] = now
+                return _series_cache["data"]
+    except Exception as e:
+        logging.warning(f"Failed to fetch The Factory series: {e}")
+    return []
+
+
+async def get_next_ncf(tipo_documento: str) -> dict:
+    """
+    Get the next NCF and sequence expiration from The Factory series.
+    Tracks used NCFs in MongoDB to avoid duplicates.
+    Returns: { "ncf": "E31XXXXXXXXXX", "fecha_venc": "31-12-2028" }
+    """
+    series = await get_series()
+    fecha_venc = "31-12-2028"
+    for s in series:
+        if s.get("tipoDocumento") == tipo_documento:
+            fecha_venc = s.get("fechaVencimientoSecuencia", "31-12-2028")
+            break
+
+    prefix = f"E{tipo_documento}"
+
+    # Get last used NCF for this type from MongoDB
+    counter = await db.ecf_ncf_counters.find_one_and_update(
+        {"tipo": tipo_documento, "provider": "thefactory"},
+        {"$inc": {"counter": 1}},
+        upsert=True,
+        return_document=True,
+        projection={"_id": 0}
+    )
+
+    # If counter was just created, initialize from series correlativo
+    current = counter.get("counter", 1)
+    if current <= 1:
+        for s in series:
+            if s.get("tipoDocumento") == tipo_documento:
+                start = s.get("correlativo", 1)
+                # Check what's already used in ecf_logs
+                last_log = await db.ecf_logs.find_one(
+                    {"encf": {"$regex": f"^{prefix}"}, "provider": "thefactory", "success": True},
+                    sort=[("created_at", -1)],
+                    projection={"_id": 0, "encf": 1}
+                )
+                if last_log:
+                    last_num = int(last_log["encf"][3:])
+                    start = max(start, last_num + 1)
+                current = start
+                await db.ecf_ncf_counters.update_one(
+                    {"tipo": tipo_documento, "provider": "thefactory"},
+                    {"$set": {"counter": current}}
+                )
+                break
+
+    ncf = f"{prefix}{str(current).zfill(10)}"
+    return {"ncf": ncf, "fecha_venc": fecha_venc}
+
 def get_config():
     """Get The Factory HKA config from environment"""
     is_sandbox = bool(os.environ.get("THEFACTORY_SANDBOX_USER"))
@@ -156,7 +235,7 @@ def format_date_tf(iso_date: str = None) -> str:
     return datetime.now(timezone.utc).strftime("%d-%m-%Y")
 
 
-def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: str) -> dict:
+def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: str, fecha_venc: str = "31-12-2028") -> dict:
     """Convert a VexlyPOS bill to The Factory HKA e-CF JSON"""
 
     # Determine document type from ecf_type or NCF prefix
@@ -169,15 +248,15 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
         prefix = ncf[:3] if isinstance(ncf, str) and len(ncf) >= 3 else "B02"
         tipo_documento = {"B01": "31", "B02": "32", "B14": "34", "B15": "31"}.get(prefix, "32")
 
-    config = get_config()
     now = datetime.now(timezone.utc)
+    config = get_config()
     fecha_emision = format_date_tf(bill.get("paid_at"))
 
     # ── Items & Tax calculation ──
     items_detail = []
-    total_gravado_1 = 0  # ITBIS 18%
+    total_gravado_1 = 0  # ITBIS 18% base
     total_exento = 0
-    itbis_1 = 0
+    itbis_1_amount = 0  # ITBIS 18% amount (goes in totalITBIS1)
 
     line = 0
     for item in bill.get("items", []):
@@ -197,7 +276,7 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
             indicador = "1"  # ITBIS 18%
             item_itbis = round(item_amount * 0.18, 2)
             total_gravado_1 += item_amount
-            itbis_1 += item_itbis
+            itbis_1_amount += item_itbis
 
         detail = {
             "numeroLinea": str(line),
@@ -235,14 +314,11 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
 
         items_detail.append(detail)
 
-    # ── Discount ──
+    # ── Discount (reserved for future descuentosORecargos section) ──
     discount = bill.get("discount_applied")
-    discount_amount = 0
-    if discount and isinstance(discount, dict):
-        discount_amount = discount.get("amount", 0)
 
     # ── Totals ──
-    total_itbis = round(itbis_1, 2)
+    total_itbis = round(itbis_1_amount, 2)
     total_amount = round(bill.get("total", 0), 2)
     tip = bill.get("propina_legal", 0)
 
@@ -271,7 +347,7 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
     buyer_name = bill.get("razon_social", "") or "CONSUMIDOR FINAL"
 
     # ── Sequence expiration date ──
-    fecha_venc_seq = "31-12-2027"
+    fecha_venc_seq = fecha_venc
 
     # ── Build payload ──
     payload = {
@@ -283,7 +359,7 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
                     "ncf": encf,
                     "fechaVencimientoSecuencia": fecha_venc_seq,
                     "indicadorEnvioDiferido": "1",
-                    "indicadorMontoGravado": "1" if total_gravado_1 > 0 else "0",
+                    "indicadorMontoGravado": "0",
                     "indicadorNotaCredito": None,
                     "tipoIngresos": "01",  # Ingresos operacionales
                     "tipoPago": tipo_pago,
@@ -346,11 +422,11 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
                     "montoGravadoI2": None,
                     "montoGravadoI3": None,
                     "montoExento": f"{total_exento:.2f}" if total_exento > 0 else None,
-                    "itbiS1": f"{itbis_1:.2f}" if itbis_1 > 0 else None,
+                    "itbiS1": "18" if total_gravado_1 > 0 else None,
                     "itbiS2": None,
                     "itbiS3": None,
                     "totalITBIS": f"{total_itbis:.2f}" if total_itbis > 0 else None,
-                    "totalITBIS1": f"{itbis_1:.2f}" if itbis_1 > 0 else None,
+                    "totalITBIS1": f"{itbis_1_amount:.2f}" if itbis_1_amount > 0 else None,
                     "totalITBIS2": None,
                     "totalITBIS3": None,
                     "montoImpuestoAdicional": None,
@@ -395,6 +471,7 @@ async def send_to_thefactory(payload: dict) -> dict:
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(url, json=payload)
+            logging.info(f"TheFactory /api/Enviar response: {response.status_code} -> {response.text[:500]}")
             data = response.json()
 
             if response.status_code == 200 and data.get("procesado"):

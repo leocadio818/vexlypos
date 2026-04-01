@@ -76,7 +76,11 @@ async def send_ecf(bill_id: str):
         encf = gen_encf(ecf_prefix)
 
     if provider == "thefactory":
-        result = await _send_via_thefactory(bill, config, encf, bill_id)
+        from routers.thefactory import get_next_ncf
+        tipo_doc = {"E31": "31", "E32": "32", "E33": "33", "E34": "34", "E44": "44", "E45": "45"}.get(ecf_prefix, "32")
+        ncf_info = await get_next_ncf(tipo_doc)
+        encf = ncf_info["ncf"]
+        result = await _send_via_thefactory(bill, config, encf, bill_id, ncf_info.get("fecha_venc", "31-12-2028"))
     else:
         result = await _send_via_alanube(bill, config, encf, bill_id)
 
@@ -114,7 +118,7 @@ async def _send_via_alanube(bill, config, encf, bill_id):
     return result
 
 
-async def _send_via_thefactory(bill, config, encf, bill_id):
+async def _send_via_thefactory(bill, config, encf, bill_id, fecha_venc="31-12-2028"):
     """Send via The Factory HKA"""
     from routers.thefactory import (
         authenticate, build_thefactory_payload, send_to_thefactory,
@@ -131,7 +135,7 @@ async def _send_via_thefactory(bill, config, encf, bill_id):
         return fail_result
 
     # Step 2: Build payload
-    payload = build_thefactory_payload(bill, config, encf, auth["token"])
+    payload = build_thefactory_payload(bill, config, encf, auth["token"], fecha_venc)
 
     # Step 3: Send
     result = await send_to_thefactory(payload)
@@ -172,7 +176,11 @@ async def retry_ecf(bill_id: str):
     encf = gen_encf(ecf_prefix)
 
     if provider == "thefactory":
-        result = await _send_via_thefactory(bill, config, encf, bill_id)
+        from routers.thefactory import get_next_ncf
+        tipo_doc = {"E31": "31", "E32": "32", "E33": "33", "E34": "34"}.get(ecf_prefix, "32")
+        ncf_info = await get_next_ncf(tipo_doc)
+        encf = ncf_info["ncf"]
+        result = await _send_via_thefactory(bill, config, encf, bill_id, ncf_info.get("fecha_venc", "31-12-2028"))
     else:
         result = await _send_via_alanube(bill, config, encf, bill_id)
 
@@ -204,7 +212,11 @@ async def retry_all_contingencia():
         encf = gen_encf(ecf_prefix)
 
         if provider == "thefactory":
-            result = await _send_via_thefactory(bill, config, encf, bill_doc["id"])
+            from routers.thefactory import get_next_ncf
+            tipo_doc = {"E31": "31", "E32": "32", "E33": "33", "E34": "34"}.get(ecf_prefix, "32")
+            ncf_info = await get_next_ncf(tipo_doc)
+            encf = ncf_info["ncf"]
+            result = await _send_via_thefactory(bill, config, encf, bill_doc["id"], ncf_info.get("fecha_venc", "31-12-2028"))
         else:
             result = await _send_via_alanube(bill, config, encf, bill_doc["id"])
 
@@ -274,7 +286,8 @@ async def refresh_ecf_status(bill_id: str):
             return {"ok": False, "message": "No tiene ID de Alanube"}
 
         # Delegate to existing alanube refresh logic
-        import os, httpx
+        import os
+        import httpx
         from routers.alanube import get_config as alanube_config
         cfg = alanube_config()
         if not cfg["token"]:

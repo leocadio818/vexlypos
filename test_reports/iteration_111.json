@@ -1,0 +1,95 @@
+{
+  "summary": "Tested The Factory HKA e-CF integration (new provider alongside Alanube). All 13 backend API tests passed. Frontend UI verified: e-CF toggle, provider selector (Alanube vs The Factory HKA), and 'Probar conexión' button all working correctly. The Factory HKA is currently the active provider with successful sandbox authentication.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "backend_api_tests": {
+      "status": "PASS",
+      "tests_run": 13,
+      "tests_passed": 13,
+      "endpoints_verified": [
+        "GET /api/ecf/config - Returns both providers' configuration status",
+        "POST /api/ecf/test-connection - Test connection to active provider (The Factory HKA)",
+        "GET /api/ecf/dashboard - Dashboard showing all e-CF bills with provider info",
+        "GET /api/ecf/logs - Audit logs showing provider for each attempt",
+        "GET /api/ecf/status/{bill_id} - Check e-CF status for bills",
+        "GET /api/ecf/refresh-status/{bill_id} - Refresh status from The Factory API",
+        "POST /api/ecf/send/{bill_id} - Send e-CF via dispatcher",
+        "GET /api/ecf/logs/{bill_id} - Get logs for specific bill",
+        "GET /api/system/config - System config with ecf_provider setting"
+      ],
+      "key_findings": {
+        "active_provider": "thefactory",
+        "ecf_enabled": true,
+        "thefactory_configured": true,
+        "thefactory_sandbox": true,
+        "thefactory_rnc": "130178984",
+        "alanube_configured": true,
+        "alanube_sandbox": true,
+        "dashboard_total_bills": 31,
+        "dashboard_registered": 27,
+        "dashboard_approved": 3,
+        "logs_with_thefactory_provider": 8
+      }
+    },
+    "frontend_ui_tests": {
+      "status": "PASS",
+      "tests_run": 8,
+      "tests_passed": 8,
+      "elements_verified": [
+        "Login with Admin PIN 10000",
+        "Navigation to Config > Sistema tab",
+        "e-CF toggle (data-testid='toggle-ecf') - FOUND and ENABLED",
+        "Alanube provider button (data-testid='ecf-provider-alanube') - FOUND, not selected",
+        "The Factory HKA provider button (data-testid='ecf-provider-thefactory') - FOUND and SELECTED",
+        "Test connection button (data-testid='ecf-test-connection') - FOUND",
+        "Test connection click - SUCCESS toast: 'Conexión exitosa con The Factory HKA'",
+        "Provider selector only shows when e-CF is enabled - VERIFIED"
+      ]
+    },
+    "bill_verification": {
+      "bill_id": "32dfd992-d18e-449a-ac53-8c66a07ae246",
+      "ecf_status": "REGISTERED",
+      "ecf_provider": "thefactory",
+      "ecf_encf": "E310000000103",
+      "ecf_security_code": "gojJJ4",
+      "logs_count": 4
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ecf_thefactory.py",
+    "/app/test_reports/iteration_111.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "The Factory HKA integration is well-implemented with proper authentication, payload mapping, and status tracking",
+    "ecf_dispatcher.py correctly routes requests to the active provider based on system_config.ecf_provider",
+    "NCF counter tracking in ecf_ncf_counters collection prevents duplicate NCF numbers",
+    "Frontend SystemTab.js correctly shows provider selector only when ecf_enabled is true",
+    "data-testid attributes are properly implemented for all e-CF UI elements"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_ecf_thefactory.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin_pin": "10000",
+    "oscar_pin": "1111",
+    "carlos_pin": "100"
+  },
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The Factory HKA e-CF integration is fully functional. Active provider is 'thefactory' with sandbox credentials. Bill 32dfd992 was successfully sent with NCF E310000000103. The ecf_dispatcher.py routes to either Alanube or The Factory based on system_config.ecf_provider. Frontend provider selector in Settings > Sistema tab works correctly with test connection button.",
+  "rca_of_the_issue": null
+}
