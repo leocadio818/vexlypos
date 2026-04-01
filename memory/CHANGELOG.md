@@ -1,5 +1,11 @@
 # VexlyPOS — Changelog
 
+## 2026-03-31 — Bug Fix: Auto-envío comandas al presionar "Mesas"
+- **Fix**: Items pendientes ahora se envían automáticamente a cocina al presionar "Mesas" en el bottom nav
+- **Causa raíz**: (1) `tableOrdersRef` no se sincronizaba con cambios locales de `order` state, (2) `alreadySentRef` no se reseteaba tras envío exitoso
+- **Solución**: useEffect para sincronizar ref + setTimeout de 1500ms para resetear alreadySentRef
+- Testing: 100% pass rate (UI + API)
+
 ## 2026-03-31 — Refactoring OrderScreen.js
 - **Componentización**: Extraído `AccountSelectorLobby.js` (~145 líneas JSX) y `SplitCheckView.js` (~142 líneas JSX) como componentes independientes
 - **Bug fix**: `verifyManagerPin` usaba `axios` sin import → corregido a `fetch` API nativa
