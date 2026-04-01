@@ -533,10 +533,27 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput,
         )
         table_id = updated_order.get("table_id")
         if table_id:
-            await db.tables.update_one(
-                {"id": table_id},
-                {"$set": {"status": "free", "active_order_id": None}}
-            )
+            # Check if other active orders exist on this table (divided tables)
+            other_active = await db.orders.count_documents({
+                "table_id": table_id,
+                "status": {"$nin": ["cancelled", "closed"]},
+                "id": {"$ne": order_id}
+            })
+            if other_active > 0:
+                remaining = await db.orders.find(
+                    {"table_id": table_id, "status": {"$nin": ["cancelled", "closed"]}, "id": {"$ne": order_id}},
+                    {"_id": 0, "id": 1}
+                ).to_list(10)
+                new_status = "divided" if len(remaining) > 1 else "occupied"
+                await db.tables.update_one(
+                    {"id": table_id},
+                    {"$set": {"status": new_status, "active_order_id": remaining[0]["id"]}}
+                )
+            else:
+                await db.tables.update_one(
+                    {"id": table_id},
+                    {"$set": {"status": "free", "active_order_id": None}}
+                )
     
     # Send cancellation ticket for sent items
     if item_was_sent:
@@ -605,16 +622,29 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
                 {"$set": {"status": "cancelled", "cancelled_at": now_iso()}}
             )
             
-            # Liberar la mesa asociada
+            # Liberar la mesa asociada (check divided tables)
             table_id = updated_order.get("table_id")
             if table_id:
-                await db.tables.update_one(
-                    {"id": table_id},
-                    {"$set": {
-                        "status": "free",
-                        "active_order_id": None
-                    }}
-                )
+                other_active = await db.orders.count_documents({
+                    "table_id": table_id,
+                    "status": {"$nin": ["cancelled", "closed"]},
+                    "id": {"$ne": order_id}
+                })
+                if other_active > 0:
+                    remaining = await db.orders.find(
+                        {"table_id": table_id, "status": {"$nin": ["cancelled", "closed"]}, "id": {"$ne": order_id}},
+                        {"_id": 0, "id": 1}
+                    ).to_list(10)
+                    new_status = "divided" if len(remaining) > 1 else "occupied"
+                    await db.tables.update_one(
+                        {"id": table_id},
+                        {"$set": {"status": new_status, "active_order_id": remaining[0]["id"]}}
+                    )
+                else:
+                    await db.tables.update_one(
+                        {"id": table_id},
+                        {"$set": {"status": "free", "active_order_id": None}}
+                    )
         
         # Return updated order (no audit log for express void)
         return await db.orders.find_one({"id": order_id}, {"_id": 0})
@@ -724,16 +754,29 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
             {"$set": {"status": "cancelled", "cancelled_at": now_iso()}}
         )
         
-        # Liberar la mesa asociada
+        # Liberar la mesa asociada (check divided tables)
         table_id = updated_order.get("table_id")
         if table_id:
-            await db.tables.update_one(
-                {"id": table_id},
-                {"$set": {
-                    "status": "free",
-                    "active_order_id": None
-                }}
-            )
+            other_active = await db.orders.count_documents({
+                "table_id": table_id,
+                "status": {"$nin": ["cancelled", "closed"]},
+                "id": {"$ne": order_id}
+            })
+            if other_active > 0:
+                remaining = await db.orders.find(
+                    {"table_id": table_id, "status": {"$nin": ["cancelled", "closed"]}, "id": {"$ne": order_id}},
+                    {"_id": 0, "id": 1}
+                ).to_list(10)
+                new_status = "divided" if len(remaining) > 1 else "occupied"
+                await db.tables.update_one(
+                    {"id": table_id},
+                    {"$set": {"status": new_status, "active_order_id": remaining[0]["id"]}}
+                )
+            else:
+                await db.tables.update_one(
+                    {"id": table_id},
+                    {"$set": {"status": "free", "active_order_id": None}}
+                )
     
     audit_log = {
         "id": gen_id(),
