@@ -6,39 +6,48 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 ## Architecture
 - Frontend: React + TailwindCSS + Shadcn/UI + React Query + Framer Motion (PWA)
 - Backend: FastAPI + MongoDB
-- External: Supabase, Alanube (e-CF), Resend (emails)
+- External: Supabase, Alanube (e-CF), The Factory HKA (e-CF), Resend (emails)
 
-## Completed Tasks (Recent - 2026-03-31)
-- **Refactoring OrderScreen.js**: Extraídos ~244 líneas de JSX a 2 componentes independientes:
-  - `AccountSelectorLobby.js` — Grid de cuentas divididas (selector de cuenta, merge visual, nueva cuenta, imprimir todas)
-  - `SplitCheckView.js` — Modo Dividir Cuenta (checkboxes, seleccionar todos, nueva cuenta, mover a cuenta)
-- **Bug fix verifyManagerPin**: Corregido referencia a `axios` no importado → ahora usa `fetch` API correctamente
-- OrderScreen.js reducido de 3563 a 3319 líneas (-7%)
+## e-CF Provider Architecture (NEW)
+- **Dispatcher pattern**: `/api/ecf/*` routes through `ecf_dispatcher.py` which reads `system_config.ecf_provider` and routes to either Alanube or The Factory HKA
+- **Alanube**: `/app/backend/routers/alanube.py` (unchanged, uses Bearer token)
+- **The Factory HKA**: `/app/backend/routers/thefactory.py` (new, uses JWT auth with user/password/rnc)
+- **Dispatcher**: `/app/backend/routers/ecf_dispatcher.py` (unified API layer)
+- **NCF Counter**: `ecf_ncf_counters` MongoDB collection tracks sequential NCFs per provider/tipo
+- **CRITICAL**: The Factory `itbiS1` field expects TAX RATE ("18"), NOT amount. Amount goes in `totalITBIS1`
+- **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
-## Completed Tasks (Previous - 2026-03-29)
-- **Reports mobile redesign**: Full-width menu replaces sidebar on mobile. Full-width report content with ☰ button to return to menu. All report types tested (Cierre, Mesero, Categoría)
-- **Clientes page fix**: Compact header, icon-only buttons on mobile, customer cards with visible edit/canjear buttons  
-- **Bottom padding global**: `pb-28` on ALL scrollable pages (Settings, Reports, Dashboard, CashRegister, Customers, Kitchen, Reservations, InventoryManager, ProductConfig)
-- **Inventory mobile**: All 11 tabs responsive with Radix ScrollArea `display:block` fix
-- **Order screen**: 2 fixed columns on mobile, hidden column selector, product search button (lupa)
+## Completed Tasks (Recent - 2026-04-01)
+- **The Factory HKA Integration** (DONE): Full e-CF integration with auth, payload mapping, send, status check, anulación, logs. Successfully tested in sandbox with real invoices.
+- **e-CF Provider Dispatcher** (DONE): Unified router that dispatches to Alanube or The Factory based on system_config.ecf_provider. Auto-retry scheduler supports both providers.
+- **Frontend Provider Selector** (DONE): Settings > Sistema tab with visual toggle buttons for Alanube vs The Factory HKA, plus "Probar conexión" button.
+- **NCF Tracking** (DONE): Sequential NCF counter in MongoDB to prevent duplicates across shared sandbox environments.
+
+## Completed Tasks (2026-03-31)
+- Refactoring OrderScreen.js → AccountSelectorLobby.js + SplitCheckView.js
+- Bug fix auto-send kitchen orders on navigation
+- Light Theme contrast fixes (text-white → text-foreground)
+
+## Completed Tasks (2026-03-29)
+- Reports mobile redesign, Clientes page fix, Bottom padding global
+- Inventory mobile, Order screen mobile, Bug fix verifyManagerPin
 
 ## Backlog
 
+### P0
+- Módulo Contable RD (Fase 1: Cuentas por Pagar/Cobrar, Fase 2: Asientos automáticos, Fase 3: Estados financieros + DGII 606/607/608, Fase 4: Conciliación bancaria)
+
 ### P1
 - Reporte de Horas Trabajadas
-- Módulo Contable RD (Fase 1: Cuentas por Pagar/Cobrar)
 - Manuales de Usuario PDF
 - Integración IA (GPT-4o mini)
-
-### P3
-- Exportar Audit Trail, Modo Offline (PAUSED)
 - CRM
 
 ### P2
 - Reporte DGII 608, Caché imágenes, Print Agent Installer
 
-### Refactoring
-- ~~Componentizar OrderScreen.js (Account Selector + Split Check)~~ ✅ DONE
+### P3
+- Exportar Audit Trail, Modo Offline (PAUSED)
 
 ## Important Notes
 - DO NOT implement offline ordering/syncing
@@ -46,3 +55,4 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - Respond in Spanish
 - Radix ScrollArea fix: `[&_[data-radix-scroll-area-viewport]>div]:!block`
 - Mobile detection: `device?.isMobile` from useAuth() (width < 768px)
+- The Factory HKA sandbox: shared environment, NCFs get consumed by other users. Start counters at 100+
