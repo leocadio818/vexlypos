@@ -49,6 +49,49 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 ### P3
 - Exportar Audit Trail, Modo Offline (PAUSED)
 
+## Comparación Proveedores e-CF: Alanube vs The Factory HKA
+
+### Autenticación
+- **Alanube**: Token fijo (Bearer JWT de larga duración). Se copia del portal una vez.
+- **The Factory**: Login con usuario + clave + RNC → Token temporal que EXPIRA (requiere renovación automática).
+
+### Complejidad del JSON
+- **Alanube**: Más simple. Campos claros en inglés (`invoiceType`, `totalAmount`, `paymentForms`).
+- **The Factory**: Más complejo. Nombres español/camelCase inconsistente. `itbiS1` espera TASA ("18"), NO el monto — esto NO está documentado claramente.
+
+### Documentación
+- **Alanube**: Portal web limpio con ejemplos claros y SDK.
+- **The Factory**: Wiki básica con un solo ejemplo (todo exento). No hay ejemplo con ITBIS. Manual PDF es de Ecuador, no RD.
+
+### NCF (Secuencias)
+- **Alanube**: Gestiona NCFs automáticamente. Sin contadores manuales.
+- **The Factory**: El desarrollador debe generar y trackear NCFs secuenciales manualmente (creamos contador en MongoDB).
+
+### Sandbox
+- **Alanube**: Sandbox aislado por cuenta.
+- **The Factory**: Sandbox COMPARTIDO — otros usuarios consumen tus NCFs. Tuvimos que saltar al NCF #100 porque 1-99 ya estaban usados.
+
+### Status DGII
+- **Alanube**: Webhooks + GET. Incluye `legalStatus`, `governmentResponse`, `stampUrl`, `pdfUrl`.
+- **The Factory**: Solo POST consulta. Código numérico (0=pendiente, 1=aceptado, 2=rechazado). Sin webhooks.
+
+### Errores
+- **Alanube**: Mensajes descriptivos en español.
+- **The Factory**: Códigos numéricos genéricos ("0102 - El campo no cumple con el formato correcto") sin especificar qué formato espera.
+
+### QR / Estampa Fiscal
+- **Alanube**: URL del sello fiscal (`stampUrl`) + PDF descargable.
+- **The Factory**: Solo `codigoSeguridad` + `xmlBase64`. Sin URL de sello ni PDF directo.
+
+### Anulación
+- **Alanube**: Endpoint simple.
+- **The Factory**: Estructura anidada compleja (`Encabezado > DetallesAnulacion > TablaSecuenciasAnuladas`).
+
+### VEREDICTO
+- **Alanube es significativamente más fácil y seguro de configurar** (configuración 1 token, NCFs automáticos, sandbox aislado, documentación clara, errores descriptivos).
+- **The Factory funciona bien una vez configurado**, pero la integración fue ~5x más difícil por documentación pobre y sandbox compartido.
+- **Ambos están integrados** — se cambia entre proveedores con un click en Settings > Sistema.
+
 ## Important Notes
 - DO NOT implement offline ordering/syncing
 - Use `notranslate` class on numbers
