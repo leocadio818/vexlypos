@@ -191,6 +191,17 @@ export default function OrderScreen() {
 
   const [accessDenied, setAccessDenied] = useState(null); // Stores error message if access denied
 
+  const applyOrders = useCallback((orders) => {
+    setTableOrders(orders);
+    tableOrdersRef.current = orders;
+    setAccessDenied(null);
+    if (orders.length > 0) {
+      const currentOrder = activeOrderId ? orders.find(o => o.id === activeOrderId) : orders[0];
+      if (currentOrder) { setOrder(currentOrder); setActiveOrderId(currentOrder.id); orderRef.current = currentOrder; }
+      if (orders.length > 1 && !activeOrderId) setShowAccountSelector(true);
+    }
+  }, [activeOrderId]);
+
   const fetchOrder = useCallback(async () => {
     try {
       const tableRes = await tablesAPI.list();
@@ -201,25 +212,9 @@ export default function OrderScreen() {
       try {
         const ordersRes = await ordersAPI.getTableOrders(tableId);
         const orders = ordersRes.data || [];
-        setTableOrders(orders);
-        tableOrdersRef.current = orders;
-        setAccessDenied(null); // Clear any previous access denied
-        
-        if (orders.length > 0) {
-          // If there's an active order selected, keep it; otherwise select first
-          const currentOrder = activeOrderId 
-            ? orders.find(o => o.id === activeOrderId) 
-            : orders[0];
-          if (currentOrder) {
-            setOrder(currentOrder);
-            setActiveOrderId(currentOrder.id);
-            orderRef.current = currentOrder;
-          }
-          // Show account selector if table has multiple accounts and none was explicitly chosen
-          if (orders.length > 1 && !activeOrderId) {
-            setShowAccountSelector(true);
-          }
-        } else if (t?.active_order_id) {
+        applyOrders(orders);
+
+        if (orders.length === 0 && t?.active_order_id) {
           // Fallback: try to get order from table reference
           try {
             const orderRes = await ordersAPI.get(t.active_order_id);
@@ -235,10 +230,35 @@ export default function OrderScreen() {
           setAccessDenied(orderError.response?.data?.detail || 'No tienes permiso para acceder a esta mesa');
           setOrder(null);
           setTableOrders([]);
+        } else {
+          // Offline fallback — read cached orders from localStorage
+          try {
+            const raw = localStorage.getItem('vexly_orders');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              const orders = Array.isArray(parsed) ? parsed.filter(o => o.table_id === tableId) : [];
+              if (orders.length > 0) applyOrders(orders);
+            }
+          } catch {}
         }
       }
-    } catch {}
-  }, [tableId, activeOrderId]);
+    } catch {
+      // Total network failure — load both table and orders from localStorage
+      try {
+        const mesasRaw = localStorage.getItem('vexly_mesas');
+        if (mesasRaw) {
+          const t = JSON.parse(mesasRaw).find(tb => tb.id === tableId);
+          if (t) setTable(t);
+        }
+        const ordersRaw = localStorage.getItem('vexly_orders');
+        if (ordersRaw) {
+          const parsed = JSON.parse(ordersRaw);
+          const orders = Array.isArray(parsed) ? parsed.filter(o => o.table_id === tableId) : [];
+          if (orders.length > 0) applyOrders(orders);
+        }
+      } catch {}
+    }
+  }, [tableId, activeOrderId, applyOrders]);
 
   // Keep tableOrdersRef in sync with local order state changes (e.g. after adding items)
   useEffect(() => {
@@ -301,7 +321,7 @@ export default function OrderScreen() {
         }
       } catch {}
     };
-    fetchAll(); fetchOrder();
+    fetchAll().catch(() => {}); fetchOrder();
     // Check if there's an active business day
     (async () => {
       try {

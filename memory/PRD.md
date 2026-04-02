@@ -18,8 +18,9 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
 ## Completed Tasks (2026-04-02)
-- **Service Worker Cache Fix** (DONE): Fixed sw.js to properly cache app shell on install (fault-tolerant individual cache.add() calls). Updated shouldCache() to include .js files and /static/ paths. Removed chunk skip. Bumped cache version to vexlypos-v3.
-- **localStorage Data Cache** (DONE): tablesAPI.list() saves to `vexly_mesas`, ordersAPI.list() and getTableOrders() save to `vexly_orders`. Offline fallback reads from these keys.
+- **Service Worker Cache Fix** (DONE): Fixed sw.js to properly cache app shell on install (v4: cache-first strategy, skipWaiting/clients.claim inside waitUntil chain). All static assets and JS/CSS bundles cached on fetch.
+- **localStorage Data Cache** (DONE): tablesAPI.list() saves to `vexly_mesas`, ordersAPI.getTableOrders() merges per-table into `vexly_orders`. Offline fallback reads from these keys.
+- **OrderScreen Offline Fallback** (DONE): When API fails offline, fetchOrder() reads table from `vexly_mesas` and orders from `vexly_orders` (filtered by table_id). fetchAll() wrapped with .catch() to prevent unhandled rejection crash. PRE-CUENTA visible with cached data, FACTURAR unchanged.
 
 ## Completed Tasks (2026-04-01)
 - **The Factory HKA Integration** (DONE): Full e-CF integration with auth, payload mapping, send, status check, anulación, logs.

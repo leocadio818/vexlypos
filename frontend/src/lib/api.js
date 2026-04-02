@@ -145,13 +145,21 @@ export const ordersAPI = {
   splitToNewOrder: (orderId, itemIds, label = '') => api.post(`/orders/${orderId}/split`, { item_ids: itemIds, label }),
   getTableOrders: (tableId) => api.get(`/tables/${tableId}/orders`)
     .then(res => {
-      try { localStorage.setItem('vexly_orders', JSON.stringify(res.data)); } catch {}
+      try {
+        // Merge: keep orders from other tables, replace orders for this table
+        const existing = JSON.parse(localStorage.getItem('vexly_orders') || '[]');
+        const other = Array.isArray(existing) ? existing.filter(o => o.table_id !== tableId) : [];
+        localStorage.setItem('vexly_orders', JSON.stringify([...other, ...(res.data || [])]));
+      } catch {}
       return res;
     })
     .catch(err => {
       if (!navigator.onLine) {
         const cached = localStorage.getItem('vexly_orders');
-        if (cached) return { data: JSON.parse(cached) };
+        if (cached) {
+          const all = JSON.parse(cached);
+          return { data: Array.isArray(all) ? all.filter(o => o.table_id === tableId) : [] };
+        }
       }
       throw err;
     }),
