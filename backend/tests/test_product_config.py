@@ -7,7 +7,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://factura-resto-rd.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://nexo-pos.preview.emergentagent.com')
 
 class TestProductConfigBackend:
     """Test Product Configuration Backend APIs"""

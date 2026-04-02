@@ -43,7 +43,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://factura-resto-rd.preview.emergentagent.com"
+SERVER_URL = "https://nexo-pos.preview.emergentagent.com"
 
 DEFAULT_PRINTER = "Caja"
 
