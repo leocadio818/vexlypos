@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api, { businessDaysAPI } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { FileText, AlertTriangle, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
@@ -51,10 +51,10 @@ export default function ReportXZ({
         detailed: mode === 'detailed',
         type: type
       });
-      toast.success('Reporte enviado a imprimir');
+      notify.success('Reporte enviado a imprimir');
       onClose?.();
     } catch (err) {
-      toast.error('Error al imprimir', {
+      notify.error('Error al imprimir', {
         description: err.response?.data?.detail || 'Verifica la impresora'
       });
     } finally {

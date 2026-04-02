@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { purchaseOrdersAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import * as XLSX from 'xlsx';
 import { NumericInput } from '@/components/NumericKeypad';
 import { NeoDatePicker, NeoTimePicker } from '@/components/DateTimePicker';
@@ -229,7 +229,7 @@ export default function PurchasesTab({
   // Export to Excel
   const handleExport = () => {
     if (filteredPOs.length === 0) {
-      toast.error('No hay datos para exportar');
+      notify.error('No hay datos para exportar');
       return;
     }
     
@@ -251,7 +251,7 @@ export default function PurchasesTab({
       ? `${formatDateInput(dateRange.start)}_${formatDateInput(dateRange.end)}`
       : activePeriod;
     XLSX.writeFile(wb, `ordenes_compra_${dateStr}.xlsx`);
-    toast.success('Archivo exportado');
+    notify.success('Archivo exportado');
   };
 
   // Get ingredients filtered by selected supplier
@@ -283,21 +283,21 @@ export default function PurchasesTab({
   // ─── PURCHASE ORDER HANDLERS ───
   const handleSavePO = async () => {
     const d = poDialog.data;
-    if (!d?.supplier_id) { toast.error('Proveedor requerido'); return; }
-    if (!d?.warehouse_id) { toast.error('Almacén requerido'); return; }
-    if (!d?.items?.length) { toast.error('Agrega items'); return; }
+    if (!d?.supplier_id) { notify.error('Proveedor requerido'); return; }
+    if (!d?.warehouse_id) { notify.error('Almacén requerido'); return; }
+    if (!d?.items?.length) { notify.error('Agrega items'); return; }
     try {
       if (d.id) {
         await purchaseOrdersAPI.update(d.id, d);
-        toast.success('Orden actualizada');
+        notify.success('Orden actualizada');
       } else {
         await purchaseOrdersAPI.create(d);
-        toast.success('Orden creada');
+        notify.success('Orden creada');
       }
       setPODialog({ open: false, data: null });
       onRefreshAll();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
@@ -305,7 +305,7 @@ export default function PurchasesTab({
     const po = receiveDialog.po;
     const items = receiveDialog.items || [];
     if (!items.some(i => i.received_quantity > 0)) {
-      toast.error('Ingresa cantidades recibidas');
+      notify.error('Ingresa cantidades recibidas');
       return;
     }
     try {
@@ -318,21 +318,21 @@ export default function PurchasesTab({
         })),
         notes: receiveDialog.notes || '',
       });
-      toast.success('Mercancía recibida');
+      notify.success('Mercancía recibida');
       setReceiveDialog({ open: false, po: null });
       onRefreshAll();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
   const handleUpdatePOStatus = async (poId, status) => {
     try {
       await purchaseOrdersAPI.updateStatus(poId, status);
-      toast.success('Estado actualizado');
+      notify.success('Estado actualizado');
       onRefreshAll();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
@@ -340,10 +340,10 @@ export default function PurchasesTab({
     { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar orden?' }); if (!ok) return; }
     try {
       await purchaseOrdersAPI.delete(id);
-      toast.success('Orden eliminada');
+      notify.success('Orden eliminada');
       onRefreshAll();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
@@ -906,7 +906,7 @@ export default function PurchasesTab({
                   size="sm"
                   onClick={() => {
                     if (!poDialog.data?.supplier_id) {
-                      toast.error('Primero selecciona un proveedor');
+                      notify.error('Primero selecciona un proveedor');
                       return;
                     }
                     setPODialog(p => ({

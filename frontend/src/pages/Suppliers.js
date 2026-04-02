@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Truck, ShoppingCart, Plus, Check, Package, Clock } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
 
@@ -43,10 +43,10 @@ export default function Suppliers() {
     if (!supplierDialog.name) return;
     try {
       await axios.post(`${API}/suppliers`, supplierDialog, { headers: headers() });
-      toast.success('Proveedor creado');
+      notify.success('Proveedor creado');
       setSupplierDialog({ open: false, name: '', contact_name: '', phone: '', email: '', address: '', rnc: '' });
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const handleCreatePO = async () => {
@@ -56,10 +56,10 @@ export default function Suppliers() {
         supplier_id: poDialog.supplier_id, warehouse_id: poDialog.warehouse_id || warehouses[0]?.id,
         items: poDialog.items.filter(i => i.product_id), notes: poDialog.notes
       }, { headers: headers() });
-      toast.success('Orden de compra creada');
+      notify.success('Orden de compra creada');
       setPoDialog({ open: false, supplier_id: '', warehouse_id: '', items: [{ product_id: '', product_name: '', quantity: 1, unit_price: 0 }], notes: '' });
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const handleReceive = async () => {
@@ -69,10 +69,10 @@ export default function Suppliers() {
         warehouse_id: receiveDialog.warehouse_id || warehouses[0]?.id,
         items: receiveDialog.items.filter(i => i.received_quantity > 0)
       }, { headers: headers() });
-      toast.success('Mercancia recibida');
+      notify.success('Mercancia recibida');
       setReceiveDialog({ open: false, po: null, warehouse_id: '', items: [] });
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const openReceive = (po) => {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSettings } from './SettingsContext';
 import { Printer, Plus, Trash2, Pencil, ChevronRight } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -20,14 +20,14 @@ export default function ChannelsTab() {
       const data = { name: channelDialog.name, code: channelDialog.code || channelDialog.name.toLowerCase().replace(/\s+/g, '_'), type: channelDialog.type, target: channelDialog.target, ip: channelDialog.ip };
       if (channelDialog.editId) await axios.put(`${API}/print-channels/${channelDialog.editId}`, data, { headers: hdrs() });
       else await axios.post(`${API}/print-channels`, data, { headers: hdrs() });
-      toast.success(channelDialog.editId ? 'Actualizado' : 'Creado');
+      notify.success(channelDialog.editId ? 'Actualizado' : 'Creado');
       setChannelDialog({ open: false, name: '', code: '', type: 'kitchen', target: 'screen', ip: '', editId: null }); fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const handleDeleteChannel = async (id) => {
-    try { await axios.delete(`${API}/print-channels/${id}`, { headers: hdrs() }); toast.success('Eliminado'); fetchAll(); }
-    catch { toast.error('Error'); }
+    try { await axios.delete(`${API}/print-channels/${id}`, { headers: hdrs() }); notify.success('Eliminado'); fetchAll(); }
+    catch { notify.error('Error'); }
   };
 
   return (
@@ -79,8 +79,8 @@ export default function ChannelsTab() {
                       printer_name: ch.printer_name || ch.name,
                       data: { channel_name: ch.name, test: true }
                     }, { headers: hdrs() });
-                    toast.success(`Test enviado a ${ch.name}`);
-                  } catch { toast.error('Error al enviar test'); }
+                    notify.success(`Test enviado a ${ch.name}`);
+                  } catch { notify.error('Error al enviar test'); }
                 }}
                 data-testid={`test-print-${ch.id}`}>
                 <Printer size={14} />

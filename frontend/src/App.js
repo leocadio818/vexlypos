@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { queryClient, QueryClientProvider } from "@/lib/queryClient";
-import { Toaster } from "@/components/ui/sonner";
+import BottomSheetNotification from "@/components/BottomSheetNotification";
 import React, { Suspense } from "react";
 import PageSkeleton from "@/components/PageSkeleton";
 import Login from "@/pages/Login";
@@ -77,7 +77,7 @@ export default function App() {
         <AuthProvider>
           <BrowserRouter>
             <AppRoutes />
-            <Toaster position="top-right" richColors duration={4000} visibleToasts={1} />
+            <BottomSheetNotification />
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>

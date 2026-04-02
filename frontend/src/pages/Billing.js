@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ordersAPI, billsAPI, posSessionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { ArrowLeft, Receipt, CreditCard, Banknote, SplitSquareHorizontal, Check, Tag, Plus, Printer } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +48,7 @@ export default function Billing() {
         setPaymentMethods(await pmRes.json());
       } catch {}
     } catch {
-      toast.error('Error cargando datos');
+      notify.error('Error cargando datos');
     }
   }, [orderId, API_BASE]);
 
@@ -68,18 +68,18 @@ export default function Billing() {
         tip_percentage: 0,
         payment_method: 'cash'
       });
-      toast.success('Factura creada');
+      notify.success('Factura creada');
       setSplitDialog(false);
       setSplitLabel('');
       setSelectedItems([]);
       fetchData();
     } catch {
-      toast.error('Error creando factura');
+      notify.error('Error creando factura');
     }
   };
 
   const handleCreateFullBill = () => {
-    if (unbilledItems.length === 0) { toast.info('Todos los items ya estan facturados'); return; }
+    if (unbilledItems.length === 0) { notify.info('Todos los items ya estan facturados'); return; }
     handleCreateBill(unbilledItems.map(i => i.id), `Mesa ${order?.table_number}`);
   };
 
@@ -88,7 +88,7 @@ export default function Billing() {
     try {
       const shiftCheck = await posSessionsAPI.check();
       if (!shiftCheck.data?.has_open_session) {
-        toast.error('Debes abrir un turno de caja', {
+        notify.error('Debes abrir un turno de caja', {
           description: 'Ve a Caja / Turnos para abrir tu turno antes de cobrar.',
           duration: 4000
         });
@@ -108,24 +108,24 @@ export default function Billing() {
       let msg = 'Pago procesado';
       if (change > 0) msg += ` | Cambio: ${formatMoney(change)}`;
       if (pts > 0) msg += ` | +${pts} pts`;
-      toast.success(msg);
+      notify.success(msg);
       setPayDialog({ open: false, billId: null, billTotal: 0 });
       setPayAmounts({});
       setSelectedCustomer('');
       setPayStep('method');
       fetchData();
     } catch {
-      toast.error('Error procesando pago');
+      notify.error('Error procesando pago');
     }
   };
 
   const handleCancelBill = async (billId) => {
     try {
       await billsAPI.cancel(billId);
-      toast.success('Factura anulada');
+      notify.success('Factura anulada');
       fetchData();
     } catch {
-      toast.error('Error anulando factura');
+      notify.error('Error anulando factura');
     }
   };
 
@@ -255,8 +255,8 @@ export default function Billing() {
                             const d = await r.json(); 
                             setPrintHtml(d.html); 
                             setPrintOpen(true); 
-                            if (d.queued) toast.success('Enviado a impresora');
-                          } catch { toast.error('Error'); }
+                            if (d.queued) notify.success('Enviado a impresora');
+                          } catch { notify.error('Error'); }
                         }} data-testid={`print-bill-${bill.id}`}
                           className="h-11 px-3 rounded-lg bg-muted text-foreground font-bold text-xs border border-border active:scale-95 flex items-center gap-1">
                           <Printer size={14} /> Imprimir
@@ -279,8 +279,8 @@ export default function Billing() {
                             const d = await r.json(); 
                             setPrintHtml(d.html); 
                             setPrintOpen(true); 
-                            if (d.queued) toast.success('Enviado a impresora');
-                          } catch { toast.error('Error'); }
+                            if (d.queued) notify.success('Enviado a impresora');
+                          } catch { notify.error('Error'); }
                         }} className="text-gray-500 hover:text-gray-800 transition-colors">
                           <Printer size={14} />
                         </button>

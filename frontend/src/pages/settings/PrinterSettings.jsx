@@ -7,7 +7,7 @@ import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Printer, RefreshCw, Trash2, CheckCircle, XCircle, Clock, Settings2, Tag, Send, ChefHat, Wine, Receipt, Download, Monitor, PlayCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { NumericInput } from '@/components/NumericKeypad';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -62,7 +62,7 @@ export default function PrinterSettings() {
       }
       if (queueRes.ok) setQueue(await queueRes.json());
     } catch (err) {
-      toast.error('Error cargando configuración');
+      notify.error('Error cargando configuración');
     }
     setLoading(false);
   }, []);
@@ -78,9 +78,9 @@ export default function PrinterSettings() {
         headers: headers(),
         body: JSON.stringify(config)
       });
-      if (res.ok) toast.success('Configuración guardada');
+      if (res.ok) notify.success('Configuración guardada');
     } catch (err) {
-      toast.error('Error guardando configuración');
+      notify.error('Error guardando configuración');
     }
   };
 
@@ -92,9 +92,9 @@ export default function PrinterSettings() {
         body: JSON.stringify(updates)
       });
       setChannels(channels.map(c => c.id === channelId ? { ...c, ...updates } : c));
-      toast.success('Canal actualizado');
+      notify.success('Canal actualizado');
     } catch (err) {
-      toast.error('Error actualizando canal');
+      notify.error('Error actualizando canal');
     }
   };
 
@@ -105,9 +105,9 @@ export default function PrinterSettings() {
         headers: headers(),
         body: JSON.stringify(categoryMappings)
       });
-      toast.success('Asignaciones guardadas');
+      notify.success('Asignaciones guardadas');
     } catch (err) {
-      toast.error('Error guardando asignaciones');
+      notify.error('Error guardando asignaciones');
     }
   };
 
@@ -118,11 +118,11 @@ export default function PrinterSettings() {
         headers: headers()
       });
       if (res.ok) {
-        toast.success('Prueba enviada a la cola');
+        notify.success('Prueba enviada a la cola');
         loadData();
       }
     } catch (err) {
-      toast.error('Error enviando prueba');
+      notify.error('Error enviando prueba');
     }
   };
 
@@ -130,11 +130,11 @@ export default function PrinterSettings() {
     try {
       const res = await fetch(`${API}/api/print-queue/clear`, { method: 'DELETE', headers: headers() });
       if (res.ok) {
-        toast.success('Cola limpiada');
+        notify.success('Cola limpiada');
         loadData();
       }
     } catch (err) {
-      toast.error('Error limpiando cola');
+      notify.error('Error limpiando cola');
     }
   };
 
@@ -474,7 +474,7 @@ export default function PrinterSettings() {
                     a.click();
                     document.body.removeChild(a);
                     
-                    toast.success('Descargando agente...', {
+                    notify.success('Descargando agente...', {
                       description: `Configurado para impresora: ${printerName}`
                     });
                   }}

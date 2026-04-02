@@ -10,7 +10,7 @@ import {
   Percent, Receipt, Building2, ArrowUpRight, ArrowDownRight, Minus,
   Filter, RefreshCw, X, Loader2, FileSpreadsheet, File, Sun, Menu
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import axios from 'axios';
 import ReportXZ from '@/components/ReportXZ';
 import {
@@ -446,10 +446,10 @@ const exportToExcel = async (reportId, data, dateRange) => {
     
     const fileName = `${reportName.replace(/\s+/g, '_')}_${dateRange.from}_${dateRange.to}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    toast.success('Excel exportado correctamente');
+    notify.success('Excel exportado correctamente');
   } catch (error) {
     console.error('Export error:', error);
-    toast.error('Error al exportar Excel');
+    notify.error('Error al exportar Excel');
   }
 };
 
@@ -611,7 +611,7 @@ export default function Reports() {
     const endpoint = endpoints[reportId];
     if (!endpoint) {
       setLoading(false);
-      toast.error('Reporte no disponible');
+      notify.error('Reporte no disponible');
       return;
     }
     
@@ -634,7 +634,7 @@ export default function Reports() {
       });
       setReportData(res.data);
     } catch (error) {
-      toast.error('Error al cargar reporte');
+      notify.error('Error al cargar reporte');
       setReportData(null);
     }
     setLoading(false);
@@ -652,7 +652,7 @@ export default function Reports() {
   // Send report by email
   const sendReportByEmail = async () => {
     if (!emailTo) {
-      toast.error('Ingresa un correo electrónico');
+      notify.error('Ingresa un correo electrónico');
       return;
     }
     setSending(true);
@@ -661,9 +661,9 @@ export default function Reports() {
         to: emailTo,
         date: dateRange.from
       }, { headers: headers() });
-      toast.success('Reporte enviado por correo');
+      notify.success('Reporte enviado por correo');
     } catch {
-      toast.error('Error al enviar correo');
+      notify.error('Error al enviar correo');
     }
     setSending(false);
   };
@@ -671,7 +671,7 @@ export default function Reports() {
   // Print report
   const printReport = () => {
     if (!selectedReport || !reportData) {
-      toast.error('Selecciona un reporte primero');
+      notify.error('Selecciona un reporte primero');
       return;
     }
     exportToPDF(selectedReport, reportData, dateRange);

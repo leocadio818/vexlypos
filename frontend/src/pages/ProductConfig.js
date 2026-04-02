@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { productsAPI, categoriesAPI, modifiersAPI, reportCategoriesAPI, recipesAPI, formatMoney } from '@/lib/api';
 import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List, Printer, Check, Image, ImageIcon, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, X, Pencil, AlertTriangle, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -156,7 +156,7 @@ export default function ProductConfig() {
         }));
       }
     } catch (e) {
-      toast.error('Error cargando datos');
+      notify.error('Error cargando datos');
     } finally {
       setLoading(false);
     }
@@ -185,11 +185,11 @@ export default function ProductConfig() {
 
   const handleSave = async () => {
     if (!product.name.trim()) {
-      toast.error('El nombre es requerido');
+      notify.error('El nombre es requerido');
       return;
     }
     if (!product.category_id) {
-      toast.error('La categoría es requerida');
+      notify.error('La categoría es requerida');
       return;
     }
 
@@ -228,7 +228,7 @@ export default function ProductConfig() {
 
       if (isNew) {
         const result = await productsAPI.create(data);
-        toast.success('Producto creado exitosamente');
+        notify.success('Producto creado exitosamente');
         // Reset form for creating another product, but stay on the page
         setProduct({
           name: '', 
@@ -252,14 +252,14 @@ export default function ProductConfig() {
           tax_exemptions: []
         });
         // Show option to go back to list
-        toast.info('Puedes crear otro producto o volver a la lista', { duration: 3000 });
+        notify.info('Puedes crear otro producto o volver a la lista', { duration: 3000 });
       } else {
         await productsAPI.update(productId, data);
-        toast.success('Producto actualizado exitosamente');
+        notify.success('Producto actualizado exitosamente');
         // Stay on the same product page
       }
     } catch (e) {
-      toast.error('Error guardando producto');
+      notify.error('Error guardando producto');
     } finally {
       setSaving(false);
     }
@@ -268,7 +268,7 @@ export default function ProductConfig() {
   const handleAddModifierAssignment = () => {
     const { group_id, min_selections, max_selections, allow_multiple, editIndex } = modAssignDialog;
     if (!group_id) {
-      toast.error('Seleccione un grupo de preguntas');
+      notify.error('Seleccione un grupo de preguntas');
       return;
     }
 
@@ -289,7 +289,7 @@ export default function ProductConfig() {
     } else {
       // Check if already assigned
       if (product.modifier_assignments.some(a => a.group_id === group_id)) {
-        toast.error('Este grupo ya está asignado');
+        notify.error('Este grupo ya está asignado');
         return;
       }
       setProduct(prev => ({
@@ -413,8 +413,8 @@ export default function ProductConfig() {
                       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                       body: JSON.stringify({ event_type: newActive ? 'product_activated' : 'product_deactivated', entity_type: 'product', entity_id: productId, entity_name: product.name, details: `Producto ${newActive ? 'activado' : 'desactivado'}: ${product.name}` })
                     }).catch(() => {});
-                    toast.success(newActive ? 'Producto activado' : 'Producto desactivado');
-                  } catch { toast.error('Error al cambiar estado'); }
+                    notify.success(newActive ? 'Producto activado' : 'Producto desactivado');
+                  } catch { notify.error('Error al cambiar estado'); }
                 }}
                 className={`ml-auto px-4 py-2 rounded-full text-xs font-bold transition-all ${
                   product.active !== false
@@ -773,7 +773,7 @@ export default function ProductConfig() {
                         
                         // Validar tamaño (5MB max)
                         if (file.size > 5 * 1024 * 1024) {
-                          toast.error('Imagen muy grande. Máximo 5MB');
+                          notify.error('Imagen muy grande. Máximo 5MB');
                           return;
                         }
                         
@@ -782,7 +782,7 @@ export default function ProductConfig() {
                         formData.append('file', file);
                         
                         try {
-                          toast.loading('Subiendo imagen...', { id: 'upload' });
+                          notify.info('Subiendo imagen...');
                           const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/products/upload-image`, {
                             method: 'POST',
                             body: formData
@@ -797,9 +797,9 @@ export default function ProductConfig() {
                           // Construir URL completa
                           const imageUrl = `${process.env.REACT_APP_BACKEND_URL}${data.url}`;
                           setProduct(p => ({ ...p, image_url: imageUrl, icon: '' }));
-                          toast.success('Imagen subida correctamente', { id: 'upload' });
+                          notify.success('Imagen subida correctamente', { id: 'upload' });
                         } catch (err) {
-                          toast.error(err.message || 'Error al subir imagen', { id: 'upload' });
+                          notify.error(err.message || 'Error al subir imagen', { id: 'upload' });
                         }
                         
                         // Limpiar input
@@ -1329,8 +1329,8 @@ export default function ProductConfig() {
                           });
                           if (!res.ok) throw new Error();
                           setModifierGroups(prev => prev.map(g => g.id === modAssignDialog.group_id ? { ...g, name: newName.trim() } : g));
-                          toast.success('Grupo renombrado');
-                        } catch { toast.error('Error al renombrar grupo'); }
+                          notify.success('Grupo renombrado');
+                        } catch { notify.error('Error al renombrar grupo'); }
                       }}
                       className="p-2 rounded-lg border border-border hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
                       title="Renombrar grupo"
@@ -1349,8 +1349,8 @@ export default function ProductConfig() {
                           setModifierGroups(prev => prev.filter(g => g.id !== deletedId));
                           setProduct(prev => ({ ...prev, modifier_assignments: prev.modifier_assignments.filter(a => a.group_id !== deletedId) }));
                           setModAssignDialog(p => ({ ...p, group_id: '' }));
-                          toast.success('Grupo eliminado');
-                        } catch { toast.error('Error al eliminar grupo'); }
+                          notify.success('Grupo eliminado');
+                        } catch { notify.error('Error al eliminar grupo'); }
                       }}
                       className="p-2 rounded-lg border border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
                       title="Eliminar grupo"

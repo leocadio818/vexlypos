@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Delete, LogIn, Clock, LogOut as LogOutIcon } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 // Neon glow colors for PIN dots
 const DOT_COLORS = [
@@ -80,7 +80,7 @@ export default function Login() {
     } catch (err) {
       setLoading(false);
       setLoggedInUser(null);
-      toast.error('PIN incorrecto');
+      notify.error('PIN incorrecto');
       setPin('');
     }
   }, [pin, loading, login, navigate, API_BASE]);
@@ -114,7 +114,7 @@ export default function Login() {
   };
 
   const handleAttendance = async (action) => {
-    if (pin.length < 1) { toast.error('Ingresa tu PIN primero'); return; }
+    if (pin.length < 1) { notify.error('Ingresa tu PIN primero'); return; }
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/attendance/${action}`, {
@@ -128,7 +128,7 @@ export default function Login() {
       try { data = await clone.json(); } catch { try { data = { detail: await res.text() }; } catch {} }
       
       if (!res.ok) {
-        toast.error(data.detail || 'Error al procesar la solicitud', { duration: 6000 });
+        notify.error(data.detail || 'Error al procesar la solicitud', { duration: 6000 });
         setPin('');
         setLoading(false);
         return;
@@ -136,7 +136,7 @@ export default function Login() {
       setAttendanceResult(data);
       setPin('');
     } catch (err) {
-      toast.error(`No se pudo conectar al servidor`, { duration: 6000 });
+      notify.error(`No se pudo conectar al servidor`, { duration: 6000 });
     }
     setLoading(false);
   };

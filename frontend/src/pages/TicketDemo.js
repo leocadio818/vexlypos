@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, Eye, RefreshCw, Settings, Cloud, CloudOff } from 'lucide-react';
 import ThermalTicket, { printTicket, useBusinessConfig } from '../components/ThermalTicket';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 // Datos de ejemplo para demostración
 const DEMO_BILL = {
@@ -108,7 +108,7 @@ export default function TicketDemo() {
       if (isConfigured) {
         setConfig(serverConfig);
         setUsingServerConfig(true);
-        toast.success('Configuración cargada desde el servidor');
+        notify.success('Configuración cargada desde el servidor');
       }
     }
   }, [configLoading, serverConfig]);
@@ -117,19 +117,19 @@ export default function TicketDemo() {
     if (serverConfig) {
       setConfig(serverConfig);
       setUsingServerConfig(true);
-      toast.success('Configuración del servidor aplicada');
+      notify.success('Configuración del servidor aplicada');
     }
   };
 
   const resetToDefaults = () => {
     setConfig(DEFAULT_CONFIG);
     setUsingServerConfig(false);
-    toast.info('Usando configuración de demostración');
+    notify.info('Usando configuración de demostración');
   };
 
   const handlePrint = () => {
     printTicket(ticketRef);
-    toast.success('Enviando a impresora...');
+    notify.success('Enviando a impresora...');
   };
 
   const updateNCF = (type) => {
@@ -181,7 +181,7 @@ export default function TicketDemo() {
       table_number: Math.floor(Math.random() * 20) + 1
     }));
     
-    toast.success('Datos de ejemplo actualizados');
+    notify.success('Datos de ejemplo actualizados');
   };
 
   return (

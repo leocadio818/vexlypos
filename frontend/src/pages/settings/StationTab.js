@@ -1,5 +1,5 @@
 import { useSettings } from './SettingsContext';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -30,7 +30,7 @@ export default function StationTab() {
       setTerminals(res.data || []);
     } catch (err) {
       console.error('Error loading terminals:', err);
-      toast.error('Error cargando terminales');
+      notify.error('Error cargando terminales');
     } finally {
       setLoadingTerminals(false);
     }
@@ -43,9 +43,9 @@ export default function StationTab() {
   const handleSaveStationConfig = async () => {
     try { 
       await axios.put(`${API}/station-config`, stationConfig, { headers: hdrs() }); 
-      toast.success('Configuracion guardada'); 
+      notify.success('Configuracion guardada'); 
     }
-    catch { toast.error('Error'); }
+    catch { notify.error('Error'); }
   };
 
   // Abrir diálogo para crear terminal
@@ -68,7 +68,7 @@ export default function StationTab() {
   // Guardar terminal (crear o editar)
   const handleSaveTerminal = async () => {
     if (!terminalForm.name.trim()) {
-      toast.error('El nombre es requerido');
+      notify.error('El nombre es requerido');
       return;
     }
 
@@ -76,15 +76,15 @@ export default function StationTab() {
     try {
       if (terminalDialog.mode === 'create') {
         await axios.post(`${API}/pos-sessions/terminals`, terminalForm, { headers: hdrs() });
-        toast.success('Terminal creado correctamente');
+        notify.success('Terminal creado correctamente');
       } else {
         await axios.put(`${API}/pos-sessions/terminals/${terminalDialog.terminal.id}`, terminalForm, { headers: hdrs() });
-        toast.success('Terminal actualizado correctamente');
+        notify.success('Terminal actualizado correctamente');
       }
       setTerminalDialog({ open: false, mode: 'create', terminal: null });
       fetchTerminals();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error guardando terminal');
+      notify.error(err.response?.data?.detail || 'Error guardando terminal');
     } finally {
       setSaving(false);
     }
@@ -96,10 +96,10 @@ export default function StationTab() {
 
     try {
       await axios.delete(`${API}/pos-sessions/terminals/${terminal.id}`, { headers: hdrs() });
-      toast.success('Terminal eliminado');
+      notify.success('Terminal eliminado');
       fetchTerminals();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error eliminando terminal');
+      notify.error(err.response?.data?.detail || 'Error eliminando terminal');
     }
   };
 

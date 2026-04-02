@@ -3,7 +3,7 @@ import { useSettings } from './SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { reasonsAPI } from '@/lib/api';
 import { CreditCard, AlertTriangle, ShoppingBag, Plus, Trash2, Pencil, Banknote, X, Check, Smartphone, Building2, DollarSign, FileText } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
@@ -67,18 +67,18 @@ export default function VentasTab() {
       } else {
         await axios.post(`${API}/payment-methods`, data, { headers: hdrs() });
       }
-      toast.success(payDialog.editId ? 'Actualizado' : 'Creado');
+      notify.success(payDialog.editId ? 'Actualizado' : 'Creado');
       setPayDialog({ 
         open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
         bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true 
       }); 
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const handleDeletePayMethod = async (id) => {
-    try { await axios.delete(`${API}/payment-methods/${id}`, { headers: hdrs() }); toast.success('Eliminado'); fetchAll(); }
-    catch { toast.error('Error'); }
+    try { await axios.delete(`${API}/payment-methods/${id}`, { headers: hdrs() }); notify.success('Eliminado'); fetchAll(); }
+    catch { notify.error('Error'); }
   };
 
   // Reason handlers
@@ -102,14 +102,14 @@ export default function VentasTab() {
       };
       if (reasonDialog.editId) {
         await reasonsAPI.update(reasonDialog.editId, payload);
-        toast.success('Razon actualizada');
+        notify.success('Razon actualizada');
       } else {
         await reasonsAPI.create(payload);
-        toast.success('Razon creada');
+        notify.success('Razon creada');
       }
       setReasonDialog({ open: false, name: '', affects_inventory: true, allowed_roles: [], active: true, editId: null });
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
       }
     });
   };
@@ -131,22 +131,22 @@ export default function VentasTab() {
       };
       if (saleDialog.editId) await axios.put(`${API}/sale-types/${saleDialog.editId}`, data, { headers: hdrs() });
       else await axios.post(`${API}/sale-types`, data, { headers: hdrs() });
-      toast.success(saleDialog.editId ? 'Actualizado' : 'Creado');
+      notify.success(saleDialog.editId ? 'Actualizado' : 'Creado');
       setSaleDialog({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null }); fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const handleDeleteSaleType = async (id) => {
-    try { await axios.delete(`${API}/sale-types/${id}`, { headers: hdrs() }); toast.success('Eliminado'); fetchAll(); }
-    catch { toast.error('Error'); }
+    try { await axios.delete(`${API}/sale-types/${id}`, { headers: hdrs() }); notify.success('Eliminado'); fetchAll(); }
+    catch { notify.error('Error'); }
   };
 
   const handleSaveSystemConfig = async () => {
     try { 
       await axios.put(`${API}/system/config`, systemConfig, { headers: hdrs() }); 
-      toast.success('Configuración del sistema guardada'); 
+      notify.success('Configuración del sistema guardada'); 
     }
-    catch { toast.error('Error'); }
+    catch { notify.error('Error'); }
   };
 
   return (
@@ -372,7 +372,7 @@ export default function VentasTab() {
                         variant: newState ? 'default' : 'destructive',
                         onConfirm: () => {
                           reasonsAPI.update(reason.id, { active: newState }).then(() => {
-                            toast.success(newState ? 'Razon reactivada' : 'Razon desactivada');
+                            notify.success(newState ? 'Razon reactivada' : 'Razon desactivada');
                             fetchAll();
                           });
                         }

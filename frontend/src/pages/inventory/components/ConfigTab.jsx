@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { inventorySettingsAPI } from '@/lib/api';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Cog } from 'lucide-react';
@@ -35,9 +35,9 @@ export default function ConfigTab() {
   const handleSave = async () => {
     try {
       await inventorySettingsAPI.update(settings);
-      toast.success('Configuración guardada correctamente');
+      notify.success('Configuración guardada correctamente');
     } catch (e) {
-      toast.error('Error al guardar configuración');
+      notify.error('Error al guardar configuración');
       console.error(e);
     }
   };

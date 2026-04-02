@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Plus, Edit2, Trash2, Tag, Clock, Shield, Percent, DollarSign, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +54,7 @@ export default function DescuentosTab() {
       setDiscounts(dRes.data);
       setCategories(cRes.data);
       setProducts(pRes.data);
-    } catch { toast.error('Error cargando datos'); }
+    } catch { notify.error('Error cargando datos'); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -81,25 +81,25 @@ export default function DescuentosTab() {
   };
 
   const save = async () => {
-    if (!form.name.trim()) { toast.error('Nombre requerido'); return; }
-    if (!form.value || parseFloat(form.value) <= 0) { toast.error('Valor debe ser mayor a 0'); return; }
+    if (!form.name.trim()) { notify.error('Nombre requerido'); return; }
+    if (!form.value || parseFloat(form.value) <= 0) { notify.error('Valor debe ser mayor a 0'); return; }
     if (form.scope !== 'GLOBAL' && form.target_ids.length === 0) {
-      toast.error('Selecciona al menos un item de destino'); return;
+      notify.error('Selecciona al menos un item de destino'); return;
     }
     setSaving(true);
     try {
       const payload = { ...form, value: parseFloat(form.value) };
       if (editingId) {
         await axios.put(`${API}/discounts/${editingId}`, payload, { headers: hdrs() });
-        toast.success('Descuento actualizado');
+        notify.success('Descuento actualizado');
       } else {
         await axios.post(`${API}/discounts`, payload, { headers: hdrs() });
-        toast.success('Descuento creado');
+        notify.success('Descuento creado');
       }
       setModalOpen(false);
       load();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error al guardar');
+      notify.error(e.response?.data?.detail || 'Error al guardar');
     }
     setSaving(false);
   };
@@ -108,9 +108,9 @@ export default function DescuentosTab() {
     { const ok = await showConfirm({ title: 'Confirmar', description: 'Eliminar este descuento?' }); if (!ok) return; }
     try {
       await axios.delete(`${API}/discounts/${id}`, { headers: hdrs() });
-      toast.success('Descuento eliminado');
+      notify.success('Descuento eliminado');
       load();
-    } catch { toast.error('Error al eliminar'); }
+    } catch { notify.error('Error al eliminar'); }
   };
 
   const toggleTarget = (id) => {

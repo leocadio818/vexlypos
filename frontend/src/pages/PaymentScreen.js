@@ -5,7 +5,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { billsAPI, businessDaysAPI, posSessionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, X, Check, Wallet, Coins, CircleDollarSign, BadgeDollarSign, ChevronUp, ChevronDown, Receipt, Sparkles, Heart, FileText, Truck, Store, UtensilsCrossed, Printer, Globe, Briefcase, Shield, Lock, AlertTriangle, Bell, Plus, Phone, Mail, Moon, Sun, Tag } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -232,7 +232,7 @@ export default function PaymentScreen() {
   // Redirect unauthorized users
   useEffect(() => {
     if (user && !canProcessPayment) {
-      toast.error('No tienes permiso para procesar pagos');
+      notify.error('No tienes permiso para procesar pagos');
       navigate('/tables');
     }
   }, [user, canProcessPayment, navigate]);
@@ -320,7 +320,7 @@ export default function PaymentScreen() {
   // Handle adding new customer from payment screen
   const handleAddNewCustomer = async () => {
     if (!newCustomerDialog.name.trim()) {
-      toast.error('El nombre es requerido');
+      notify.error('El nombre es requerido');
       return;
     }
     try {
@@ -338,7 +338,7 @@ export default function PaymentScreen() {
       });
       if (res.ok) {
         const newCustomer = await res.json();
-        toast.success('Cliente registrado');
+        notify.success('Cliente registrado');
         // Refresh customers list
         const custRes = await fetch(`${API_BASE}/api/customers`, { 
           headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } 
@@ -350,10 +350,10 @@ export default function PaymentScreen() {
         setCustomerDialog(false);
         setCustomerSearch('');
       } else {
-        toast.error('Error al crear cliente');
+        notify.error('Error al crear cliente');
       }
     } catch (e) {
-      toast.error('Error al crear cliente');
+      notify.error('Error al crear cliente');
       console.error(e);
     }
   };
@@ -379,10 +379,10 @@ export default function PaymentScreen() {
         },
         body: JSON.stringify({ discount_id: discount.id, bill_id: bill.id })
       });
-      if (!res.ok) { toast.error('Error al calcular descuento'); return; }
+      if (!res.ok) { notify.error('Error al calcular descuento'); return; }
       const calc = await res.json();
       if (calc.discount_amount <= 0) {
-        toast.warning(calc.message || 'Este descuento no aplica a ningun item');
+        notify.warning(calc.message || 'Este descuento no aplica a ningun item');
         return;
       }
       setAppliedDiscount(calc);
@@ -404,10 +404,10 @@ export default function PaymentScreen() {
           original_subtotal: calc.original_subtotal
         }
       }));
-      toast.success(`Descuento "${calc.discount_name}" aplicado: -RD$ ${calc.discount_amount.toLocaleString()}`);
+      notify.success(`Descuento "${calc.discount_name}" aplicado: -RD$ ${calc.discount_amount.toLocaleString()}`);
       setDiscountDialog(false);
     } catch (e) {
-      toast.error('Error al aplicar descuento');
+      notify.error('Error al aplicar descuento');
     }
   };
 
@@ -433,13 +433,13 @@ export default function PaymentScreen() {
           setDiscountPinDialog({ open: false, discount: null });
           applyDiscount(discountPinDialog.discount);
         } else {
-          toast.error('Se requiere PIN de Gerente o Administrador');
+          notify.error('Se requiere PIN de Gerente o Administrador');
         }
       } else {
-        toast.error('PIN incorrecto');
+        notify.error('PIN incorrecto');
       }
     } catch {
-      toast.error('Error verificando PIN');
+      notify.error('Error verificando PIN');
     }
   };
 
@@ -457,7 +457,7 @@ export default function PaymentScreen() {
         discount_applied: null
       }));
     }
-    toast.info('Descuento removido');
+    notify.info('Descuento removido');
   };
 
   // Handle tax override button click
@@ -476,7 +476,7 @@ export default function PaymentScreen() {
   // Verify admin PIN for tax override
   const verifyTaxOverridePin = async () => {
     if (!taxOverridePin || taxOverridePin.length < 4) {
-      toast.error('Ingrese un PIN válido');
+      notify.error('Ingrese un PIN válido');
       return;
     }
     
@@ -502,10 +502,10 @@ export default function PaymentScreen() {
         setTaxOverridePin('');
       } else {
         const err = await res.json();
-        toast.error(err.detail || 'PIN inválido o sin permiso');
+        notify.error(err.detail || 'PIN inválido o sin permiso');
       }
     } catch {
-      toast.error('Error verificando PIN');
+      notify.error('Error verificando PIN');
     }
   };
 
@@ -741,12 +741,12 @@ export default function PaymentScreen() {
 
   const handlePayment = async () => {
     if (!isEnough) {
-      toast.error('Monto insuficiente');
+      notify.error('Monto insuficiente');
       return;
     }
     // DGII Fiscal Security: Block zero-value payments
     if (billTotal <= 0) {
-      toast.error('No se puede procesar un pago con valor $0.00. La DGII no permite asignar NCF a facturas sin valor.');
+      notify.error('No se puede procesar un pago con valor $0.00. La DGII no permite asignar NCF a facturas sin valor.');
       return;
     }
     
@@ -754,7 +754,7 @@ export default function PaymentScreen() {
     try {
       const shiftCheck = await posSessionsAPI.check();
       if (!shiftCheck.data?.has_open_session) {
-        toast.error('Debes abrir un turno de caja', {
+        notify.error('Debes abrir un turno de caja', {
           description: 'Ve a Caja / Turnos para abrir tu turno antes de cobrar.',
           duration: 4000
         });
@@ -810,12 +810,12 @@ export default function PaymentScreen() {
           if (ncfRes.ok) {
             generatedNcf = await ncfRes.json();
             if (generatedNcf.alert_message) {
-              toast.warning(generatedNcf.alert_message);
+              notify.warning(generatedNcf.alert_message);
             }
           } else {
             const errData = await ncfRes.json();
             if (errData.detail?.includes('agotada')) {
-              toast.error(errData.detail);
+              notify.error(errData.detail);
               setProcessing(false);
               return;
             }
@@ -867,7 +867,7 @@ export default function PaymentScreen() {
       if (change > 0) msg += ` | Cambio: ${formatMoney(change)}`;
       if (cardTip > 0) msg += ` | Propina: ${formatMoney(cardTip)}`;
       if (pts > 0) msg += ` | +${pts} pts fidelidad`;
-      toast.success(msg);
+      notify.success(msg);
       
       // Register sale to POS session for cash/card/transfer tracking
       try {
@@ -930,12 +930,12 @@ export default function PaymentScreen() {
             const ecfData = await ecfResp.json();
             if (!ecfData.ok) {
               // e-CF failed — bill is in CONTINGENCIA mode
-              toast.error('e-CF en Modo Contingencia — se reintentará automáticamente');
+              notify.error('e-CF en Modo Contingencia — se reintentará automáticamente');
             }
             // Wait for MongoDB to fully persist the e-CF data before printing
             await new Promise(r => setTimeout(r, 2500));
           } catch {
-            toast.error('e-CF en Modo Contingencia — sin conexión');
+            notify.error('e-CF en Modo Contingencia — sin conexión');
           }
         }
         
@@ -966,7 +966,7 @@ export default function PaymentScreen() {
     } catch (err) {
       // Handle specific error from backend
       const errorMsg = err?.response?.data?.detail || 'Error procesando pago';
-      toast.error(errorMsg);
+      notify.error(errorMsg);
     } finally {
       setProcessing(false);
     }
@@ -2156,7 +2156,7 @@ export default function PaymentScreen() {
                     placeholder="Email *" type="email" className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm" />
                   <button
                     onClick={async () => {
-                      if (!newCustomerForm.name || !newCustomerForm.email) { toast.error('Nombre y email son requeridos'); return; }
+                      if (!newCustomerForm.name || !newCustomerForm.email) { notify.error('Nombre y email son requeridos'); return; }
                       try {
                         await fetch(`${API_BASE}/api/customers`, {
                           method: 'POST',
@@ -2164,7 +2164,7 @@ export default function PaymentScreen() {
                           body: JSON.stringify(newCustomerForm)
                         });
                         handleSendEmailAndNavigate(newCustomerForm.email);
-                      } catch { toast.error('Error creando cliente'); }
+                      } catch { notify.error('Error creando cliente'); }
                     }}
                     disabled={!newCustomerForm.name || !newCustomerForm.email || emailSending}
                     className="w-full h-12 rounded-xl bg-blue-600 text-white font-oswald font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
@@ -2503,7 +2503,7 @@ export default function PaymentScreen() {
                     });
                     const printData = await printResp.json();
                     if (printData.ok) {
-                      toast.success('Factura enviada a impresora');
+                      notify.success('Factura enviada a impresora');
                     }
                   } catch (printErr) {
                     console.warn('Auto-print error:', printErr);

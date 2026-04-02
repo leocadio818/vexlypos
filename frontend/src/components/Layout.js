@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { PinPad } from '@/components/PinPad';
 import { useState, useEffect, useCallback } from 'react';
 import api, { businessDaysAPI, ordersAPI } from '@/lib/api';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import BusinessDayManager from '@/components/BusinessDayManager';
 import EcfDashboardInline from '@/pages/reports/EcfDashboard';
 import '@/App.css';
@@ -75,7 +75,7 @@ export default function Layout() {
   
   // Limpiar toasts al cambiar de ruta
   useEffect(() => {
-    toast.dismiss();
+    notify.dismiss();
   }, [location.pathname]);
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -97,9 +97,9 @@ export default function Layout() {
         
         for (const n of notifications) {
           if (n.type === 'table_transfer') {
-            toast.success(n.title, { description: n.message, duration: 8000 });
+            notify.success(n.title, { description: n.message, duration: 8000 });
           } else {
-            toast.info(n.title, { description: n.message, duration: 5000 });
+            notify.info(n.title, { description: n.message, duration: 5000 });
           }
           // Mark as read
           fetch(`${API_BASE}/api/notifications/${n.id}/read`, {
@@ -608,8 +608,8 @@ export default function Layout() {
                           body: JSON.stringify(prefs)
                         });
                         localStorage.setItem('pos_user_ui_prefs', JSON.stringify(prefs));
-                        toast.success('Preferencia guardada');
-                      } catch { toast.error('Error'); }
+                        notify.success('Preferencia guardada');
+                      } catch { notify.error('Error'); }
                     }}
                       className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-all"
                       data-testid="save-my-theme-btn">
@@ -934,11 +934,11 @@ export default function Layout() {
                 setClockOutLoading(true);
                 try {
                   const res = await api.post('/attendance/auto-clock-out');
-                  toast.success(res.data.message, { duration: 8000 });
+                  notify.success(res.data.message, { duration: 8000 });
                   setClockOutDialogOpen(false);
                   logout();
                 } catch (e) {
-                  toast.error(e.response?.data?.detail || 'Error de conexión');
+                  notify.error(e.response?.data?.detail || 'Error de conexión');
                 }
                 setClockOutLoading(false);
               }}
@@ -967,14 +967,14 @@ export default function Layout() {
             onSubmit={async (pin) => {
               try {
                 await api.put(`/users/me/pin`, { pin });
-                toast.success('PIN actualizado correctamente');
+                notify.success('PIN actualizado correctamente');
                 setChangePinOpen(false);
                 setNewPinValue('');
               } catch (e) {
                 if (e.response?.data?.detail === 'PIN_ALREADY_IN_USE') {
-                  toast.error('Esta clave ya está en uso');
+                  notify.error('Esta clave ya está en uso');
                 } else {
-                  toast.error('Error de conexión');
+                  notify.error('Error de conexión');
                 }
                 setNewPinValue('');
               }

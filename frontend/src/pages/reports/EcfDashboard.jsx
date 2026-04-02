@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, RefreshCw, Printer, AlertTriangle, CheckCircle2, Clock, XCircle, Search } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -44,16 +44,16 @@ export default function EcfDashboard({ data }) {
       const r = await fetch(`${API}/api/ecf/refresh-status/${billId}`, { headers: hdrs() });
       const d = await r.json();
       if (d.ok) {
-        toast.success(`Status: ${d.status}${d.reject_reason ? ' — ' + d.reject_reason : ''}`);
+        notify.success(`Status: ${d.status}${d.reject_reason ? ' — ' + d.reject_reason : ''}`);
         // Refresh data
         const res = await fetch(`${API}/api/ecf/dashboard`, { headers: hdrs() });
         const fresh = await res.json();
         setBills(fresh.bills || []);
         setSummary(fresh.summary || {});
       } else {
-        toast.error(d.message);
+        notify.error(d.message);
       }
-    } catch { toast.error('Error de conexión'); }
+    } catch { notify.error('Error de conexión'); }
   };
 
   const handleRetry = async (billId) => {
@@ -62,15 +62,15 @@ export default function EcfDashboard({ data }) {
       const r = await fetch(`${API}/api/ecf/retry/${billId}`, { method: 'POST', headers: hdrs() });
       const d = await r.json();
       if (d.ok) {
-        toast.success(`e-CF reenviado: ${d.encf}`);
+        notify.success(`e-CF reenviado: ${d.encf}`);
         const res = await fetch(`${API}/api/ecf/dashboard`, { headers: hdrs() });
         const fresh = await res.json();
         setBills(fresh.bills || []);
         setSummary(fresh.summary || {});
       } else {
-        toast.error(d.message);
+        notify.error(d.message);
       }
-    } catch { toast.error('Error de conexión'); }
+    } catch { notify.error('Error de conexión'); }
     setLoading(false);
   };
 
@@ -79,12 +79,12 @@ export default function EcfDashboard({ data }) {
     try {
       const r = await fetch(`${API}/api/ecf/retry-all`, { method: 'POST', headers: hdrs() });
       const d = await r.json();
-      toast.success(`Reintentos: ${d.success} exitosos, ${d.failed} fallidos de ${d.total}`);
+      notify.success(`Reintentos: ${d.success} exitosos, ${d.failed} fallidos de ${d.total}`);
       const res = await fetch(`${API}/api/ecf/dashboard`, { headers: hdrs() });
       const fresh = await res.json();
       setBills(fresh.bills || []);
       setSummary(fresh.summary || {});
-    } catch { toast.error('Error de conexión'); }
+    } catch { notify.error('Error de conexión'); }
     setLoading(false);
   };
 
@@ -96,8 +96,8 @@ export default function EcfDashboard({ data }) {
     // Then print
     try {
       await fetch(`${API}/api/print/receipt/${billId}/send`, { method: 'POST', headers: hdrs() });
-      toast.success('Factura enviada a impresora');
-    } catch { toast.error('Error al imprimir'); }
+      notify.success('Factura enviada a impresora');
+    } catch { notify.error('Error al imprimir'); }
   };
 
   const formatDate = (d) => {

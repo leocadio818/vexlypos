@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, TrendingDown, RotateCcw, Ban, Download, Calendar, User, FileText, DollarSign } from 'lucide-react';
@@ -25,7 +25,7 @@ export default function AnulacionesReport() {
       const data = await res.json();
       setReportData(data);
     } catch (e) {
-      toast.error('Error cargando reporte');
+      notify.error('Error cargando reporte');
     }
     setLoading(false);
   }, [period]);
@@ -36,7 +36,7 @@ export default function AnulacionesReport() {
 
   const exportToExcel = () => {
     if (!reportData?.logs?.length) {
-      toast.error('No hay datos para exportar');
+      notify.error('No hay datos para exportar');
       return;
     }
 
@@ -94,7 +94,7 @@ export default function AnulacionesReport() {
 
     // Download
     XLSX.writeFile(wb, `Reporte_Anulaciones_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('Reporte exportado a Excel');
+    notify.success('Reporte exportado a Excel');
   };
 
   const getPeriodLabel = () => {

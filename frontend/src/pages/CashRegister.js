@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import api, { posSessionsAPI, businessDaysAPI, formatMoney } from '@/lib/api';
 import { CircleDollarSign, Play, Square, Clock, Banknote, CreditCard, AlertTriangle, TrendingUp, ArrowDownCircle, ArrowUpCircle, History, Wallet, CheckCircle2, Calculator, Coins, Receipt, RefreshCw, FileX, Search, Printer, X, Calendar, Lock, KeyRound, Tag, XCircle, FileText } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import CreditNoteModal from '@/components/CreditNoteModal';
@@ -185,7 +185,7 @@ export default function CashRegister() {
       }
     } catch (err) {
       console.error('Error fetching session data:', err);
-      toast.error('Error cargando datos de caja');
+      notify.error('Error cargando datos de caja');
     } finally {
       setLoading(false);
     }
@@ -227,7 +227,7 @@ export default function CashRegister() {
   const handleOpenSession = async () => {
     // Validar que haya un terminal seleccionado
     if (!terminalName) {
-      toast.error('Selecciona una estación', {
+      notify.error('Selecciona una estación', {
         description: 'Debes seleccionar una estación disponible'
       });
       return;
@@ -235,7 +235,7 @@ export default function CashRegister() {
     
     // Validar que el terminal no esté en uso
     if (terminalsInUse[terminalName]) {
-      toast.error('Estación no disponible', {
+      notify.error('Estación no disponible', {
         description: `${terminalName} ya está en uso por ${terminalsInUse[terminalName]}`
       });
       return;
@@ -249,14 +249,14 @@ export default function CashRegister() {
       });
       
       setCurrentSession(res.data);
-      toast.success('Turno abierto correctamente', {
+      notify.success('Turno abierto correctamente', {
         description: `${res.data.ref} - ${res.data.terminal_name}`
       });
       setOpenDialog(false);
       setOpeningAmount('');
       fetchData();
     } catch (err) {
-      toast.error('Error abriendo turno', {
+      notify.error('Error abriendo turno', {
         description: err.response?.data?.detail || 'Intenta de nuevo'
       });
     }
@@ -295,19 +295,19 @@ export default function CashRegister() {
       
       const alertStatus = getAlertStatus();
       if (alertStatus.type === 'major') {
-        toast.error('⚠️ ALERTA: Descuadre de caja', {
+        notify.error('⚠️ ALERTA: Descuadre de caja', {
           description: `Diferencia: ${formatMoney(diferenciaCaja)} - Requiere revisión`
         });
       } else if (alertStatus.type === 'minor') {
-        toast.warning('Turno cerrado con faltante menor', {
+        notify.warning('Turno cerrado con faltante menor', {
           description: `Diferencia: ${formatMoney(diferenciaCaja)}`
         });
       } else if (alertStatus.type === 'surplus') {
-        toast.info('Turno cerrado con sobrante', {
+        notify.info('Turno cerrado con sobrante', {
           description: `Diferencia: ${formatMoney(diferenciaCaja)}`
         });
       } else {
-        toast.success('Turno cerrado - Caja cuadrada');
+        notify.success('Turno cerrado - Caja cuadrada');
       }
       
       setCurrentSession(null);
@@ -326,7 +326,7 @@ export default function CashRegister() {
       if (err.response?.status === 400 && (detail.includes('cuenta') || detail.includes('turno') || detail.includes('No se puede cerrar'))) {
         setOpenTablesError({ show: true, message: detail });
       } else {
-        toast.error('Error cerrando turno', {
+        notify.error('Error cerrando turno', {
           description: detail || 'Intenta de nuevo'
         });
       }
@@ -342,7 +342,7 @@ export default function CashRegister() {
 
   const handleAddMovement = async () => {
     if (!currentSession || !movementForm.amount || !movementForm.description) {
-      toast.error('Completa los campos requeridos');
+      notify.error('Completa los campos requeridos');
       return;
     }
     
@@ -356,12 +356,12 @@ export default function CashRegister() {
         payment_method: 'cash'
       });
       
-      toast.success('Movimiento registrado');
+      notify.success('Movimiento registrado');
       setMovementDialog(false);
       setMovementForm({ movement_type: 'cash_in', amount: '', description: '', reason_code: '', notes: '' });
       fetchData();
     } catch (err) {
-      toast.error('Error registrando movimiento', {
+      notify.error('Error registrando movimiento', {
         description: err.response?.data?.detail
       });
     }
@@ -393,20 +393,20 @@ export default function CashRegister() {
           });
           
           if (printRes.ok) {
-            toast.success('Factura enviada a imprimir', {
+            notify.success('Factura enviada a imprimir', {
               description: `NCF: ${ncfMatch[0]}`
             });
           } else {
             throw new Error('Error al enviar a imprimir');
           }
         } else {
-          toast.error('No se encontró la factura');
+          notify.error('No se encontró la factura');
         }
       } else {
-        toast.error('Este movimiento no es una venta facturable');
+        notify.error('Este movimiento no es una venta facturable');
       }
     } catch (err) {
-      toast.error('Error al reimprimir', {
+      notify.error('Error al reimprimir', {
         description: err.message
       });
     } finally {
@@ -428,7 +428,7 @@ export default function CashRegister() {
   
   const handleCloseDay = async () => {
     if (!closeDayPin) {
-      toast.error('Ingresa el PIN de autorización');
+      notify.error('Ingresa el PIN de autorización');
       return;
     }
     setCloseDayLoading(true);
@@ -438,7 +438,7 @@ export default function CashRegister() {
         closing_notes: closeDayNotes || '',
         force_close: false
       });
-      toast.success('Jornada cerrada exitosamente');
+      notify.success('Jornada cerrada exitosamente');
       setCloseDayDialog(false);
       setCloseDayPin('');
       setCloseDayNotes('');
@@ -454,7 +454,7 @@ export default function CashRegister() {
         try { await api.post('/attendance/auto-clock-out'); } catch {}
         setTimeout(() => {
           logout();
-          toast.info('Jornada cerrada. Se requiere nuevo login para iniciar la próxima jornada.');
+          notify.info('Jornada cerrada. Se requiere nuevo login para iniciar la próxima jornada.');
         }, 2000);
       }
     } catch (err) {
@@ -463,7 +463,7 @@ export default function CashRegister() {
       if (err.response?.status === 400 && (detail.includes('cuenta') || detail.includes('turno') || detail.includes('No se puede cerrar'))) {
         setOpenTablesError({ show: true, message: detail });
       } else {
-        toast.error('No se puede cerrar la jornada', {
+        notify.error('No se puede cerrar la jornada', {
           description: detail
         });
       }
@@ -475,11 +475,11 @@ export default function CashRegister() {
   // Re-imprimir Reporte X de un turno cerrado
   const handleReprintReport = async (sessionId) => {
     try {
-      toast.info('Generando reporte...');
+      notify.info('Generando reporte...');
       setReprintSessionId(sessionId);
       // El reporte se abre en el componente ReportXZ
     } catch (err) {
-      toast.error('Error generando reporte');
+      notify.error('Error generando reporte');
     }
   };
 

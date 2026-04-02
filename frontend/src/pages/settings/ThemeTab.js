@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { Palette, Check, Sun, Moon, Sparkles, RotateCcw, User } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import axios from 'axios';
 
@@ -55,8 +55,8 @@ export default function ThemeTab() {
     setSaving(true);
     const ok = await saveAllThemeSettings();
     setSaving(false);
-    if (ok) toast.success('Tema guardado correctamente');
-    else toast.error('Error al guardar el tema');
+    if (ok) notify.success('Tema guardado correctamente');
+    else notify.error('Error al guardar el tema');
   };
 
   const handleSaveAsMyPreference = async () => {
@@ -72,9 +72,9 @@ export default function ThemeTab() {
         neo_glow_color: neoColors.neoGlowColor,
         neo_accent_color: neoColors.neoAccentColor,
       }, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success(`Preferencia guardada para ${user?.name || 'tu perfil'}`);
+      notify.success(`Preferencia guardada para ${user?.name || 'tu perfil'}`);
     } catch {
-      toast.error('Error al guardar preferencia');
+      notify.error('Error al guardar preferencia');
     }
     setSavingProfile(false);
   };
@@ -307,7 +307,7 @@ export default function ThemeTab() {
         <Button
           onClick={() => {
             setActiveThemeMode('original');
-            toast.info('Restaurado al tema original');
+            notify.info('Restaurado al tema original');
           }}
           variant="outline"
           className="h-11 px-4"

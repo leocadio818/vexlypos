@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSettings } from './SettingsContext';
 import { areasAPI, tablesAPI } from '@/lib/api';
 import { MapPin, Table2, Plus, Trash2, Pencil } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { NumericInput } from '@/components/NumericKeypad';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -40,10 +40,10 @@ export default function MesasTab() {
       } else {
         await areasAPI.create({ name: areaDialog.name, color: areaDialog.color });
       }
-      toast.success(areaDialog.editId ? 'Area actualizada' : 'Area creada');
+      notify.success(areaDialog.editId ? 'Area actualizada' : 'Area creada');
       setAreaDialog({ open: false, name: '', color: '#FF6600', editId: null }); 
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   // Table handlers
@@ -58,14 +58,14 @@ export default function MesasTab() {
       };
       if (tableDialog.editId) {
         await tablesAPI.update(tableDialog.editId, data);
-        toast.success('Mesa actualizada');
+        notify.success('Mesa actualizada');
       } else {
         await tablesAPI.create({ ...data, x: 20 + Math.random() * 60, y: 20 + Math.random() * 60 });
-        toast.success('Mesa creada');
+        notify.success('Mesa creada');
       }
       setTableDialog({ open: false, number: '', area_id: '', capacity: 4, shape: 'round', editId: null }); 
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   return (
@@ -105,7 +105,7 @@ export default function MesasTab() {
                     className="text-muted-foreground hover:text-primary h-8 w-8">
                     <Pencil size={14} />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => { tablesAPI.delete(table.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
+                  <Button variant="ghost" size="icon" onClick={() => { tablesAPI.delete(table.id).then(() => { notify.success('Eliminada'); fetchAll(); }); }}
                     className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
                 </div>
               </div>
@@ -136,7 +136,7 @@ export default function MesasTab() {
                     onClick={() => setAreaDialog({ open: true, name: area.name, color: area.color, editId: area.id })}>
                     <Pencil size={14} />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => { areasAPI.delete(area.id).then(() => { toast.success('Eliminada'); fetchAll(); }); }}
+                  <Button variant="ghost" size="icon" onClick={() => { areasAPI.delete(area.id).then(() => { notify.success('Eliminada'); fetchAll(); }); }}
                     className="text-destructive/60 hover:text-destructive h-8 w-8"><Trash2 size={14} /></Button>
                 </div>
               </div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Trash2, Camera, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock, GraduationCap, Briefcase, Check, Pencil } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PinPad } from '@/components/PinPad';
@@ -249,7 +249,7 @@ export default function UserConfig() {
       }
     } catch (e) {
       console.error(e);
-      toast.error('Error cargando datos');
+      notify.error('Error cargando datos');
     } finally {
       setLoading(false);
     }
@@ -277,15 +277,15 @@ export default function UserConfig() {
     const code = getRoleCode(role);
     const defaults = role.builtin ? (ROLE_DEFAULTS[code] || {}) : (role.permissions || {});
     setUser(p => ({ ...p, role: code, permissions: { ...defaults } }));
-    toast.success(`Puesto: ${role.name}`, { duration: 1500 });
+    notify.success(`Puesto: ${role.name}`, { duration: 1500 });
   };
 
   const handleSave = async () => {
-    if (!user.name.trim()) { toast.error('El nombre es requerido'); return; }
-    if (isNew && !user.pin) { toast.error('El PIN es requerido'); return; }
+    if (!user.name.trim()) { notify.error('El nombre es requerido'); return; }
+    if (isNew && !user.pin) { notify.error('El PIN es requerido'); return; }
     if (user.pin && canEditPin) {
       const v = validatePin(user.pin);
-      if (!v.valid) { toast.error(v.error); return; }
+      if (!v.valid) { notify.error(v.error); return; }
     }
 
     setSaving(true);
@@ -296,7 +296,7 @@ export default function UserConfig() {
         }, { headers: hdrs() });
         if (checkRes.data.exists) {
           setSaving(false);
-          toast.error('Este PIN ya esta asignado a otro usuario activo');
+          notify.error('Este PIN ya esta asignado a otro usuario activo');
           return;
         }
       }
@@ -306,29 +306,29 @@ export default function UserConfig() {
 
       if (isNew) {
         await axios.post(`${API}/users`, data, { headers: hdrs() });
-        toast.success('Empleado creado');
+        notify.success('Empleado creado');
       } else {
         await axios.put(`${API}/users/${userId}`, data, { headers: hdrs() });
-        toast.success('Empleado actualizado');
+        notify.success('Empleado actualizado');
       }
       navigate('/settings');
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error guardando');
+      notify.error(e.response?.data?.detail || 'Error guardando');
     } finally { setSaving(false); }
   };
 
   const handleCreateRole = async () => {
-    if (!newRoleName.trim()) { toast.error('Nombre del puesto requerido'); return; }
+    if (!newRoleName.trim()) { notify.error('Nombre del puesto requerido'); return; }
     try {
       const code = newRoleName.trim().toLowerCase().replace(/\s+/g, '_');
       await axios.post(`${API}/roles`, { name: newRoleName.trim(), code, permissions: {}, level: newRoleLevel }, { headers: hdrs() });
-      toast.success(`Puesto "${newRoleName}" creado (nivel ${newRoleLevel})`);
+      notify.success(`Puesto "${newRoleName}" creado (nivel ${newRoleLevel})`);
       setNewRoleName('');
       setNewRoleLevel(20);
       setCreateRoleDialog(false);
       const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
       setRoles(rolesRes.data);
-    } catch (e) { toast.error(e.response?.data?.detail || 'Error creando puesto'); }
+    } catch (e) { notify.error(e.response?.data?.detail || 'Error creando puesto'); }
   };
 
   if (loading) {
@@ -629,10 +629,10 @@ export default function UserConfig() {
                             { const ok = await showConfirm({ title: 'Eliminar Puesto', description: `¿Eliminar puesto "${role.name}"?` }); if (!ok) return; }
                             try {
                               await axios.delete(`${API}/roles/${role.id}`, { headers: hdrs() });
-                              toast.success(`Puesto "${role.name}" eliminado`);
+                              notify.success(`Puesto "${role.name}" eliminado`);
                               fetchRoles();
                             } catch (e) {
-                              toast.error(e.response?.data?.detail || 'Error eliminando');
+                              notify.error(e.response?.data?.detail || 'Error eliminando');
                             }
                           }} className="w-6 h-6 rounded flex items-center justify-center hover:bg-red-500/30 text-red-400 transition-all" title="Eliminar">
                             <Trash2 size={10} />
@@ -659,7 +659,7 @@ export default function UserConfig() {
                     </Badge>
                   )}
                   <Button variant="outline" size="sm" className="h-7 text-xs" data-testid="reset-permissions-btn"
-                    onClick={() => { setUser(p => ({ ...p, permissions: getRoleDefaults(p.role, roles) })); toast.success('Permisos restablecidos'); }}>
+                    onClick={() => { setUser(p => ({ ...p, permissions: getRoleDefaults(p.role, roles) })); notify.success('Permisos restablecidos'); }}>
                     <RotateCcw size={12} className="mr-1" /> Restablecer
                   </Button>
                 </div>
@@ -822,10 +822,10 @@ export default function UserConfig() {
             <Button onClick={async () => {
               try {
                 await axios.put(`${API}/roles/${editRoleDialog.id}`, { name: editRoleDialog.name, level: editRoleDialog.level }, { headers: hdrs() });
-                toast.success('Puesto actualizado');
+                notify.success('Puesto actualizado');
                 setEditRoleDialog({ open: false, id: null, name: '', level: 20 });
                 fetchRoles();
-              } catch (e) { toast.error(e.response?.data?.detail || 'Error'); }
+              } catch (e) { notify.error(e.response?.data?.detail || 'Error'); }
             }} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold">
               GUARDAR CAMBIOS
             </Button>

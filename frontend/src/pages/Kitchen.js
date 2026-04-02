@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { kitchenAPI } from '@/lib/api';
 import { Clock, ChefHat, CheckCircle2, ArrowRight, Printer, Monitor, Wifi, WifiOff } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -95,11 +95,11 @@ export default function Kitchen() {
     if (!next) return;
     try {
       await kitchenAPI.updateItem(orderId, itemId, { status: next });
-      toast.success(`Item: ${statusLabels[next]}`);
+      notify.success(`Item: ${statusLabels[next]}`);
       // Refresh immediately after action
       fetchOrders();
     } catch {
-      toast.error('Error actualizando');
+      notify.error('Error actualizando');
     }
   };
 

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Heart, Plus, Search, Gift, Star, Phone, Mail, ArrowLeft, Pencil } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
 
@@ -61,29 +61,29 @@ export default function Customers() {
     if (!addDialog.name) return;
     try {
       await axios.post(`${API}/customers`, { name: addDialog.name, phone: addDialog.phone, email: addDialog.email }, { headers: headers() });
-      toast.success('Cliente registrado');
+      notify.success('Cliente registrado');
       setAddDialog({ open: false, name: '', phone: '', email: '' });
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const handleRedeem = async () => {
     const pts = parseInt(redeemDialog.points);
-    if (!pts || pts < config.min_redemption) { toast.error(`Minimo ${config.min_redemption} puntos`); return; }
+    if (!pts || pts < config.min_redemption) { notify.error(`Minimo ${config.min_redemption} puntos`); return; }
     try {
       const res = await axios.post(`${API}/customers/${redeemDialog.customer.id}/redeem-points`, { points: pts }, { headers: headers() });
-      toast.success(`${pts} puntos canjeados = ${formatMoney(res.data.discount_rd)} descuento`);
+      notify.success(`${pts} puntos canjeados = ${formatMoney(res.data.discount_rd)} descuento`);
       setRedeemDialog({ open: false, customer: null, points: '' });
       fetchAll();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Error'); }
+    } catch (e) { notify.error(e.response?.data?.detail || 'Error'); }
   };
 
   const handleUpdateConfig = async () => {
     try {
       await axios.put(`${API}/loyalty/config`, config, { headers: headers() });
-      toast.success('Configuracion actualizada');
+      notify.success('Configuracion actualizada');
       setConfigDialog(false);
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   return (
@@ -251,8 +251,8 @@ export default function Customers() {
                 });
                 setEditDialog({ open: false, customer: null, name: '', phone: '', email: '', rnc: '' });
                 fetchAll();
-                toast.success('Cliente actualizado');
-              } catch { toast.error('Error al actualizar'); }
+                notify.success('Cliente actualizado');
+              } catch { notify.error('Error al actualizar'); }
             }}>
               Guardar Cambios
             </Button>

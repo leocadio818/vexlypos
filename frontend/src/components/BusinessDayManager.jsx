@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { PinPad } from '@/components/PinPad';
 import { NeoDatePicker } from '@/components/DateTimePicker';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -84,7 +84,7 @@ export default function BusinessDayManager({
   // Verificar PIN de autorización
   const handleVerifyPin = async () => {
     if (!authorizerPin || authorizerPin.length < 4) {
-      toast.error('Ingresa un PIN válido');
+      notify.error('Ingresa un PIN válido');
       return;
     }
     
@@ -102,7 +102,7 @@ export default function BusinessDayManager({
         setCloseDayDialog(true);
       }
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'PIN inválido o sin autorización');
+      notify.error(err.response?.data?.detail || 'PIN inválido o sin autorización');
     } finally {
       setProcessing(false);
     }
@@ -111,7 +111,7 @@ export default function BusinessDayManager({
   // Abrir Jornada
   const handleOpenDay = async () => {
     if (!authorizer) {
-      toast.error('Se requiere autorización');
+      notify.error('Se requiere autorización');
       return;
     }
     
@@ -123,14 +123,14 @@ export default function BusinessDayManager({
         opening_notes: openingNotes || null
       });
       
-      toast.success(res.data.message);
+      notify.success(res.data.message);
       setOpenDayDialog(false);
       setAuthorizer(null);
       setAuthorizerPin('');
       setOpeningNotes('');
       fetchCurrentDay();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error al abrir jornada');
+      notify.error(err.response?.data?.detail || 'Error al abrir jornada');
     } finally {
       setProcessing(false);
     }
@@ -139,7 +139,7 @@ export default function BusinessDayManager({
   // Cerrar Jornada
   const handleCloseDay = async () => {
     if (!authorizer) {
-      toast.error('Se requiere autorización');
+      notify.error('Se requiere autorización');
       return;
     }
     
@@ -151,7 +151,7 @@ export default function BusinessDayManager({
         force_close: forceClose
       });
       
-      toast.success(res.data.message);
+      notify.success(res.data.message);
       setCloseDayDialog(false);
       setAuthorizer(null);
       setAuthorizerPin('');
@@ -164,7 +164,7 @@ export default function BusinessDayManager({
         window.location.href = '/login';
       }, 2000);
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error al cerrar jornada');
+      notify.error(err.response?.data?.detail || 'Error al cerrar jornada');
     } finally {
       setProcessing(false);
     }

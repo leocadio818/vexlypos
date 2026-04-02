@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Warehouse, Plus, Pencil, Trash2, AlertTriangle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,21 +20,21 @@ export default function WarehousesTab({
   const handleSaveWarehouse = async () => {
     const d = warehouseDialog.data;
     if (!d?.name?.trim()) { 
-      toast.error('Nombre requerido'); 
+      notify.error('Nombre requerido'); 
       return; 
     }
     try {
       if (d.id) {
         await warehousesAPI.update(d.id, d);
-        toast.success('Almacén actualizado');
+        notify.success('Almacén actualizado');
       } else {
         await warehousesAPI.create(d);
-        toast.success('Almacén creado');
+        notify.success('Almacén creado');
       }
       setWarehouseDialog({ open: false, data: null });
       onRefreshAll?.();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
@@ -42,10 +42,10 @@ export default function WarehousesTab({
     { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar almacén?' }); if (!ok) return; }
     try {
       await warehousesAPI.delete(id);
-      toast.success('Almacén eliminado');
+      notify.success('Almacén eliminado');
       onRefreshAll?.();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 

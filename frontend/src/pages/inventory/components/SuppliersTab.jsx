@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { 
   Truck, Plus, Pencil, Trash2, Save, Search, X, Package, Wine, Cigarette, 
   UtensilsCrossed, Box, ShoppingCart, BarChart3, List, TrendingUp, 
@@ -73,7 +73,7 @@ export default function SuppliersTab({
       const res = await axios.get(`${API}/suppliers/analytics`, { headers: headers() });
       setAnalytics(res.data);
     } catch (e) {
-      toast.error('Error al cargar analíticas');
+      notify.error('Error al cargar analíticas');
     } finally {
       setLoadingAnalytics(false);
     }
@@ -116,16 +116,16 @@ export default function SuppliersTab({
   const handleSaveSupplier = async () => {
     const d = supplierDialog.data;
     if (!d?.name?.trim()) { 
-      toast.error('Nombre requerido'); 
+      notify.error('Nombre requerido'); 
       return; 
     }
     try {
       if (d.id) {
         await suppliersAPI.update(d.id, d);
-        toast.success('Proveedor actualizado');
+        notify.success('Proveedor actualizado');
       } else {
         await suppliersAPI.create(d);
-        toast.success('Proveedor creado');
+        notify.success('Proveedor creado');
       }
       setSupplierDialog({ open: false, data: null });
       onRefreshAll?.();
@@ -136,7 +136,7 @@ export default function SuppliersTab({
         fetchAnalytics();
       }
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
@@ -144,12 +144,12 @@ export default function SuppliersTab({
     { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar proveedor?' }); if (!ok) return; }
     try {
       await suppliersAPI.delete(id);
-      toast.success('Proveedor eliminado');
+      notify.success('Proveedor eliminado');
       onRefreshAll?.();
       const res = await axios.get(`${API}/suppliers/with-active-orders`, { headers: headers() });
       setSuppliers(res.data);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import offlineDB from '@/lib/offlineDB';
 
 /**
@@ -38,7 +38,7 @@ export function useOfflineSync() {
       setLastSyncTime(new Date());
       
       if (result.synced > 0) {
-        toast.success(`✓ ${result.synced} operación(es) sincronizada(s)`, {
+        notify.success(`✓ ${result.synced} operación(es) sincronizada(s)`, {
           description: result.failed > 0 ? `${result.failed} pendiente(s)` : undefined,
         });
       }
@@ -57,7 +57,7 @@ export function useOfflineSync() {
     } catch (error) {
       console.error('[Sync] Error:', error);
       setSyncError(error.message);
-      toast.error('Error al sincronizar', { description: error.message });
+      notify.error('Error al sincronizar', { description: error.message });
     } finally {
       setIsSyncing(false);
     }
@@ -82,7 +82,7 @@ export function useOfflineSync() {
       
       // If we were offline and now online, show notification and sync
       if (wasOfflineRef.current) {
-        toast.success('🌐 Conexión restaurada', {
+        notify.success('🌐 Conexión restaurada', {
           description: pendingCount > 0 
             ? `Sincronizando ${pendingCount} operación(es)...` 
             : 'Sistema en línea',
@@ -102,7 +102,7 @@ export function useOfflineSync() {
       setIsOnline(false);
       wasOfflineRef.current = true;
       
-      toast.warning('📴 Sin conexión', {
+      notify.warning('📴 Sin conexión', {
         description: 'El sistema funciona offline. Los cambios se sincronizarán automáticamente.',
         duration: 4000,
       });
@@ -208,7 +208,7 @@ export function useOfflineData(key, fetchFn, deps = []) {
       if (cachedData) {
         setData(cachedData);
         setIsFromCache(true);
-        toast.info('Usando datos en caché', { 
+        notify.info('Usando datos en caché', { 
           description: 'No se pudo conectar al servidor' 
         });
       } else {
@@ -260,7 +260,7 @@ export function useOfflineMutation(mutationFn, options = {}) {
             data: variables,
           });
           
-          toast.info('Guardado offline', {
+          notify.info('Guardado offline', {
             description: 'Se sincronizará cuando vuelva la conexión',
           });
           

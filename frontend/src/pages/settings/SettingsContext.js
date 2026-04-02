@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { areasAPI, tablesAPI, reasonsAPI, categoriesAPI, productsAPI, inventorySettingsAPI, warehousesAPI, taxesAPI, ncfAPI } from '@/lib/api';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -146,9 +146,9 @@ export function SettingsProvider({ children }) {
       ]);
       setNcfSequences(ncfSeqRes.data);
       setNcfAlerts(ncfAlertsRes.data.alerts || { critical: [], warning: [], ok: [] });
-      toast.success('Datos NCF actualizados');
+      notify.success('Datos NCF actualizados');
     } catch (err) {
-      toast.error('Error al actualizar datos NCF');
+      notify.error('Error al actualizar datos NCF');
     }
   };
 

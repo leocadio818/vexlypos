@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CalendarDays, Plus, Clock, Users, Phone, Trash2, Check, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
 import { NeoDatePicker, NeoTimePicker } from '@/components/DateTimePicker';
@@ -50,8 +50,8 @@ export default function Reservations() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleCreate = async () => {
-    if (!dialog.customer_name || !dialog.date || !dialog.time) { toast.error('Completa los campos requeridos'); return; }
-    if (dialog.table_ids.length === 0) { toast.error('Selecciona al menos una mesa'); return; }
+    if (!dialog.customer_name || !dialog.date || !dialog.time) { notify.error('Completa los campos requeridos'); return; }
+    if (dialog.table_ids.length === 0) { notify.error('Selecciona al menos una mesa'); return; }
     try {
       await axios.post(`${API}/reservations`, {
         ...dialog,
@@ -59,19 +59,19 @@ export default function Reservations() {
         reservation_time: dialog.time,
         created_by: user?.name || '',
       }, { headers: hdrs() });
-      toast.success('Reservacion creada');
+      notify.success('Reservacion creada');
       setDialog({ 
         open: false, editId: null, customer_name: '', phone: '', date: getLocalDate(), time: '', party_size: 2, 
         table_ids: [], area_id: '', notes: '',
         activation_minutes: 60, tolerance_minutes: 15
       });
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const handleUpdate = async () => {
-    if (!dialog.customer_name || !dialog.date || !dialog.time) { toast.error('Completa los campos requeridos'); return; }
-    if (dialog.table_ids.length === 0) { toast.error('Selecciona al menos una mesa'); return; }
+    if (!dialog.customer_name || !dialog.date || !dialog.time) { notify.error('Completa los campos requeridos'); return; }
+    if (dialog.table_ids.length === 0) { notify.error('Selecciona al menos una mesa'); return; }
     try {
       await axios.put(`${API}/reservations/${dialog.editId}`, { 
         customer_name: dialog.customer_name,
@@ -85,14 +85,14 @@ export default function Reservations() {
         activation_minutes: dialog.activation_minutes,
         tolerance_minutes: dialog.tolerance_minutes
       }, { headers: hdrs() });
-      toast.success('Reservacion actualizada');
+      notify.success('Reservacion actualizada');
       setDialog({ 
         open: false, editId: null, customer_name: '', phone: '', date: getLocalDate(), time: '', party_size: 2, 
         table_ids: [], area_id: '', notes: '',
         activation_minutes: 60, tolerance_minutes: 15
       });
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const openEdit = (res) => {
@@ -115,13 +115,13 @@ export default function Reservations() {
   const updateStatus = async (id, status) => {
     try {
       await axios.put(`${API}/reservations/${id}`, { status }, { headers: hdrs() });
-      toast.success('Actualizado'); fetchAll();
-    } catch { toast.error('Error'); }
+      notify.success('Actualizado'); fetchAll();
+    } catch { notify.error('Error'); }
   };
 
   const deleteRes = async (id) => {
-    try { await axios.delete(`${API}/reservations/${id}`, { headers: hdrs() }); toast.success('Eliminada'); fetchAll(); }
-    catch { toast.error('Error'); }
+    try { await axios.delete(`${API}/reservations/${id}`, { headers: hdrs() }); notify.success('Eliminada'); fetchAll(); }
+    catch { notify.error('Error'); }
   };
 
   // Group by time slots

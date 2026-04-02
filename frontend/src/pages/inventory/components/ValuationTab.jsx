@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { reportsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -76,7 +76,7 @@ export default function ValuationTab({ warehouses }) {
       const res = await reportsAPI.inventoryValuation(params);
       setValuationData(res.data);
     } catch (e) {
-      toast.error('Error al cargar valorización de inventario');
+      notify.error('Error al cargar valorización de inventario');
     }
     setLoadingValuation(false);
   };
@@ -92,7 +92,7 @@ export default function ValuationTab({ warehouses }) {
       const res = await reportsAPI.valuationTrends(params);
       setTrendsData(res.data);
     } catch (e) {
-      toast.error('Error al cargar tendencias');
+      notify.error('Error al cargar tendencias');
     }
     setLoadingTrends(false);
   };
@@ -100,7 +100,7 @@ export default function ValuationTab({ warehouses }) {
   // Export to Excel
   const exportValuationToExcel = () => {
     if (!valuationData || valuationData.items.length === 0) {
-      toast.error('No hay datos para exportar');
+      notify.error('No hay datos para exportar');
       return;
     }
     
@@ -155,7 +155,7 @@ export default function ValuationTab({ warehouses }) {
       }
       
       XLSX.writeFile(wb, `valorizacion_inventario_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast.success('Valorización exportada a Excel');
+      notify.success('Valorización exportada a Excel');
     });
   };
 

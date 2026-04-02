@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { 
   ShoppingCart, TrendingUp, Target, RefreshCw, Search, Check, X, Zap,
   AlertTriangle, ChevronRight, ArrowUpRight, LineChart
@@ -43,7 +43,7 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
       setPurchaseSuggestions(res.data);
       setSelectedSuggestions([]);
     } catch (e) {
-      toast.error('Error al cargar sugerencias de compra');
+      notify.error('Error al cargar sugerencias de compra');
     }
     setLoadingAssistant(false);
   };
@@ -54,7 +54,7 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
       const res = await purchasingAPI.getPriceAlerts();
       setPriceAlerts(res.data);
     } catch (e) {
-      toast.error('Error al cargar alertas de precios');
+      notify.error('Error al cargar alertas de precios');
     }
     setLoadingAssistant(false);
   };
@@ -64,9 +64,9 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
     try {
       const res = await purchasingAPI.recalculateMargins();
       setMarginResults(res.data);
-      toast.success('Márgenes recalculados correctamente');
+      notify.success('Márgenes recalculados correctamente');
     } catch (e) {
-      toast.error('Error al recalcular márgenes');
+      notify.error('Error al recalcular márgenes');
     }
     setLoadingMargins(false);
   };
@@ -77,19 +77,19 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
       const res = await purchasingAPI.getIngredientPriceHistory(ingredientId);
       setPriceHistoryDialog({ open: true, data: res.data, loading: false });
     } catch (e) {
-      toast.error('Error al cargar historial de precios');
+      notify.error('Error al cargar historial de precios');
       setPriceHistoryDialog({ open: false, data: null, loading: false });
     }
   };
 
   const handleGeneratePO = async () => {
     if (selectedSuggestions.length === 0) {
-      toast.error('Selecciona al menos un insumo');
+      notify.error('Selecciona al menos un insumo');
       return;
     }
     
     if (!assistantFilters.warehouse_id) {
-      toast.error('Selecciona un almacén de destino');
+      notify.error('Selecciona un almacén de destino');
       return;
     }
     
@@ -102,7 +102,7 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
     const itemsWithSupplier = selectedItems.filter(s => s.default_supplier_id);
     
     if (itemsWithSupplier.length === 0) {
-      toast.error('Ninguno de los insumos seleccionados tiene proveedor asignado');
+      notify.error('Ninguno de los insumos seleccionados tiene proveedor asignado');
       return;
     }
     
@@ -172,16 +172,16 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
       
       if (errorCount > 0) {
         message += ` ${errorCount} orden(es) fallaron.`;
-        toast.warning(message);
+        notify.warning(message);
       } else {
-        toast.success(message);
+        notify.success(message);
       }
       
       setSelectedSuggestions([]);
       onRefreshAll?.();
       onChangeTab?.('purchases');
     } else {
-      toast.error('No se pudo crear ninguna orden de compra');
+      notify.error('No se pudo crear ninguna orden de compra');
     }
   };
 

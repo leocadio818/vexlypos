@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useSettings } from './SettingsContext';
 import { categoriesAPI, productsAPI, warehousesAPI, inventorySettingsAPI } from '@/lib/api';
 import { Tag, Package, Plus, Trash2, Pencil, Search, X, Sparkles, ListChecks, Receipt } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -90,9 +90,9 @@ export default function InventarioTab() {
   };
 
   const saveModifier = async () => {
-    if (!modDialog.name.trim()) { toast.error('Nombre requerido'); return; }
+    if (!modDialog.name.trim()) { notify.error('Nombre requerido'); return; }
     const validOpts = modDialog.options.filter(o => o.name.trim());
-    if (validOpts.length === 0) { toast.error('Agrega al menos una opcion'); return; }
+    if (validOpts.length === 0) { notify.error('Agrega al menos una opcion'); return; }
     try {
       let groupId = modDialog.editId;
       if (groupId) {
@@ -110,19 +110,19 @@ export default function InventarioTab() {
       await Promise.all(validOpts.map(o =>
         axios.post(`${API}/modifiers`, { group_id: groupId, name: o.name, price: o.price || 0 }, { headers: hdrs() })
       ));
-      toast.success(modDialog.editId ? 'Modificador actualizado' : 'Modificador creado');
+      notify.success(modDialog.editId ? 'Modificador actualizado' : 'Modificador creado');
       setModDialog(p => ({ ...p, open: false }));
       loadModifiers();
-    } catch { toast.error('Error al guardar'); }
+    } catch { notify.error('Error al guardar'); }
   };
 
   const deleteModifier = async (id) => {
     { const ok = await showConfirm({ title: 'Confirmar', description: 'Eliminar este modificador y todas sus opciones?' }); if (!ok) return; }
     try {
       await axios.delete(`${API}/modifier-groups/${id}`, { headers: hdrs() });
-      toast.success('Modificador eliminado');
+      notify.success('Modificador eliminado');
       loadModifiers();
-    } catch { toast.error('Error al eliminar'); }
+    } catch { notify.error('Error al eliminar'); }
   };
 
   const addModOption = () => setModDialog(p => ({ ...p, options: [...p.options, { name: '', price: 0 }] }));
@@ -159,11 +159,11 @@ export default function InventarioTab() {
         }, { headers: hdrs() });
       }
       
-      toast.success(categoryDialog.editId ? 'Categoría actualizada' : 'Categoría creada');
+      notify.success(categoryDialog.editId ? 'Categoría actualizada' : 'Categoría creada');
       setCategoryDialog({ open: false, name: '', color: '#FF6600', editId: null, print_channel: '', tax_ids: [] }); 
       fetchAll();
     } catch (e) { 
-      toast.error('Error al guardar categoría'); 
+      notify.error('Error al guardar categoría'); 
       console.error(e);
     }
   };
@@ -214,9 +214,9 @@ export default function InventarioTab() {
     if (!confirm('¿Eliminar categoría?')) return;
     try { 
       await categoriesAPI.delete(id); 
-      toast.success('Eliminada'); 
+      notify.success('Eliminada'); 
       fetchAll(); 
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   // Warehouse handlers
@@ -229,17 +229,17 @@ export default function InventarioTab() {
       } else {
         await warehousesAPI.create(data);
       }
-      toast.success(warehouseDialog.editId ? 'Almacén actualizado' : 'Almacén creado');
+      notify.success(warehouseDialog.editId ? 'Almacén actualizado' : 'Almacén creado');
       setWarehouseDialog({ open: false, name: '', location: '', editId: null }); 
       fetchAll();
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   const handleSaveInventorySettings = async () => {
     try {
       await inventorySettingsAPI.update(inventorySettings);
-      toast.success('Configuración guardada');
-    } catch { toast.error('Error'); }
+      notify.success('Configuración guardada');
+    } catch { notify.error('Error'); }
   };
 
   // Filter products

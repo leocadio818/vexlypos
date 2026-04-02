@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { UserCheck, ArrowRightLeft, Lock, Shield } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import axios from 'axios';
 import { PinPad } from '@/components/PinPad';
 
@@ -32,7 +32,7 @@ export default function TransferTableModal({ open, onClose, tableId, currentUser
   }, [open, currentUserId]);
 
   const handleTransfer = async () => {
-    if (!selectedUser) { toast.error('Selecciona un usuario destino'); return; }
+    if (!selectedUser) { notify.error('Selecciona un usuario destino'); return; }
     setLoading(true);
     try {
       const payload = {
@@ -44,14 +44,14 @@ export default function TransferTableModal({ open, onClose, tableId, currentUser
       const res = await axios.post(`${API}/tables/transfer`, payload, { headers: hdrs() });
       const data = res.data;
       const count = data.transferred?.length || 0;
-      toast.success(`${count} mesa(s) transferida(s) a ${data.to_user}${data.authorized_by ? ` (Autorizado: ${data.authorized_by})` : ''}`);
+      notify.success(`${count} mesa(s) transferida(s) a ${data.to_user}${data.authorized_by ? ` (Autorizado: ${data.authorized_by})` : ''}`);
       onClose(true);
     } catch (err) {
       const msg = err.response?.data?.detail || 'Error al transferir';
       if (msg.includes('autorizacion') || msg.includes('PIN')) {
         setNeedsAuth(true);
       } else {
-        toast.error(msg);
+        notify.error(msg);
       }
     }
     setLoading(false);

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { useAuth } from '../../context/AuthContext';
 import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe, Clock, Trash2, Save, Key } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { invalidateTimezoneCache } from '@/lib/timezone';
@@ -50,9 +50,9 @@ function EcfCredentialsForm({ provider }) {
         body: JSON.stringify(body),
       });
       const d = await r.json();
-      if (d.ok) toast.success(d.message || 'Credenciales guardadas');
-      else toast.error('Error al guardar');
-    } catch { toast.error('Error de conexión'); }
+      if (d.ok) notify.success(d.message || 'Credenciales guardadas');
+      else notify.error('Error al guardar');
+    } catch { notify.error('Error de conexión'); }
     setSaving(false);
   };
 
@@ -242,23 +242,23 @@ export default function SystemTab() {
 
   const handleSystemReset = async () => {
     if (resetConfirmText !== 'RESETEAR_SISTEMA') {
-      toast.error('Escribe RESETEAR_SISTEMA para confirmar');
+      notify.error('Escribe RESETEAR_SISTEMA para confirmar');
       return;
     }
     if (keepUsers.length === 0) {
-      toast.error('Selecciona al menos un usuario a mantener');
+      notify.error('Selecciona al menos un usuario a mantener');
       return;
     }
     setResetLoading(true);
     try {
       const res = await axios.post(`${API}/system-reset`, { confirm: 'RESETEAR_SISTEMA', keep_user_ids: keepUsers }, { headers: hdrs() });
-      toast.success(res.data.message || 'Sistema reseteado');
+      notify.success(res.data.message || 'Sistema reseteado');
       setResetDialog(false);
       setResetConfirmText('');
       // Redirect to login after reset
       setTimeout(() => { localStorage.removeItem('pos_token'); window.location.href = '/'; }, 2000);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error al resetear');
+      notify.error(e.response?.data?.detail || 'Error al resetear');
     }
     setResetLoading(false);
   };
@@ -266,9 +266,9 @@ export default function SystemTab() {
   const handleSaveSystemConfig = async () => {
     try { 
       await axios.put(`${API}/system/config`, systemConfig, { headers: hdrs() }); 
-      toast.success('Configuración guardada'); 
+      notify.success('Configuración guardada'); 
     }
-    catch { toast.error('Error'); }
+    catch { notify.error('Error'); }
   };
 
   // Demo order for ticket preview
@@ -320,14 +320,14 @@ export default function SystemTab() {
               <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (file.size > 5 * 1024 * 1024) { toast.error('Logo debe ser menor a 5MB'); return; }
+                if (file.size > 5 * 1024 * 1024) { notify.error('Logo debe ser menor a 5MB'); return; }
                 const fd = new FormData();
                 fd.append('file', file);
                 try {
                   const res = await axios.post(`${API}/system/upload-logo`, fd, { headers: { ...hdrs(), 'Content-Type': 'multipart/form-data' } });
                   setSystemConfig(p => ({ ...p, logo_url: res.data.logo_url }));
-                  toast.success('Logo actualizado');
-                } catch { toast.error('Error al subir logo'); }
+                  notify.success('Logo actualizado');
+                } catch { notify.error('Error al subir logo'); }
               }} />
               <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold cursor-pointer active:scale-95 transition-transform">
                 <Building2 size={16} /> {systemConfig.logo_url ? 'Cambiar Logo' : 'Subir Logo'}
@@ -338,8 +338,8 @@ export default function SystemTab() {
                 try {
                   await axios.put(`${API}/system/config`, { ...systemConfig, logo_url: '' }, { headers: hdrs() });
                   setSystemConfig(p => ({ ...p, logo_url: '' }));
-                  toast.success('Logo eliminado');
-                } catch { toast.error('Error'); }
+                  notify.success('Logo eliminado');
+                } catch { notify.error('Error'); }
               }} className="text-xs text-destructive hover:underline">Quitar</button>
             )}
           </div>
@@ -421,9 +421,9 @@ export default function SystemTab() {
               try {
                 const r = await fetch(`${API}/ecf/test-connection`, { method: 'POST', headers: hdrs() });
                 const d = await r.json();
-                if (d.ok) toast.success(d.message);
-                else toast.error(d.message || 'Error de conexión');
-              } catch { toast.error('Error de conexión'); }
+                if (d.ok) notify.success(d.message);
+                else notify.error(d.message || 'Error de conexión');
+              } catch { notify.error('Error de conexión'); }
             }}
             className="mt-3 text-xs text-blue-400 hover:underline"
             data-testid="ecf-test-connection"
@@ -479,9 +479,9 @@ export default function SystemTab() {
               try {
                 await axios.put(`${API}/timezone`, { timezone: systemTimezone }, { headers: hdrs() });
                 invalidateTimezoneCache();
-                toast.success(`Zona horaria actualizada: ${systemTimezone}`);
+                notify.success(`Zona horaria actualizada: ${systemTimezone}`);
               } catch (e) {
-                toast.error(e.response?.data?.detail || 'Error al guardar timezone');
+                notify.error(e.response?.data?.detail || 'Error al guardar timezone');
               }
               setTzSaving(false);
             }}
@@ -740,10 +740,10 @@ export default function SystemTab() {
                     });
                     const data = await resp.json();
                     if (data.ok) {
-                      toast.success(`Limpieza completada: ${data.deleted} registros eliminados`);
+                      notify.success(`Limpieza completada: ${data.deleted} registros eliminados`);
                       setCleanupSelections({});
-                    } else { toast.error(data.detail || 'Error'); }
-                  } catch { toast.error('Error de conexión'); }
+                    } else { notify.error(data.detail || 'Error'); }
+                  } catch { notify.error('Error de conexión'); }
                 }}
                 data-testid="selective-cleanup-btn">
                 <Trash2 size={16} className="mr-2" /> LIMPIAR SELECCIONADOS ({Object.values(cleanupSelections).filter(v => v).length})

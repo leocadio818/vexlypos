@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { ncfAPI } from '@/lib/api';
 import { FileText, Plus, Trash2, Pencil, RefreshCw, AlertTriangle, AlertCircle, Calendar, ListChecks, Store, Bell } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +61,7 @@ export default function NcfTab() {
 
   const handleSaveNCFSequence = async () => {
     if (!ncfDialog.ncf_type_code || !ncfDialog.expiration_date || !ncfDialog.range_end) {
-      toast.error('Tipo NCF, fecha vencimiento y rango final son requeridos');
+      notify.error('Tipo NCF, fecha vencimiento y rango final son requeridos');
       return;
     }
     try {
@@ -89,15 +89,15 @@ export default function NcfTab() {
           alert_threshold: data.alert_threshold,
           alert_interval: data.alert_interval
         });
-        toast.success('Secuencia NCF actualizada');
+        notify.success('Secuencia NCF actualizada');
       } else {
         await ncfAPI.createSequence(data);
-        toast.success('Secuencia NCF creada');
+        notify.success('Secuencia NCF creada');
       }
       setNcfDialog({ open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' });
       refreshNCFData();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error al guardar secuencia');
+      notify.error(err.response?.data?.detail || 'Error al guardar secuencia');
     }
   };
 
@@ -114,10 +114,10 @@ export default function NcfTab() {
     if (!confirm('¿Desactivar esta secuencia NCF?')) return;
     try {
       await ncfAPI.deleteSequence(id);
-      toast.success('Secuencia desactivada');
+      notify.success('Secuencia desactivada');
       refreshNCFData();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error');
+      notify.error(err.response?.data?.detail || 'Error');
     }
   };
 

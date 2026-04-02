@@ -7,7 +7,7 @@ import {
   unitDefinitionsAPI
 } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { 
   Package, Warehouse, Truck, FileText, ArrowLeftRight, AlertTriangle,
   ChevronRight, ArrowLeft, RefreshCw, Mail, Bell, Check, Plus, Save, X,
@@ -128,7 +128,7 @@ export default function InventoryManager() {
       setSchedulerStatus(schedRes.data || { active: false, next_run: null });
       setCustomUnits(unitsRes.data || []);
     } catch (e) {
-      toast.error('Error al cargar datos');
+      notify.error('Error al cargar datos');
     }
     setLoading(false);
   };
@@ -147,7 +147,7 @@ export default function InventoryManager() {
       const res = await ingredientsAPI.getConversionAnalysis(ingredientId);
       setConversionAnalysis({ open: true, data: res.data, loading: false });
     } catch (e) {
-      toast.error('Error al cargar análisis de conversión');
+      notify.error('Error al cargar análisis de conversión');
       setConversionAnalysis({ open: false, data: null, loading: false });
     }
   };
@@ -164,7 +164,7 @@ export default function InventoryManager() {
       const res = await stockAPI.listMultilevel(params);
       setMultilevelStock(res.data || []);
     } catch (e) {
-      toast.error('Error al cargar stock multinivel');
+      notify.error('Error al cargar stock multinivel');
     }
     setLoadingMultilevel(false);
   };
@@ -172,11 +172,11 @@ export default function InventoryManager() {
   const handleRegisterDifference = async () => {
     const d = differenceDialog.data;
     if (!d?.quantity || d.quantity <= 0) {
-      toast.error('Cantidad requerida');
+      notify.error('Cantidad requerida');
       return;
     }
     if (!d?.reason?.trim()) {
-      toast.error('Razón de la diferencia requerida');
+      notify.error('Razón de la diferencia requerida');
       return;
     }
     
@@ -191,11 +191,11 @@ export default function InventoryManager() {
         observations: d.observations || ''
       });
       
-      toast.success(`Diferencia registrada: ${formatMoney(res.data.monetary_value)} ${d.difference_type === 'faltante' ? 'perdido' : 'ganado'}`);
+      notify.success(`Diferencia registrada: ${formatMoney(res.data.monetary_value)} ${d.difference_type === 'faltante' ? 'perdido' : 'ganado'}`);
       setDifferenceDialog({ open: false, data: null });
       fetchMultilevelStock();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error al registrar diferencia');
+      notify.error(e.response?.data?.detail || 'Error al registrar diferencia');
     }
   };
 
@@ -219,36 +219,36 @@ export default function InventoryManager() {
   const handleTransfer = async () => {
     const d = transferDialog.data;
     if (!d?.ingredient_id || !d?.from_warehouse_id || !d?.to_warehouse_id || !d?.quantity) {
-      toast.error('Completa todos los campos');
+      notify.error('Completa todos los campos');
       return;
     }
     if (d.from_warehouse_id === d.to_warehouse_id) {
-      toast.error('Los almacenes deben ser diferentes');
+      notify.error('Los almacenes deben ser diferentes');
       return;
     }
     try {
       await stockAPI.transfer(d);
-      toast.success('Transferencia realizada');
+      notify.success('Transferencia realizada');
       setTransferDialog({ open: false, data: null });
       fetchAll();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
   const handleAdjust = async () => {
     const d = adjustDialog.data;
     if (!d?.ingredient_id || !d?.warehouse_id || d?.quantity === undefined) {
-      toast.error('Completa todos los campos');
+      notify.error('Completa todos los campos');
       return;
     }
     try {
       await stockAPI.adjust(d);
-      toast.success('Ajuste realizado');
+      notify.success('Ajuste realizado');
       setAdjustDialog({ open: false, data: null });
       fetchAll();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
@@ -258,28 +258,28 @@ export default function InventoryManager() {
       const res = await stockAlertsAPI.check(false);
       setLowStockItems(res.data.items || []);
       if (res.data.items?.length === 0) {
-        toast.success('No hay items con stock bajo');
+        notify.success('No hay items con stock bajo');
       }
     } catch (e) {
-      toast.error('Error al verificar alertas');
+      notify.error('Error al verificar alertas');
     }
   };
 
   const handleSendAlert = async () => {
     if (!alertConfig.emails?.length) {
-      toast.error('Configura al menos un email');
+      notify.error('Configura al menos un email');
       return;
     }
     setSendingAlert(true);
     try {
       const res = await stockAlertsAPI.check(true);
       if (res.data.email_sent) {
-        toast.success(`Alerta enviada a ${res.data.sent_to?.length} destinatario(s)`);
+        notify.success(`Alerta enviada a ${res.data.sent_to?.length} destinatario(s)`);
       } else {
-        toast.error(res.data.reason || 'No se pudo enviar');
+        notify.error(res.data.reason || 'No se pudo enviar');
       }
     } catch (e) {
-      toast.error('Error al enviar alerta');
+      notify.error('Error al enviar alerta');
     }
     setSendingAlert(false);
   };
@@ -287,21 +287,21 @@ export default function InventoryManager() {
   const handleSaveAlertConfig = async () => {
     try {
       await stockAlertsAPI.updateConfig(alertConfig);
-      toast.success('Configuración guardada');
+      notify.success('Configuración guardada');
       setAlertDialog({ open: false });
     } catch (e) {
-      toast.error('Error al guardar');
+      notify.error('Error al guardar');
     }
   };
 
   const addAlertEmail = () => {
     const email = alertDialog.newEmail?.trim();
     if (!email || !email.includes('@')) {
-      toast.error('Email inválido');
+      notify.error('Email inválido');
       return;
     }
     if (alertConfig.emails?.includes(email)) {
-      toast.error('Email ya existe');
+      notify.error('Email ya existe');
       return;
     }
     setAlertConfig(prev => ({

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSettings } from './SettingsContext';
 import { taxesAPI } from '@/lib/api';
 import { Calculator, Plus, Trash2, Pencil, Sparkles, Percent, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { NumericInput } from '@/components/NumericKeypad';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -20,16 +20,16 @@ export default function TaxesTab() {
   const handleSeedDefaultTaxes = async () => {
     try {
       const res = await taxesAPI.seedDefaults();
-      toast.success(`Se crearon ${res.data.created} impuestos por defecto`);
+      notify.success(`Se crearon ${res.data.created} impuestos por defecto`);
       refreshTaxConfig();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error');
+      notify.error(err.response?.data?.detail || 'Error');
     }
   };
 
   const handleSaveTax = async () => {
     if (!taxDialog.code.trim() || !taxDialog.name.trim()) {
-      toast.error('Código y nombre son requeridos');
+      notify.error('Código y nombre son requeridos');
       return;
     }
     try {
@@ -47,15 +47,15 @@ export default function TaxesTab() {
       
       if (taxDialog.editId) {
         await taxesAPI.updateConfig(taxDialog.editId, data);
-        toast.success('Impuesto actualizado');
+        notify.success('Impuesto actualizado');
       } else {
         await taxesAPI.createConfig(data);
-        toast.success('Impuesto creado');
+        notify.success('Impuesto creado');
       }
       setTaxDialog({ open: false, code: '', name: '', rate: 18, tax_type: 'percentage', applies_to: 'subtotal', is_dine_in_only: false, dgii_code: '', description: '', sort_order: 0, editId: null });
       refreshTaxConfig();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error al guardar impuesto');
+      notify.error(err.response?.data?.detail || 'Error al guardar impuesto');
     }
   };
 
@@ -63,10 +63,10 @@ export default function TaxesTab() {
     if (!confirm(`¿Desactivar impuesto ${code}?`)) return;
     try {
       await taxesAPI.deleteConfig(code);
-      toast.success('Impuesto desactivado');
+      notify.success('Impuesto desactivado');
       refreshTaxConfig();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Error al desactivar');
+      notify.error(err.response?.data?.detail || 'Error al desactivar');
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { 
   Package, Plus, Pencil, Trash2, Search, X, Save, Calculator, 
   ArrowLeftRight, AlertTriangle, FileText, History, Factory, Truck
@@ -113,7 +113,7 @@ export default function IngredientsTab({
       setAuditLogs(res.data || []);
       setShowAuditHistory(true);
     } catch (e) {
-      toast.error('Error al cargar historial');
+      notify.error('Error al cargar historial');
     }
   };
 
@@ -128,7 +128,7 @@ export default function IngredientsTab({
     const validation = validateIngredient(d);
     if (!validation.isValid) {
       const firstError = Object.values(validation.errors)[0];
-      toast.error(firstError);
+      notify.error(firstError);
       return;
     }
     
@@ -143,10 +143,10 @@ export default function IngredientsTab({
     try {
       if (d.id) {
         const res = await ingredientsAPI.update(d.id, saveData);
-        toast.success(`Ingrediente actualizado${res.data?.audit_logs_created > 0 ? ' (cambios registrados en auditoría)' : ''}`);
+        notify.success(`Ingrediente actualizado${res.data?.audit_logs_created > 0 ? ' (cambios registrados en auditoría)' : ''}`);
       } else {
         await ingredientsAPI.create(saveData);
-        toast.success('Ingrediente creado');
+        notify.success('Ingrediente creado');
       }
       setIngredientDialog({ open: false, data: null });
       setAffectedRecipes({ count: 0, recipes: [] });
@@ -154,7 +154,7 @@ export default function IngredientsTab({
       setValidationAttempted(false);
       onRefreshAll?.();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
@@ -162,31 +162,31 @@ export default function IngredientsTab({
     { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar ingrediente?' }); if (!ok) return; }
     try {
       await ingredientsAPI.delete(id);
-      toast.success('Ingrediente eliminado');
+      notify.success('Ingrediente eliminado');
       onRefreshAll?.();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
   // ─── CUSTOM UNITS HANDLERS ───
   const handleSaveUnit = async () => {
     const d = unitDialog.data;
-    if (!d?.name?.trim()) { toast.error('Nombre requerido'); return; }
-    if (!d?.abbreviation?.trim()) { toast.error('Abreviatura requerida'); return; }
+    if (!d?.name?.trim()) { notify.error('Nombre requerido'); return; }
+    if (!d?.abbreviation?.trim()) { notify.error('Abreviatura requerida'); return; }
     try {
       if (d.id) {
         const res = await unitDefinitionsAPI.update(d.id, d);
         const updated = res.data?.ingredients_updated || 0;
-        toast.success(`Unidad actualizada${updated > 0 ? `. ${updated} ingrediente(s) actualizados automáticamente.` : ''}`);
+        notify.success(`Unidad actualizada${updated > 0 ? `. ${updated} ingrediente(s) actualizados automáticamente.` : ''}`);
       } else {
         await unitDefinitionsAPI.create(d);
-        toast.success('Unidad creada');
+        notify.success('Unidad creada');
       }
       setUnitDialog({ open: false, data: null });
       onRefreshAll?.();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
@@ -194,10 +194,10 @@ export default function IngredientsTab({
     { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar unidad? Solo se puede eliminar si no está en uso.' }); if (!ok) return; }
     try {
       await unitDefinitionsAPI.delete(id);
-      toast.success('Unidad eliminada');
+      notify.success('Unidad eliminada');
       onRefreshAll?.();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 

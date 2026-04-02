@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Popover, PopoverTrigger, PopoverContent } from '../../../components/ui/popover';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '../../../components/ui/command';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { 
   FileText, Plus, Pencil, Trash2, Save, X, TrendingUp, DollarSign, 
   AlertTriangle, Check, BarChart3, List, ArrowUpDown, Filter, Search,
@@ -256,10 +256,10 @@ export default function RecipesTab({
       });
       
       setCustomPrice(marginData.suggestedPrice);
-      toast.success(`Precio actualizado a ${formatMoney(marginData.suggestedPrice)}`);
+      notify.success(`Precio actualizado a ${formatMoney(marginData.suggestedPrice)}`);
       onRefreshAll?.();
     } catch (e) {
-      toast.error('Error al actualizar precio');
+      notify.error('Error al actualizar precio');
     }
   };
 
@@ -284,25 +284,25 @@ export default function RecipesTab({
   const handleSaveRecipe = async () => {
     const d = recipeDialog.data;
     if (!d?.product_id) { 
-      toast.error('Selecciona un producto'); 
+      notify.error('Selecciona un producto'); 
       return; 
     }
     if (!d?.ingredients?.length) { 
-      toast.error('Agrega al menos un ingrediente'); 
+      notify.error('Agrega al menos un ingrediente'); 
       return; 
     }
     try {
       if (d.id) {
         await recipesAPI.update(d.id, d);
-        toast.success('Receta actualizada');
+        notify.success('Receta actualizada');
       } else {
         await recipesAPI.create(d);
-        toast.success('Receta creada');
+        notify.success('Receta creada');
       }
       setRecipeDialog({ open: false, data: null });
       onRefreshAll?.();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 
@@ -310,10 +310,10 @@ export default function RecipesTab({
     { const ok = await showConfirm({ title: 'Confirmar', description: '¿Eliminar receta?' }); if (!ok) return; }
     try {
       await recipesAPI.delete(id);
-      toast.success('Receta eliminada');
+      notify.success('Receta eliminada');
       onRefreshAll?.();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error');
+      notify.error(e.response?.data?.detail || 'Error');
     }
   };
 

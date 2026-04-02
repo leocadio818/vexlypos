@@ -12,7 +12,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Search, Check, X, AlertCircle, User, Building2, Mail, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 /**
  * Algoritmo de validación de RNC dominicano (9 dígitos)
@@ -236,7 +236,7 @@ const FiscalDataDrawer = ({
             if (!razonSocial) {
               setRazonSocial(data.nombre);
               setIsNewCustomer(true);
-              toast.success(`DGII: ${data.nombre}`, { duration: 2000 });
+              notify.success(`DGII: ${data.nombre}`, { duration: 2000 });
             }
           }
         } catch (err) {
@@ -254,7 +254,7 @@ const FiscalDataDrawer = ({
   // Buscar cliente en la base de datos
   const searchCustomer = useCallback(async () => {
     if (!validation.valid) {
-      toast.error('Ingresa un RNC o Cédula válido primero');
+      notify.error('Ingresa un RNC o Cédula válido primero');
       return;
     }
     
@@ -277,7 +277,7 @@ const FiscalDataDrawer = ({
         setEmail(found.email || '');
         setIsNewCustomer(false);
         setDgiiData(null);
-        toast.success('Cliente encontrado');
+        notify.success('Cliente encontrado');
       } else {
         setCustomerFound(null);
         setIsNewCustomer(true);
@@ -285,7 +285,7 @@ const FiscalDataDrawer = ({
         // If we already have DGII data, use it
         if (dgiiData?.nombre && !razonSocial) {
           setRazonSocial(dgiiData.nombre);
-          toast.info('Cliente nuevo - Datos de DGII aplicados');
+          notify.info('Cliente nuevo - Datos de DGII aplicados');
         } else if (!dgiiData && validation.type === 'RNC') {
           // Try DGII if we don't have data yet
           try {
@@ -297,20 +297,20 @@ const FiscalDataDrawer = ({
             if (dgii.valid && dgii.nombre) {
               setDgiiData(dgii);
               setRazonSocial(dgii.nombre);
-              toast.success(`DGII: ${dgii.nombre}`);
+              notify.success(`DGII: ${dgii.nombre}`);
             } else {
-              toast.info('Cliente no encontrado. Ingresa los datos manualmente.');
+              notify.info('Cliente no encontrado. Ingresa los datos manualmente.');
             }
           } catch {
-            toast.info('Cliente no encontrado. Ingresa los datos manualmente.');
+            notify.info('Cliente no encontrado. Ingresa los datos manualmente.');
           }
         } else {
-          toast.info('Cliente no encontrado. Ingresa los datos manualmente.');
+          notify.info('Cliente no encontrado. Ingresa los datos manualmente.');
         }
       }
     } catch (err) {
       console.error('Error searching customer:', err);
-      toast.error('Error al buscar cliente');
+      notify.error('Error al buscar cliente');
     } finally {
       setSearching(false);
     }
@@ -319,7 +319,7 @@ const FiscalDataDrawer = ({
   // Guardar nuevo cliente
   const saveNewCustomer = async () => {
     if (!razonSocial.trim()) {
-      toast.error('La Razón Social es obligatoria');
+      notify.error('La Razón Social es obligatoria');
       return null;
     }
     
@@ -341,11 +341,11 @@ const FiscalDataDrawer = ({
       if (!res.ok) throw new Error('Error al crear cliente');
       
       const newCustomer = await res.json();
-      toast.success('Cliente registrado exitosamente');
+      notify.success('Cliente registrado exitosamente');
       return newCustomer;
     } catch (err) {
       console.error('Error saving customer:', err);
-      toast.error('Error al guardar cliente');
+      notify.error('Error al guardar cliente');
       return null;
     }
   };
@@ -353,12 +353,12 @@ const FiscalDataDrawer = ({
   // Confirmar y continuar
   const handleConfirm = async () => {
     if (!validation.valid) {
-      toast.error('Ingresa un RNC o Cédula válido');
+      notify.error('Ingresa un RNC o Cédula válido');
       return;
     }
     
     if (!razonSocial.trim()) {
-      toast.error('La Razón Social es obligatoria');
+      notify.error('La Razón Social es obligatoria');
       return;
     }
     

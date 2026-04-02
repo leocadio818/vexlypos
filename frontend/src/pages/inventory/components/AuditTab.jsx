@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ingredientsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { NeoDatePicker, NeoTimePicker } from '@/components/DateTimePicker';
 
 const getFieldLabel = (field) => {
@@ -44,7 +44,7 @@ export default function AuditTab() {
       setAllAuditLogs(res.data.logs || []);
       setAuditStats(res.data.stats || { total_changes: 0, unique_ingredients: 0, changes_by_field: {} });
     } catch (e) {
-      toast.error('Error al cargar historial de auditoría');
+      notify.error('Error al cargar historial de auditoría');
     }
     setLoadingAudit(false);
   };
@@ -52,7 +52,7 @@ export default function AuditTab() {
   // Export to Excel
   const exportAuditToExcel = () => {
     if (allAuditLogs.length === 0) {
-      toast.error('No hay datos para exportar');
+      notify.error('No hay datos para exportar');
       return;
     }
     
@@ -85,7 +85,7 @@ export default function AuditTab() {
       XLSX.utils.book_append_sheet(wb, wsStats, 'Resumen');
       
       XLSX.writeFile(wb, `auditoria_insumos_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast.success('Historial exportado a Excel');
+      notify.success('Historial exportado a Excel');
     });
   };
 

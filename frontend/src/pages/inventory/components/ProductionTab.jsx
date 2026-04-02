@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { 
   Factory, AlertTriangle, Check, History, Play, Search, X, RefreshCw, BookOpen, Plus, Trash2
 } from 'lucide-react';
@@ -103,7 +103,7 @@ export default function ProductionTab({
         });
       }
     } catch (e) {
-      toast.error('Error al cargar receta');
+      notify.error('Error al cargar receta');
     }
     setLoadingRecipe(false);
   };
@@ -111,7 +111,7 @@ export default function ProductionTab({
   const handleSaveSubrecipeRecipe = async () => {
     const validIngredients = recipeDialog.ingredients.filter(i => i.ingredient_id);
     if (validIngredients.length === 0) {
-      toast.error('Agrega al menos un ingrediente base');
+      notify.error('Agrega al menos un ingrediente base');
       return;
     }
     try {
@@ -127,14 +127,14 @@ export default function ProductionTab({
       
       if (recipeDialog.recipeId) {
         await recipesAPI.update(recipeDialog.recipeId, payload);
-        toast.success('Receta de sub-receta actualizada');
+        notify.success('Receta de sub-receta actualizada');
       } else {
         await recipesAPI.create(payload);
-        toast.success('Receta de sub-receta creada');
+        notify.success('Receta de sub-receta creada');
       }
       setRecipeDialog({ open: false, subrecipeId: null, subrecipeName: '', recipeId: null, ingredients: [], yield_quantity: 1, notes: '' });
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error al guardar receta');
+      notify.error(e.response?.data?.detail || 'Error al guardar receta');
     }
   };
 
@@ -159,7 +159,7 @@ export default function ProductionTab({
   const handleCheckProduction = async () => {
     const d = productionDialog.data;
     if (!d?.warehouse_id || !d?.quantity) {
-      toast.error('Completa todos los campos');
+      notify.error('Completa todos los campos');
       return;
     }
     setProductionDialog(p => ({ ...p, checking: true }));
@@ -171,7 +171,7 @@ export default function ProductionTab({
       });
       setProductionDialog(p => ({ ...p, checking: false, checkResult: res.data }));
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error al verificar');
+      notify.error(e.response?.data?.detail || 'Error al verificar');
       setProductionDialog(p => ({ ...p, checking: false }));
     }
   };
@@ -180,7 +180,7 @@ export default function ProductionTab({
     const d = productionDialog.data;
     const check = productionDialog.checkResult;
     if (!check?.can_produce) {
-      toast.error('Verifica la disponibilidad primero');
+      notify.error('Verifica la disponibilidad primero');
       return;
     }
     setProducingItem(true);
@@ -192,15 +192,15 @@ export default function ProductionTab({
         notes: d.notes || ''
       });
       if (res.data.ok) {
-        toast.success(`Producido: ${res.data.quantity_produced} ${res.data.unit} de ${res.data.ingredient_name}`);
+        notify.success(`Producido: ${res.data.quantity_produced} ${res.data.unit} de ${res.data.ingredient_name}`);
         setProductionDialog({ open: false, data: null, checking: false, checkResult: null });
         onRefreshAll?.();
         loadProductionHistory();
       } else {
-        toast.error(res.data.error || 'Error en producción');
+        notify.error(res.data.error || 'Error en producción');
       }
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error al producir');
+      notify.error(e.response?.data?.detail || 'Error al producir');
     }
     setProducingItem(false);
   };

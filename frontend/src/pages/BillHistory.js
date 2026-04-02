@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -61,7 +61,7 @@ export default function BillHistory() {
       setCreditNotes(cnRes);
       setReturnReasons(reasonsRes);
     } catch (e) {
-      toast.error('Error cargando datos');
+      notify.error('Error cargando datos');
     }
     setLoading(false);
   }, [statusFilter, dateRange]);
@@ -88,7 +88,7 @@ export default function BillHistory() {
 
   const openReversalDialog = (bill) => {
     if (bill.credit_note_id) {
-      toast.error('Esta factura ya tiene una nota de crédito asociada');
+      notify.error('Esta factura ya tiene una nota de crédito asociada');
       return;
     }
     setReversalDialog({ open: true, bill });
@@ -100,11 +100,11 @@ export default function BillHistory() {
 
   const handleReversal = async () => {
     if (!selectedReason) {
-      toast.error('Selecciona un motivo de devolución');
+      notify.error('Selecciona un motivo de devolución');
       return;
     }
     if (!isFullReversal && selectedItems.length === 0) {
-      toast.error('Selecciona al menos un item para reversión parcial');
+      notify.error('Selecciona al menos un item para reversión parcial');
       return;
     }
 
@@ -134,11 +134,11 @@ export default function BillHistory() {
       }
 
       const creditNote = await res.json();
-      toast.success(`Nota de Crédito ${creditNote.ncf} generada exitosamente`);
+      notify.success(`Nota de Crédito ${creditNote.ncf} generada exitosamente`);
       setReversalDialog({ open: false, bill: null });
       fetchData();
     } catch (e) {
-      toast.error(e.message || 'Error procesando reversión');
+      notify.error(e.message || 'Error procesando reversión');
     }
     setProcessing(false);
   };

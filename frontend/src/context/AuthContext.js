@@ -3,7 +3,7 @@ import { authAPI, seedAPI, processOfflineQueue } from '@/lib/api';
 import { useTheme } from '@/context/ThemeContext';
 import useDeviceDetect from '@/hooks/useDeviceDetect';
 import offlineDB from '@/lib/offlineDB';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 
 const AuthContext = createContext(null);
 
@@ -200,8 +200,7 @@ export function AuthProvider({ children }) {
       // Notify if business day was auto-opened
       if (res.data.business_day_opened) {
         setTimeout(() => {
-          const { toast } = require('sonner');
-          toast.success('Nueva jornada de trabajo iniciada', {
+          notify.success('Nueva jornada de trabajo iniciada', {
             description: `Abierta automáticamente al hacer login como ${res.data.user.name}`
           });
         }, 500);

@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { useTheme } from '@/context/ThemeContext';
 import TransferTableModal from '@/components/TransferTableModal';
 import AccountSelectorLobby from '@/components/AccountSelectorLobby';
@@ -640,12 +640,12 @@ export default function OrderScreen() {
   const handleProductClick = (product) => {
     // Block if offline
     if (!navigator.onLine) {
-      toast.error('Sin conexión. Para agregar artículos necesitas internet.');
+      notify.error('Sin conexión. Para agregar artículos necesitas internet.');
       return;
     }
     // Block if no active business day
     if (!hasActiveDay) {
-      toast.error('No hay jornada activa', { description: 'Se requiere iniciar una nueva jornada. Cierra sesión y vuelve a entrar.' });
+      notify.error('No hay jornada activa', { description: 'Se requiere iniciar una nueva jornada. Cierra sesión y vuelve a entrar.' });
       return;
     }
     // Check if product has any modifiers (from either old or new system)
@@ -674,7 +674,7 @@ export default function OrderScreen() {
 
   const addItemToOrder = async (product, qty, mods, notes) => {
     if (!navigator.onLine) {
-      toast.error('Sin conexión. Para agregar artículos necesitas internet.');
+      notify.error('Sin conexión. Para agregar artículos necesitas internet.');
       return;
     }
     const item = { product_id: product.id, product_name: product.name, quantity: qty, unit_price: product.price, modifiers: mods, notes };
@@ -1116,11 +1116,11 @@ export default function OrderScreen() {
       });
       const data = await resp.json();
       if (data.ok) {
-        toast.success('Pre-cuenta enviada a impresora');
+        notify.success('Pre-cuenta enviada a impresora');
         setPreCheckOpen(false);
         setPrinterSelectDialog({ open: false, pendingOrderId: null });
       }
-    } catch { toast.error('Error al imprimir'); }
+    } catch { notify.error('Error al imprimir'); }
   };
 
   const checkUserHasActiveShift = async () => {
@@ -1159,7 +1159,7 @@ export default function OrderScreen() {
         });
         const data = await resp.json();
         if (data.ok) setPreCheckOpen(false);
-      } catch { toast.error('Error al imprimir'); }
+      } catch { notify.error('Error al imprimir'); }
     } else {
       // Sin turno → cerrar pre-cuenta y mostrar selector de impresora
       setPreCheckOpen(false);
@@ -1235,7 +1235,7 @@ export default function OrderScreen() {
     for (const ord of ordersWithItems) {
       await doPrintPreCheck(ord.id);
     }
-    toast.success(`${ordersWithItems.length} pre-cuentas generadas`);
+    notify.success(`${ordersWithItems.length} pre-cuentas generadas`);
   };
 
   const handleManagerAuth = async () => {
@@ -1328,7 +1328,7 @@ export default function OrderScreen() {
   // Create new order from selected items
   const createNewOrderFromItems = async (label = '') => {
     if (selectedSplitItems.length === 0) {
-      toast.error('Selecciona al menos un item');
+      notify.error('Selecciona al menos un item');
       return;
     }
     if (!order) return;
@@ -1336,7 +1336,7 @@ export default function OrderScreen() {
     // Check if ALL items are selected - not allowed (account would be empty)
     const allItemIds = activeItems.map(i => i.id);
     if (selectedSplitItems.length === allItemIds.length) {
-      toast.error('No puedes mover todos los items. Deselecciona al menos uno para que la cuenta original no quede vacía.');
+      notify.error('No puedes mover todos los items. Deselecciona al menos uno para que la cuenta original no quede vacía.');
       return;
     }
 
@@ -1356,12 +1356,12 @@ export default function OrderScreen() {
   // Open label dialog for split
   const openSplitLabelDialog = () => {
     if (selectedSplitItems.length === 0) {
-      toast.error('Selecciona al menos un item');
+      notify.error('Selecciona al menos un item');
       return;
     }
     const allItemIds = activeItems.map(i => i.id);
     if (selectedSplitItems.length === allItemIds.length) {
-      toast.error('No puedes mover todos los items. Deselecciona al menos uno.');
+      notify.error('No puedes mover todos los items. Deselecciona al menos uno.');
       return;
     }
     setAccountLabelDialog({ open: true, label: '', action: 'split', itemIds: selectedSplitItems });
@@ -1384,7 +1384,7 @@ export default function OrderScreen() {
   // Open label dialog for new empty account
   const openNewAccountLabelDialog = () => {
     if (!navigator.onLine) {
-      toast.error('Sin conexión. Para agregar artículos necesitas internet.');
+      notify.error('Sin conexión. Para agregar artículos necesitas internet.');
       return;
     }
     setAccountLabelDialog({ open: true, label: '', action: 'new', itemIds: [] });
@@ -1463,9 +1463,9 @@ export default function OrderScreen() {
       setSelectorMergeMode(false);
       setSelectorMergeSource(null);
       await fetchOrder();
-      toast.success('Cuentas unidas exitosamente');
+      notify.success('Cuentas unidas exitosamente');
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Error uniendo cuentas');
+      notify.error(e.response?.data?.detail || 'Error uniendo cuentas');
     }
   };
 
@@ -1476,7 +1476,7 @@ export default function OrderScreen() {
       try {
         const shiftCheck = await posSessionsAPI.check();
         if (!shiftCheck.data?.has_open_session) {
-          toast.error('Debes abrir un turno de caja', {
+          notify.error('Debes abrir un turno de caja', {
             description: 'Ve a Caja / Turnos para abrir tu turno antes de cobrar.',
             duration: 4000
           });

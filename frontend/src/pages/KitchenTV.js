@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Clock, ChefHat, ArrowRight, Maximize, Minimize, Settings, Keyboard } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { notify } from '@/lib/notify';
 import { Toaster } from '@/components/ui/sonner';
 import axios from 'axios';
 
@@ -130,9 +130,9 @@ export default function KitchenTV() {
   const handleSaveConfig = async () => {
     try {
       await axios.put(`${API}/kitchen/config`, config, { headers: hdrs() });
-      toast.success('Configuracion guardada');
+      notify.success('Configuracion guardada');
       setSettingsOpen(false);
-    } catch { toast.error('Error'); }
+    } catch { notify.error('Error'); }
   };
 
   // Auth loading/prompt screen
