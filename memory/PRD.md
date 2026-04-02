@@ -20,8 +20,9 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 ## Completed Tasks (2026-04-02)
 - **Service Worker Cache Fix** (DONE): Fixed sw.js to properly cache app shell on install (v4: cache-first strategy, skipWaiting/clients.claim inside waitUntil chain). All static assets and JS/CSS bundles cached on fetch.
 - **localStorage Data Cache** (DONE): tablesAPI.list() saves to `vexly_mesas`, ordersAPI.getTableOrders() merges per-table into `vexly_orders`. Offline fallback reads from these keys.
-- **OrderScreen Offline Fallback** (DONE): When offline, fetchOrder() skips API calls entirely and reads directly from localStorage (`vexly_mesas` for table, `vexly_orders` filtered by table_id for orders). Split bill accounts load correctly offline. fetchAll() wrapped with .catch() to prevent unhandled rejection crash. PRE-CUENTA visible with cached data, FACTURAR unchanged.
-- **TableMap Offline Fallback** (DONE): fetchData() falls back to `vexly_mesas` and `vexly_areas` from localStorage when API fails. Areas cached on successful fetch. Navigating back from order offline no longer shows blank screen.
+- **OrderScreen Offline Fallback** (DONE): Removed unreliable `navigator.onLine` checks. Now uses `!err.response` (axios network error detection) in api.js catches. `fetchOrder()` uses `loadFromCache()` helper on ANY catch. All `sendPendingToKitchenSilently` and `fetchOrder` calls wrapped in try/catch to prevent blocked navigation. Split bill `applyOrders` correctly filters by table_id and selects account by activeOrderId.
+- **TableMap Offline Fallback** (DONE): fetchData() falls back to `vexly_mesas` and `vexly_areas` from localStorage on ANY error. Areas cached on successful fetch. Back navigation always reaches `navigate('/tables')`.
+- **api.js Cache Isolation** (DONE): `ordersAPI.list()` no longer writes to `vexly_orders` (prevented overwriting per-table data). Only `getTableOrders()` writes to `vexly_orders` using merge strategy.
 
 ## Completed Tasks (2026-04-01)
 - **The Factory HKA Integration** (DONE): Full e-CF integration with auth, payload mapping, send, status check, anulación, logs.

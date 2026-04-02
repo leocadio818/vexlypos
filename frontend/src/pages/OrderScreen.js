@@ -202,38 +202,34 @@ export default function OrderScreen() {
     }
   }, [activeOrderId]);
 
-  const fetchOrder = useCallback(async () => {
-    // When offline, skip API calls entirely — use localStorage directly
-    if (!navigator.onLine) {
-      try {
-        const mesasRaw = localStorage.getItem('vexly_mesas');
-        if (mesasRaw) {
-          const t = JSON.parse(mesasRaw).find(tb => tb.id === tableId);
-          if (t) setTable(t);
-        }
-        const ordersRaw = localStorage.getItem('vexly_orders');
-        if (ordersRaw) {
-          const parsed = JSON.parse(ordersRaw);
-          const orders = Array.isArray(parsed) ? parsed.filter(o => o.table_id === tableId) : [];
-          if (orders.length > 0) applyOrders(orders);
-        }
-      } catch {}
-      return;
-    }
+  const loadFromCache = useCallback(() => {
+    try {
+      const mesasRaw = localStorage.getItem('vexly_mesas');
+      if (mesasRaw) {
+        const t = JSON.parse(mesasRaw).find(tb => tb.id === tableId);
+        if (t) setTable(t);
+      }
+      const ordersRaw = localStorage.getItem('vexly_orders');
+      if (ordersRaw) {
+        const parsed = JSON.parse(ordersRaw);
+        const orders = Array.isArray(parsed) ? parsed.filter(o => o.table_id === tableId) : [];
+        if (orders.length > 0) applyOrders(orders);
+      }
+    } catch {}
+  }, [tableId, applyOrders]);
 
+  const fetchOrder = useCallback(async () => {
     try {
       const tableRes = await tablesAPI.list();
       const t = tableRes.data.find(tb => tb.id === tableId);
       setTable(t);
       
-      // Fetch ALL orders for this table
       try {
         const ordersRes = await ordersAPI.getTableOrders(tableId);
         const orders = ordersRes.data || [];
         applyOrders(orders);
 
         if (orders.length === 0 && t?.active_order_id) {
-          // Fallback: try to get order from table reference
           try {
             const orderRes = await ordersAPI.get(t.active_order_id);
             setOrder(orderRes.data);
@@ -243,40 +239,20 @@ export default function OrderScreen() {
           } catch {}
         }
       } catch (orderError) {
-        // Check if it's a 403 Forbidden error
         if (orderError.response?.status === 403) {
           setAccessDenied(orderError.response?.data?.detail || 'No tienes permiso para acceder a esta mesa');
           setOrder(null);
           setTableOrders([]);
         } else {
-          // Offline fallback — read cached orders from localStorage
-          try {
-            const raw = localStorage.getItem('vexly_orders');
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              const orders = Array.isArray(parsed) ? parsed.filter(o => o.table_id === tableId) : [];
-              if (orders.length > 0) applyOrders(orders);
-            }
-          } catch {}
+          // Network error — fall back to cache
+          loadFromCache();
         }
       }
     } catch {
-      // Total network failure — load both table and orders from localStorage
-      try {
-        const mesasRaw = localStorage.getItem('vexly_mesas');
-        if (mesasRaw) {
-          const t = JSON.parse(mesasRaw).find(tb => tb.id === tableId);
-          if (t) setTable(t);
-        }
-        const ordersRaw = localStorage.getItem('vexly_orders');
-        if (ordersRaw) {
-          const parsed = JSON.parse(ordersRaw);
-          const orders = Array.isArray(parsed) ? parsed.filter(o => o.table_id === tableId) : [];
-          if (orders.length > 0) applyOrders(orders);
-        }
-      } catch {}
+      // Network error — fall back to cache
+      loadFromCache();
     }
-  }, [tableId, activeOrderId, applyOrders]);
+  }, [tableId, activeOrderId, applyOrders, loadFromCache]);
 
   // Keep tableOrdersRef in sync with local order state changes (e.g. after adding items)
   useEffect(() => {
@@ -599,12 +575,12 @@ export default function OrderScreen() {
   const handleBack = async () => { 
     // If table has multiple accounts, go back to account selector first
     if (tableOrders.length > 1 && !showAccountSelector) {
-      await sendPendingToKitchenSilently(true);
-      await fetchOrder(); // Refresh data before showing selector
+      try { await sendPendingToKitchenSilently(true); } catch {}
+      try { await fetchOrder(); } catch {}
       setShowAccountSelector(true);
       return;
     }
-    await sendPendingToKitchenSilently(true); 
+    try { await sendPendingToKitchenSilently(true); } catch {}
     navigate('/tables'); 
   };
 
@@ -1574,7 +1550,7 @@ export default function OrderScreen() {
           setSelectorMergeMode={setSelectorMergeMode}
           selectorMergeSource={selectorMergeSource}
           setSelectorMergeSource={setSelectorMergeSource}
-          onBack={async () => { await sendPendingToKitchenSilently(true); navigate('/tables'); }}
+          onBack={async () => { try { await sendPendingToKitchenSilently(true); } catch {} navigate('/tables'); }}
           onSelectAccount={(ord) => {
             setActiveOrderId(ord.id);
             setOrder(ord);
@@ -2045,7 +2021,7 @@ export default function OrderScreen() {
             {tableOrders.length > 1 && !activeCat && (
               <>
               <button
-                onClick={async () => { await sendPendingToKitchenSilently(true); await fetchOrder(); setShowAccountSelector(true); }}
+                onClick={async () => { try { await sendPendingToKitchenSilently(true); } catch {} try { await fetchOrder(); } catch {} setShowAccountSelector(true); }}
                 className={`flex items-center gap-1.5 bg-orange-500/20 text-orange-400 border border-orange-500/40 hover:bg-orange-500/30 font-oswald font-bold rounded-xl px-3 transition-all active:scale-95 ${largeMode ? 'h-10 text-sm' : 'h-8 text-xs'}`}
                 data-testid="back-to-accounts-btn"
               >
