@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vexlypos-v2';
+const CACHE_NAME = 'vexlypos-v3';
 
 const STATIC_ASSETS = [
   '/',
@@ -8,12 +8,16 @@ const STATIC_ASSETS = [
   '/icon-512.png',
 ];
 
-// Install — cache static assets and force activate
+// Install — cache app shell with fault tolerance (one bad URL won't block the rest)
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        STATIC_ASSETS.map((url) =>
+          cache.add(url).catch((err) => console.warn('[SW] cache skip:', url, err))
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -30,30 +34,33 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch — NETWORK FIRST for everything, cache only static assets as fallback
+// Fetch — NETWORK FIRST, cache static assets (including JS/CSS bundles) as fallback
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET
+  // Skip non-GET and non-http
   if (request.method !== 'GET') return;
   if (!url.protocol.startsWith('http')) return;
 
   // NEVER intercept API calls
   if (url.pathname.startsWith('/api/')) return;
 
-  // NEVER intercept webpack chunks (dynamic imports) — let them go to network directly
-  if (url.pathname.includes('/static/js/') && url.pathname.includes('.chunk.')) return;
-
   // For navigation requests — network first, fallback to cached index.html
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html'))
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  // For static assets — network first, then cache
+  // For all other assets (JS, CSS, images, fonts) — network first, then cache
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -68,7 +75,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 function shouldCache(pathname) {
-  // Only cache fonts and the main assets, NOT JS bundles (they change with each build)
-  const exts = ['.css', '.png', '.jpg', '.jpeg', '.svg', '.woff', '.woff2', '.ttf', '.ico', '.webp', '.mp3'];
+  if (pathname.startsWith('/static/')) return true;
+  const exts = ['.js', '.css', '.png', '.jpg', '.jpeg', '.svg', '.woff', '.woff2', '.ttf', '.ico', '.webp', '.mp3'];
   return exts.some((ext) => pathname.endsWith(ext));
 }

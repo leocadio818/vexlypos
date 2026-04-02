@@ -66,9 +66,20 @@ export const areasAPI = {
   delete: (id) => api.delete(`/areas/${id}`),
 };
 
-// Tables
+// Tables (with offline localStorage cache)
 export const tablesAPI = {
-  list: (areaId) => api.get('/tables', { params: areaId ? { area_id: areaId } : {} }),
+  list: (areaId) => api.get('/tables', { params: areaId ? { area_id: areaId } : {} })
+    .then(res => {
+      try { localStorage.setItem('vexly_mesas', JSON.stringify(res.data)); } catch {}
+      return res;
+    })
+    .catch(err => {
+      if (!navigator.onLine) {
+        const cached = localStorage.getItem('vexly_mesas');
+        if (cached) return { data: JSON.parse(cached) };
+      }
+      throw err;
+    }),
   create: (data) => api.post('/tables', data),
   update: (id, data) => api.put(`/tables/${id}`, data),
   delete: (id) => api.delete(`/tables/${id}`),
@@ -109,9 +120,20 @@ export const reportCategoriesAPI = {
   delete: (id) => api.delete(`/report-categories/${id}`),
 };
 
-// Orders
+// Orders (with offline localStorage cache)
 export const ordersAPI = {
-  list: (params) => api.get('/orders', { params }),
+  list: (params) => api.get('/orders', { params })
+    .then(res => {
+      try { localStorage.setItem('vexly_orders', JSON.stringify(res.data)); } catch {}
+      return res;
+    })
+    .catch(err => {
+      if (!navigator.onLine) {
+        const cached = localStorage.getItem('vexly_orders');
+        if (cached) return { data: JSON.parse(cached) };
+      }
+      throw err;
+    }),
   get: (id) => api.get(`/orders/${id}`),
   create: (data) => api.post('/orders', data),
   addItems: (id, items) => api.post(`/orders/${id}/items`, { items }),
@@ -121,7 +143,18 @@ export const ordersAPI = {
   sendToKitchen: (id) => api.post(`/orders/${id}/send-kitchen`),
   moveToTable: (orderId, targetTableId, merge = false) => api.post(`/orders/${orderId}/move`, { target_table_id: targetTableId, merge }),
   splitToNewOrder: (orderId, itemIds, label = '') => api.post(`/orders/${orderId}/split`, { item_ids: itemIds, label }),
-  getTableOrders: (tableId) => api.get(`/tables/${tableId}/orders`),
+  getTableOrders: (tableId) => api.get(`/tables/${tableId}/orders`)
+    .then(res => {
+      try { localStorage.setItem('vexly_orders', JSON.stringify(res.data)); } catch {}
+      return res;
+    })
+    .catch(err => {
+      if (!navigator.onLine) {
+        const cached = localStorage.getItem('vexly_orders');
+        if (cached) return { data: JSON.parse(cached) };
+      }
+      throw err;
+    }),
   createNewAccount: (tableId, label = '') => api.post(`/tables/${tableId}/new-account`, { label }),
   deleteEmpty: (orderId) => api.delete(`/orders/${orderId}/empty`),
   mergeOrders: (sourceOrderId, targetOrderId) => api.post(`/orders/${sourceOrderId}/merge/${targetOrderId}`),
