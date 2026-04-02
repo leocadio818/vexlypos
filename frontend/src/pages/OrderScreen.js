@@ -266,42 +266,77 @@ export default function OrderScreen() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [catRes, prodRes, modRes, reasonRes] = await Promise.all([
-        categoriesAPI.list(), productsAPI.list(), modifiersAPI.list(), reasonsAPI.list()
-      ]);
-      setCategories(catRes.data); setProducts(prodRes.data);
-      setCancelReasons((reasonRes.data || []).filter(r => r.active !== false));
+      // Categories
+      let catData = [];
+      try {
+        const catRes = await categoriesAPI.list();
+        catData = catRes.data;
+        try { localStorage.setItem('vexly_categories', JSON.stringify(catData)); } catch {}
+      } catch {
+        const c = localStorage.getItem('vexly_categories');
+        if (c) catData = JSON.parse(c);
+      }
+      setCategories(catData);
+
+      // Products
+      let prodData = [];
+      try {
+        const prodRes = await productsAPI.list();
+        prodData = prodRes.data;
+        try { localStorage.setItem('vexly_products', JSON.stringify(prodData)); } catch {}
+      } catch {
+        const c = localStorage.getItem('vexly_products');
+        if (c) prodData = JSON.parse(c);
+      }
+      setProducts(prodData);
+
+      // Modifiers
+      let oldGroups = [];
+      try {
+        const modRes = await modifiersAPI.list();
+        oldGroups = modRes.data.filter(m => m.options && m.options.length > 0);
+        try { localStorage.setItem('vexly_modifiers', JSON.stringify(modRes.data)); } catch {}
+      } catch {
+        const c = localStorage.getItem('vexly_modifiers');
+        if (c) oldGroups = JSON.parse(c).filter(m => m.options && m.options.length > 0);
+      }
       // Merge old modifier system with new modifier_groups system
-      const oldGroups = modRes.data.filter(m => m.options && m.options.length > 0);
       try {
         const newRes = await fetch(`${API_BASE}/api/modifier-groups-with-options`);
         const newGroups = await newRes.json();
-        // Normalize new groups to match old format (options field)
         const normalizedNew = newGroups.filter(g => g.options && g.options.length > 0).map(g => ({
           ...g, required: g.required || (g.min_selection > 0), max_selections: g.max_selections || g.max_selection || 1
         }));
-        // Merge: old groups + new groups (avoid duplicates by id)
         const oldIds = new Set(oldGroups.map(g => g.id));
-        const merged = [...oldGroups, ...normalizedNew.filter(g => !oldIds.has(g.id))];
-        setModifierGroups(merged);
+        setModifierGroups([...oldGroups, ...normalizedNew.filter(g => !oldIds.has(g.id))]);
       } catch { setModifierGroups(oldGroups); }
-      // Fetch tax config
+
+      // Cancellation reasons
+      try {
+        const reasonRes = await reasonsAPI.list();
+        const reasons = (reasonRes.data || []).filter(r => r.active !== false);
+        setCancelReasons(reasons);
+        try { localStorage.setItem('vexly_cancellation_reasons', JSON.stringify(reasons)); } catch {}
+      } catch {
+        const c = localStorage.getItem('vexly_cancellation_reasons');
+        if (c) setCancelReasons(JSON.parse(c));
+      }
+
+      // Tax config
       try {
         const taxRes = await fetch(`${API_BASE}/api/tax-config`);
         const taxes = await taxRes.json();
         setTaxConfig(taxes.filter(t => t.active && t.rate > 0));
       } catch {}
-      // Fetch sale types (with NCF defaults and tax exemptions) - 100% dynamic from DB
+
+      // Sale types
       try {
         const stRes = await fetch(`${API_BASE}/api/sale-types`);
         const stData = await stRes.json();
-        // Sort by order field and filter active
         const sortedTypes = stData.filter(st => st.active !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
         setSaleTypes(sortedTypes);
-        // Set initial sale type to first one (usually "Consumo Local")
         const initialSaleType = sortedTypes.find(st => st.code === 'consumo_local') || sortedTypes[0];
         setCurrentSaleType(initialSaleType);
-        // Also set serviceType for compatibility
         if (initialSaleType) {
           const typeMap = {
             'consumo_local': 'dine_in',
@@ -322,7 +357,12 @@ export default function OrderScreen() {
         const res = await fetch(`${API_BASE}/api/business-days/current`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } });
         const data = await res.json();
         setHasActiveDay(!!data?.has_open_day);
-      } catch { setHasActiveDay(false); }
+        try { localStorage.setItem('vexly_business_day_current', JSON.stringify(data)); } catch {}
+      } catch {
+        const c = localStorage.getItem('vexly_business_day_current');
+        if (c) setHasActiveDay(!!JSON.parse(c)?.has_open_day);
+        else setHasActiveDay(false);
+      }
     })();
   }, [fetchOrder, API_BASE]);
 
