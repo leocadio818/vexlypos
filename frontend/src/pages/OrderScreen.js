@@ -203,6 +203,24 @@ export default function OrderScreen() {
   }, [activeOrderId]);
 
   const fetchOrder = useCallback(async () => {
+    // When offline, skip API calls entirely — use localStorage directly
+    if (!navigator.onLine) {
+      try {
+        const mesasRaw = localStorage.getItem('vexly_mesas');
+        if (mesasRaw) {
+          const t = JSON.parse(mesasRaw).find(tb => tb.id === tableId);
+          if (t) setTable(t);
+        }
+        const ordersRaw = localStorage.getItem('vexly_orders');
+        if (ordersRaw) {
+          const parsed = JSON.parse(ordersRaw);
+          const orders = Array.isArray(parsed) ? parsed.filter(o => o.table_id === tableId) : [];
+          if (orders.length > 0) applyOrders(orders);
+        }
+      } catch {}
+      return;
+    }
+
     try {
       const tableRes = await tablesAPI.list();
       const t = tableRes.data.find(tb => tb.id === tableId);

@@ -315,8 +315,20 @@ export default function TableMap() {
       const [areasRes, tablesRes] = await Promise.all([areasAPI.list(), tablesAPI.list()]);
       setAreas(areasRes.data);
       setTables(tablesRes.data);
+      // Cache areas for offline use
+      try { localStorage.setItem('vexly_areas', JSON.stringify(areasRes.data)); } catch {}
       if (!activeArea && areasRes.data.length > 0) setActiveArea(areasRes.data[0].id);
-    } catch { console.warn('Error cargando datos de mesas'); }
+    } catch {
+      // Offline fallback — read from localStorage
+      const cachedMesas = localStorage.getItem('vexly_mesas');
+      const cachedAreas = localStorage.getItem('vexly_areas');
+      if (cachedMesas) setTables(JSON.parse(cachedMesas));
+      if (cachedAreas) {
+        const areasData = JSON.parse(cachedAreas);
+        setAreas(areasData);
+        if (!activeArea && areasData.length > 0) setActiveArea(areasData[0].id);
+      }
+    }
   }, [activeArea]);
 
   useEffect(() => { fetchData(); }, [fetchData]);

@@ -20,7 +20,8 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 ## Completed Tasks (2026-04-02)
 - **Service Worker Cache Fix** (DONE): Fixed sw.js to properly cache app shell on install (v4: cache-first strategy, skipWaiting/clients.claim inside waitUntil chain). All static assets and JS/CSS bundles cached on fetch.
 - **localStorage Data Cache** (DONE): tablesAPI.list() saves to `vexly_mesas`, ordersAPI.getTableOrders() merges per-table into `vexly_orders`. Offline fallback reads from these keys.
-- **OrderScreen Offline Fallback** (DONE): When API fails offline, fetchOrder() reads table from `vexly_mesas` and orders from `vexly_orders` (filtered by table_id). fetchAll() wrapped with .catch() to prevent unhandled rejection crash. PRE-CUENTA visible with cached data, FACTURAR unchanged.
+- **OrderScreen Offline Fallback** (DONE): When offline, fetchOrder() skips API calls entirely and reads directly from localStorage (`vexly_mesas` for table, `vexly_orders` filtered by table_id for orders). Split bill accounts load correctly offline. fetchAll() wrapped with .catch() to prevent unhandled rejection crash. PRE-CUENTA visible with cached data, FACTURAR unchanged.
+- **TableMap Offline Fallback** (DONE): fetchData() falls back to `vexly_mesas` and `vexly_areas` from localStorage when API fails. Areas cached on successful fetch. Navigating back from order offline no longer shows blank screen.
 
 ## Completed Tasks (2026-04-01)
 - **The Factory HKA Integration** (DONE): Full e-CF integration with auth, payload mapping, send, status check, anulación, logs.
