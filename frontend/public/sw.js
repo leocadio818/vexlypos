@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vexlypos-v3';
+const CACHE_NAME = 'vexlypos-v4';
 
 const STATIC_ASSETS = [
   '/',
@@ -8,74 +8,41 @@ const STATIC_ASSETS = [
   '/icon-512.png',
 ];
 
-// Install — cache app shell with fault tolerance (one bad URL won't block the rest)
+// Install — cache app shell, then skipWaiting
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      Promise.all(
-        STATIC_ASSETS.map((url) =>
-          cache.add(url).catch((err) => console.warn('[SW] cache skip:', url, err))
-        )
-      )
-    )
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
-// Activate — delete ALL old caches immediately
+// Activate — purge old caches, then claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      )
-    )
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch — NETWORK FIRST, cache static assets (including JS/CSS bundles) as fallback
+// Fetch — cache-first, fallback to network, cache new responses
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+  if (event.request.method !== 'GET') return;
+  if (event.request.url.includes('/api/')) return;
 
-  // Skip non-GET and non-http
-  if (request.method !== 'GET') return;
-  if (!url.protocol.startsWith('http')) return;
-
-  // NEVER intercept API calls
-  if (url.pathname.startsWith('/api/')) return;
-
-  // For navigation requests — network first, fallback to cached index.html
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          return response;
-        })
-        .catch(() => caches.match('/index.html'))
-    );
-    return;
-  }
-
-  // For all other assets (JS, CSS, images, fonts) — network first, then cache
   event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response.ok && shouldCache(url.pathname)) {
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        if (response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
         }
         return response;
-      })
-      .catch(() => caches.match(request))
+      });
+    })
   );
 });
-
-function shouldCache(pathname) {
-  if (pathname.startsWith('/static/')) return true;
-  const exts = ['.js', '.css', '.png', '.jpg', '.jpeg', '.svg', '.woff', '.woff2', '.ttf', '.ico', '.webp', '.mp3'];
-  return exts.some((ext) => pathname.endsWith(ext));
-}
