@@ -638,6 +638,11 @@ export default function OrderScreen() {
     : [];
 
   const handleProductClick = (product) => {
+    // Block if offline
+    if (!navigator.onLine) {
+      toast.error('Sin conexión. Para agregar artículos necesitas internet.');
+      return;
+    }
     // Block if no active business day
     if (!hasActiveDay) {
       toast.error('No hay jornada activa', { description: 'Se requiere iniciar una nueva jornada. Cierra sesión y vuelve a entrar.' });
@@ -668,6 +673,10 @@ export default function OrderScreen() {
   };
 
   const addItemToOrder = async (product, qty, mods, notes) => {
+    if (!navigator.onLine) {
+      toast.error('Sin conexión. Para agregar artículos necesitas internet.');
+      return;
+    }
     const item = { product_id: product.id, product_name: product.name, quantity: qty, unit_price: product.price, modifiers: mods, notes };
     try {
       if (!order) {
@@ -1374,6 +1383,10 @@ export default function OrderScreen() {
 
   // Open label dialog for new empty account
   const openNewAccountLabelDialog = () => {
+    if (!navigator.onLine) {
+      toast.error('Sin conexión. Para agregar artículos necesitas internet.');
+      return;
+    }
     setAccountLabelDialog({ open: true, label: '', action: 'new', itemIds: [] });
   };
 
