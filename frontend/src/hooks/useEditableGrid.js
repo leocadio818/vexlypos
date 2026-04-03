@@ -140,6 +140,7 @@ export function useScreenEditMode() {
 
 /**
  * Long press hook — activates edit mode on 500ms hold.
+ * Uses both pointer and touch events for cross-platform support (iOS Safari fallback).
  */
 export function useLongPress(callback, ms = 500) {
   const timerRef = useRef(null);
@@ -148,6 +149,7 @@ export function useLongPress(callback, ms = 500) {
 
   const start = useCallback((e) => {
     if (e.button && e.button !== 0) return;
+    e.preventDefault?.();
     timerRef.current = setTimeout(() => {
       callbackRef.current();
       timerRef.current = null;
@@ -163,5 +165,15 @@ export function useLongPress(callback, ms = 500) {
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
-  return { onPointerDown: start, onPointerUp: stop, onPointerLeave: stop, onPointerCancel: stop };
+  return {
+    onPointerDown: start,
+    onPointerUp: stop,
+    onPointerLeave: stop,
+    onPointerCancel: stop,
+    onTouchStart: start,
+    onTouchEnd: stop,
+    onTouchCancel: stop,
+    onContextMenu: (e) => e.preventDefault(),
+    style: { WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none', touchAction: 'manipulation' },
+  };
 }

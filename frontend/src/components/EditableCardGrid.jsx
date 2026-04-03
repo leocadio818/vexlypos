@@ -43,19 +43,20 @@ function SortableCard({ id, editMode, onHide, children }) {
         <>
           <button
             onClick={(e) => { e.stopPropagation(); onHide(id); }}
-            className="absolute -top-2 -right-2 z-20 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+            className="absolute -top-2 -right-2 z-20 w-12 h-12 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
             data-testid={`hide-card-${id}`}
             aria-label="Ocultar tarjeta"
           >
-            <X size={12} strokeWidth={3} />
+            <X size={16} strokeWidth={3} />
           </button>
           <div
             {...attributes}
             {...listeners}
-            className="absolute top-1 left-1 z-20 w-7 h-7 rounded-md bg-white/20 backdrop-blur-sm flex items-center justify-center cursor-grab active:cursor-grabbing"
+            className="absolute top-1 left-1 z-20 w-12 h-12 rounded-md bg-white/20 backdrop-blur-sm flex items-center justify-center cursor-grab active:cursor-grabbing"
             data-testid={`drag-handle-${id}`}
+            style={{ touchAction: 'none' }}
           >
-            <GripVertical size={14} className="text-white/80" />
+            <GripVertical size={18} className="text-white/80" />
           </div>
         </>
       )}
