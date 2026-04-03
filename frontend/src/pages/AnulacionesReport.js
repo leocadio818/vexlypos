@@ -25,7 +25,7 @@ export default function AnulacionesReport() {
   const anulScreen = useScreenEditMode();
   const anulCards = useSectionLayout('anulaciones', 'summary', ANULACIONES_IDS);
   useEffect(() => { anulScreen.registerSection([anulCards]); }, [anulCards, anulScreen.registerSection]); // eslint-disable-line react-hooks/exhaustive-deps
-  const anulLongPress = useLongPress(anulScreen.enterEditMode, 500);
+  const anulLongPress = useLongPress(anulScreen.enterEditMode, 800);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);

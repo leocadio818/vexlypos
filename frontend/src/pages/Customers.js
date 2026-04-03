@@ -39,7 +39,7 @@ export default function Customers() {
   const custScreen = useScreenEditMode();
   const loyaltyCards = useSectionLayout('customers', 'loyalty', LOYALTY_IDS);
   useEffect(() => { custScreen.registerSection([loyaltyCards]); }, [loyaltyCards, custScreen.registerSection]); // eslint-disable-line react-hooks/exhaustive-deps
-  const custLongPress = useLongPress(custScreen.enterEditMode, 500);
+  const custLongPress = useLongPress(custScreen.enterEditMode, 800);
 
   const fetchAll = useCallback(async () => {
     try {

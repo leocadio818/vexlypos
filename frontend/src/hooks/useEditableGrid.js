@@ -139,40 +139,61 @@ export function useScreenEditMode() {
 }
 
 /**
- * Long press hook — activates edit mode on 500ms hold.
+ * Long press hook — activates edit mode on 800ms hold.
+ * Cancels if finger/pointer moves more than 10px (prevents scroll from triggering).
  * Uses both pointer and touch events for cross-platform support (iOS Safari fallback).
  */
-export function useLongPress(callback, ms = 500) {
+export function useLongPress(callback, ms = 800) {
   const timerRef = useRef(null);
   const callbackRef = useRef(callback);
+  const startPos = useRef(null);
   callbackRef.current = callback;
 
-  const start = useCallback((e) => {
-    if (e.button && e.button !== 0) return;
-    e.preventDefault?.();
-    timerRef.current = setTimeout(() => {
-      callbackRef.current();
-      timerRef.current = null;
-    }, ms);
-  }, [ms]);
+  const MOVE_TOLERANCE = 10;
 
-  const stop = useCallback(() => {
+  const cancel = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    startPos.current = null;
   }, []);
+
+  const getXY = (e) => {
+    if (e.touches?.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+  };
+
+  const start = useCallback((e) => {
+    if (e.button && e.button !== 0) return;
+    startPos.current = getXY(e);
+    timerRef.current = setTimeout(() => {
+      callbackRef.current();
+      timerRef.current = null;
+      startPos.current = null;
+    }, ms);
+  }, [ms]);
+
+  const move = useCallback((e) => {
+    if (!startPos.current || !timerRef.current) return;
+    const pos = getXY(e);
+    const dx = Math.abs(pos.x - startPos.current.x);
+    const dy = Math.abs(pos.y - startPos.current.y);
+    if (dx > MOVE_TOLERANCE || dy > MOVE_TOLERANCE) cancel();
+  }, [cancel]);
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   return {
     onPointerDown: start,
-    onPointerUp: stop,
-    onPointerLeave: stop,
-    onPointerCancel: stop,
+    onPointerUp: cancel,
+    onPointerLeave: cancel,
+    onPointerCancel: cancel,
+    onPointerMove: move,
     onTouchStart: start,
-    onTouchEnd: stop,
-    onTouchCancel: stop,
+    onTouchEnd: cancel,
+    onTouchCancel: cancel,
+    onTouchMove: move,
     onContextMenu: (e) => e.preventDefault(),
     style: { WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none', touchAction: 'manipulation' },
   };
