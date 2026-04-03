@@ -186,7 +186,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
               <div>
                 <DialogTitle className="text-xl font-oswald text-white">Re-abrir Transacción</DialogTitle>
                 <DialogDescription className="text-white/60 text-sm">
-                  Generar Nota de Crédito Fiscal (B04)
+                  Nota de Credito Electronica (E34)
                 </DialogDescription>
               </div>
             </div>
@@ -203,7 +203,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                 <div>
                   <p className="text-amber-200 font-medium text-sm">Acción Restringida</p>
                   <p className="text-amber-200/70 text-xs mt-1">
-                    Solo administradores pueden anular transacciones cerradas. Se generará NCF B04.
+                    Solo administradores pueden anular transacciones cerradas. Se generara e-CF E34.
                   </p>
                 </div>
               </div>
@@ -305,7 +305,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                 <div>
                   <p className="text-red-200 font-medium text-sm">¿Anular esta factura?</p>
                   <p className="text-red-200/70 text-xs mt-1">
-                    Se generara una Nota de Credito B04 que afectara el NCF {foundBill.ecf_encf || foundBill.ncf}. Esta accion es irreversible y se reportara a la DGII.
+                    Se generara una Nota de Credito E34 que afectara el NCF {foundBill.ecf_encf || foundBill.ncf}. Esta accion es irreversible y se reportara a la DGII.
                   </p>
                 </div>
               </div>
@@ -401,7 +401,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white font-oswald disabled:opacity-50"
                   data-testid="credit-note-create-btn"
                 >
-                  Generar B04
+                  Generar E34
                 </Button>
               </div>
             </div>
@@ -414,7 +414,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                 <div className="w-8 h-8 border-3 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
               </div>
               <h3 className="text-lg font-medium text-white">Procesando Nota de Crédito</h3>
-              <p className="text-white/50 text-sm mt-2">Generando NCF B04...</p>
+              <p className="text-white/50 text-sm mt-2">Generando e-CF E34...</p>
             </div>
           )}
 
@@ -457,7 +457,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                   className="flex-1 border-white/20 text-white hover:bg-white/10"
                 >
                   <Printer size={16} className="mr-2" />
-                  Imprimir B04
+                  Imprimir e-CF
                 </Button>
                 <Button
                   onClick={handleClose}

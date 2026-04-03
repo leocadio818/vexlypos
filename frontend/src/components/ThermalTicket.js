@@ -107,7 +107,8 @@ const getNCFType = (ncf) => {
     'B02': 'Consumidor Final',
     'B14': 'Gubernamental',
     'B15': 'Régimen Especial',
-    'B04': 'Nota de Débito',
+    'B04': 'Nota de Crédito',
+    'E34': 'Nota de Crédito Electrónica',
     'B03': 'Nota de Crédito'
   };
   return types[prefix] || 'Comprobante Fiscal';

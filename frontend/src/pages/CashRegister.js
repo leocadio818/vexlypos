@@ -525,7 +525,7 @@ export default function CashRegister() {
           <button onClick={fetchData} className="p-2 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
             <RefreshCw size={16} />
           </button>
-          {/* Botón Nota de Crédito B04 - SIEMPRE visible */}
+          {/* Botón Nota de Crédito E34 - SIEMPRE visible */}
           <button 
             onClick={() => {
               if (hasPermission('create_b04')) {
@@ -538,9 +538,9 @@ export default function CashRegister() {
             }} 
             data-testid="credit-note-btn"
             className="px-3 py-2 rounded-xl bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 text-red-400 font-medium text-sm flex items-center gap-2 transition-all"
-            title="Nota de Crédito B04"
+            title="Nota de Crédito E34"
           >
-            <FileX size={16} /> B04
+            <FileX size={16} /> E34
           </button>
           {/* Botón Cierre de Día - Solo para Admin */}
           {user?.role === 'admin' && !currentSession && (
@@ -611,7 +611,7 @@ export default function CashRegister() {
                       cash_in: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-cash-in"><ArrowUpCircle size={20} className="mx-auto mb-1 text-emerald-400" /><p className="text-xs text-muted-foreground uppercase">Ingresos</p><p className="font-oswald text-lg font-bold text-emerald-400">{formatMoney(currentSession.cash_in)}</p></div>),
                       cash_out: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-cash-out"><ArrowDownCircle size={20} className="mx-auto mb-1 text-red-400" /><p className="text-xs text-muted-foreground uppercase">Retiros</p><p className="font-oswald text-lg font-bold text-red-400">-{formatMoney(salesBreakdown?.withdrawals ?? currentSession.cash_out ?? 0)}</p></div>),
                       voids: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-voids"><XCircle size={20} className="mx-auto mb-1 text-orange-500" /><p className="text-xs text-muted-foreground uppercase">Anulaciones</p><p className="font-oswald text-lg font-bold text-orange-500">-{formatMoney(salesBreakdown?.voids_total ?? 0)}</p><p className="text-[11px] text-muted-foreground">{salesBreakdown?.voids_count ?? 0} anuladas</p></div>),
-                      credit_notes: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-credit-notes"><FileText size={20} className="mx-auto mb-1 text-amber-400" /><p className="text-xs text-muted-foreground uppercase">Notas Credito</p><p className="font-oswald text-lg font-bold text-amber-400">-{formatMoney(salesBreakdown?.credit_notes_total ?? 0)}</p><p className="text-[11px] text-muted-foreground">{salesBreakdown?.credit_notes_count ?? 0} B04</p></div>),
+                      credit_notes: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-credit-notes"><FileText size={20} className="mx-auto mb-1 text-amber-400" /><p className="text-xs text-muted-foreground uppercase">Notas Credito</p><p className="font-oswald text-lg font-bold text-amber-400">-{formatMoney(salesBreakdown?.credit_notes_total ?? 0)}</p><p className="text-[11px] text-muted-foreground">{salesBreakdown?.credit_notes_count ?? 0} E34</p></div>),
                       cash_balance: (<div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/30 h-full" data-testid="stat-cash-balance"><Wallet size={20} className="mx-auto mb-1 text-green-500" /><p className="text-xs text-green-600 dark:text-green-300/70 uppercase font-bold">Balance Efectivo</p><p className="font-oswald text-xl font-bold text-green-500">{formatMoney(salesBreakdown?.cash_balance ?? 0)}</p><p className="text-[11px] text-muted-foreground">Apertura + Ventas - Retiros</p></div>),
                     };
                     return statCards[id] || null;
@@ -1105,7 +1105,7 @@ export default function CashRegister() {
         </DialogContent>
       </Dialog>
 
-      {/* Credit Note Modal (B04 - Nota de Crédito para Post-Venta) */}
+      {/* Credit Note Modal (E34 - Nota de Crédito Electrónica) */}
       <CreditNoteModal 
         open={creditNoteModalOpen} 
         onOpenChange={(open) => {
@@ -1116,7 +1116,7 @@ export default function CashRegister() {
         initialTransactionNumber={pendingB04Transaction}
       />
 
-      {/* B04 Authorization Modal - For users without create_b04 permission */}
+      {/* E34 Authorization Modal - For users without create_b04 permission */}
       <Dialog open={b04AuthModal} onOpenChange={setB04AuthModal}>
         <DialogContent className="max-w-xs sm:max-w-sm mx-auto" data-testid="b04-auth-dialog">
           <DialogHeader>
@@ -1124,7 +1124,7 @@ export default function CashRegister() {
               <Lock size={20} className="text-amber-500" /> Autorizacion Requerida
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground text-center">PIN de administrador para autorizar Nota de Credito B04</p>
+          <p className="text-sm text-muted-foreground text-center">PIN de administrador para autorizar Nota de Credito E34</p>
           <PinPad 
             value={b04AuthPin} 
             onChange={(val) => { setB04AuthPin(val); setB04AuthError(''); }}
@@ -1139,7 +1139,7 @@ export default function CashRegister() {
                   setB04AuthPin('');
                   setCreditNoteModalOpen(true);
                 } else {
-                  setB04AuthError('PIN sin permisos para B04');
+                  setB04AuthError('PIN sin permisos para E34');
                   setB04AuthPin('');
                 }
               } catch (e) {

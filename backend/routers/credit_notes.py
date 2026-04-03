@@ -316,18 +316,22 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
         propina_reversed = round(original_bill.get("propina_legal", 0) * proportion, 2)
         total_reversed = round(subtotal_reversed + itbis_reversed + propina_reversed, 2)
     
-    # 6. Generar NCF B04
-    ncf_b04 = None
+    # 6. Generar NCF E34 (Nota de Crédito Electrónica)
+    ncf_e34 = None
     if supabase_client:
         try:
-            # Get active B04 sequence
-            seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", "B04").eq("is_active", True).limit(1).execute()
+            # Get active E34 sequence (fallback to B04 for migration)
+            seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", "E34").eq("is_active", True).limit(1).execute()
+            if not seq_result.data:
+                seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", "B04").eq("is_active", True).limit(1).execute()
             
             if seq_result.data and len(seq_result.data) > 0:
                 seq = seq_result.data[0]
                 current_num = seq.get("current_number", 1)
-                prefix = seq.get("sequence_prefix", "B04")
-                ncf_b04 = f"{prefix}{current_num:08d}"
+                prefix = seq.get("sequence_prefix", "E34")
+                if prefix == "B04":
+                    prefix = "E34"
+                ncf_e34 = f"{prefix}{current_num:08d}"
                 
                 # Update sequence
                 supabase_client.table("ncf_sequences").update({
@@ -336,40 +340,39 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
             else:
                 # Fallback: generate from MongoDB
                 ncf_doc = await db.ncf_sequences.find_one_and_update(
-                    {"prefix": "B04"},
+                    {"prefix": "E34"},
                     {"$inc": {"current_number": 1}},
                     upsert=True,
                     return_document=True
                 )
                 ncf_num = ncf_doc.get("current_number", 1) if ncf_doc else 1
-                ncf_b04 = f"B04{ncf_num:08d}"
+                ncf_e34 = f"E34{ncf_num:08d}"
         except Exception as e:
-            print(f"Warning: NCF B04 generation error: {e}")
-            # Fallback to MongoDB
+            print(f"Warning: NCF E34 generation error: {e}")
             ncf_doc = await db.ncf_sequences.find_one_and_update(
-                {"prefix": "B04"},
+                {"prefix": "E34"},
                 {"$inc": {"current_number": 1}},
                 upsert=True,
                 return_document=True
             )
             ncf_num = ncf_doc.get("current_number", 1) if ncf_doc else 1
-            ncf_b04 = f"B04{ncf_num:08d}"
+            ncf_e34 = f"E34{ncf_num:08d}"
     else:
-        # MongoDB fallback
         ncf_doc = await db.ncf_sequences.find_one_and_update(
-            {"prefix": "B04"},
+            {"prefix": "E34"},
             {"$inc": {"current_number": 1}},
             upsert=True,
             return_document=True
         )
         ncf_num = ncf_doc.get("current_number", 1) if ncf_doc else 1
-        ncf_b04 = f"B04{ncf_num:08d}"
+        ncf_e34 = f"E34{ncf_num:08d}"
     
     # 7. Crear nota de crédito
     credit_note = {
         "id": gen_id(),
-        "ncf": ncf_b04,
-        "ncf_type": "B04",
+        "ncf": ncf_e34,
+        "ncf_type": "E34",
+        "ecf_type": "E34",
         "original_bill_id": input.original_bill_id,
         "original_ncf": original_bill.get("ncf"),
         "original_date": original_bill.get("paid_at") or original_bill.get("created_at"),
@@ -418,7 +421,7 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
         {"$set": {
             "status": "reversed" if input.is_full_reversal else "partially_reversed",
             "credit_note_id": credit_note["id"],
-            "credit_note_ncf": ncf_b04,
+            "credit_note_ncf": ncf_e34,
             "reversed_at": now_iso(),
             "reversed_by": user["user_id"],
             "reversed_by_name": user["name"]
@@ -451,13 +454,13 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
                 # Create negative cash movement for the reversal
                 movement_data = {
                     "id": gen_id(),
-                    "ref": f"CN-{ncf_b04}",
+                    "ref": f"CN-{ncf_e34}",
                     "session_id": session["id"],
                     "movement_type": "credit_note",
                     "direction": -1,
                     "amount": total_reversed,
                     "payment_method": original_bill.get("payment_method", "cash"),
-                    "description": f"Nota de Crédito {ncf_b04} - {reason.get('name')}",
+                    "description": f"Nota de Crédito {ncf_e34} - {reason.get('name')}",
                     "created_by": user["user_id"],
                     "created_by_name": user["name"]
                 }
@@ -472,7 +475,7 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
         "id": gen_id(),
         "action": "credit_note_created",
         "credit_note_id": credit_note["id"],
-        "credit_note_ncf": ncf_b04,
+        "credit_note_ncf": ncf_e34,
         "original_bill_id": input.original_bill_id,
         "original_ncf": original_bill.get("ncf"),
         "reason": reason.get("name"),

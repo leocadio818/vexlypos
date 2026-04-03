@@ -3247,7 +3247,7 @@ export default function OrderScreen() {
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
               <p className="text-amber-200 text-sm leading-relaxed">
                 Esta cuenta ya fue <strong>facturada y pagada</strong>. Para anularla, debe generar una{' '}
-                <strong>Nota de Crédito (NCF B04)</strong> que afecte el comprobante fiscal original.
+                <strong>Nota de Credito (e-CF E34)</strong> que afecte el comprobante fiscal original.
               </p>
             </div>
             
@@ -3299,13 +3299,13 @@ export default function OrderScreen() {
                 data-testid="go-to-b04-btn"
               >
                 <Receipt size={18} className="mr-2" />
-                Ir a Crear B04
+                Ir a Crear E34
               </Button>
             </div>
             
             {/* Nota informativa */}
             <p className="text-white/40 text-xs text-center">
-              Solo los administradores pueden generar Notas de Crédito (B04)
+              Solo los administradores pueden generar Notas de Credito (E34)
             </p>
           </div>
         </DialogContent>

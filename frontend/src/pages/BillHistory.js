@@ -388,7 +388,7 @@ export default function BillHistory() {
                           onClick={() => openReversalDialog(bill)}
                           data-testid={`reverse-${bill.id}`}
                         >
-                          <RotateCcw size={14} className="mr-1" /> Reversar (B04)
+                          <RotateCcw size={14} className="mr-1" /> Reversar (E34)
                         </Button>
                       )}
                     </div>
@@ -406,7 +406,7 @@ export default function BillHistory() {
           <DialogHeader>
             <DialogTitle className="font-oswald flex items-center gap-2 text-red-500">
               <AlertTriangle size={20} />
-              Generar Nota de Crédito (B04)
+              Generar Nota de Credito (E34)
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
               Proceso de reversión fiscal conforme a regulaciones DGII
@@ -418,7 +418,7 @@ export default function BillHistory() {
               {/* Warning */}
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
                 <p className="text-xs text-amber-500">
-                  <strong>Advertencia:</strong> Esta acción generará un comprobante fiscal B04 (Nota de Crédito) 
+                  <strong>Advertencia:</strong> Esta accion generara un comprobante fiscal E34 (Nota de Credito Electronica) 
                   que no se puede anular. La DGII registrará esta reversión.
                 </p>
               </div>
@@ -572,7 +572,7 @@ export default function BillHistory() {
                     <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
                   ) : (
                     <>
-                      <Check size={14} className="mr-1" /> Generar B04
+                      <Check size={14} className="mr-1" /> Generar E34
                     </>
                   )}
                 </Button>
