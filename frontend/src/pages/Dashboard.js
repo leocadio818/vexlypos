@@ -96,7 +96,7 @@ export default function Dashboard() {
           </div>
 
           {/* Payment Methods Breakdown - Jornada */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3" data-testid="payment-breakdown">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="payment-breakdown">
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
                 <CreditCard size={18} className="text-blue-500" />
@@ -124,11 +124,20 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground font-medium">Propinas</p>
               </div>
             </div>
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3" data-testid="facturas-card">
+              <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                <UtensilsCrossed size={18} className="text-cyan-400" />
+              </div>
+              <div>
+                <p className="font-oswald text-lg font-bold text-cyan-400 notranslate">{today.bills_count}</p>
+                <p className="text-xs text-muted-foreground font-medium">Facturas</p>
+              </div>
+            </div>
           </div>
 
 
           {/* Operations Row - Glassmorphism */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3" data-testid="operations-cards">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" data-testid="operations-cards">
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-3 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center">
                 <Tag size={18} className="text-rose-400" />

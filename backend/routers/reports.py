@@ -153,8 +153,17 @@ async def dashboard():
     occupied_tables = len([t for t in tables if t.get("status") in ("occupied", "billed") or t["id"] in active_table_ids])
     occupancy_pct = round((occupied_tables / total_tables * 100) if total_tables > 0 else 0)
     
-    shifts = await db.shifts.find({"closed_at": None}, {"_id": 0}).to_list(50)
-    open_shifts = len(shifts)
+    # Count open POS sessions from Supabase (same source as Caja/Turnos screen)
+    open_shifts = 0
+    try:
+        from routers.pos_sessions import get_supabase
+        sb = get_supabase()
+        shifts_result = sb.table("pos_sessions").select("id", count="exact").eq("status", "open").execute()
+        open_shifts = shifts_result.count or 0
+    except Exception:
+        # Fallback to MongoDB if Supabase unavailable
+        shifts = await db.shifts.find({"closed_at": None}, {"_id": 0}).to_list(50)
+        open_shifts = len(shifts)
     
     # Inventory alerts (low stock) - check directly on ingredients
     ingredients = await db.ingredients.find({}, {"_id": 0, "id": 1, "min_stock": 1, "current_stock": 1}).to_list(500)
