@@ -149,38 +149,36 @@ export function EditableCardGrid({
 
 /* ── Edit mode floating toolbar ── */
 export function EditModeBar({ onSave, onCancel, onRestore, hasHiddenCards }) {
+  const btnBase = { minHeight: 44, padding: '10px 20px', fontSize: 14, fontWeight: 700, borderRadius: 10, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.3px' };
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 py-2.5 backdrop-blur-xl bg-orange-500/90 border-b border-orange-400/50 shadow-lg edit-bar-enter"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: '#D97706', borderBottom: '2px solid #B45309', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
       data-testid="edit-mode-bar"
     >
-      <div className="flex items-center gap-2">
-        <GripVertical size={16} className="text-white/80" />
-        <span className="text-sm font-semibold text-white">Modo Edicion — Arrastra las tarjetas</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <GripVertical size={16} color="#FFF" />
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>Modo Edicion</span>
       </div>
-      <div className="flex items-center gap-2">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {hasHiddenCards && (
           <button
             onClick={onRestore}
-            className="text-sm font-bold rounded-lg border"
-            style={{ minHeight: 40, padding: '10px 16px', background: 'rgba(255,255,255,0.2)', color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.4)', borderRadius: 8 }}
+            style={{ ...btnBase, background: 'rgba(255,255,255,0.25)', color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.5)' }}
             data-testid="restore-layout-btn"
           >
-            Restaurar layout original
+            Restaurar
           </button>
         )}
         <button
           onClick={onCancel}
-          className="text-sm font-bold rounded-lg border"
-          style={{ minHeight: 40, padding: '10px 16px', background: '#FFFFFF', color: '#1F2937', borderColor: '#D1D5DB', borderRadius: 8 }}
+          style={{ ...btnBase, background: '#FFFFFF', color: '#1F2937', border: '2px solid #9CA3AF' }}
           data-testid="cancel-edit-btn"
         >
           Cancelar
         </button>
         <button
           onClick={onSave}
-          className="text-sm font-bold rounded-lg"
-          style={{ minHeight: 40, padding: '10px 16px', background: '#1F2937', color: '#FFFFFF', borderRadius: 8 }}
+          style={{ ...btnBase, background: '#111827', color: '#FFFFFF' }}
           data-testid="save-layout-btn"
         >
           Guardar

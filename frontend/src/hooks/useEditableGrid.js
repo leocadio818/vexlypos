@@ -150,7 +150,7 @@ export function useLongPress(callback, ms = 800) {
   const activeRef = useRef(false);
   callbackRef.current = callback;
 
-  const MOVE_TOLERANCE = 10;
+  const MOVE_TOLERANCE = 8;
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -216,6 +216,6 @@ export function useLongPress(callback, ms = 800) {
     onMouseUp: clearTimer,
     onMouseLeave: clearTimer,
     onContextMenu: (e) => e.preventDefault(),
-    style: { WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none', touchAction: 'manipulation' },
+    style: { WebkitTouchCallout: 'none', userSelect: 'none' },
   };
 }
