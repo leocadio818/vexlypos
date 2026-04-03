@@ -17,7 +17,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://nexo-pos.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://pos-dominicana-2.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_PIN = "10000"

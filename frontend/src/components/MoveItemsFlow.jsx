@@ -31,11 +31,14 @@ export default function MoveItemsFlow({ active, order, tableOrders, tableId, onD
     [order]
   );
 
-  // Other accounts on the same table (excluding current order)
-  const otherAccounts = useMemo(() =>
-    (tableOrders || []).filter(o => o.id !== order?.id && !['closed', 'cancelled'].includes(o.status)),
-    [tableOrders, order]
-  );
+  // Other accounts on the same table (excluding current order), with computed display numbers
+  const otherAccounts = useMemo(() => {
+    const all = (tableOrders || []).filter(o => !['closed', 'cancelled'].includes(o.status));
+    return all.filter(o => o.id !== order?.id).map((o, _i) => {
+      const idx = all.findIndex(a => a.id === o.id) + 1;
+      return { ...o, _displayNum: o.account_number || idx };
+    });
+  }, [tableOrders, order]);
 
   const selectedCount = Object.values(selected).reduce((s, q) => s + q, 0);
 
@@ -81,6 +84,9 @@ export default function MoveItemsFlow({ active, order, tableOrders, tableId, onD
       if (orig && selected[id] < orig.quantity) quantities[id] = selected[id];
     });
 
+    // Close the destination dialog first so it doesn't interfere with the confirm overlay
+    setStep(0);
+
     notify.confirm(`¿Mover ${selectedCount} artículo(s) a ${destLabel}?`, {
       onConfirm: async () => {
         setLoading(true);
@@ -91,8 +97,10 @@ export default function MoveItemsFlow({ active, order, tableOrders, tableId, onD
           onDone();
         } catch (err) {
           notify.error('Error al mover', { description: err.response?.data?.detail || err.message });
+          setStep(2); // Re-open destination dialog on error so user can retry
         } finally { setLoading(false); }
       },
+      onCancel: () => { setStep(2); }, // Re-open destination dialog if user cancels
     });
   };
 
@@ -232,14 +240,14 @@ export default function MoveItemsFlow({ active, order, tableOrders, tableId, onD
                 {otherAccounts.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">No hay otras cuentas en esta mesa</p>
                 ) : otherAccounts.map(acc => (
-                  <button key={acc.id} onClick={() => executeMove(acc.id, `Cuenta ${acc.account_label || acc.account_number || '#'}`)}
+                  <button key={acc.id} onClick={() => executeMove(acc.id, `Cuenta #${acc._displayNum}`)}
                     disabled={loading} data-testid={`move-dest-account-${acc.id}`}
                     className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all active:scale-[0.98]">
                     <div className="w-10 h-10 rounded-full bg-cyan-500/15 flex items-center justify-center text-cyan-500 font-oswald font-bold text-sm">
-                      #{acc.account_number || '?'}
+                      #{acc._displayNum}
                     </div>
                     <div className="text-left flex-1">
-                      <p className="text-sm font-bold">{acc.account_label || `Cuenta #${acc.account_number}`}</p>
+                      <p className="text-sm font-bold">{acc.account_label || `Cuenta #${acc._displayNum}`}</p>
                       <p className="text-xs text-muted-foreground">{(acc.items || []).filter(i => i.status !== 'cancelled').length} artículos</p>
                     </div>
                   </button>
