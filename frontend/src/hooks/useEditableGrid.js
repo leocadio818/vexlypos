@@ -140,60 +140,81 @@ export function useScreenEditMode() {
 
 /**
  * Long press hook — activates edit mode on 800ms hold.
- * Cancels if finger/pointer moves more than 10px (prevents scroll from triggering).
- * Uses both pointer and touch events for cross-platform support (iOS Safari fallback).
+ * Cancels immediately if finger/pointer moves more than 10px.
+ * Separates touch and mouse to prevent dual-fire on mobile.
  */
 export function useLongPress(callback, ms = 800) {
   const timerRef = useRef(null);
   const callbackRef = useRef(callback);
   const startPos = useRef(null);
+  const activeRef = useRef(false);
   callbackRef.current = callback;
 
   const MOVE_TOLERANCE = 10;
 
-  const cancel = useCallback(() => {
+  const clearTimer = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
     startPos.current = null;
+    activeRef.current = false;
   }, []);
 
-  const getXY = (e) => {
-    if (e.touches?.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    return { x: e.clientX, y: e.clientY };
-  };
-
-  const start = useCallback((e) => {
-    if (e.button && e.button !== 0) return;
-    startPos.current = getXY(e);
+  const beginPress = useCallback((x, y) => {
+    // Guard: if already tracking a press, ignore
+    if (activeRef.current) return;
+    activeRef.current = true;
+    startPos.current = { x, y };
     timerRef.current = setTimeout(() => {
-      callbackRef.current();
       timerRef.current = null;
       startPos.current = null;
+      activeRef.current = false;
+      callbackRef.current();
     }, ms);
   }, [ms]);
 
-  const move = useCallback((e) => {
+  const checkMove = useCallback((x, y) => {
     if (!startPos.current || !timerRef.current) return;
-    const pos = getXY(e);
-    const dx = Math.abs(pos.x - startPos.current.x);
-    const dy = Math.abs(pos.y - startPos.current.y);
-    if (dx > MOVE_TOLERANCE || dy > MOVE_TOLERANCE) cancel();
-  }, [cancel]);
+    const dx = Math.abs(x - startPos.current.x);
+    const dy = Math.abs(y - startPos.current.y);
+    if (dx > MOVE_TOLERANCE || dy > MOVE_TOLERANCE) {
+      clearTimer();
+    }
+  }, [clearTimer]);
+
+  // Touch handlers (primary on mobile)
+  const onTouchStart = useCallback((e) => {
+    if (!e.touches?.length) return;
+    beginPress(e.touches[0].clientX, e.touches[0].clientY);
+  }, [beginPress]);
+
+  const onTouchMove = useCallback((e) => {
+    if (!e.touches?.length) return;
+    checkMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, [checkMove]);
+
+  // Mouse handlers (desktop only — skip if touch already active)
+  const onMouseDown = useCallback((e) => {
+    if (e.button !== 0) return;
+    beginPress(e.clientX, e.clientY);
+  }, [beginPress]);
+
+  const onMouseMove = useCallback((e) => {
+    checkMove(e.clientX, e.clientY);
+  }, [checkMove]);
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   return {
-    onPointerDown: start,
-    onPointerUp: cancel,
-    onPointerLeave: cancel,
-    onPointerCancel: cancel,
-    onPointerMove: move,
-    onTouchStart: start,
-    onTouchEnd: cancel,
-    onTouchCancel: cancel,
-    onTouchMove: move,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd: clearTimer,
+    onTouchCancel: clearTimer,
+    onMouseDown,
+    onMouseMove,
+    onMouseUp: clearTimer,
+    onMouseLeave: clearTimer,
     onContextMenu: (e) => e.preventDefault(),
     style: { WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none', touchAction: 'manipulation' },
   };
