@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Check, Minus, Plus, ArrowRightLeft, X } from 'lucide-react';
@@ -202,6 +202,7 @@ export default function MoveItemsFlow({ active, order, tableOrders, tableId, onD
   return (
     <Dialog open={step === 2} onOpenChange={(open) => { if (!open) setStep(1); }}>
       <DialogContent className="max-w-md p-0 overflow-hidden" data-testid="move-items-step2">
+        <DialogTitle className="sr-only">Seleccionar destino</DialogTitle>
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-oswald font-bold flex items-center gap-2">
