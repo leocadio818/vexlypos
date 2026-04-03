@@ -113,3 +113,10 @@
 }
 .edit-bar-enter { animation: edit-bar-slide 0.25s ease-out; }
 
+
+/* ── Vexly Toggle Switch ── */
+[data-vexly-switch] { background-color: #4B5563; }
+[data-vexly-switch][data-state="checked"] { background-color: #F59E0B; }
+[data-vexly-switch] > span { transform: translateX(3px); }
+[data-vexly-switch][data-state="checked"] > span { transform: translateX(27px); }
+
