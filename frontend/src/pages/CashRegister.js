@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import api, { posSessionsAPI, businessDaysAPI, formatMoney } from '@/lib/api';
@@ -12,6 +12,8 @@ import { NumericInput } from '@/components/NumericKeypad';
 import { PinPad } from '@/components/PinPad';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
+import { useSectionLayout, useScreenEditMode, useLongPress } from '@/hooks/useEditableGrid';
+import { EditableCardGrid, EditModeBar } from '@/components/EditableCardGrid';
 
 // Denominaciones de billetes y monedas RD (estructura del usuario)
 const DENOMINACIONES = [
@@ -104,6 +106,13 @@ export default function CashRegister() {
   
   // Desglose detallado de ventas por forma de pago
   const [salesBreakdown, setSalesBreakdown] = useState(null);
+
+  // ── Editable grid for stats cards ──
+  const CAJA_STAT_IDS = useMemo(() => ['cash_rd','card','transfer','usd','eur','total_sales','discounts','cash_in','cash_out','voids','credit_notes','cash_balance'], []);
+  const cajaScreen = useScreenEditMode();
+  const cajaStats = useSectionLayout('caja', 'stats', CAJA_STAT_IDS);
+  useEffect(() => { cajaScreen.registerSection([cajaStats]); }, [cajaStats, cajaScreen.registerSection]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cajaLongPress = useLongPress(cajaScreen.enterEditMode, 500);
   
   // Check URL params for B04 redirect
   useEffect(() => {
@@ -567,72 +576,34 @@ export default function CashRegister() {
                 </div>
               </div>
               
-              {/* Stats Grid */}
-              <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-cash-rd">
-                  <Banknote size={20} className="mx-auto mb-1 text-green-400" />
-                  <p className="text-xs text-muted-foreground uppercase">Efectivo RD$</p>
-                  <p className="font-oswald text-lg font-bold text-green-400">{formatMoney(salesBreakdown?.cash_rd ?? currentSession.cash_sales)}</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-card">
-                  <CreditCard size={20} className="mx-auto mb-1 text-blue-400" />
-                  <p className="text-xs text-muted-foreground uppercase">Tarjeta</p>
-                  <p className="font-oswald text-lg font-bold text-blue-400">{formatMoney(salesBreakdown?.card ?? currentSession.card_sales)}</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-transfer">
-                  <RefreshCw size={20} className="mx-auto mb-1 text-purple-400" />
-                  <p className="text-xs text-muted-foreground uppercase">Transferencia</p>
-                  <p className="font-oswald text-lg font-bold text-purple-400">{formatMoney(salesBreakdown?.transfer ?? currentSession.transfer_sales)}</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-usd">
-                  <CircleDollarSign size={20} className="mx-auto mb-1 text-yellow-400" />
-                  <p className="text-xs text-muted-foreground uppercase">USD Dolar</p>
-                  <p className="font-oswald text-lg font-bold text-yellow-400">{formatMoney(salesBreakdown?.usd ?? 0)}</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-eur">
-                  <Coins size={20} className="mx-auto mb-1 text-cyan-400" />
-                  <p className="text-xs text-muted-foreground uppercase">Euro</p>
-                  <p className="font-oswald text-lg font-bold text-cyan-400">{formatMoney(salesBreakdown?.eur ?? 0)}</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-total-sales">
-                  <TrendingUp size={20} className="mx-auto mb-1 text-orange-400" />
-                  <p className="text-xs text-muted-foreground uppercase">Total Ventas</p>
-                  <p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(salesBreakdown?.total ?? totalSales)}</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-discounts">
-                  <Tag size={20} className="mx-auto mb-1 text-rose-400" />
-                  <p className="text-xs text-muted-foreground uppercase">Descuentos</p>
-                  <p className="font-oswald text-lg font-bold text-rose-400">-{formatMoney(salesBreakdown?.discounts ?? 0)}</p>
-                  <p className="text-[11px] text-muted-foreground">{salesBreakdown?.discounts_count ?? 0} facturas</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-cash-in">
-                  <ArrowUpCircle size={20} className="mx-auto mb-1 text-emerald-400" />
-                  <p className="text-xs text-muted-foreground uppercase">Ingresos</p>
-                  <p className="font-oswald text-lg font-bold text-emerald-400">{formatMoney(currentSession.cash_in)}</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-cash-out">
-                  <ArrowDownCircle size={20} className="mx-auto mb-1 text-red-400" />
-                  <p className="text-xs text-muted-foreground uppercase">Retiros</p>
-                  <p className="font-oswald text-lg font-bold text-red-400">-{formatMoney(salesBreakdown?.withdrawals ?? currentSession.cash_out ?? 0)}</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-voids">
-                  <XCircle size={20} className="mx-auto mb-1 text-orange-500" />
-                  <p className="text-xs text-muted-foreground uppercase">Anulaciones</p>
-                  <p className="font-oswald text-lg font-bold text-orange-500">-{formatMoney(salesBreakdown?.voids_total ?? 0)}</p>
-                  <p className="text-[11px] text-muted-foreground">{salesBreakdown?.voids_count ?? 0} anuladas</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50 border border-border" data-testid="stat-credit-notes">
-                  <FileText size={20} className="mx-auto mb-1 text-amber-400" />
-                  <p className="text-xs text-muted-foreground uppercase">Notas Credito</p>
-                  <p className="font-oswald text-lg font-bold text-amber-400">-{formatMoney(salesBreakdown?.credit_notes_total ?? 0)}</p>
-                  <p className="text-[11px] text-muted-foreground">{salesBreakdown?.credit_notes_count ?? 0} B04</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/30" data-testid="stat-cash-balance">
-                  <Wallet size={20} className="mx-auto mb-1 text-green-500" />
-                  <p className="text-xs text-green-600 dark:text-green-300/70 uppercase font-bold">Balance Efectivo</p>
-                  <p className="font-oswald text-xl font-bold text-green-500">{formatMoney(salesBreakdown?.cash_balance ?? 0)}</p>
-                  <p className="text-[11px] text-muted-foreground">Apertura + Ventas - Retiros</p>
-                </div>
+              {/* Stats Grid - Editable */}
+              <div className="p-6" {...(cajaScreen.isAdmin && !cajaScreen.editMode ? cajaLongPress : {})}>
+                {cajaScreen.editMode && <EditModeBar onSave={cajaScreen.save} onCancel={cajaScreen.cancel} onRestore={cajaScreen.restore} hasHiddenCards={cajaStats.hasHiddenCards} />}
+                <EditableCardGrid
+                  editMode={cajaScreen.editMode}
+                  visibleCards={cajaStats.visibleCards}
+                  cardOrder={cajaStats.cardOrder}
+                  reorder={cajaStats.reorder}
+                  hideCard={cajaStats.hideCard}
+                  className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                  renderCard={(id) => {
+                    const statCards = {
+                      cash_rd: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-cash-rd"><Banknote size={20} className="mx-auto mb-1 text-green-400" /><p className="text-xs text-muted-foreground uppercase">Efectivo RD$</p><p className="font-oswald text-lg font-bold text-green-400">{formatMoney(salesBreakdown?.cash_rd ?? currentSession.cash_sales)}</p></div>),
+                      card: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-card"><CreditCard size={20} className="mx-auto mb-1 text-blue-400" /><p className="text-xs text-muted-foreground uppercase">Tarjeta</p><p className="font-oswald text-lg font-bold text-blue-400">{formatMoney(salesBreakdown?.card ?? currentSession.card_sales)}</p></div>),
+                      transfer: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-transfer"><RefreshCw size={20} className="mx-auto mb-1 text-purple-400" /><p className="text-xs text-muted-foreground uppercase">Transferencia</p><p className="font-oswald text-lg font-bold text-purple-400">{formatMoney(salesBreakdown?.transfer ?? currentSession.transfer_sales)}</p></div>),
+                      usd: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-usd"><CircleDollarSign size={20} className="mx-auto mb-1 text-yellow-400" /><p className="text-xs text-muted-foreground uppercase">USD Dolar</p><p className="font-oswald text-lg font-bold text-yellow-400">{formatMoney(salesBreakdown?.usd ?? 0)}</p></div>),
+                      eur: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-eur"><Coins size={20} className="mx-auto mb-1 text-cyan-400" /><p className="text-xs text-muted-foreground uppercase">Euro</p><p className="font-oswald text-lg font-bold text-cyan-400">{formatMoney(salesBreakdown?.eur ?? 0)}</p></div>),
+                      total_sales: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-total-sales"><TrendingUp size={20} className="mx-auto mb-1 text-orange-400" /><p className="text-xs text-muted-foreground uppercase">Total Ventas</p><p className="font-oswald text-lg font-bold text-orange-400">{formatMoney(salesBreakdown?.total ?? totalSales)}</p></div>),
+                      discounts: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-discounts"><Tag size={20} className="mx-auto mb-1 text-rose-400" /><p className="text-xs text-muted-foreground uppercase">Descuentos</p><p className="font-oswald text-lg font-bold text-rose-400">-{formatMoney(salesBreakdown?.discounts ?? 0)}</p><p className="text-[11px] text-muted-foreground">{salesBreakdown?.discounts_count ?? 0} facturas</p></div>),
+                      cash_in: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-cash-in"><ArrowUpCircle size={20} className="mx-auto mb-1 text-emerald-400" /><p className="text-xs text-muted-foreground uppercase">Ingresos</p><p className="font-oswald text-lg font-bold text-emerald-400">{formatMoney(currentSession.cash_in)}</p></div>),
+                      cash_out: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-cash-out"><ArrowDownCircle size={20} className="mx-auto mb-1 text-red-400" /><p className="text-xs text-muted-foreground uppercase">Retiros</p><p className="font-oswald text-lg font-bold text-red-400">-{formatMoney(salesBreakdown?.withdrawals ?? currentSession.cash_out ?? 0)}</p></div>),
+                      voids: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-voids"><XCircle size={20} className="mx-auto mb-1 text-orange-500" /><p className="text-xs text-muted-foreground uppercase">Anulaciones</p><p className="font-oswald text-lg font-bold text-orange-500">-{formatMoney(salesBreakdown?.voids_total ?? 0)}</p><p className="text-[11px] text-muted-foreground">{salesBreakdown?.voids_count ?? 0} anuladas</p></div>),
+                      credit_notes: (<div className="text-center p-3 rounded-lg bg-muted/50 border border-border h-full" data-testid="stat-credit-notes"><FileText size={20} className="mx-auto mb-1 text-amber-400" /><p className="text-xs text-muted-foreground uppercase">Notas Credito</p><p className="font-oswald text-lg font-bold text-amber-400">-{formatMoney(salesBreakdown?.credit_notes_total ?? 0)}</p><p className="text-[11px] text-muted-foreground">{salesBreakdown?.credit_notes_count ?? 0} B04</p></div>),
+                      cash_balance: (<div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/30 h-full" data-testid="stat-cash-balance"><Wallet size={20} className="mx-auto mb-1 text-green-500" /><p className="text-xs text-green-600 dark:text-green-300/70 uppercase font-bold">Balance Efectivo</p><p className="font-oswald text-xl font-bold text-green-500">{formatMoney(salesBreakdown?.cash_balance ?? 0)}</p><p className="text-[11px] text-muted-foreground">Apertura + Ventas - Retiros</p></div>),
+                    };
+                    return statCards[id] || null;
+                  }}
+                />
               </div>
               
               {/* Expected Cash - Solo visible para admin, oculto para cajeros para conteo ciego */}

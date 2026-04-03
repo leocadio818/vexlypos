@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, TrendingDown, RotateCcw, Ban, Download, Calendar, User, FileText, DollarSign } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useSectionLayout, useScreenEditMode, useLongPress } from '@/hooks/useEditableGrid';
+import { EditableCardGrid, EditModeBar } from '@/components/EditableCardGrid';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -17,6 +19,13 @@ export default function AnulacionesReport() {
   const [period, setPeriod] = useState('month');
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Editable grid for summary cards
+  const ANULACIONES_IDS = useMemo(() => ['total_voided', 'recovered', 'loss', 'recovery_rate'], []);
+  const anulScreen = useScreenEditMode();
+  const anulCards = useSectionLayout('anulaciones', 'summary', ANULACIONES_IDS);
+  useEffect(() => { anulScreen.registerSection([anulCards]); }, [anulCards, anulScreen.registerSection]); // eslint-disable-line react-hooks/exhaustive-deps
+  const anulLongPress = useLongPress(anulScreen.enterEditMode, 500);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -156,59 +165,27 @@ export default function AnulacionesReport() {
         </div>
       ) : reportData ? (
         <>
-          {/* Executive Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4" data-testid="summary-cards">
-            {/* Total Voided */}
-            <div className="p-5 rounded-xl bg-card border-2 border-border hover:border-destructive/30 transition-colors">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-destructive/10">
-                  <TrendingDown className="text-destructive" size={20} />
-                </div>
-                <span className="text-xs font-semibold text-muted-foreground uppercase">Total Anulado</span>
-              </div>
-              <p className="font-oswald text-2xl font-bold text-destructive">{formatMoney(reportData.summary.total_voided)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{reportData.summary.total_count} anulaciones - {getPeriodLabel()}</p>
-            </div>
-
-            {/* Recovered */}
-            <div className="p-5 rounded-xl bg-card border-2 border-border hover:border-green-500/30 transition-colors">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-green-500/10">
-                  <RotateCcw className="text-green-500" size={20} />
-                </div>
-                <span className="text-xs font-semibold text-muted-foreground uppercase">Recuperado</span>
-              </div>
-              <p className="font-oswald text-2xl font-bold text-green-500">{formatMoney(reportData.summary.recovered_value)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Devuelto a inventario</p>
-            </div>
-
-            {/* Loss */}
-            <div className="p-5 rounded-xl bg-card border-2 border-border hover:border-red-500/30 transition-colors">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-red-500/10">
-                  <Ban className="text-red-500" size={20} />
-                </div>
-                <span className="text-xs font-semibold text-muted-foreground uppercase">Pérdida/Merma</span>
-              </div>
-              <p className="font-oswald text-2xl font-bold text-red-500">{formatMoney(reportData.summary.loss_value)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Sin recuperar</p>
-            </div>
-
-            {/* Recovery Rate */}
-            <div className="p-5 rounded-xl bg-card border-2 border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <FileText className="text-primary" size={20} />
-                </div>
-                <span className="text-xs font-semibold text-muted-foreground uppercase">Tasa Recuperación</span>
-              </div>
-              <p className="font-oswald text-2xl font-bold text-primary">
-                {reportData.summary.total_voided > 0 
-                  ? `${((reportData.summary.recovered_value / reportData.summary.total_voided) * 100).toFixed(1)}%`
-                  : '0%'}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Del valor anulado</p>
-            </div>
+          {/* Executive Summary Cards - Editable */}
+          <div {...(anulScreen.isAdmin && !anulScreen.editMode ? anulLongPress : {})}>
+            {anulScreen.editMode && <EditModeBar onSave={anulScreen.save} onCancel={anulScreen.cancel} onRestore={anulScreen.restore} hasHiddenCards={anulCards.hasHiddenCards} />}
+            <EditableCardGrid
+              editMode={anulScreen.editMode}
+              visibleCards={anulCards.visibleCards}
+              cardOrder={anulCards.cardOrder}
+              reorder={anulCards.reorder}
+              hideCard={anulCards.hideCard}
+              className="grid grid-cols-1 md:grid-cols-4 gap-4"
+              data-testid="summary-cards"
+              renderCard={(id) => {
+                const cards = {
+                  total_voided: (<div className="p-5 rounded-xl bg-card border-2 border-border hover:border-destructive/30 transition-colors h-full"><div className="flex items-center gap-2 mb-2"><div className="p-2 rounded-lg bg-destructive/10"><TrendingDown className="text-destructive" size={20} /></div><span className="text-xs font-semibold text-muted-foreground uppercase">Total Anulado</span></div><p className="font-oswald text-2xl font-bold text-destructive">{formatMoney(reportData.summary.total_voided)}</p><p className="text-xs text-muted-foreground mt-1">{reportData.summary.total_count} anulaciones - {getPeriodLabel()}</p></div>),
+                  recovered: (<div className="p-5 rounded-xl bg-card border-2 border-border hover:border-green-500/30 transition-colors h-full"><div className="flex items-center gap-2 mb-2"><div className="p-2 rounded-lg bg-green-500/10"><RotateCcw className="text-green-500" size={20} /></div><span className="text-xs font-semibold text-muted-foreground uppercase">Recuperado</span></div><p className="font-oswald text-2xl font-bold text-green-500">{formatMoney(reportData.summary.recovered_value)}</p><p className="text-xs text-muted-foreground mt-1">Devuelto a inventario</p></div>),
+                  loss: (<div className="p-5 rounded-xl bg-card border-2 border-border hover:border-red-500/30 transition-colors h-full"><div className="flex items-center gap-2 mb-2"><div className="p-2 rounded-lg bg-red-500/10"><Ban className="text-red-500" size={20} /></div><span className="text-xs font-semibold text-muted-foreground uppercase">Perdida/Merma</span></div><p className="font-oswald text-2xl font-bold text-red-500">{formatMoney(reportData.summary.loss_value)}</p><p className="text-xs text-muted-foreground mt-1">Sin recuperar</p></div>),
+                  recovery_rate: (<div className="p-5 rounded-xl bg-card border-2 border-border h-full"><div className="flex items-center gap-2 mb-2"><div className="p-2 rounded-lg bg-primary/10"><FileText className="text-primary" size={20} /></div><span className="text-xs font-semibold text-muted-foreground uppercase">Tasa Recuperacion</span></div><p className="font-oswald text-2xl font-bold text-primary">{reportData.summary.total_voided > 0 ? `${((reportData.summary.recovered_value / reportData.summary.total_voided) * 100).toFixed(1)}%` : '0%'}</p><p className="text-xs text-muted-foreground mt-1">Del valor anulado</p></div>),
+                };
+                return cards[id] || null;
+              }}
+            />
           </div>
 
           {/* Charts Row */}

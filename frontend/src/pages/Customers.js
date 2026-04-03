@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { formatMoney } from '@/lib/api';
@@ -10,6 +10,8 @@ import { Heart, Plus, Search, Gift, Star, Phone, Mail, ArrowLeft, Pencil } from 
 import { notify } from '@/lib/notify';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
+import { useSectionLayout, useScreenEditMode, useLongPress } from '@/hooks/useEditableGrid';
+import { EditableCardGrid, EditModeBar } from '@/components/EditableCardGrid';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -31,6 +33,13 @@ export default function Customers() {
 
   // Check if current user has admin privileges
   const isAdmin = user && ADMIN_ROLES.includes(user.role?.toLowerCase());
+
+  // Editable grid for loyalty info cards
+  const LOYALTY_IDS = useMemo(() => ['points_rate', 'point_value', 'min_redeem'], []);
+  const custScreen = useScreenEditMode();
+  const loyaltyCards = useSectionLayout('customers', 'loyalty', LOYALTY_IDS);
+  useEffect(() => { custScreen.registerSection([loyaltyCards]); }, [loyaltyCards, custScreen.registerSection]); // eslint-disable-line react-hooks/exhaustive-deps
+  const custLongPress = useLongPress(custScreen.enterEditMode, 500);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -111,23 +120,25 @@ export default function Customers() {
 
       <div className="flex-1 overflow-y-auto p-4 pb-28 sm:pb-4">
         <div className="max-w-4xl mx-auto">
-          {/* Loyalty Info */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="bg-card border border-border rounded-xl p-4 text-center">
-              <Star size={20} className="mx-auto mb-1 text-yellow-400" />
-              <p className="text-xs text-muted-foreground uppercase">Puntos por RD$100</p>
-              <p className="font-oswald text-2xl font-bold">{config.points_per_hundred}</p>
-            </div>
-            <div className="bg-card border border-border rounded-xl p-4 text-center">
-              <Gift size={20} className="mx-auto mb-1 text-green-400" />
-              <p className="text-xs text-muted-foreground uppercase">Valor del Punto</p>
-              <p className="font-oswald text-2xl font-bold">RD$ {config.point_value_rd}</p>
-            </div>
-            <div className="bg-card border border-border rounded-xl p-4 text-center">
-              <Heart size={20} className="mx-auto mb-1 text-primary" />
-              <p className="text-xs text-muted-foreground uppercase">Min para Canjeo</p>
-              <p className="font-oswald text-2xl font-bold">{config.min_redemption} pts</p>
-            </div>
+          {/* Loyalty Info - Editable */}
+          <div className="mb-6" {...(custScreen.isAdmin && !custScreen.editMode ? custLongPress : {})}>
+            {custScreen.editMode && <EditModeBar onSave={custScreen.save} onCancel={custScreen.cancel} onRestore={custScreen.restore} hasHiddenCards={loyaltyCards.hasHiddenCards} />}
+            <EditableCardGrid
+              editMode={custScreen.editMode}
+              visibleCards={loyaltyCards.visibleCards}
+              cardOrder={loyaltyCards.cardOrder}
+              reorder={loyaltyCards.reorder}
+              hideCard={loyaltyCards.hideCard}
+              className="grid grid-cols-3 gap-3"
+              renderCard={(id) => {
+                const cards = {
+                  points_rate: (<div className="bg-card border border-border rounded-xl p-4 text-center h-full"><Star size={20} className="mx-auto mb-1 text-yellow-400" /><p className="text-xs text-muted-foreground uppercase">Puntos por RD$100</p><p className="font-oswald text-2xl font-bold">{config.points_per_hundred}</p></div>),
+                  point_value: (<div className="bg-card border border-border rounded-xl p-4 text-center h-full"><Gift size={20} className="mx-auto mb-1 text-green-400" /><p className="text-xs text-muted-foreground uppercase">Valor del Punto</p><p className="font-oswald text-2xl font-bold">RD$ {config.point_value_rd}</p></div>),
+                  min_redeem: (<div className="bg-card border border-border rounded-xl p-4 text-center h-full"><Heart size={20} className="mx-auto mb-1 text-primary" /><p className="text-xs text-muted-foreground uppercase">Min para Canjeo</p><p className="font-oswald text-2xl font-bold">{config.min_redemption} pts</p></div>),
+                };
+                return cards[id] || null;
+              }}
+            />
           </div>
 
           {/* Search */}
