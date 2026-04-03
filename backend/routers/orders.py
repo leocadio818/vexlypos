@@ -1476,9 +1476,10 @@ async def merge_orders(order_id: str, target_order_id: str, user: dict = Depends
 
 @router.post("/orders/{order_id}/move-items")
 async def move_items_to_order(order_id: str, input: dict, user: dict = Depends(get_current_user)):
-    """Move items from one order to another (same table)"""
+    """Move items from one order to another, with optional partial quantities"""
     target_order_id = input.get("target_order_id")
     item_ids = input.get("item_ids", [])
+    quantities = input.get("quantities") or {}  # { item_id: qty_to_move }
     
     if not target_order_id or not item_ids:
         raise HTTPException(status_code=400, detail="Faltan datos")
@@ -1490,13 +1491,23 @@ async def move_items_to_order(order_id: str, input: dict, user: dict = Depends(g
         raise HTTPException(status_code=404, detail="Orden origen no encontrada")
     if not target_order:
         raise HTTPException(status_code=404, detail="Orden destino no encontrada")
+    if target_order.get("status") in ("closed", "cancelled"):
+        raise HTTPException(status_code=400, detail="La orden destino está cerrada")
     
     items_to_move = []
     remaining_items = []
     
     for item in source_order.get("items", []):
-        if item["id"] in item_ids and item.get("status") != "cancelled":
-            items_to_move.append(item)
+        if item["id"] in item_ids and item.get("status") not in ("cancelled", "billed"):
+            qty_to_move = quantities.get(item["id"], item.get("quantity", 1))
+            if qty_to_move >= item.get("quantity", 1):
+                items_to_move.append(item)
+            else:
+                import uuid
+                moved = {**item, "id": str(uuid.uuid4()), "quantity": qty_to_move}
+                item["quantity"] = item.get("quantity", 1) - qty_to_move
+                items_to_move.append(moved)
+                remaining_items.append(item)
         else:
             remaining_items.append(item)
     

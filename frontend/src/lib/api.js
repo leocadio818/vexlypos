@@ -156,6 +156,7 @@ export const ordersAPI = {
   deleteEmpty: (orderId) => api.delete(`/orders/${orderId}/empty`),
   mergeOrders: (sourceOrderId, targetOrderId) => api.post(`/orders/${sourceOrderId}/merge/${targetOrderId}`),
   moveAllToTable: (sourceTableId, targetTableId) => api.post(`/tables/${sourceTableId}/move-all`, { target_table_id: targetTableId }),
+  moveItems: (orderId, targetOrderId, itemIds, quantities) => api.post(`/orders/${orderId}/move-items`, { target_order_id: targetOrderId, item_ids: itemIds, quantities }),
 };
 
 // Void Audit Logs

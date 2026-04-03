@@ -1,0 +1,142 @@
+{
+  "summary": "Mover Artículo Feature - ALL TESTS PASSED. Verified: 1) Funciones de Mesa modal shows exactly 5 buttons (Mover Mesa, Transferir Mesa, Dividir Cuenta, Mover Artículo, Anular Cuenta Entera) with no Reimprimir or Descuento buttons, 2) 'Mover Artículo' button (data-testid='sidebar-fn-move-items') exists and is clickable, 3) Clicking 'Mover Artículo' closes modal and shows MoveItemsFlow Step 1 (data-testid='move-items-step1'), 4) 'Siguiente' button is disabled when no items selected, 5) 'Cancelar' button returns to normal order view, 6) Backend API POST /api/orders/{order_id}/move-items accepts {target_order_id, item_ids, quantities}, 7) Grid layout is clean (2 columns for first 4 buttons, full-width for Anular), 8) No regressions - order screen loads categories, products, items correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "funciones_modal_tests": {
+      "status": "PASS",
+      "tests": [
+        {
+          "name": "Modal shows exactly 5 buttons",
+          "result": "PASS",
+          "details": "Found: Mover Mesa, Transferir Mesa, Dividir Cuenta, Mover Artículo, Anular Cuenta Entera"
+        },
+        {
+          "name": "No unwanted buttons (Reimprimir, Descuento)",
+          "result": "PASS",
+          "details": "Neither Reimprimir nor Descuento buttons found in modal"
+        },
+        {
+          "name": "Grid layout is correct",
+          "result": "PASS",
+          "details": "2 columns for first 4 buttons, full-width for Anular Cuenta Entera"
+        }
+      ]
+    },
+    "move_items_flow_tests": {
+      "status": "PASS",
+      "tests": [
+        {
+          "name": "Mover Artículo button clickable",
+          "result": "PASS",
+          "details": "Button with data-testid='sidebar-fn-move-items' found and clickable"
+        },
+        {
+          "name": "Step 1 (item selection) visible",
+          "result": "PASS",
+          "details": "MoveItemsFlow Step 1 (data-testid='move-items-step1') visible after clicking Mover Artículo"
+        },
+        {
+          "name": "Siguiente disabled when no items selected",
+          "result": "PASS",
+          "details": "Siguiente button has cursor-not-allowed/bg-muted classes when no items selected"
+        },
+        {
+          "name": "Siguiente enabled after selecting item",
+          "result": "PASS",
+          "details": "Siguiente button has bg-cyan-500 class after selecting an item"
+        },
+        {
+          "name": "Cancelar returns to normal view",
+          "result": "PASS",
+          "details": "Clicking Cancelar hides MoveItemsFlow and returns to normal order view"
+        },
+        {
+          "name": "Step 2 (destination selection) visible",
+          "result": "PASS",
+          "details": "After clicking Siguiente, Step 2 dialog (data-testid='move-items-step2') appears"
+        },
+        {
+          "name": "Esta Mesa / Otra Mesa tabs work",
+          "result": "PASS",
+          "details": "Both tabs (data-testid='move-dest-tab-same' and 'move-dest-tab-other') found and functional"
+        },
+        {
+          "name": "Other tables list shown",
+          "result": "PASS",
+          "details": "Found 12 other tables to move items to in 'Otra Mesa' tab"
+        }
+      ]
+    },
+    "backend_api_tests": {
+      "status": "PASS",
+      "tests": [
+        {
+          "name": "move-items endpoint exists",
+          "result": "PASS",
+          "details": "POST /api/orders/{order_id}/move-items returns 404 for invalid order (not 405)"
+        },
+        {
+          "name": "Requires target_order_id",
+          "result": "PASS",
+          "details": "Returns validation error when target_order_id missing"
+        },
+        {
+          "name": "Requires item_ids",
+          "result": "PASS",
+          "details": "Returns validation error when item_ids missing"
+        },
+        {
+          "name": "Accepts quantities parameter",
+          "result": "PASS",
+          "details": "API accepts optional quantities parameter for partial moves"
+        }
+      ]
+    },
+    "regression_tests": {
+      "status": "PASS",
+      "tests": [
+        {
+          "name": "Order screen loads correctly",
+          "result": "PASS",
+          "details": "Categories (HAMBURGUESA, CERVEZAS) visible, products loadable"
+        },
+        {
+          "name": "Order items display correctly",
+          "result": "PASS",
+          "details": "Items show with name, price, status badge (Enviado/Pendiente)"
+        }
+      ]
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_move_items_feature.py",
+    "/app/test_reports/pytest/move_items_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Console warnings about DialogContent missing DialogTitle for accessibility - consider adding VisuallyHidden DialogTitle"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_move_items_feature.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin_pin": "10000"
+  },
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Mover Artículo feature fully implemented and tested. The flow is: 1) Open Funciones de Mesa modal via sidebar button, 2) Click 'Mover Artículo', 3) Select items in Step 1, 4) Click Siguiente, 5) Choose destination (Esta Mesa for same table accounts, Otra Mesa for other tables), 6) Confirm move. Backend supports partial quantities via 'quantities' parameter. Table 5 has existing order with PRESIDENTE item for testing.",
+  "rca_of_the_issue": null
+}

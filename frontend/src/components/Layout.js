@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { GraduationCap } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud, MoreHorizontal, Wrench, MoveRight, SplitSquareHorizontal, Percent, Ban, Sun, Moon, AlertTriangle, Palette, ArrowRightLeft, Clock, LogOut as LogOutIcon, Lock, FileText } from 'lucide-react';
+import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud, MoreHorizontal, Wrench, MoveRight, SplitSquareHorizontal, Ban, Sun, Moon, AlertTriangle, Palette, ArrowRightLeft, Clock, LogOut as LogOutIcon, Lock, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -796,13 +796,11 @@ export default function Layout() {
                 <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors"><SplitSquareHorizontal size={16} className="text-green-400" /></div>
                 <span className="text-sm font-medium text-white/90 group-hover:text-white">Dividir Cuenta</span>
               </button>
-              <button className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed" disabled data-testid="sidebar-fn-reprint-order">
-                <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center"><RefreshCw size={16} className="text-orange-400" /></div>
-                <div className="flex flex-col items-start"><span className="text-sm font-medium text-white/50">Reimprimir</span><span className="text-xs text-white/30">Pronto</span></div>
-              </button>
-              <button className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed" disabled data-testid="sidebar-fn-apply-discount">
-                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center"><Percent size={16} className="text-purple-400" /></div>
-                <div className="flex flex-col items-start"><span className="text-sm font-medium text-white/50">Descuento</span><span className="text-xs text-white/30">Pronto</span></div>
+              <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('openMoveItemsFlow')); }}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-400/50 transition-all duration-200 group active:scale-95"
+                data-testid="sidebar-fn-move-items">
+                <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center group-hover:bg-cyan-500/30 transition-colors"><ArrowRightLeft size={16} className="text-cyan-400" /></div>
+                <span className="text-sm font-medium text-white/90 group-hover:text-white">Mover Artículo</span>
               </button>
               <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('voidEntireOrder')); }}
                 className="col-span-2 flex items-center justify-center gap-3 px-4 py-3.5 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-400/50 transition-all duration-200 group active:scale-95"

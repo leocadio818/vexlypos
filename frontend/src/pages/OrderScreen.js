@@ -15,6 +15,7 @@ import { useTheme } from '@/context/ThemeContext';
 import TransferTableModal from '@/components/TransferTableModal';
 import AccountSelectorLobby from '@/components/AccountSelectorLobby';
 import SplitCheckView from '@/components/SplitCheckView';
+import MoveItemsFlow from '@/components/MoveItemsFlow';
 
 // Mapa de iconos de producto
 const PRODUCT_ICON_MAP = {
@@ -152,6 +153,9 @@ export default function OrderScreen() {
   
   // Transfer Table Dialog
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+
+  // Move Items flow
+  const [moveItemsActive, setMoveItemsActive] = useState(false);
 
   // Mobile fullscreen account view
   const [mobileAccountExpanded, setMobileAccountExpanded] = useState(false);
@@ -557,12 +561,15 @@ export default function OrderScreen() {
     window.addEventListener('voidEntireOrder', handleVoidEntireOrder);
     const handleOpenTransfer = () => setTransferDialogOpen(true);
     window.addEventListener('openTransferTableDialog', handleOpenTransfer);
+    const handleOpenMoveItems = () => setMoveItemsActive(true);
+    window.addEventListener('openMoveItemsFlow', handleOpenMoveItems);
     
     return () => {
       window.removeEventListener('openMoveTableDialog', handleOpenMoveDialog);
       window.removeEventListener('enterSplitMode', handleEnterSplitMode);
       window.removeEventListener('voidEntireOrder', handleVoidEntireOrder);
       window.removeEventListener('openTransferTableDialog', handleOpenTransfer);
+      window.removeEventListener('openMoveItemsFlow', handleOpenMoveItems);
     };
   }, [order]);
 
@@ -1790,6 +1797,15 @@ export default function OrderScreen() {
             onMoveToAccount={enterMoveItemsMode}
             getOrderTotal={getOrderTotal}
             isOrderEmpty={isOrderEmpty}
+          />
+        ) : moveItemsActive ? (
+          <MoveItemsFlow
+            active={moveItemsActive}
+            order={order}
+            tableOrders={tableOrders}
+            tableId={tableId}
+            onDone={() => { setMoveItemsActive(false); fetchOrder(); }}
+            onCancel={() => setMoveItemsActive(false)}
           />
         ) : (
           /* Normal Order View */
