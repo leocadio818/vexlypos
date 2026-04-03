@@ -162,7 +162,8 @@ export function EditModeBar({ onSave, onCancel, onRestore, hasHiddenCards }) {
         {hasHiddenCards && (
           <button
             onClick={onRestore}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors"
+            className="text-sm font-bold rounded-lg border"
+            style={{ minHeight: 40, padding: '10px 16px', background: 'rgba(255,255,255,0.2)', color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.4)', borderRadius: 8 }}
             data-testid="restore-layout-btn"
           >
             Restaurar layout original
@@ -170,14 +171,16 @@ export function EditModeBar({ onSave, onCancel, onRestore, hasHiddenCards }) {
         )}
         <button
           onClick={onCancel}
-          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors"
+          className="text-sm font-bold rounded-lg border"
+          style={{ minHeight: 40, padding: '10px 16px', background: '#FFFFFF', color: '#1F2937', borderColor: '#D1D5DB', borderRadius: 8 }}
           data-testid="cancel-edit-btn"
         >
           Cancelar
         </button>
         <button
           onClick={onSave}
-          className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-orange-600 hover:bg-white/90 transition-colors"
+          className="text-sm font-bold rounded-lg"
+          style={{ minHeight: 40, padding: '10px 16px', background: '#1F2937', color: '#FFFFFF', borderRadius: 8 }}
           data-testid="save-layout-btn"
         >
           Guardar
