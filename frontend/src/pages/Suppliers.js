@@ -94,7 +94,7 @@ export default function Suppliers() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 p-4 pb-28 overflow-auto">
         <Tabs defaultValue="suppliers" className="max-w-5xl mx-auto">
           <TabsList className="bg-card border border-border mb-4">
             <TabsTrigger value="suppliers" className="data-[state=active]:bg-primary data-[state=active]:text-white font-oswald text-xs" data-testid="tab-suppliers">

@@ -378,7 +378,7 @@ export default function UserConfig() {
       </div>
 
       {/* ═══ MAIN CONTENT ═══ */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-4 pb-28">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4">
 
           {/* ═══ LEFT COLUMN: Employee Data ═══ */}
