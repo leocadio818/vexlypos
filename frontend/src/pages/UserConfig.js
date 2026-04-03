@@ -340,7 +340,8 @@ export default function UserConfig() {
   return (
     <div className="h-full flex flex-col" data-testid="user-config-page">
       {/* ═══ HEADER ═══ */}
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card/50 flex-shrink-0">
+      <div className="px-4 py-3 border-b border-border bg-card/50 flex-shrink-0">
+        {/* Row 1: Back + Title */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} data-testid="back-btn">
             <ArrowLeft size={20} />
@@ -354,13 +355,14 @@ export default function UserConfig() {
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+        {/* Row 2: Toggles + Save */}
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
             <span className="text-[11px] text-muted-foreground">Activo</span>
             <Switch checked={user.active} onCheckedChange={v => setUser(p => ({ ...p, active: v }))} />
           </div>
           <div className="h-5 w-px bg-border" />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <GraduationCap size={14} className={user.training_mode ? 'text-amber-400' : 'text-muted-foreground'} />
             <span className="text-[11px] text-muted-foreground">Entrenamiento</span>
             <Switch
