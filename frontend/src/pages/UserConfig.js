@@ -340,31 +340,30 @@ export default function UserConfig() {
   return (
     <div className="h-full flex flex-col" data-testid="user-config-page">
       {/* ═══ HEADER ═══ */}
-      <div className="px-4 py-3 border-b border-border bg-card/50 flex-shrink-0">
+      <div className="px-3 py-2 border-b border-border bg-card/50 flex-shrink-0 overflow-hidden">
         {/* Row 1: Back + Title */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} data-testid="back-btn">
-            <ArrowLeft size={20} />
+        <div className="flex items-center gap-2 min-w-0">
+          <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => navigate('/settings')} data-testid="back-btn">
+            <ArrowLeft size={18} />
           </Button>
-          <User size={20} className="text-primary" />
-          <h1 className="font-oswald text-lg font-bold tracking-wide">{isNew ? 'NUEVO EMPLEADO' : 'EDITAR EMPLEADO'}</h1>
-          {!isNew && <Badge variant={user.active ? 'default' : 'destructive'}>{user.active ? 'Activo' : 'Inactivo'}</Badge>}
+          <User size={18} className="text-primary shrink-0" />
+          <h1 className="font-oswald text-base font-bold tracking-wide truncate">{isNew ? 'NUEVO EMPLEADO' : 'EDITAR EMPLEADO'}</h1>
+          {!isNew && <Badge variant={user.active ? 'default' : 'destructive'} className="shrink-0 text-[10px] px-1.5">{user.active ? 'Activo' : 'Inactivo'}</Badge>}
           {user.training_mode && (
-            <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse">
-              <GraduationCap size={12} className="mr-1" /> ENTRENAMIENTO
+            <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse shrink-0 text-[10px] px-1.5">
+              <GraduationCap size={10} className="mr-0.5" /> ENTREN.
             </Badge>
           )}
         </div>
-        {/* Row 2: Toggles + Save */}
-        <div className="flex items-center gap-3 mt-2 flex-wrap">
-          <div className="flex items-center gap-1.5">
+        {/* Row 2: Toggles + Save — wraps on tiny screens */}
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <div className="flex items-center gap-1">
             <span className="text-[11px] text-muted-foreground">Activo</span>
             <Switch checked={user.active} onCheckedChange={v => setUser(p => ({ ...p, active: v }))} />
           </div>
-          <div className="h-5 w-px bg-border" />
-          <div className="flex items-center gap-1.5">
-            <GraduationCap size={14} className={user.training_mode ? 'text-amber-400' : 'text-muted-foreground'} />
-            <span className="text-[11px] text-muted-foreground">Entrenamiento</span>
+          <div className="flex items-center gap-1">
+            <GraduationCap size={12} className={user.training_mode ? 'text-amber-400' : 'text-muted-foreground'} />
+            <span className="text-[11px] text-muted-foreground">Entren.</span>
             <Switch
               checked={user.training_mode}
               onCheckedChange={v => setUser(p => ({ ...p, training_mode: v }))}
@@ -372,9 +371,8 @@ export default function UserConfig() {
               className={user.training_mode ? 'data-[state=checked]:bg-amber-500' : ''}
             />
           </div>
-          <div className="h-5 w-px bg-border" />
-          <Button onClick={handleSave} disabled={saving} className="bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="save-user-btn">
-            <Save size={16} className="mr-2" /> {saving ? 'GUARDANDO...' : 'GUARDAR'}
+          <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary text-primary-foreground font-oswald font-bold active:scale-95 ml-auto h-8 px-3 text-xs" data-testid="save-user-btn">
+            <Save size={14} className="mr-1" /> {saving ? 'GUARDANDO...' : 'GUARDAR'}
           </Button>
         </div>
       </div>
