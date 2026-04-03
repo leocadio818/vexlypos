@@ -336,60 +336,65 @@ export default function Dashboard() {
             data-testid="tables-section"
           />
 
-          {/* Voids Panel (not draggable — conditional) */}
-          {(voidsToday.count > 0 || voidsJornada.count > 0) && (
-            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4" data-testid="voids-section">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2"><XCircle size={14} className="text-red-400" /><h3 className="font-oswald text-sm font-bold uppercase tracking-wider text-white/50">Anulaciones</h3></div>
+          {/* Anulaciones — Single unified card (Jornada source) */}
+          <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4" data-testid="voids-section">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <XCircle size={14} className="text-orange-400" />
+                <h3 className="font-oswald text-sm font-bold uppercase tracking-wider text-white/50">Anulaciones</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                  <p className="text-xs text-red-300/80 uppercase font-bold mb-1">Hoy (Tiempo Real)</p>
-                  <div className="flex items-baseline gap-2"><span className="font-oswald text-2xl font-bold text-red-400">{voidsToday.count}</span><span className="text-xs text-white/60">anulaciones</span></div>
-                  <p className="font-oswald text-base font-bold text-red-400 mt-1">{formatMoney(voidsToday.total)}</p>
-                  {voidsToday.by_reason.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {voidsToday.by_reason.map((r, i) => (
-                        <div key={i} className="flex justify-between text-xs"><span className="text-white/70 truncate mr-2">{r.reason}</span><span className="text-red-400 font-mono shrink-0">{r.count}x {formatMoney(r.total)}</span></div>
-                      ))}
-                    </div>
-                  )}
+            </div>
+            <p className="text-[11px] text-white/40 mb-3">
+              {jornada.status === 'open' && jornada.opened_at
+                ? `Jornada activa desde ${new Date(jornada.opened_at).toLocaleString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                : 'Sin jornada activa'}
+            </p>
+            {voidsJornada.count === 0 ? (
+              <p className="text-xs text-white/30 text-center py-4">Sin anulaciones en esta jornada</p>
+            ) : (
+              <>
+                {/* Summary row */}
+                <div className="flex items-baseline gap-3 mb-3">
+                  <span className="font-oswald text-3xl font-bold text-white">{voidsJornada.count}</span>
+                  <span className="text-xs text-white/50">anulaciones</span>
+                  <span className="font-oswald text-xl font-bold text-orange-400 ml-auto">{formatMoney(voidsJornada.total)}</span>
                 </div>
-                <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                  <p className="text-xs text-orange-300/80 uppercase font-bold mb-1">Jornada Operativa</p>
-                  <div className="flex items-baseline gap-2"><span className="font-oswald text-2xl font-bold text-orange-400">{voidsJornada.count}</span><span className="text-xs text-white/60">anulaciones</span></div>
-                  <p className="font-oswald text-base font-bold text-orange-400 mt-1">{formatMoney(voidsJornada.total)}</p>
-                  {voidsJornada.by_reason.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {voidsJornada.by_reason.map((r, i) => (
-                        <div key={i} className="flex justify-between text-xs"><span className="text-white/70 truncate mr-2">{r.reason}</span><span className="text-orange-400 font-mono shrink-0">{r.count}x {formatMoney(r.total)}</span></div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {voidsJornada.items.length > 0 && (
-                <div className="mt-3 pt-2 border-t border-white/10">
-                  <p className="text-xs text-white/50 uppercase font-bold mb-1.5">Items Anulados Recientes</p>
-                  <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                    {voidsJornada.items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs py-0.5" data-testid={`void-item-${i}`}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-red-400 font-mono">x{item.quantity}</span>
-                          <span className="text-white/70">{item.product_name}</span>
-                          <span className="text-white/30">-- {item.reason}</span>
+                {/* Detail list by reason */}
+                {voidsJornada.by_reason.length > 0 && (
+                  <div className="space-y-1.5 mb-3">
+                    {voidsJornada.by_reason.slice(0, 5).map((r, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-white/5">
+                        <span className="text-white/70 truncate mr-2">{r.reason}</span>
+                        <span className="text-orange-400 font-mono shrink-0">{r.count}x &middot; {formatMoney(r.total)}</span>
+                      </div>
+                    ))}
+                    {voidsJornada.by_reason.length > 5 && (
+                      <p className="text-[11px] text-orange-400/70 text-right cursor-pointer hover:text-orange-300">Ver todas ({voidsJornada.by_reason.length})</p>
+                    )}
+                  </div>
+                )}
+                {/* Recent items */}
+                {voidsJornada.items.length > 0 && (
+                  <div className="pt-2 border-t border-white/10 space-y-1 max-h-[100px] overflow-y-auto">
+                    {voidsJornada.items.slice(0, 5).map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-[11px] py-0.5" data-testid={`void-item-${i}`}>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-red-400 font-mono shrink-0">x{item.quantity}</span>
+                          <span className="text-white/60 truncate">{item.product_name}</span>
+                          <span className="text-white/25 shrink-0">— {item.reason}</span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-white/60">{item.requested_by}</span>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <span className="text-white/40">{item.requested_by}</span>
                           <span className="text-red-400 font-mono">{formatMoney(item.unit_price * item.quantity)}</span>
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </>
+            )}
+            <p className="text-[10px] text-white/20 mt-3 text-right">Actualizado en tiempo real</p>
+          </div>
 
           {/* Hourly Sales Chart */}
           <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl p-4" data-testid="hourly-chart">
