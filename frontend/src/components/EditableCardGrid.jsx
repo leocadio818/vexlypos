@@ -148,22 +148,45 @@ export function EditableCardGrid({
 }
 
 /* ── Edit mode floating toolbar ── */
+/* Safari iOS aggressively resets button styles — all properties must be explicit
+   with -webkit- prefixes and appearance:none to prevent native overrides. */
 export function EditModeBar({ onSave, onCancel, onRestore, hasHiddenCards }) {
-  const btnBase = { minHeight: 44, padding: '10px 20px', fontSize: 14, fontWeight: 700, borderRadius: 10, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.3px' };
+  const btnBase = {
+    minHeight: 48,
+    padding: '10px 20px',
+    fontSize: '0.875rem',
+    fontWeight: 700,
+    borderRadius: 10,
+    border: 'none',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    letterSpacing: '0.3px',
+    lineHeight: '1.2',
+    margin: 0,
+    boxSizing: 'border-box',
+    textDecoration: 'none',
+    outline: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    appearance: 'none',
+    WebkitTapHighlightColor: 'transparent',
+  };
   return (
     <div
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: '#D97706', borderBottom: '2px solid #B45309', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', backgroundColor: '#D97706', borderBottom: '2px solid #B45309', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
       data-testid="edit-mode-bar"
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <GripVertical size={16} color="#FFF" />
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>Modo Edicion</span>
+        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', WebkitTextFillColor: '#FFFFFF' }}>Modo Edicion</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {hasHiddenCards && (
           <button
             onClick={onRestore}
-            style={{ ...btnBase, background: 'rgba(255,255,255,0.25)', color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.5)' }}
+            style={{ ...btnBase, backgroundColor: 'rgba(255,255,255,0.25)', color: '#FFFFFF', WebkitTextFillColor: '#FFFFFF', border: '1px solid rgba(255,255,255,0.5)', opacity: 1 }}
             data-testid="restore-layout-btn"
           >
             Restaurar
@@ -171,14 +194,14 @@ export function EditModeBar({ onSave, onCancel, onRestore, hasHiddenCards }) {
         )}
         <button
           onClick={onCancel}
-          style={{ ...btnBase, background: '#FFFFFF', color: '#1F2937', border: '2px solid #9CA3AF' }}
+          style={{ ...btnBase, backgroundColor: '#FFFFFF', color: '#1F2937', WebkitTextFillColor: '#1F2937', border: '2px solid #9CA3AF', opacity: 1 }}
           data-testid="cancel-edit-btn"
         >
           Cancelar
         </button>
         <button
           onClick={onSave}
-          style={{ ...btnBase, background: '#111827', color: '#FFFFFF' }}
+          style={{ ...btnBase, backgroundColor: '#111827', color: '#FFFFFF', WebkitTextFillColor: '#FFFFFF', opacity: 1 }}
           data-testid="save-layout-btn"
         >
           Guardar

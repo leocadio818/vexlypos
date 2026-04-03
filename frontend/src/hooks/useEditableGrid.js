@@ -140,91 +140,86 @@ export function useScreenEditMode() {
 
 /**
  * Long press hook — activates edit mode on 900ms hold with zero movement.
- * Cancels on: finger movement > 15px, native scroll detected, or touch end.
- * Listens for scroll events on the nearest scrollable ancestor to reliably
- * cancel the timer even when the browser intercepts touchMove for native scroll.
+ * Safari-safe: uses window-level scroll listener (capture phase) instead of
+ * container scroll, because Safari iOS does not reliably fire touchmove or
+ * container scroll events during native momentum scrolling.
+ * New touchstart always cancels any pending timer from a previous press.
  */
 export function useLongPress(callback, ms = 900) {
   const timerRef = useRef(null);
   const callbackRef = useRef(callback);
   const startPos = useRef(null);
-  const activeRef = useRef(false);
-  const scrollParentRef = useRef(null);
+  const listeningRef = useRef(false);
   callbackRef.current = callback;
 
   const MOVE_TOLERANCE = 15;
 
-  // Cancel timer when parent scrolls (browser-intercepted scroll)
-  const onScrollDetected = useCallback(() => {
+  // Core cancel — clears timer and position
+  const cancel = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
     startPos.current = null;
-    activeRef.current = false;
   }, []);
 
-  const removeScrollListener = useCallback(() => {
-    if (scrollParentRef.current) {
-      scrollParentRef.current.removeEventListener('scroll', onScrollDetected);
-      scrollParentRef.current = null;
-    }
-  }, [onScrollDetected]);
-
-  const clearTimer = useCallback(() => {
+  // Window-level scroll handler (capture: true catches ALL scrolls on Safari)
+  const onWindowScroll = useRef(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
     startPos.current = null;
-    activeRef.current = false;
-    removeScrollListener();
-  }, [removeScrollListener]);
+  });
 
-  // Walk up the DOM to find the nearest scrollable ancestor
-  const findScrollParent = useCallback((el) => {
-    let node = el?.parentElement;
-    while (node && node !== document.documentElement) {
-      const style = window.getComputedStyle(node);
-      if (/(auto|scroll)/.test(style.overflow + style.overflowY)) return node;
-      node = node.parentElement;
+  const attachScrollListener = useCallback(() => {
+    if (!listeningRef.current) {
+      window.addEventListener('scroll', onWindowScroll.current, { passive: true, capture: true });
+      listeningRef.current = true;
     }
-    return window;
   }, []);
 
-  const beginPress = useCallback((x, y, target) => {
-    if (activeRef.current) return;
-    activeRef.current = true;
+  const detachScrollListener = useCallback(() => {
+    if (listeningRef.current) {
+      window.removeEventListener('scroll', onWindowScroll.current, { capture: true });
+      listeningRef.current = false;
+    }
+  }, []);
+
+  const endPress = useCallback(() => {
+    cancel();
+    detachScrollListener();
+  }, [cancel, detachScrollListener]);
+
+  const beginPress = useCallback((x, y) => {
+    // Always cancel previous press first (Safari: rapid taps or new touch)
+    cancel();
+    detachScrollListener();
+
     startPos.current = { x, y };
-
-    // Attach scroll listener to nearest scrollable parent
-    removeScrollListener();
-    const scrollParent = findScrollParent(target);
-    scrollParentRef.current = scrollParent;
-    scrollParent.addEventListener('scroll', onScrollDetected, { passive: true });
+    attachScrollListener();
 
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
       startPos.current = null;
-      activeRef.current = false;
-      removeScrollListener();
+      detachScrollListener();
       callbackRef.current();
     }, ms);
-  }, [ms, findScrollParent, onScrollDetected, removeScrollListener]);
+  }, [ms, cancel, attachScrollListener, detachScrollListener]);
 
   const checkMove = useCallback((x, y) => {
     if (!startPos.current || !timerRef.current) return;
     const dx = Math.abs(x - startPos.current.x);
     const dy = Math.abs(y - startPos.current.y);
     if (dx > MOVE_TOLERANCE || dy > MOVE_TOLERANCE) {
-      clearTimer();
+      endPress();
     }
-  }, [clearTimer]);
+  }, [endPress]);
 
-  // Touch handlers (primary on mobile)
+  // Touch handlers (primary on mobile / Safari iOS)
   const onTouchStart = useCallback((e) => {
     if (!e.touches?.length) return;
-    beginPress(e.touches[0].clientX, e.touches[0].clientY, e.target);
+    beginPress(e.touches[0].clientX, e.touches[0].clientY);
   }, [beginPress]);
 
   const onTouchMove = useCallback((e) => {
@@ -232,31 +227,40 @@ export function useLongPress(callback, ms = 900) {
     checkMove(e.touches[0].clientX, e.touches[0].clientY);
   }, [checkMove]);
 
-  // Mouse handlers (desktop only — skip if touch already active)
+  // Mouse handlers (desktop Chrome/Edge/Firefox)
   const onMouseDown = useCallback((e) => {
     if (e.button !== 0) return;
-    beginPress(e.clientX, e.clientY, e.target);
+    beginPress(e.clientX, e.clientY);
   }, [beginPress]);
 
   const onMouseMove = useCallback((e) => {
     checkMove(e.clientX, e.clientY);
   }, [checkMove]);
 
+  // Cleanup on unmount
   useEffect(() => () => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    removeScrollListener();
-  }, [removeScrollListener]);
+    if (listeningRef.current) {
+      window.removeEventListener('scroll', onWindowScroll.current, { capture: true });
+      listeningRef.current = false;
+    }
+  }, []);
 
   return {
     onTouchStart,
     onTouchMove,
-    onTouchEnd: clearTimer,
-    onTouchCancel: clearTimer,
+    onTouchEnd: endPress,
+    onTouchCancel: endPress,
     onMouseDown,
     onMouseMove,
-    onMouseUp: clearTimer,
-    onMouseLeave: clearTimer,
+    onMouseUp: endPress,
+    onMouseLeave: endPress,
     onContextMenu: (e) => e.preventDefault(),
-    style: { WebkitTouchCallout: 'none', userSelect: 'none', touchAction: 'pan-y' },
+    style: {
+      WebkitTouchCallout: 'none',
+      WebkitUserSelect: 'none',
+      userSelect: 'none',
+      touchAction: 'pan-y',
+    },
   };
 }
