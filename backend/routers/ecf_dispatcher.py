@@ -80,7 +80,7 @@ async def send_ecf(bill_id: str):
         tipo_doc = {"E31": "31", "E32": "32", "E33": "33", "E34": "34", "E44": "44", "E45": "45"}.get(ecf_prefix, "32")
         ncf_info = await get_next_ncf(tipo_doc)
         encf = ncf_info["ncf"]
-        result = await _send_via_thefactory(bill, config, encf, bill_id, ncf_info.get("fecha_venc", "31-12-2028"))
+        result = await _send_via_thefactory(bill, config, encf, bill_id, ncf_info.get("fecha_venc"))
     else:
         result = await _send_via_alanube(bill, config, encf, bill_id)
 
@@ -118,7 +118,7 @@ async def _send_via_alanube(bill, config, encf, bill_id):
     return result
 
 
-async def _send_via_thefactory(bill, config, encf, bill_id, fecha_venc="31-12-2028"):
+async def _send_via_thefactory(bill, config, encf, bill_id, fecha_venc=None):
     """Send via The Factory HKA"""
     from routers.thefactory import (
         authenticate, build_thefactory_payload, send_to_thefactory,
@@ -183,7 +183,7 @@ async def retry_ecf(bill_id: str):
         tipo_doc = {"E31": "31", "E32": "32", "E33": "33", "E34": "34"}.get(ecf_prefix, "32")
         ncf_info = await get_next_ncf(tipo_doc)
         encf = ncf_info["ncf"]
-        result = await _send_via_thefactory(bill, config, encf, bill_id, ncf_info.get("fecha_venc", "31-12-2028"))
+        result = await _send_via_thefactory(bill, config, encf, bill_id, ncf_info.get("fecha_venc"))
     else:
         result = await _send_via_alanube(bill, config, encf, bill_id)
 
@@ -219,7 +219,7 @@ async def retry_all_contingencia():
             tipo_doc = {"E31": "31", "E32": "32", "E33": "33", "E34": "34"}.get(ecf_prefix, "32")
             ncf_info = await get_next_ncf(tipo_doc)
             encf = ncf_info["ncf"]
-            result = await _send_via_thefactory(bill, config, encf, bill_doc["id"], ncf_info.get("fecha_venc", "31-12-2028"))
+            result = await _send_via_thefactory(bill, config, encf, bill_doc["id"], ncf_info.get("fecha_venc"))
         else:
             result = await _send_via_alanube(bill, config, encf, bill_doc["id"])
 

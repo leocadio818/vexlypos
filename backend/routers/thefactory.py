@@ -61,17 +61,26 @@ async def get_series() -> list:
     return []
 
 
+def _is_valid_fecha_venc(val) -> bool:
+    """Check if a fechaVencimientoSecuencia value is a valid dd-mm-yyyy date."""
+    if not val or not isinstance(val, str) or val.strip().upper() in ("N/A", "NA", "NULL", "NONE", ""):
+        return False
+    import re
+    return bool(re.match(r"^\d{2}-\d{2}-\d{4}$", val.strip()))
+
+
 async def get_next_ncf(tipo_documento: str) -> dict:
     """
     Get the next NCF and sequence expiration from The Factory series.
     Tracks used NCFs in MongoDB to avoid duplicates.
-    Returns: { "ncf": "E31XXXXXXXXXX", "fecha_venc": "31-12-2028" }
+    Returns: { "ncf": "E31XXXXXXXXXX", "fecha_venc": "31-12-2028" | None }
     """
     series = await get_series()
-    fecha_venc = "31-12-2028"
+    fecha_venc = None
     for s in series:
         if s.get("tipoDocumento") == tipo_documento:
-            fecha_venc = s.get("fechaVencimientoSecuencia", "31-12-2028")
+            raw = s.get("fechaVencimientoSecuencia")
+            fecha_venc = raw.strip() if _is_valid_fecha_venc(raw) else None
             break
 
     prefix = f"E{tipo_documento}"
@@ -256,7 +265,7 @@ def format_date_tf(iso_date: str = None) -> str:
     return datetime.now(timezone.utc).strftime("%d-%m-%Y")
 
 
-def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: str, fecha_venc: str = "31-12-2028", ecf_config: dict = None) -> dict:
+def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: str, fecha_venc: str = None, ecf_config: dict = None) -> dict:
     """Convert a VexlyPOS bill to The Factory HKA e-CF JSON"""
 
     # Determine document type from ecf_type or NCF prefix
@@ -367,7 +376,8 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
     buyer_name = bill.get("razon_social", "") or "CONSUMIDOR FINAL"
 
     # ── Sequence expiration date ──
-    fecha_venc_seq = fecha_venc
+    # For E32 (Consumo) The Factory may return "N/A" — pass None to omit
+    fecha_venc_seq = fecha_venc if _is_valid_fecha_venc(fecha_venc) else None
 
     # ── Build payload ──
     payload = {
@@ -654,6 +664,13 @@ async def anular_secuencias(tipo_documento: str, ncf_desde: str, ncf_hasta: str)
             response = await client.post(url, json=payload)
             data = response.json()
             return {
+                "ok": data.get("codigo") == 0,
+                "message": data.get("mensaje", ""),
+                "codigo": data.get("codigo"),
+            }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+        return {
                 "ok": data.get("codigo") == 0,
                 "message": data.get("mensaje", ""),
                 "codigo": data.get("codigo"),
