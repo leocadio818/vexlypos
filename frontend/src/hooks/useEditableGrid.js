@@ -139,20 +139,23 @@ export function useScreenEditMode() {
 }
 
 /**
- * Long press hook — activates edit mode on 800ms hold.
- * Cancels immediately if finger/pointer moves more than 10px.
- * Separates touch and mouse to prevent dual-fire on mobile.
+ * Long press hook — activates edit mode on 900ms hold with zero movement.
+ * Cancels on: finger movement > 15px, native scroll detected, or touch end.
+ * Listens for scroll events on the nearest scrollable ancestor to reliably
+ * cancel the timer even when the browser intercepts touchMove for native scroll.
  */
-export function useLongPress(callback, ms = 800) {
+export function useLongPress(callback, ms = 900) {
   const timerRef = useRef(null);
   const callbackRef = useRef(callback);
   const startPos = useRef(null);
   const activeRef = useRef(false);
+  const scrollParentRef = useRef(null);
   callbackRef.current = callback;
 
-  const MOVE_TOLERANCE = 8;
+  const MOVE_TOLERANCE = 15;
 
-  const clearTimer = useCallback(() => {
+  // Cancel timer when parent scrolls (browser-intercepted scroll)
+  const onScrollDetected = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -161,18 +164,53 @@ export function useLongPress(callback, ms = 800) {
     activeRef.current = false;
   }, []);
 
-  const beginPress = useCallback((x, y) => {
-    // Guard: if already tracking a press, ignore
+  const removeScrollListener = useCallback(() => {
+    if (scrollParentRef.current) {
+      scrollParentRef.current.removeEventListener('scroll', onScrollDetected);
+      scrollParentRef.current = null;
+    }
+  }, [onScrollDetected]);
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    startPos.current = null;
+    activeRef.current = false;
+    removeScrollListener();
+  }, [removeScrollListener]);
+
+  // Walk up the DOM to find the nearest scrollable ancestor
+  const findScrollParent = useCallback((el) => {
+    let node = el?.parentElement;
+    while (node && node !== document.documentElement) {
+      const style = window.getComputedStyle(node);
+      if (/(auto|scroll)/.test(style.overflow + style.overflowY)) return node;
+      node = node.parentElement;
+    }
+    return window;
+  }, []);
+
+  const beginPress = useCallback((x, y, target) => {
     if (activeRef.current) return;
     activeRef.current = true;
     startPos.current = { x, y };
+
+    // Attach scroll listener to nearest scrollable parent
+    removeScrollListener();
+    const scrollParent = findScrollParent(target);
+    scrollParentRef.current = scrollParent;
+    scrollParent.addEventListener('scroll', onScrollDetected, { passive: true });
+
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
       startPos.current = null;
       activeRef.current = false;
+      removeScrollListener();
       callbackRef.current();
     }, ms);
-  }, [ms]);
+  }, [ms, findScrollParent, onScrollDetected, removeScrollListener]);
 
   const checkMove = useCallback((x, y) => {
     if (!startPos.current || !timerRef.current) return;
@@ -186,7 +224,7 @@ export function useLongPress(callback, ms = 800) {
   // Touch handlers (primary on mobile)
   const onTouchStart = useCallback((e) => {
     if (!e.touches?.length) return;
-    beginPress(e.touches[0].clientX, e.touches[0].clientY);
+    beginPress(e.touches[0].clientX, e.touches[0].clientY, e.target);
   }, [beginPress]);
 
   const onTouchMove = useCallback((e) => {
@@ -197,14 +235,17 @@ export function useLongPress(callback, ms = 800) {
   // Mouse handlers (desktop only — skip if touch already active)
   const onMouseDown = useCallback((e) => {
     if (e.button !== 0) return;
-    beginPress(e.clientX, e.clientY);
+    beginPress(e.clientX, e.clientY, e.target);
   }, [beginPress]);
 
   const onMouseMove = useCallback((e) => {
     checkMove(e.clientX, e.clientY);
   }, [checkMove]);
 
-  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    removeScrollListener();
+  }, [removeScrollListener]);
 
   return {
     onTouchStart,
@@ -216,6 +257,6 @@ export function useLongPress(callback, ms = 800) {
     onMouseUp: clearTimer,
     onMouseLeave: clearTimer,
     onContextMenu: (e) => e.preventDefault(),
-    style: { WebkitTouchCallout: 'none', userSelect: 'none' },
+    style: { WebkitTouchCallout: 'none', userSelect: 'none', touchAction: 'pan-y' },
   };
 }

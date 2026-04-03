@@ -112,7 +112,7 @@ export default function CashRegister() {
   const cajaScreen = useScreenEditMode();
   const cajaStats = useSectionLayout('caja', 'stats', CAJA_STAT_IDS);
   useEffect(() => { cajaScreen.registerSection([cajaStats]); }, [cajaStats, cajaScreen.registerSection]); // eslint-disable-line react-hooks/exhaustive-deps
-  const cajaLongPress = useLongPress(cajaScreen.enterEditMode, 800);
+  const cajaLongPress = useLongPress(cajaScreen.enterEditMode, 900);
   
   // Check URL params for B04 redirect
   useEffect(() => {

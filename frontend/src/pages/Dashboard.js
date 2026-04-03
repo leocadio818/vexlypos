@@ -46,7 +46,7 @@ export default function Dashboard() {
   useEffect(() => { screen.registerSection(allSections); }, [allSections, screen.registerSection]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasAnyHidden = kpiSection.hasHiddenCards || paySection.hasHiddenCards || opsSection.hasHiddenCards || tableSection.hasHiddenCards;
-  const longPress = useLongPress(screen.enterEditMode, 800);
+  const longPress = useLongPress(screen.enterEditMode, 900);
 
   if (!data) return (
     <div className="h-full flex items-center justify-center">
