@@ -382,12 +382,27 @@ export default function CashRegister() {
     
     setReprintLoading(true);
     try {
-      // Extraer el bill_id de la descripción del movimiento (formato: "Venta NCF - método")
-      // El NCF está en la descripción, necesitamos buscar el bill
-      const ncfMatch = selectedMovement.description?.match(/B\d{10}/);
+      // Extraer el bill_id de la descripción del movimiento (formato: "[BILL:uuid] Venta NCF - método")
+      // Match both e-CF (E31/E32...) and legacy B-series, and BILL:id
+      const billIdMatch = selectedMovement.description?.match(/\[BILL:([^\]]+)\]/);
+      const ncfMatch = selectedMovement.description?.match(/E\d{11,13}|B\d{10}|PENDING-E\d{2}/);
       
-      if (ncfMatch) {
-        // Buscar el bill por NCF
+      if (billIdMatch) {
+        // Direct bill lookup by ID
+        const bill_id = billIdMatch[1];
+        const printRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/print/receipt/${bill_id}/send`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+        });
+        if (printRes.ok) {
+          notify.success('Factura enviada a imprimir', {
+            description: ncfMatch ? `NCF: ${ncfMatch[0]}` : ''
+          });
+        } else {
+          throw new Error('Error al enviar a imprimir');
+        }
+      } else if (ncfMatch) {
+        // Fallback: search by NCF
         const searchRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/bills?ncf=${ncfMatch[0]}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
         });
@@ -395,12 +410,10 @@ export default function CashRegister() {
         
         if (bills && bills.length > 0) {
           const bill = bills[0];
-          // Enviar a imprimir
           const printRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/print/receipt/${bill.id}/send`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
           });
-          
           if (printRes.ok) {
             notify.success('Factura enviada a imprimir', {
               description: `NCF: ${ncfMatch[0]}`

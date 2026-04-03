@@ -276,7 +276,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-white/60">NCF:</span>
-                    <span className="font-mono font-bold text-white">{foundBill.ncf}</span>
+                    <span className="font-mono font-bold text-white">{foundBill.ecf_encf || foundBill.ncf}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-white/60">Mesa:</span>
@@ -305,7 +305,7 @@ export default function CreditNoteModal({ open, onOpenChange, API_BASE, initialT
                 <div>
                   <p className="text-red-200 font-medium text-sm">¿Anular esta factura?</p>
                   <p className="text-red-200/70 text-xs mt-1">
-                    Se generará una Nota de Crédito B04 que afectará el NCF {foundBill.ncf}. Esta acción es irreversible y se reportará a la DGII.
+                    Se generara una Nota de Credito B04 que afectara el NCF {foundBill.ecf_encf || foundBill.ncf}. Esta accion es irreversible y se reportara a la DGII.
                   </p>
                 </div>
               </div>

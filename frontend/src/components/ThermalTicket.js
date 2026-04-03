@@ -162,8 +162,8 @@ const ThermalTicket = forwardRef(({
       ═══════════════════════════════════════════════════════════════ */}
       <div className="ticket-ncf-section">
         <div className="ticket-ncf-label">COMPROBANTE FISCAL</div>
-        <div className="ticket-ncf-number">{bill.ncf || 'N/A'}</div>
-        <div className="ticket-ncf-type">{getNCFType(bill.ncf)}</div>
+        <div className="ticket-ncf-number">{bill.ecf_encf || bill.ncf || 'N/A'}</div>
+        <div className="ticket-ncf-type">{getNCFType(bill.ecf_encf || bill.ncf)}</div>
         <div className="ticket-ncf-expiry">Válido hasta: {config.ncf_expiry}</div>
       </div>
 
@@ -343,9 +343,9 @@ const ThermalTicket = forwardRef(({
       {/* ═══════════════════════════════════════════════════════════════
           CÓDIGO DE BARRAS (opcional)
       ═══════════════════════════════════════════════════════════════ */}
-      {showBarcode && bill.ncf && (
+      {showBarcode && (bill.ecf_encf || bill.ncf) && (
         <div className="ticket-barcode">
-          *{bill.ncf}*
+          *{bill.ecf_encf || bill.ncf}*
         </div>
       )}
 

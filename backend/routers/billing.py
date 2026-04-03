@@ -460,6 +460,8 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         "customer_email": input.customer_email,
         "send_email": input.send_email,
         "ecf_type": input.ecf_type,
+        # Update NCF to reflect e-CF when applicable
+        **({"ncf": f"PENDING-{input.ecf_type}"} if input.ecf_type and bill.get("ncf", "").startswith("B") else {}),
         # Doble marcación de tiempo (Jornada de Trabajo)
         "business_date": business_date,  # Fecha contable (jornada)
         "business_day_id": business_day["id"],  # Referencia a la jornada
@@ -584,11 +586,16 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                     except:
                         pass
                     
+                    # Prefer ecf_type prefix over B-series for movement description
+                    display_ncf = bill.get('ncf', bill_id[:8])
+                    if input.ecf_type and display_ncf.startswith('B'):
+                        display_ncf = f"PENDING-{input.ecf_type}"
+                    
                     if len(payments_list) > 1:
                         pmt_names = ", ".join([p["payment_method_name"] for p in payments_list])
-                        pmt_description = f"[BILL:{bill_id}] Venta {bill.get('ncf', bill_id[:8])}{txn_num} - Pago mixto: {pmt_names}"
+                        pmt_description = f"[BILL:{bill_id}] Venta {display_ncf}{txn_num} - Pago mixto: {pmt_names}"
                     else:
-                        pmt_description = f"[BILL:{bill_id}] Venta {bill.get('ncf', bill_id[:8])}{txn_num} - {primary_payment_method_name}"
+                        pmt_description = f"[BILL:{bill_id}] Venta {display_ncf}{txn_num} - {primary_payment_method_name}"
                     
                     supabase_movement_id = gen_id()
                     movement_ref = f"MOV-{datetime.now().year}-{gen_id()[:5].upper()}"

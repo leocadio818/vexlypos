@@ -85,6 +85,25 @@ async def send_ecf(bill_id: str):
         result = await _send_via_alanube(bill, config, encf, bill_id)
 
     if result["ok"]:
+        # Update bill's ncf field with the real e-NCF so all displays show the correct sequence
+        await db.bills.update_one({"id": bill_id}, {"$set": {"ncf": encf, "ecf_encf": encf}})
+
+        # Update cash movement description in Supabase to reflect e-NCF instead of B-series
+        try:
+            from routers.pos_sessions import get_supabase
+            sb = get_supabase()
+            movements = sb.table("cash_movements").select("id, description").like("description", f"%[BILL:{bill_id}]%").execute()
+            if movements.data:
+                for mov in movements.data:
+                    old_desc = mov.get("description", "")
+                    # Replace B-series or PENDING NCF with the real e-NCF
+                    import re
+                    new_desc = re.sub(r'Venta\s+(B\d{10}|PENDING-E\d{2})', f'Venta {encf}', old_desc)
+                    if new_desc != old_desc:
+                        sb.table("cash_movements").update({"description": new_desc}).eq("id", mov["id"]).execute()
+        except Exception:
+            pass  # Non-critical: movement display update is best-effort
+
         return {
             "ok": True,
             "message": f"e-CF enviado exitosamente via {provider.upper()}",

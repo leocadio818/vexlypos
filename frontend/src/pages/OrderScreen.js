@@ -532,7 +532,7 @@ export default function OrderScreen() {
           setB04RedirectDialog({
             open: true,
             transactionNumber: paidBill.transaction_number || order.transaction_number,
-            ncf: paidBill.ncf,
+            ncf: paidBill.ecf_encf || paidBill.ncf,
             total: paidBill.total,
             paidAt: paidBill.paid_at
           });

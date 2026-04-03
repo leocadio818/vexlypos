@@ -77,6 +77,7 @@ export default function BillHistory() {
     const transNum = String(b.transaction_number || '');
     return (
       b.ncf?.toLowerCase().includes(s) ||
+      b.ecf_encf?.toLowerCase().includes(s) ||
       b.label?.toLowerCase().includes(s) ||
       b.cashier_name?.toLowerCase().includes(s) ||
       b.waiter_name?.toLowerCase().includes(s) ||
@@ -255,7 +256,7 @@ export default function BillHistory() {
                   <div className="flex items-center gap-4">
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-oswald font-bold text-sm">{bill.ncf || 'Sin NCF'}</span>
+                        <span className="font-oswald font-bold text-sm">{bill.ecf_encf || bill.ncf || 'Sin NCF'}</span>
                         {bill.transaction_number && (
                           <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                             #{bill.transaction_number}
@@ -428,7 +429,7 @@ export default function BillHistory() {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-muted-foreground">NCF:</span>
-                    <span className="font-semibold ml-1">{reversalDialog.bill.ncf}</span>
+                    <span className="font-semibold ml-1">{reversalDialog.bill.ecf_encf || reversalDialog.bill.ncf}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Total:</span>

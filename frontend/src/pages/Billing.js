@@ -193,7 +193,7 @@ export default function Billing() {
                   <div className="p-4 text-gray-800">
                     {/* NCF */}
                     <div className="text-center border-b border-dashed border-gray-300 pb-2 mb-3">
-                      <p className="font-mono text-xs text-gray-500">NCF: {bill.ncf}</p>
+                      <p className="font-mono text-xs text-gray-500">NCF: {bill.ecf_encf || bill.ncf}</p>
                       <p className="font-mono text-xs text-gray-400">RNC: 000-000000-0</p>
                     </div>
 
