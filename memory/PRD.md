@@ -18,6 +18,22 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
 ## Completed Tasks (2026-04-04)
+- **Kitchen/Bar Print Commands First Exit Bug Fix** (DONE): Fixed critical bug where comandas were NOT sent to kitchen/bar on FIRST exit from order screen. Only worked on SECOND exit.
+  - Root cause: `tableOrdersRef.current` was empty when a new order was created, so `sendPendingToKitchenSilently` couldn't find orders to send.
+  - Fix 1: Updated useEffect (lines 261-283 in OrderScreen.js) to handle empty ref initialization and new orders not yet in ref
+  - Fix 2: Added fallback to `orderRef.current` in `sendPendingToKitchenSilently` (lines 467-471) when `tableOrdersRef` is empty
+  - Fix 3: Added same fallback pattern in navigation intercept useEffect (lines 503-507)
+  - Verified by testing_agent_v3_fork - Backend API correctly changes item status from 'pending' to 'sent' on first call
+  - Files: `/app/frontend/src/pages/OrderScreen.js`
+
+- **The Factory HKA Error Handling Improvements** (DONE):
+  - Modified `build_thefactory_payload` to OMIT `fechaVencimientoSecuencia` field entirely when `None` instead of sending `null` (fixes Code 145)
+  - Added error hints for common codes (111, 145, 110, 112) in `send_to_thefactory` response
+  - Added `sync_ncf_counters()` function to sync local NCF counters with The Factory series
+  - Added `get_series_info()` function for NCF diagnostics
+  - New endpoints: `POST /api/system/ecf/sync-ncf-counters`, `GET /api/system/ecf/series-info`
+  - Files: `/app/backend/routers/thefactory.py`, `/app/backend/routers/config.py`
+
 - **Smart Notification System** (DONE): Complete replacement of old toast/notification system with context-aware notifications:
   - SUCCESS (green #22C55E) → Bottom Sheet, auto-dismiss 3s
   - WARNING (amber #F59E0B) → Bottom Sheet, auto-dismiss 5s
