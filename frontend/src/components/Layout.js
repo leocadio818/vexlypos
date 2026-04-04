@@ -757,11 +757,12 @@ export default function Layout() {
       {/* Business Day Management Dialog - Global */}
       <Dialog open={businessDayDialogOpen} onOpenChange={setBusinessDayDialogOpen}>
         <DialogContent 
-          className="bg-slate-900/95 backdrop-blur-xl border-white/10 w-[calc(100%-2rem)] max-w-lg mx-auto rounded-2xl"
+          className="bg-slate-900/95 backdrop-blur-xl border-white/10 w-[calc(100%-2rem)] max-w-lg mx-auto rounded-2xl p-4 sm:p-6"
           style={{
-            maxHeight: 'calc(100vh - 4rem)',
+            maxHeight: 'calc(100vh - 6rem)',
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch',
+            position: 'relative',
           }}
         >
           <BusinessDayManager 

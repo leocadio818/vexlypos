@@ -251,7 +251,7 @@ export default function BusinessDayManager({
 
   // Vista completa
   return (
-    <div className="space-y-4 max-h-[80vh] overflow-y-auto">
+    <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Estado actual */}
       <div 
         className={`rounded-2xl p-4 sm:p-5 transition-all ${
@@ -259,7 +259,6 @@ export default function BusinessDayManager({
             ? 'bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20' 
             : 'bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20'
         }`}
-        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Header: Title + Date */}
         <div className="flex items-start gap-3 mb-4">
@@ -272,8 +271,8 @@ export default function BusinessDayManager({
                 <h3 
                   className="font-oswald font-bold text-base sm:text-lg"
                   style={{ 
-                    color: '#22C55E',
-                    WebkitTextFillColor: '#22C55E',
+                    color: '#FFFFFF',
+                    WebkitTextFillColor: '#FFFFFF',
                     opacity: 1 
                   }}
                 >
@@ -282,8 +281,8 @@ export default function BusinessDayManager({
                 <p 
                   className="text-sm"
                   style={{ 
-                    color: '#86EFAC',
-                    WebkitTextFillColor: '#86EFAC',
+                    color: '#D1D5DB',
+                    WebkitTextFillColor: '#D1D5DB',
                     opacity: 1 
                   }}
                 >
@@ -300,8 +299,8 @@ export default function BusinessDayManager({
                 <h3 
                   className="font-oswald font-bold text-base sm:text-lg"
                   style={{ 
-                    color: '#EF4444',
-                    WebkitTextFillColor: '#EF4444',
+                    color: '#FFFFFF',
+                    WebkitTextFillColor: '#FFFFFF',
                     opacity: 1 
                   }}
                 >
