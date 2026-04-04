@@ -18,6 +18,15 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
 ## Completed Tasks (2026-04-04)
+- **Light Mode Contrast Audit Fix** (DONE):
+  - Added 164+ CSS rules with `:not(.neo-dark)` selector to fix light mode only
+  - Converts bg-slate-9/8, bg-gray-9/8, bg-zinc-9/8 to var(--neo-bg) in light mode
+  - Forces text to hsl(var(--foreground)) inside converted containers
+  - Preserves white text in colored buttons (primary, gradient, red, green, orange)
+  - Makes borders visible with hsl(var(--border)) instead of transparent
+  - Dark mode completely unchanged
+  - File: `/app/frontend/src/styles/theme-minimalist.css`
+
 - **PWA iPhone Safe Area Fixes - GLOBAL** (DONE - VERIFIED IN PRODUCTION):
   - **GLOBAL FIX**: Applied `safe-area-top` and `safe-area-bottom` (mobile) to Layout.js `<main>` container (Line 630)
   - This makes ALL screens automatically inherit safe areas without needing individual fixes
