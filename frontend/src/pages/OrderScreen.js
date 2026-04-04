@@ -259,11 +259,26 @@ export default function OrderScreen() {
   }, [tableId, activeOrderId, applyOrders, loadFromCache]);
 
   // Keep tableOrdersRef in sync with local order state changes (e.g. after adding items)
+  // CRITICAL: This must also handle new orders that aren't yet in the ref
   useEffect(() => {
-    if (order && tableOrdersRef.current.length > 0) {
-      tableOrdersRef.current = tableOrdersRef.current.map(o =>
-        o.id === order.id ? order : o
-      );
+    if (order) {
+      if (tableOrdersRef.current.length > 0) {
+        // Check if order exists in ref
+        const orderExists = tableOrdersRef.current.some(o => o.id === order.id);
+        if (orderExists) {
+          // Update existing order in ref
+          tableOrdersRef.current = tableOrdersRef.current.map(o =>
+            o.id === order.id ? order : o
+          );
+        } else {
+          // New order created - add to ref
+          tableOrdersRef.current = [...tableOrdersRef.current, order];
+        }
+      } else {
+        // Ref is empty - initialize with current order
+        // This happens when user creates a new order by adding items
+        tableOrdersRef.current = [order];
+      }
     }
   }, [order]);
 
@@ -446,8 +461,15 @@ export default function OrderScreen() {
   const sendPendingToKitchenSilently = useCallback(async (showToast = false) => {
     if (alreadySentRef.current) return false;
     
-    // Send pending items for ALL orders on this table, not just the active one
-    const allOrders = tableOrdersRef.current || [];
+    // Get orders from ref, with fallback to current order state
+    let allOrders = tableOrdersRef.current || [];
+    
+    // CRITICAL FIX: If ref is empty but we have an order in state, use that
+    // This handles the case when user creates a new order and exits immediately
+    if (allOrders.length === 0 && orderRef.current) {
+      allOrders = [orderRef.current];
+    }
+    
     const ordersWithPending = allOrders.filter(o => 
       o.items?.some(i => i.status === 'pending')
     );
@@ -478,7 +500,12 @@ export default function OrderScreen() {
       const href = link.getAttribute('href');
       if (href && !href.startsWith('/order/') && href !== '#') {
         // Check ALL orders on the table for pending items
-        const allOrders = tableOrdersRef.current || [];
+        // CRITICAL FIX: Fallback to orderRef if tableOrdersRef is empty
+        let allOrders = tableOrdersRef.current || [];
+        if (allOrders.length === 0 && orderRef.current) {
+          allOrders = [orderRef.current];
+        }
+        
         const ordersWithPending = allOrders.filter(o => 
           o.items?.some(i => i.status === 'pending')
         );
