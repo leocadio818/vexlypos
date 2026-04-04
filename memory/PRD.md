@@ -18,13 +18,14 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
 ## Completed Tasks (2026-04-04)
-- **PWA iPhone Safe Area Fixes** (DONE - VERIFIED IN PRODUCTION):
-  - Bug 1: Search button overlapping iPhone status bar → Added `safe-area-top` class to Grid Settings Bar
-  - Bug 2: FACTURAR button cut off at bottom → Added `safe-area-bottom` and `float-above-nav` classes
-  - CSS: Uses `env(safe-area-inset-top/bottom)` for proper iPhone notch/home indicator handling
-  - manifest.json: Updated `orientation: "portrait"`, synced `theme_color: "#0c0f1e"`
-  - Files: `OrderScreen.js`, `App.css`, `manifest.json`, `index.html`
-  - **IMPORTANT**: Always use these classes for PWA-aware layouts on iPhone
+- **PWA iPhone Safe Area Fixes - GLOBAL** (DONE - VERIFIED IN PRODUCTION):
+  - **GLOBAL FIX**: Applied `safe-area-top` and `safe-area-bottom` (mobile) to Layout.js `<main>` container (Line 630)
+  - This makes ALL screens automatically inherit safe areas without needing individual fixes
+  - Mobile nav already has `safe-area-bottom` (Line 323)
+  - CSS: Uses `env(safe-area-inset-top/bottom)` for iPhone notch/home indicator
+  - manifest.json: `orientation: "portrait"`, `theme_color: "#0c0f1e"`
+  - Files: `Layout.js`, `App.css`, `manifest.json`, `index.html`
+  - **IMPORTANT**: For new screens, they will automatically inherit safe areas from Layout
 
 - **Root URL Redirect Fix** (DONE):
   - Problem: vexlyapp.com showed blank white page
