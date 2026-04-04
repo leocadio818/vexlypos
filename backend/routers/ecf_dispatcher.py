@@ -398,7 +398,11 @@ async def get_ecf_config():
 
 
 @router.get("/dashboard")
-async def ecf_dashboard(date_from: Optional[str] = Query(None), date_to: Optional[str] = Query(None)):
+async def ecf_dashboard(
+    date_from: Optional[str] = Query(None), 
+    date_to: Optional[str] = Query(None),
+    business_day_id: Optional[str] = Query(None)
+):
     """Dashboard with all e-CF bills grouped by status"""
     query = {"$or": [
         {"ecf_type": {"$exists": True, "$ne": None}},
@@ -407,13 +411,18 @@ async def ecf_dashboard(date_from: Optional[str] = Query(None), date_to: Optiona
         {"ncf": {"$regex": "^PENDING-E"}},
         {"ncf": {"$regex": "^E3"}},
     ]}
-    if date_from:
-        query["paid_at"] = {"$gte": date_from}
-    if date_to:
-        if "paid_at" in query:
-            query["paid_at"]["$lte"] = date_to + "T23:59:59"
-        else:
-            query["paid_at"] = {"$lte": date_to + "T23:59:59"}
+    
+    # If filtering by specific business day, use that instead of date range
+    if business_day_id:
+        query["business_day_id"] = business_day_id
+    else:
+        if date_from:
+            query["paid_at"] = {"$gte": date_from}
+        if date_to:
+            if "paid_at" in query:
+                query["paid_at"]["$lte"] = date_to + "T23:59:59"
+            else:
+                query["paid_at"] = {"$lte": date_to + "T23:59:59"}
 
     bills = await db.bills.find(query, {
         "_id": 0, "id": 1, "transaction_number": 1, "total": 1, "ncf": 1,

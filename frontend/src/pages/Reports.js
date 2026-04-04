@@ -477,6 +477,7 @@ export default function Reports() {
   // Business Day (Jornada) filter state
   const [businessDays, setBusinessDays] = useState([]);
   const [selectedBusinessDay, setSelectedBusinessDay] = useState(null);
+  const [activeBusinessDayId, setActiveBusinessDayId] = useState(null);
   const [loadingBusinessDays, setLoadingBusinessDays] = useState(false);
   const [reportZOpen, setReportZOpen] = useState(false);
   const [reportZDayId, setReportZDayId] = useState(null);
@@ -491,23 +492,35 @@ export default function Reports() {
         if (d.date) {
           setDateRange({ from: d.date, to: d.date });
         }
+        if (d.id) {
+          setActiveBusinessDayId(d.id);
+        }
       }).catch(() => {});
   }, []);
   
-  // Quick date presets — "Hoy" uses business date, not calendar
+  // Quick date presets — "Jornada" uses active business day ID
   const datePresets = [
     { label: 'Jornada', value: async () => {
       try {
         const r = await fetch(`${API}/business-days/active-date`);
         const d = await r.json();
-        return { from: d.date, to: d.date };
-      } catch { const t = new Date().toISOString().slice(0, 10); return { from: t, to: t }; }
+        if (d.id) {
+          setActiveBusinessDayId(d.id);
+        }
+        return { from: d.date, to: d.date, businessDayId: d.id };
+      } catch { 
+        setActiveBusinessDayId(null);
+        const t = new Date().toISOString().slice(0, 10); 
+        return { from: t, to: t }; 
+      }
     }},
     { label: 'Ayer', value: () => {
+      setActiveBusinessDayId(null); // Clear jornada filter
       const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
       return { from: yesterday, to: yesterday };
     }},
     { label: 'Esta Semana', value: () => {
+      setActiveBusinessDayId(null); // Clear jornada filter
       const today = new Date();
       const dayOfWeek = today.getDay();
       const monday = new Date(today);
@@ -515,6 +528,7 @@ export default function Reports() {
       return { from: monday.toISOString().slice(0, 10), to: today.toISOString().slice(0, 10) };
     }},
     { label: 'Este Mes', value: () => {
+      setActiveBusinessDayId(null); // Clear jornada filter
       const today = new Date();
       const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
       return { from: firstDay.toISOString().slice(0, 10), to: today.toISOString().slice(0, 10) };
@@ -627,6 +641,10 @@ export default function Reports() {
       if (reportId === 'system-audit' && auditEventFilter && auditEventFilter !== 'Todos') {
         params.event_type = auditEventFilter;
       }
+      // For e-CF dashboard, pass business_day_id to filter by current jornada
+      if (reportId === 'ecf-dashboard' && activeBusinessDayId) {
+        params.business_day_id = activeBusinessDayId;
+      }
       
       const res = await axios.get(`${API}${endpoint}`, { 
         params, 
@@ -638,7 +656,7 @@ export default function Reports() {
       setReportData(null);
     }
     setLoading(false);
-  }, [dateRange, topLimit, auditEventFilter]);
+  }, [dateRange, topLimit, auditEventFilter, activeBusinessDayId]);
 
   // Toggle category expansion
   const toggleCategory = (categoryId) => {

@@ -186,12 +186,17 @@ async def get_active_business_date():
     """Returns the active business date (or last closed). No auth required — used by reports date pickers."""
     business_day = await get_current_business_day()
     if business_day:
-        return {"date": business_day["business_date"], "status": "open"}
+        return {
+            "date": business_day["business_date"], 
+            "status": "open",
+            "id": business_day.get("id"),
+            "opened_at": business_day.get("opened_at")
+        }
     # Fallback: find the last closed day
-    last = await db.business_days.find_one({"status": "closed"}, {"_id": 0, "business_date": 1}, sort=[("closed_at", -1)])
+    last = await db.business_days.find_one({"status": "closed"}, {"_id": 0, "business_date": 1, "id": 1}, sort=[("closed_at", -1)])
     if last:
-        return {"date": last["business_date"], "status": "closed"}
-    return {"date": today_str(), "status": "none"}
+        return {"date": last["business_date"], "status": "closed", "id": last.get("id")}
+    return {"date": today_str(), "status": "none", "id": None}
 
 
 

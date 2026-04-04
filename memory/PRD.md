@@ -30,11 +30,18 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **E34 Authorization Fix** (DONE): Fixed credit note authorization logic in `/app/backend/routers/credit_notes.py`. Previously only checked for exact role names "admin"/"manager". Now checks `role_level >= 40` OR role in ["admin", "manager", "supervisor"]. This allows custom roles like "gerente" (level 60) and "administrador" (level 80) to create E34 with `requires_authorization` reasons without needing extra approval.
 
 - **Jornada Modal Safari iOS Fixes** (DONE): Fixed 4 UI bugs in BusinessDayManager.jsx:
-  - BUG 1: Text invisible - Applied explicit colors with `-webkit-text-fill-color` and `opacity:1` for Safari
+  - BUG 1: Text invisible - Applied explicit colors: White (#FFFFFF) for title, gray (#D1D5DB) for date
   - BUG 2: Horizontal scroll - Buttons now stack vertically on mobile (`flex-col sm:flex-row`)
-  - BUG 3: X button misaligned - Fixed by DialogContent styling
+  - BUG 3: X button misaligned - Fixed in dialog.jsx with inline styles: top:12px, right:12px, circular background
   - BUG 4: Modal cut off - Added max-height and overflow-y-auto with WebkitOverflowScrolling
-  - Files: `/app/frontend/src/components/BusinessDayManager.jsx`, `/app/frontend/src/components/Layout.js`
+  - Files: `/app/frontend/src/components/BusinessDayManager.jsx`, `/app/frontend/src/components/ui/dialog.jsx`, `/app/frontend/src/components/Layout.js`
+
+- **e-CF Dashboard Jornada Filter Fix** (DONE): Fixed "Jornada" filter showing transactions from previous days.
+  - Problem: Filter was using calendar date instead of actual business day ID
+  - Solution: Added `business_day_id` parameter to `/api/ecf/dashboard` endpoint
+  - Backend changes: `/app/backend/routers/ecf_dispatcher.py` (line 400) - added business_day_id query param
+  - Backend changes: `/app/backend/routers/business_days.py` - `/active-date` now returns `id` and `opened_at`
+  - Frontend changes: `/app/frontend/src/pages/Reports.js` - stores activeBusinessDayId and passes to e-CF dashboard
 
 ## Completed Tasks (2026-04-03)
 - **Dashboard Edit Mode UI/UX Bug Fix + Safari iOS Compat** (DONE): Fixed two P0 bugs with full cross-browser support. (1) Buttons: Safari-safe inline styles with `WebkitAppearance:none`, `WebkitTextFillColor`, explicit `backgroundColor`, `opacity:1`, `minHeight:48px` touch targets. (2) Long-press: Safari-safe implementation using `window` scroll listener with `capture:true` (Safari doesn't fire touchmove/container scroll during momentum scroll), tolerance 15px, 900ms duration, `touchAction:'pan-y'`, new touchstart cancels any pending timer. Verified on vexlyapp.com production.
