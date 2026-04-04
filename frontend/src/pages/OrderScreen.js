@@ -2107,7 +2107,7 @@ export default function OrderScreen() {
       {!splitMode && !accessDenied && !mobileAccountExpanded && (
         <div className="flex-1 flex flex-col overflow-hidden">
         {/* Grid Settings Bar - Glassmorphism - With PWA safe area top */}
-        <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-white/10 backdrop-blur-xl bg-white/5 safe-area-top`}>
+        <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-white/10 backdrop-blur-xl bg-white/5`}>
           <div className="flex items-center gap-2">
             {activeCat ? (
               <button onClick={() => { setActiveCat(null); setShowProductSearch(false); setProductSearchQuery(''); }} className={`flex items-center gap-2 bg-primary text-primary-foreground font-oswald font-bold rounded-xl px-4 transition-all active:scale-95 ${largeMode ? 'h-12 text-base' : 'h-10 text-sm'}`} data-testid="back-to-categories">

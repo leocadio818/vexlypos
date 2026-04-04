@@ -626,8 +626,8 @@ export default function Layout() {
         </aside>
       ) : null}
 
-      {/* Main content */}
-      <main className={`flex-1 relative z-10 ${isMobile && !shouldHideNav ? 'pb-20' : ''}`} style={{ overflow: 'auto', minHeight: 0 }}>
+      {/* Main content - PWA safe areas applied globally */}
+      <main className={`flex-1 relative z-10 safe-area-top ${isMobile && !shouldHideNav ? 'pb-20 safe-area-bottom' : ''}`} style={{ overflow: 'auto', minHeight: 0 }}>
         {/* ─── Training Mode Banner ─── */}
         {user?.training_mode && (
           <div className="bg-amber-500 text-black px-4 py-1.5 flex items-center justify-center gap-2 text-sm font-bold font-oswald tracking-wider z-50" data-testid="training-mode-banner">
