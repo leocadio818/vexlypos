@@ -277,7 +277,12 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
         raise HTTPException(status_code=400, detail="Motivo de devolución no válido")
     
     # 4. Verificar autorización si es necesaria
-    if reason.get("requires_authorization") and user.get("role") not in ["admin", "manager"]:
+    # Roles con nivel >= 40 (supervisor+) pueden autorizar, o roles "admin"/"manager" explícitos
+    user_role = user.get("role", "")
+    user_role_level = user.get("role_level", 0)
+    can_authorize = user_role in ["admin", "manager", "supervisor"] or user_role_level >= 40
+    
+    if reason.get("requires_authorization") and not can_authorize:
         raise HTTPException(
             status_code=403, 
             detail="Este tipo de reversión requiere autorización de un administrador"
