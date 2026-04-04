@@ -265,14 +265,14 @@ export default function BusinessDayManager({
           {businessDay ? (
             <>
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                <Sun size={20} className="text-green-400" />
+                <Sun size={20} style={{ color: '#4ADE80' }} />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 
                   className="font-oswald font-bold text-base sm:text-lg"
                   style={{ 
-                    color: '#FFFFFF',
-                    WebkitTextFillColor: '#FFFFFF',
+                    color: '#4ADE80',
+                    WebkitTextFillColor: '#4ADE80',
                     opacity: 1 
                   }}
                 >
@@ -281,8 +281,8 @@ export default function BusinessDayManager({
                 <p 
                   className="text-sm"
                   style={{ 
-                    color: '#D1D5DB',
-                    WebkitTextFillColor: '#D1D5DB',
+                    color: '#86EFAC',
+                    WebkitTextFillColor: '#86EFAC',
                     opacity: 1 
                   }}
                 >
@@ -293,14 +293,14 @@ export default function BusinessDayManager({
           ) : (
             <>
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500/20 flex items-center justify-center animate-pulse flex-shrink-0">
-                <Moon size={20} className="text-red-400" />
+                <Moon size={20} style={{ color: '#F87171' }} />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 
                   className="font-oswald font-bold text-base sm:text-lg"
                   style={{ 
-                    color: '#FFFFFF',
-                    WebkitTextFillColor: '#FFFFFF',
+                    color: '#F87171',
+                    WebkitTextFillColor: '#F87171',
                     opacity: 1 
                   }}
                 >
@@ -327,30 +327,30 @@ export default function BusinessDayManager({
             <>
               <Button
                 onClick={() => setReportZDialog({ open: true, dayId: businessDay.id })}
-                className="flex-1 min-h-[48px] bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30"
+                className="flex-1 min-h-[48px] bg-cyan-600 hover:bg-cyan-700 border-0"
                 style={{ 
-                  color: '#67E8F9',
-                  WebkitTextFillColor: '#67E8F9',
+                  color: '#FFFFFF',
+                  WebkitTextFillColor: '#FFFFFF',
                   WebkitAppearance: 'none',
                   opacity: 1
                 }}
                 data-testid="report-z-btn"
               >
-                <FileText size={16} className="mr-2 flex-shrink-0" />
+                <FileText size={16} className="mr-2 flex-shrink-0" style={{ color: '#FFFFFF' }} />
                 <span>Reporte Z</span>
               </Button>
               <Button
                 onClick={() => startAction('close')}
-                className="flex-1 min-h-[48px] bg-red-500/20 hover:bg-red-500/30 border border-red-500/30"
+                className="flex-1 min-h-[48px] bg-red-600 hover:bg-red-700 border-0"
                 style={{ 
-                  color: '#FCA5A5',
-                  WebkitTextFillColor: '#FCA5A5',
+                  color: '#FFFFFF',
+                  WebkitTextFillColor: '#FFFFFF',
                   WebkitAppearance: 'none',
                   opacity: 1
                 }}
                 data-testid="close-day-btn"
               >
-                <Lock size={16} className="mr-2 flex-shrink-0" />
+                <Lock size={16} className="mr-2 flex-shrink-0" style={{ color: '#FFFFFF' }} />
                 <span>Cerrar Día</span>
               </Button>
               <Button
@@ -359,15 +359,15 @@ export default function BusinessDayManager({
                   setHistoryDialog(true);
                 }}
                 variant="outline"
-                className="min-h-[48px] min-w-[48px] sm:w-auto border-white/20"
+                className="min-h-[48px] min-w-[48px] sm:w-auto border-white/30 hover:bg-white/10"
                 style={{ 
-                  color: '#9CA3AF',
-                  WebkitTextFillColor: '#9CA3AF',
+                  color: '#D1D5DB',
+                  WebkitTextFillColor: '#D1D5DB',
                   WebkitAppearance: 'none',
                   opacity: 1
                 }}
               >
-                <History size={16} />
+                <History size={16} style={{ color: '#D1D5DB' }} />
                 <span className="sm:hidden ml-2">Historial</span>
               </Button>
             </>
@@ -375,16 +375,16 @@ export default function BusinessDayManager({
             <>
               <Button
                 onClick={() => startAction('open')}
-                className="flex-1 min-h-[48px] bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
+                className="flex-1 min-h-[48px] bg-green-600 hover:bg-green-700 border-0"
                 style={{ 
-                  color: '#86EFAC',
-                  WebkitTextFillColor: '#86EFAC',
+                  color: '#FFFFFF',
+                  WebkitTextFillColor: '#FFFFFF',
                   WebkitAppearance: 'none',
                   opacity: 1
                 }}
                 data-testid="open-day-btn"
               >
-                <Unlock size={16} className="mr-2 flex-shrink-0" />
+                <Unlock size={16} className="mr-2 flex-shrink-0" style={{ color: '#FFFFFF' }} />
                 <span>Abrir Día</span>
               </Button>
               <Button
@@ -393,15 +393,15 @@ export default function BusinessDayManager({
                   setHistoryDialog(true);
                 }}
                 variant="outline"
-                className="min-h-[48px] min-w-[48px] sm:w-auto border-white/20"
+                className="min-h-[48px] min-w-[48px] sm:w-auto border-white/30 hover:bg-white/10"
                 style={{ 
-                  color: '#9CA3AF',
-                  WebkitTextFillColor: '#9CA3AF',
+                  color: '#D1D5DB',
+                  WebkitTextFillColor: '#D1D5DB',
                   WebkitAppearance: 'none',
                   opacity: 1
                 }}
               >
-                <History size={16} />
+                <History size={16} style={{ color: '#D1D5DB' }} />
                 <span className="sm:hidden ml-2">Historial</span>
               </Button>
             </>
@@ -425,7 +425,7 @@ export default function BusinessDayManager({
             </div>
             <div className="text-center">
               <p className="text-xs mb-1" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Referencia</p>
-              <p className="font-mono text-sm" style={{ color: '#67E8F9', WebkitTextFillColor: '#67E8F9', opacity: 1 }}>{businessDay.ref}</p>
+              <p className="font-mono text-sm" style={{ color: '#22D3EE', WebkitTextFillColor: '#22D3EE', opacity: 1 }}>{businessDay.ref}</p>
             </div>
           </div>
         )}
@@ -434,22 +434,22 @@ export default function BusinessDayManager({
         {businessDay && stats && showStatsInline && (
           <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/10">
             <div className="bg-white/5 rounded-xl p-3 text-center">
-              <TrendingUp size={18} className="text-green-400 mx-auto mb-1" />
+              <TrendingUp size={18} style={{ color: '#4ADE80' }} className="mx-auto mb-1" />
               <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Ventas</p>
               <p className="font-oswald font-bold text-sm" style={{ color: '#4ADE80', WebkitTextFillColor: '#4ADE80', opacity: 1 }}>{formatMoney(stats.total_sales)}</p>
             </div>
             <div className="bg-white/5 rounded-xl p-3 text-center">
-              <Banknote size={18} className="text-emerald-400 mx-auto mb-1" />
+              <Banknote size={18} style={{ color: '#34D399' }} className="mx-auto mb-1" />
               <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Efectivo</p>
               <p className="font-oswald font-bold text-sm" style={{ color: '#34D399', WebkitTextFillColor: '#34D399', opacity: 1 }}>{formatMoney(stats.total_cash)}</p>
             </div>
             <div className="bg-white/5 rounded-xl p-3 text-center">
-              <CreditCard size={18} className="text-blue-400 mx-auto mb-1" />
+              <CreditCard size={18} style={{ color: '#60A5FA' }} className="mx-auto mb-1" />
               <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Tarjeta</p>
               <p className="font-oswald font-bold text-sm" style={{ color: '#60A5FA', WebkitTextFillColor: '#60A5FA', opacity: 1 }}>{formatMoney(stats.total_card)}</p>
             </div>
             <div className="bg-white/5 rounded-xl p-3 text-center">
-              <FileText size={18} className="text-cyan-400 mx-auto mb-1" />
+              <FileText size={18} style={{ color: '#22D3EE' }} className="mx-auto mb-1" />
               <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Facturas</p>
               <p className="font-oswald font-bold text-sm" style={{ color: '#22D3EE', WebkitTextFillColor: '#22D3EE', opacity: 1 }}>{stats.total_invoices}</p>
             </div>

@@ -47,14 +47,14 @@ const DialogContent = React.forwardRef(({ className, children, hideCloseButton, 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(255,255,255,0.1)',
-            color: '#9CA3AF',
+            backgroundColor: 'rgba(255,255,255,0.15)',
+            color: '#D1D5DB',
             WebkitAppearance: 'none',
             appearance: 'none',
             border: 'none',
             cursor: 'pointer',
           }}>
-          <X className="h-4 w-4" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF' }} />
+          <X className="h-4 w-4" style={{ color: '#D1D5DB', WebkitTextFillColor: '#D1D5DB' }} />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
       )}
