@@ -38,12 +38,25 @@ function ProtectedRoute({ children }) {
 }
 
 function AppRoutes() {
+  const { user, loading } = useAuth();
+  
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/kitchen-tv" element={<Suspense fallback={<PageSkeleton />}><KitchenTV /></Suspense>} />
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+      {/* Root redirect: if loading show spinner, if no user go to login, else go to dashboard */}
+      <Route path="/" element={
+        loading ? (
+          <div className="h-screen flex items-center justify-center bg-background">
+            <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : !user ? (
+          <Navigate to="/login" replace />
+        ) : (
+          <Navigate to="/dashboard" replace />
+        )
+      } />
+      <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route path="dashboard" element={<Suspense fallback={<PageSkeleton />}><Dashboard /></Suspense>} />
         <Route path="tables" element={<Suspense fallback={<PageSkeleton />}><TableMap /></Suspense>} />
         <Route path="order/:tableId" element={<Suspense fallback={<PageSkeleton />}><OrderScreen /></Suspense>} />
