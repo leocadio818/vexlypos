@@ -18,6 +18,20 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
 ## Completed Tasks (2026-04-04)
+- **PWA iPhone Safe Area Fixes** (DONE - VERIFIED IN PRODUCTION):
+  - Bug 1: Search button overlapping iPhone status bar → Added `safe-area-top` class to Grid Settings Bar
+  - Bug 2: FACTURAR button cut off at bottom → Added `safe-area-bottom` and `float-above-nav` classes
+  - CSS: Uses `env(safe-area-inset-top/bottom)` for proper iPhone notch/home indicator handling
+  - manifest.json: Updated `orientation: "portrait"`, synced `theme_color: "#0c0f1e"`
+  - Files: `OrderScreen.js`, `App.css`, `manifest.json`, `index.html`
+  - **IMPORTANT**: Always use these classes for PWA-aware layouts on iPhone
+
+- **Root URL Redirect Fix** (DONE):
+  - Problem: vexlyapp.com showed blank white page
+  - Fix: Added explicit redirect in App.js: "/" → "/login" (unauthenticated) or "/dashboard" (authenticated)
+  - Shows loading spinner while checking auth state
+  - File: `/app/frontend/src/App.js`
+
 - **Account Naming for ALL Tables** (DONE): 
   - Added "Editar Nombre" button in "Funciones de Mesa" modal (Layout.js lines 808-813)
   - Works for BOTH single and split tables (not just split tables)
