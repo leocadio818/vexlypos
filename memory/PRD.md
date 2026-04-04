@@ -17,6 +17,16 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **CRITICAL**: The Factory `itbiS1` field expects TAX RATE ("18"), NOT amount. Amount goes in `totalITBIS1`
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
+## Completed Tasks (2026-04-04)
+- **Smart Notification System** (DONE): Complete replacement of old toast/notification system with context-aware notifications:
+  - SUCCESS (green #22C55E) → Bottom Sheet, auto-dismiss 3s
+  - WARNING (amber #F59E0B) → Bottom Sheet, auto-dismiss 5s
+  - ERROR/FISCAL (red) → Centered Modal, requires "Entendido" button
+  - CONFIRMATION (blue) → Centered Modal, Cancel/Confirm buttons
+  - Cross-platform: Safari iOS 15+, Android Chrome, Windows Chrome/Edge, iPad
+  - Files: `/app/frontend/src/components/SmartNotificationSystem.jsx`, `/app/frontend/src/lib/notify.js`
+  - Removed: `BottomSheetNotification.jsx`, Sonner Toaster from KitchenTV
+
 ## Completed Tasks (2026-04-03)
 - **Dashboard Edit Mode UI/UX Bug Fix + Safari iOS Compat** (DONE): Fixed two P0 bugs with full cross-browser support. (1) Buttons: Safari-safe inline styles with `WebkitAppearance:none`, `WebkitTextFillColor`, explicit `backgroundColor`, `opacity:1`, `minHeight:48px` touch targets. (2) Long-press: Safari-safe implementation using `window` scroll listener with `capture:true` (Safari doesn't fire touchmove/container scroll during momentum scroll), tolerance 15px, 900ms duration, `touchAction:'pan-y'`, new touchstart cancels any pending timer. Verified on vexlyapp.com production.
 - **Dashboard Anulaciones Label Format Fix** (DONE): Replaced confusing "2x" multiplier format with clear "[Razón] [N] anulaciones RD$ X,XXX.00" three-column layout. Singular/plural handled.
