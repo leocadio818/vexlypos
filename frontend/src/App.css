@@ -45,6 +45,27 @@
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* Floating action bar above mobile nav + safe area (Safari iOS) */
+.float-above-nav {
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 640px) {
+  .float-above-nav {
+    bottom: 1.5rem;
+  }
+}
+
+/* Scroll container padding to clear mobile nav + safe area (Safari iOS) */
+.scroll-clear-nav {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 640px) {
+  .scroll-clear-nav {
+    padding-bottom: 1rem;
+  }
+}
+
+
 /* Hide scrollbar but keep functionality */
 .scrollbar-hide {
   -ms-overflow-style: none;

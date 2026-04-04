@@ -573,7 +573,7 @@ export default function CashRegister() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 pb-28 sm:pb-4 overflow-auto">
+      <div className="flex-1 p-4 overflow-auto scroll-clear-nav">
         {/* Current Session Card */}
         {currentSession && (
           <div className="max-w-3xl mx-auto mb-8" data-testid="current-session">
@@ -1189,7 +1189,7 @@ export default function CashRegister() {
 
       {/* Botón Flotante de Re-impresión */}
       {selectedMovement && (
-        <div className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300 float-above-nav" style={{ maxWidth: 'calc(100% - 2rem)' }}>
           <div className="backdrop-blur-xl bg-slate-900/95 border border-orange-500/30 rounded-2xl p-4 shadow-2xl shadow-orange-500/20 flex items-center gap-4">
             <div className="flex-1 min-w-0">
               <p className="text-white font-semibold text-sm truncate">{(selectedMovement.description || '').replace(/\[BILL:[^\]]+\]\s*/g, '')}</p>
