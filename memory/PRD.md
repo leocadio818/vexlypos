@@ -18,6 +18,19 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
 ## Completed Tasks (2026-04-04)
+- **Account Naming for ALL Tables** (DONE): 
+  - Added "Editar Nombre" button in "Funciones de Mesa" modal (Layout.js lines 808-813)
+  - Works for BOTH single and split tables (not just split tables)
+  - Name appears on: Comandas (kitchen/bar), Pre-cuenta (customer check)
+  - Name does NOT appear on: Facturas fiscales, e-CF, DGII documents
+  - Files: `Layout.js`, `OrderScreen.js`
+
+- **Enhanced Comanda Headers** (DONE):
+  - Added area_name, account_display, account_label, waiter_name to all comandas
+  - Format: "ÁREA: TERRAZA | Mesa 3 | Cuenta #2 — María | Mesero: Admin | 04/04/2026"
+  - Applied to: Food comandas, Bar comandas, Cancel tickets, Pre-cuenta
+  - Files: `orders.py` (send_comanda_to_print_queue, send_cancel_ticket_to_print_queue), `server.py` (pre-check)
+
 - **Kitchen/Bar Print Commands First Exit Bug Fix** (DONE): Fixed critical bug where comandas were NOT sent to kitchen/bar on FIRST exit from order screen. Only worked on SECOND exit.
   - Root cause: `tableOrdersRef.current` was empty when a new order was created, so `sendPendingToKitchenSilently` couldn't find orders to send.
   - Fix 1: Updated useEffect (lines 261-283 in OrderScreen.js) to handle empty ref initialization and new orders not yet in ref
