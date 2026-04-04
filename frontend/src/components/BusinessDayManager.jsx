@@ -251,126 +251,208 @@ export default function BusinessDayManager({
 
   // Vista completa
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-[80vh] overflow-y-auto">
       {/* Estado actual */}
-      <div className={`rounded-2xl p-5 transition-all ${
-        businessDay 
-          ? 'bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20' 
-          : 'bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20'
-      }`}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            {businessDay ? (
-              <>
-                <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
-                  <Sun size={24} className="text-green-400" />
-                </div>
-                <div>
-                  <h3 className="font-oswald font-bold text-foreground text-lg">JORNADA ABIERTA</h3>
-                  <p className="text-green-600 dark:text-green-300 text-sm">{formatDate(businessDay.business_date)}</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center animate-pulse">
-                  <Moon size={24} className="text-red-400" />
-                </div>
-                <div>
-                  <h3 className="font-oswald font-bold text-foreground text-lg">SIN JORNADA</h3>
-                  <p className="text-red-600 dark:text-red-300 text-sm">Debe abrir el día para operar</p>
-                </div>
-              </>
-            )}
-          </div>
-          
-          <div className="flex gap-2">
-            {businessDay ? (
-              <>
-                <Button
-                  onClick={() => setReportZDialog({ open: true, dayId: businessDay.id })}
-                  className="bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300"
-                  data-testid="report-z-btn"
+      <div 
+        className={`rounded-2xl p-4 sm:p-5 transition-all ${
+          businessDay 
+            ? 'bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20' 
+            : 'bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20'
+        }`}
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {/* Header: Title + Date */}
+        <div className="flex items-start gap-3 mb-4">
+          {businessDay ? (
+            <>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                <Sun size={20} className="text-green-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 
+                  className="font-oswald font-bold text-base sm:text-lg"
+                  style={{ 
+                    color: '#22C55E',
+                    WebkitTextFillColor: '#22C55E',
+                    opacity: 1 
+                  }}
                 >
-                  <FileText size={16} className="mr-2" />
-                  Reporte Z
-                </Button>
-                <Button
-                  onClick={() => startAction('close')}
-                  className="bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-700 dark:text-red-300"
-                  data-testid="close-day-btn"
+                  JORNADA ABIERTA
+                </h3>
+                <p 
+                  className="text-sm"
+                  style={{ 
+                    color: '#86EFAC',
+                    WebkitTextFillColor: '#86EFAC',
+                    opacity: 1 
+                  }}
                 >
-                  <Lock size={16} className="mr-2" />
-                  Cerrar Día
-                </Button>
-              </>
-            ) : (
+                  {formatDate(businessDay.business_date)}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500/20 flex items-center justify-center animate-pulse flex-shrink-0">
+                <Moon size={20} className="text-red-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 
+                  className="font-oswald font-bold text-base sm:text-lg"
+                  style={{ 
+                    color: '#EF4444',
+                    WebkitTextFillColor: '#EF4444',
+                    opacity: 1 
+                  }}
+                >
+                  SIN JORNADA
+                </h3>
+                <p 
+                  className="text-sm"
+                  style={{ 
+                    color: '#FCA5A5',
+                    WebkitTextFillColor: '#FCA5A5',
+                    opacity: 1 
+                  }}
+                >
+                  Debe abrir el día para operar
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+        
+        {/* Action Buttons - Stack on mobile */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          {businessDay ? (
+            <>
+              <Button
+                onClick={() => setReportZDialog({ open: true, dayId: businessDay.id })}
+                className="flex-1 min-h-[48px] bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30"
+                style={{ 
+                  color: '#67E8F9',
+                  WebkitTextFillColor: '#67E8F9',
+                  WebkitAppearance: 'none',
+                  opacity: 1
+                }}
+                data-testid="report-z-btn"
+              >
+                <FileText size={16} className="mr-2 flex-shrink-0" />
+                <span>Reporte Z</span>
+              </Button>
+              <Button
+                onClick={() => startAction('close')}
+                className="flex-1 min-h-[48px] bg-red-500/20 hover:bg-red-500/30 border border-red-500/30"
+                style={{ 
+                  color: '#FCA5A5',
+                  WebkitTextFillColor: '#FCA5A5',
+                  WebkitAppearance: 'none',
+                  opacity: 1
+                }}
+                data-testid="close-day-btn"
+              >
+                <Lock size={16} className="mr-2 flex-shrink-0" />
+                <span>Cerrar Día</span>
+              </Button>
+              <Button
+                onClick={() => {
+                  fetchHistory();
+                  setHistoryDialog(true);
+                }}
+                variant="outline"
+                className="min-h-[48px] min-w-[48px] sm:w-auto border-white/20"
+                style={{ 
+                  color: '#9CA3AF',
+                  WebkitTextFillColor: '#9CA3AF',
+                  WebkitAppearance: 'none',
+                  opacity: 1
+                }}
+              >
+                <History size={16} />
+                <span className="sm:hidden ml-2">Historial</span>
+              </Button>
+            </>
+          ) : (
+            <>
               <Button
                 onClick={() => startAction('open')}
-                className="bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-700 dark:text-green-300"
+                className="flex-1 min-h-[48px] bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
+                style={{ 
+                  color: '#86EFAC',
+                  WebkitTextFillColor: '#86EFAC',
+                  WebkitAppearance: 'none',
+                  opacity: 1
+                }}
                 data-testid="open-day-btn"
               >
-                <Unlock size={16} className="mr-2" />
-                Abrir Día
+                <Unlock size={16} className="mr-2 flex-shrink-0" />
+                <span>Abrir Día</span>
               </Button>
-            )}
-            
-            <Button
-              onClick={() => {
-                fetchHistory();
-                setHistoryDialog(true);
-              }}
-              variant="outline"
-              className="border-border text-muted-foreground hover:bg-muted"
-            >
-              <History size={16} />
-            </Button>
-          </div>
+              <Button
+                onClick={() => {
+                  fetchHistory();
+                  setHistoryDialog(true);
+                }}
+                variant="outline"
+                className="min-h-[48px] min-w-[48px] sm:w-auto border-white/20"
+                style={{ 
+                  color: '#9CA3AF',
+                  WebkitTextFillColor: '#9CA3AF',
+                  WebkitAppearance: 'none',
+                  opacity: 1
+                }}
+              >
+                <History size={16} />
+                <span className="sm:hidden ml-2">Historial</span>
+              </Button>
+            </>
+          )}
         </div>
         
         {/* Info de la jornada */}
         {businessDay && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-border">
+          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/10">
             <div className="text-center">
-              <p className="text-muted-foreground text-xs mb-1">Abierta</p>
-              <p className="text-foreground font-medium text-sm">{formatTime(businessDay.opened_at)}</p>
+              <p className="text-xs mb-1" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Abierta</p>
+              <p className="font-medium text-sm" style={{ color: '#F3F4F6', WebkitTextFillColor: '#F3F4F6', opacity: 1 }}>{formatTime(businessDay.opened_at)}</p>
             </div>
             <div className="text-center">
-              <p className="text-muted-foreground text-xs mb-1">Por</p>
-              <p className="text-foreground font-medium text-sm">{businessDay.opened_by_name}</p>
+              <p className="text-xs mb-1" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Autorizado</p>
+              <p className="font-medium text-sm" style={{ color: '#F3F4F6', WebkitTextFillColor: '#F3F4F6', opacity: 1 }}>{businessDay.authorized_by_name || 'Admin'}</p>
             </div>
             <div className="text-center">
-              <p className="text-muted-foreground text-xs mb-1">Autorizado</p>
-              <p className="text-foreground font-medium text-sm">{businessDay.authorized_by_name}</p>
+              <p className="text-xs mb-1" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Por</p>
+              <p className="font-medium text-sm" style={{ color: '#F3F4F6', WebkitTextFillColor: '#F3F4F6', opacity: 1 }}>{businessDay.opened_by_name}</p>
             </div>
             <div className="text-center">
-              <p className="text-muted-foreground text-xs mb-1">Referencia</p>
-              <p className="text-cyan-600 dark:text-cyan-400 font-mono text-sm">{businessDay.ref}</p>
+              <p className="text-xs mb-1" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Referencia</p>
+              <p className="font-mono text-sm" style={{ color: '#67E8F9', WebkitTextFillColor: '#67E8F9', opacity: 1 }}>{businessDay.ref}</p>
             </div>
           </div>
         )}
         
         {/* Estadísticas del día */}
         {businessDay && stats && showStatsInline && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-border">
-            <div className="bg-muted rounded-xl p-3 text-center">
-              <TrendingUp size={20} className="text-green-500 mx-auto mb-1" />
-              <p className="text-muted-foreground text-xs">Ventas</p>
-              <p className="font-oswald font-bold text-green-600 dark:text-green-400">{formatMoney(stats.total_sales)}</p>
+          <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/10">
+            <div className="bg-white/5 rounded-xl p-3 text-center">
+              <TrendingUp size={18} className="text-green-400 mx-auto mb-1" />
+              <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Ventas</p>
+              <p className="font-oswald font-bold text-sm" style={{ color: '#4ADE80', WebkitTextFillColor: '#4ADE80', opacity: 1 }}>{formatMoney(stats.total_sales)}</p>
             </div>
-            <div className="bg-muted rounded-xl p-3 text-center">
-              <Banknote size={20} className="text-emerald-500 mx-auto mb-1" />
-              <p className="text-muted-foreground text-xs">Efectivo</p>
-              <p className="font-oswald font-bold text-emerald-600 dark:text-emerald-400">{formatMoney(stats.total_cash)}</p>
+            <div className="bg-white/5 rounded-xl p-3 text-center">
+              <Banknote size={18} className="text-emerald-400 mx-auto mb-1" />
+              <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Efectivo</p>
+              <p className="font-oswald font-bold text-sm" style={{ color: '#34D399', WebkitTextFillColor: '#34D399', opacity: 1 }}>{formatMoney(stats.total_cash)}</p>
             </div>
-            <div className="bg-muted rounded-xl p-3 text-center">
-              <CreditCard size={20} className="text-blue-500 mx-auto mb-1" />
-              <p className="text-muted-foreground text-xs">Tarjeta</p>
-              <p className="font-oswald font-bold text-blue-600 dark:text-blue-400">{formatMoney(stats.total_card)}</p>
+            <div className="bg-white/5 rounded-xl p-3 text-center">
+              <CreditCard size={18} className="text-blue-400 mx-auto mb-1" />
+              <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Tarjeta</p>
+              <p className="font-oswald font-bold text-sm" style={{ color: '#60A5FA', WebkitTextFillColor: '#60A5FA', opacity: 1 }}>{formatMoney(stats.total_card)}</p>
             </div>
-            <div className="bg-muted rounded-xl p-3 text-center">
-              <FileText size={20} className="text-cyan-500 mx-auto mb-1" />
-              <p className="text-muted-foreground text-xs">Facturas</p>
-              <p className="font-oswald font-bold text-cyan-600 dark:text-cyan-400">{stats.total_invoices}</p>
+            <div className="bg-white/5 rounded-xl p-3 text-center">
+              <FileText size={18} className="text-cyan-400 mx-auto mb-1" />
+              <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Facturas</p>
+              <p className="font-oswald font-bold text-sm" style={{ color: '#22D3EE', WebkitTextFillColor: '#22D3EE', opacity: 1 }}>{stats.total_invoices}</p>
             </div>
           </div>
         )}
