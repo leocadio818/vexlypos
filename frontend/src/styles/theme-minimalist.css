@@ -159,9 +159,22 @@ body.theme-minimalist div[class*="rounded-lg"][class*="border"][class*="p-"] {
 }
 
 /* Override dark slate backgrounds used in modals/panels to neo-bg */
-body.theme-minimalist [class*="bg-slate-9"],
-body.theme-minimalist [class*="bg-slate-8"] {
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-8"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-gray-9"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-gray-8"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-zinc-9"],
+body.theme-minimalist:not(.neo-dark) [class*="bg-zinc-8"] {
   background-color: var(--neo-bg) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Dark mode: keep dark backgrounds as-is */
+body.theme-minimalist.neo-dark [class*="bg-slate-9"],
+body.theme-minimalist.neo-dark [class*="bg-slate-8"],
+body.theme-minimalist.neo-dark [class*="bg-gray-9"],
+body.theme-minimalist.neo-dark [class*="bg-gray-8"] {
+  /* Keep original dark colors in dark mode */
 }
 
 /* bg-card opacity variants */
@@ -385,7 +398,29 @@ body.theme-minimalist [data-sonner-toaster] [data-sonner-toast] {
    Comprehensive fix for ALL light-colored text on light bg
    ═══════════════════════════════════════════════════════════════ */
 
-body.theme-minimalist:not(.neo-dark) .text-white { color: hsl(var(--foreground)) !important; }
+/* ── LIGHT MODE: Force text inside dark-bg containers to dark ── */
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-8"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-gray-9"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-gray-8"] * {
+  color: hsl(var(--foreground)) !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+}
+
+/* Preserve white text in colored buttons inside converted containers */
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-primary"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-gradient"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-red-5"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-green-5"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-orange-5"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-gray-9"] [class*="bg-primary"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-gray-9"] [class*="bg-gradient"] * {
+  color: white !important;
+  -webkit-text-fill-color: white !important;
+}
+
+/* ── Light mode: text-white → dark text ── */
+body.theme-minimalist:not(.neo-dark) .text-white { color: hsl(var(--foreground)) !important; -webkit-text-fill-color: hsl(var(--foreground)) !important; }
 body.theme-minimalist:not(.neo-dark) .text-white\/90 { color: hsl(var(--foreground)) !important; }
 body.theme-minimalist:not(.neo-dark) .text-white\/80 { color: hsl(var(--foreground) / 0.9) !important; }
 body.theme-minimalist:not(.neo-dark) .text-white\/70 { color: hsl(var(--foreground) / 0.85) !important; }
@@ -498,10 +533,16 @@ body.theme-minimalist:not(.neo-dark) [class*="bg-gradient"] .bg-clip-text {
 }
 
 /* ── Light mode: borders ── */
-body.theme-minimalist:not(.neo-dark) [class*="border-white/"] { border-color: transparent !important; }
+body.theme-minimalist:not(.neo-dark) [class*="border-white/"] { border-color: hsl(var(--border)) !important; }
+body.theme-minimalist:not(.neo-dark) [class*="border-white/10"],
+body.theme-minimalist:not(.neo-dark) [class*="border-white/20"],
+body.theme-minimalist:not(.neo-dark) [class*="border-white/30"] { border-color: hsl(var(--border)) !important; }
 
-/* Light mode: glass bg → neo bg (attribute selectors for responsive variants) */
-body.theme-minimalist:not(.neo-dark) [class*="bg-white/"] { background-color: var(--neo-bg) !important; }
+/* Light mode: glass bg → neo bg with subtle contrast */
+body.theme-minimalist:not(.neo-dark) [class*="bg-white/"] { 
+  background-color: rgba(255,255,255,0.7) !important; 
+  border: 1px solid hsl(var(--border)) !important;
+}
 body.theme-minimalist:not(.neo-dark) [class*="bg-background/"] { background-color: var(--neo-bg) !important; }
 
 /* Both modes: kill backdrop blur */
