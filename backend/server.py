@@ -1227,6 +1227,25 @@ async def print_pre_check(order_id: str):
         total_tax = sum(t["amount"] for t in tax_lines)
     total = round(subtotal + total_tax, 2)
     
+    # Get table info for area name
+    table_id = order.get("table_id")
+    area_name = ""
+    table_number = order.get("table_number", "?")
+    if table_id:
+        table = await db.tables.find_one({"id": table_id}, {"_id": 0})
+        if table:
+            table_number = table.get("number", table_number)
+            area_id = table.get("area_id")
+            if area_id:
+                area = await db.areas.find_one({"id": area_id}, {"_id": 0})
+                if area:
+                    area_name = area.get("name", "")
+    
+    # Get account label (custom name)
+    account_label = order.get("account_label", "")
+    account_number = order.get("account_number", 1)
+    account_display = f" — {account_label}" if account_label else ""
+    
     items_html = ""
     for item in items:
         mods = ", ".join(m["name"] for m in item.get("modifiers", []))
@@ -1237,12 +1256,17 @@ async def print_pre_check(order_id: str):
     await db.pre_check_prints.insert_one({"order_id": order_id, "print_number": print_count + 1, "printed_at": now_iso()})
     reprint_label = f"<div style='text-align:center;color:red;font-weight:bold;'>*** RE-IMPRESION #{print_count} ***</div>" if print_count > 0 else ""
     tax_html = "".join(f"<tr><td>{t['description']} {t['rate']}%</td><td style='text-align:right'>RD$ {t['amount']:,.2f}</td></tr>" for t in tax_lines)
+    
+    # Build area header line if area exists
+    area_line = f"<div style='text-align:center;font-weight:bold;'>ÁREA: {area_name}</div>" if area_name else ""
+    
     # Pre-cuenta HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
     return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:12px;margin:0 auto;box-sizing:border-box;'>
     {reprint_label}
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
     <b style='font-size:16px;'>ALONZO CIGAR</b><br><b>PRE-CUENTA</b></div>
-    <div style='font-size:11px;'>Mesa: {order['table_number']}<br>Mesero: {order['waiter_name']}<br>Fecha: {utc_to_local_str(order['created_at'])}</div>
+    {area_line}
+    <div style='font-size:11px;'>Mesa: {table_number}{account_display}<br>Cuenta #{account_number}<br>Mesero: {order['waiter_name']}<br>Fecha: {utc_to_local_str(order['created_at'])}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;font-size:11px;'>
     {items_html}</table>
     <table style='width:100%;font-size:11px;'>

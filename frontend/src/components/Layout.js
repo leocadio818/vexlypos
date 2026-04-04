@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { GraduationCap } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud, MoreHorizontal, Wrench, MoveRight, SplitSquareHorizontal, Ban, Sun, Moon, AlertTriangle, Palette, ArrowRightLeft, Clock, LogOut as LogOutIcon, Lock, FileText } from 'lucide-react';
+import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud, MoreHorizontal, Wrench, MoveRight, SplitSquareHorizontal, Ban, Sun, Moon, AlertTriangle, Palette, ArrowRightLeft, Clock, LogOut as LogOutIcon, Lock, FileText, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -810,6 +810,12 @@ export default function Layout() {
                 data-testid="sidebar-fn-move-items">
                 <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center group-hover:bg-cyan-500/30 transition-colors"><ArrowRightLeft size={16} className="text-cyan-400" /></div>
                 <span className="text-sm font-medium text-white/90 group-hover:text-white">Mover Artículo</span>
+              </button>
+              <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('openRenameAccountDialog')); }}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-400/50 transition-all duration-200 group active:scale-95"
+                data-testid="sidebar-fn-rename-account">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors"><Pencil size={16} className="text-amber-400" /></div>
+                <span className="text-sm font-medium text-white/90 group-hover:text-white">Editar Nombre</span>
               </button>
               <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('voidEntireOrder')); }}
                 className="col-span-2 flex items-center justify-center gap-3 px-4 py-3.5 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-400/50 transition-all duration-200 group active:scale-95"

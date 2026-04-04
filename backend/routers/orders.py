@@ -203,6 +203,28 @@ async def send_cancel_ticket_to_print_queue(order_id: str, items_cancelled: list
     if not order:
         return
     
+    # Get table info for area name
+    table_id = order.get("table_id")
+    area_name = ""
+    table_number = order.get("table_number", "?")
+    if table_id:
+        table = await db.tables.find_one({"id": table_id}, {"_id": 0})
+        if table:
+            table_number = table.get("number", table_number)
+            area_id = table.get("area_id")
+            if area_id:
+                area = await db.areas.find_one({"id": area_id}, {"_id": 0})
+                if area:
+                    area_name = area.get("name", "")
+    
+    # Get account label and account number
+    account_label = order.get("account_label", "")
+    account_number = order.get("account_number", 1)
+    if account_label:
+        account_display = f"Cuenta #{account_number} — {account_label}"
+    else:
+        account_display = f"Cuenta #{account_number}"
+    
     # Route to same printer channel as original comanda
     channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
     category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
@@ -250,7 +272,11 @@ async def send_cancel_ticket_to_print_queue(order_id: str, items_cancelled: list
             "type": "cancel_comanda",
             "paper_width": 80,
             "channel_name": channel_name,
-            "table_number": order.get("table_number", "?"),
+            # ═══ ENHANCED HEADER INFO ═══
+            "area_name": area_name,
+            "table_number": table_number,
+            "account_display": account_display,
+            "account_label": account_label,
             "waiter_name": order.get("waiter_name", ""),
             "order_number": f"T-{order.get('transaction_number', '')}" if order.get('transaction_number') else order.get("id", "")[:8],
             "date": await now_local_print_formatted(),
@@ -1164,6 +1190,30 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
         transaction_number = await get_next_transaction_number()
         await db.orders.update_one({"id": order_id}, {"$set": {"transaction_number": transaction_number}})
     
+    # Get table info for area name
+    table_id = order.get("table_id")
+    area_name = ""
+    table_number = order.get("table_number", "?")
+    if table_id:
+        table = await db.tables.find_one({"id": table_id}, {"_id": 0})
+        if table:
+            table_number = table.get("number", table_number)
+            area_id = table.get("area_id")
+            if area_id:
+                area = await db.areas.find_one({"id": area_id}, {"_id": 0})
+                if area:
+                    area_name = area.get("name", "")
+    
+    # Get account label (custom name) and account number
+    account_label = order.get("account_label", "")
+    account_number = order.get("account_number", 1)
+    
+    # Format account display: "Cuenta #1 — María" or just "Cuenta #1" if no label
+    if account_label:
+        account_display = f"Cuenta #{account_number} — {account_label}"
+    else:
+        account_display = f"Cuenta #{account_number}"
+    
     # Get channels and category mappings
     channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
     category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
@@ -1212,7 +1262,11 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
             "type": "comanda",
             "paper_width": 80,
             "channel_name": channel_name,
-            "table_number": order.get("table_number", "?"),
+            # ═══ ENHANCED HEADER INFO ═══
+            "area_name": area_name,
+            "table_number": table_number,
+            "account_display": account_display,
+            "account_label": account_label,  # Raw label for backward compatibility
             "waiter_name": order.get("waiter_name", ""),
             "order_number": f"T-{transaction_number}" if transaction_number else order.get("id", "")[:8],
             "training_mode": order.get("training_mode", False),

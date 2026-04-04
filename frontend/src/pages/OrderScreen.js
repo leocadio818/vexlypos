@@ -590,6 +590,8 @@ export default function OrderScreen() {
     window.addEventListener('openTransferTableDialog', handleOpenTransfer);
     const handleOpenMoveItems = () => setMoveItemsActive(true);
     window.addEventListener('openMoveItemsFlow', handleOpenMoveItems);
+    const handleOpenRenameAccount = () => setRenameDialog({ open: true, value: order?.account_label || '' });
+    window.addEventListener('openRenameAccountDialog', handleOpenRenameAccount);
     
     return () => {
       window.removeEventListener('openMoveTableDialog', handleOpenMoveDialog);
@@ -597,6 +599,7 @@ export default function OrderScreen() {
       window.removeEventListener('voidEntireOrder', handleVoidEntireOrder);
       window.removeEventListener('openTransferTableDialog', handleOpenTransfer);
       window.removeEventListener('openMoveItemsFlow', handleOpenMoveItems);
+      window.removeEventListener('openRenameAccountDialog', handleOpenRenameAccount);
     };
   }, [order]);
 
