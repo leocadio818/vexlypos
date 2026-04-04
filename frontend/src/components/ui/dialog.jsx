@@ -36,7 +36,7 @@ const DialogContent = React.forwardRef(({ className, children, hideCloseButton, 
       {children}
       {!hideCloseButton && (
         <DialogPrimitive.Close
-          className="absolute z-50 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+          className="absolute z-50 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none bg-muted hover:bg-muted/80 text-muted-foreground"
           style={{
             right: '12px',
             top: '12px',
@@ -47,14 +47,12 @@ const DialogContent = React.forwardRef(({ className, children, hideCloseButton, 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(255,255,255,0.15)',
-            color: '#D1D5DB',
             WebkitAppearance: 'none',
             appearance: 'none',
             border: 'none',
             cursor: 'pointer',
           }}>
-          <X className="h-4 w-4" style={{ color: '#D1D5DB', WebkitTextFillColor: '#D1D5DB' }} />
+          <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
       )}

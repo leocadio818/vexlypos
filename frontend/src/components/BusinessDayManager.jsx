@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { businessDaysAPI, formatMoney } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { 
   Calendar, Sun, Moon, Clock, Lock, Unlock, CheckCircle2, 
   AlertTriangle, TrendingUp, Banknote, CreditCard, ArrowRight,
@@ -28,6 +29,11 @@ export default function BusinessDayManager({
   showStatsInline = false 
 }) {
   const { user, logout, hasPermission } = useAuth();
+  const { isMinimalist, isNeoDark } = useTheme();
+  
+  // Determine if we're on a light background (minimalist light mode)
+  const isLightBg = isMinimalist && !isNeoDark;
+  
   const [businessDay, setBusinessDay] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -250,6 +256,51 @@ export default function BusinessDayManager({
   }
 
   // Vista completa
+  // Theme-adaptive colors
+  const colors = isLightBg ? {
+    // Light theme colors (dark text on light bg)
+    titleOpen: '#166534',      // Green 800
+    dateOpen: '#374151',       // Gray 700
+    titleClosed: '#DC2626',    // Red 600
+    dateClosed: '#374151',     // Gray 700
+    infoLabel: '#6B7280',      // Gray 500
+    infoValue: '#1F2937',      // Gray 800
+    refValue: '#0891B2',       // Cyan 600
+    statLabel: '#6B7280',      // Gray 500
+    statVentas: '#166534',     // Green 800
+    statEfectivo: '#065F46',   // Emerald 800
+    statTarjeta: '#1E40AF',    // Blue 800
+    statFacturas: '#0E7490',   // Cyan 700
+    historyBtn: '#374151',     // Gray 700
+    historyBorder: 'border-gray-300',
+    infoBorder: 'border-gray-200',
+    statBgVentas: 'bg-green-50',
+    statBgEfectivo: 'bg-emerald-50',
+    statBgTarjeta: 'bg-blue-50',
+    statBgFacturas: 'bg-cyan-50',
+  } : {
+    // Dark theme colors (light text on dark bg)
+    titleOpen: '#4ADE80',      // Green 400
+    dateOpen: '#86EFAC',       // Green 300
+    titleClosed: '#F87171',    // Red 400
+    dateClosed: '#FCA5A5',     // Red 300
+    infoLabel: '#9CA3AF',      // Gray 400
+    infoValue: '#F3F4F6',      // Gray 100
+    refValue: '#22D3EE',       // Cyan 400
+    statLabel: '#9CA3AF',      // Gray 400
+    statVentas: '#4ADE80',     // Green 400
+    statEfectivo: '#34D399',   // Emerald 400
+    statTarjeta: '#60A5FA',    // Blue 400
+    statFacturas: '#22D3EE',   // Cyan 400
+    historyBtn: '#D1D5DB',     // Gray 300
+    historyBorder: 'border-white/30 hover:bg-white/10',
+    infoBorder: 'border-white/10',
+    statBgVentas: 'bg-white/5',
+    statBgEfectivo: 'bg-white/5',
+    statBgTarjeta: 'bg-white/5',
+    statBgFacturas: 'bg-white/5',
+  };
+
   return (
     <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Estado actual */}
@@ -265,14 +316,14 @@ export default function BusinessDayManager({
           {businessDay ? (
             <>
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                <Sun size={20} style={{ color: '#4ADE80' }} />
+                <Sun size={20} style={{ color: colors.titleOpen }} />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 
                   className="font-oswald font-bold text-base sm:text-lg"
                   style={{ 
-                    color: '#4ADE80',
-                    WebkitTextFillColor: '#4ADE80',
+                    color: colors.titleOpen,
+                    WebkitTextFillColor: colors.titleOpen,
                     opacity: 1 
                   }}
                 >
@@ -281,8 +332,8 @@ export default function BusinessDayManager({
                 <p 
                   className="text-sm"
                   style={{ 
-                    color: '#86EFAC',
-                    WebkitTextFillColor: '#86EFAC',
+                    color: colors.dateOpen,
+                    WebkitTextFillColor: colors.dateOpen,
                     opacity: 1 
                   }}
                 >
@@ -293,14 +344,14 @@ export default function BusinessDayManager({
           ) : (
             <>
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500/20 flex items-center justify-center animate-pulse flex-shrink-0">
-                <Moon size={20} style={{ color: '#F87171' }} />
+                <Moon size={20} style={{ color: colors.titleClosed }} />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 
                   className="font-oswald font-bold text-base sm:text-lg"
                   style={{ 
-                    color: '#F87171',
-                    WebkitTextFillColor: '#F87171',
+                    color: colors.titleClosed,
+                    WebkitTextFillColor: colors.titleClosed,
                     opacity: 1 
                   }}
                 >
@@ -309,8 +360,8 @@ export default function BusinessDayManager({
                 <p 
                   className="text-sm"
                   style={{ 
-                    color: '#FCA5A5',
-                    WebkitTextFillColor: '#FCA5A5',
+                    color: colors.dateClosed,
+                    WebkitTextFillColor: colors.dateClosed,
                     opacity: 1 
                   }}
                 >
@@ -359,15 +410,15 @@ export default function BusinessDayManager({
                   setHistoryDialog(true);
                 }}
                 variant="outline"
-                className="min-h-[48px] min-w-[48px] sm:w-auto border-white/30 hover:bg-white/10"
+                className={`min-h-[48px] min-w-[48px] sm:w-auto ${colors.historyBorder}`}
                 style={{ 
-                  color: '#D1D5DB',
-                  WebkitTextFillColor: '#D1D5DB',
+                  color: colors.historyBtn,
+                  WebkitTextFillColor: colors.historyBtn,
                   WebkitAppearance: 'none',
                   opacity: 1
                 }}
               >
-                <History size={16} style={{ color: '#D1D5DB' }} />
+                <History size={16} style={{ color: colors.historyBtn }} />
                 <span className="sm:hidden ml-2">Historial</span>
               </Button>
             </>
@@ -393,15 +444,15 @@ export default function BusinessDayManager({
                   setHistoryDialog(true);
                 }}
                 variant="outline"
-                className="min-h-[48px] min-w-[48px] sm:w-auto border-white/30 hover:bg-white/10"
+                className={`min-h-[48px] min-w-[48px] sm:w-auto ${colors.historyBorder}`}
                 style={{ 
-                  color: '#D1D5DB',
-                  WebkitTextFillColor: '#D1D5DB',
+                  color: colors.historyBtn,
+                  WebkitTextFillColor: colors.historyBtn,
                   WebkitAppearance: 'none',
                   opacity: 1
                 }}
               >
-                <History size={16} style={{ color: '#D1D5DB' }} />
+                <History size={16} style={{ color: colors.historyBtn }} />
                 <span className="sm:hidden ml-2">Historial</span>
               </Button>
             </>
@@ -410,48 +461,48 @@ export default function BusinessDayManager({
         
         {/* Info de la jornada */}
         {businessDay && (
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/10">
+          <div className={`grid grid-cols-2 gap-3 mt-4 pt-4 border-t ${colors.infoBorder}`}>
             <div className="text-center">
-              <p className="text-xs mb-1" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Abierta</p>
-              <p className="font-medium text-sm" style={{ color: '#F3F4F6', WebkitTextFillColor: '#F3F4F6', opacity: 1 }}>{formatTime(businessDay.opened_at)}</p>
+              <p className="text-xs mb-1" style={{ color: colors.infoLabel, WebkitTextFillColor: colors.infoLabel, opacity: 1 }}>Abierta</p>
+              <p className="font-medium text-sm" style={{ color: colors.infoValue, WebkitTextFillColor: colors.infoValue, opacity: 1 }}>{formatTime(businessDay.opened_at)}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs mb-1" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Autorizado</p>
-              <p className="font-medium text-sm" style={{ color: '#F3F4F6', WebkitTextFillColor: '#F3F4F6', opacity: 1 }}>{businessDay.authorized_by_name || 'Admin'}</p>
+              <p className="text-xs mb-1" style={{ color: colors.infoLabel, WebkitTextFillColor: colors.infoLabel, opacity: 1 }}>Autorizado</p>
+              <p className="font-medium text-sm" style={{ color: colors.infoValue, WebkitTextFillColor: colors.infoValue, opacity: 1 }}>{businessDay.authorized_by_name || 'Admin'}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs mb-1" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Por</p>
-              <p className="font-medium text-sm" style={{ color: '#F3F4F6', WebkitTextFillColor: '#F3F4F6', opacity: 1 }}>{businessDay.opened_by_name}</p>
+              <p className="text-xs mb-1" style={{ color: colors.infoLabel, WebkitTextFillColor: colors.infoLabel, opacity: 1 }}>Por</p>
+              <p className="font-medium text-sm" style={{ color: colors.infoValue, WebkitTextFillColor: colors.infoValue, opacity: 1 }}>{businessDay.opened_by_name}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs mb-1" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Referencia</p>
-              <p className="font-mono text-sm" style={{ color: '#22D3EE', WebkitTextFillColor: '#22D3EE', opacity: 1 }}>{businessDay.ref}</p>
+              <p className="text-xs mb-1" style={{ color: colors.infoLabel, WebkitTextFillColor: colors.infoLabel, opacity: 1 }}>Referencia</p>
+              <p className="font-mono text-sm" style={{ color: colors.refValue, WebkitTextFillColor: colors.refValue, opacity: 1 }}>{businessDay.ref}</p>
             </div>
           </div>
         )}
         
         {/* Estadísticas del día */}
         {businessDay && stats && showStatsInline && (
-          <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/10">
-            <div className="bg-white/5 rounded-xl p-3 text-center">
-              <TrendingUp size={18} style={{ color: '#4ADE80' }} className="mx-auto mb-1" />
-              <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Ventas</p>
-              <p className="font-oswald font-bold text-sm" style={{ color: '#4ADE80', WebkitTextFillColor: '#4ADE80', opacity: 1 }}>{formatMoney(stats.total_sales)}</p>
+          <div className={`grid grid-cols-2 gap-2 mt-4 pt-4 border-t ${colors.infoBorder}`}>
+            <div className={`${colors.statBgVentas} rounded-xl p-3 text-center`}>
+              <TrendingUp size={18} style={{ color: colors.statVentas }} className="mx-auto mb-1" />
+              <p className="text-xs mb-0.5" style={{ color: colors.statLabel, WebkitTextFillColor: colors.statLabel, opacity: 1 }}>Ventas</p>
+              <p className="font-oswald font-bold text-sm" style={{ color: colors.statVentas, WebkitTextFillColor: colors.statVentas, opacity: 1 }}>{formatMoney(stats.total_sales)}</p>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 text-center">
-              <Banknote size={18} style={{ color: '#34D399' }} className="mx-auto mb-1" />
-              <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Efectivo</p>
-              <p className="font-oswald font-bold text-sm" style={{ color: '#34D399', WebkitTextFillColor: '#34D399', opacity: 1 }}>{formatMoney(stats.total_cash)}</p>
+            <div className={`${colors.statBgEfectivo} rounded-xl p-3 text-center`}>
+              <Banknote size={18} style={{ color: colors.statEfectivo }} className="mx-auto mb-1" />
+              <p className="text-xs mb-0.5" style={{ color: colors.statLabel, WebkitTextFillColor: colors.statLabel, opacity: 1 }}>Efectivo</p>
+              <p className="font-oswald font-bold text-sm" style={{ color: colors.statEfectivo, WebkitTextFillColor: colors.statEfectivo, opacity: 1 }}>{formatMoney(stats.total_cash)}</p>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 text-center">
-              <CreditCard size={18} style={{ color: '#60A5FA' }} className="mx-auto mb-1" />
-              <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Tarjeta</p>
-              <p className="font-oswald font-bold text-sm" style={{ color: '#60A5FA', WebkitTextFillColor: '#60A5FA', opacity: 1 }}>{formatMoney(stats.total_card)}</p>
+            <div className={`${colors.statBgTarjeta} rounded-xl p-3 text-center`}>
+              <CreditCard size={18} style={{ color: colors.statTarjeta }} className="mx-auto mb-1" />
+              <p className="text-xs mb-0.5" style={{ color: colors.statLabel, WebkitTextFillColor: colors.statLabel, opacity: 1 }}>Tarjeta</p>
+              <p className="font-oswald font-bold text-sm" style={{ color: colors.statTarjeta, WebkitTextFillColor: colors.statTarjeta, opacity: 1 }}>{formatMoney(stats.total_card)}</p>
             </div>
-            <div className="bg-white/5 rounded-xl p-3 text-center">
-              <FileText size={18} style={{ color: '#22D3EE' }} className="mx-auto mb-1" />
-              <p className="text-xs mb-0.5" style={{ color: '#9CA3AF', WebkitTextFillColor: '#9CA3AF', opacity: 1 }}>Facturas</p>
-              <p className="font-oswald font-bold text-sm" style={{ color: '#22D3EE', WebkitTextFillColor: '#22D3EE', opacity: 1 }}>{stats.total_invoices}</p>
+            <div className={`${colors.statBgFacturas} rounded-xl p-3 text-center`}>
+              <FileText size={18} style={{ color: colors.statFacturas }} className="mx-auto mb-1" />
+              <p className="text-xs mb-0.5" style={{ color: colors.statLabel, WebkitTextFillColor: colors.statLabel, opacity: 1 }}>Facturas</p>
+              <p className="font-oswald font-bold text-sm" style={{ color: colors.statFacturas, WebkitTextFillColor: colors.statFacturas, opacity: 1 }}>{stats.total_invoices}</p>
             </div>
           </div>
         )}
