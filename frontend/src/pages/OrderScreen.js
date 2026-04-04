@@ -1663,7 +1663,7 @@ export default function OrderScreen() {
       {!mobileAccountExpanded && !splitMode && !accessDenied && activeItems.length > 0 && (
         <button
           onClick={() => setMobileAccountExpanded(true)}
-          className="lg:hidden fixed bottom-20 right-4 z-50 h-14 px-4 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center gap-2 font-oswald font-bold active:scale-95 transition-transform"
+          className="lg:hidden fixed right-4 z-50 h-14 px-4 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center gap-2 font-oswald font-bold active:scale-95 transition-transform float-above-nav"
           data-testid="mobile-show-account-btn"
         >
           <ShoppingCart size={20} />
@@ -1926,7 +1926,7 @@ export default function OrderScreen() {
             {/* Mobile: State machine for buttons (initial -> editing -> closing) */}
             {/* Desktop: Always show ENVIAR + FACTURAR row, then secondary buttons */}
             {!splitMode && order && (
-              <div className="p-3 border-t border-border bg-card/80 space-y-2">
+              <div className="p-3 border-t border-border bg-card/80 space-y-2 safe-area-bottom">
                 {/* ENVIAR button - always visible when there are pending items (both mobile and desktop) */}
                 {pendingCount > 0 && (
                   <Button onClick={handleSendToKitchen} size="lg" data-testid="send-to-kitchen-btn"
@@ -2106,8 +2106,8 @@ export default function OrderScreen() {
       {/* Hide on mobile when account is expanded */}
       {!splitMode && !accessDenied && !mobileAccountExpanded && (
         <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Grid Settings Bar - Glassmorphism */}
-        <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-white/10 backdrop-blur-xl bg-white/5`}>
+        {/* Grid Settings Bar - Glassmorphism - With PWA safe area top */}
+        <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-white/10 backdrop-blur-xl bg-white/5 safe-area-top`}>
           <div className="flex items-center gap-2">
             {activeCat ? (
               <button onClick={() => { setActiveCat(null); setShowProductSearch(false); setProductSearchQuery(''); }} className={`flex items-center gap-2 bg-primary text-primary-foreground font-oswald font-bold rounded-xl px-4 transition-all active:scale-95 ${largeMode ? 'h-12 text-base' : 'h-10 text-sm'}`} data-testid="back-to-categories">

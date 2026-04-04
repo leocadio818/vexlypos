@@ -18,7 +18,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait",
   "theme_color": "#0c0f1e",
   "background_color": "#0c0f1e",
   "categories": ["business", "finance"],
