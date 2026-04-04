@@ -1189,17 +1189,18 @@ export default function CashRegister() {
 
       {/* Botón Flotante de Re-impresión */}
       {selectedMovement && (
-        <div className="fixed left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300 float-above-nav" style={{ maxWidth: 'calc(100% - 2rem)' }}>
-          <div className="backdrop-blur-xl bg-slate-900/95 border border-orange-500/30 rounded-2xl p-4 shadow-2xl shadow-orange-500/20 flex items-center gap-4">
+        <div className="fixed left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300 float-above-nav" style={{ width: 'calc(100% - 2rem)', maxWidth: '28rem' }}>
+          <div className="backdrop-blur-xl bg-slate-900/95 border border-orange-500/30 rounded-2xl px-3 py-3 shadow-2xl shadow-orange-500/20 flex items-center gap-2">
             <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold text-sm truncate">{(selectedMovement.description || '').replace(/\[BILL:[^\]]+\]\s*/g, '')}</p>
-              <p className="text-white/50 text-xs">{formatMoney(selectedMovement.amount)} - {selectedMovement.ref}</p>
+              <p className="text-white font-semibold leading-snug" style={{ fontSize: '0.75rem' }}>{(selectedMovement.description || '').replace(/\[BILL:[^\]]+\]\s*/g, '')}</p>
+              <p className="text-white/50 mt-0.5" style={{ fontSize: '0.75rem' }}>{formatMoney(selectedMovement.amount)}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={handleReprint}
                 disabled={reprintLoading}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-bold text-sm flex items-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-bold flex items-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+                style={{ minWidth: '8.125rem', minHeight: '3rem', fontSize: '0.875rem', padding: '0.5rem 1rem', justifyContent: 'center' }}
                 data-testid="reprint-btn"
               >
                 <Printer size={16} className={reprintLoading ? 'animate-pulse' : ''} />
@@ -1208,6 +1209,7 @@ export default function CashRegister() {
               <button
                 onClick={() => setSelectedMovement(null)}
                 className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all"
+                style={{ minWidth: '2.75rem', minHeight: '2.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <X size={18} />
               </button>
