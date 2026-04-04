@@ -363,9 +363,10 @@ export default function Dashboard() {
                 {voidsJornada.by_reason.length > 0 && (
                   <div className="space-y-1.5 mb-3">
                     {voidsJornada.by_reason.slice(0, 5).map((r, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-white/5">
-                        <span className="text-white/70 truncate mr-2">{r.reason}</span>
-                        <span className="text-orange-400 font-mono shrink-0">{r.count}x &middot; {formatMoney(r.total)}</span>
+                      <div key={i} className="flex items-center text-xs py-1 px-2 rounded bg-white/5 gap-2">
+                        <span className="text-white/70 truncate flex-1">{r.reason}</span>
+                        <span className="text-white/50 shrink-0">{r.count} {r.count === 1 ? 'anulacion' : 'anulaciones'}</span>
+                        <span className="text-orange-400 font-mono font-bold shrink-0">{formatMoney(r.total)}</span>
                       </div>
                     ))}
                     {voidsJornada.by_reason.length > 5 && (
