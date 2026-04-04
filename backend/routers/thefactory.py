@@ -119,6 +119,75 @@ async def get_next_ncf(tipo_documento: str) -> dict:
     ncf = f"{prefix}{str(current).zfill(10)}"
     return {"ncf": ncf, "fecha_venc": fecha_venc}
 
+
+async def sync_ncf_counters() -> dict:
+    """
+    Synchronize NCF counters with The Factory series.
+    Resets counters to match the 'correlativo' from series API.
+    Call this when NCF errors occur (Code 111, 145).
+    Returns: { "synced": [...], "errors": [...] }
+    """
+    series = await get_series()
+    if not series:
+        return {"synced": [], "errors": ["Could not fetch series from The Factory"]}
+    
+    synced = []
+    errors = []
+    
+    for s in series:
+        tipo = s.get("tipoDocumento")
+        correlativo = s.get("correlativo", 1)
+        
+        if not tipo:
+            continue
+            
+        try:
+            # Reset counter to current correlativo from The Factory
+            await db.ecf_ncf_counters.update_one(
+                {"tipo": tipo, "provider": "thefactory"},
+                {"$set": {"counter": correlativo}},
+                upsert=True
+            )
+            synced.append({"tipo": tipo, "counter": correlativo})
+            logging.info(f"NCF counter synced: Type {tipo} -> {correlativo}")
+        except Exception as e:
+            errors.append({"tipo": tipo, "error": str(e)})
+    
+    # Clear series cache to force refresh
+    global _series_cache
+    _series_cache = {"data": None, "fetched_at": None}
+    
+    return {"synced": synced, "errors": errors}
+
+
+async def get_series_info() -> dict:
+    """
+    Get detailed series information for diagnostics.
+    Returns available NCF ranges and current positions.
+    """
+    series = await get_series()
+    result = []
+    
+    for s in series:
+        tipo = s.get("tipoDocumento")
+        counter = await db.ecf_ncf_counters.find_one(
+            {"tipo": tipo, "provider": "thefactory"},
+            {"_id": 0}
+        )
+        
+        result.append({
+            "tipo": tipo,
+            "secuencia_inicial": s.get("secuenciaInicial"),
+            "secuencia_final": s.get("secuenciaFinal"),
+            "correlativo_thefactory": s.get("correlativo"),
+            "correlativo_local": counter.get("counter") if counter else None,
+            "fecha_vencimiento": s.get("fechaVencimientoSecuencia"),
+            "in_sync": counter and counter.get("counter") == s.get("correlativo") if counter else False,
+        })
+    
+    return {"series": result}
+
+
 async def get_config_from_db():
     """Try to get The Factory config from system_config DB"""
     if db is None:
@@ -380,28 +449,34 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
     fecha_venc_seq = fecha_venc if _is_valid_fecha_venc(fecha_venc) else None
 
     # ── Build payload ──
+    # Build identificacionDocumento - OMIT fechaVencimientoSecuencia entirely if None
+    # The Factory API rejects null values for this field (Code 145)
+    identificacion_doc = {
+        "tipoDocumento": tipo_documento,
+        "ncf": encf,
+        "indicadorEnvioDiferido": "1",
+        "indicadorMontoGravado": "0",
+        "indicadorNotaCredito": None,
+        "tipoIngresos": "01",  # Ingresos operacionales
+        "tipoPago": tipo_pago,
+        "fechaLimitePago": None,
+        "terminoPago": None,
+        "tablaFormasPago": payment_forms,
+        "tipoCuentaPago": None,
+        "numeroCuentaPago": None,
+        "bancoPago": None,
+        "fechaDesde": None,
+        "fechaHasta": None,
+    }
+    # Only include fechaVencimientoSecuencia if it's a valid date (not None/N/A)
+    if fecha_venc_seq:
+        identificacion_doc["fechaVencimientoSecuencia"] = fecha_venc_seq
+    
     payload = {
         "Token": token,
         "documentoElectronico": {
             "encabezado": {
-                "identificacionDocumento": {
-                    "tipoDocumento": tipo_documento,
-                    "ncf": encf,
-                    "fechaVencimientoSecuencia": fecha_venc_seq,
-                    "indicadorEnvioDiferido": "1",
-                    "indicadorMontoGravado": "0",
-                    "indicadorNotaCredito": None,
-                    "tipoIngresos": "01",  # Ingresos operacionales
-                    "tipoPago": tipo_pago,
-                    "fechaLimitePago": None,
-                    "terminoPago": None,
-                    "tablaFormasPago": payment_forms,
-                    "tipoCuentaPago": None,
-                    "numeroCuentaPago": None,
-                    "bancoPago": None,
-                    "fechaDesde": None,
-                    "fechaHasta": None,
-                },
+                "identificacionDocumento": identificacion_doc,
                 "emisor": {
                     "rnc": config["rnc"],
                     "razonSocial": system_config.get("restaurant_name", config["company_name"]) or config["company_name"],
@@ -515,10 +590,24 @@ async def send_to_thefactory(payload: dict, ecf_config: dict = None) -> dict:
                     "xml_base64": data.get("xmlBase64"),
                 }
             else:
+                # Enhanced error messages for common codes
+                codigo = data.get("codigo")
+                error_msg = data.get("mensaje", "Error desconocido")
+                
+                # Add helpful context for known error codes
+                error_hints = {
+                    111: " (NCF fuera de rango - verificar configuración de secuencias en The Factory)",
+                    145: " (Fecha de vencimiento de secuencia inválida - verificar series en The Factory)",
+                    110: " (NCF ya utilizado - posible duplicado)",
+                    112: " (Secuencia no autorizada para este RNC)",
+                }
+                if codigo in error_hints:
+                    error_msg += error_hints[codigo]
+                
                 return {
                     "ok": False,
-                    "codigo": data.get("codigo"),
-                    "error": data.get("mensaje", "Error desconocido"),
+                    "codigo": codigo,
+                    "error": error_msg,
                     "status_code": response.status_code,
                 }
     except httpx.TimeoutException:

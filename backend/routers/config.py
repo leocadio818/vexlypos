@@ -183,6 +183,28 @@ async def get_ecf_credentials(provider: str):
             "has_credentials": bool(config.get("ecf_tf_user") and config.get("ecf_tf_password")),
         }
 
+
+# ─── THE FACTORY NCF SYNC ───
+@router.post("/system/ecf/sync-ncf-counters")
+async def sync_ncf_counters_endpoint():
+    """
+    Synchronize NCF counters with The Factory series.
+    Use this when you get error codes 111 (NCF out of range) or 145 (invalid expiration date).
+    """
+    from routers.thefactory import sync_ncf_counters
+    result = await sync_ncf_counters()
+    return {"ok": len(result["errors"]) == 0, **result}
+
+@router.get("/system/ecf/series-info")
+async def get_series_info_endpoint():
+    """
+    Get detailed NCF series information for diagnostics.
+    Shows local vs The Factory counter positions.
+    """
+    from routers.thefactory import get_series_info
+    return await get_series_info()
+
+
 @router.get("/system/timezones")
 async def get_timezone_options():
     return TIMEZONE_OPTIONS
