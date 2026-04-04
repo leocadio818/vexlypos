@@ -43,7 +43,7 @@ except ImportError:
 
 # ============ CONFIGURACIÓN ============
 # Cambiar esta URL a la de tu servidor POS
-SERVER_URL = "https://pos-dominicana-2.preview.emergentagent.com"
+SERVER_URL = "https://factura-consumo-app.preview.emergentagent.com"
 
 DEFAULT_PRINTER = "Caja"
 

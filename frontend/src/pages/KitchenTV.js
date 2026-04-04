@@ -4,7 +4,6 @@ import { Clock, ChefHat, ArrowRight, Maximize, Minimize, Settings, Keyboard } fr
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { notify } from '@/lib/notify';
-import { Toaster } from '@/components/ui/sonner';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -158,7 +157,6 @@ export default function KitchenTV() {
 
   return (
     <div className="min-h-screen bg-black text-white select-none" data-testid="kitchen-tv-page">
-      <Toaster position="top-center" />
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-3">

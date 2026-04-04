@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { queryClient, QueryClientProvider } from "@/lib/queryClient";
-import BottomSheetNotification from "@/components/BottomSheetNotification";
+import SmartNotificationSystem from "@/components/SmartNotificationSystem";
 import React, { Suspense } from "react";
 import PageSkeleton from "@/components/PageSkeleton";
 import Login from "@/pages/Login";
@@ -77,7 +77,7 @@ export default function App() {
         <AuthProvider>
           <BrowserRouter>
             <AppRoutes />
-            <BottomSheetNotification />
+            <SmartNotificationSystem />
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>

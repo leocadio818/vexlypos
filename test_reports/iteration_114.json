@@ -16,7 +16,7 @@
         {
           "name": "SW Registration",
           "result": "PASS",
-          "details": "sw.js registered and active at https://pos-dominicana-2.preview.emergentagent.com/sw.js"
+          "details": "sw.js registered and active at https://factura-consumo-app.preview.emergentagent.com/sw.js"
         },
         {
           "name": "Cache Name",
@@ -95,7 +95,7 @@
     }
   },
   "console_logs_observed": [
-    "[SW] Registered: https://pos-dominicana-2.preview.emergentagent.com/",
+    "[SW] Registered: https://factura-consumo-app.preview.emergentagent.com/",
     "[Offline] Data cached successfully"
   ],
   "test_report_links": [],

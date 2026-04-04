@@ -71,7 +71,7 @@ REM Crear archivo de configuracion inicial
 echo Creando configuracion inicial...
 if not exist "%USERPROFILE%\MesaPOS\config.json" (
     echo {> "%USERPROFILE%\MesaPOS\config.json"
-    echo   "api_url": "https://pos-dominicana-2.preview.emergentagent.com/api",>> "%USERPROFILE%\MesaPOS\config.json"
+    echo   "api_url": "https://factura-consumo-app.preview.emergentagent.com/api",>> "%USERPROFILE%\MesaPOS\config.json"
     echo   "poll_interval": 3,>> "%USERPROFILE%\MesaPOS\config.json"
     echo   "printers": {>> "%USERPROFILE%\MesaPOS\config.json"
     echo     "kitchen": "",>> "%USERPROFILE%\MesaPOS\config.json"

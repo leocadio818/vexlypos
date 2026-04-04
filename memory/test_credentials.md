@@ -1,7 +1,7 @@
 # Test Credentials
 
 ## POS Login PINs
-- Admin: `10000`
+- Admin: `1000`
 - OSCAR (Cajero): `1111`
 - Carlos (Mesero): `100`
 
