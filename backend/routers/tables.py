@@ -109,6 +109,63 @@ async def delete_decorator(decorator_id: str):
     await db.map_decorators.delete_one({"id": decorator_id})
     return {"ok": True}
 
+# ─── DEVICE-SPECIFIC LAYOUTS (Desktop vs Mobile) ───
+# Stores separate table positions and decorators for each device type per area
+
+class LayoutInput(BaseModel):
+    area_id: str
+    device_type: str  # 'desktop' or 'mobile'
+    tables: list  # [{table_id, x, y, width, height}, ...]
+    decorators: list  # [{id, type, x, y, width, height, color, text}, ...]
+
+@router.get("/layouts/{area_id}/{device_type}")
+async def get_layout(area_id: str, device_type: str):
+    """Get layout for specific device type (desktop/mobile)"""
+    if device_type not in ['desktop', 'mobile']:
+        raise HTTPException(status_code=400, detail="device_type must be 'desktop' or 'mobile'")
+    
+    layout = await db.map_layouts.find_one(
+        {"area_id": area_id, "device_type": device_type},
+        {"_id": 0}
+    )
+    
+    if not layout:
+        # Return null to indicate no custom layout exists
+        return {"exists": False, "area_id": area_id, "device_type": device_type}
+    
+    return {"exists": True, **layout}
+
+@router.put("/layouts/{area_id}/{device_type}")
+async def save_layout(area_id: str, device_type: str, input: dict):
+    """Save layout for specific device type"""
+    if device_type not in ['desktop', 'mobile']:
+        raise HTTPException(status_code=400, detail="device_type must be 'desktop' or 'mobile'")
+    
+    if "_id" in input:
+        del input["_id"]
+    
+    layout_doc = {
+        "area_id": area_id,
+        "device_type": device_type,
+        "tables": input.get("tables", []),
+        "decorators": input.get("decorators", []),
+        "updated_at": now_iso()
+    }
+    
+    await db.map_layouts.update_one(
+        {"area_id": area_id, "device_type": device_type},
+        {"$set": layout_doc},
+        upsert=True
+    )
+    
+    return {"ok": True, "area_id": area_id, "device_type": device_type}
+
+@router.delete("/layouts/{area_id}/{device_type}")
+async def delete_layout(area_id: str, device_type: str):
+    """Delete custom layout for device type (reverts to default)"""
+    await db.map_layouts.delete_one({"area_id": area_id, "device_type": device_type})
+    return {"ok": True}
+
 # ─── TABLES CRUD ───
 @router.get("/tables")
 async def list_tables(area_id: Optional[str] = Query(None)):

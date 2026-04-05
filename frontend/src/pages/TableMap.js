@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { areasAPI, tablesAPI, ncfAPI, decoratorsAPI } from '@/lib/api';
+import { areasAPI, tablesAPI, ncfAPI, decoratorsAPI, layoutsAPI } from '@/lib/api';
 import { Users, Plus, Lock, Unlock, Maximize2, Minus, AlertTriangle, FileText, ChevronRight, Minus as HLine, GripVertical, Square, Circle, Type, Trash2, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -679,6 +679,21 @@ export default function TableMap() {
   // NCF Alerts state
   const [ncfAlerts, setNcfAlerts] = useState({ critical: [], warning: [], has_critical: false, has_warnings: false });
   const [showNcfAlert, setShowNcfAlert] = useState(true);
+  
+  // Layout mode state - tracks which layout is currently active
+  const [layoutMode, setLayoutMode] = useState('desktop'); // 'desktop' or 'mobile'
+  const [mobileLayoutExists, setMobileLayoutExists] = useState(false);
+  
+  // Determine layout mode based on screen width
+  useEffect(() => {
+    const checkLayoutMode = () => {
+      const newMode = window.innerWidth < 768 ? 'mobile' : 'desktop';
+      setLayoutMode(newMode);
+    };
+    checkLayoutMode();
+    window.addEventListener('resize', checkLayoutMode);
+    return () => window.removeEventListener('resize', checkLayoutMode);
+  }, []);
 
   const canMoveTable = hasPermission('move_tables');
   const currentUserId = user?.id;
@@ -707,25 +722,41 @@ export default function TableMap() {
   }, [fetchNcfAlerts]);
 
   // Fetch decorators when area changes
+  // For mobile, use mobile-specific layout if it exists
   const fetchDecorators = useCallback(async () => {
     if (!activeArea) return;
     try {
-      const res = await decoratorsAPI.list(activeArea);
-      setDecorators(res.data || []);
+      if (layoutMode === 'mobile') {
+        // Check if mobile layout exists
+        const layoutRes = await layoutsAPI.get(activeArea, 'mobile');
+        if (layoutRes.data?.exists) {
+          setDecorators(layoutRes.data.decorators || []);
+          setMobileLayoutExists(true);
+          return;
+        }
+        // No mobile layout - show NO decorators on mobile by default
+        setDecorators([]);
+        setMobileLayoutExists(false);
+      } else {
+        // Desktop/tablet: use shared decorators from database
+        const res = await decoratorsAPI.list(activeArea);
+        setDecorators(res.data || []);
+      }
     } catch (err) {
       console.warn('Could not fetch decorators:', err);
     }
-  }, [activeArea]);
+  }, [activeArea, layoutMode]);
 
   useEffect(() => {
     fetchDecorators();
   }, [fetchDecorators]);
 
-  // Decorator handlers
+  // Decorator handlers - save to appropriate layout based on device
   const handleAddDecorator = async (type, defaultW, defaultH) => {
     if (!activeArea) return;
     try {
       const newDecorator = {
+        id: `dec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         area_id: activeArea,
         type,
         x: 40 + Math.random() * 20,
@@ -735,8 +766,18 @@ export default function TableMap() {
         color: '#6B7280',
         text: type === 'text' ? 'Texto' : '',
       };
-      const res = await decoratorsAPI.create(newDecorator);
-      setDecorators(prev => [...prev, res.data]);
+      
+      if (layoutMode === 'mobile') {
+        // Save to mobile layout
+        const updatedDecorators = [...decorators, newDecorator];
+        setDecorators(updatedDecorators);
+        await saveMobileLayout(updatedDecorators);
+        setMobileLayoutExists(true);
+      } else {
+        // Save to shared decorators database (desktop)
+        const res = await decoratorsAPI.create(newDecorator);
+        setDecorators(prev => [...prev, res.data]);
+      }
     } catch (err) {
       console.warn('Error creating decorator:', err);
     }
@@ -744,8 +785,16 @@ export default function TableMap() {
 
   const handleUpdateDecorator = async (id, updates) => {
     try {
-      await decoratorsAPI.update(id, updates);
-      setDecorators(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+      if (layoutMode === 'mobile') {
+        // Update in mobile layout
+        const updatedDecorators = decorators.map(d => d.id === id ? { ...d, ...updates } : d);
+        setDecorators(updatedDecorators);
+        await saveMobileLayout(updatedDecorators);
+      } else {
+        // Update in shared database (desktop)
+        await decoratorsAPI.update(id, updates);
+        setDecorators(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+      }
     } catch (err) {
       console.warn('Error updating decorator:', err);
     }
@@ -753,10 +802,42 @@ export default function TableMap() {
 
   const handleDeleteDecorator = async (id) => {
     try {
-      await decoratorsAPI.delete(id);
-      setDecorators(prev => prev.filter(d => d.id !== id));
+      if (layoutMode === 'mobile') {
+        // Delete from mobile layout
+        const updatedDecorators = decorators.filter(d => d.id !== id);
+        setDecorators(updatedDecorators);
+        await saveMobileLayout(updatedDecorators);
+      } else {
+        // Delete from shared database (desktop)
+        await decoratorsAPI.delete(id);
+        setDecorators(prev => prev.filter(d => d.id !== id));
+      }
     } catch (err) {
       console.warn('Error deleting decorator:', err);
+    }
+  };
+  
+  // Helper to save mobile layout
+  const saveMobileLayout = async (decoratorsData) => {
+    if (!activeArea) return;
+    try {
+      // Get current table positions for mobile
+      const mobileTablePositions = tables
+        .filter(t => t.area_id === activeArea)
+        .map(t => ({
+          table_id: t.id,
+          x: t.mobile_x ?? t.x,
+          y: t.mobile_y ?? t.y,
+          width: t.mobile_width ?? t.width,
+          height: t.mobile_height ?? t.height,
+        }));
+      
+      await layoutsAPI.save(activeArea, 'mobile', {
+        tables: mobileTablePositions,
+        decorators: decoratorsData,
+      });
+    } catch (err) {
+      console.warn('Error saving mobile layout:', err);
     }
   };
 
@@ -768,8 +849,46 @@ export default function TableMap() {
       });
       
       const [areasRes, tablesRes] = await Promise.all([areasAPI.list(), tablesAPI.list()]);
+      let tablesData = tablesRes.data;
+      
+      // If in mobile mode, apply mobile layout positions if they exist
+      if (layoutMode === 'mobile' && activeArea) {
+        try {
+          const layoutRes = await layoutsAPI.get(activeArea, 'mobile');
+          if (layoutRes.data?.exists && layoutRes.data.tables?.length > 0) {
+            // Apply mobile positions to tables
+            const mobilePositions = {};
+            layoutRes.data.tables.forEach(t => {
+              mobilePositions[t.table_id] = t;
+            });
+            tablesData = tablesData.map(table => {
+              const mobilePos = mobilePositions[table.id];
+              if (mobilePos) {
+                return {
+                  ...table,
+                  x: mobilePos.x,
+                  y: mobilePos.y,
+                  width: mobilePos.width ?? table.width,
+                  height: mobilePos.height ?? table.height,
+                };
+              }
+              return table;
+            });
+            setMobileLayoutExists(true);
+          } else {
+            // No mobile layout - use default grid positions for mobile
+            tablesData = applyDefaultMobilePositions(tablesData, activeArea);
+            setMobileLayoutExists(false);
+          }
+        } catch {
+          // If layout fetch fails, use default positions
+          tablesData = applyDefaultMobilePositions(tablesData, activeArea);
+          setMobileLayoutExists(false);
+        }
+      }
+      
       setAreas(areasRes.data);
-      setTables(tablesRes.data);
+      setTables(tablesData);
       // Cache areas for offline use
       try { localStorage.setItem('vexly_areas', JSON.stringify(areasRes.data)); } catch {}
       if (!activeArea && areasRes.data.length > 0) setActiveArea(areasRes.data[0].id);
@@ -784,7 +903,27 @@ export default function TableMap() {
         if (!activeArea && areasData.length > 0) setActiveArea(areasData[0].id);
       }
     }
-  }, [activeArea]);
+  }, [activeArea, layoutMode]);
+  
+  // Generate default grid positions for mobile layout
+  const applyDefaultMobilePositions = (tablesData, areaId) => {
+    const areaTables = tablesData.filter(t => t.area_id === areaId);
+    const otherTables = tablesData.filter(t => t.area_id !== areaId);
+    
+    // Arrange tables in a grid (3 columns for mobile)
+    const cols = 3;
+    const spacing = { x: 30, y: 28 }; // Percentage spacing
+    const startX = 8;
+    const startY = 8;
+    
+    const repositioned = areaTables.map((table, idx) => ({
+      ...table,
+      x: startX + (idx % cols) * spacing.x,
+      y: startY + Math.floor(idx / cols) * spacing.y,
+    }));
+    
+    return [...repositioned, ...otherTables];
+  };
 
   useEffect(() => { fetchData(); }, [fetchData]);
   
@@ -868,8 +1007,32 @@ export default function TableMap() {
 
   const handleDragEnd = async (table, newX, newY) => {
     try {
-      await tablesAPI.update(table.id, { x: newX, y: newY });
-      setTables(prev => prev.map(t => t.id === table.id ? { ...t, x: newX, y: newY } : t));
+      if (layoutMode === 'mobile') {
+        // Save to mobile layout only - don't affect desktop database
+        setTables(prev => prev.map(t => t.id === table.id ? { ...t, x: newX, y: newY } : t));
+        // Save entire mobile layout
+        const updatedTables = tables.map(t => 
+          t.id === table.id ? { ...t, x: newX, y: newY } : t
+        );
+        const mobileTablePositions = updatedTables
+          .filter(t => t.area_id === activeArea)
+          .map(t => ({
+            table_id: t.id,
+            x: t.x,
+            y: t.y,
+            width: t.width,
+            height: t.height,
+          }));
+        await layoutsAPI.save(activeArea, 'mobile', {
+          tables: mobileTablePositions,
+          decorators: decorators,
+        });
+        setMobileLayoutExists(true);
+      } else {
+        // Desktop mode - save to database directly
+        await tablesAPI.update(table.id, { x: newX, y: newY });
+        setTables(prev => prev.map(t => t.id === table.id ? { ...t, x: newX, y: newY } : t));
+      }
     } catch { console.warn('Error moviendo mesa'); }
   };
 
@@ -884,8 +1047,31 @@ export default function TableMap() {
   const handleSaveResize = async () => {
     if (!resizeDialog.table) return;
     try {
-      await tablesAPI.update(resizeDialog.table.id, { width: resizeDialog.width, height: resizeDialog.height });
-      setTables(prev => prev.map(t => t.id === resizeDialog.table.id ? { ...t, width: resizeDialog.width, height: resizeDialog.height } : t));
+      if (layoutMode === 'mobile') {
+        // Save to mobile layout only
+        setTables(prev => prev.map(t => t.id === resizeDialog.table.id ? { ...t, width: resizeDialog.width, height: resizeDialog.height } : t));
+        const updatedTables = tables.map(t => 
+          t.id === resizeDialog.table.id ? { ...t, width: resizeDialog.width, height: resizeDialog.height } : t
+        );
+        const mobileTablePositions = updatedTables
+          .filter(t => t.area_id === activeArea)
+          .map(t => ({
+            table_id: t.id,
+            x: t.x,
+            y: t.y,
+            width: t.width,
+            height: t.height,
+          }));
+        await layoutsAPI.save(activeArea, 'mobile', {
+          tables: mobileTablePositions,
+          decorators: decorators,
+        });
+        setMobileLayoutExists(true);
+      } else {
+        // Desktop mode
+        await tablesAPI.update(resizeDialog.table.id, { width: resizeDialog.width, height: resizeDialog.height });
+        setTables(prev => prev.map(t => t.id === resizeDialog.table.id ? { ...t, width: resizeDialog.width, height: resizeDialog.height } : t));
+      }
       setResizeDialog({ open: false, table: null, width: 80, height: 80 });
     } catch { console.warn('Error actualizando tamaño'); }
   };

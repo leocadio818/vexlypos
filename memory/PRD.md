@@ -51,24 +51,34 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **REGLA**: Modo oscuro usa clases Tailwind originales (sin cambios)
   - Files: `/app/frontend/src/components/Layout.js`, `/app/frontend/src/pages/CashRegister.js`
 
-- **🔒 Table Map Responsive Layout** (DONE - TESTED - **NO MODIFICAR**):
-  - **Problema Original**: El mapa de mesas se veía diferente en móvil vs desktop debido a aspect ratio fijo que dejaba mesas agrupadas en pantallas pequeñas. Las mesas de la fila inferior (3, 5, 8) estaban cortadas en móviles.
-  - **Solución v3 (2026-04-05)**: Comportamiento responsivo adaptado por viewport:
-    - **Móviles (<768px)**: 
-      - Contenedor con `min-h-[500px]` y altura calculada `w * 1.2` para mostrar todas las mesas
-      - Scroll interno habilitado si es necesario (`overflow-auto`, `WebkitOverflowScrolling: touch`)
-      - Posicionamiento `relative` con centrado horizontal
-    - **Tablets (768px-1024px)**: Aspect ratio 16:10, centrado absoluto
-    - **Desktop (>1024px)**: Aspect ratio 16:10, centrado absoluto
-  - **Implementación** (`TableMap.js`):
-    - Líneas 798-844: Cálculo responsivo de altura móvil con `mobileMapHeight = max(w * 1.2, 500, viewportHeight - 220)`
-    - Líneas 960-970: Contenedor con classes condicionales `isMobile ? 'overflow-auto min-h-[500px]' : 'overflow-hidden'`
-    - Líneas 978-995: Área del mapa con `isMobile ? 'relative' : 'absolute'`
-  - **IMPORTANTE**: Los porcentajes en la BD NO se modifican. Solo cambia CÓMO se renderizan en pantalla.
-  - **Resultado**: TODAS las mesas (1-8) visibles en móviles sin scroll requerido
-  - **Testeado**: Safari iOS 390px ✅, Android Chrome 412px ✅, Desktop 1280px ✅
+- **🔒 Table Map - LAYOUTS SEPARADOS Mobile vs Desktop** (DONE - TESTED - **NO MODIFICAR**):
+  - **Feature (2026-04-05)**: Layouts independientes para móvil (<768px) y desktop (≥768px)
+  - **Comportamiento**:
+    - **Desktop/Tablet (≥768px)**: Usa el layout original con posiciones y decoradores de la BD
+    - **Mobile (<768px)**: Layout completamente independiente
+      - Por defecto: Grid de 3 columnas SIN decoradores
+      - Admin puede configurar posiciones y decoradores desde móvil
+      - Cambios en móvil NO afectan desktop y viceversa
+  - **Almacenamiento**:
+    - `map_layouts` collection en MongoDB con `{area_id, device_type, tables, decorators}`
+    - Desktop: usa tablas y decoradores directamente de `tables` y `map_decorators`
+    - Mobile: usa `map_layouts` con `device_type: 'mobile'`
+  - **API Endpoints**:
+    - `GET /api/layouts/{area_id}/{device_type}` - Obtiene layout
+    - `PUT /api/layouts/{area_id}/{device_type}` - Guarda layout
+    - `DELETE /api/layouts/{area_id}/{device_type}` - Elimina layout (revierte a default)
+  - **Detección automática**: `window.innerWidth < 768` determina el modo
+  - **Implementación**:
+    - Backend: `/app/backend/routers/tables.py` líneas 115-175 (CRUD layouts)
+    - Frontend: `/app/frontend/src/pages/TableMap.js` (layoutMode state, fetchData, handlers)
+    - API: `/app/frontend/src/lib/api.js` (layoutsAPI)
+  - **Testeado**: 
+    - Desktop 1280px ✅ Layout original sin cambios
+    - iPad 768px ✅ Layout original (≥768 = desktop)
+    - Safari iOS 390px ✅ Grid default sin decoradores
+    - Android 412px ✅ Grid default sin decoradores
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
-  - **Files**: `/app/frontend/src/pages/TableMap.js`
+  - **Files**: `/app/frontend/src/pages/TableMap.js`, `/app/backend/routers/tables.py`, `/app/frontend/src/lib/api.js`
 
 - **🔒 Map Decorators - Responsive System** (DONE - TESTED - **NO MODIFICAR**):
   - **Feature**: Elementos decorativos para simular el layout físico del restaurante (paredes, muebles, barra, columnas)

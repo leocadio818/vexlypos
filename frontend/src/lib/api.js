@@ -93,6 +93,13 @@ export const decoratorsAPI = {
   delete: (id) => api.delete(`/decorators/${id}`),
 };
 
+// Device-specific Map Layouts (desktop vs mobile)
+export const layoutsAPI = {
+  get: (areaId, deviceType) => api.get(`/layouts/${areaId}/${deviceType}`),
+  save: (areaId, deviceType, data) => api.put(`/layouts/${areaId}/${deviceType}`, data),
+  delete: (areaId, deviceType) => api.delete(`/layouts/${areaId}/${deviceType}`),
+};
+
 // Categories
 export const categoriesAPI = {
   list: () => api.get('/categories'),
