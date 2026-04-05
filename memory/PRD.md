@@ -70,27 +70,27 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`
 
-- **🔒 Map Decorators - Responsive Scaling** (DONE - TESTED - **NO MODIFICAR**):
+- **🔒 Map Decorators - Responsive System** (DONE - TESTED - **NO MODIFICAR**):
   - **Feature**: Elementos decorativos para simular el layout físico del restaurante (paredes, muebles, barra, columnas)
   - **Tipos de decoradores**: Línea horizontal, línea vertical, rectángulo, círculo, texto
-  - **Responsive Fix (2026-04-05)**: 
-    - Agregado `getDecoratorScale()` que escala igual que las mesas según dispositivo
-    - Tamaños mínimos responsivos: `minW` (15px móvil, 18px tablet, 20px desktop), `minH` (8px móvil, 9px tablet, 10px desktop)
-    - Grosor de líneas: 2px en móvil, 3px en tablet/desktop
+  - **Sistema de coordenadas (2026-04-05)**:
+    - Posiciones: Porcentajes del canvas (igual que mesas)
+    - Tamaños: Porcentajes convertidos a "píxeles de referencia" (REF_WIDTH=1200, REF_HEIGHT=700) y luego escalados con `getScale()`
+    - Z-index: 0 en modo normal (detrás de mesas), 10-100 en modo edición
+  - **LIMITACIÓN CONOCIDA**: En móviles, las mesas tienen tamaños mínimos (45x42px) que pueden superponerse a decoradores cercanos. Los decoradores quedan visualmente "detrás" de las mesas en estos casos. **Solución**: Diseñar layouts con espacio suficiente entre mesas y decoradores, o editar decoradores desde el dispositivo móvil.
   - **Implementación**:
     - Backend: `/app/backend/routers/tables.py` líneas 62-112 (CRUD decoradores)
-    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 40-330 (DraggableDecorator con escalado responsivo)
+    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 40-330 (DraggableDecorator)
     - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 850-880 (DecoratorToolbar fuera del canvas)
     - API: `/app/frontend/src/lib/api.js` (decoratorsAPI)
   - **Funcionalidad CRÍTICA (NO TOCAR)**:
     - `pointerEvents: 'auto'` y `zIndex: 9999` en botones delete/color/edit-text
     - `e.stopPropagation()` + `e.preventDefault()` en todos los onClick
-    - Z-index del decorador: 10 (normal), 100 (seleccionado)
     - Toolbar renderizada FUERA del canvas (no flotante sobre mesas)
     - Click para seleccionar → aparecen botones delete 🗑, color 🎨, resize ↗
     - **Botón "T" azul** para editar texto (solo aparece en decoradores tipo texto)
   - **Almacenamiento**: Porcentajes por área (igual que mesas)
-  - **Testeado**: Safari iOS 390px ✅, Android 412px ✅, iPad 768px ✅, Desktop 1280px ✅
+  - **Testeado**: Safari iOS 390px ✅, Android 412px ✅, Desktop 1280px ✅
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`, `/app/backend/routers/tables.py`
 

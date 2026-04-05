@@ -50,23 +50,34 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
   const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0, sizeW: 0, sizeH: 0, moved: false, pointerId: null });
   const nodeRef = useRef(null);
 
-  // Responsive scaling for decorators (same approach as tables)
-  const getDecoratorScale = () => {
+  // Use the SAME scaling logic as tables so positions and sizes align correctly
+  // Tables store positions as % and sizes in pixels, so decorators should too
+  const getScale = () => {
     if (device?.isMobile) return Math.min(containerSize.w / 800, containerSize.h / 500, 1.2);
     if (device?.isTablet) return Math.min(containerSize.w / 1000, containerSize.h / 600, 1.3);
     return Math.min(containerSize.w / 1200, containerSize.h / 700, 1.5);
   };
-  const decoratorScale = getDecoratorScale();
+  const scale = getScale();
   
-  // Minimum sizes scale with device (responsive)
-  const minW = device?.isMobile ? 15 : device?.isTablet ? 18 : 20;
-  const minH = device?.isMobile ? 8 : device?.isTablet ? 9 : 10;
-
-  // Convert percentage to pixels
+  // Reference canvas size (desktop) - used to calculate consistent pixel values
+  const REF_WIDTH = 1200;
+  const REF_HEIGHT = 700;
+  
+  // Convert percentage to pixels using the SAME coordinate system as tables
+  // Position: percentage → pixels (same as tables)
   const pxX = (decorator.x / 100) * containerSize.w;
   const pxY = (decorator.y / 100) * containerSize.h;
-  const pxW = (decorator.width / 100) * containerSize.w;
-  const pxH = (decorator.height / 100) * containerSize.h;
+  
+  // Size: Convert percentage to "reference pixels" then scale (like tables)
+  // This makes decorator sizes scale the same way table sizes do
+  const baseW = (decorator.width / 100) * REF_WIDTH;  // Convert % to reference pixels
+  const baseH = (decorator.height / 100) * REF_HEIGHT;
+  
+  // Apply same scaling as tables
+  const minW = device?.isMobile ? 3 : 5;  // Minimum for lines
+  const minH = device?.isMobile ? 3 : 5;
+  const pxW = Math.max(minW, baseW * scale);
+  const pxH = Math.max(minH, baseH * scale);
 
   useEffect(() => {
     setPos({ x: pxX, y: pxY });
@@ -228,8 +239,10 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
         top: pos.y, 
         width: Math.max(minW, size.w), 
         height: Math.max(minH, size.h),
-        zIndex: editMode ? (isDragging || isSelected ? 100 : 10) : 1,
-        opacity: editMode ? 1 : 0.7,
+        // Decorators are always BEHIND tables (z-index 0 or 1)
+        // This is intentional so tables are always clickable and decorators serve as background elements
+        zIndex: editMode ? (isDragging || isSelected ? 100 : 10) : 0,
+        opacity: editMode ? 1 : 0.75,
         outline: editMode && isSelected ? '3px dashed #FF6600' : 'none',
         outlineOffset: '2px',
         transform: isDragging ? 'scale(1.02)' : 'scale(1)',
@@ -522,8 +535,6 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
   if (isOtherUser && isDivided) colorKey = 'divided_other';
   
   const colors = statusColors[colorKey] || statusColors.free;
-  const pxX = (table.x / 100) * containerSize.w;
-  const pxY = (table.y / 100) * containerSize.h;
   
   // Responsive scaling based on device
   const getScale = () => {
@@ -537,11 +548,16 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
   const baseH = table.height || 80;
   
   // Minimum sizes based on device
-  const minW = device?.isMobile ? 55 : device?.isTablet ? 60 : 50;
-  const minH = device?.isMobile ? 50 : device?.isTablet ? 55 : 45;
+  const minW = device?.isMobile ? 45 : device?.isTablet ? 55 : 50;
+  const minH = device?.isMobile ? 42 : device?.isTablet ? 50 : 45;
   
   const w = Math.max(minW, baseW * scale);
   const h = Math.max(minH, baseH * scale);
+  
+  // Position is the top-left corner (legacy behavior)
+  const pxX = (table.x / 100) * containerSize.w;
+  const pxY = (table.y / 100) * containerSize.h;
+  
   const radius = table.shape === 'round' ? '50%' : table.shape === 'rectangle' ? '12px' : '16px';
   
   // Font sizes based on device
@@ -785,15 +801,8 @@ export default function TableMap() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Responsive aspect ratio for the map canvas
-  // Mobile: uses full available space (no forced aspect ratio)
-  // Tablet: 16:10 aspect ratio
-  // Desktop: 16:10 aspect ratio
-  const getMapAspectRatio = (viewportWidth) => {
-    if (viewportWidth < 768) return null; // Mobile: use full container (no forced ratio)
-    if (viewportWidth < 1024) return 16 / 10; // Tablet
-    return 16 / 10; // Desktop
-  };
+  // Aspect ratio for the map canvas - MUST be identical across all devices for coordinate consistency
+  // Using 16:10 universally ensures decorators and tables align correctly
   
   useEffect(() => {
     const updateSize = () => {
@@ -801,23 +810,22 @@ export default function TableMap() {
         const rect = containerRef.current.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
-        const MAP_ASPECT_RATIO = getMapAspectRatio(viewportWidth);
+        
+        // IMPORTANT: Use the SAME aspect ratio for ALL devices to maintain coordinate consistency
+        // The map coordinate system must be identical across devices for decorators/tables to align
+        const MAP_ASPECT_RATIO = 16 / 10;
         
         let w = rect.width;
         let h = rect.height;
         
-        // Mobile: use full width and calculate height based on content needs
-        if (MAP_ASPECT_RATIO === null) {
+        // Mobile: use full width and calculate proportional height based on SAME aspect ratio
+        if (viewportWidth < 768) {
           // Use full container width with small padding
           w = Math.max(rect.width - 8, rect.width * 0.98);
-          // For mobile, ensure minimum height that can show all tables
-          // Use a taller aspect ratio (closer to 1:1 or even portrait) to fit all content
-          const mobileMapHeight = Math.max(
-            w * 1.2, // Slightly taller than wide to fit tables vertically
-            500, // Absolute minimum
-            viewportHeight - 220 // Leave space for UI elements
-          );
-          h = mobileMapHeight;
+          // Maintain the SAME aspect ratio as desktop for coordinate consistency
+          h = w / MAP_ASPECT_RATIO;
+          // Ensure minimum height for usability
+          h = Math.max(h, 400);
         } else {
           // Tablet/Desktop: maintain aspect ratio
           const currentRatio = w / h;
@@ -957,14 +965,16 @@ export default function TableMap() {
       {/* Table Canvas - Glassmorphism */}
       <div 
         ref={containerRef} 
-        className={`relative backdrop-blur-xl bg-white/5 mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-xl border border-white/10 ${
+        className={`backdrop-blur-xl bg-white/5 mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-xl border border-white/10 ${
           isMobile 
-            ? 'overflow-auto min-h-[500px] flex-1' 
-            : 'overflow-hidden flex-1'
+            ? 'overflow-auto flex-1' 
+            : 'overflow-hidden flex-1 relative'
         }`}
         style={isMobile ? { 
-          maxHeight: 'calc(100vh - 200px)', // Leave space for header, tabs, and nav bar
-          WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
+          minHeight: containerSize.h + 20, // Ensure container is tall enough for content
+          maxHeight: 'calc(100vh - 180px)', // Leave space for header, tabs, and nav bar
+          WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+          position: 'relative'
         } : {}}
         data-testid="table-canvas"
       >
@@ -974,21 +984,18 @@ export default function TableMap() {
           </div>
         )}
         
-        {/* Map area with fixed aspect ratio - positioned based on device */}
+        {/* Map area with fixed aspect ratio - ALWAYS use absolute positioning for consistent coordinates */}
         <div 
-          className={isMobile ? 'relative' : 'absolute'}
+          className="absolute"
           style={{
             width: containerSize.w,
             height: containerSize.h,
-            ...(isMobile ? {
-              // Mobile: relative positioning, centered horizontally
-              margin: '0 auto',
-              minHeight: containerSize.h,
-            } : {
-              // Desktop/Tablet: absolute positioning, centered
-              left: containerSize.actualW ? (containerSize.actualW - containerSize.w) / 2 : 0,
-              top: containerSize.actualH ? (containerSize.actualH - containerSize.h) / 2 : 0,
-            })
+            left: isMobile 
+              ? Math.max(0, (containerSize.actualW - containerSize.w) / 2) 
+              : containerSize.actualW ? (containerSize.actualW - containerSize.w) / 2 : 0,
+            top: isMobile 
+              ? 0 
+              : containerSize.actualH ? (containerSize.actualH - containerSize.h) / 2 : 0,
           }}
         >
           {/* Decorators Layer - BEHIND tables (lower z-index) */}
