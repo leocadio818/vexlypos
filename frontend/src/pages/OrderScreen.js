@@ -2681,8 +2681,27 @@ export default function OrderScreen() {
                 <div className={`relative rounded-2xl border p-5 ${isMinimalist ? 'bg-white border-gray-200' : 'bg-slate-900 border-white/20'}`}>
                   {/* Icon */}
                   <div className="flex justify-center mb-3">
-                    <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
-                      <AlertTriangle size={28} className="text-white" />
+                    <div 
+                      className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${isMinimalist ? '' : 'bg-gradient-to-br from-orange-400 to-red-500'}`}
+                      style={isMinimalist ? {
+                        backgroundColor: '#FEF3C7',
+                        borderRadius: '50%',
+                        width: '56px',
+                        height: '56px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      } : undefined}
+                    >
+                      <AlertTriangle 
+                        size={28} 
+                        className={isMinimalist ? '' : 'text-white'}
+                        style={isMinimalist ? {
+                          color: '#D97706',
+                          WebkitTextFillColor: '#D97706',
+                          opacity: 1
+                        } : undefined}
+                      />
                     </div>
                   </div>
                   
