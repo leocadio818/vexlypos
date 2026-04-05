@@ -68,17 +68,18 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **Tipos de decoradores**: Línea horizontal, línea vertical, rectángulo, círculo, texto
   - **Implementación**:
     - Backend: `/app/backend/routers/tables.py` líneas 62-112 (CRUD decoradores)
-    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 40-330 (DraggableDecorator con selección, delete, color)
+    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 40-330 (DraggableDecorator con selección, delete, color, edit text)
     - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 850-880 (DecoratorToolbar fuera del canvas)
     - API: `/app/frontend/src/lib/api.js` (decoratorsAPI)
   - **Funcionalidad CRÍTICA (NO TOCAR)**:
-    - `pointerEvents: 'auto'` y `zIndex: 9999` en botones delete/color
+    - `pointerEvents: 'auto'` y `zIndex: 9999` en botones delete/color/edit-text
     - `e.stopPropagation()` + `e.preventDefault()` en todos los onClick
     - Z-index del decorador: 10 (normal), 100 (seleccionado)
     - Toolbar renderizada FUERA del canvas (no flotante sobre mesas)
     - Click para seleccionar → aparecen botones delete 🗑, color 🎨, resize ↗
+    - **Botón "T" azul** para editar texto (solo aparece en decoradores tipo texto)
   - **Almacenamiento**: Porcentajes por área (igual que mesas)
-  - **Testeado**: Desktop 1280px ✅, Mobile 390px ✅, Delete ✅, Color picker ✅
+  - **Testeado**: Desktop 1280px ✅, Mobile 390px ✅, Delete ✅, Color picker ✅, Edit Text ✅
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`, `/app/backend/routers/tables.py`
 
@@ -276,13 +277,14 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testeado en**: Desktop, iPad, Android, Safari iOS ✅
 
 ### 2. Map Decorators (`/app/frontend/src/pages/TableMap.js` + `/app/backend/routers/tables.py`)
-- **Líneas 40-330**: Componente `DraggableDecorator` con selección, delete, color picker
+- **Líneas 40-330**: Componente `DraggableDecorator` con selección, delete, color picker, edit text
 - **Líneas 850-880**: `DecoratorToolbar` renderizada FUERA del canvas
 - **Backend líneas 62-112**: CRUD de decoradores
 - **Configuración CRÍTICA**:
-  - `pointerEvents: 'auto'` y `zIndex: 9999` en botones
+  - `pointerEvents: 'auto'` y `zIndex: 9999` en botones (delete, color, edit-text, resize)
   - `e.stopPropagation()` + `e.preventDefault()` en onClick
   - Toolbar NO flotante (fuera del canvas, no sobre las mesas)
-- **Razón**: Los botones delete/color DEBEN funcionar en todos los dispositivos incluyendo Safari iOS
+  - **Botón "T" azul** para editar texto en decoradores tipo texto (líneas 290-310)
+- **Razón**: Los botones delete/color/edit-text DEBEN funcionar en todos los dispositivos incluyendo Safari iOS
 - **Fecha de protección**: 2026-04-05
-- **Testeado en**: Desktop 1280px ✅, Mobile 390px ✅, Delete ✅, Color picker ✅
+- **Testeado en**: Desktop 1280px ✅, Mobile 390px ✅, Delete ✅, Color picker ✅, Edit Text ✅
