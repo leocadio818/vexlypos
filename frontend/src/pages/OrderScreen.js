@@ -2696,11 +2696,49 @@ export default function OrderScreen() {
                   
                   <div className="space-y-1.5 mb-4">
                     {requiredAlert.missingGroups.map((group, index) => (
-                      <div key={group.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${isMinimalist ? 'bg-red-50 border-red-200' : 'bg-red-500/10 border-red-400/30'}`}>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isMinimalist ? 'bg-red-100' : 'bg-red-500/20'}`}>
-                          <span className={`font-bold text-xs ${isMinimalist ? 'text-red-600' : 'text-red-400'}`}>{index + 1}</span>
+                      <div 
+                        key={group.id} 
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${isMinimalist ? '' : 'bg-red-500/10 border-red-400/30'}`}
+                        style={isMinimalist ? {
+                          backgroundColor: '#FEE2E2',
+                          borderRadius: '8px',
+                          padding: '12px',
+                          border: '1px solid #FECACA'
+                        } : undefined}
+                      >
+                        <div 
+                          className={`w-6 h-6 rounded-full flex items-center justify-center ${isMinimalist ? '' : 'bg-red-500/20'}`}
+                          style={isMinimalist ? {
+                            backgroundColor: '#DC2626',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          } : undefined}
+                        >
+                          <span 
+                            className={`font-bold text-xs ${isMinimalist ? '' : 'text-red-400'}`}
+                            style={isMinimalist ? {
+                              color: '#FFFFFF',
+                              WebkitTextFillColor: '#FFFFFF',
+                              opacity: 1,
+                              fontWeight: '700',
+                              fontSize: '12px'
+                            } : undefined}
+                          >{index + 1}</span>
                         </div>
-                        <span className={`text-sm font-medium ${isMinimalist ? 'text-gray-800' : 'text-white'}`}>{group.name}</span>
+                        <span 
+                          className={`text-sm font-medium ${isMinimalist ? '' : 'text-white'}`}
+                          style={isMinimalist ? {
+                            color: '#111827',
+                            WebkitTextFillColor: '#111827',
+                            opacity: 1,
+                            fontWeight: '600',
+                            fontSize: '16px'
+                          } : undefined}
+                        >{group.name}</span>
                       </div>
                     ))}
                   </div>
