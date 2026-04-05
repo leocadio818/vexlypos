@@ -51,15 +51,19 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **REGLA**: Modo oscuro usa clases Tailwind originales (sin cambios)
   - Files: `/app/frontend/src/components/Layout.js`, `/app/frontend/src/pages/CashRegister.js`
 
-- **🔒 Table Map Fixed Aspect Ratio** (DONE - TESTED - **NO MODIFICAR**):
-  - **Problema**: El mapa de mesas se veía diferente en móvil vs desktop debido a diferente aspect ratio del contenedor
-  - **Solución**: Canvas del mapa con aspect ratio fijo 16:10 (1.60), centrado en el contenedor
+- **🔒 Table Map Responsive Layout** (DONE - TESTED - **NO MODIFICAR**):
+  - **Problema Original**: El mapa de mesas se veía diferente en móvil vs desktop debido a aspect ratio fijo que dejaba mesas agrupadas en pantallas pequeñas
+  - **Solución v2 (2026-04-05)**: Comportamiento responsivo adaptado por viewport:
+    - **Móviles (<768px)**: Usa TODO el espacio disponible del contenedor (sin aspect ratio forzado) para máxima distribución de mesas
+    - **Tablets (768px-1024px)**: Aspect ratio 16:10, centrado
+    - **Desktop (>1024px)**: Aspect ratio 16:10, centrado
   - **Implementación** (`TableMap.js`):
-    - Líneas 349-382: Cálculo de dimensiones con aspect ratio fijo `MAP_ASPECT_RATIO = 16 / 10`
-    - Líneas 468-483: Área del mapa centrada dentro del contenedor con `left/top` calculados
-    - Líneas 141-142: Conversión de porcentaje a píxeles `(table.x / 100) * containerSize.w`
-  - **Resultado**: Las mesas mantienen posiciones relativas idénticas en todos los dispositivos
-  - **Testeado**: Desktop 1280px ✅, iPad 768px ✅, Android 412px ✅, Safari iOS 390px ✅
+    - Líneas 774-830: Función `getMapAspectRatio(viewportWidth)` que retorna `null` para móviles (full container) o `16/10` para tablet/desktop
+    - `orientationchange` listener para recalcular en cambios de orientación móvil
+    - Líneas 511-512: Conversión de porcentaje a píxeles `(table.x / 100) * containerSize.w`
+  - **IMPORTANTE**: Los porcentajes en la BD NO se modifican. Solo cambia CÓMO se renderizan en pantalla.
+  - **Resultado**: Las mesas se distribuyen proporcionalmente en TODO el espacio disponible en móviles
+  - **Testeado**: Safari iOS 390px ✅, Android Chrome 412px ✅, iPad 768px ✅, Desktop 1280px ✅
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`
 
@@ -269,12 +273,14 @@ Para cualquier botón/texto invisible en modo claro, usar este patrón:
 
 Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser modificados sin autorización explícita del usuario:
 
-### 1. Table Map Fixed Aspect Ratio (`/app/frontend/src/pages/TableMap.js`)
-- **Líneas 349-382**: Cálculo de `MAP_ASPECT_RATIO = 16 / 10` y dimensiones del canvas
-- **Líneas 468-483**: Área del mapa centrada con `left/top` calculados
-- **Razón**: Garantiza que las mesas se vean en la misma posición relativa en TODOS los dispositivos
-- **Fecha de protección**: 2026-04-05
-- **Testeado en**: Desktop, iPad, Android, Safari iOS ✅
+### 1. Table Map Responsive Layout (`/app/frontend/src/pages/TableMap.js`)
+- **Líneas 774-830**: Función `getMapAspectRatio(viewportWidth)` y cálculo responsivo del canvas
+- **Comportamiento**:
+  - Móviles (<768px): Usa TODO el espacio del contenedor (máxima distribución)
+  - Tablets/Desktop (≥768px): Aspect ratio 16:10 centrado
+- **Razón**: Garantiza que las mesas se distribuyan proporcionalmente en TODOS los dispositivos
+- **Fecha de protección**: 2026-04-05 (actualizado)
+- **Testeado en**: Safari iOS 390px ✅, Android 412px ✅, iPad 768px ✅, Desktop 1280px ✅
 
 ### 2. Map Decorators (`/app/frontend/src/pages/TableMap.js` + `/app/backend/routers/tables.py`)
 - **Líneas 40-330**: Componente `DraggableDecorator` con selección, delete, color picker, edit text

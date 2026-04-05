@@ -771,25 +771,41 @@ export default function TableMap() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Fixed aspect ratio for the map canvas (16:10 for good viewing on all devices)
-  const MAP_ASPECT_RATIO = 16 / 10; // width / height
+  // Responsive aspect ratio for the map canvas
+  // Mobile: uses full available space (no forced aspect ratio)
+  // Tablet: 16:10 aspect ratio
+  // Desktop: 16:10 aspect ratio
+  const getMapAspectRatio = (viewportWidth) => {
+    if (viewportWidth < 768) return null; // Mobile: use full container (no forced ratio)
+    if (viewportWidth < 1024) return 16 / 10; // Tablet
+    return 16 / 10; // Desktop
+  };
   
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        // Calculate the actual usable dimensions while maintaining aspect ratio
+        const viewportWidth = window.innerWidth;
+        const MAP_ASPECT_RATIO = getMapAspectRatio(viewportWidth);
+        
         let w = rect.width;
         let h = rect.height;
         
-        // Adjust to maintain aspect ratio within the container
-        const currentRatio = w / h;
-        if (currentRatio > MAP_ASPECT_RATIO) {
-          // Container is wider than needed - use height as reference
-          w = h * MAP_ASPECT_RATIO;
+        // Mobile: use full container space for maximum distribution
+        if (MAP_ASPECT_RATIO === null) {
+          // Use full container with small padding
+          w = Math.max(rect.width - 8, rect.width * 0.98);
+          h = Math.max(rect.height - 8, rect.height * 0.98);
         } else {
-          // Container is taller than needed - use width as reference
-          h = w / MAP_ASPECT_RATIO;
+          // Tablet/Desktop: maintain aspect ratio
+          const currentRatio = w / h;
+          if (currentRatio > MAP_ASPECT_RATIO) {
+            // Container is wider than needed - use height as reference
+            w = h * MAP_ASPECT_RATIO;
+          } else {
+            // Container is taller than needed - use width as reference
+            h = w / MAP_ASPECT_RATIO;
+          }
         }
         
         setContainerSize({ 
@@ -797,13 +813,20 @@ export default function TableMap() {
           h,
           // Store actual container dimensions for centering
           actualW: rect.width,
-          actualH: rect.height
+          actualH: rect.height,
+          // Pass viewport info for responsive positioning
+          isMobileView: viewportWidth < 768
         });
       }
     };
     updateSize();
     window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    // Also listen for orientation changes on mobile
+    window.addEventListener('orientationchange', () => setTimeout(updateSize, 100));
+    return () => {
+      window.removeEventListener('resize', updateSize);
+      window.removeEventListener('orientationchange', updateSize);
+    };
   }, []);
 
   useEffect(() => {
