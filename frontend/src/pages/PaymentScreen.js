@@ -1985,23 +1985,42 @@ export default function PaymentScreen() {
 
       {/* Print Ticket Dialog */}
       <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
-        <DialogContent className="max-w-md bg-slate-900/95 backdrop-blur-xl border-white/20 p-0 overflow-hidden">
-          <DialogHeader className="p-4 border-b border-white/10">
-            <DialogTitle className="font-oswald text-white flex items-center gap-2">
-              <Check size={20} className="text-green-400" />
+        <DialogContent className={`max-w-md backdrop-blur-xl border p-0 overflow-hidden ${
+          isMinimalist 
+            ? 'bg-white border-gray-200' 
+            : 'bg-slate-900/95 border-white/20'
+        }`}>
+          <DialogHeader className={`p-4 border-b ${isMinimalist ? 'border-gray-200' : 'border-white/10'}`}>
+            <DialogTitle className={`font-oswald flex items-center gap-2 ${isMinimalist ? 'text-gray-900' : 'text-white'}`}>
+              <Check size={20} className="text-green-500" />
               Pago Completado
             </DialogTitle>
           </DialogHeader>
           
           <div className="p-4 space-y-4">
             {/* Success summary */}
-            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
-              <div className="text-green-400 font-oswald text-3xl font-bold mb-1">
+            <div className={`rounded-xl p-4 text-center ${
+              isMinimalist 
+                ? 'bg-green-50 border border-green-200' 
+                : 'bg-green-500/10 border border-green-500/30'
+            }`}>
+              <div 
+                className="font-oswald text-3xl font-bold mb-1"
+                style={isMinimalist ? { color: '#166534', WebkitTextFillColor: '#166534' } : { color: '#4ade80' }}
+              >
                 {formatMoney(paidBill?.total || 0)}
               </div>
-              <p className="text-white/60 text-sm">Pago procesado exitosamente</p>
+              <p 
+                className="text-sm"
+                style={isMinimalist ? { color: '#374151', WebkitTextFillColor: '#374151' } : { color: 'rgba(255,255,255,0.6)' }}
+              >
+                Pago procesado exitosamente
+              </p>
               {change > 0 && (
-                <p className="text-yellow-400 font-bold mt-2">
+                <p 
+                  className="font-bold mt-2"
+                  style={isMinimalist ? { color: '#B45309', WebkitTextFillColor: '#B45309' } : { color: '#facc15' }}
+                >
                   Cambio: {formatMoney(change)}
                 </p>
               )}

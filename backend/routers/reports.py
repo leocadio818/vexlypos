@@ -231,6 +231,30 @@ async def dashboard():
                 "transaction_number": table_orders[0].get("transaction_number") if table_orders else None
             })
     open_tables_list.sort(key=lambda x: x.get("table_number", 0))
+    
+    # Filter out zombie tables: 0 items, 0 consumption, and open for more than 12 hours
+    from datetime import datetime, timedelta, timezone
+    twelve_hours_ago = datetime.now(timezone.utc) - timedelta(hours=12)
+    
+    def is_zombie_table(t):
+        if t.get("items_count", 0) > 0 or t.get("consumption", 0) > 0:
+            return False  # Has items or consumption, not a zombie
+        opened_at = t.get("opened_at", "")
+        if not opened_at:
+            return True  # No opened_at timestamp, consider zombie
+        try:
+            # Parse the timestamp
+            if isinstance(opened_at, str):
+                opened_dt = datetime.fromisoformat(opened_at.replace("Z", "+00:00"))
+            else:
+                opened_dt = opened_at
+            # If opened more than 12 hours ago with 0 items/consumption, it's a zombie
+            return opened_dt < twelve_hours_ago
+        except Exception:
+            return True  # Can't parse timestamp, consider zombie
+    
+    # Remove zombie tables from the list
+    open_tables_list = [t for t in open_tables_list if not is_zombie_table(t)]
 
     # Closed tables today (from paid bills)
     closed_tables_map = {}
