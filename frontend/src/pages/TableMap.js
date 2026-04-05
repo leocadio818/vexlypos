@@ -800,16 +800,24 @@ export default function TableMap() {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
         const MAP_ASPECT_RATIO = getMapAspectRatio(viewportWidth);
         
         let w = rect.width;
         let h = rect.height;
         
-        // Mobile: use full container space for maximum distribution
+        // Mobile: use full width and calculate height based on content needs
         if (MAP_ASPECT_RATIO === null) {
-          // Use full container with small padding
+          // Use full container width with small padding
           w = Math.max(rect.width - 8, rect.width * 0.98);
-          h = Math.max(rect.height - 8, rect.height * 0.98);
+          // For mobile, ensure minimum height that can show all tables
+          // Use a taller aspect ratio (closer to 1:1 or even portrait) to fit all content
+          const mobileMapHeight = Math.max(
+            w * 1.2, // Slightly taller than wide to fit tables vertically
+            500, // Absolute minimum
+            viewportHeight - 220 // Leave space for UI elements
+          );
+          h = mobileMapHeight;
         } else {
           // Tablet/Desktop: maintain aspect ratio
           const currentRatio = w / h;
@@ -947,21 +955,40 @@ export default function TableMap() {
       )}
 
       {/* Table Canvas - Glassmorphism */}
-      <div ref={containerRef} className="flex-1 relative backdrop-blur-xl bg-white/5 mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-xl border border-white/10 overflow-hidden" data-testid="table-canvas">
+      <div 
+        ref={containerRef} 
+        className={`relative backdrop-blur-xl bg-white/5 mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-xl border border-white/10 ${
+          isMobile 
+            ? 'overflow-auto min-h-[500px] flex-1' 
+            : 'overflow-hidden flex-1'
+        }`}
+        style={isMobile ? { 
+          maxHeight: 'calc(100vh - 200px)', // Leave space for header, tabs, and nav bar
+          WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
+        } : {}}
+        data-testid="table-canvas"
+      >
         {editMode && (
           <div className={`absolute top-2 ${isMobile ? 'left-2 right-2 text-center' : 'left-2'} z-50 backdrop-blur-xl bg-white/20 text-white border border-white/30 ${isMobile ? 'text-xs px-3 py-1' : largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
             {isMobile ? 'MODO EDICION' : 'MODO EDICION - Arrastra mesas o decoradores'}
           </div>
         )}
         
-        {/* Map area with fixed aspect ratio - centered in container */}
+        {/* Map area with fixed aspect ratio - positioned based on device */}
         <div 
-          className="absolute"
+          className={isMobile ? 'relative' : 'absolute'}
           style={{
             width: containerSize.w,
             height: containerSize.h,
-            left: containerSize.actualW ? (containerSize.actualW - containerSize.w) / 2 : 0,
-            top: containerSize.actualH ? (containerSize.actualH - containerSize.h) / 2 : 0,
+            ...(isMobile ? {
+              // Mobile: relative positioning, centered horizontally
+              margin: '0 auto',
+              minHeight: containerSize.h,
+            } : {
+              // Desktop/Tablet: absolute positioning, centered
+              left: containerSize.actualW ? (containerSize.actualW - containerSize.w) / 2 : 0,
+              top: containerSize.actualH ? (containerSize.actualH - containerSize.h) / 2 : 0,
+            })
           }}
         >
           {/* Decorators Layer - BEHIND tables (lower z-index) */}

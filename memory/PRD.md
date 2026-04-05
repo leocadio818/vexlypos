@@ -52,18 +52,21 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - Files: `/app/frontend/src/components/Layout.js`, `/app/frontend/src/pages/CashRegister.js`
 
 - **🔒 Table Map Responsive Layout** (DONE - TESTED - **NO MODIFICAR**):
-  - **Problema Original**: El mapa de mesas se veía diferente en móvil vs desktop debido a aspect ratio fijo que dejaba mesas agrupadas en pantallas pequeñas
-  - **Solución v2 (2026-04-05)**: Comportamiento responsivo adaptado por viewport:
-    - **Móviles (<768px)**: Usa TODO el espacio disponible del contenedor (sin aspect ratio forzado) para máxima distribución de mesas
-    - **Tablets (768px-1024px)**: Aspect ratio 16:10, centrado
-    - **Desktop (>1024px)**: Aspect ratio 16:10, centrado
+  - **Problema Original**: El mapa de mesas se veía diferente en móvil vs desktop debido a aspect ratio fijo que dejaba mesas agrupadas en pantallas pequeñas. Las mesas de la fila inferior (3, 5, 8) estaban cortadas en móviles.
+  - **Solución v3 (2026-04-05)**: Comportamiento responsivo adaptado por viewport:
+    - **Móviles (<768px)**: 
+      - Contenedor con `min-h-[500px]` y altura calculada `w * 1.2` para mostrar todas las mesas
+      - Scroll interno habilitado si es necesario (`overflow-auto`, `WebkitOverflowScrolling: touch`)
+      - Posicionamiento `relative` con centrado horizontal
+    - **Tablets (768px-1024px)**: Aspect ratio 16:10, centrado absoluto
+    - **Desktop (>1024px)**: Aspect ratio 16:10, centrado absoluto
   - **Implementación** (`TableMap.js`):
-    - Líneas 774-830: Función `getMapAspectRatio(viewportWidth)` que retorna `null` para móviles (full container) o `16/10` para tablet/desktop
-    - `orientationchange` listener para recalcular en cambios de orientación móvil
-    - Líneas 511-512: Conversión de porcentaje a píxeles `(table.x / 100) * containerSize.w`
+    - Líneas 798-844: Cálculo responsivo de altura móvil con `mobileMapHeight = max(w * 1.2, 500, viewportHeight - 220)`
+    - Líneas 960-970: Contenedor con classes condicionales `isMobile ? 'overflow-auto min-h-[500px]' : 'overflow-hidden'`
+    - Líneas 978-995: Área del mapa con `isMobile ? 'relative' : 'absolute'`
   - **IMPORTANTE**: Los porcentajes en la BD NO se modifican. Solo cambia CÓMO se renderizan en pantalla.
-  - **Resultado**: Las mesas se distribuyen proporcionalmente en TODO el espacio disponible en móviles
-  - **Testeado**: Safari iOS 390px ✅, Android Chrome 412px ✅, iPad 768px ✅, Desktop 1280px ✅
+  - **Resultado**: TODAS las mesas (1-8) visibles en móviles sin scroll requerido
+  - **Testeado**: Safari iOS 390px ✅, Android Chrome 412px ✅, Desktop 1280px ✅
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`
 
