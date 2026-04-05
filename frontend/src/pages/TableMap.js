@@ -43,7 +43,7 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
   const [isResizing, setIsResizing] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [showControls, setShowControls] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [editingText, setEditingText] = useState(false);
   const [textValue, setTextValue] = useState(decorator.text || '');
@@ -61,9 +61,30 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
     setSize({ w: pxW, h: pxH });
   }, [pxX, pxY, pxW, pxH]);
 
+  // Click outside to deselect
+  useEffect(() => {
+    if (!editMode || !isSelected) return;
+    const handleClickOutside = (e) => {
+      if (nodeRef.current && !nodeRef.current.contains(e.target)) {
+        setIsSelected(false);
+        setShowColorPicker(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, [editMode, isSelected]);
+
   const handlePointerDown = (e) => {
     if (!editMode || isResizing) return;
     e.stopPropagation();
+    
+    // Toggle selection on tap/click
+    if (!isSelected) {
+      setIsSelected(true);
+      return;
+    }
+    
+    // Start dragging if already selected
     const d = dragRef.current;
     d.startX = e.clientX; d.startY = e.clientY;
     d.posX = pos.x; d.posY = pos.y;
@@ -182,53 +203,67 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
         top: pos.y, 
         width: Math.max(20, size.w), 
         height: Math.max(10, size.h),
-        zIndex: editMode ? (isDragging ? 50 : 5) : 0,
+        zIndex: editMode ? (isDragging || isSelected ? 50 : 5) : 0,
         opacity: editMode ? 1 : 0.7,
-        outline: editMode && showControls ? '2px dashed #FF6600' : 'none',
+        outline: editMode && isSelected ? '2px dashed #FF6600' : 'none',
         transform: isDragging ? 'scale(1.02)' : 'scale(1)',
         transition: isDragging ? 'none' : 'transform 0.15s',
       }}
       onPointerDown={editMode ? handlePointerDown : undefined}
       onPointerMove={(isDragging || isResizing) ? handlePointerMove : undefined}
       onPointerUp={(isDragging || isResizing) ? handlePointerUp : undefined}
-      onMouseEnter={() => editMode && setShowControls(true)}
-      onMouseLeave={() => { setShowControls(false); setShowColorPicker(false); }}
-      onClick={(e) => editMode && e.stopPropagation()}
       data-testid={`decorator-${decorator.id}`}
     >
       {renderContent()}
       
-      {/* Edit Controls - visible in edit mode on hover/touch */}
-      {editMode && showControls && (
+      {/* Edit Controls - visible when decorator is selected in edit mode */}
+      {editMode && isSelected && (
         <>
           {/* Delete button */}
           <button
-            onClick={(e) => { e.stopPropagation(); onDelete(decorator.id); }}
-            className="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 active:scale-95 z-10"
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              e.preventDefault();
+              onDelete(decorator.id); 
+            }}
+            className="absolute -top-4 -right-4 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 active:scale-95 z-50 border-2 border-white"
             data-testid={`delete-decorator-${decorator.id}`}
           >
-            <Trash2 size={12} />
+            <Trash2 size={14} />
           </button>
           
           {/* Color picker button */}
           <button
-            onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}
-            className="absolute -top-3 -left-3 w-6 h-6 rounded-full bg-white border-2 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 z-10"
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              e.preventDefault();
+              setShowColorPicker(!showColorPicker); 
+            }}
+            className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-white border-2 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 z-50"
             style={{ borderColor: decorator.color }}
+            data-testid={`color-picker-${decorator.id}`}
           >
-            <Palette size={12} style={{ color: decorator.color }} />
+            <Palette size={14} style={{ color: decorator.color }} />
           </button>
           
           {/* Color picker dropdown */}
           {showColorPicker && (
-            <div className="absolute -left-3 top-5 bg-slate-800 rounded-lg p-2 shadow-xl z-20 flex gap-1">
+            <div 
+              className="absolute left-0 top-8 bg-slate-800 rounded-lg p-2 shadow-2xl z-[60] flex gap-2 border border-white/20"
+              onClick={(e) => e.stopPropagation()}
+            >
               {DECORATOR_COLORS.map(c => (
                 <button
                   key={c.value}
-                  onClick={(e) => { e.stopPropagation(); handleColorChange(c.value); }}
-                  className="w-6 h-6 rounded-full border-2 border-white/20 hover:scale-110 active:scale-95"
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    e.preventDefault();
+                    handleColorChange(c.value); 
+                  }}
+                  className="w-8 h-8 rounded-full border-2 border-white/30 hover:scale-110 active:scale-95 transition-transform"
                   style={{ backgroundColor: c.value }}
                   title={c.name}
+                  data-testid={`color-${c.name.toLowerCase()}`}
                 />
               ))}
             </div>
@@ -236,57 +271,25 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
           
           {/* Resize handle */}
           <div
-            className="absolute -bottom-2 -right-2 w-5 h-5 bg-primary rounded-br-lg cursor-se-resize flex items-center justify-center"
+            className="absolute -bottom-3 -right-3 w-7 h-7 bg-primary rounded-lg cursor-se-resize flex items-center justify-center z-50 border-2 border-white shadow-lg"
             onPointerDown={handleResizeStart}
             onPointerMove={isResizing ? handlePointerMove : undefined}
             onPointerUp={isResizing ? handlePointerUp : undefined}
           >
-            <Maximize2 size={10} className="text-white" />
+            <Maximize2 size={12} className="text-white" />
           </div>
         </>
-      )}
-      
-      {/* Touch: show controls on tap in edit mode */}
-      {editMode && !showControls && device?.isMobile && (
-        <div 
-          className="absolute inset-0"
-          onClick={(e) => { e.stopPropagation(); setShowControls(true); }}
-        />
       )}
     </div>
   );
 }
 
-// Decorator Toolbar Component
+// Decorator Toolbar Component - FIXED: Now positioned outside the map canvas
 function DecoratorToolbar({ onAddDecorator, visible, isMobile }) {
   if (!visible) return null;
   
-  return (
-    <div 
-      className={`absolute z-40 backdrop-blur-xl bg-slate-900/95 border border-primary/50 rounded-xl shadow-2xl ${
-        isMobile 
-          ? 'bottom-20 left-2 right-2 p-3 flex justify-around' 
-          : 'top-14 right-3 p-3 flex flex-row gap-2'
-      }`}
-      data-testid="decorator-toolbar"
-    >
-      <span className={`text-white/60 font-oswald text-xs ${isMobile ? 'hidden' : 'mr-2 self-center'}`}>DECORADORES:</span>
-      {DECORATOR_TYPES.map(dt => (
-        <button
-          key={dt.type}
-          onClick={() => onAddDecorator(dt.type, dt.defaultW, dt.defaultH)}
-          className={`flex items-center gap-1.5 rounded-lg font-medium transition-all active:scale-95 text-white/80 hover:text-white hover:bg-white/20 border border-transparent hover:border-primary/50 ${
-            isMobile ? 'flex-col px-3 py-2 text-xs' : 'px-3 py-2 text-xs'
-          }`}
-          data-testid={`add-${dt.type}`}
-          title={dt.label}
-        >
-          <dt.icon size={isMobile ? 20 : 18} className="text-primary" />
-          <span className={isMobile ? 'text-[10px]' : 'hidden sm:inline'}>{dt.label.split(' ')[0]}</span>
-        </button>
-      ))}
-    </div>
-  );
+  // This component renders OUTSIDE the map canvas as a separate bar
+  return null; // Rendered separately in the main component
 }
 
 // Generate chair/seat positions around the table - as small semicircles attached to the table edge
@@ -784,20 +787,39 @@ export default function TableMap() {
         ))}
       </div>
 
+      {/* Decorator Toolbar - OUTSIDE the map canvas, only in edit mode */}
+      {editMode && (
+        <div 
+          className={`mx-2 sm:mx-4 mb-1 backdrop-blur-xl bg-slate-900/95 border border-primary/50 rounded-xl shadow-lg flex items-center ${
+            isMobile ? 'justify-around p-2' : 'justify-start gap-2 px-4 py-2'
+          }`}
+          data-testid="decorator-toolbar"
+        >
+          <span className={`text-primary font-oswald text-xs font-bold ${isMobile ? 'hidden' : 'mr-3'}`}>DECORADORES:</span>
+          {DECORATOR_TYPES.map(dt => (
+            <button
+              key={dt.type}
+              onClick={() => handleAddDecorator(dt.type, dt.defaultW, dt.defaultH)}
+              className={`flex items-center gap-1.5 rounded-lg font-medium transition-all active:scale-95 text-white/80 hover:text-white hover:bg-white/20 border border-transparent hover:border-primary/50 ${
+                isMobile ? 'flex-col px-2 py-1.5 text-xs' : 'px-3 py-1.5 text-xs'
+              }`}
+              data-testid={`add-${dt.type}`}
+              title={dt.label}
+            >
+              <dt.icon size={isMobile ? 18 : 16} className="text-primary" />
+              <span className="text-[10px]">{dt.label.split(' ')[0]}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Table Canvas - Glassmorphism */}
-      <div ref={containerRef} className="flex-1 relative backdrop-blur-xl bg-white/5 mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-b-xl rounded-tr-xl border border-white/10 overflow-hidden" data-testid="table-canvas">
+      <div ref={containerRef} className="flex-1 relative backdrop-blur-xl bg-white/5 mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-xl border border-white/10 overflow-hidden" data-testid="table-canvas">
         {editMode && (
           <div className={`absolute top-2 ${isMobile ? 'left-2 right-2 text-center' : 'left-2'} z-50 backdrop-blur-xl bg-white/20 text-white border border-white/30 ${isMobile ? 'text-xs px-3 py-1' : largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
             {isMobile ? 'MODO EDICION' : 'MODO EDICION - Arrastra mesas o decoradores'}
           </div>
         )}
-        
-        {/* Decorator Toolbar - only visible in edit mode */}
-        <DecoratorToolbar 
-          onAddDecorator={handleAddDecorator} 
-          visible={editMode} 
-          isMobile={isMobile} 
-        />
         
         {/* Map area with fixed aspect ratio - centered in container */}
         <div 
