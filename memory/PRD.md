@@ -19,7 +19,7 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ## Completed Tasks (2026-04-05)
 
-- **🔧 CRITICAL BUG FIX: Mobile Decorator Panel JavaScript Error** (DONE - 2026-04-05):
+- **🔒 CRITICAL BUG FIX: Mobile Decorator Panel JavaScript Error** (DONE - 2026-04-05 - **NO MODIFICAR**):
   - **Issue**: User reported app crashing on Safari iOS with error overlay: `"Can't find variable: setSelected"` in `handleClickOutside`
   - **Root Cause**: The `DraggableDecorator` component used `setIsSelected()` which didn't exist. The code had `setLocalSelected` for desktop and `onSelect` for mobile, but the `handleClickOutside` useEffect incorrectly called `setIsSelected`.
   - **Fix**: Updated `handleClickOutside` in `/app/frontend/src/pages/TableMap.js` (lines 205-230):
@@ -29,8 +29,8 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
     - Added check to NOT deselect when clicking on `MobileDecoratorControlPanel`
   - **Also Fixed**: `handleSelect` function now uses the correct method based on `isMobileLayout`
   - **Verification**: App loads without JavaScript errors, decorator panel functions correctly
-  - **⚠️ USER MUST DEPLOY** to verify fix on Safari iOS in production
-  - **File**: `/app/frontend/src/pages/TableMap.js`
+  - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
+  - **File**: `/app/frontend/src/pages/TableMap.js` (lines 205-235)
 
 - **Centro de Ayuda In-App + PDFs Descargables** (DONE):
   - Creada página `/help` con manuales interactivos por rol
