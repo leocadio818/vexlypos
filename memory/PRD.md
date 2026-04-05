@@ -37,6 +37,20 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - Frontend: Botones "Descargar PDF" en Centro de Ayuda con URLs correctas
   - Files: `/app/backend/routers/manuales.py`, `/app/backend/server.py`, `/app/frontend/src/pages/Help.js`
 
+- **Light Mode Contrast Fixes - Safari iOS Compatible** (DONE):
+  - **PATRÓN OBLIGATORIO**: Usar `style={isMinimalist ? {...} : {}}` con `WebkitTextFillColor` para Safari iOS
+  - **Modal "Funciones de Mesa"** (`Layout.js` líneas 802-847):
+    - Botón "Dividir Cuenta": `bg: #F0FDF4`, `border: #22C55E`, `text: #166534`, `icon: #16A34A`
+    - Botón "Anular Cuenta Entera": `bg: #FEF2F2`, `border: #EF4444`, `text: #991B1B`, `icon: #DC2626`
+  - **Modal "Abrir Turno"** (`CashRegister.js` líneas 831-930):
+    - Botón terminal "En uso": `bg: #FEE2E2`, `border: #EF4444`, `text: #991B1B` (bold)
+    - Subtexto "En uso: Admin": `color: #B91C1C`, `fontSize: 12px`
+    - Botón terminal disponible: `bg: #F3F4F6`, `border: #D1D5DB`, `text: #374151`
+    - Botón terminal seleccionado: `bg: #FEF3C7`, `border: #F59E0B`, `text: #92400E`
+  - **REGLA**: Siempre usar `WebkitTextFillColor` + `opacity: 1` para texto en modo claro Safari
+  - **REGLA**: Modo oscuro usa clases Tailwind originales (sin cambios)
+  - Files: `/app/frontend/src/components/Layout.js`, `/app/frontend/src/pages/CashRegister.js`
+
 ## Completed Tasks (2026-04-04)
 - **Light Mode Contrast Audit Fix** (DONE):
   - Added 164+ CSS rules with `:not(.neo-dark)` selector to fix light mode only
@@ -193,3 +207,26 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - Radix ScrollArea fix: `[&_[data-radix-scroll-area-viewport]>div]:!block`
 - Mobile detection: `device?.isMobile` from useAuth() (width < 768px)
 - The Factory HKA sandbox: shared environment, NCFs get consumed by other users. Start counters at 100+
+
+### Light Mode Fix Pattern (Safari iOS)
+Para cualquier botón/texto invisible en modo claro, usar este patrón:
+```jsx
+<button
+  style={isMinimalist ? {
+    backgroundColor: '#COLORHEX',
+    border: '1.5px solid #COLORHEX'
+  } : {}}
+  className={`...base-classes ${!isMinimalist ? 'dark-mode-tailwind-classes' : 'hover:opacity-80'}`}
+>
+  <Icon style={isMinimalist ? { color: '#COLORHEX' } : {}} className={!isMinimalist ? 'text-color-class' : ''} />
+  <span style={isMinimalist ? { color: '#HEX', WebkitTextFillColor: '#HEX', opacity: 1 } : {}}>
+    Texto
+  </span>
+</button>
+```
+**Paleta de colores modo claro:**
+- Verde (success): bg `#F0FDF4`, border `#22C55E`, text `#166534`, icon `#16A34A`
+- Rojo (danger): bg `#FEF2F2`, border `#EF4444`, text `#991B1B`, icon `#DC2626`
+- Rojo (en uso): bg `#FEE2E2`, border `#EF4444`, text `#991B1B`
+- Amber (selected): bg `#FEF3C7`, border `#F59E0B`, text `#92400E`
+- Gray (default): bg `#F3F4F6`, border `#D1D5DB`, text `#374151`
