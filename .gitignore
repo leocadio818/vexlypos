@@ -30,13 +30,11 @@ next-env.d.ts
 dist/
 dist
 
-# Environment files
-*.env
-*.env.*
+# Sensitive credentials (NOT .env files - those are needed for deployment)
 *token.json*
 *credentials.json*
 
-# Sensitive files
+# Test credentials
 memory/test_credentials.md
 
 # Logs and debug files
@@ -86,78 +84,8 @@ android-sdk/
 
 # Reference
 _referencia_dolibarr/
-frontend/node_modules/.cache/default-development/14.pack
-frontend/node_modules/.cache/default-development/43.pack
-frontend/node_modules/.cache/default-development/9.pack
-frontend/node_modules/.cache/default-development/0.pack
-frontend/node_modules/.cache/default-development/18.pack
-frontend/node_modules/.cache/default-development/4.pack
-frontend/node_modules/.cache/default-development/45.pack
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/5.pack
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/8.pack
-frontend/node_modules/.cache/default-development/6.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/12.pack
-frontend/node_modules/.cache/default-development/11.pack
--e 
-# Environment files
-*.env
-*.env.*
 frontend/node_modules/.cache/default-development/13.pack
-frontend/node_modules/.cache/default-development/15.pack
-frontend/node_modules/.cache/default-development/16.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/20.pack
-frontend/node_modules/.cache/default-development/10.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/1.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/3.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/7.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/17.pack
-frontend/node_modules/.cache/default-development/17.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/2.pack
--e 
-# Environment files
-*.env
-*.env.*
+frontend/node_modules/.cache/default-development/6.pack
+frontend/node_modules/.cache/default-development/43.pack
+frontend/node_modules/.cache/default-development/0.pack
+frontend/node_modules/.cache/default-development/45.pack
