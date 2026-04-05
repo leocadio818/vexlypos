@@ -85,6 +85,14 @@ export const tablesAPI = {
   delete: (id) => api.delete(`/tables/${id}`),
 };
 
+// Map Decorators
+export const decoratorsAPI = {
+  list: (areaId) => api.get('/decorators', { params: areaId ? { area_id: areaId } : {} }),
+  create: (data) => api.post('/decorators', data),
+  update: (id, data) => api.put(`/decorators/${id}`, data),
+  delete: (id) => api.delete(`/decorators/${id}`),
+};
+
 // Categories
 export const categoriesAPI = {
   list: () => api.get('/categories'),

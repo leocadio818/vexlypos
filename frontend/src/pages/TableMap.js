@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { areasAPI, tablesAPI, ncfAPI } from '@/lib/api';
-import { Users, Plus, Lock, Unlock, Maximize2, Minus, AlertTriangle, FileText, ChevronRight } from 'lucide-react';
+import { areasAPI, tablesAPI, ncfAPI, decoratorsAPI } from '@/lib/api';
+import { Users, Plus, Lock, Unlock, Maximize2, Minus, AlertTriangle, FileText, ChevronRight, Minus as HLine, GripVertical, Square, Circle, Type, Trash2, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
@@ -17,6 +17,275 @@ const statusColors = {
   divided: { border: '#FF6600', bg: 'rgba(255,102,0,0.25)', glow: 'rgba(255,102,0,0.5)' }, // Naranja para dividida
   divided_other: { border: '#F9A825', bg: 'rgba(249,168,37,0.25)', glow: 'rgba(249,168,37,0.5)' }, // Amarillo para dividida de otros
 };
+
+// Decorator color presets
+const DECORATOR_COLORS = [
+  { name: 'Gris', value: '#6B7280' },
+  { name: 'Negro', value: '#1F2937' },
+  { name: 'Marrón', value: '#92400E' },
+  { name: 'Verde', value: '#166534' },
+  { name: 'Azul', value: '#1E40AF' },
+  { name: 'Rojo', value: '#991B1B' },
+];
+
+// Decorator types
+const DECORATOR_TYPES = [
+  { type: 'hline', icon: HLine, label: '― Línea H', defaultW: 15, defaultH: 0.5 },
+  { type: 'vline', icon: GripVertical, label: '| Línea V', defaultW: 0.5, defaultH: 15 },
+  { type: 'rect', icon: Square, label: '□ Rectángulo', defaultW: 12, defaultH: 8 },
+  { type: 'circle', icon: Circle, label: '○ Círculo', defaultW: 5, defaultH: 5 },
+  { type: 'text', icon: Type, label: 'T Texto', defaultW: 10, defaultH: 3 },
+];
+
+// Draggable Decorator Component
+function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, editMode, device }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const [showControls, setShowControls] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [editingText, setEditingText] = useState(false);
+  const [textValue, setTextValue] = useState(decorator.text || '');
+  const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0, sizeW: 0, sizeH: 0, moved: false, pointerId: null });
+  const nodeRef = useRef(null);
+
+  // Convert percentage to pixels
+  const pxX = (decorator.x / 100) * containerSize.w;
+  const pxY = (decorator.y / 100) * containerSize.h;
+  const pxW = (decorator.width / 100) * containerSize.w;
+  const pxH = (decorator.height / 100) * containerSize.h;
+
+  useEffect(() => {
+    setPos({ x: pxX, y: pxY });
+    setSize({ w: pxW, h: pxH });
+  }, [pxX, pxY, pxW, pxH]);
+
+  const handlePointerDown = (e) => {
+    if (!editMode || isResizing) return;
+    e.stopPropagation();
+    const d = dragRef.current;
+    d.startX = e.clientX; d.startY = e.clientY;
+    d.posX = pos.x; d.posY = pos.y;
+    d.moved = false; d.pointerId = e.pointerId;
+    setIsDragging(true);
+    nodeRef.current?.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDragging && !isResizing) return;
+    const d = dragRef.current;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    
+    if (isDragging) {
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) d.moved = true;
+      if (d.moved) {
+        setPos({ 
+          x: Math.max(0, Math.min(containerSize.w - size.w, d.posX + dx)), 
+          y: Math.max(0, Math.min(containerSize.h - size.h, d.posY + dy)) 
+        });
+      }
+    } else if (isResizing) {
+      const newW = Math.max(10, d.sizeW + dx);
+      const newH = Math.max(10, d.sizeH + dy);
+      setSize({ w: newW, h: newH });
+    }
+  };
+
+  const handlePointerUp = () => {
+    const d = dragRef.current;
+    if (isDragging && d.moved) {
+      onUpdate(decorator.id, { 
+        x: Math.max(0, Math.min(95, (pos.x / containerSize.w) * 100)), 
+        y: Math.max(0, Math.min(95, (pos.y / containerSize.h) * 100))
+      });
+    }
+    if (isResizing) {
+      onUpdate(decorator.id, { 
+        width: Math.max(1, (size.w / containerSize.w) * 100),
+        height: Math.max(1, (size.h / containerSize.h) * 100)
+      });
+    }
+    setIsDragging(false);
+    setIsResizing(false);
+    try { nodeRef.current?.releasePointerCapture(d.pointerId); } catch {}
+  };
+
+  const handleResizeStart = (e) => {
+    if (!editMode) return;
+    e.stopPropagation();
+    const d = dragRef.current;
+    d.startX = e.clientX; d.startY = e.clientY;
+    d.sizeW = size.w; d.sizeH = size.h;
+    d.pointerId = e.pointerId;
+    setIsResizing(true);
+    e.target?.setPointerCapture(e.pointerId);
+  };
+
+  const handleColorChange = (color) => {
+    onUpdate(decorator.id, { color });
+    setShowColorPicker(false);
+  };
+
+  const handleTextSave = () => {
+    onUpdate(decorator.id, { text: textValue });
+    setEditingText(false);
+  };
+
+  const renderContent = () => {
+    const minDim = device?.isMobile ? 12 : 14;
+    switch (decorator.type) {
+      case 'hline':
+        return <div className="w-full h-full rounded-sm" style={{ backgroundColor: decorator.color, minHeight: 3 }} />;
+      case 'vline':
+        return <div className="w-full h-full rounded-sm" style={{ backgroundColor: decorator.color, minWidth: 3 }} />;
+      case 'rect':
+        return <div className="w-full h-full rounded-lg border-2" style={{ borderColor: decorator.color, backgroundColor: `${decorator.color}20` }} />;
+      case 'circle':
+        return <div className="w-full h-full rounded-full border-2" style={{ borderColor: decorator.color, backgroundColor: `${decorator.color}20` }} />;
+      case 'text':
+        if (editMode && editingText) {
+          return (
+            <input
+              type="text"
+              value={textValue}
+              onChange={(e) => setTextValue(e.target.value)}
+              onBlur={handleTextSave}
+              onKeyDown={(e) => e.key === 'Enter' && handleTextSave()}
+              autoFocus
+              className="w-full h-full bg-transparent text-center font-oswald font-bold outline-none"
+              style={{ color: decorator.color, fontSize: Math.max(minDim, size.h * 0.6) }}
+            />
+          );
+        }
+        return (
+          <span 
+            className="font-oswald font-bold text-center w-full truncate px-1"
+            style={{ color: decorator.color, fontSize: Math.max(minDim, size.h * 0.6) }}
+            onDoubleClick={() => editMode && setEditingText(true)}
+          >
+            {decorator.text || 'Texto'}
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div
+      ref={nodeRef}
+      className={`absolute flex items-center justify-center select-none ${editMode ? 'cursor-grab' : 'pointer-events-none'}`}
+      style={{
+        left: pos.x, 
+        top: pos.y, 
+        width: Math.max(20, size.w), 
+        height: Math.max(10, size.h),
+        zIndex: editMode ? (isDragging ? 50 : 5) : 0,
+        opacity: editMode ? 1 : 0.7,
+        outline: editMode && showControls ? '2px dashed #FF6600' : 'none',
+        transform: isDragging ? 'scale(1.02)' : 'scale(1)',
+        transition: isDragging ? 'none' : 'transform 0.15s',
+      }}
+      onPointerDown={editMode ? handlePointerDown : undefined}
+      onPointerMove={(isDragging || isResizing) ? handlePointerMove : undefined}
+      onPointerUp={(isDragging || isResizing) ? handlePointerUp : undefined}
+      onMouseEnter={() => editMode && setShowControls(true)}
+      onMouseLeave={() => { setShowControls(false); setShowColorPicker(false); }}
+      onClick={(e) => editMode && e.stopPropagation()}
+      data-testid={`decorator-${decorator.id}`}
+    >
+      {renderContent()}
+      
+      {/* Edit Controls - visible in edit mode on hover/touch */}
+      {editMode && showControls && (
+        <>
+          {/* Delete button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(decorator.id); }}
+            className="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 active:scale-95 z-10"
+            data-testid={`delete-decorator-${decorator.id}`}
+          >
+            <Trash2 size={12} />
+          </button>
+          
+          {/* Color picker button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}
+            className="absolute -top-3 -left-3 w-6 h-6 rounded-full bg-white border-2 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 z-10"
+            style={{ borderColor: decorator.color }}
+          >
+            <Palette size={12} style={{ color: decorator.color }} />
+          </button>
+          
+          {/* Color picker dropdown */}
+          {showColorPicker && (
+            <div className="absolute -left-3 top-5 bg-slate-800 rounded-lg p-2 shadow-xl z-20 flex gap-1">
+              {DECORATOR_COLORS.map(c => (
+                <button
+                  key={c.value}
+                  onClick={(e) => { e.stopPropagation(); handleColorChange(c.value); }}
+                  className="w-6 h-6 rounded-full border-2 border-white/20 hover:scale-110 active:scale-95"
+                  style={{ backgroundColor: c.value }}
+                  title={c.name}
+                />
+              ))}
+            </div>
+          )}
+          
+          {/* Resize handle */}
+          <div
+            className="absolute -bottom-2 -right-2 w-5 h-5 bg-primary rounded-br-lg cursor-se-resize flex items-center justify-center"
+            onPointerDown={handleResizeStart}
+            onPointerMove={isResizing ? handlePointerMove : undefined}
+            onPointerUp={isResizing ? handlePointerUp : undefined}
+          >
+            <Maximize2 size={10} className="text-white" />
+          </div>
+        </>
+      )}
+      
+      {/* Touch: show controls on tap in edit mode */}
+      {editMode && !showControls && device?.isMobile && (
+        <div 
+          className="absolute inset-0"
+          onClick={(e) => { e.stopPropagation(); setShowControls(true); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Decorator Toolbar Component
+function DecoratorToolbar({ onAddDecorator, visible, isMobile }) {
+  if (!visible) return null;
+  
+  return (
+    <div 
+      className={`absolute z-40 backdrop-blur-xl bg-slate-900/90 border border-white/20 rounded-xl shadow-2xl ${
+        isMobile 
+          ? 'bottom-16 left-2 right-2 p-2 flex justify-around' 
+          : 'top-12 left-2 p-2 flex flex-col gap-1'
+      }`}
+      data-testid="decorator-toolbar"
+    >
+      {DECORATOR_TYPES.map(dt => (
+        <button
+          key={dt.type}
+          onClick={() => onAddDecorator(dt.type, dt.defaultW, dt.defaultH)}
+          className={`flex items-center gap-2 rounded-lg font-medium transition-all active:scale-95 text-white/80 hover:text-white hover:bg-white/10 ${
+            isMobile ? 'flex-col px-3 py-2 text-xs' : 'px-3 py-2 text-sm'
+          }`}
+          data-testid={`add-${dt.type}`}
+        >
+          <dt.icon size={isMobile ? 18 : 16} />
+          <span className={isMobile ? 'text-[10px]' : ''}>{isMobile ? dt.label.split(' ')[0] : dt.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 // Generate chair/seat positions around the table - as small semicircles attached to the table edge
 const getChairPositions = (capacity, shape) => {
@@ -267,6 +536,7 @@ function DraggableTable({ table, containerSize, onDragEnd, onClick, editMode, on
 export default function TableMap() {
   const [areas, setAreas] = useState([]);
   const [tables, setTables] = useState([]);
+  const [decorators, setDecorators] = useState([]);
   const [activeArea, setActiveArea] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [resizeDialog, setResizeDialog] = useState({ open: false, table: null, width: 80, height: 80 });
@@ -304,6 +574,60 @@ export default function TableMap() {
     const interval = setInterval(fetchNcfAlerts, 5 * 60 * 1000); // 5 minutes
     return () => clearInterval(interval);
   }, [fetchNcfAlerts]);
+
+  // Fetch decorators when area changes
+  const fetchDecorators = useCallback(async () => {
+    if (!activeArea) return;
+    try {
+      const res = await decoratorsAPI.list(activeArea);
+      setDecorators(res.data || []);
+    } catch (err) {
+      console.warn('Could not fetch decorators:', err);
+    }
+  }, [activeArea]);
+
+  useEffect(() => {
+    fetchDecorators();
+  }, [fetchDecorators]);
+
+  // Decorator handlers
+  const handleAddDecorator = async (type, defaultW, defaultH) => {
+    if (!activeArea) return;
+    try {
+      const newDecorator = {
+        area_id: activeArea,
+        type,
+        x: 40 + Math.random() * 20,
+        y: 40 + Math.random() * 20,
+        width: defaultW,
+        height: defaultH,
+        color: '#6B7280',
+        text: type === 'text' ? 'Texto' : '',
+      };
+      const res = await decoratorsAPI.create(newDecorator);
+      setDecorators(prev => [...prev, res.data]);
+    } catch (err) {
+      console.warn('Error creating decorator:', err);
+    }
+  };
+
+  const handleUpdateDecorator = async (id, updates) => {
+    try {
+      await decoratorsAPI.update(id, updates);
+      setDecorators(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+    } catch (err) {
+      console.warn('Error updating decorator:', err);
+    }
+  };
+
+  const handleDeleteDecorator = async (id) => {
+    try {
+      await decoratorsAPI.delete(id);
+      setDecorators(prev => prev.filter(d => d.id !== id));
+    } catch (err) {
+      console.warn('Error deleting decorator:', err);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -461,10 +785,18 @@ export default function TableMap() {
       {/* Table Canvas - Glassmorphism */}
       <div ref={containerRef} className="flex-1 relative backdrop-blur-xl bg-white/5 mx-2 sm:mx-4 mb-2 sm:mb-4 rounded-b-xl rounded-tr-xl border border-white/10 overflow-hidden" data-testid="table-canvas">
         {editMode && (
-          <div className={`absolute top-2 left-2 z-50 backdrop-blur-xl bg-white/20 text-white border border-white/30 ${isMobile ? 'text-xs px-3 py-1' : largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
-            {isMobile ? 'MODO EDICION' : 'MODO EDICION - Arrastra o toca para redimensionar'}
+          <div className={`absolute top-2 ${isMobile ? 'left-2 right-2 text-center' : 'left-2'} z-50 backdrop-blur-xl bg-white/20 text-white border border-white/30 ${isMobile ? 'text-xs px-3 py-1' : largeMode ? 'text-sm px-4 py-2' : 'text-xs px-3 py-1.5'} rounded-full font-oswald tracking-wider animate-pulse`}>
+            {isMobile ? 'MODO EDICION' : 'MODO EDICION - Arrastra mesas o decoradores'}
           </div>
         )}
+        
+        {/* Decorator Toolbar - only visible in edit mode */}
+        <DecoratorToolbar 
+          onAddDecorator={handleAddDecorator} 
+          visible={editMode} 
+          isMobile={isMobile} 
+        />
+        
         {/* Map area with fixed aspect ratio - centered in container */}
         <div 
           className="absolute"
@@ -475,13 +807,27 @@ export default function TableMap() {
             top: containerSize.actualH ? (containerSize.actualH - containerSize.h) / 2 : 0,
           }}
         >
+          {/* Decorators Layer - BEHIND tables (lower z-index) */}
+          {decorators.filter(d => d.area_id === activeArea).map(decorator => (
+            <DraggableDecorator
+              key={decorator.id}
+              decorator={decorator}
+              containerSize={containerSize}
+              onUpdate={handleUpdateDecorator}
+              onDelete={handleDeleteDecorator}
+              editMode={editMode}
+              device={device}
+            />
+          ))}
+          
+          {/* Tables Layer - ON TOP of decorators */}
           {containerSize.w > 0 && filteredTables.map(table => (
             <DraggableTable key={table.id} table={table} containerSize={containerSize}
               onDragEnd={handleDragEnd} onClick={handleTableClick}
               editMode={editMode} onResize={handleResize} currentUserId={currentUserId} largeMode={largeMode} device={device} />
           ))}
         </div>
-        {filteredTables.length === 0 && (
+        {filteredTables.length === 0 && decorators.filter(d => d.area_id === activeArea).length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-white/40">
             <div className="text-center">
               <Plus size={isMobile ? 28 : largeMode ? 40 : 32} className="mx-auto mb-2 opacity-40" />

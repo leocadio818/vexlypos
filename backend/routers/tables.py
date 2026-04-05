@@ -58,6 +58,55 @@ async def update_area(area_id: str, input: dict):
 @router.delete("/areas/{area_id}")
 async def delete_area(area_id: str):
     await db.areas.delete_one({"id": area_id})
+    # Also delete decorators for this area
+    await db.map_decorators.delete_many({"area_id": area_id})
+    return {"ok": True}
+
+# ─── MAP DECORATORS CRUD ───
+class DecoratorInput(BaseModel):
+    area_id: str
+    type: str  # 'hline', 'vline', 'rect', 'circle', 'text'
+    x: float = 50  # percentage
+    y: float = 50  # percentage
+    width: float = 10  # percentage
+    height: float = 2  # percentage
+    color: str = "#6B7280"  # gray default
+    text: str = ""  # for text type
+    rotation: float = 0
+
+@router.get("/decorators")
+async def list_decorators(area_id: Optional[str] = Query(None)):
+    query = {"area_id": area_id} if area_id else {}
+    return await db.map_decorators.find(query, {"_id": 0}).to_list(200)
+
+@router.post("/decorators")
+async def create_decorator(input: DecoratorInput):
+    doc = {
+        "id": gen_id(),
+        "area_id": input.area_id,
+        "type": input.type,
+        "x": input.x,
+        "y": input.y,
+        "width": input.width,
+        "height": input.height,
+        "color": input.color,
+        "text": input.text,
+        "rotation": input.rotation,
+        "created_at": now_iso()
+    }
+    await db.map_decorators.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@router.put("/decorators/{decorator_id}")
+async def update_decorator(decorator_id: str, input: dict):
+    if "_id" in input:
+        del input["_id"]
+    await db.map_decorators.update_one({"id": decorator_id}, {"$set": input})
+    return {"ok": True}
+
+@router.delete("/decorators/{decorator_id}")
+async def delete_decorator(decorator_id: str):
+    await db.map_decorators.delete_one({"id": decorator_id})
     return {"ok": True}
 
 # ─── TABLES CRUD ───
