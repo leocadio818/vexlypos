@@ -972,7 +972,7 @@ export default function Help() {
                 return (
                   <a
                     key={manualKey}
-                    href={`/manuales/manual-${manualKey}.pdf`}
+                    href={`${process.env.REACT_APP_BACKEND_URL}/api/manuales/manual-${manualKey}.pdf`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${
@@ -1075,7 +1075,7 @@ export default function Help() {
         {/* Botón descargar PDF */}
         <div className="mt-8 flex justify-center">
           <a
-            href={`/manuales/manual-${selectedManual}.pdf`}
+            href={`${process.env.REACT_APP_BACKEND_URL}/api/manuales/manual-${selectedManual}.pdf`}
             target="_blank"
             rel="noopener noreferrer"
             className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${

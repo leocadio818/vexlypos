@@ -49,6 +49,7 @@ from routers.discounts import router as discounts_router, set_db as discounts_se
 from routers.email import router as email_router, set_db as email_set_db
 from routers.alanube import router as alanube_router, set_db as alanube_set_db
 from routers.ecf_dispatcher import router as ecf_dispatcher_router, set_db as ecf_dispatcher_set_db
+from routers.manuales import router as manuales_router
 from utils.timezone import get_system_timezone_name, get_system_now, invalidate_cache as tz_invalidate_cache
 
 ROOT_DIR = Path(__file__).parent
@@ -141,6 +142,7 @@ api.include_router(dgii_router)
 api.include_router(discounts_router)
 api.include_router(email_router, prefix="/email")
 api.include_router(ecf_dispatcher_router, prefix="/ecf")
+api.include_router(manuales_router)
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()

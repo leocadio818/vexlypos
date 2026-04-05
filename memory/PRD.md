@@ -18,7 +18,7 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
 ## Completed Tasks (2026-04-05)
-- **Centro de Ayuda In-App** (DONE):
+- **Centro de Ayuda In-App + PDFs Descargables** (DONE):
   - Creada página `/help` con manuales interactivos por rol
   - Manual del Mesero: 10 secciones (inicio sesión, abrir mesa, tomar pedido, enviar cocina, etc.)
   - Manual del Cajero: 7 secciones (inicio turno, cobrar, formas de pago, tipos de factura, etc.)
@@ -27,8 +27,15 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - Secciones expandibles con pasos, notas, tips y alertas importantes
   - Soporte para modo claro y oscuro
   - Botón "Ayuda" agregado al menú de Opciones
-  - Enlaces para descargar PDFs (pendiente generar los PDFs)
-  - Files: `/app/frontend/src/pages/Help.js`, `App.js`, `Layout.js`
+  
+- **Manuales PDF Descargables** (DONE):
+  - Backend: `/app/backend/routers/manuales.py` con WeasyPrint para generación HTML→PDF
+  - 4 endpoints: `GET /api/manuales/manual-waiter.pdf`, `manual-cashier.pdf`, `manual-admin.pdf`, `manual-manager.pdf`
+  - PDFs profesionales: header con gradiente azul, secciones con iconos, pasos numerados, notas/tips/alertas
+  - Formato carta (Letter), márgenes 2cm, numeración de páginas "Página X de Y"
+  - Tamaños: Mesero (220KB), Cajero (156KB), Admin (154KB), Gerente (84KB)
+  - Frontend: Botones "Descargar PDF" en Centro de Ayuda con URLs correctas
+  - Files: `/app/backend/routers/manuales.py`, `/app/backend/server.py`, `/app/frontend/src/pages/Help.js`
 
 ## Completed Tasks (2026-04-04)
 - **Light Mode Contrast Audit Fix** (DONE):
@@ -152,7 +159,6 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ### P1
 - Reporte de Horas Trabajadas
-- Manuales de Usuario PDF
 - Integración IA (GPT-4o mini)
 - CRM
 
