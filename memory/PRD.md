@@ -63,6 +63,24 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`
 
+- **Map Decorators** (DONE - TESTED):
+  - **Feature**: Elementos decorativos para simular el layout físico del restaurante (paredes, muebles, barra, columnas)
+  - **Tipos de decoradores**: Línea horizontal, línea vertical, rectángulo, círculo, texto
+  - **Implementación**:
+    - Backend: `/app/backend/routers/tables.py` líneas 62-112 (CRUD decoradores)
+    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 20-270 (componentes DraggableDecorator, DecoratorToolbar)
+    - API: `/app/frontend/src/lib/api.js` (decoratorsAPI)
+  - **Funcionalidad**:
+    - Toolbar visible solo en modo edición con 5 botones de tipos de decoradores
+    - Arrastrar para posicionar, esquina para redimensionar
+    - Selector de colores (gris, negro, marrón, verde, azul, rojo)
+    - Doble-click en texto para editar
+    - Botón X para eliminar
+    - Decoradores detrás de mesas (z-index: 0 vs 1)
+    - No clickeables en modo normal (pointer-events: none)
+  - **Almacenamiento**: Porcentajes por área (igual que mesas)
+  - **Testeado**: Desktop ✅, iPad ✅, Android ✅, Safari iOS ✅, Dark/Light mode ✅
+
 ## Completed Tasks (2026-04-04)
 - **Light Mode Contrast Audit Fix** (DONE):
   - Added 164+ CSS rules with `:not(.neo-dark)` selector to fix light mode only
