@@ -49,7 +49,6 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
   const [textValue, setTextValue] = useState(decorator.text || '');
   const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0, sizeW: 0, sizeH: 0, moved: false, pointerId: null });
   const nodeRef = useRef(null);
-  const controlsRef = useRef(null);
 
   // Convert percentage to pixels
   const pxX = (decorator.x / 100) * containerSize.w;
@@ -66,13 +65,14 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
   useEffect(() => {
     if (!editMode || !isSelected) return;
     const handleClickOutside = (e) => {
-      // Don't deselect if clicking inside the decorator or its controls
+      // Don't deselect if clicking inside the decorator
       if (nodeRef.current?.contains(e.target)) return;
-      if (controlsRef.current?.contains(e.target)) return;
+      // Don't deselect if clicking on buttons (they have data-testid starting with delete- or color-)
+      if (e.target.closest('[data-testid^="delete-"]') || e.target.closest('[data-testid^="color-"]')) return;
       setIsSelected(false);
       setShowColorPicker(false);
     };
-    // Use mousedown instead of pointerdown for better compatibility
+    // Use mousedown for desktop, touchstart for mobile
     document.addEventListener('mousedown', handleClickOutside, true);
     document.addEventListener('touchstart', handleClickOutside, true);
     return () => {
@@ -104,26 +104,6 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
     d.moved = false; d.pointerId = e.pointerId;
     setIsDragging(true);
     nodeRef.current?.setPointerCapture(e.pointerId);
-  };
-
-  const handleDeleteClick = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    console.log('DELETE clicked for decorator:', decorator.id);
-    onDelete(decorator.id);
-  };
-
-  const handleColorButtonClick = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    console.log('COLOR PICKER toggled');
-    setShowColorPicker(prev => !prev);
-  };
-
-  const handleColorSelect = (color) => {
-    console.log('COLOR selected:', color);
-    onUpdate(decorator.id, { color });
-    setShowColorPicker(false);
   };
 
   const handlePointerMove = (e) => {
@@ -247,48 +227,95 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
       
       {/* Edit Controls - visible when decorator is selected in edit mode */}
       {editMode && isSelected && (
-        <div ref={controlsRef} className="contents">
+        <>
           {/* Delete button - RED X */}
           <button
             type="button"
-            onMouseDown={(e) => { e.stopPropagation(); }}
-            onTouchStart={(e) => { e.stopPropagation(); }}
-            onClick={handleDeleteClick}
-            className="absolute -top-5 -right-5 w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl hover:bg-red-700 active:scale-90 z-[100] border-2 border-white touch-manipulation"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              console.log('DELETE BUTTON CLICKED - ID:', decorator.id);
+              onDelete(decorator.id);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            style={{ 
+              pointerEvents: 'auto',
+              position: 'absolute',
+              top: -20,
+              right: -20,
+              width: 44,
+              height: 44,
+              zIndex: 9999,
+              WebkitTapHighlightColor: 'transparent'
+            }}
+            className="rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl hover:bg-red-700 active:scale-90 border-2 border-white touch-manipulation"
             data-testid={`delete-decorator-${decorator.id}`}
           >
-            <Trash2 size={18} />
+            <Trash2 size={20} />
           </button>
           
           {/* Color picker button - PALETTE */}
           <button
             type="button"
-            onMouseDown={(e) => { e.stopPropagation(); }}
-            onTouchStart={(e) => { e.stopPropagation(); }}
-            onClick={handleColorButtonClick}
-            className="absolute -top-5 -left-5 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 z-[100] border-2 touch-manipulation"
-            style={{ borderColor: decorator.color, WebkitTapHighlightColor: 'transparent' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              console.log('COLOR BUTTON CLICKED - showColorPicker:', !showColorPicker);
+              setShowColorPicker(prev => !prev);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            style={{ 
+              pointerEvents: 'auto',
+              position: 'absolute',
+              top: -20,
+              left: -20,
+              width: 44,
+              height: 44,
+              zIndex: 9999,
+              borderColor: decorator.color,
+              WebkitTapHighlightColor: 'transparent'
+            }}
+            className="rounded-full bg-white flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 border-2 touch-manipulation"
             data-testid={`color-picker-${decorator.id}`}
           >
-            <Palette size={18} style={{ color: decorator.color }} />
+            <Palette size={20} style={{ color: decorator.color }} />
           </button>
           
           {/* Color picker dropdown */}
           {showColorPicker && (
             <div 
-              className="absolute -left-2 top-6 bg-slate-900 rounded-xl p-3 shadow-2xl z-[200] flex gap-2 border-2 border-primary"
-              onMouseDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
+              style={{
+                pointerEvents: 'auto',
+                position: 'absolute',
+                left: -10,
+                top: 30,
+                zIndex: 99999
+              }}
+              className="bg-slate-900 rounded-xl p-3 shadow-2xl flex gap-2 border-2 border-primary"
               onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
             >
               {DECORATOR_COLORS.map(c => (
                 <button
                   key={c.value}
                   type="button"
-                  onClick={() => handleColorSelect(c.value)}
-                  className="w-10 h-10 rounded-full border-2 border-white/50 hover:scale-110 active:scale-90 transition-transform touch-manipulation"
-                  style={{ backgroundColor: c.value, WebkitTapHighlightColor: 'transparent' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    console.log('COLOR SELECTED:', c.value);
+                    onUpdate(decorator.id, { color: c.value });
+                    setShowColorPicker(false);
+                  }}
+                  style={{ 
+                    pointerEvents: 'auto',
+                    backgroundColor: c.value,
+                    width: 40,
+                    height: 40,
+                    WebkitTapHighlightColor: 'transparent'
+                  }}
+                  className="rounded-full border-2 border-white/50 hover:scale-110 active:scale-90 transition-transform touch-manipulation"
                   title={c.name}
                   data-testid={`color-${c.name.toLowerCase()}`}
                 />
@@ -298,14 +325,23 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
           
           {/* Resize handle */}
           <div
-            className="absolute -bottom-4 -right-4 w-8 h-8 bg-primary rounded-lg cursor-se-resize flex items-center justify-center z-[100] border-2 border-white shadow-xl touch-manipulation"
+            style={{
+              pointerEvents: 'auto',
+              position: 'absolute',
+              bottom: -16,
+              right: -16,
+              width: 36,
+              height: 36,
+              zIndex: 9999
+            }}
+            className="bg-primary rounded-lg cursor-se-resize flex items-center justify-center border-2 border-white shadow-xl touch-manipulation"
             onPointerDown={handleResizeStart}
             onPointerMove={isResizing ? handlePointerMove : undefined}
             onPointerUp={isResizing ? handlePointerUp : undefined}
           >
-            <Maximize2 size={14} className="text-white" />
+            <Maximize2 size={16} className="text-white" />
           </div>
-        </div>
+        </>
       )}
     </div>
   );
