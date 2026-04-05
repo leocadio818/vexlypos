@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import api, { posSessionsAPI, businessDaysAPI, formatMoney } from '@/lib/api';
 import { CircleDollarSign, Play, Square, Clock, Banknote, CreditCard, AlertTriangle, TrendingUp, ArrowDownCircle, ArrowUpCircle, History, Wallet, CheckCircle2, Calculator, Coins, Receipt, RefreshCw, FileX, Search, Printer, X, Calendar, Lock, KeyRound, Tag, XCircle, FileText } from 'lucide-react';
 import { notify } from '@/lib/notify';
@@ -45,6 +46,7 @@ const COLORES_DENOMINACION = {
 
 export default function CashRegister() {
   const { user, logout, hasPermission } = useAuth();
+  const { isMinimalist } = useTheme();
   const [currentSession, setCurrentSession] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [movements, setMovements] = useState([]);
@@ -831,6 +833,74 @@ export default function CashRegister() {
                   const inUseBy = t.in_use_by || terminalsInUse[t.name];
                   const isSelected = terminalName === t.name;
                   
+                  // Light mode Safari iOS compatible styles
+                  const getButtonStyle = () => {
+                    if (isInUse) {
+                      return isMinimalist ? {
+                        backgroundColor: '#FEE2E2',
+                        border: '2px solid #EF4444',
+                        cursor: 'not-allowed',
+                        opacity: 1
+                      } : {
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        cursor: 'not-allowed'
+                      };
+                    }
+                    if (isSelected) {
+                      return isMinimalist ? {
+                        backgroundColor: '#FEF3C7',
+                        border: '2px solid #F59E0B'
+                      } : {
+                        backgroundColor: 'rgba(251, 146, 60, 0.2)',
+                        border: '1px solid #FB923C'
+                      };
+                    }
+                    return isMinimalist ? {
+                      backgroundColor: '#F3F4F6',
+                      border: '1px solid #D1D5DB'
+                    } : {};
+                  };
+                  
+                  const getTextStyle = () => {
+                    if (isInUse && isMinimalist) {
+                      return {
+                        color: '#991B1B',
+                        WebkitTextFillColor: '#991B1B',
+                        opacity: 1,
+                        fontWeight: '700'
+                      };
+                    }
+                    if (isSelected && isMinimalist) {
+                      return {
+                        color: '#92400E',
+                        WebkitTextFillColor: '#92400E',
+                        opacity: 1,
+                        fontWeight: '600'
+                      };
+                    }
+                    if (isMinimalist) {
+                      return {
+                        color: '#374151',
+                        WebkitTextFillColor: '#374151',
+                        opacity: 1
+                      };
+                    }
+                    return {};
+                  };
+                  
+                  const getSubtextStyle = () => {
+                    if (isMinimalist) {
+                      return {
+                        color: '#B91C1C',
+                        WebkitTextFillColor: '#B91C1C',
+                        opacity: 1,
+                        fontSize: '12px'
+                      };
+                    }
+                    return {};
+                  };
+                  
                   return (
                     <button 
                       key={t.code} 
@@ -841,17 +911,20 @@ export default function CashRegister() {
                         }
                       }}
                       disabled={isInUse}
-                      className={`p-2.5 rounded-lg text-sm font-medium transition-all border relative ${
-                        isInUse 
-                          ? 'border-red-500/30 bg-red-500/10 text-red-400/60 cursor-not-allowed'
-                          : isSelected 
-                            ? 'border-orange-400 bg-orange-400/20 text-orange-400' 
-                            : 'border-border bg-muted/50 text-foreground/70 hover:border-foreground/30'
+                      style={getButtonStyle()}
+                      className={`p-2.5 rounded-lg text-sm font-medium transition-all relative ${
+                        !isMinimalist ? (
+                          isInUse 
+                            ? 'border-red-500/30 bg-red-500/10 text-red-400/60 cursor-not-allowed'
+                            : isSelected 
+                              ? 'border-orange-400 bg-orange-400/20 text-orange-400' 
+                              : 'border-border bg-muted/50 text-foreground/70 hover:border-foreground/30'
+                        ) : ''
                       }`}
                     >
-                      <span className="block">{t.name}</span>
+                      <span className="block" style={getTextStyle()}>{t.name}</span>
                       {isInUse && (
-                        <span className="text-xs block text-red-400/80 mt-0.5">
+                        <span className="text-xs block mt-0.5" style={getSubtextStyle()}>
                           En uso: {inUseBy}
                         </span>
                       )}
