@@ -800,10 +800,21 @@ export default function Layout() {
                 <span className="text-sm font-medium text-white/90 group-hover:text-white">Transferir Mesa</span>
               </button>
               <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('enterSplitMode')); }}
-                className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-green-500/20 border border-white/10 hover:border-green-400/50 transition-all duration-200 group active:scale-95"
+                style={isMinimalist ? {
+                  backgroundColor: '#F0FDF4',
+                  border: '1.5px solid #22C55E'
+                } : {}}
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-full transition-all duration-200 group active:scale-95 ${
+                  !isMinimalist ? 'bg-white/5 hover:bg-green-500/20 border border-white/10 hover:border-green-400/50' : 'hover:opacity-80'
+                }`}
                 data-testid="sidebar-fn-split-bill">
-                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors"><SplitSquareHorizontal size={16} className="text-green-400" /></div>
-                <span className="text-sm font-medium text-white/90 group-hover:text-white">Dividir Cuenta</span>
+                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                  <SplitSquareHorizontal size={16} style={isMinimalist ? { color: '#16A34A' } : {}} className={!isMinimalist ? 'text-green-400' : ''} />
+                </div>
+                <span 
+                  style={isMinimalist ? { color: '#166534', WebkitTextFillColor: '#166534', opacity: 1 } : {}}
+                  className={`text-sm font-medium ${!isMinimalist ? 'text-white/90 group-hover:text-white' : ''}`}
+                >Dividir Cuenta</span>
               </button>
               <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('openMoveItemsFlow')); }}
                 className="flex items-center gap-3 px-4 py-3.5 rounded-full bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-400/50 transition-all duration-200 group active:scale-95"
@@ -818,10 +829,21 @@ export default function Layout() {
                 <span className="text-sm font-medium text-white/90 group-hover:text-white">Editar Nombre</span>
               </button>
               <button onClick={() => { setFunctionsMenuOpen(false); window.dispatchEvent(new CustomEvent('voidEntireOrder')); }}
-                className="col-span-2 flex items-center justify-center gap-3 px-4 py-3.5 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-400/50 transition-all duration-200 group active:scale-95"
+                style={isMinimalist ? {
+                  backgroundColor: '#FEF2F2',
+                  border: '1.5px solid #EF4444'
+                } : {}}
+                className={`col-span-2 flex items-center justify-center gap-3 px-4 py-3.5 rounded-full transition-all duration-200 group active:scale-95 ${
+                  !isMinimalist ? 'bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-400/50' : 'hover:opacity-80'
+                }`}
                 data-testid="sidebar-fn-void-order">
-                <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center group-hover:bg-red-500/30 transition-colors"><Ban size={16} className="text-red-400" /></div>
-                <span className="text-sm font-semibold text-red-400 group-hover:text-red-300">Anular Cuenta Entera</span>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-red-500/30 transition-colors" style={isMinimalist ? { backgroundColor: 'rgba(239, 68, 68, 0.15)' } : { backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
+                  <Ban size={16} style={isMinimalist ? { color: '#DC2626' } : {}} className={!isMinimalist ? 'text-red-400' : ''} />
+                </div>
+                <span 
+                  style={isMinimalist ? { color: '#991B1B', WebkitTextFillColor: '#991B1B', opacity: 1 } : {}}
+                  className={`text-sm font-semibold ${!isMinimalist ? 'text-red-400 group-hover:text-red-300' : ''}`}
+                >Anular Cuenta Entera</span>
               </button>
             </div>
             <div className="relative mt-4 pt-3 border-t border-white/10 flex justify-end">
