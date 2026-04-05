@@ -88,16 +88,19 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
   };
 
   const handlePointerDown = (e) => {
+    console.log('DECORATOR POINTER DOWN - editMode:', editMode, 'isResizing:', isResizing, 'isSelected:', isSelected);
     if (!editMode || isResizing) return;
     e.stopPropagation();
     
     // If not selected, just select
     if (!isSelected) {
+      console.log('SELECTING DECORATOR:', decorator.id);
       setIsSelected(true);
       return;
     }
     
     // Start dragging if already selected
+    console.log('STARTING DRAG');
     const d = dragRef.current;
     d.startX = e.clientX; d.startY = e.clientY;
     d.posX = pos.x; d.posY = pos.y;
@@ -211,12 +214,13 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
         top: pos.y, 
         width: Math.max(20, size.w), 
         height: Math.max(10, size.h),
-        zIndex: editMode ? (isDragging || isSelected ? 50 : 5) : 0,
+        zIndex: editMode ? (isDragging || isSelected ? 100 : 10) : 1,
         opacity: editMode ? 1 : 0.7,
         outline: editMode && isSelected ? '3px dashed #FF6600' : 'none',
         outlineOffset: '2px',
         transform: isDragging ? 'scale(1.02)' : 'scale(1)',
         transition: isDragging ? 'none' : 'transform 0.15s',
+        pointerEvents: editMode ? 'auto' : 'none',
       }}
       onPointerDown={editMode ? handlePointerDown : undefined}
       onPointerMove={(isDragging || isResizing) ? handlePointerMove : undefined}
