@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 
 /**
@@ -32,7 +33,6 @@ export function ConfirmDialog({ open, onConfirm, onCancel, title = '¿Estas segu
  * Returns [confirmProps, showConfirm] — spread confirmProps on <ConfirmDialog>
  */
 export function useConfirmDialog() {
-  const { useState, useCallback } = require('react');
   const [state, setState] = useState({ open: false, title: '', description: '', destructive: true, resolve: null });
 
   const showConfirm = useCallback(({ title, description, destructive = true }) => {
