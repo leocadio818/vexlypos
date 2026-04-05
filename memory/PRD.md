@@ -63,23 +63,24 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`
 
-- **Map Decorators** (DONE - TESTED):
+- **🔒 Map Decorators** (DONE - TESTED - **NO MODIFICAR**):
   - **Feature**: Elementos decorativos para simular el layout físico del restaurante (paredes, muebles, barra, columnas)
   - **Tipos de decoradores**: Línea horizontal, línea vertical, rectángulo, círculo, texto
   - **Implementación**:
     - Backend: `/app/backend/routers/tables.py` líneas 62-112 (CRUD decoradores)
-    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 20-270 (componentes DraggableDecorator, DecoratorToolbar)
+    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 40-330 (DraggableDecorator con selección, delete, color)
+    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 850-880 (DecoratorToolbar fuera del canvas)
     - API: `/app/frontend/src/lib/api.js` (decoratorsAPI)
-  - **Funcionalidad**:
-    - Toolbar visible solo en modo edición con 5 botones de tipos de decoradores
-    - Arrastrar para posicionar, esquina para redimensionar
-    - Selector de colores (gris, negro, marrón, verde, azul, rojo)
-    - Doble-click en texto para editar
-    - Botón X para eliminar
-    - Decoradores detrás de mesas (z-index: 0 vs 1)
-    - No clickeables en modo normal (pointer-events: none)
+  - **Funcionalidad CRÍTICA (NO TOCAR)**:
+    - `pointerEvents: 'auto'` y `zIndex: 9999` en botones delete/color
+    - `e.stopPropagation()` + `e.preventDefault()` en todos los onClick
+    - Z-index del decorador: 10 (normal), 100 (seleccionado)
+    - Toolbar renderizada FUERA del canvas (no flotante sobre mesas)
+    - Click para seleccionar → aparecen botones delete 🗑, color 🎨, resize ↗
   - **Almacenamiento**: Porcentajes por área (igual que mesas)
-  - **Testeado**: Desktop ✅, iPad ✅, Android ✅, Safari iOS ✅, Dark/Light mode ✅
+  - **Testeado**: Desktop 1280px ✅, Mobile 390px ✅, Delete ✅, Color picker ✅
+  - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
+  - **Files**: `/app/frontend/src/pages/TableMap.js`, `/app/backend/routers/tables.py`
 
 ## Completed Tasks (2026-04-04)
 - **Light Mode Contrast Audit Fix** (DONE):
@@ -273,3 +274,15 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Razón**: Garantiza que las mesas se vean en la misma posición relativa en TODOS los dispositivos
 - **Fecha de protección**: 2026-04-05
 - **Testeado en**: Desktop, iPad, Android, Safari iOS ✅
+
+### 2. Map Decorators (`/app/frontend/src/pages/TableMap.js` + `/app/backend/routers/tables.py`)
+- **Líneas 40-330**: Componente `DraggableDecorator` con selección, delete, color picker
+- **Líneas 850-880**: `DecoratorToolbar` renderizada FUERA del canvas
+- **Backend líneas 62-112**: CRUD de decoradores
+- **Configuración CRÍTICA**:
+  - `pointerEvents: 'auto'` y `zIndex: 9999` en botones
+  - `e.stopPropagation()` + `e.preventDefault()` en onClick
+  - Toolbar NO flotante (fuera del canvas, no sobre las mesas)
+- **Razón**: Los botones delete/color DEBEN funcionar en todos los dispositivos incluyendo Safari iOS
+- **Fecha de protección**: 2026-04-05
+- **Testeado en**: Desktop 1280px ✅, Mobile 390px ✅, Delete ✅, Color picker ✅
