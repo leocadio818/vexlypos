@@ -280,26 +280,42 @@ Para cualquier botón/texto invisible en modo claro, usar este patrón:
 
 Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser modificados sin autorización explícita del usuario:
 
-### 1. Table Map Responsive Layout (`/app/frontend/src/pages/TableMap.js`)
-- **Líneas 774-830**: Función `getMapAspectRatio(viewportWidth)` y cálculo responsivo del canvas
+### 1. 🔒 Table Map Responsive Layout (`/app/frontend/src/pages/TableMap.js`)
+- **Líneas 788-845**: Cálculo de `containerSize` con aspect ratio 16:10 UNIVERSAL
 - **Comportamiento**:
-  - Móviles (<768px): Usa TODO el espacio del contenedor (máxima distribución)
-  - Tablets/Desktop (≥768px): Aspect ratio 16:10 centrado
-- **Razón**: Garantiza que las mesas se distribuyan proporcionalmente en TODOS los dispositivos
-- **Fecha de protección**: 2026-04-05 (actualizado)
-- **Testeado en**: Safari iOS 390px ✅, Android 412px ✅, iPad 768px ✅, Desktop 1280px ✅
+  - **TODOS los dispositivos**: Aspect ratio 16:10 para consistencia de coordenadas
+  - Móviles: Altura mínima 400px, scroll habilitado si necesario
+  - Desktop/Tablet: Centrado absoluto en contenedor
+- **Líneas 536-566**: Posicionamiento de mesas con tamaños mínimos (45x42px móvil, 55x50px tablet)
+- **Razón**: Garantiza que mesas Y decoradores usen el MISMO sistema de coordenadas
+- **Fecha de protección**: 2026-04-05
+- **Testeado en**: Safari iOS 390px ✅, Android 412px ✅, Desktop 1280px ✅
 
-### 2. Map Decorators Responsive (`/app/frontend/src/pages/TableMap.js` + `/app/backend/routers/tables.py`)
-- **Líneas 40-65**: `DraggableDecorator` con `getDecoratorScale()` responsivo (tamaños mínimos escalados por dispositivo)
-- **Líneas 180-220**: `renderContent()` con `lineThickness` responsivo (2px móvil, 3px desktop)
-- **Líneas 850-880**: `DecoratorToolbar` renderizada FUERA del canvas
+### 2. 🔒 Map Decorators Sistema Unificado (`/app/frontend/src/pages/TableMap.js` + `/app/backend/routers/tables.py`)
+- **Líneas 40-85**: `DraggableDecorator` con sistema de coordenadas unificado
+  - `REF_WIDTH=1200, REF_HEIGHT=700` como canvas de referencia
+  - Posiciones: % del canvas (igual que mesas)
+  - Tamaños: % → píxeles de referencia → escalado con `getScale()`
+  - Z-index: 0 (detrás de mesas en modo normal), 10-100 (modo edición)
+- **Líneas 191-230**: `renderContent()` con grosor de líneas responsivo
+- **Líneas 233-255**: Contenedor con z-index y opacidad configurados
 - **Backend líneas 62-112**: CRUD de decoradores
 - **Configuración CRÍTICA**:
-  - `pointerEvents: 'auto'` y `zIndex: 9999` en botones (delete, color, edit-text, resize)
+  - `pointerEvents: 'auto'` y `zIndex: 9999` en botones (delete, color, edit-text)
   - `e.stopPropagation()` + `e.preventDefault()` en onClick
-  - Toolbar NO flotante (fuera del canvas, no sobre las mesas)
-  - **Botón "T" azul** para editar texto en decoradores tipo texto
-  - **Escalado responsivo**: `minW` (15/18/20px), `minH` (8/9/10px) según dispositivo
-- **Razón**: Los decoradores DEBEN escalar proporcionalmente en todos los dispositivos
-- **Fecha de protección**: 2026-04-05 (actualizado con responsive scaling)
-- **Testeado en**: Safari iOS 390px ✅, Android 412px ✅, iPad 768px ✅, Desktop 1280px ✅
+  - Decoradores SIEMPRE detrás de mesas (z-index: 0) en modo normal
+  - **Botón "T" azul** para editar texto
+- **LIMITACIÓN CONOCIDA**: En móviles, mesas con tamaño mínimo pueden cubrir decoradores cercanos. Diseñar con espacio suficiente.
+- **Razón**: Sistema de coordenadas unificado entre mesas y decoradores
+- **Fecha de protección**: 2026-04-05
+- **Testeado en**: Safari iOS 390px ✅, Android 412px ✅, Desktop 1280px ✅
+
+### 3. 🔒 Light Mode Contrast Fixes
+- **Archivos**: `CashRegister.js`, `Layout.js`, `PaymentScreen.js`, `theme-minimalist.css`
+- **Razón**: Contraste legible en modo claro
+- **Fecha de protección**: 2026-04-05
+
+### 4. 🔒 Dashboard Zombie Tables Filter (`/app/backend/routers/reports.py`)
+- **Filtro**: Excluye mesas con 0 items, RD$0, >12 horas
+- **Razón**: Dashboard muestra solo mesas activas reales
+- **Fecha de protección**: 2026-04-05
