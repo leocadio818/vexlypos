@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { areasAPI, tablesAPI, ncfAPI, decoratorsAPI, layoutsAPI } from '@/lib/api';
-import { Users, Plus, Lock, Unlock, Maximize2, Minus, AlertTriangle, FileText, ChevronRight, Minus as HLine, GripVertical, Square, Circle, Type, Trash2, Palette } from 'lucide-react';
+import { Users, Plus, Lock, Unlock, Maximize2, Minus, AlertTriangle, FileText, ChevronRight, ChevronUp, ChevronDown, ChevronLeft, Minus as HLine, GripVertical, Square, Circle, Type, Trash2, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
@@ -37,13 +37,130 @@ const DECORATOR_TYPES = [
   { type: 'text', icon: Type, label: 'T Texto', defaultW: 10, defaultH: 3 },
 ];
 
+// Mobile Decorator Control Panel - Fixed panel at bottom of screen
+function MobileDecoratorControlPanel({ decorator, onUpdate, onDelete, onClose }) {
+  if (!decorator) return null;
+  
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 80,
+        left: 8,
+        right: 8,
+        zIndex: 999999,
+      }}
+      className="bg-slate-900/98 backdrop-blur-xl rounded-2xl p-3 shadow-2xl border-2 border-primary"
+      data-testid="mobile-decorator-panel"
+    >
+      {/* Title with close button */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-white text-sm font-oswald tracking-wide">CONTROLES DECORADOR</span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center text-white"
+        >
+          ✕
+        </button>
+      </div>
+      
+      <div className="flex justify-between items-start gap-2">
+        {/* Move Controls - D-Pad style */}
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] text-gray-400 mb-1">MOVER</span>
+          <button
+            type="button"
+            onClick={() => onUpdate(decorator.id, { y: Math.max(0, decorator.y - 2) })}
+            className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white active:scale-90 touch-manipulation shadow-lg"
+          >
+            <ChevronUp size={20} />
+          </button>
+          <div className="flex gap-0.5">
+            <button
+              type="button"
+              onClick={() => onUpdate(decorator.id, { x: Math.max(0, decorator.x - 2) })}
+              className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white active:scale-90 touch-manipulation shadow-lg"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdate(decorator.id, { x: Math.min(95, decorator.x + 2) })}
+              className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white active:scale-90 touch-manipulation shadow-lg"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => onUpdate(decorator.id, { y: Math.min(95, decorator.y + 2) })}
+            className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white active:scale-90 touch-manipulation shadow-lg"
+          >
+            <ChevronDown size={20} />
+          </button>
+        </div>
+        
+        {/* Size Controls */}
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] text-gray-400 mb-1">TAMAÑO</span>
+          <button
+            type="button"
+            onClick={() => onUpdate(decorator.id, { width: Math.min(50, decorator.width + 2), height: Math.min(50, decorator.height + 1) })}
+            className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold active:scale-90 touch-manipulation shadow-lg mb-1"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={() => onUpdate(decorator.id, { width: Math.max(1, decorator.width - 2), height: Math.max(1, decorator.height - 1) })}
+            className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold active:scale-90 touch-manipulation shadow-lg"
+          >
+            −
+          </button>
+        </div>
+        
+        {/* Color Quick Select */}
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] text-gray-400 mb-1">COLOR</span>
+          <div className="grid grid-cols-2 gap-1">
+            {DECORATOR_COLORS.slice(0, 6).map(c => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => onUpdate(decorator.id, { color: c.value })}
+                style={{ backgroundColor: c.value }}
+                className={`w-8 h-8 rounded-lg border-2 ${decorator.color === c.value ? 'border-white scale-110' : 'border-white/30'} active:scale-90 touch-manipulation shadow-lg`}
+              />
+            ))}
+          </div>
+        </div>
+        
+        {/* Delete button */}
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] text-gray-400 mb-1">BORRAR</span>
+          <button
+            type="button"
+            onClick={() => onDelete(decorator.id)}
+            className="w-12 h-20 bg-red-600 rounded-xl text-white flex flex-col items-center justify-center gap-1 active:scale-95 touch-manipulation shadow-lg"
+          >
+            <Trash2 size={24} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Draggable Decorator Component
-function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, editMode, device }) {
+function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, editMode, device, isMobileLayout, isGlobalSelected, onSelect }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [isSelected, setIsSelected] = useState(false);
+  const [localSelected, setLocalSelected] = useState(false);
+  // Use global selection state for mobile, local for desktop
+  const actualSelected = isMobileLayout ? isGlobalSelected : localSelected;
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [editingText, setEditingText] = useState(false);
   const [textValue, setTextValue] = useState(decorator.text || '');
@@ -86,7 +203,7 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
 
   // Click outside to deselect - but NOT if clicking on controls
   useEffect(() => {
-    if (!editMode || !isSelected) return;
+    if (!editMode || !actualSelected) return;
     const handleClickOutside = (e) => {
       // Don't deselect if clicking inside the decorator
       if (nodeRef.current?.contains(e.target)) return;
@@ -102,7 +219,7 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
       document.removeEventListener('mousedown', handleClickOutside, true);
       document.removeEventListener('touchstart', handleClickOutside, true);
     };
-  }, [editMode, isSelected]);
+  }, [editMode, actualSelected]);
 
   const handleSelect = (e) => {
     if (!editMode) return;
@@ -111,14 +228,18 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
   };
 
   const handlePointerDown = (e) => {
-    console.log('DECORATOR POINTER DOWN - editMode:', editMode, 'isResizing:', isResizing, 'isSelected:', isSelected);
+    console.log('DECORATOR POINTER DOWN - editMode:', editMode, 'isResizing:', isResizing, 'actualSelected:', actualSelected);
     if (!editMode || isResizing) return;
     e.stopPropagation();
     
-    // If not selected, just select
-    if (!isSelected) {
+    // If not selected, just select (mobile uses global, desktop uses local)
+    if (!actualSelected) {
       console.log('SELECTING DECORATOR:', decorator.id);
-      setIsSelected(true);
+      if (isMobileLayout) {
+        onSelect?.(decorator.id);
+      } else {
+        setLocalSelected(true);
+      }
       return;
     }
     
@@ -241,9 +362,9 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
         height: Math.max(minH, size.h),
         // Decorators are always BEHIND tables (z-index 0 or 1)
         // This is intentional so tables are always clickable and decorators serve as background elements
-        zIndex: editMode ? (isDragging || isSelected ? 100 : 10) : 0,
+        zIndex: editMode ? (isDragging || actualSelected ? 100 : 10) : 0,
         opacity: editMode ? 1 : 0.75,
-        outline: editMode && isSelected ? '3px dashed #FF6600' : 'none',
+        outline: editMode && actualSelected ? '3px dashed #FF6600' : 'none',
         outlineOffset: '2px',
         transform: isDragging ? 'scale(1.02)' : 'scale(1)',
         transition: isDragging ? 'none' : 'transform 0.15s',
@@ -252,12 +373,20 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
       onPointerDown={editMode ? handlePointerDown : undefined}
       onPointerMove={(isDragging || isResizing) ? handlePointerMove : undefined}
       onPointerUp={(isDragging || isResizing) ? handlePointerUp : undefined}
+      onClick={editMode ? (e) => { 
+        e.stopPropagation(); 
+        if (isMobileLayout) {
+          onSelect?.(decorator.id);
+        } else {
+          setLocalSelected(true);
+        }
+      } : undefined}
       data-testid={`decorator-${decorator.id}`}
     >
       {renderContent()}
       
       {/* Edit Controls - visible when decorator is selected in edit mode */}
-      {editMode && isSelected && (
+      {editMode && actualSelected && (
         <>
           {/* Delete button - RED X */}
           <button
@@ -684,6 +813,9 @@ export default function TableMap() {
   const [layoutMode, setLayoutMode] = useState('desktop'); // 'desktop' or 'mobile'
   const [mobileLayoutExists, setMobileLayoutExists] = useState(false);
   
+  // Selected decorator state (for mobile control panel)
+  const [selectedDecoratorId, setSelectedDecoratorId] = useState(null);
+  
   // Determine layout mode based on screen width
   useEffect(() => {
     const checkLayoutMode = () => {
@@ -773,6 +905,8 @@ export default function TableMap() {
         setDecorators(updatedDecorators);
         await saveMobileLayout(updatedDecorators);
         setMobileLayoutExists(true);
+        // Auto-select the new decorator to show control panel immediately
+        setSelectedDecoratorId(newDecorator.id);
       } else {
         // Save to shared decorators database (desktop)
         const res = await decoratorsAPI.create(newDecorator);
@@ -1191,9 +1325,12 @@ export default function TableMap() {
               decorator={decorator}
               containerSize={containerSize}
               onUpdate={handleUpdateDecorator}
-              onDelete={handleDeleteDecorator}
+              onDelete={(id) => { setSelectedDecoratorId(null); handleDeleteDecorator(id); }}
               editMode={editMode}
               device={device}
+              isMobileLayout={layoutMode === 'mobile'}
+              isGlobalSelected={selectedDecoratorId === decorator.id}
+              onSelect={(id) => setSelectedDecoratorId(id)}
             />
           ))}
           
@@ -1245,6 +1382,16 @@ export default function TableMap() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* MOBILE DECORATOR CONTROL PANEL - Fixed at bottom */}
+      {layoutMode === 'mobile' && editMode && selectedDecoratorId && (
+        <MobileDecoratorControlPanel
+          decorator={decorators.find(d => d.id === selectedDecoratorId)}
+          onUpdate={handleUpdateDecorator}
+          onDelete={(id) => { setSelectedDecoratorId(null); handleDeleteDecorator(id); }}
+          onClose={() => setSelectedDecoratorId(null)}
+        />
+      )}
     </div>
   );
 }
