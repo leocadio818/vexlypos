@@ -287,6 +287,35 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
             <Palette size={20} style={{ color: decorator.color }} />
           </button>
           
+          {/* Edit Text button - only for text decorators */}
+          {decorator.type === 'text' && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                console.log('EDIT TEXT CLICKED');
+                setEditingText(true);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              style={{ 
+                pointerEvents: 'auto',
+                position: 'absolute',
+                top: -20,
+                left: 30,
+                width: 44,
+                height: 44,
+                zIndex: 9999,
+                WebkitTapHighlightColor: 'transparent'
+              }}
+              className="rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xl hover:bg-blue-700 active:scale-90 border-2 border-white touch-manipulation"
+              data-testid={`edit-text-${decorator.id}`}
+            >
+              <Type size={20} />
+            </button>
+          )}
+          
           {/* Color picker dropdown */}
           {showColorPicker && (
             <div 
