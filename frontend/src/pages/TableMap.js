@@ -50,6 +50,18 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
   const dragRef = useRef({ startX: 0, startY: 0, posX: 0, posY: 0, sizeW: 0, sizeH: 0, moved: false, pointerId: null });
   const nodeRef = useRef(null);
 
+  // Responsive scaling for decorators (same approach as tables)
+  const getDecoratorScale = () => {
+    if (device?.isMobile) return Math.min(containerSize.w / 800, containerSize.h / 500, 1.2);
+    if (device?.isTablet) return Math.min(containerSize.w / 1000, containerSize.h / 600, 1.3);
+    return Math.min(containerSize.w / 1200, containerSize.h / 700, 1.5);
+  };
+  const decoratorScale = getDecoratorScale();
+  
+  // Minimum sizes scale with device (responsive)
+  const minW = device?.isMobile ? 15 : device?.isTablet ? 18 : 20;
+  const minH = device?.isMobile ? 8 : device?.isTablet ? 9 : 10;
+
   // Convert percentage to pixels
   const pxX = (decorator.x / 100) * containerSize.w;
   const pxY = (decorator.y / 100) * containerSize.h;
@@ -167,11 +179,13 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
 
   const renderContent = () => {
     const minDim = device?.isMobile ? 12 : 14;
+    // Minimum line thickness scales with device
+    const lineThickness = device?.isMobile ? 2 : 3;
     switch (decorator.type) {
       case 'hline':
-        return <div className="w-full h-full rounded-sm" style={{ backgroundColor: decorator.color, minHeight: 3 }} />;
+        return <div className="w-full h-full rounded-sm" style={{ backgroundColor: decorator.color, minHeight: lineThickness }} />;
       case 'vline':
-        return <div className="w-full h-full rounded-sm" style={{ backgroundColor: decorator.color, minWidth: 3 }} />;
+        return <div className="w-full h-full rounded-sm" style={{ backgroundColor: decorator.color, minWidth: lineThickness }} />;
       case 'rect':
         return <div className="w-full h-full rounded-lg border-2" style={{ borderColor: decorator.color, backgroundColor: `${decorator.color}20` }} />;
       case 'circle':
@@ -212,8 +226,8 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
       style={{
         left: pos.x, 
         top: pos.y, 
-        width: Math.max(20, size.w), 
-        height: Math.max(10, size.h),
+        width: Math.max(minW, size.w), 
+        height: Math.max(minH, size.h),
         zIndex: editMode ? (isDragging || isSelected ? 100 : 10) : 1,
         opacity: editMode ? 1 : 0.7,
         outline: editMode && isSelected ? '3px dashed #FF6600' : 'none',

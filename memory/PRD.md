@@ -67,12 +67,16 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`
 
-- **🔒 Map Decorators** (DONE - TESTED - **NO MODIFICAR**):
+- **🔒 Map Decorators - Responsive Scaling** (DONE - TESTED - **NO MODIFICAR**):
   - **Feature**: Elementos decorativos para simular el layout físico del restaurante (paredes, muebles, barra, columnas)
   - **Tipos de decoradores**: Línea horizontal, línea vertical, rectángulo, círculo, texto
+  - **Responsive Fix (2026-04-05)**: 
+    - Agregado `getDecoratorScale()` que escala igual que las mesas según dispositivo
+    - Tamaños mínimos responsivos: `minW` (15px móvil, 18px tablet, 20px desktop), `minH` (8px móvil, 9px tablet, 10px desktop)
+    - Grosor de líneas: 2px en móvil, 3px en tablet/desktop
   - **Implementación**:
     - Backend: `/app/backend/routers/tables.py` líneas 62-112 (CRUD decoradores)
-    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 40-330 (DraggableDecorator con selección, delete, color, edit text)
+    - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 40-330 (DraggableDecorator con escalado responsivo)
     - Frontend: `/app/frontend/src/pages/TableMap.js` líneas 850-880 (DecoratorToolbar fuera del canvas)
     - API: `/app/frontend/src/lib/api.js` (decoratorsAPI)
   - **Funcionalidad CRÍTICA (NO TOCAR)**:
@@ -83,7 +87,7 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
     - Click para seleccionar → aparecen botones delete 🗑, color 🎨, resize ↗
     - **Botón "T" azul** para editar texto (solo aparece en decoradores tipo texto)
   - **Almacenamiento**: Porcentajes por área (igual que mesas)
-  - **Testeado**: Desktop 1280px ✅, Mobile 390px ✅, Delete ✅, Color picker ✅, Edit Text ✅
+  - **Testeado**: Safari iOS 390px ✅, Android 412px ✅, iPad 768px ✅, Desktop 1280px ✅
   - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`, `/app/backend/routers/tables.py`
 
@@ -282,15 +286,17 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Fecha de protección**: 2026-04-05 (actualizado)
 - **Testeado en**: Safari iOS 390px ✅, Android 412px ✅, iPad 768px ✅, Desktop 1280px ✅
 
-### 2. Map Decorators (`/app/frontend/src/pages/TableMap.js` + `/app/backend/routers/tables.py`)
-- **Líneas 40-330**: Componente `DraggableDecorator` con selección, delete, color picker, edit text
+### 2. Map Decorators Responsive (`/app/frontend/src/pages/TableMap.js` + `/app/backend/routers/tables.py`)
+- **Líneas 40-65**: `DraggableDecorator` con `getDecoratorScale()` responsivo (tamaños mínimos escalados por dispositivo)
+- **Líneas 180-220**: `renderContent()` con `lineThickness` responsivo (2px móvil, 3px desktop)
 - **Líneas 850-880**: `DecoratorToolbar` renderizada FUERA del canvas
 - **Backend líneas 62-112**: CRUD de decoradores
 - **Configuración CRÍTICA**:
   - `pointerEvents: 'auto'` y `zIndex: 9999` en botones (delete, color, edit-text, resize)
   - `e.stopPropagation()` + `e.preventDefault()` en onClick
   - Toolbar NO flotante (fuera del canvas, no sobre las mesas)
-  - **Botón "T" azul** para editar texto en decoradores tipo texto (líneas 290-310)
-- **Razón**: Los botones delete/color/edit-text DEBEN funcionar en todos los dispositivos incluyendo Safari iOS
-- **Fecha de protección**: 2026-04-05
-- **Testeado en**: Desktop 1280px ✅, Mobile 390px ✅, Delete ✅, Color picker ✅, Edit Text ✅
+  - **Botón "T" azul** para editar texto en decoradores tipo texto
+  - **Escalado responsivo**: `minW` (15/18/20px), `minH` (8/9/10px) según dispositivo
+- **Razón**: Los decoradores DEBEN escalar proporcionalmente en todos los dispositivos
+- **Fecha de protección**: 2026-04-05 (actualizado con responsive scaling)
+- **Testeado en**: Safari iOS 390px ✅, Android 412px ✅, iPad 768px ✅, Desktop 1280px ✅
