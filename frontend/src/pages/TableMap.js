@@ -263,24 +263,26 @@ function DecoratorToolbar({ onAddDecorator, visible, isMobile }) {
   
   return (
     <div 
-      className={`absolute z-40 backdrop-blur-xl bg-slate-900/90 border border-white/20 rounded-xl shadow-2xl ${
+      className={`absolute z-40 backdrop-blur-xl bg-slate-900/95 border border-primary/50 rounded-xl shadow-2xl ${
         isMobile 
-          ? 'bottom-16 left-2 right-2 p-2 flex justify-around' 
-          : 'top-12 left-2 p-2 flex flex-col gap-1'
+          ? 'bottom-20 left-2 right-2 p-3 flex justify-around' 
+          : 'top-14 right-3 p-3 flex flex-row gap-2'
       }`}
       data-testid="decorator-toolbar"
     >
+      <span className={`text-white/60 font-oswald text-xs ${isMobile ? 'hidden' : 'mr-2 self-center'}`}>DECORADORES:</span>
       {DECORATOR_TYPES.map(dt => (
         <button
           key={dt.type}
           onClick={() => onAddDecorator(dt.type, dt.defaultW, dt.defaultH)}
-          className={`flex items-center gap-2 rounded-lg font-medium transition-all active:scale-95 text-white/80 hover:text-white hover:bg-white/10 ${
-            isMobile ? 'flex-col px-3 py-2 text-xs' : 'px-3 py-2 text-sm'
+          className={`flex items-center gap-1.5 rounded-lg font-medium transition-all active:scale-95 text-white/80 hover:text-white hover:bg-white/20 border border-transparent hover:border-primary/50 ${
+            isMobile ? 'flex-col px-3 py-2 text-xs' : 'px-3 py-2 text-xs'
           }`}
           data-testid={`add-${dt.type}`}
+          title={dt.label}
         >
-          <dt.icon size={isMobile ? 18 : 16} />
-          <span className={isMobile ? 'text-[10px]' : ''}>{isMobile ? dt.label.split(' ')[0] : dt.label}</span>
+          <dt.icon size={isMobile ? 20 : 18} className="text-primary" />
+          <span className={isMobile ? 'text-[10px]' : 'hidden sm:inline'}>{dt.label.split(' ')[0]}</span>
         </button>
       ))}
     </div>
