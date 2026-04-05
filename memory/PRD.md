@@ -18,6 +18,20 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
 ## Completed Tasks (2026-04-05)
+
+- **🔧 CRITICAL BUG FIX: Mobile Decorator Panel JavaScript Error** (DONE - 2026-04-05):
+  - **Issue**: User reported app crashing on Safari iOS with error overlay: `"Can't find variable: setSelected"` in `handleClickOutside`
+  - **Root Cause**: The `DraggableDecorator` component used `setIsSelected()` which didn't exist. The code had `setLocalSelected` for desktop and `onSelect` for mobile, but the `handleClickOutside` useEffect incorrectly called `setIsSelected`.
+  - **Fix**: Updated `handleClickOutside` in `/app/frontend/src/pages/TableMap.js` (lines 205-230):
+    - For mobile layout (`isMobileLayout`): calls `onSelect?.(null)` to deselect globally
+    - For desktop: calls `setLocalSelected(false)` to deselect locally
+    - Added dependency array to include `isMobileLayout` and `onSelect`
+    - Added check to NOT deselect when clicking on `MobileDecoratorControlPanel`
+  - **Also Fixed**: `handleSelect` function now uses the correct method based on `isMobileLayout`
+  - **Verification**: App loads without JavaScript errors, decorator panel functions correctly
+  - **⚠️ USER MUST DEPLOY** to verify fix on Safari iOS in production
+  - **File**: `/app/frontend/src/pages/TableMap.js`
+
 - **Centro de Ayuda In-App + PDFs Descargables** (DONE):
   - Creada página `/help` con manuales interactivos por rol
   - Manual del Mesero: 10 secciones (inicio sesión, abrir mesa, tomar pedido, enviar cocina, etc.)

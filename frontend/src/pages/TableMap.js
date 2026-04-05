@@ -209,7 +209,14 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
       if (nodeRef.current?.contains(e.target)) return;
       // Don't deselect if clicking on buttons (they have data-testid starting with delete- or color-)
       if (e.target.closest('[data-testid^="delete-"]') || e.target.closest('[data-testid^="color-"]')) return;
-      setIsSelected(false);
+      // Don't deselect if clicking on the mobile control panel
+      if (e.target.closest('[data-testid="mobile-decorator-panel"]')) return;
+      // Deselect: use appropriate method based on layout mode
+      if (isMobileLayout) {
+        onSelect?.(null);
+      } else {
+        setLocalSelected(false);
+      }
       setShowColorPicker(false);
     };
     // Use mousedown for desktop, touchstart for mobile
@@ -219,12 +226,16 @@ function DraggableDecorator({ decorator, containerSize, onUpdate, onDelete, edit
       document.removeEventListener('mousedown', handleClickOutside, true);
       document.removeEventListener('touchstart', handleClickOutside, true);
     };
-  }, [editMode, actualSelected]);
+  }, [editMode, actualSelected, isMobileLayout, onSelect]);
 
   const handleSelect = (e) => {
     if (!editMode) return;
     e.stopPropagation();
-    setIsSelected(true);
+    if (isMobileLayout) {
+      onSelect?.(decorator.id);
+    } else {
+      setLocalSelected(true);
+    }
   };
 
   const handlePointerDown = (e) => {
