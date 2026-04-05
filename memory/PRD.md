@@ -51,6 +51,17 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **REGLA**: Modo oscuro usa clases Tailwind originales (sin cambios)
   - Files: `/app/frontend/src/components/Layout.js`, `/app/frontend/src/pages/CashRegister.js`
 
+- **Table Map Fixed Aspect Ratio** (DONE - TESTED):
+  - **Problema**: El mapa de mesas se veía diferente en móvil vs desktop debido a diferente aspect ratio del contenedor
+  - **Solución**: Canvas del mapa con aspect ratio fijo 16:10 (1.60), centrado en el contenedor
+  - **Implementación** (`TableMap.js`):
+    - Líneas 349-382: Cálculo de dimensiones con aspect ratio fijo
+    - Líneas 468-483: Área del mapa centrada dentro del contenedor
+    - Líneas 141-142: Conversión de porcentaje a píxeles
+  - **Resultado**: Las mesas mantienen posiciones relativas idénticas en todos los dispositivos
+  - **Testeado**: Desktop 1280px ✅, iPad 768px ✅, Android 412px ✅, Safari iOS 390px ✅
+  - **Files**: `/app/frontend/src/pages/TableMap.js`
+
 ## Completed Tasks (2026-04-04)
 - **Light Mode Contrast Audit Fix** (DONE):
   - Added 164+ CSS rules with `:not(.neo-dark)` selector to fix light mode only
