@@ -51,15 +51,16 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **REGLA**: Modo oscuro usa clases Tailwind originales (sin cambios)
   - Files: `/app/frontend/src/components/Layout.js`, `/app/frontend/src/pages/CashRegister.js`
 
-- **Table Map Fixed Aspect Ratio** (DONE - TESTED):
+- **🔒 Table Map Fixed Aspect Ratio** (DONE - TESTED - **NO MODIFICAR**):
   - **Problema**: El mapa de mesas se veía diferente en móvil vs desktop debido a diferente aspect ratio del contenedor
   - **Solución**: Canvas del mapa con aspect ratio fijo 16:10 (1.60), centrado en el contenedor
   - **Implementación** (`TableMap.js`):
-    - Líneas 349-382: Cálculo de dimensiones con aspect ratio fijo
-    - Líneas 468-483: Área del mapa centrada dentro del contenedor
-    - Líneas 141-142: Conversión de porcentaje a píxeles
+    - Líneas 349-382: Cálculo de dimensiones con aspect ratio fijo `MAP_ASPECT_RATIO = 16 / 10`
+    - Líneas 468-483: Área del mapa centrada dentro del contenedor con `left/top` calculados
+    - Líneas 141-142: Conversión de porcentaje a píxeles `(table.x / 100) * containerSize.w`
   - **Resultado**: Las mesas mantienen posiciones relativas idénticas en todos los dispositivos
   - **Testeado**: Desktop 1280px ✅, iPad 768px ✅, Android 412px ✅, Safari iOS 390px ✅
+  - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
   - **Files**: `/app/frontend/src/pages/TableMap.js`
 
 ## Completed Tasks (2026-04-04)
@@ -241,3 +242,16 @@ Para cualquier botón/texto invisible en modo claro, usar este patrón:
 - Rojo (en uso): bg `#FEE2E2`, border `#EF4444`, text `#991B1B`
 - Amber (selected): bg `#FEF3C7`, border `#F59E0B`, text `#92400E`
 - Gray (default): bg `#F3F4F6`, border `#D1D5DB`, text `#374151`
+
+---
+
+## 🔒 CÓDIGO PROTEGIDO - NO MODIFICAR SIN AUTORIZACIÓN
+
+Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser modificados sin autorización explícita del usuario:
+
+### 1. Table Map Fixed Aspect Ratio (`/app/frontend/src/pages/TableMap.js`)
+- **Líneas 349-382**: Cálculo de `MAP_ASPECT_RATIO = 16 / 10` y dimensiones del canvas
+- **Líneas 468-483**: Área del mapa centrada con `left/top` calculados
+- **Razón**: Garantiza que las mesas se vean en la misma posición relativa en TODOS los dispositivos
+- **Fecha de protección**: 2026-04-05
+- **Testeado en**: Desktop, iPad, Android, Safari iOS ✅
