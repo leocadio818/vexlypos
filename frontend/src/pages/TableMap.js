@@ -346,11 +346,34 @@ export default function TableMap() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  // Fixed aspect ratio for the map canvas (16:10 for good viewing on all devices)
+  const MAP_ASPECT_RATIO = 16 / 10; // width / height
+  
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        setContainerSize({ w: rect.width, h: rect.height });
+        // Calculate the actual usable dimensions while maintaining aspect ratio
+        let w = rect.width;
+        let h = rect.height;
+        
+        // Adjust to maintain aspect ratio within the container
+        const currentRatio = w / h;
+        if (currentRatio > MAP_ASPECT_RATIO) {
+          // Container is wider than needed - use height as reference
+          w = h * MAP_ASPECT_RATIO;
+        } else {
+          // Container is taller than needed - use width as reference
+          h = w / MAP_ASPECT_RATIO;
+        }
+        
+        setContainerSize({ 
+          w, 
+          h,
+          // Store actual container dimensions for centering
+          actualW: rect.width,
+          actualH: rect.height
+        });
       }
     };
     updateSize();
@@ -442,11 +465,22 @@ export default function TableMap() {
             {isMobile ? 'MODO EDICION' : 'MODO EDICION - Arrastra o toca para redimensionar'}
           </div>
         )}
-        {containerSize.w > 0 && filteredTables.map(table => (
-          <DraggableTable key={table.id} table={table} containerSize={containerSize}
-            onDragEnd={handleDragEnd} onClick={handleTableClick}
-            editMode={editMode} onResize={handleResize} currentUserId={currentUserId} largeMode={largeMode} device={device} />
-        ))}
+        {/* Map area with fixed aspect ratio - centered in container */}
+        <div 
+          className="absolute"
+          style={{
+            width: containerSize.w,
+            height: containerSize.h,
+            left: containerSize.actualW ? (containerSize.actualW - containerSize.w) / 2 : 0,
+            top: containerSize.actualH ? (containerSize.actualH - containerSize.h) / 2 : 0,
+          }}
+        >
+          {containerSize.w > 0 && filteredTables.map(table => (
+            <DraggableTable key={table.id} table={table} containerSize={containerSize}
+              onDragEnd={handleDragEnd} onClick={handleTableClick}
+              editMode={editMode} onResize={handleResize} currentUserId={currentUserId} largeMode={largeMode} device={device} />
+          ))}
+        </div>
         {filteredTables.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-white/40">
             <div className="text-center">
