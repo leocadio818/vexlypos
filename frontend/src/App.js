@@ -28,6 +28,7 @@ const ProductConfig = React.lazy(() => import("@/pages/ProductConfig"));
 const UserConfig = React.lazy(() => import("@/pages/UserConfig"));
 const AnulacionesReport = React.lazy(() => import("@/pages/AnulacionesReport"));
 const TicketDemo = React.lazy(() => import("@/pages/TicketDemo"));
+const Help = React.lazy(() => import("@/pages/Help"));
 const BillHistory = React.lazy(() => import("@/pages/BillHistory"));
 
 function ProtectedRoute({ children }) {
@@ -77,6 +78,7 @@ function AppRoutes() {
         <Route path="product/:productId" element={<Suspense fallback={<PageSkeleton />}><ProductConfig /></Suspense>} />
         <Route path="user/:userId" element={<Suspense fallback={<PageSkeleton />}><UserConfig /></Suspense>} />
         <Route path="ticket-demo" element={<Suspense fallback={<PageSkeleton />}><TicketDemo /></Suspense>} />
+        <Route path="help" element={<Suspense fallback={<PageSkeleton />}><Help /></Suspense>} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

@@ -17,6 +17,19 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **CRITICAL**: The Factory `itbiS1` field expects TAX RATE ("18"), NOT amount. Amount goes in `totalITBIS1`
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
+## Completed Tasks (2026-04-05)
+- **Centro de Ayuda In-App** (DONE):
+  - Creada página `/help` con manuales interactivos por rol
+  - Manual del Mesero: 10 secciones (inicio sesión, abrir mesa, tomar pedido, enviar cocina, etc.)
+  - Manual del Cajero: 7 secciones (inicio turno, cobrar, formas de pago, tipos de factura, etc.)
+  - Manual del Administrador: 7 secciones (gestión usuarios, jornada, productos, impresoras, etc.)
+  - Manual del Gerente: 4 secciones (supervisión, autorizaciones, gestión equipo, reportes)
+  - Secciones expandibles con pasos, notas, tips y alertas importantes
+  - Soporte para modo claro y oscuro
+  - Botón "Ayuda" agregado al menú de Opciones
+  - Enlaces para descargar PDFs (pendiente generar los PDFs)
+  - Files: `/app/frontend/src/pages/Help.js`, `App.js`, `Layout.js`
+
 ## Completed Tasks (2026-04-04)
 - **Light Mode Contrast Audit Fix** (DONE):
   - Added 164+ CSS rules with `:not(.neo-dark)` selector to fix light mode only

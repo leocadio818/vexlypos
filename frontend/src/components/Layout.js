@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { GraduationCap } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud, MoreHorizontal, Wrench, MoveRight, SplitSquareHorizontal, Ban, Sun, Moon, AlertTriangle, Palette, ArrowRightLeft, Clock, LogOut as LogOutIcon, Lock, FileText, Pencil } from 'lucide-react';
+import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud, MoreHorizontal, Wrench, MoveRight, SplitSquareHorizontal, Ban, Sun, Moon, AlertTriangle, Palette, ArrowRightLeft, Clock, LogOut as LogOutIcon, Lock, FileText, Pencil, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -905,6 +905,15 @@ export default function Layout() {
                   <span className="font-semibold text-sm">Cierre de Día</span>
                 </button>
               )}
+              {/* Ayuda - disponible para todos */}
+              <button onClick={() => { setOptionsMenuOpen(false); navigate('/help'); }}
+                className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-blue-500/50 hover:bg-blue-500/5 transition-all active:scale-95"
+                data-testid="opt-ayuda">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                  <HelpCircle size={20} className="text-blue-500" />
+                </div>
+                <span className="font-semibold text-sm">Ayuda</span>
+              </button>
               {(isAdmin || hasPermission('view_ecf_dashboard')) && (
                 <button onClick={async () => {
                   setOptionsMenuOpen(false);
