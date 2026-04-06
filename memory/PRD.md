@@ -19,6 +19,26 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ## Completed Tasks (2026-04-05)
 
+- **Light Mode Contrast Fix: Recipes Module (RecipesTab.jsx)** (DONE - 2026-04-06):
+  - **Location**: Modal "Editar Receta" / Calculadora de Margen
+  - **Issues Fixed**:
+    - Costo/Precio Venta/Ganancia values invisible (white on white)
+    - "% Margen Deseado" and "Precio de Venta" labels invisible
+    - "Precio sugerido" cyan text invisible
+    - Ingredient row unit labels ("% merma") invisible
+    - IngredientSearchSelect dropdown text invisible
+  - **Technical Implementation**:
+    - Added `useTheme()` hook to RecipesTab.jsx
+    - Created `isLightMode = isMinimalist && !isNeoDark` check
+    - Applied inline styles with WebkitTextFillColor for Safari iOS
+    - Passed `isLightMode` prop to IngredientSearchSelect component
+  - **Colors Applied**:
+    - Text: `#1E293B` (dark slate)
+    - Muted: `#64748B` (slate gray)  
+    - Cyan accent: `#0891B2` (replaces `text-cyan-400`)
+    - Status colors preserved (red/amber/green for margin status)
+  - **File**: `/app/frontend/src/pages/inventory/components/RecipesTab.jsx`
+
 - **Light Mode Contrast Fix: Inventory Module** (DONE - 2026-04-06):
   - **BUG 1 - "Editar Insumo" Modal, "Conversión de Unidades" Section**:
     - All text inside this section was invisible in light mode (white text on white background)
