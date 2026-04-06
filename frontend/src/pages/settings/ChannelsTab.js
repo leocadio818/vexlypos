@@ -296,8 +296,8 @@ export default function ChannelsTab() {
                             </div>
                             
                             <Select
-                              value={areaMapping}
-                              onValueChange={(value) => updateAreaCategoryMapping(area.id, category.id, value)}
+                              value={areaMapping || '__global__'}
+                              onValueChange={(value) => updateAreaCategoryMapping(area.id, category.id, value === '__global__' ? '' : value)}
                             >
                               <SelectTrigger 
                                 className={`w-[140px] h-8 text-xs ${isLightMode ? 'bg-white border-slate-300' : ''}`}
@@ -313,7 +313,7 @@ export default function ChannelsTab() {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">
+                                <SelectItem value="__global__">
                                   <span className="text-muted-foreground">Usar global</span>
                                 </SelectItem>
                                 {printChannels.filter(c => c.active !== false && c.code !== 'receipt').map(channel => (
