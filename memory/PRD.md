@@ -19,7 +19,7 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ## Completed Tasks (2026-04-05)
 
-- **Shift/Day Closing Flow Fixes** (DONE - 2026-04-06):
+- **🔒 Shift/Day Closing Flow Fixes** (DONE - 2026-04-06 - **NO MODIFICAR**):
   - **BUG 1 - "Cierre de Turno" White Screen on Safari iOS**:
     - Added CSS fixes in `theme-minimalist.css` for Safari iOS dialog rendering
     - Uses `-webkit-transform`, `-webkit-backface-visibility`, and `transform-style: preserve-3d`
@@ -29,10 +29,11 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
     - Added frontend validation `handleOpenCloseDayDialog()` that checks for open shifts before allowing Cierre Z
     - Added warning dialog showing which shifts are still open with message "Debes cerrar el turno activo antes de cerrar el día"
   - **Files Modified**:
-    - `/app/backend/routers/pos_sessions.py` - New endpoint for checking open shifts
+    - `/app/backend/routers/pos_sessions.py` - New endpoint for checking open shifts (lines 708-732)
     - `/app/frontend/src/lib/api.js` - Added `openShifts()` API call
     - `/app/frontend/src/pages/CashRegister.js` - Added validation and warning dialog
-    - `/app/frontend/src/styles/theme-minimalist.css` - Safari iOS dialog fixes
+    - `/app/frontend/src/styles/theme-minimalist.css` - Safari iOS dialog fixes (lines 870-895)
+  - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
 
 - **🔒 Light Mode Contrast Fix: Recipes Module (RecipesTab.jsx + CSS)** (DONE - 2026-04-06 - **NO MODIFICAR**):
   - **Location**: Modal "Editar Receta" / Calculadora de Margen
