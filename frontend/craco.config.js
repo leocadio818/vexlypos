@@ -9,7 +9,8 @@ const isDevServer = process.env.NODE_ENV !== "production";
 // Environment variable overrides
 const config = {
   enableHealthCheck: process.env.ENABLE_HEALTH_CHECK === "true",
-  enableVisualEdits: isDevServer, // Only enable during dev server
+  // Disable visual edits temporarily to fix babel plugin error
+  enableVisualEdits: false, // isDevServer - disabled due to babel-metadata-plugin bug
 };
 
 // Conditionally load visual edits modules only in dev mode
