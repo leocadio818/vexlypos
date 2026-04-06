@@ -14,9 +14,10 @@ import { Badge } from '@/components/ui/badge';
 import RecipeHistoryDialog from './RecipeHistoryDialog';
 import { NumericInput } from '@/components/NumericKeypad';
 import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
+import { useTheme } from '@/context/ThemeContext';
 
 // Searchable ingredient selector using Shadcn Combobox pattern
-function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
+function IngredientSearchSelect({ ingredients, value, onChange, testId, isLightMode }) {
   const [confirmProps, showConfirm] = useConfirmDialog();
   const [open, setOpen] = useState(false);
   const selected = ingredients.find(i => i.id === value);
@@ -29,9 +30,13 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
           role="combobox"
           aria-expanded={open}
           data-testid={testId}
-          className="flex-1 text-left px-2 py-1 bg-card border border-border rounded text-sm truncate"
+          className="flex-1 text-left px-2 py-1 border border-border rounded text-sm truncate"
+          style={isLightMode 
+            ? { backgroundColor: '#FFFFFF', color: '#1E293B', WebkitTextFillColor: '#1E293B' } 
+            : { backgroundColor: 'var(--card)' }
+          }
         >
-          {selected ? selected.name : <span className="text-muted-foreground">Buscar insumo...</span>}
+          {selected ? selected.name : <span style={isLightMode ? { color: '#94A3B8' } : {}}>Buscar insumo...</span>}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-[280px] p-0" align="start">
@@ -47,8 +52,13 @@ function IngredientSearchSelect({ ingredients, value, onChange, testId }) {
                   onSelect={() => { onChange(i.id); setOpen(false); }}
                   data-testid={`ingredient-option-${i.id}`}
                 >
-                  {i.name}
-                  <span className="ml-auto text-xs text-muted-foreground">{i.unit}</span>
+                  <span style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}>
+                    {i.name}
+                  </span>
+                  <span 
+                    className="ml-auto text-xs"
+                    style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                  >{i.unit}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -84,6 +94,10 @@ export default function RecipesTab({
   calculateRecipeCost,
   onRefreshAll 
 }) {
+  // Theme context for light/dark mode styling
+  const { isMinimalist, isNeoDark } = useTheme();
+  const isLightMode = isMinimalist && !isNeoDark;
+
   const [recipeDialog, setRecipeDialog] = useState({ open: false, data: null });
   const [marginMode, setMarginMode] = useState('price');
   const [targetMargin, setTargetMargin] = useState(30);
@@ -830,17 +844,50 @@ export default function RecipesTab({
 
                 {/* Cost display */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="text-center p-2 rounded-lg bg-background/50">
-                    <div className="text-xs text-muted-foreground">Costo</div>
-                    <div className="font-mono font-bold text-lg">{formatMoney(marginData.cost)}</div>
+                  <div 
+                    className="text-center p-2 rounded-lg"
+                    style={isLightMode ? { backgroundColor: '#F1F5F9' } : { backgroundColor: 'rgb(var(--background) / 0.5)' }}
+                  >
+                    <div 
+                      className="text-xs"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >Costo</div>
+                    <div 
+                      className="font-mono font-bold text-lg"
+                      style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
+                    >{formatMoney(marginData.cost)}</div>
                   </div>
-                  <div className="text-center p-2 rounded-lg bg-background/50">
-                    <div className="text-xs text-muted-foreground">Precio Venta</div>
-                    <div className={`font-mono font-bold text-lg ${marginData.statusColor}`}>{formatMoney(marginData.currentPrice)}</div>
+                  <div 
+                    className="text-center p-2 rounded-lg"
+                    style={isLightMode ? { backgroundColor: '#F1F5F9' } : { backgroundColor: 'rgb(var(--background) / 0.5)' }}
+                  >
+                    <div 
+                      className="text-xs"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >Precio Venta</div>
+                    <div 
+                      className="font-mono font-bold text-lg"
+                      style={isLightMode ? { 
+                        color: marginData.status === 'critical' ? '#DC2626' : marginData.status === 'warning' ? '#D97706' : '#047857',
+                        WebkitTextFillColor: marginData.status === 'critical' ? '#DC2626' : marginData.status === 'warning' ? '#D97706' : '#047857'
+                      } : {}}
+                    >{formatMoney(marginData.currentPrice)}</div>
                   </div>
-                  <div className="text-center p-2 rounded-lg bg-background/50">
-                    <div className="text-xs text-muted-foreground">Ganancia</div>
-                    <div className={`font-mono font-bold text-lg ${marginData.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <div 
+                    className="text-center p-2 rounded-lg"
+                    style={isLightMode ? { backgroundColor: '#F1F5F9' } : { backgroundColor: 'rgb(var(--background) / 0.5)' }}
+                  >
+                    <div 
+                      className="text-xs"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >Ganancia</div>
+                    <div 
+                      className="font-mono font-bold text-lg"
+                      style={isLightMode ? { 
+                        color: marginData.profit >= 0 ? '#047857' : '#DC2626',
+                        WebkitTextFillColor: marginData.profit >= 0 ? '#047857' : '#DC2626'
+                      } : {}}
+                    >
                       {formatMoney(marginData.profit)}
                     </div>
                   </div>
@@ -850,7 +897,10 @@ export default function RecipesTab({
                 <div className="grid grid-cols-2 gap-4">
                   {/* Target Margin Input */}
                   <div>
-                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <label 
+                      className="text-xs flex items-center gap-1"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >
                       <TrendingUp size={12} /> % Margen Deseado
                     </label>
                     <div className="flex items-center gap-2 mt-1">
@@ -858,35 +908,50 @@ export default function RecipesTab({
                         value={targetMargin}
                         onChange={e => setTargetMargin(parseFloat(e.target.value) || 0)}
                         className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-center font-mono"
-                       
+                        style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
                         max="99"
                        
                         data-testid="target-margin-input"
                       />
-                      <span className="text-muted-foreground">%</span>
+                      <span style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}>%</span>
                     </div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      Precio sugerido: <span className="font-mono text-cyan-400">{formatMoney(marginData.suggestedPrice)}</span>
+                    <div 
+                      className="mt-1 text-xs"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >
+                      Precio sugerido: <span 
+                        className="font-mono"
+                        style={isLightMode ? { color: '#0891B2', WebkitTextFillColor: '#0891B2' } : { color: '#22D3EE' }}
+                      >{formatMoney(marginData.suggestedPrice)}</span>
                     </div>
                   </div>
 
                   {/* Custom Price Input */}
                   <div>
-                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <label 
+                      className="text-xs flex items-center gap-1"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >
                       <DollarSign size={12} /> Precio de Venta
                     </label>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-muted-foreground">RD$</span>
+                      <span style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}>RD$</span>
                       <NumericInput label="Valor"
                         value={customPrice}
                         onChange={e => setCustomPrice(parseFloat(e.target.value) || 0)}
                         className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-center font-mono"
-                       
+                        style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
                        
                         data-testid="custom-price-input"
                       />
                     </div>
-                    <div className={`mt-1 text-xs ${marginData.statusColor}`}>
+                    <div 
+                      className="mt-1 text-xs"
+                      style={isLightMode ? { 
+                        color: marginData.status === 'critical' ? '#DC2626' : marginData.status === 'warning' ? '#D97706' : '#047857',
+                        WebkitTextFillColor: marginData.status === 'critical' ? '#DC2626' : marginData.status === 'warning' ? '#D97706' : '#047857'
+                      } : {}}
+                    >
                       Margen actual: <span className="font-mono font-bold">{marginData.currentMargin}%</span>
                     </div>
                   </div>
@@ -908,15 +973,15 @@ export default function RecipesTab({
                 <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-center gap-4 text-xs">
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                    <span className="text-muted-foreground">&lt;{MARGIN_CRITICAL}% Crítico</span>
+                    <span style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}>&lt;{MARGIN_CRITICAL}% Crítico</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                    <span className="text-muted-foreground">&lt;{MARGIN_WARNING}% Advertencia</span>
+                    <span style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}>&lt;{MARGIN_WARNING}% Advertencia</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    <span className="text-muted-foreground">≥{MARGIN_WARNING}% Saludable</span>
+                    <span style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}>≥{MARGIN_WARNING}% Saludable</span>
                   </span>
                 </div>
               </div>
@@ -945,7 +1010,12 @@ export default function RecipesTab({
               </div>
               <div className="space-y-2">
                 {(recipeDialog.data?.ingredients || []).map((ing, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border" data-testid={`recipe-ingredient-${idx}`}>
+                  <div 
+                    key={idx} 
+                    className="flex items-center gap-2 p-2 rounded-lg border border-border" 
+                    style={isLightMode ? { backgroundColor: '#F8FAFC' } : { backgroundColor: 'var(--background)' }}
+                    data-testid={`recipe-ingredient-${idx}`}
+                  >
                     <IngredientSearchSelect
                       ingredients={ingredients}
                       value={ing.ingredient_id}
@@ -965,6 +1035,7 @@ export default function RecipesTab({
                         }));
                       }}
                       testId={`ingredient-search-${idx}`}
+                      isLightMode={isLightMode}
                     />
                     <NumericInput label="Valor"
                       value={ing.quantity}
@@ -978,9 +1049,13 @@ export default function RecipesTab({
                         }));
                       }}
                       className="w-20 px-2 py-1 bg-card border border-border rounded text-sm"
+                      style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
                       placeholder="Cant."
                     />
-                    <span className="text-xs text-muted-foreground w-16">{ing.unit}</span>
+                    <span 
+                      className="text-xs w-16"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >{ing.unit}</span>
                     <NumericInput label="Valor"
                       value={ing.waste_percentage}
                       onChange={e => {
@@ -993,9 +1068,13 @@ export default function RecipesTab({
                         }));
                       }}
                       className="w-16 px-2 py-1 bg-card border border-border rounded text-sm"
+                      style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
                       placeholder="%"
                     />
-                    <span className="text-xs text-muted-foreground">% merma</span>
+                    <span 
+                      className="text-xs"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >% merma</span>
                     <Button 
                       variant="ghost" 
                       size="icon" 
