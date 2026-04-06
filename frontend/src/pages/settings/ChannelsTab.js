@@ -31,7 +31,7 @@ export default function ChannelsTab() {
   const loadAreaData = useCallback(async () => {
     try {
       const [areasRes, areaMappingsRes, catMappingsRes] = await Promise.all([
-        axios.get(`${API}/tables/areas`, { headers: hdrs() }),
+        axios.get(`${API}/areas`, { headers: hdrs() }),
         axios.get(`${API}/area-channel-mappings`, { headers: hdrs() }),
         axios.get(`${API}/category-channels`, { headers: hdrs() })
       ]);
@@ -212,17 +212,23 @@ export default function ChannelsTab() {
         <div className="space-y-4" data-testid="area-channels-section">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="text-sm text-muted-foreground">
+              <p 
+                className="text-sm"
+                style={isLightMode ? { color: '#1E293B' } : {}}
+              >
                 Configura qué impresora recibe las comandas según el <strong>área</strong> de la mesa.
               </p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
+              <p 
+                className="text-xs mt-1"
+                style={isLightMode ? { color: '#64748B' } : { color: 'rgb(148 163 184 / 0.7)' }}
+              >
                 Si no configuras un área, usará el canal global.
               </p>
             </div>
             <Button 
               onClick={saveAreaChannelMappings} 
               disabled={savingAreaMappings}
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-orange-600 hover:bg-orange-700 text-white"
               data-testid="save-area-mappings-btn"
             >
               <Save size={14} className="mr-2" />
@@ -231,11 +237,17 @@ export default function ChannelsTab() {
           </div>
           
           {areas.length === 0 ? (
-            <Card className="bg-muted/50">
+            <Card className={isLightMode ? 'bg-slate-100' : 'bg-muted/50'}>
               <CardContent className="p-8 text-center">
                 <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No hay áreas configuradas</p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p 
+                  className="font-medium"
+                  style={isLightMode ? { color: '#1E293B' } : {}}
+                >No hay áreas configuradas</p>
+                <p 
+                  className="text-sm mt-1"
+                  style={isLightMode ? { color: '#64748B' } : {}}
+                >
                   Ve a Ajustes → Mesas para crear áreas
                 </p>
               </CardContent>
@@ -244,10 +256,10 @@ export default function ChannelsTab() {
             <div className="space-y-3">
               {areas.map(area => (
                 <Card key={area.id} className="overflow-hidden" data-testid={`area-config-${area.id}`}>
-                  <CardHeader className="py-3 px-4 bg-muted/30">
+                  <CardHeader className={`py-3 px-4 ${isLightMode ? 'bg-slate-100' : 'bg-muted/30'}`}>
                     <CardTitle className="flex items-center gap-2 text-sm">
                       <MapPin size={14} className="text-orange-500" />
-                      {area.name}
+                      <span style={isLightMode ? { color: '#1E293B' } : {}}>{area.name}</span>
                       {Object.keys(areaChannelMappings[area.id] || {}).length > 0 && (
                         <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30 text-[10px]">
                           {Object.keys(areaChannelMappings[area.id] || {}).length} personalizadas
@@ -264,13 +276,20 @@ export default function ChannelsTab() {
                         return (
                           <div 
                             key={category.id} 
-                            className="flex items-center justify-between gap-2 p-2 rounded-lg bg-background/50"
+                            className={`flex items-center justify-between gap-2 p-2 rounded-lg ${isLightMode ? 'bg-slate-50' : 'bg-background/50'}`}
                             data-testid={`area-${area.id}-cat-${category.id}`}
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-sm font-medium truncate">{category.name}</span>
+                              <span 
+                                className="text-sm font-medium truncate"
+                                style={isLightMode ? { color: '#1E293B' } : {}}
+                              >{category.name}</span>
                               {!effective.isAreaSpecific && (
-                                <Badge variant="outline" className="text-[10px] shrink-0">
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-[10px] shrink-0"
+                                  style={isLightMode ? { color: '#64748B', borderColor: '#CBD5E1' } : {}}
+                                >
                                   Global
                                 </Badge>
                               )}
@@ -280,14 +299,16 @@ export default function ChannelsTab() {
                               value={areaMapping}
                               onValueChange={(value) => updateAreaCategoryMapping(area.id, category.id, value)}
                             >
-                              <SelectTrigger className="w-[140px] h-8 text-xs">
+                              <SelectTrigger 
+                                className={`w-[140px] h-8 text-xs ${isLightMode ? 'bg-white border-slate-300' : ''}`}
+                              >
                                 <SelectValue placeholder="Usar global">
                                   {areaMapping ? (
                                     <span className="text-orange-500 font-medium">
                                       {printChannels.find(c => c.code === areaMapping)?.name || areaMapping}
                                     </span>
                                   ) : (
-                                    <span className="text-muted-foreground">Usar global</span>
+                                    <span style={isLightMode ? { color: '#64748B' } : {}} className="text-muted-foreground">Usar global</span>
                                   )}
                                 </SelectValue>
                               </SelectTrigger>
@@ -318,10 +339,16 @@ export default function ChannelsTab() {
           )}
           
           {/* Info card */}
-          <Card className="bg-blue-500/10 border-blue-500/20 mt-4">
+          <Card className={`mt-4 ${isLightMode ? 'bg-blue-50 border-blue-200' : 'bg-blue-500/10 border-blue-500/20'}`}>
             <CardContent className="p-4">
-              <h4 className="font-oswald font-bold text-blue-400 mb-2">¿Cómo funciona?</h4>
-              <ul className="text-xs space-y-1 text-muted-foreground">
+              <h4 
+                className="font-oswald font-bold mb-2"
+                style={isLightMode ? { color: '#1E40AF' } : { color: '#60A5FA' }}
+              >¿Cómo funciona?</h4>
+              <ul 
+                className="text-xs space-y-1"
+                style={isLightMode ? { color: '#1E293B' } : { color: '#CBD5E1' }}
+              >
                 <li>• <strong>Prioridad 1:</strong> Canal específico del producto</li>
                 <li>• <strong>Prioridad 2:</strong> Canal del área para esa categoría</li>
                 <li>• <strong>Prioridad 3:</strong> Canal global de la categoría</li>
