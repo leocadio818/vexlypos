@@ -825,6 +825,82 @@ async def update_category_channels(input: dict):
         )
     return {"ok": True}
 
+
+# ─── AREA CHANNEL MAPPINGS (Area-based print routing) ───
+@api.get("/area-channel-mappings")
+async def get_area_channel_mappings():
+    """Get all area-specific channel mappings"""
+    mappings = await db.area_channel_mappings.find({}, {"_id": 0}).to_list(500)
+    return mappings
+
+@api.get("/area-channel-mappings/{area_id}")
+async def get_area_channel_mapping(area_id: str):
+    """Get channel mappings for a specific area"""
+    mappings = await db.area_channel_mappings.find({"area_id": area_id}, {"_id": 0}).to_list(100)
+    return mappings
+
+@api.post("/area-channel-mappings")
+async def create_area_channel_mapping(input: dict):
+    """Create a single area-category-channel mapping"""
+    area_id = input.get("area_id")
+    category_id = input.get("category_id")
+    channel_code = input.get("channel_code")
+    
+    if not area_id or not category_id or not channel_code:
+        raise HTTPException(status_code=400, detail="area_id, category_id, and channel_code required")
+    
+    # Upsert: update if exists, create if not
+    await db.area_channel_mappings.update_one(
+        {"area_id": area_id, "category_id": category_id},
+        {"$set": {
+            "area_id": area_id,
+            "category_id": category_id,
+            "channel_code": channel_code,
+            "updated_at": now_iso()
+        }},
+        upsert=True
+    )
+    return {"ok": True, "area_id": area_id, "category_id": category_id, "channel_code": channel_code}
+
+@api.put("/area-channel-mappings/bulk")
+async def update_area_channel_mappings_bulk(input: dict):
+    """
+    Bulk update area channel mappings.
+    Input format: { "area_id": { "category_id": "channel_code", ... }, ... }
+    """
+    for area_id, mappings in input.items():
+        for category_id, channel_code in mappings.items():
+            if channel_code:
+                await db.area_channel_mappings.update_one(
+                    {"area_id": area_id, "category_id": category_id},
+                    {"$set": {
+                        "area_id": area_id,
+                        "category_id": category_id,
+                        "channel_code": channel_code,
+                        "updated_at": now_iso()
+                    }},
+                    upsert=True
+                )
+            else:
+                # Empty channel means remove the mapping (use global fallback)
+                await db.area_channel_mappings.delete_one(
+                    {"area_id": area_id, "category_id": category_id}
+                )
+    return {"ok": True}
+
+@api.delete("/area-channel-mappings/{area_id}/{category_id}")
+async def delete_area_channel_mapping(area_id: str, category_id: str):
+    """Remove a specific area-category mapping (falls back to global)"""
+    await db.area_channel_mappings.delete_one({"area_id": area_id, "category_id": category_id})
+    return {"ok": True}
+
+@api.delete("/area-channel-mappings/area/{area_id}")
+async def delete_all_area_channel_mappings(area_id: str):
+    """Remove all channel mappings for an area"""
+    result = await db.area_channel_mappings.delete_many({"area_id": area_id})
+    return {"ok": True, "deleted": result.deleted_count}
+
+
 # ─── RESERVATIONS ───
 @api.get("/reservations")
 async def list_reservations(date: Optional[str] = Query(None)):

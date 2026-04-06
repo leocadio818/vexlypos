@@ -1219,11 +1219,23 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
     category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
     cat_to_channel = {m["category_id"]: m["channel_code"] for m in category_mappings}
     
+    # Get area-specific channel mappings (NEW: Area-based routing)
+    area_channel_mappings = []
+    if area_id:
+        area_channel_mappings = await db.area_channel_mappings.find(
+            {"area_id": area_id}, {"_id": 0}
+        ).to_list(100)
+    area_cat_to_channel = {m["category_id"]: m["channel_code"] for m in area_channel_mappings}
+    
     # Get products for print_channels
     products = await db.products.find({}, {"_id": 0, "id": 1, "name": 1, "category_id": 1, "print_channels": 1}).to_list(500)
     prod_map = {p["id"]: p for p in products}
     
     # Group items by channel
+    # ROUTING PRIORITY:
+    # 1. Product-specific print_channels[] (highest priority)
+    # 2. Area's configured channel for that category (NEW)
+    # 3. Global category_channels fallback (lowest priority)
     items_by_channel = {}
     for item in items_to_print:
         prod_id = item.get("product_id", "")
@@ -1231,10 +1243,16 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
         
         product_channels = product.get("print_channels", [])
         if product_channels and len(product_channels) > 0:
+            # Priority 1: Product-specific channels
             target_channels = product_channels
         else:
             cat_id = product.get("category_id", "")
-            channel_code = cat_to_channel.get(cat_id, "kitchen")
+            # Priority 2: Area-specific channel for this category
+            if cat_id in area_cat_to_channel:
+                channel_code = area_cat_to_channel[cat_id]
+            else:
+                # Priority 3: Global category channel (fallback)
+                channel_code = cat_to_channel.get(cat_id, "kitchen")
             target_channels = [channel_code]
         
         for channel_code in target_channels:

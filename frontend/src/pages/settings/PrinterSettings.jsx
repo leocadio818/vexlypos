@@ -6,9 +6,10 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Printer, RefreshCw, Trash2, CheckCircle, XCircle, Clock, Settings2, Tag, Send, ChefHat, Wine, Receipt, Download, Monitor, PlayCircle } from 'lucide-react';
+import { Printer, RefreshCw, Trash2, CheckCircle, XCircle, Clock, Settings2, Tag, Send, ChefHat, Wine, Receipt, Download, Monitor, PlayCircle, MapPin, Plus, Save } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { NumericInput } from '@/components/NumericKeypad';
+import { useTheme } from '@/context/ThemeContext';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const headers = () => ({ 
@@ -23,6 +24,10 @@ const channelIcons = {
 };
 
 export default function PrinterSettings() {
+  // Theme context for light/dark mode styling
+  const { isMinimalist, isNeoDark } = useTheme();
+  const isLightMode = isMinimalist && !isNeoDark;
+  
   const [config, setConfig] = useState({
     enabled: true,
     paper_width: 80,
@@ -40,15 +45,22 @@ export default function PrinterSettings() {
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('channels');
+  
+  // Area-based channel mappings (NEW)
+  const [areas, setAreas] = useState([]);
+  const [areaChannelMappings, setAreaChannelMappings] = useState({}); // { area_id: { category_id: channel_code } }
+  const [savingAreaMappings, setSavingAreaMappings] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
-      const [configRes, channelsRes, categoriesRes, mappingsRes, queueRes] = await Promise.all([
+      const [configRes, channelsRes, categoriesRes, mappingsRes, queueRes, areasRes, areaMappingsRes] = await Promise.all([
         fetch(`${API}/api/printer-config`),
         fetch(`${API}/api/print-channels`),
         fetch(`${API}/api/categories`),
         fetch(`${API}/api/category-channels`),
-        fetch(`${API}/api/print/queue`)
+        fetch(`${API}/api/print/queue`),
+        fetch(`${API}/api/tables/areas`, { headers: headers() }),
+        fetch(`${API}/api/area-channel-mappings`, { headers: headers() })
       ]);
       
       if (configRes.ok) setConfig(await configRes.json());
@@ -61,6 +73,24 @@ export default function PrinterSettings() {
         setCategoryMappings(mapObj);
       }
       if (queueRes.ok) setQueue(await queueRes.json());
+      
+      // Load areas
+      if (areasRes.ok) {
+        const areasData = await areasRes.json();
+        setAreas(areasData || []);
+      }
+      
+      // Load area-channel mappings
+      if (areaMappingsRes.ok) {
+        const areaMappingsData = await areaMappingsRes.json();
+        // Convert array to nested object: { area_id: { category_id: channel_code } }
+        const mappingsObj = {};
+        (areaMappingsData || []).forEach(m => {
+          if (!mappingsObj[m.area_id]) mappingsObj[m.area_id] = {};
+          mappingsObj[m.area_id][m.category_id] = m.channel_code;
+        });
+        setAreaChannelMappings(mappingsObj);
+      }
     } catch (err) {
       notify.error('Error cargando configuración');
     }
@@ -138,6 +168,52 @@ export default function PrinterSettings() {
     }
   };
 
+  // Save area-channel mappings
+  const saveAreaChannelMappings = async () => {
+    setSavingAreaMappings(true);
+    try {
+      const res = await fetch(`${API}/api/area-channel-mappings/bulk`, {
+        method: 'PUT',
+        headers: headers(),
+        body: JSON.stringify(areaChannelMappings)
+      });
+      if (res.ok) {
+        notify.success('Asignaciones por área guardadas');
+      } else {
+        notify.error('Error guardando asignaciones');
+      }
+    } catch (err) {
+      notify.error('Error guardando asignaciones');
+    }
+    setSavingAreaMappings(false);
+  };
+
+  // Update a single area-category mapping in local state
+  const updateAreaCategoryMapping = (areaId, categoryId, channelCode) => {
+    setAreaChannelMappings(prev => {
+      const newMappings = { ...prev };
+      if (!newMappings[areaId]) newMappings[areaId] = {};
+      if (channelCode) {
+        newMappings[areaId][categoryId] = channelCode;
+      } else {
+        delete newMappings[areaId][categoryId];
+      }
+      return newMappings;
+    });
+  };
+
+  // Get the effective channel for an area/category (for display)
+  const getEffectiveChannel = (areaId, categoryId) => {
+    // Priority: area-specific > global
+    if (areaChannelMappings[areaId]?.[categoryId]) {
+      return { code: areaChannelMappings[areaId][categoryId], isAreaSpecific: true };
+    }
+    if (categoryMappings[categoryId]) {
+      return { code: categoryMappings[categoryId], isAreaSpecific: false };
+    }
+    return { code: 'kitchen', isAreaSpecific: false }; // default fallback
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -164,9 +240,10 @@ export default function PrinterSettings() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-700 pb-2">
+      <div className="flex gap-2 border-b border-slate-700 pb-2 overflow-x-auto">
         {[
           { id: 'channels', label: 'Impresoras', icon: Printer },
+          { id: 'areas', label: 'Por Área', icon: MapPin },
           { id: 'business', label: 'Datos Negocio', icon: Settings2 },
           { id: 'queue', label: `Cola (${queue.length})`, icon: Clock }
         ].map(tab => {
@@ -175,11 +252,13 @@ export default function PrinterSettings() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${
+              data-testid={`printer-tab-${tab.id}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id 
                   ? 'bg-orange-500/20 text-orange-400 border-b-2 border-orange-500' 
                   : 'text-slate-400 hover:text-white'
               }`}
+              style={isLightMode && activeTab !== tab.id ? { color: '#64748B' } : {}}
             >
               <Icon className="w-4 h-4" />
               {tab.label}
@@ -318,6 +397,156 @@ export default function PrinterSettings() {
               <Button onClick={saveConfig} className="bg-orange-600 hover:bg-orange-700">
                 Guardar Opciones
               </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Tab: Enrutamiento Por Área (NEW) */}
+      {activeTab === 'areas' && (
+        <div className="space-y-4" data-testid="area-channels-tab">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm" style={isLightMode ? { color: '#64748B' } : { color: '#94A3B8' }}>
+                Configura qué impresora recibe las comandas de cada categoría <strong>según el área</strong> donde está la mesa.
+              </p>
+              <p className="text-xs mt-1" style={isLightMode ? { color: '#94A3B8' } : { color: '#64748B' }}>
+                Si un área no tiene configuración específica, usará el canal global de la categoría.
+              </p>
+            </div>
+            <Button 
+              onClick={saveAreaChannelMappings} 
+              disabled={savingAreaMappings}
+              className="bg-orange-600 hover:bg-orange-700"
+              data-testid="save-area-mappings-btn"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {savingAreaMappings ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </div>
+          
+          {areas.length === 0 ? (
+            <Card className={isLightMode ? 'bg-slate-100 border-slate-200' : 'bg-slate-800 border-slate-700'}>
+              <CardContent className="p-8 text-center">
+                <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" style={isLightMode ? { color: '#94A3B8' } : {}} />
+                <p className="font-medium" style={isLightMode ? { color: '#1E293B' } : {}}>No hay áreas configuradas</p>
+                <p className="text-sm mt-1" style={isLightMode ? { color: '#64748B' } : { color: '#94A3B8' }}>
+                  Ve a Ajustes → Mesas para crear áreas (Salón, Terraza, Bar, etc.)
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {areas.map(area => (
+                <Card 
+                  key={area.id} 
+                  className={isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700'}
+                  data-testid={`area-config-${area.id}`}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <MapPin className="w-4 h-4 text-orange-500" />
+                      <span style={isLightMode ? { color: '#1E293B' } : {}}>{area.name}</span>
+                      {Object.keys(areaChannelMappings[area.id] || {}).length > 0 && (
+                        <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs">
+                          {Object.keys(areaChannelMappings[area.id] || {}).length} personalizaciones
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="grid gap-2">
+                      {categories.filter(c => c.id && c.name).map(category => {
+                        const effective = getEffectiveChannel(area.id, category.id);
+                        const areaMapping = areaChannelMappings[area.id]?.[category.id] || '';
+                        
+                        return (
+                          <div 
+                            key={category.id} 
+                            className={`flex items-center justify-between p-2 rounded-lg ${isLightMode ? 'bg-slate-50' : 'bg-slate-900/50'}`}
+                            data-testid={`area-${area.id}-category-${category.id}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span 
+                                className="text-sm font-medium min-w-[120px]"
+                                style={isLightMode ? { color: '#1E293B' } : {}}
+                              >
+                                {category.name}
+                              </span>
+                              {!effective.isAreaSpecific && (
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs"
+                                  style={isLightMode ? { color: '#64748B', borderColor: '#CBD5E1' } : {}}
+                                >
+                                  Global: {channels.find(c => c.code === effective.code)?.name || effective.code}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <Select
+                              value={areaMapping}
+                              onValueChange={(value) => updateAreaCategoryMapping(area.id, category.id, value)}
+                            >
+                              <SelectTrigger 
+                                className={`w-[180px] ${isLightMode ? 'bg-white border-slate-300' : 'bg-slate-800 border-slate-600'}`}
+                                data-testid={`select-area-${area.id}-cat-${category.id}`}
+                              >
+                                <SelectValue placeholder="Usar global">
+                                  {areaMapping ? (
+                                    <span className="text-orange-400 font-medium">
+                                      {channels.find(c => c.code === areaMapping)?.name || areaMapping}
+                                    </span>
+                                  ) : (
+                                    <span style={isLightMode ? { color: '#94A3B8' } : { color: '#64748B' }}>
+                                      Usar global
+                                    </span>
+                                  )}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">
+                                  <span className="text-slate-400">Usar global ({channels.find(c => c.code === categoryMappings[category.id])?.name || 'Cocina'})</span>
+                                </SelectItem>
+                                {channels.filter(c => c.active && c.code !== 'receipt').map(channel => (
+                                  <SelectItem key={channel.code} value={channel.code}>
+                                    <div className="flex items-center gap-2">
+                                      {channel.code === 'kitchen' && <ChefHat className="w-3 h-3" />}
+                                      {channel.code === 'bar' && <Wine className="w-3 h-3" />}
+                                      {!['kitchen', 'bar'].includes(channel.code) && <Printer className="w-3 h-3" />}
+                                      {channel.name}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          
+          {/* Explanation card */}
+          <Card className={`mt-4 ${isLightMode ? 'bg-blue-50 border-blue-200' : 'bg-blue-500/10 border-blue-500/20'}`}>
+            <CardContent className="p-4">
+              <h4 
+                className="font-oswald font-bold mb-2"
+                style={isLightMode ? { color: '#1E40AF' } : { color: '#60A5FA' }}
+              >
+                ¿Cómo funciona?
+              </h4>
+              <ul className="text-sm space-y-1" style={isLightMode ? { color: '#1E293B' } : { color: '#CBD5E1' }}>
+                <li>• <strong>Prioridad 1:</strong> Si el producto tiene canales específicos, esos se usan.</li>
+                <li>• <strong>Prioridad 2:</strong> Si el área tiene un canal configurado para la categoría, se usa ese.</li>
+                <li>• <strong>Prioridad 3:</strong> Se usa el canal global de la categoría (fallback).</li>
+              </ul>
+              <p className="text-xs mt-3" style={isLightMode ? { color: '#64748B' } : { color: '#94A3B8' }}>
+                Ejemplo: Una "Cerveza" en la mesa 5 (Terraza) irá a "Bar Terraza" si configuraste esa área así.
+              </p>
             </CardContent>
           </Card>
         </div>
