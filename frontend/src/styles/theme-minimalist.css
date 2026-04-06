@@ -841,6 +841,13 @@ body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] label {
   -webkit-text-fill-color: #64748b !important;
 }
 
+/* Light mode: Margin calculator title "Calculadora de Margen" */
+body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] h4,
+body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] .font-oswald {
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+}
+
 /* Light mode: Cyan accent text (precio sugerido) */
 body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] .text-cyan-400,
 body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] [class*="text-cyan"] {
