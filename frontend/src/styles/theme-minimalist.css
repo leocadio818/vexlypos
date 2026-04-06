@@ -810,3 +810,59 @@ body.theme-minimalist .neo-glow-animate {
 body.theme-minimalist .neo-bg-orb {
   animation: neo-glow-breathe 4s ease-in-out infinite;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FIX: Recipe Modal Inputs — Light mode text visibility
+   Inputs inside the margin calculator were invisible (white on white)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Light mode: Input text must be dark/visible */
+body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] input,
+body.theme-minimalist:not(.neo-dark) [data-testid="target-margin-input"],
+body.theme-minimalist:not(.neo-dark) [data-testid="custom-price-input"],
+body.theme-minimalist:not(.neo-dark) [data-testid="recipe-yield-input"] {
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+}
+
+/* Light mode: Input placeholders */
+body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] input::placeholder,
+body.theme-minimalist:not(.neo-dark) [data-testid="target-margin-input"]::placeholder,
+body.theme-minimalist:not(.neo-dark) [data-testid="custom-price-input"]::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+
+/* Light mode: Labels and small text in margin calculator */
+body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] .text-xs,
+body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] label {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+}
+
+/* Light mode: Cyan accent text (precio sugerido) */
+body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] .text-cyan-400,
+body.theme-minimalist:not(.neo-dark) [data-testid="margin-calculator"] [class*="text-cyan"] {
+  color: #0891b2 !important;
+  -webkit-text-fill-color: #0891b2 !important;
+}
+
+/* Light mode: Recipe ingredient rows */
+body.theme-minimalist:not(.neo-dark) [data-testid^="recipe-ingredient-"] input {
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+}
+
+body.theme-minimalist:not(.neo-dark) [data-testid^="recipe-ingredient-"] .text-xs,
+body.theme-minimalist:not(.neo-dark) [data-testid^="recipe-ingredient-"] span {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+}
+
+/* Light mode: Ingredient search select */
+body.theme-minimalist:not(.neo-dark) [data-testid^="ingredient-search-"] {
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+}
+
