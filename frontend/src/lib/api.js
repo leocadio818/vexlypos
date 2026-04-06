@@ -220,6 +220,7 @@ export const posSessionsAPI = {
   terminals: () => api.get('/pos-sessions/terminals'),
   terminalsInUse: () => api.get('/pos-sessions/terminals/in-use'),
   movementReasons: () => api.get('/pos-sessions/movement-reasons'),
+  openShifts: () => api.get('/pos-sessions/open-shifts'), // Para verificar turnos abiertos antes de Cierre Z
   // Movements
   addMovement: (sessionId, data) => api.post(`/pos-sessions/${sessionId}/movements`, data),
   getMovements: (sessionId) => api.get(`/pos-sessions/${sessionId}/movements`),

@@ -705,6 +705,32 @@ async def get_terminals_in_use():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/open-shifts")
+async def get_all_open_shifts(user=Depends(get_current_user)):
+    """
+    Obtiene TODOS los turnos abiertos (para validación de Cierre de Día).
+    Solo admin puede ver todos los turnos. Usado para verificar si se puede cerrar el día.
+    """
+    try:
+        sb = get_supabase()
+        
+        # Obtener todos los turnos abiertos sin filtrar por usuario
+        result = sb.table("pos_sessions").select(
+            "id, ref, terminal_name, opened_by, opened_by_name, opened_at, status"
+        ).eq("status", "open").execute()
+        
+        open_sessions = result.data or []
+        
+        return {
+            "has_open_shifts": len(open_sessions) > 0,
+            "count": len(open_sessions),
+            "sessions": open_sessions
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/movement-reasons")
 async def get_movement_reasons():
     """Obtiene catalogo de razones de movimiento de caja"""

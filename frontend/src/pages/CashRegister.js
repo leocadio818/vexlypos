@@ -98,6 +98,7 @@ export default function CashRegister() {
   const [closeDayPin, setCloseDayPin] = useState('');
   const [closeDayNotes, setCloseDayNotes] = useState('');
   const [closeDayLoading, setCloseDayLoading] = useState(false);
+  const [openShiftsWarning, setOpenShiftsWarning] = useState(null); // Para mostrar turnos abiertos
   
   // Re-imprimir reporte
   const [reprintSessionId, setReprintSessionId] = useState(null);
@@ -450,6 +451,37 @@ export default function CashRegister() {
   // Cierre de Día - estados adicionales
   const [closedDayId, setClosedDayId] = useState(null);
   
+  // Verificar turnos abiertos antes de permitir Cierre de Día
+  const handleOpenCloseDayDialog = async () => {
+    try {
+      // Verificar si hay turnos abiertos en el sistema usando endpoint dedicado
+      const checkRes = await posSessionsAPI.openShifts();
+      const { has_open_shifts, count, sessions } = checkRes.data || {};
+      
+      if (has_open_shifts && count > 0) {
+        // Hay turnos abiertos - mostrar advertencia y NO abrir el diálogo
+        const sessionDetails = (sessions || []).map(s => 
+          `${s.opened_by_name || 'Usuario'} (${s.terminal_name || 'Sin terminal'})`
+        ).join(', ');
+        
+        setOpenShiftsWarning({
+          count: count,
+          details: sessionDetails,
+          sessions: sessions
+        });
+        return; // NO abrir el diálogo de cierre
+      }
+      
+      // No hay turnos abiertos - permitir cierre de día
+      setOpenShiftsWarning(null);
+      setCloseDayDialog(true);
+    } catch (err) {
+      // Si falla la verificación, permitir abrir el diálogo (el backend validará)
+      console.error('Error verificando turnos:', err);
+      setCloseDayDialog(true);
+    }
+  };
+  
   const handleCloseDay = async () => {
     if (!closeDayPin) {
       notify.error('Ingresa el PIN de autorización');
@@ -547,7 +579,7 @@ export default function CashRegister() {
           {/* Botón Cierre de Día - Solo para Admin */}
           {user?.role === 'admin' && !currentSession && (
             <button 
-              onClick={() => setCloseDayDialog(true)} 
+              onClick={handleOpenCloseDayDialog} 
               data-testid="close-day-btn"
               className="px-3 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 hover:bg-amber-500/30 text-amber-400 font-medium text-sm flex items-center gap-2 transition-all"
               title="Cierre de Día (Z)"
@@ -1253,6 +1285,41 @@ export default function CashRegister() {
               onClick={() => setOpenTablesError({ show: false, message: '' })}
               data-testid="close-open-tables-error"
               className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-oswald font-bold hover:opacity-90 transition-all"
+            >
+              ENTENDIDO
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Advertencia: Turnos Abiertos (para Cierre de Día) */}
+      <Dialog open={!!openShiftsWarning} onOpenChange={(v) => !v && setOpenShiftsWarning(null)}>
+        <DialogContent className="max-w-md mx-auto" data-testid="open-shifts-warning-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald text-amber-400 flex items-center gap-2">
+              <AlertTriangle size={20} />
+              No se puede cerrar la jornada
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+              <p className="text-amber-600 dark:text-amber-400 text-sm font-bold mb-2">
+                Hay {openShiftsWarning?.count || 0} turno(s) abierto(s):
+              </p>
+              <p className="text-amber-700 dark:text-amber-300 text-sm">
+                {openShiftsWarning?.details}
+              </p>
+            </div>
+            <p className="text-sm text-foreground">
+              <strong>Debes cerrar el turno activo antes de cerrar el día.</strong>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Asegúrate de que todos los cajeros cierren sus turnos antes de realizar el Cierre Z.
+            </p>
+            <button 
+              onClick={() => setOpenShiftsWarning(null)}
+              data-testid="close-shifts-warning"
+              className="w-full h-11 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-oswald font-bold transition-all"
             >
               ENTENDIDO
             </button>

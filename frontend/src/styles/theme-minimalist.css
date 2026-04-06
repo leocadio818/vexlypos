@@ -873,3 +873,34 @@ body.theme-minimalist:not(.neo-dark) [data-testid^="ingredient-search-"] {
   -webkit-text-fill-color: #1e293b !important;
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   FIX: Safari iOS Dialog Rendering — Cierre de Turno white screen
+   Safari iOS sometimes has issues with translate-based positioning
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Ensure dialog overlay renders correctly on Safari iOS */
+@supports (-webkit-touch-callout: none) {
+  [data-testid="close-session-dialog"],
+  [data-testid="close-day-dialog"],
+  [data-testid="open-session-dialog"] {
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  
+  /* Force repaint on Safari iOS for dialogs */
+  [role="dialog"] {
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+  }
+  
+  /* Ensure backdrop renders on Safari iOS */
+  [data-state="open"] > [data-radix-dialog-overlay] {
+    -webkit-backdrop-filter: blur(0px);
+    backdrop-filter: blur(0px);
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+}
+
