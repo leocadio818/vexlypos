@@ -19,25 +19,28 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ## Completed Tasks (2026-04-05)
 
-- **Light Mode Contrast Fix: Recipes Module (RecipesTab.jsx)** (DONE - 2026-04-06):
+- **🔒 Light Mode Contrast Fix: Recipes Module (RecipesTab.jsx + CSS)** (DONE - 2026-04-06 - **NO MODIFICAR**):
   - **Location**: Modal "Editar Receta" / Calculadora de Margen
   - **Issues Fixed**:
-    - Costo/Precio Venta/Ganancia values invisible (white on white)
+    - Título "Calculadora de Margen" invisible (blanco sobre fondo claro)
+    - Costo/Precio Venta/Ganancia values invisible
     - "% Margen Deseado" and "Precio de Venta" labels invisible
     - "Precio sugerido" cyan text invisible
     - Ingredient row unit labels ("% merma") invisible
     - IngredientSearchSelect dropdown text invisible
   - **Technical Implementation**:
-    - Added `useTheme()` hook to RecipesTab.jsx
-    - Created `isLightMode = isMinimalist && !isNeoDark` check
-    - Applied inline styles with WebkitTextFillColor for Safari iOS
-    - Passed `isLightMode` prop to IngredientSearchSelect component
+    - Added CSS rules in `/app/frontend/src/styles/theme-minimalist.css` (lines 815-870)
+    - Uses `!important` to override aggressive theme-minimalist styles
+    - Targets `[data-testid="margin-calculator"]` and `[data-testid^="recipe-ingredient-"]`
   - **Colors Applied**:
-    - Text: `#1E293B` (dark slate)
-    - Muted: `#64748B` (slate gray)  
-    - Cyan accent: `#0891B2` (replaces `text-cyan-400`)
-    - Status colors preserved (red/amber/green for margin status)
-  - **File**: `/app/frontend/src/pages/inventory/components/RecipesTab.jsx`
+    - Title/Headers: `#1e293b` (dark slate)
+    - Input text: `#1e293b`
+    - Labels/Muted: `#64748b` (slate gray)
+    - Cyan accent: `#0891b2`
+  - **Files Modified**:
+    - `/app/frontend/src/styles/theme-minimalist.css` (CSS rules for light mode)
+    - `/app/frontend/src/pages/inventory/components/RecipesTab.jsx` (data-testid attributes)
+  - **⚠️ PROTEGIDO**: Este código NO debe modificarse sin autorización explícita del usuario
 
 - **Light Mode Contrast Fix: Inventory Module** (DONE - 2026-04-06):
   - **BUG 1 - "Editar Insumo" Modal, "Conversión de Unidades" Section**:
