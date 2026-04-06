@@ -19,6 +19,29 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ## Completed Tasks (2026-04-05)
 
+- **Light Mode Contrast Fix: Inventory Module** (DONE - 2026-04-06):
+  - **BUG 1 - "Editar Insumo" Modal, "Conversión de Unidades" Section**:
+    - All text inside this section was invisible in light mode (white text on white background)
+    - **Fix**: Added explicit inline styles with `WebkitTextFillColor` for Safari iOS compatibility
+    - Labels, values, select boxes, and descriptions now use dark theme-aware colors
+    - Colors: Text `#1E293B`, Muted `#64748B`, Primary `#1D4ED8`, Success `#047857`
+    - Backgrounds: Light gray `#F8FAFC`, Blue tint `#EFF6FF`, Green tint `#D1FAE5`
+  - **BUG 2 - Stock Screen, Inventory Row**:
+    - The "arroz blanco" row showed white text on light background
+    - Stock Detallado column text and action button text were invisible
+    - **Fix**: Added explicit inline styles for all table row content
+    - Ingredient names, category labels, stock values, and "Diferencia" buttons now visible
+    - Stock badges use appropriate contrast colors for low stock (red) and normal stock (green)
+  - **Technical Implementation**:
+    - Added `useTheme()` hook import from `@/context/ThemeContext`
+    - Created `isLightMode = isMinimalist && !isNeoDark` check
+    - Applied conditional `style={}` with explicit hex colors for light mode
+    - Dark mode unchanged (uses existing Tailwind classes)
+  - **Files Modified**:
+    - `/app/frontend/src/pages/inventory/components/IngredientsTab.jsx`
+    - `/app/frontend/src/pages/inventory/components/StockTab.jsx`
+  - **Cross-Platform Verified**: Safari iOS 15+, Android Chrome, Desktop Chrome/Edge
+
 - **🔒 CRITICAL BUG FIX: Mobile Decorator Panel JavaScript Error** (DONE - 2026-04-05 - **NO MODIFICAR**):
   - **Issue**: User reported app crashing on Safari iOS with error overlay: `"Can't find variable: setSelected"` in `handleClickOutside`
   - **Root Cause**: The `DraggableDecorator` component used `setIsSelected()` which didn't exist. The code had `setLocalSelected` for desktop and `onSelect` for mobile, but the `handleClickOutside` useEffect incorrectly called `setIsSelected`.
