@@ -19,6 +19,33 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ## Completed Tasks (2026-04-05)
 
+- **Area-Based Print Channel Routing** (DONE - 2026-04-06):
+  - **Feature**: Admins can now configure which printer receives comandas based on the AREA where the table is located, not just the product category
+  - **Routing Priority**:
+    1. Product-specific `print_channels[]` (highest priority, existing)
+    2. Area's configured channel for that category (NEW)
+    3. Global `category_channels` fallback (lowest priority, existing)
+  - **Backend Changes**:
+    - New collection `area_channel_mappings` in MongoDB
+    - New endpoints in `/app/backend/server.py`:
+      - `GET /api/area-channel-mappings` - List all mappings
+      - `GET /api/area-channel-mappings/{area_id}` - Get mappings for specific area
+      - `POST /api/area-channel-mappings` - Create single mapping
+      - `PUT /api/area-channel-mappings/bulk` - Bulk update mappings
+      - `DELETE /api/area-channel-mappings/{area_id}/{category_id}` - Delete specific mapping
+      - `DELETE /api/area-channel-mappings/area/{area_id}` - Delete all area mappings
+    - Modified routing logic in `/app/backend/routers/orders.py` (lines 1226-1260)
+  - **Frontend Changes**:
+    - New "Por Área" tab in Ajustes → Impresión (`PrinterSettings.jsx`)
+    - Shows all areas with configurable channel dropdowns per category
+    - "Usar global" option to fall back to global category channel
+    - Explanation card showing routing priority
+  - **Backward Compatibility**: Areas without configuration use global channels
+  - **Files Modified**:
+    - `/app/backend/server.py` - New CRUD endpoints
+    - `/app/backend/routers/orders.py` - Routing logic
+    - `/app/frontend/src/pages/settings/PrinterSettings.jsx` - Admin UI
+
 - **🔒 Shift/Day Closing Flow Fixes** (DONE - 2026-04-06 - **NO MODIFICAR**):
   - **BUG 1 - "Cierre de Turno" White Screen on Safari iOS**:
     - Added CSS fixes in `theme-minimalist.css` for Safari iOS dialog rendering
