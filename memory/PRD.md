@@ -19,6 +19,21 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ## Completed Tasks (2026-04-05)
 
+- **Shift/Day Closing Flow Fixes** (DONE - 2026-04-06):
+  - **BUG 1 - "Cierre de Turno" White Screen on Safari iOS**:
+    - Added CSS fixes in `theme-minimalist.css` for Safari iOS dialog rendering
+    - Uses `-webkit-transform`, `-webkit-backface-visibility`, and `transform-style: preserve-3d`
+    - Forces correct backdrop rendering on Safari iOS
+  - **BUG 2 - "Cierre de Día" allowed without closing active shifts**:
+    - Added new backend endpoint `GET /api/pos-sessions/open-shifts` to check for ALL open shifts
+    - Added frontend validation `handleOpenCloseDayDialog()` that checks for open shifts before allowing Cierre Z
+    - Added warning dialog showing which shifts are still open with message "Debes cerrar el turno activo antes de cerrar el día"
+  - **Files Modified**:
+    - `/app/backend/routers/pos_sessions.py` - New endpoint for checking open shifts
+    - `/app/frontend/src/lib/api.js` - Added `openShifts()` API call
+    - `/app/frontend/src/pages/CashRegister.js` - Added validation and warning dialog
+    - `/app/frontend/src/styles/theme-minimalist.css` - Safari iOS dialog fixes
+
 - **🔒 Light Mode Contrast Fix: Recipes Module (RecipesTab.jsx + CSS)** (DONE - 2026-04-06 - **NO MODIFICAR**):
   - **Location**: Modal "Editar Receta" / Calculadora de Margen
   - **Issues Fixed**:
