@@ -6,6 +6,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatMoney } from '@/lib/api';
+import { useTheme } from '@/context/ThemeContext';
 
 const CATEGORY_LABELS = {
   general: 'General', proteina: 'Proteína', vegetales: 'Vegetales', lacteos: 'Lácteos',
@@ -20,6 +21,10 @@ export default function StockTab({
   onFetchMultilevelStock, onSendAlert, onOpenAlertDialog,
   onOpenTransferDialog, onOpenAdjustDialog, onOpenDifferenceDialog
 }) {
+  // Theme context for light/dark mode styling
+  const { isMinimalist, isNeoDark } = useTheme();
+  const isLightMode = isMinimalist && !isNeoDark;
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [filterWarehouse, setFilterWarehouse] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
@@ -194,45 +199,129 @@ export default function StockTab({
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{item.ingredient_name}</span>
+                      <span 
+                        className="font-medium"
+                        style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
+                      >
+                        {item.ingredient_name}
+                      </span>
                       {item.is_low_stock && (
-                        <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">Stock Bajo</Badge>
+                        <Badge 
+                          className="text-xs"
+                          style={isLightMode 
+                            ? { backgroundColor: '#FEE2E2', color: '#DC2626', WebkitTextFillColor: '#DC2626', border: '1px solid #FCA5A5' } 
+                            : { backgroundColor: 'rgb(239 68 68 / 0.2)', color: '#F87171', border: '1px solid rgb(239 68 68 / 0.3)' }
+                          }
+                        >
+                          Stock Bajo
+                        </Badge>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground">{getCategoryLabel(item.category)}</div>
+                    <div 
+                      className="text-xs"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >
+                      {getCategoryLabel(item.category)}
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{item.warehouse_name}</td>
+                  <td 
+                    className="px-4 py-3"
+                    style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                  >
+                    {item.warehouse_name}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       {item.stock_in_purchase_units > 0 && (
                         <>
-                          <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-oswald font-bold text-sm">{item.stock_in_purchase_units}</span>
-                          <span className="text-xs text-blue-400">{item.purchase_unit}</span>
+                          <span 
+                            className="px-2 py-0.5 rounded font-oswald font-bold text-sm"
+                            style={isLightMode 
+                              ? { backgroundColor: '#DBEAFE', color: '#1D4ED8', WebkitTextFillColor: '#1D4ED8' } 
+                              : { backgroundColor: 'rgb(59 130 246 / 0.2)', color: '#60A5FA' }
+                            }
+                          >
+                            {item.stock_in_purchase_units}
+                          </span>
+                          <span 
+                            className="text-xs"
+                            style={isLightMode ? { color: '#1D4ED8', WebkitTextFillColor: '#1D4ED8' } : { color: '#60A5FA' }}
+                          >
+                            {item.purchase_unit}
+                          </span>
                           {item.stock_remainder_dispatch > 0 && <ChevronRight size={14} className="text-muted-foreground" />}
                         </>
                       )}
                       {(item.stock_remainder_dispatch > 0 || item.stock_in_purchase_units === 0) && (
                         <>
-                          <span className={`px-2 py-0.5 rounded font-oswald font-bold text-sm ${item.is_low_stock ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                          <span 
+                            className="px-2 py-0.5 rounded font-oswald font-bold text-sm"
+                            style={isLightMode 
+                              ? { 
+                                  backgroundColor: item.is_low_stock ? '#FEE2E2' : '#D1FAE5', 
+                                  color: item.is_low_stock ? '#DC2626' : '#047857', 
+                                  WebkitTextFillColor: item.is_low_stock ? '#DC2626' : '#047857' 
+                                } 
+                              : { 
+                                  backgroundColor: item.is_low_stock ? 'rgb(239 68 68 / 0.2)' : 'rgb(16 185 129 / 0.2)', 
+                                  color: item.is_low_stock ? '#F87171' : '#34D399' 
+                                }
+                            }
+                          >
                             {item.stock_remainder_dispatch > 0 ? item.stock_remainder_dispatch.toFixed(2).replace(/\.?0+$/, '') : item.current_stock.toFixed(2).replace(/\.?0+$/, '')}
                           </span>
-                          <span className={`text-xs ${item.is_low_stock ? 'text-red-400' : 'text-emerald-400'}`}>{item.dispatch_unit}</span>
+                          <span 
+                            className="text-xs"
+                            style={isLightMode 
+                              ? { color: item.is_low_stock ? '#DC2626' : '#047857', WebkitTextFillColor: item.is_low_stock ? '#DC2626' : '#047857' } 
+                              : { color: item.is_low_stock ? '#F87171' : '#34D399' }
+                            }
+                          >
+                            {item.dispatch_unit}
+                          </span>
                         </>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">1 {item.purchase_unit} = {item.conversion_factor} {item.dispatch_unit}</div>
+                    <div 
+                      className="text-xs mt-0.5"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >
+                      1 {item.purchase_unit} = {item.conversion_factor} {item.dispatch_unit}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <span className={`font-mono ${item.is_low_stock ? 'text-red-400' : ''}`}>{item.current_stock.toFixed(2)}</span>
-                    <span className="text-xs text-muted-foreground ml-1">{item.dispatch_unit}</span>
+                    <span 
+                      className="font-mono"
+                      style={isLightMode 
+                        ? { color: item.is_low_stock ? '#DC2626' : '#1E293B', WebkitTextFillColor: item.is_low_stock ? '#DC2626' : '#1E293B' } 
+                        : { color: item.is_low_stock ? '#F87171' : 'inherit' }
+                      }
+                    >
+                      {item.current_stock.toFixed(2)}
+                    </span>
+                    <span 
+                      className="text-xs ml-1"
+                      style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}
+                    >
+                      {item.dispatch_unit}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <span className="font-oswald font-bold text-emerald-400">{formatMoney(item.stock_value)}</span>
+                    <span 
+                      className="font-oswald font-bold"
+                      style={isLightMode ? { color: '#047857', WebkitTextFillColor: '#047857' } : { color: '#34D399' }}
+                    >
+                      {formatMoney(item.stock_value)}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <Button
                       variant="ghost" size="sm"
-                      className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10"
+                      className="hover:bg-amber-500/10"
+                      style={isLightMode 
+                        ? { color: '#D97706', WebkitTextFillColor: '#D97706' } 
+                        : { color: '#F59E0B' }
+                      }
                       onClick={() => onOpenDifferenceDialog({
                         ingredient_id: item.ingredient_id, ingredient_name: item.ingredient_name,
                         warehouse_id: item.warehouse_id, warehouse_name: item.warehouse_name,

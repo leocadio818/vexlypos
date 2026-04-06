@@ -13,6 +13,7 @@ import { formatMoney } from '@/lib/api';
 import { INGREDIENT_CATEGORIES, UNITS } from '../constants';
 import { NumericInput } from '@/components/NumericKeypad';
 import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
+import { useTheme } from '@/context/ThemeContext';
 
 const getCategoryLabel = (value) => {
   const cat = INGREDIENT_CATEGORIES.find(c => c.value === value);
@@ -28,6 +29,10 @@ export default function IngredientsTab({
   onNavigateToProduction,
   onLoadConversionAnalysis
 }) {
+  // Theme context for light/dark mode styling
+  const { isMinimalist, isNeoDark } = useTheme();
+  const isLightMode = isMinimalist && !isNeoDark;
+  
   // Search/filter states
   const [confirmProps, showConfirm] = useConfirmDialog();
   const [ingredientSearch, setIngredientSearch] = useState('');
@@ -585,28 +590,44 @@ export default function IngredientsTab({
               </div>
               
               {/* Human-readable sentence */}
-              <div className="bg-background/60 rounded-lg p-4 border border-border/50 mb-4">
-                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+              <div 
+                className="bg-background/60 rounded-lg p-4 border border-border/50 mb-4"
+                style={isLightMode ? { backgroundColor: '#F8FAFC' } : {}}
+              >
+                <p 
+                  className="text-sm mb-3 leading-relaxed"
+                  style={isLightMode ? { color: '#475569', WebkitTextFillColor: '#475569' } : {}}
+                >
                   Completa la siguiente oración para configurar la conversión:
                 </p>
                 
                 <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-foreground">Yo compro por</span>
+                  <span style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}>Yo compro por</span>
                   <select
                     value={ingredientDialog.data?.purchase_unit || ingredientDialog.data?.unit || 'unidad'}
                     onChange={e => {
                       const newPurchaseUnit = e.target.value;
                       setIngredientDialog(p => ({ ...p, data: { ...p.data, purchase_unit: newPurchaseUnit } }));
                     }}
-                    className="px-2 py-1 text-sm bg-primary/10 border border-primary/30 rounded-md font-medium text-primary min-w-[100px]"
+                    className="px-2 py-1 text-sm border rounded-md font-medium min-w-[100px]"
+                    style={isLightMode 
+                      ? { backgroundColor: '#EFF6FF', borderColor: '#3B82F6', color: '#1D4ED8', WebkitTextFillColor: '#1D4ED8' } 
+                      : { backgroundColor: 'rgb(var(--primary) / 0.1)', borderColor: 'rgb(var(--primary) / 0.3)', color: 'hsl(var(--primary))' }
+                    }
                     data-testid="purchase-unit-select"
                   >
                     {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
                     {customUnits.map(u => <option key={u.id} value={u.abbreviation}>{u.name}</option>)}
                   </select>
                   
-                  <span className="text-foreground">y despacho por</span>
-                  <span className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-md font-medium text-emerald-400">
+                  <span style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}>y despacho por</span>
+                  <span 
+                    className="px-2 py-1 rounded-md font-medium"
+                    style={isLightMode 
+                      ? { backgroundColor: '#D1FAE5', borderColor: '#10B981', color: '#047857', WebkitTextFillColor: '#047857', border: '1px solid #10B981' } 
+                      : { backgroundColor: 'rgb(16 185 129 / 0.1)', border: '1px solid rgb(16 185 129 / 0.3)', color: '#34D399' }
+                    }
+                  >
                     {UNITS.find(u => u.value === ingredientDialog.data?.unit)?.label || 
                      customUnits.find(u => u.abbreviation === ingredientDialog.data?.unit)?.name ||
                      ingredientDialog.data?.unit || 'Unidad'}
@@ -614,12 +635,15 @@ export default function IngredientsTab({
                 </div>
                 
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-foreground">Por eso, 1</span>
-                  <span className="font-medium text-primary">
+                  <span style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}>Por eso, 1</span>
+                  <span 
+                    className="font-medium"
+                    style={isLightMode ? { color: '#1D4ED8', WebkitTextFillColor: '#1D4ED8' } : {}}
+                  >
                     {UNITS.find(u => u.value === (ingredientDialog.data?.purchase_unit || ingredientDialog.data?.unit))?.label || 
                      ingredientDialog.data?.purchase_unit || 'Unidad'}
                   </span>
-                  <span className="text-foreground">trae</span>
+                  <span style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}>trae</span>
                   <NumericInput label="Valor"
                    
                    
@@ -642,7 +666,10 @@ export default function IngredientsTab({
                     placeholder="16"
                     data-testid="dispatch-quantity-input"
                   />
-                  <span className="font-medium text-emerald-400">
+                  <span 
+                    className="font-medium"
+                    style={isLightMode ? { color: '#047857', WebkitTextFillColor: '#047857' } : { color: '#34D399' }}
+                  >
                     {UNITS.find(u => u.value === ingredientDialog.data?.unit)?.label || 
                      customUnits.find(u => u.abbreviation === ingredientDialog.data?.unit)?.name ||
                      ingredientDialog.data?.unit || 'Unidad'}(s)
@@ -782,28 +809,51 @@ export default function IngredientsTab({
               })()}
               
               {/* Real Money Result */}
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+              <div 
+                className="p-3 rounded-lg"
+                style={isLightMode 
+                  ? { backgroundColor: '#D1FAE5', border: '1px solid #10B981' } 
+                  : { backgroundColor: 'rgb(16 185 129 / 0.1)', border: '1px solid rgb(16 185 129 / 0.3)' }
+                }
+              >
                 <div className="flex items-center gap-2 mb-2">
-                  <Calculator size={14} className="text-emerald-400" />
-                  <span className="text-xs font-medium text-emerald-400 uppercase tracking-wide">Resultado en Dinero Real</span>
+                  <Calculator size={14} style={isLightMode ? { color: '#047857' } : { color: '#34D399' }} />
+                  <span 
+                    className="text-xs font-medium uppercase tracking-wide"
+                    style={isLightMode ? { color: '#047857', WebkitTextFillColor: '#047857' } : { color: '#34D399' }}
+                  >
+                    Resultado en Dinero Real
+                  </span>
                 </div>
-                <p className="text-sm text-foreground leading-relaxed">
+                <p 
+                  className="text-sm leading-relaxed"
+                  style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
+                >
                   Esto significa que cada{' '}
-                  <span className="font-bold text-emerald-400">
+                  <span 
+                    className="font-bold"
+                    style={isLightMode ? { color: '#047857', WebkitTextFillColor: '#047857' } : { color: '#34D399' }}
+                  >
                     {UNITS.find(u => u.value === ingredientDialog.data?.unit)?.label || 
                      ingredientDialog.data?.unit || 'Unidad'}
                   </span>
                   {ingredientDialog.data?.name && (
-                    <span className="text-muted-foreground"> de {ingredientDialog.data.name}</span>
+                    <span style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : {}}> de {ingredientDialog.data.name}</span>
                   )}
                   {' '}te cuesta{' '}
-                  <span className="font-oswald font-bold text-lg text-primary">
+                  <span 
+                    className="font-oswald font-bold text-lg"
+                    style={isLightMode ? { color: '#1D4ED8', WebkitTextFillColor: '#1D4ED8' } : {}}
+                  >
                     {formatMoney(
                       (ingredientDialog.data?.avg_cost || 0) / (ingredientDialog.data?.conversion_factor || 1)
                     )}
                   </span>
                 </p>
-                <p className="text-xs text-muted-foreground mt-2 opacity-70">
+                <p 
+                  className="text-xs mt-2"
+                  style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B', opacity: 0.9 } : { opacity: 0.7 }}
+                >
                   Cálculo: {formatMoney(ingredientDialog.data?.avg_cost || 0)} ÷ {ingredientDialog.data?.dispatch_quantity || 1} = {formatMoney((ingredientDialog.data?.avg_cost || 0) / (ingredientDialog.data?.conversion_factor || 1))} por unidad
                 </p>
               </div>
