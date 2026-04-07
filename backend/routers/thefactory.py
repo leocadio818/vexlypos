@@ -62,11 +62,30 @@ async def get_series() -> list:
 
 
 def _is_valid_fecha_venc(val) -> bool:
-    """Check if a fechaVencimientoSecuencia value is a valid dd-mm-yyyy date."""
+    """
+    Check if a fechaVencimientoSecuencia value is a valid dd-mm-yyyy date 
+    AND has not expired (must be in the future or today).
+    """
     if not val or not isinstance(val, str) or val.strip().upper() in ("N/A", "NA", "NULL", "NONE", ""):
         return False
     import re
-    return bool(re.match(r"^\d{2}-\d{2}-\d{4}$", val.strip()))
+    val = val.strip()
+    if not re.match(r"^\d{2}-\d{2}-\d{4}$", val):
+        return False
+    
+    # Check if date is not expired
+    try:
+        day, month, year = val.split("-")
+        from datetime import date
+        fecha = date(int(year), int(month), int(day))
+        today = date.today()
+        if fecha < today:
+            logging.warning(f"fechaVencimientoSecuencia {val} is expired (today: {today})")
+            return False
+        return True
+    except Exception as e:
+        logging.warning(f"Error parsing fechaVencimientoSecuencia {val}: {e}")
+        return False
 
 
 async def get_next_ncf(tipo_documento: str) -> dict:
@@ -77,10 +96,12 @@ async def get_next_ncf(tipo_documento: str) -> dict:
     """
     series = await get_series()
     fecha_venc = None
+    raw_fecha = None
     for s in series:
         if s.get("tipoDocumento") == tipo_documento:
-            raw = s.get("fechaVencimientoSecuencia")
-            fecha_venc = raw.strip() if _is_valid_fecha_venc(raw) else None
+            raw_fecha = s.get("fechaVencimientoSecuencia")
+            fecha_venc = raw_fecha.strip() if _is_valid_fecha_venc(raw_fecha) else None
+            logging.info(f"NCF tipo {tipo_documento}: raw fechaVencimientoSecuencia={raw_fecha!r}, valid={fecha_venc is not None}")
             break
 
     prefix = f"E{tipo_documento}"
@@ -597,7 +618,7 @@ async def send_to_thefactory(payload: dict, ecf_config: dict = None) -> dict:
                 # Add helpful context for known error codes
                 error_hints = {
                     111: " (NCF fuera de rango - verificar configuración de secuencias en The Factory)",
-                    145: " (Fecha de vencimiento de secuencia inválida - verificar series en The Factory)",
+                    145: " (Fecha de vencimiento de secuencia inválida o expirada. SOLUCIÓN: Ingrese al portal de The Factory HKA y renueve la autorización de secuencias para este tipo de documento E32/E31. Contacte soporte si el problema persiste.)",
                     110: " (NCF ya utilizado - posible duplicado)",
                     112: " (Secuencia no autorizada para este RNC)",
                 }

@@ -80,7 +80,13 @@ async def send_ecf(bill_id: str):
         tipo_doc = {"E31": "31", "E32": "32", "E33": "33", "E34": "34", "E44": "44", "E45": "45"}.get(ecf_prefix, "32")
         ncf_info = await get_next_ncf(tipo_doc)
         encf = ncf_info["ncf"]
-        result = await _send_via_thefactory(bill, config, encf, bill_id, ncf_info.get("fecha_venc"))
+        fecha_venc = ncf_info.get("fecha_venc")
+        
+        # Log warning if fechaVencimientoSecuencia is missing or invalid for this document type
+        if not fecha_venc:
+            logging.warning(f"e-CF {ecf_prefix}: fechaVencimientoSecuencia is missing/invalid. The Factory may reject the document. Check series configuration.")
+        
+        result = await _send_via_thefactory(bill, config, encf, bill_id, fecha_venc)
     else:
         result = await _send_via_alanube(bill, config, encf, bill_id)
 
@@ -483,3 +489,48 @@ async def test_ecf_connection():
             return {"ok": True, "provider": "alanube", "message": "Token de Alanube configurado"}
         else:
             return {"ok": False, "provider": "alanube", "message": "Token de Alanube no configurado"}
+
+
+# ═══════════════════════════════════════════════════════════════
+# DIAGNOSTICS
+# ═══════════════════════════════════════════════════════════════
+
+@router.get("/thefactory/series-diagnostics")
+async def thefactory_series_diagnostics():
+    """
+    Get detailed series diagnostics for The Factory HKA.
+    Useful for debugging Code 145 (fechaVencimientoSecuencia) errors.
+    """
+    provider = await get_provider()
+    if provider != "thefactory":
+        return {"warning": "The Factory no es el proveedor activo", "provider": provider}
+    
+    from routers.thefactory import get_series_info, get_series, _is_valid_fecha_venc
+    
+    series_info = await get_series_info()
+    raw_series = await get_series()
+    
+    # Add validation details for each series
+    diagnostics = []
+    for s in raw_series:
+        tipo = s.get("tipoDocumento")
+        raw_fecha = s.get("fechaVencimientoSecuencia")
+        is_valid = _is_valid_fecha_venc(raw_fecha)
+        
+        diagnostics.append({
+            "tipo_documento": tipo,
+            "descripcion": s.get("descripcionTipoDocumento", ""),
+            "fechaVencimientoSecuencia_raw": raw_fecha,
+            "fechaVencimientoSecuencia_valid": is_valid,
+            "correlativo": s.get("correlativo"),
+            "secuencia_inicial": s.get("secuenciaInicial"),
+            "secuencia_final": s.get("secuenciaFinal"),
+            "warning": None if is_valid else f"⚠️ Fecha inválida o expirada. Debe renovar la secuencia tipo {tipo} en The Factory/DGII."
+        })
+    
+    return {
+        "provider": "thefactory",
+        "series_count": len(diagnostics),
+        "diagnostics": diagnostics,
+        "series_info": series_info.get("series", [])
+    }
