@@ -422,7 +422,7 @@ export default function BusinessDayManager({
                 }}
                 data-testid="history-btn"
               >
-                <History size={18} style={{ color: colors.historyBtn, strokeWidth: 2.5, minWidth: '18px', minHeight: '18px' }} />
+                <History size={18} style={{ color: colors.historyBtn, stroke: colors.historyBtn, strokeWidth: 2.5, minWidth: '18px', minHeight: '18px' }} />
                 <span className="sm:hidden ml-2">Historial</span>
               </Button>
             </>
@@ -460,7 +460,7 @@ export default function BusinessDayManager({
                 }}
                 data-testid="history-btn-closed"
               >
-                <History size={18} style={{ color: colors.historyBtn, strokeWidth: 2.5, minWidth: '18px', minHeight: '18px' }} />
+                <History size={18} style={{ color: colors.historyBtn, stroke: colors.historyBtn, strokeWidth: 2.5, minWidth: '18px', minHeight: '18px' }} />
                 <span className="sm:hidden ml-2">Historial</span>
               </Button>
             </>
@@ -493,22 +493,22 @@ export default function BusinessDayManager({
         {businessDay && stats && showStatsInline && (
           <div className={`grid grid-cols-2 gap-2 mt-4 pt-4 border-t ${colors.infoBorder}`}>
             <div className={`${colors.statBgVentas} rounded-xl p-3 text-center`}>
-              <TrendingUp size={18} style={{ color: colors.statVentas }} className="mx-auto mb-1" />
+              <TrendingUp size={18} style={{ color: colors.statVentas, stroke: colors.statVentas, strokeWidth: 2 }} className="mx-auto mb-1" />
               <p className="text-xs mb-0.5" style={{ color: colors.statLabel, WebkitTextFillColor: colors.statLabel, opacity: 1 }}>Ventas</p>
               <p className="font-oswald font-bold text-sm" style={{ color: colors.statVentas, WebkitTextFillColor: colors.statVentas, opacity: 1 }}>{formatMoney(stats.total_sales)}</p>
             </div>
             <div className={`${colors.statBgEfectivo} rounded-xl p-3 text-center`}>
-              <Banknote size={18} style={{ color: colors.statEfectivo }} className="mx-auto mb-1" />
+              <Banknote size={18} style={{ color: colors.statEfectivo, stroke: colors.statEfectivo, strokeWidth: 2 }} className="mx-auto mb-1" />
               <p className="text-xs mb-0.5" style={{ color: colors.statLabel, WebkitTextFillColor: colors.statLabel, opacity: 1 }}>Efectivo</p>
               <p className="font-oswald font-bold text-sm" style={{ color: colors.statEfectivo, WebkitTextFillColor: colors.statEfectivo, opacity: 1 }}>{formatMoney(stats.total_cash)}</p>
             </div>
             <div className={`${colors.statBgTarjeta} rounded-xl p-3 text-center`}>
-              <CreditCard size={18} style={{ color: colors.statTarjeta }} className="mx-auto mb-1" />
+              <CreditCard size={18} style={{ color: colors.statTarjeta, stroke: colors.statTarjeta, strokeWidth: 2 }} className="mx-auto mb-1" />
               <p className="text-xs mb-0.5" style={{ color: colors.statLabel, WebkitTextFillColor: colors.statLabel, opacity: 1 }}>Tarjeta</p>
               <p className="font-oswald font-bold text-sm" style={{ color: colors.statTarjeta, WebkitTextFillColor: colors.statTarjeta, opacity: 1 }}>{formatMoney(stats.total_card)}</p>
             </div>
             <div className={`${colors.statBgFacturas} rounded-xl p-3 text-center`}>
-              <FileText size={18} style={{ color: colors.statFacturas }} className="mx-auto mb-1" />
+              <FileText size={18} style={{ color: colors.statFacturas, stroke: colors.statFacturas, strokeWidth: 2 }} className="mx-auto mb-1" />
               <p className="text-xs mb-0.5" style={{ color: colors.statLabel, WebkitTextFillColor: colors.statLabel, opacity: 1 }}>Facturas</p>
               <p className="font-oswald font-bold text-sm" style={{ color: colors.statFacturas, WebkitTextFillColor: colors.statFacturas, opacity: 1 }}>{stats.total_invoices}</p>
             </div>
