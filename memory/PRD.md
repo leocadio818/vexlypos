@@ -51,6 +51,13 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **Verificado**: Desktop ✅, Móvil ✅, Light/Dark mode ✅, Envío real ✅
   - **⚠️ PROTEGIDO**: Esta feature está BLOQUEADA - ver sección CÓDIGO PROTEGIDO
 
+- **🔒 Modal Jornada - Light Mode Visibility Fix** (DONE - 2026-04-07):
+  - **Bugs corregidos**: Tarjetas de stats invisibles, iconos invisibles, botón historial invisible
+  - **Archivo**: `/app/frontend/src/components/BusinessDayManager.jsx`
+  - **Fix**: Bordes en tarjetas + `stroke` explícito en iconos Lucide para Safari
+  - **Verificado**: 4 iconos de stats visibles, botón historial visible, modo oscuro sin cambios
+  - **⚠️ PROTEGIDO**: Este fix está BLOQUEADO - ver sección CÓDIGO PROTEGIDO
+
 ## Completed Tasks (2026-04-05)
 
 - **Area-Based Print Channel Routing** (DONE - 2026-04-06):
@@ -537,4 +544,20 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Compatibilidad**: Safari iOS 15+, Android Chrome, Windows Chrome/Edge, iPad Safari
 - **Modo claro/oscuro**: Soportado con estilos condicionales `isLightMode`
 - **Razón de protección**: Feature de marketing completa y probada
+- **Fecha de protección**: 2026-04-07
+
+### 9. 🔒 Modal Jornada - Light Mode Visibility Fix (2026-04-07)
+- **Archivo**: `/app/frontend/src/components/BusinessDayManager.jsx`
+- **Bugs corregidos**:
+  1. **Tarjetas de stats invisibles**: Agregado `border border-{color}-200 shadow-sm` a los fondos
+  2. **Iconos de stats invisibles**: Agregado `stroke: colors.stat{X}` a cada icono (TrendingUp, Banknote, CreditCard, FileText)
+  3. **Botón de historial invisible**: Agregado `borderWidth: '2px'`, `borderColor: '#6B7280'`, `backgroundColor: '#F3F4F6'`, y `stroke: colors.historyBtn` al icono History
+- **Colores de iconos en modo claro**:
+  - Ventas: `#166534` (Green 800)
+  - Efectivo: `#065F46` (Emerald 800)
+  - Tarjeta: `#1E40AF` (Blue 800)
+  - Facturas: `#0E7490` (Cyan 700)
+  - Historial: `#1F2937` (Gray 800)
+- **Modo oscuro**: Sin cambios, mantiene estilos originales
+- **Razón de protección**: Fix crítico de visibilidad en modo claro
 - **Fecha de protección**: 2026-04-07
