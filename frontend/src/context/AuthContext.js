@@ -241,6 +241,16 @@ export function AuthProvider({ children }) {
         }
       }
     } catch {}
+    
+    // Clear Service Worker cache to ensure fresh data on next login
+    // Cross-platform: Safari iOS 15+, Android Chrome, Windows Chrome/Edge, iPad Safari
+    try {
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+      }
+    } catch {}
+    
     localStorage.removeItem('pos_token');
     setUser(null);
     resetThemeOnLogout();
