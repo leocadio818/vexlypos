@@ -43,6 +43,14 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **Compatibilidad**: Safari iOS 15+, Android Chrome, Windows Chrome/Edge, iPad Safari
   - **⚠️ PROTEGIDO**: Esta feature está BLOQUEADA - ver sección CÓDIGO PROTEGIDO
 
+- **🔒 Marketing Email to Customers** (DONE - 2026-04-07):
+  - **Feature**: Enviar emails de marketing a todos los clientes con email
+  - **Backend**: `/app/backend/routers/email.py` (endpoints send-marketing, preview)
+  - **Frontend**: `/app/frontend/src/pages/Customers.js` (botón Email + modal)
+  - **Template**: HTML profesional con logo, productos destacados, footer
+  - **Verificado**: Desktop ✅, Móvil ✅, Light/Dark mode ✅, Envío real ✅
+  - **⚠️ PROTEGIDO**: Esta feature está BLOQUEADA - ver sección CÓDIGO PROTEGIDO
+
 ## Completed Tasks (2026-04-05)
 
 - **Area-Based Print Channel Routing** (DONE - 2026-04-06):
@@ -509,4 +517,24 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Compatibilidad**: Safari iOS 15+, Android Chrome, Windows Chrome/Edge, iPad Safari
 - **Propósito**: Asegura que cada login inicie con datos frescos del servidor, no datos cacheados obsoletos
 - **Razón de protección**: Feature crítica para evitar datos stale después de logout
+- **Fecha de protección**: 2026-04-07
+
+### 8. 🔒 Marketing Email to Customers (2026-04-07)
+- **Archivos Backend** (`/app/backend/routers/email.py`):
+  - `POST /api/email/send-marketing` - Envía email a todos los clientes con email válido
+  - `POST /api/email/send-marketing/preview` - Vista previa del email sin enviar
+  - `build_marketing_html()` - Template HTML profesional con branding
+- **Archivos Frontend** (`/app/frontend/src/pages/Customers.js`):
+  - Botón "Email" en header (solo admin)
+  - Modal completo con campos Asunto, Mensaje, Productos opcionales
+  - Vista previa en iframe
+  - Confirmación antes de enviar
+- **Funcionalidad**:
+  - Envía emails marketing a clientes con email registrado
+  - Template profesional: Header naranja con logo, productos destacados, footer con unsubscribe
+  - Usa Resend existente (facturas@vexlyapp.com)
+  - Soporte para lista de productos con precios
+- **Compatibilidad**: Safari iOS 15+, Android Chrome, Windows Chrome/Edge, iPad Safari
+- **Modo claro/oscuro**: Soportado con estilos condicionales `isLightMode`
+- **Razón de protección**: Feature de marketing completa y probada
 - **Fecha de protección**: 2026-04-07
