@@ -26,6 +26,16 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **Resultado**: Flujo completo probado (Login → Config → Impresión → Por Área → Guardar) - Toast verde "Asignaciones por área guardadas" aparece correctamente
   - **⚠️ PROTEGIDO**: Esta funcionalidad está BLOQUEADA - ver sección CÓDIGO PROTEGIDO
 
+- **🔒 Modal "Turno de Caja Requerido" - Light Mode Fix** (DONE - 2026-04-07):
+  - **BUG**: Texto invisible (blanco sobre fondo claro) en el warning box del modal en modo Minimalist
+  - **Archivo**: `/app/frontend/src/components/Layout.js` (líneas 657-737)
+  - **Fix Applied**: Estilos condicionales con `isMinimalist && !isNeoDark` usando colores oscuros legibles:
+    - Modal fondo: `bg-white`
+    - Textos: `#1E293B` (títulos), `#64748B` (descripciones)
+    - Warning box: Fondo `#FEF2F2`, texto `#991B1B`
+  - **Modo oscuro**: Sin cambios
+  - **⚠️ PROTEGIDO**: Este fix está BLOQUEADO - ver sección CÓDIGO PROTEGIDO
+
 ## Completed Tasks (2026-04-05)
 
 - **Area-Based Print Channel Routing** (DONE - 2026-04-06):
@@ -461,4 +471,19 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - Badge "X personalizadas" muestra cuántas categorías tienen canal específico por área
 - **Compatibilidad**: Safari iOS ✅, Android Chrome ✅, Desktop ✅
 - **Razón de protección**: Funcionalidad compleja de enrutamiento de impresión probada y validada
+- **Fecha de protección**: 2026-04-07
+
+### 6. 🔒 Modal "Turno de Caja Requerido" - Light Mode Fix (2026-04-07)
+- **Archivo**: `/app/frontend/src/components/Layout.js` (líneas 657-737)
+- **Bug corregido**: Texto invisible (blanco sobre fondo claro) en modo Minimalist (Light Mode)
+- **Elementos corregidos**:
+  - Fondo modal: `bg-white` en modo claro
+  - Título: `#1E293B` (slate oscuro)
+  - Descripción: `#64748B` (gris)
+  - Warning box: Fondo `#FEF2F2`, borde `#FECACA`, texto `#991B1B`
+  - Info box: Fondo `#F8FAFC`, borde `#E2E8F0`, texto `#64748B`
+  - Botón "Cerrar Sesión": `border-slate-300 text-slate-700`
+- **Patrón usado**: `isMinimalist && !isNeoDark` con `style={{}}` + `WebkitTextFillColor` para Safari iOS
+- **Modo oscuro**: Sin cambios, mantiene estilos originales (`bg-slate-900`, `text-white`, etc.)
+- **Razón de protección**: Fix crítico de accesibilidad en modo claro
 - **Fecha de protección**: 2026-04-07
