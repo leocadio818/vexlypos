@@ -10,6 +10,24 @@ import '@fontsource/jetbrains-mono/400.css';
 import "@/index.css";
 import App from "@/App";
 
+// Suppress ResizeObserver loop error (known Radix UI issue, not critical)
+const resizeObserverErr = window.onerror;
+window.onerror = (message, ...args) => {
+  if (typeof message === 'string' && message.includes('ResizeObserver loop')) {
+    return true; // Suppress this specific error
+  }
+  return resizeObserverErr ? resizeObserverErr(message, ...args) : false;
+};
+
+// Also handle unhandled promise rejections for ResizeObserver
+window.addEventListener('error', (event) => {
+  if (event.message && event.message.includes('ResizeObserver loop')) {
+    event.stopImmediatePropagation();
+    event.preventDefault();
+    return true;
+  }
+});
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
