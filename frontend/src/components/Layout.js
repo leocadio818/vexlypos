@@ -655,29 +655,62 @@ export default function Layout() {
           Este diálogo es PERMANENTE y aparece en TODAS las páginas hasta que abra turno
           ═══════════════════════════════════════════════════════════════════════════════ */}
       <Dialog open={cashierNeedsShift} onOpenChange={() => {}}>
-        <DialogContent className="bg-slate-900 border-amber-500/50 max-w-md" hideCloseButton>
+        <DialogContent 
+          className={`max-w-md ${isMinimalist && !isNeoDark ? 'bg-white border-amber-500/50' : 'bg-slate-900 border-amber-500/50'}`} 
+          hideCloseButton
+        >
           <DialogHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center animate-pulse">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center animate-pulse ${isMinimalist && !isNeoDark ? 'bg-amber-100' : 'bg-amber-500/20'}`}>
                 <AlertTriangle className="w-8 h-8 text-amber-500" />
               </div>
             </div>
-            <DialogTitle className="text-xl font-oswald text-white text-center">
+            <DialogTitle 
+              className="text-xl font-oswald text-center"
+              style={isMinimalist && !isNeoDark ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : { color: 'white' }}
+            >
               Turno de Caja Requerido
             </DialogTitle>
-            <DialogDescription className="text-white/70 text-center mt-2">
+            <DialogDescription 
+              className="text-center mt-2"
+              style={isMinimalist && !isNeoDark ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : { color: 'rgba(255,255,255,0.7)' }}
+            >
               Debes abrir un turno de caja antes de poder usar el sistema.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="bg-red-500/10 rounded-lg p-4 mt-4 border border-red-500/30">
-            <p className="text-red-400 text-sm text-center font-medium">
+          <div 
+            className="rounded-lg p-4 mt-4"
+            style={isMinimalist && !isNeoDark 
+              ? { backgroundColor: '#FEF2F2', border: '1px solid #FECACA' } 
+              : { backgroundColor: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }
+            }
+          >
+            <p 
+              className="text-sm text-center font-medium"
+              style={isMinimalist && !isNeoDark 
+                ? { color: '#991B1B', WebkitTextFillColor: '#991B1B' } 
+                : { color: '#F87171' }
+              }
+            >
               ⚠️ No puedes realizar ninguna operación hasta abrir un turno de caja.
             </p>
           </div>
           
-          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-            <p className="text-white/60 text-xs text-center">
+          <div 
+            className="rounded-lg p-3"
+            style={isMinimalist && !isNeoDark 
+              ? { backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' } 
+              : { backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }
+            }
+          >
+            <p 
+              className="text-xs text-center"
+              style={isMinimalist && !isNeoDark 
+                ? { color: '#64748B', WebkitTextFillColor: '#64748B' } 
+                : { color: 'rgba(255,255,255,0.6)' }
+              }
+            >
               El turno de caja te permite registrar ventas, recibir pagos y realizar cuadres de efectivo.
             </p>
           </div>
@@ -694,7 +727,7 @@ export default function Layout() {
             <Button
               onClick={handleLogoutWithoutShift}
               variant="outline"
-              className="w-full h-10 border-white/20 text-white/70 hover:bg-white/10"
+              className={`w-full h-10 ${isMinimalist && !isNeoDark ? 'border-slate-300 text-slate-700 hover:bg-slate-100' : 'border-white/20 text-white/70 hover:bg-white/10'}`}
               data-testid="logout-without-shift-btn"
             >
               <LogOut size={16} className="mr-2" />
