@@ -251,6 +251,16 @@ async def send_invoice_email(bill_id: str, email_override: Optional[str] = Query
         
         return {"ok": True, "message": f"Factura enviada a {customer_email}", "email_id": email_response.get("id", "")}
     except Exception as e:
+        # Log email error to system_logs
+        try:
+            from routers.system_logs import log_email_error
+            await log_email_error(
+                technical_error=str(e),
+                email=customer_email,
+                error_type="email_invoice_failed"
+            )
+        except Exception:
+            pass
         raise HTTPException(status_code=500, detail=f"Error enviando email: {str(e)}")
 
 
@@ -402,6 +412,16 @@ async def send_marketing_email(input: dict):
             sent_count += 1
         except Exception as e:
             failed_emails.append({"email": customer["email"], "error": str(e)})
+            # Log each failed email to system_logs
+            try:
+                from routers.system_logs import log_email_error
+                await log_email_error(
+                    technical_error=str(e),
+                    email=customer["email"],
+                    error_type="email_send_failed"
+                )
+            except Exception:
+                pass
     
     return {
         "ok": True,

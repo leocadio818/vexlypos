@@ -50,6 +50,7 @@ from routers.email import router as email_router, set_db as email_set_db
 from routers.alanube import router as alanube_router, set_db as alanube_set_db
 from routers.ecf_dispatcher import router as ecf_dispatcher_router, set_db as ecf_dispatcher_set_db
 from routers.manuales import router as manuales_router
+from routers.system_logs import set_db as system_logs_set_db
 from utils.timezone import get_system_timezone_name, get_system_now, invalidate_cache as tz_invalidate_cache
 
 ROOT_DIR = Path(__file__).parent
@@ -83,6 +84,7 @@ discounts_set_db(db)
 email_set_db(db)
 alanube_set_db(db)
 ecf_dispatcher_set_db(db)
+system_logs_set_db(db)
 
 # Connect KDS notifier to orders
 set_kds_notifier(notify_kds)
@@ -1887,6 +1889,67 @@ async def selective_cleanup(input: dict, user: dict = Depends(get_current_user))
         await db.tables.update_many({}, {"$set": {"status": "free", "active_order_id": None}})
     
     return {"ok": True, "deleted": total_deleted, "collections": collections}
+
+
+# ═══════════════════════════════════════════════════════════════
+# SYSTEM ERROR LOGS
+# ═══════════════════════════════════════════════════════════════
+
+@api.get("/system-logs")
+async def get_system_logs(
+    limit: int = 50,
+    module: str = None,
+    level: str = None,
+    resolved: bool = None,
+    user: dict = Depends(get_current_user)
+):
+    """Get system error logs. Requires admin or supervisor role."""
+    if user.get("role") not in ["admin", "supervisor"]:
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    from routers.system_logs import get_recent_logs
+    logs = await get_recent_logs(
+        limit=min(limit, 200),
+        module=module,
+        level=level,
+        resolved=resolved
+    )
+    return {"logs": logs, "count": len(logs)}
+
+
+@api.get("/system-logs/stats")
+async def get_system_logs_stats(user: dict = Depends(get_current_user)):
+    """Get statistics about system logs"""
+    if user.get("role") not in ["admin", "supervisor"]:
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    from routers.system_logs import get_log_stats
+    return await get_log_stats()
+
+
+@api.put("/system-logs/{log_id}/resolve")
+async def resolve_system_log(log_id: str, input: dict, user: dict = Depends(get_current_user)):
+    """Mark a system log as resolved"""
+    if user.get("role") not in ["admin", "supervisor"]:
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    from routers.system_logs import resolve_log
+    notes = input.get("notes", "")
+    success = await resolve_log(log_id, user.get("name", "Unknown"), notes)
+    if not success:
+        raise HTTPException(status_code=404, detail="Log no encontrado")
+    return {"ok": True}
+
+
+@api.delete("/system-logs/cleanup")
+async def cleanup_system_logs(days: int = 30, user: dict = Depends(get_current_user)):
+    """Delete old resolved logs"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo admin puede limpiar logs")
+    
+    from routers.system_logs import delete_old_logs
+    deleted = await delete_old_logs(days)
+    return {"ok": True, "deleted": deleted}
 
 
 # ─── SCHEDULER ───

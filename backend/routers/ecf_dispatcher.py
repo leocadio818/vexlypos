@@ -122,6 +122,33 @@ async def send_ecf(bill_id: str):
             "alanube_id": result.get("alanube_id"),
         }
     else:
+        # Log the e-CF error to system_logs for human-readable display
+        try:
+            from routers.system_logs import log_ecf_error
+            error_msg = result.get('error', 'Error desconocido')
+            dgii_reason = ""
+            if result.get("errors"):
+                dgii_reason = "; ".join([str(e) for e in result.get("errors", [])])
+            
+            # Determine error type for better messaging
+            error_type = "ecf_send_failed"
+            if "auth" in error_msg.lower() or result.get("codigo") in [-1, 401, 403]:
+                error_type = "ecf_auth_failed"
+            elif "secuencia" in error_msg.lower() or "145" in error_msg or result.get("codigo") == 145:
+                error_type = "ecf_sequence_invalid"
+            elif "rechaz" in error_msg.lower() or result.get("codigo") in [111, 110, 112]:
+                error_type = "ecf_dgii_rejected"
+            
+            await log_ecf_error(
+                technical_error=f"{error_msg} | Code: {result.get('codigo')} | Errors: {dgii_reason}",
+                error_type=error_type,
+                bill_id=bill_id,
+                encf=encf,
+                dgii_reason=dgii_reason or error_msg
+            )
+        except Exception as log_err:
+            logging.error(f"Failed to log e-CF error: {log_err}")
+        
         return {
             "ok": False,
             "message": f"Error al enviar e-CF via {provider.upper()}: {result.get('error', '')}",

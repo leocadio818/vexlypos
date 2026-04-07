@@ -43,6 +43,7 @@ DEFAULT_PERMISSIONS = {
         "can_manage_tax_override": True,
         "transfer_tables": True,
         "create_b04": True,
+        "view_system_logs": True,
         "config_users": True, "config_mesas": True, "config_ventas": True,
         "config_productos": True, "config_inventario": True, "config_impresion": True,
         "config_estacion": True, "config_reportes": True, "config_clientes": True,
