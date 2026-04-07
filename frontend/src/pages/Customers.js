@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@/context/ThemeContext';
 import { formatMoney } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Heart, Plus, Search, Gift, Star, Phone, Mail, ArrowLeft, Pencil } from 'lucide-react';
+import { Heart, Plus, Search, Gift, Star, Phone, Mail, ArrowLeft, Pencil, Send, Trash2, Eye, Loader2 } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
@@ -22,6 +23,8 @@ const ADMIN_ROLES = ['admin', 'gerente', 'propietario', 'manager', 'owner'];
 export default function Customers() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isMinimalist, isNeoDark } = useTheme();
+  const isLightMode = isMinimalist && !isNeoDark;
   const [customers, setCustomers] = useState([]);
   const [allCustomers, setAllCustomers] = useState([]);
   const [search, setSearch] = useState('');
@@ -30,6 +33,18 @@ export default function Customers() {
   const [redeemDialog, setRedeemDialog] = useState({ open: false, customer: null, points: '' });
   const [editDialog, setEditDialog] = useState({ open: false, customer: null, name: '', phone: '', email: '', rnc: '' });
   const [configDialog, setConfigDialog] = useState(false);
+  
+  // Marketing email state
+  const [marketingDialog, setMarketingDialog] = useState({ 
+    open: false, 
+    subject: '', 
+    message: '', 
+    products: [],
+    previewHtml: '',
+    customerCount: 0,
+    showPreview: false,
+    sending: false
+  });
 
   // Check if current user has admin privileges
   const isAdmin = user && ADMIN_ROLES.includes(user.role?.toLowerCase());
@@ -95,6 +110,79 @@ export default function Customers() {
     } catch { notify.error('Error'); }
   };
 
+  // Marketing email functions
+  const openMarketingDialog = async () => {
+    try {
+      const res = await axios.post(`${API}/email/send-marketing/preview`, { subject: '', message: '' }, { headers: headers() });
+      setMarketingDialog({
+        open: true,
+        subject: '',
+        message: '',
+        products: [],
+        previewHtml: '',
+        customerCount: res.data.customer_count || 0,
+        showPreview: false,
+        sending: false
+      });
+    } catch (e) {
+      notify.error('Error al cargar datos');
+    }
+  };
+
+  const handleMarketingPreview = async () => {
+    if (!marketingDialog.subject.trim()) { notify.error('El asunto es requerido'); return; }
+    if (!marketingDialog.message.trim()) { notify.error('El mensaje es requerido'); return; }
+    try {
+      const res = await axios.post(`${API}/email/send-marketing/preview`, {
+        subject: marketingDialog.subject,
+        message: marketingDialog.message,
+        products: marketingDialog.products.filter(p => p.name.trim())
+      }, { headers: headers() });
+      setMarketingDialog(prev => ({ ...prev, previewHtml: res.data.html, customerCount: res.data.customer_count, showPreview: true }));
+    } catch (e) {
+      notify.error('Error al generar preview');
+    }
+  };
+
+  const handleMarketingSend = async () => {
+    if (!marketingDialog.subject.trim()) { notify.error('El asunto es requerido'); return; }
+    if (!marketingDialog.message.trim()) { notify.error('El mensaje es requerido'); return; }
+    if (marketingDialog.customerCount === 0) { notify.error('No hay clientes con email'); return; }
+    
+    const confirmed = window.confirm(`¿Enviar email a ${marketingDialog.customerCount} clientes?`);
+    if (!confirmed) return;
+    
+    setMarketingDialog(prev => ({ ...prev, sending: true }));
+    try {
+      const res = await axios.post(`${API}/email/send-marketing`, {
+        subject: marketingDialog.subject,
+        message: marketingDialog.message,
+        products: marketingDialog.products.filter(p => p.name.trim())
+      }, { headers: headers() });
+      
+      notify.success(`Email enviado a ${res.data.sent_count} clientes exitosamente`);
+      setMarketingDialog({ open: false, subject: '', message: '', products: [], previewHtml: '', customerCount: 0, showPreview: false, sending: false });
+    } catch (e) {
+      notify.error(e.response?.data?.detail || 'Error al enviar emails');
+      setMarketingDialog(prev => ({ ...prev, sending: false }));
+    }
+  };
+
+  const addProductRow = () => {
+    setMarketingDialog(prev => ({ ...prev, products: [...prev.products, { name: '', price: 0 }] }));
+  };
+
+  const removeProductRow = (index) => {
+    setMarketingDialog(prev => ({ ...prev, products: prev.products.filter((_, i) => i !== index) }));
+  };
+
+  const updateProductRow = (index, field, value) => {
+    setMarketingDialog(prev => ({
+      ...prev,
+      products: prev.products.map((p, i) => i === index ? { ...p, [field]: value } : p)
+    }));
+  };
+
   return (
     <div className="absolute inset-0 flex flex-col" data-testid="customers-page">
       <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-border flex items-center justify-between bg-card/50 shrink-0 gap-2">
@@ -107,9 +195,14 @@ export default function Customers() {
         </div>
         <div className="flex gap-1.5 shrink-0">
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => setConfigDialog(true)} className="text-xs h-8 px-2" data-testid="loyalty-config-btn">
-              <Star size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Config</span>
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={openMarketingDialog} className="text-xs h-8 px-2" data-testid="marketing-email-btn">
+                <Send size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Email</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setConfigDialog(true)} className="text-xs h-8 px-2" data-testid="loyalty-config-btn">
+                <Star size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Config</span>
+              </Button>
+            </>
           )}
           <Button size="sm" onClick={() => setAddDialog({ open: true, name: '', phone: '', email: '' })}
             className="bg-primary text-primary-foreground font-bold active:scale-95 h-8 px-2 sm:px-3 text-xs" data-testid="add-customer-btn">
@@ -295,6 +388,198 @@ export default function Customers() {
               GUARDAR
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Marketing Email Dialog */}
+      <Dialog open={marketingDialog.open} onOpenChange={(open) => !marketingDialog.sending && setMarketingDialog(prev => ({ ...prev, open }))}>
+        <DialogContent 
+          className={`max-w-2xl max-h-[90vh] overflow-hidden flex flex-col ${isLightMode ? 'bg-white' : ''}`}
+          style={isLightMode ? { backgroundColor: '#ffffff' } : {}}
+        >
+          <DialogHeader>
+            <DialogTitle 
+              className="flex items-center gap-2 text-lg"
+              style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
+            >
+              <Send size={20} className="text-primary" />
+              Enviar Email a Clientes
+            </DialogTitle>
+            <p 
+              className="text-sm"
+              style={isLightMode ? { color: '#64748B', WebkitTextFillColor: '#64748B' } : { color: 'rgba(255,255,255,0.6)' }}
+            >
+              {marketingDialog.customerCount > 0 
+                ? `${marketingDialog.customerCount} clientes con email registrado`
+                : 'No hay clientes con email registrado'}
+            </p>
+          </DialogHeader>
+
+          <ScrollArea className="flex-1 pr-2">
+            {!marketingDialog.showPreview ? (
+              <div className="space-y-4 py-2">
+                {/* Subject */}
+                <div>
+                  <label 
+                    className="text-xs font-medium mb-1 block"
+                    style={isLightMode ? { color: '#374151' } : {}}
+                  >Asunto *</label>
+                  <input
+                    type="text"
+                    value={marketingDialog.subject}
+                    onChange={(e) => setMarketingDialog(prev => ({ ...prev, subject: e.target.value }))}
+                    placeholder="Ej: Nuevas promociones esta semana"
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm"
+                    style={isLightMode ? { backgroundColor: '#F9FAFB', color: '#1F2937', borderColor: '#D1D5DB' } : { backgroundColor: 'rgba(255,255,255,0.05)' }}
+                    data-testid="marketing-subject-input"
+                  />
+                </div>
+
+                {/* Message */}
+                <div>
+                  <label 
+                    className="text-xs font-medium mb-1 block"
+                    style={isLightMode ? { color: '#374151' } : {}}
+                  >Mensaje *</label>
+                  <textarea
+                    value={marketingDialog.message}
+                    onChange={(e) => setMarketingDialog(prev => ({ ...prev, message: e.target.value }))}
+                    placeholder="Escribe tu mensaje aquí..."
+                    rows={4}
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm resize-none"
+                    style={isLightMode ? { backgroundColor: '#F9FAFB', color: '#1F2937', borderColor: '#D1D5DB' } : { backgroundColor: 'rgba(255,255,255,0.05)' }}
+                    data-testid="marketing-message-input"
+                  />
+                </div>
+
+                {/* Products Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label 
+                      className="text-xs font-medium"
+                      style={isLightMode ? { color: '#374151' } : {}}
+                    >Productos destacados (opcional)</label>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={addProductRow}
+                      className="h-7 text-xs"
+                      data-testid="add-product-row-btn"
+                    >
+                      <Plus size={12} className="mr-1" /> Agregar
+                    </Button>
+                  </div>
+                  
+                  {marketingDialog.products.length > 0 && (
+                    <div className="space-y-2">
+                      {marketingDialog.products.map((product, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            value={product.name}
+                            onChange={(e) => updateProductRow(index, 'name', e.target.value)}
+                            placeholder="Nombre del producto"
+                            className="flex-1 border border-border rounded-lg px-3 py-2 text-sm"
+                            style={isLightMode ? { backgroundColor: '#F9FAFB', color: '#1F2937', borderColor: '#D1D5DB' } : { backgroundColor: 'rgba(255,255,255,0.05)' }}
+                            data-testid={`product-name-${index}`}
+                          />
+                          <input
+                            type="number"
+                            value={product.price}
+                            onChange={(e) => updateProductRow(index, 'price', parseFloat(e.target.value) || 0)}
+                            placeholder="Precio"
+                            className="w-28 border border-border rounded-lg px-3 py-2 text-sm"
+                            style={isLightMode ? { backgroundColor: '#F9FAFB', color: '#1F2937', borderColor: '#D1D5DB' } : { backgroundColor: 'rgba(255,255,255,0.05)' }}
+                            data-testid={`product-price-${index}`}
+                          />
+                          <button
+                            onClick={() => removeProductRow(index)}
+                            className="p-2 hover:bg-destructive/10 rounded-lg transition-colors text-destructive"
+                            data-testid={`remove-product-${index}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleMarketingPreview}
+                    className="flex-1 h-11"
+                    disabled={!marketingDialog.subject.trim() || !marketingDialog.message.trim()}
+                    data-testid="preview-email-btn"
+                  >
+                    <Eye size={16} className="mr-2" /> Vista Previa
+                  </Button>
+                  <Button
+                    onClick={handleMarketingSend}
+                    className="flex-1 h-11 bg-primary text-primary-foreground font-bold"
+                    disabled={marketingDialog.sending || marketingDialog.customerCount === 0 || !marketingDialog.subject.trim() || !marketingDialog.message.trim()}
+                    data-testid="send-marketing-btn"
+                  >
+                    {marketingDialog.sending ? (
+                      <><Loader2 size={16} className="mr-2 animate-spin" /> Enviando...</>
+                    ) : (
+                      <><Send size={16} className="mr-2" /> Enviar a {marketingDialog.customerCount}</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="py-2">
+                {/* Preview Mode */}
+                <div className="mb-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setMarketingDialog(prev => ({ ...prev, showPreview: false }))}
+                    className="mb-3"
+                  >
+                    <ArrowLeft size={14} className="mr-1" /> Volver a editar
+                  </Button>
+                  <p 
+                    className="text-xs"
+                    style={isLightMode ? { color: '#64748B' } : { color: 'rgba(255,255,255,0.6)' }}
+                  >
+                    Vista previa del email que recibirán los clientes:
+                  </p>
+                </div>
+                
+                <div 
+                  className="border border-border rounded-lg overflow-hidden"
+                  style={{ maxHeight: '400px', overflowY: 'auto' }}
+                >
+                  <iframe
+                    srcDoc={marketingDialog.previewHtml}
+                    title="Email Preview"
+                    className="w-full"
+                    style={{ height: '400px', border: 'none' }}
+                  />
+                </div>
+
+                {/* Send Button in Preview Mode */}
+                <div className="mt-4">
+                  <Button
+                    onClick={handleMarketingSend}
+                    className="w-full h-12 bg-primary text-primary-foreground font-bold text-base"
+                    disabled={marketingDialog.sending || marketingDialog.customerCount === 0}
+                    data-testid="send-marketing-confirm-btn"
+                  >
+                    {marketingDialog.sending ? (
+                      <><Loader2 size={18} className="mr-2 animate-spin" /> Enviando...</>
+                    ) : (
+                      <><Send size={18} className="mr-2" /> Enviar a {marketingDialog.customerCount} clientes</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

@@ -119,7 +119,7 @@ def build_invoice_html(bill: dict, config: dict) -> str:
         from datetime import datetime
         dt = datetime.fromisoformat(paid_at.replace("Z", ""))
         date_str = dt.strftime("%d/%m/%Y %I:%M %p")
-    except:
+    except Exception:
         date_str = paid_at[:16] if paid_at else ""
     
     html = f'''
@@ -265,3 +265,171 @@ async def preview_invoice_email(bill_id: str):
     html = build_invoice_html(bill, config)
     
     return {"html": html, "customer_email": bill.get("customer_email", "")}
+
+
+# ─── MARKETING EMAIL ───
+
+def build_marketing_html(config: dict, subject: str, message: str, products: list = None) -> str:
+    """Build professional HTML marketing email"""
+    biz_name = config.get("restaurant_name", "VexlyPOS")
+    logo_url = config.get("logo_url", "")
+    phone = config.get("phone", "")
+    address = config.get("address", "")
+    
+    # Products section
+    products_html = ""
+    if products and len(products) > 0:
+        products_rows = ""
+        for p in products:
+            name = p.get("name", "")
+            price = p.get("price", 0)
+            if name:
+                products_rows += f'''
+                <tr>
+                    <td style="padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:15px;color:#333;">{name}</td>
+                    <td style="padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:15px;color:#FF6600;font-weight:bold;text-align:right;">RD$ {price:,.2f}</td>
+                </tr>'''
+        
+        if products_rows:
+            products_html = f'''
+            <div style="margin:24px 0;">
+                <h3 style="color:#FF6600;font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #FF6600;">Productos Destacados</h3>
+                <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                    {products_rows}
+                </table>
+            </div>'''
+    
+    # Logo section
+    logo_html = ""
+    if logo_url:
+        logo_html = f'<img src="{logo_url}" alt="{biz_name}" style="max-height:60px;max-width:200px;margin-bottom:8px;" />'
+    
+    # Message with line breaks
+    message_formatted = message.replace('\n', '<br>')
+    
+    html = f'''<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;background:#f5f5f5;">
+    <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+        
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#FF6600 0%,#FF8533 100%);padding:30px 24px;text-align:center;">
+            {logo_html}
+            <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:700;">{biz_name}</h1>
+        </div>
+        
+        <!-- Subject as Title -->
+        <div style="padding:24px 24px 0;">
+            <h2 style="color:#333;font-size:22px;margin:0 0 16px;line-height:1.3;">{subject}</h2>
+        </div>
+        
+        <!-- Main Message -->
+        <div style="padding:0 24px 24px;">
+            <p style="color:#555;font-size:15px;line-height:1.7;margin:0;">{message_formatted}</p>
+        </div>
+        
+        {products_html}
+        
+        <!-- Footer -->
+        <div style="background:#f9f9f9;padding:20px 24px;border-top:1px solid #eee;">
+            <p style="color:#888;font-size:13px;margin:0 0 8px;text-align:center;">
+                {f'<span style="margin-right:16px;">📍 {address}</span>' if address else ''}
+                {f'<span>📞 {phone}</span>' if phone else ''}
+            </p>
+            <p style="color:#aaa;font-size:11px;margin:0;text-align:center;">
+                Para cancelar suscripción responda a este email
+            </p>
+        </div>
+        
+    </div>
+</body>
+</html>'''
+    
+    return html
+
+
+@router.post("/send-marketing")
+async def send_marketing_email(input: dict):
+    """Send marketing email to all customers with email addresses"""
+    if not resend.api_key:
+        raise HTTPException(status_code=500, detail="API de email no configurada")
+    
+    subject = input.get("subject", "").strip()
+    message = input.get("message", "").strip()
+    products = input.get("products", [])
+    
+    if not subject:
+        raise HTTPException(status_code=400, detail="El asunto es requerido")
+    if not message:
+        raise HTTPException(status_code=400, detail="El mensaje es requerido")
+    
+    # Get system config for branding
+    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    biz_name = config.get("restaurant_name", "VexlyPOS")
+    
+    # Build HTML template
+    html = build_marketing_html(config, subject, message, products)
+    
+    # Get all customers with valid email
+    customers = await db.customers.find(
+        {"$and": [{"email": {"$ne": None}}, {"email": {"$ne": ""}}]},
+        {"_id": 0, "email": 1, "name": 1}
+    ).to_list(5000)
+    
+    # Filter out empty emails (double check)
+    customers_with_email = [c for c in customers if c.get("email", "").strip()]
+    
+    if not customers_with_email:
+        raise HTTPException(status_code=400, detail="No hay clientes con email registrado")
+    
+    # Send emails
+    sent_count = 0
+    failed_emails = []
+    
+    for customer in customers_with_email:
+        try:
+            params = {
+                "from": f"{biz_name} <{SENDER_EMAIL}>",
+                "to": [customer["email"]],
+                "subject": subject,
+                "html": html,
+            }
+            resend.Emails.send(params)
+            sent_count += 1
+        except Exception as e:
+            failed_emails.append({"email": customer["email"], "error": str(e)})
+    
+    return {
+        "ok": True,
+        "sent_count": sent_count,
+        "total_customers": len(customers_with_email),
+        "failed_count": len(failed_emails),
+        "failed_emails": failed_emails[:10] if failed_emails else []
+    }
+
+
+@router.post("/send-marketing/preview")
+async def preview_marketing_email(input: dict):
+    """Preview marketing email without sending"""
+    subject = input.get("subject", "Asunto de ejemplo")
+    message = input.get("message", "Este es un mensaje de ejemplo.")
+    products = input.get("products", [])
+    
+    # Get system config for branding
+    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    
+    # Build HTML template
+    html = build_marketing_html(config, subject, message, products)
+    
+    # Count customers with email
+    count = await db.customers.count_documents({"$and": [{"email": {"$ne": None}}, {"email": {"$ne": ""}}]})
+    
+    return {
+        "html": html,
+        "customer_count": count
+    }
+
