@@ -294,6 +294,15 @@ async def login(input: LoginInput):
 
 
 @router.get("/auth/me")
+async def get_me(user=Depends(get_current_user)):
+    """Get current authenticated user info"""
+    u = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "pin_hash": 0})
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+    u["permissions"] = get_permissions(u["role"], u.get("permissions"))
+    u["role_level"] = await get_role_level_async(u["role"])
+    return u
+
 
 @router.put("/users/me/pin")
 async def update_my_pin(input: dict, user=Depends(get_current_user)):
@@ -316,15 +325,6 @@ async def update_my_pin(input: dict, user=Depends(get_current_user)):
     
     await db.users.update_one({"id": user["user_id"]}, {"$set": {"pin_hash": pin_hash}})
     return {"ok": True, "message": "PIN actualizado correctamente"}
-
-
-async def get_me(user=Depends(get_current_user)):
-    u = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "pin_hash": 0})
-    if not u:
-        raise HTTPException(status_code=404, detail="User not found")
-    u["permissions"] = get_permissions(u["role"], u.get("permissions"))
-    u["role_level"] = await get_role_level_async(u["role"])
-    return u
 
 
 @router.put("/users/me/ui-preferences")
