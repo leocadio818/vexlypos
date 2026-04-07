@@ -11,7 +11,10 @@ import { useTheme } from '@/context/ThemeContext';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
+const hdrs = () => ({ 
+  Authorization: `Bearer ${localStorage.getItem('pos_token')}`,
+  'Content-Type': 'application/json'
+});
 
 export default function ChannelsTab() {
   const { printChannels, categories, fetchAll } = useSettings();
@@ -65,9 +68,30 @@ export default function ChannelsTab() {
   const saveAreaChannelMappings = async () => {
     setSavingAreaMappings(true);
     try {
-      await axios.put(`${API}/area-channel-mappings/bulk`, areaChannelMappings, { headers: hdrs() });
+      // Clean the mappings: remove empty entries and __global__ values
+      const cleanMappings = {};
+      for (const [areaId, catMappings] of Object.entries(areaChannelMappings)) {
+        if (catMappings && typeof catMappings === 'object') {
+          const cleanCatMappings = {};
+          for (const [catId, channelCode] of Object.entries(catMappings)) {
+            // Only include valid channel codes (not empty, not __global__)
+            if (channelCode && channelCode !== '__global__' && channelCode.trim() !== '') {
+              cleanCatMappings[catId] = channelCode;
+            }
+          }
+          if (Object.keys(cleanCatMappings).length > 0) {
+            cleanMappings[areaId] = cleanCatMappings;
+          }
+        }
+      }
+      
+      console.log('Saving area mappings:', cleanMappings);
+      await axios.put(`${API}/area-channel-mappings/bulk`, cleanMappings, { headers: hdrs() });
       notify.success('Asignaciones por área guardadas');
-    } catch {
+      // Reload data to confirm save
+      loadAreaData();
+    } catch (err) {
+      console.error('Error saving area mappings:', err);
       notify.error('Error guardando asignaciones');
     }
     setSavingAreaMappings(false);
