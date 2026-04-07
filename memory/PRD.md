@@ -17,6 +17,15 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **CRITICAL**: The Factory `itbiS1` field expects TAX RATE ("18"), NOT amount. Amount goes in `totalITBIS1`
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
+## Completed Tasks (2026-04-07)
+
+- **🔒 Area-Based Print Channel Routing - BUG FIX** (DONE - 2026-04-07):
+  - **BUG**: "Error guardando asignaciones" al intentar guardar configuración de impresión por área
+  - **Root Cause**: El endpoint `/api/auth/me` estaba mal configurado. El decorador `@router.get("/auth/me")` existía pero NO tenía función asociada (la función `get_me()` estaba definida más abajo sin decorador). Esto causaba error 422 cuando la app verificaba la sesión.
+  - **Fix Applied**: Asocié la función `get_me()` directamente al decorador del endpoint en `/app/backend/routers/auth.py` (líneas 296-307)
+  - **Resultado**: Flujo completo probado (Login → Config → Impresión → Por Área → Guardar) - Toast verde "Asignaciones por área guardadas" aparece correctamente
+  - **⚠️ PROTEGIDO**: Esta funcionalidad está BLOQUEADA - ver sección CÓDIGO PROTEGIDO
+
 ## Completed Tasks (2026-04-05)
 
 - **Area-Based Print Channel Routing** (DONE - 2026-04-06):
@@ -432,3 +441,24 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Filtro**: Excluye mesas con 0 items, RD$0, >12 horas
 - **Razón**: Dashboard muestra solo mesas activas reales
 - **Fecha de protección**: 2026-04-05
+
+### 5. 🔒 Impresión por Área - Area-Based Print Channel Routing (2026-04-07)
+- **Archivos Backend**:
+  - `/app/backend/server.py` (líneas 830-900): Endpoints CRUD para `area_channel_mappings`
+    - `GET /api/area-channel-mappings` - Lista todas las asignaciones
+    - `PUT /api/area-channel-mappings/bulk` - Actualización masiva
+  - `/app/backend/routers/orders.py` (líneas 1226-1260): Lógica de enrutamiento de impresión
+  - `/app/backend/routers/auth.py` (líneas 296-307): Endpoint `/auth/me` corregido
+- **Archivos Frontend**:
+  - `/app/frontend/src/pages/settings/ChannelsTab.js`: UI completa con tabs "Canales" y "Por Área"
+- **Funcionalidad**:
+  - Configura qué impresora recibe las comandas según el **área** de la mesa
+  - **Prioridad de enrutamiento**:
+    1. Canal específico del producto (más alta)
+    2. Canal del área para esa categoría (NUEVO)
+    3. Canal global de la categoría (más baja)
+  - Dropdown "Usar global" para usar el canal global de la categoría
+  - Badge "X personalizadas" muestra cuántas categorías tienen canal específico por área
+- **Compatibilidad**: Safari iOS ✅, Android Chrome ✅, Desktop ✅
+- **Razón de protección**: Funcionalidad compleja de enrutamiento de impresión probada y validada
+- **Fecha de protección**: 2026-04-07
