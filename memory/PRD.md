@@ -36,6 +36,13 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **Modo oscuro**: Sin cambios
   - **⚠️ PROTEGIDO**: Este fix está BLOQUEADO - ver sección CÓDIGO PROTEGIDO
 
+- **🔒 Clear Service Worker Cache on Logout** (DONE - 2026-04-07):
+  - **Feature**: Limpia todos los caches del Service Worker al cerrar sesión
+  - **Archivo**: `/app/frontend/src/context/AuthContext.js` (líneas 245-252)
+  - **Propósito**: Asegura datos frescos del servidor en cada nuevo login
+  - **Compatibilidad**: Safari iOS 15+, Android Chrome, Windows Chrome/Edge, iPad Safari
+  - **⚠️ PROTEGIDO**: Esta feature está BLOQUEADA - ver sección CÓDIGO PROTEGIDO
+
 ## Completed Tasks (2026-04-05)
 
 - **Area-Based Print Channel Routing** (DONE - 2026-04-06):
@@ -486,4 +493,20 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Patrón usado**: `isMinimalist && !isNeoDark` con `style={{}}` + `WebkitTextFillColor` para Safari iOS
 - **Modo oscuro**: Sin cambios, mantiene estilos originales (`bg-slate-900`, `text-white`, etc.)
 - **Razón de protección**: Fix crítico de accesibilidad en modo claro
+- **Fecha de protección**: 2026-04-07
+
+### 7. 🔒 Clear Service Worker Cache on Logout (2026-04-07)
+- **Archivo**: `/app/frontend/src/context/AuthContext.js` (líneas 245-252)
+- **Funcionalidad**: Limpia todos los caches del Service Worker cuando el usuario cierra sesión
+- **Código**:
+  ```javascript
+  if ('caches' in window) {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+  }
+  ```
+- **Momento de ejecución**: ANTES de eliminar el token y redirigir al login
+- **Compatibilidad**: Safari iOS 15+, Android Chrome, Windows Chrome/Edge, iPad Safari
+- **Propósito**: Asegura que cada login inicie con datos frescos del servidor, no datos cacheados obsoletos
+- **Razón de protección**: Feature crítica para evitar datos stale después de logout
 - **Fecha de protección**: 2026-04-07
