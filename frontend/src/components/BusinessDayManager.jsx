@@ -271,13 +271,13 @@ export default function BusinessDayManager({
     statEfectivo: '#065F46',   // Emerald 800
     statTarjeta: '#1E40AF',    // Blue 800
     statFacturas: '#0E7490',   // Cyan 700
-    historyBtn: '#374151',     // Gray 700
-    historyBorder: 'border-gray-300',
+    historyBtn: '#1F2937',     // Gray 800 (darker for better visibility)
+    historyBorder: 'border-gray-500 hover:bg-gray-100 bg-gray-50',
     infoBorder: 'border-gray-200',
-    statBgVentas: 'bg-green-50',
-    statBgEfectivo: 'bg-emerald-50',
-    statBgTarjeta: 'bg-blue-50',
-    statBgFacturas: 'bg-cyan-50',
+    statBgVentas: 'bg-green-50 border border-green-200 shadow-sm',
+    statBgEfectivo: 'bg-emerald-50 border border-emerald-200 shadow-sm',
+    statBgTarjeta: 'bg-blue-50 border border-blue-200 shadow-sm',
+    statBgFacturas: 'bg-cyan-50 border border-cyan-200 shadow-sm',
   } : {
     // Dark theme colors (light text on dark bg)
     titleOpen: '#4ADE80',      // Green 400
@@ -410,15 +410,19 @@ export default function BusinessDayManager({
                   setHistoryDialog(true);
                 }}
                 variant="outline"
-                className={`min-h-[48px] min-w-[48px] sm:w-auto ${colors.historyBorder}`}
+                className={`min-h-[48px] min-w-[48px] sm:w-auto`}
                 style={{ 
                   color: colors.historyBtn,
                   WebkitTextFillColor: colors.historyBtn,
                   WebkitAppearance: 'none',
-                  opacity: 1
+                  opacity: 1,
+                  borderWidth: '2px',
+                  borderColor: isLightBg ? '#6B7280' : 'rgba(255,255,255,0.3)',
+                  backgroundColor: isLightBg ? '#F3F4F6' : 'transparent'
                 }}
+                data-testid="history-btn"
               >
-                <History size={16} style={{ color: colors.historyBtn }} />
+                <History size={18} style={{ color: colors.historyBtn, strokeWidth: 2.5, minWidth: '18px', minHeight: '18px' }} />
                 <span className="sm:hidden ml-2">Historial</span>
               </Button>
             </>
@@ -444,15 +448,19 @@ export default function BusinessDayManager({
                   setHistoryDialog(true);
                 }}
                 variant="outline"
-                className={`min-h-[48px] min-w-[48px] sm:w-auto ${colors.historyBorder}`}
+                className={`min-h-[48px] min-w-[48px] sm:w-auto`}
                 style={{ 
                   color: colors.historyBtn,
                   WebkitTextFillColor: colors.historyBtn,
                   WebkitAppearance: 'none',
-                  opacity: 1
+                  opacity: 1,
+                  borderWidth: '2px',
+                  borderColor: isLightBg ? '#6B7280' : 'rgba(255,255,255,0.3)',
+                  backgroundColor: isLightBg ? '#F3F4F6' : 'transparent'
                 }}
+                data-testid="history-btn-closed"
               >
-                <History size={16} style={{ color: colors.historyBtn }} />
+                <History size={18} style={{ color: colors.historyBtn, strokeWidth: 2.5, minWidth: '18px', minHeight: '18px' }} />
                 <span className="sm:hidden ml-2">Historial</span>
               </Button>
             </>
