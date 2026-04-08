@@ -561,3 +561,29 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Modo oscuro**: Sin cambios, mantiene estilos originales
 - **Razón de protección**: Fix crítico de visibilidad en modo claro
 - **Fecha de protección**: 2026-04-07
+
+## Completed Tasks (2026-04-08)
+
+- **🔒 Sistema de Auditoría General Completo** (DONE - 2026-04-08):
+  - **Feature**: Sistema de auditoría centralizado para tracking de todas las acciones críticas del sistema
+  - **Archivos creados/modificados**:
+    - `/app/backend/utils/audit.py` (NUEVO) - Función central `log_audit_event()` y helpers
+    - `/app/backend/routers/auth.py` - Logging de login/logout
+    - `/app/backend/routers/billing.py` - Logging de pagos y descuentos
+    - `/app/backend/routers/business_days.py` - Logging de apertura/cierre de jornada
+    - `/app/backend/server.py` - Logging de turnos y cambios de precios/config
+    - `/app/backend/routers/reports.py` - Consolidación de system_audit_logs
+    - `/app/frontend/src/pages/settings/SettingsContext.js` - Label del permiso
+  - **Eventos registrados**:
+    - LOGIN / LOGIN_FAILED / LOGOUT
+    - SHIFT_OPENED / SHIFT_CLOSED
+    - BUSINESS_DAY_OPENED / BUSINESS_DAY_CLOSED
+    - BILL_PAID / DISCOUNT_APPLIED
+    - PRICE_CHANGED / CONFIG_CHANGED
+  - **Permisos**: 
+    - `view_audit_complete` agregado a Admin y Supervisor
+    - Label: "Ver Auditoría Completa del Sistema"
+  - **Testing**: 12/12 tests pasados (pytest)
+  - **Razón de protección**: Sistema de auditoría crítico para compliance y trazabilidad
+  - **Fecha de protección**: 2026-04-08
+
