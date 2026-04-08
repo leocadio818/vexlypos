@@ -172,11 +172,13 @@ async def list_tables(area_id: Optional[str] = Query(None)):
     query = {"area_id": area_id} if area_id else {}
     tables = await db.tables.find(query, {"_id": 0}).to_list(200)
     
-    # Get ALL active orders to calculate table status dynamically
+    # Get ALL active/open orders to calculate table status dynamically
     # This ensures status is always accurate regardless of cached table.status
+    # Include: active, sent, merged (divided accounts) - these are all "open"
+    # Exclude: closed, paid, cancelled - these are finished
     active_orders = await db.orders.find(
-        {"status": {"$in": ["active", "sent"]}},
-        {"_id": 0, "table_id": 1, "waiter_id": 1, "waiter_name": 1, "id": 1}
+        {"status": {"$nin": ["closed", "paid", "cancelled"]}},
+        {"_id": 0, "table_id": 1, "waiter_id": 1, "waiter_name": 1, "id": 1, "status": 1}
     ).to_list(500)
     
     # Group orders by table_id

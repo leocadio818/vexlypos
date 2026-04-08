@@ -564,6 +564,18 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 
 ## Completed Tasks (2026-04-08)
 
+- **🔒 Bug Fix: Table Map Status for Merged Orders** (DONE - 2026-04-08):
+  - **Bug**: Mesas 3 y 5 aparecían en azul (libre) aunque tenían órdenes abiertas
+  - **Causa raíz**: El filtro de órdenes solo buscaba `status: ["active", "sent"]` pero ignoraba `status: "merged"` (cuentas divididas)
+  - **Solución**: Cambiar filtro a `status: {"$nin": ["closed", "paid", "cancelled"]}` para capturar TODAS las órdenes no cerradas
+  - **Archivo modificado**: `/app/backend/routers/tables.py` línea 178
+  - **Testing**: Screenshot confirmó:
+    - Mesa 1: Naranja (dividida) ✅
+    - Mesa 2: Naranja (dividida) ✅
+    - Mesa 3: Rojo (occupied) ✅
+    - Mesa 5: Rojo (occupied) ✅
+  - **Fecha de protección**: 2026-04-08
+
 - **🔒 Bug Fix: Table Map Status Colors** (DONE - 2026-04-08):
   - **Bug**: El mapa de mesas mostraba todas las mesas en azul/libre aunque había órdenes activas
   - **Causa raíz**: El endpoint `/api/tables` dependía del campo `table.status` almacenado en DB, el cual podía desincronizarse de las órdenes reales
