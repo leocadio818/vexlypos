@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { SettingsProvider } from './SettingsContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Table2, CreditCard, Package, Printer, Cog, BarChart3, Heart, Calculator, FileText, Palette, Warehouse, Tag } from 'lucide-react';
+import { Users, Table2, CreditCard, Package, Printer, Cog, BarChart3, Heart, Calculator, FileText, Palette, Warehouse, Tag, AlertCircle } from 'lucide-react';
 
 import UsersTab from './UsersTab';
 import MesasTab from './MesasTab';
@@ -18,6 +18,7 @@ import NcfTab from './NcfTab';
 import SystemTab from './SystemTab';
 import ThemeTab from './ThemeTab';
 import DescuentosTab from './DescuentosTab';
+import SystemLogsTab from './SystemLogsTab';
 
 // Tab definitions with permission mapping (new config_* + old manage_* fallback)
 const ALL_TABS = [
@@ -34,6 +35,7 @@ const ALL_TABS = [
   { value: 'ncf', label: 'NCF', icon: FileText, permissions: ['config_ncf'], component: NcfTab },
   { value: 'theme', label: 'Apariencia', icon: Palette, permissions: ['config_apariencia'], component: ThemeTab },
   { value: 'system', label: 'Sistema', icon: Cog, permissions: ['config_sistema'], component: SystemTab },
+  { value: 'logs', label: 'Logs', icon: AlertCircle, permissions: ['view_system_logs','config_sistema'], component: SystemLogsTab },
   { value: 'descuentos', label: 'Descuentos', icon: Tag, permissions: ['config_descuentos','manage_cancellation_reasons'], component: DescuentosTab },
 ];
 
