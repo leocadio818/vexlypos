@@ -280,10 +280,16 @@ async def login(input: LoginInput):
     try:
         active_day = await db.business_days.find_one({"status": "open"}, {"_id": 0})
         if not active_day:
-            from datetime import datetime, timezone
+            from datetime import datetime, timezone as dt_timezone
+            from zoneinfo import ZoneInfo
             import uuid
-            now = datetime.now(timezone.utc).isoformat()
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            
+            # Use Dominican Republic timezone for business_date
+            dr_tz = ZoneInfo("America/Santo_Domingo")
+            dr_now = datetime.now(dr_tz)
+            today = dr_now.strftime("%Y-%m-%d")
+            now = datetime.now(dt_timezone.utc).isoformat()
+            
             # Count existing days for ref
             count = await db.business_days.count_documents({})
             day_ref = f"JT-{count + 1:04d}"

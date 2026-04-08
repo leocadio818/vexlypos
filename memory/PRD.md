@@ -564,6 +564,15 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 
 ## Completed Tasks (2026-04-08)
 
+- **🔒 Bug Fix: Timezone - Business Date One Day Ahead** (DONE - 2026-04-08):
+  - **Bug**: El sistema mostraba "miércoles 8 de abril" cuando era martes 7 de abril
+  - **Causa raíz**: En `auth.py`, al auto-abrir la jornada durante el login, usaba `datetime.now(timezone.utc)` para calcular `business_date` en lugar de usar la zona horaria local de República Dominicana
+  - **Solución**: 
+    - Modificado `/app/backend/routers/auth.py` para usar `ZoneInfo("America/Santo_Domingo")` al calcular `business_date`
+    - Corregido el `business_date` de la jornada activa de 2026-04-08 a 2026-04-07
+  - **Testing**: Screenshot confirmó "JORNADA ACTIVA: 2026-04-07" en Dashboard
+  - **Fecha de protección**: 2026-04-08
+
 - **🔒 Bug Fix: Table Map Status for Merged Orders** (DONE - 2026-04-08):
   - **Bug**: Mesas 3 y 5 aparecían en azul (libre) aunque tenían órdenes abiertas
   - **Causa raíz**: El filtro de órdenes solo buscaba `status: ["active", "sent"]` pero ignoraba `status: "merged"` (cuentas divididas)
