@@ -172,15 +172,55 @@ async def list_tables(area_id: Optional[str] = Query(None)):
     query = {"area_id": area_id} if area_id else {}
     tables = await db.tables.find(query, {"_id": 0}).to_list(200)
     
+    # Get ALL active orders to calculate table status dynamically
+    # This ensures status is always accurate regardless of cached table.status
+    active_orders = await db.orders.find(
+        {"status": {"$in": ["active", "sent"]}},
+        {"_id": 0, "table_id": 1, "waiter_id": 1, "waiter_name": 1, "id": 1}
+    ).to_list(500)
+    
+    # Group orders by table_id
+    orders_by_table = {}
+    for order in active_orders:
+        tid = order.get("table_id")
+        if tid:
+            if tid not in orders_by_table:
+                orders_by_table[tid] = []
+            orders_by_table[tid].append(order)
+    
+    # Calculate status for each table based on active orders
     for table in tables:
-        if table["status"] in ["occupied", "divided"]:
-            order = await db.orders.find_one(
-                {"table_id": table["id"], "status": {"$in": ["active", "sent"]}},
-                {"_id": 0, "waiter_id": 1, "waiter_name": 1}
-            )
-            if order:
-                table["owner_id"] = order.get("waiter_id")
-                table["owner_name"] = order.get("waiter_name")
+        table_orders = orders_by_table.get(table["id"], [])
+        
+        if not table_orders:
+            # No active orders = free (override any stale status)
+            table["status"] = "free"
+            table["active_order_id"] = None
+            table["owner_id"] = None
+            table["owner_name"] = None
+        else:
+            # Has active orders
+            if len(table_orders) > 1:
+                table["status"] = "divided"
+            else:
+                table["status"] = "occupied"
+            
+            # Set owner from first order
+            first_order = table_orders[0]
+            table["owner_id"] = first_order.get("waiter_id")
+            table["owner_name"] = first_order.get("waiter_name")
+            table["active_order_id"] = first_order.get("id")
+        
+        # Preserve reserved status if no orders (reservation takes precedence)
+        if table.get("reserved_until") and not table_orders:
+            # Check if reservation is still valid
+            try:
+                from datetime import datetime, timezone
+                reserved_until = datetime.fromisoformat(table["reserved_until"].replace("Z", "+00:00"))
+                if reserved_until > datetime.now(timezone.utc):
+                    table["status"] = "reserved"
+            except:
+                pass
     
     return tables
 

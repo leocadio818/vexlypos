@@ -564,6 +564,20 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 
 ## Completed Tasks (2026-04-08)
 
+- **🔒 Bug Fix: Table Map Status Colors** (DONE - 2026-04-08):
+  - **Bug**: El mapa de mesas mostraba todas las mesas en azul/libre aunque había órdenes activas
+  - **Causa raíz**: El endpoint `/api/tables` dependía del campo `table.status` almacenado en DB, el cual podía desincronizarse de las órdenes reales
+  - **Solución**: Modificado `/api/tables` para calcular el status dinámicamente basado en órdenes activas (`status: active|sent`)
+  - **Archivo modificado**: `/app/backend/routers/tables.py` (función `list_tables`)
+  - **Comportamiento actual**:
+    - Mesa sin órdenes activas → `status: free` (azul)
+    - Mesa con 1 orden activa → `status: occupied` (rojo si es mi mesa, amarillo si es de otro)
+    - Mesa con 2+ órdenes activas → `status: divided` (naranja)
+    - Mesa con reservación activa → `status: reserved` (morado)
+  - **Testing**: Screenshot confirmó colores correctos (Mesa 1 en rojo con orden activa)
+  - **Razón de protección**: Fix crítico de UX para operación del restaurante
+  - **Fecha de protección**: 2026-04-08
+
 - **🔒 Sistema de Auditoría General Completo** (DONE - 2026-04-08):
   - **Feature**: Sistema de auditoría centralizado para tracking de todas las acciones críticas del sistema
   - **Bug Fixed**: Eventos no aparecían en reporte debido a:
