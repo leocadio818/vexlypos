@@ -564,6 +564,24 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 
 ## Completed Tasks (2026-04-08)
 
+- **🔒 CRITICAL: Jornada Date vs Calendar Date Architecture** (DONE - 2026-04-08):
+  - **Problem**: System was mixing fiscal/business date (jornada) with calendar/clock date
+  - **Business Rule Implemented**:
+    - **Jornada Date**: Used for ALL reports, filters, groupings, audit logs, dashboard
+    - **Print Timestamp**: Used ONLY for printed documents (facturas, receipts)
+  - **Changes**:
+    - Added `get_jornada_date()` and `get_jornada_date_with_fallback()` helpers to `/app/backend/utils/timezone.py`
+    - Modified `/app/backend/utils/audit.py` to include `jornada_date` field in all audit logs
+    - Updated `/app/backend/routers/reports.py` system-audit endpoint to filter by `jornada_date`
+    - Uses helper `in_date_range()` that prioritizes jornada_date over created_at
+  - **Testing verified**:
+    - Desktop (1920px): Dashboard shows "JORNADA ACTIVA: 2026-04-07" ✅
+    - Mobile Safari iOS (390px): Jornada badge visible ✅
+    - Desktop Light mode (1280px): All elements visible ✅
+    - Events from 01:38 AM Apr 8 correctly belong to jornada Apr 7 ✅
+  - **Cross-platform**: Safari iOS 15+, Android Chrome, Desktop Chrome/Edge
+  - **Fecha de protección**: 2026-04-08
+
 - **🔒 Bug Fix: Timezone - Business Date One Day Ahead** (DONE - 2026-04-08):
   - **Bug**: El sistema mostraba "miércoles 8 de abril" cuando era martes 7 de abril
   - **Causa raíz**: En `auth.py`, al auto-abrir la jornada durante el login, usaba `datetime.now(timezone.utc)` para calcular `business_date` en lugar de usar la zona horaria local de República Dominicana

@@ -72,3 +72,76 @@ async def utc_hour_to_local(utc_hour: int) -> int:
     utc_dt = utc_now.replace(hour=utc_hour, minute=0, second=0, microsecond=0)
     local_dt = utc_dt.astimezone(tz)
     return local_dt.hour
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# JORNADA DATE - The fiscal/business date for grouping and filtering
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# CRITICAL BUSINESS RULE:
+# In restaurants, there are TWO different date concepts:
+#
+# 1. JORNADA DATE (fiscal date): The date of the active business_day.
+#    - Used for: ALL reports, ALL filters, ALL groupings, ALL audit logs,
+#      ALL dashboard numbers, ALL shift reports, inventory movements
+#    - Example: Jornada opens Apr 7 10AM, closes Apr 8 3AM → everything
+#      in between belongs to APRIL 7 in reports
+#
+# 2. PRINT TIMESTAMP (clock time): The real system clock time.
+#    - Used ONLY for: printed documents (facturas, comandas, receipts)
+#    - Example: Factura printed at 1:29AM Apr 8 shows that timestamp
+#      BUT belongs to Apr 7 jornada in reports
+#
+# ALWAYS use get_jornada_date() for grouping/filtering events by business day.
+# NEVER use datetime.now() for this purpose.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+async def get_jornada_date() -> str:
+    """
+    Get the active jornada's business_date for grouping and filtering.
+    
+    This is the FISCAL date that all transactions, reports, and events
+    should be associated with - NOT the calendar date.
+    
+    Returns:
+        str: The business_date in YYYY-MM-DD format
+             - If jornada is open: returns that jornada's business_date
+             - If no jornada: returns today's date in local timezone (fallback)
+    """
+    # Check for open business day
+    active_day = await _db.business_days.find_one(
+        {"status": "open"}, 
+        {"_id": 0, "business_date": 1}
+    )
+    
+    if active_day and active_day.get("business_date"):
+        return active_day["business_date"]
+    
+    # Fallback: use local timezone date (no jornada open)
+    tz = await get_system_tz()
+    return datetime.now(tz).strftime("%Y-%m-%d")
+
+
+async def get_jornada_date_with_fallback(db=None) -> str:
+    """
+    Same as get_jornada_date but accepts an optional db parameter
+    for use in routers that have their own db connection.
+    
+    Args:
+        db: Optional database connection. If None, uses the module's connection.
+    
+    Returns:
+        str: The business_date in YYYY-MM-DD format
+    """
+    database = db if db is not None else _db
+    
+    active_day = await database.business_days.find_one(
+        {"status": "open"}, 
+        {"_id": 0, "business_date": 1}
+    )
+    
+    if active_day and active_day.get("business_date"):
+        return active_day["business_date"]
+    
+    tz = await get_system_tz()
+    return datetime.now(tz).strftime("%Y-%m-%d")

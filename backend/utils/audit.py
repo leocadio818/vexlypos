@@ -146,6 +146,10 @@ async def log_audit_event(
     Central audit logging function.
     Writes to 'system_audit_logs' collection for unified audit trail.
     
+    IMPORTANT: Uses jornada_date (fiscal date) for grouping, NOT calendar date.
+    The jornada_date is the business_day this event belongs to.
+    created_at is the real clock timestamp for audit trail purposes.
+    
     Args:
         db: MongoDB database instance
         event_type: One of AuditEventType constants
@@ -167,6 +171,10 @@ async def log_audit_event(
     # Get human-readable label for event type
     type_label = EVENT_TYPE_LABELS.get(event_type, event_type.replace("_", " ").title())
     
+    # Get jornada date (fiscal date for grouping) - NOT calendar date
+    from utils.timezone import get_jornada_date_with_fallback
+    jornada_date = await get_jornada_date_with_fallback(db)
+    
     log_entry = {
         "id": gen_id(),
         "event_type": event_type,
@@ -182,7 +190,8 @@ async def log_audit_event(
         "details": details or {},
         "authorized_by_id": authorized_by_id or "",
         "authorized_by_name": authorized_by_name or "",
-        "created_at": now_iso(),
+        "jornada_date": jornada_date,  # Fiscal date for grouping/filtering
+        "created_at": now_iso(),  # Real clock timestamp for audit trail
     }
     
     try:

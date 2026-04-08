@@ -1514,6 +1514,11 @@ async def system_audit_report(
 ):
     """
     General system audit log - all significant activities.
+    
+    IMPORTANT: Filters by jornada_date (fiscal date), NOT by created_at (clock time).
+    This ensures events from late night (e.g., 2AM Apr 8) appear under the correct
+    jornada (Apr 7) rather than the next calendar day.
+    
     Consolidates data from:
     - system_audit_logs (central audit collection)
     - void_audit_logs (item cancellations)
@@ -1531,16 +1536,23 @@ async def system_audit_report(
     if not date_to:
         date_to = date_from
     
+    # Helper to check if event belongs to date range
+    # Uses jornada_date if available, falls back to created_at[:10] for legacy data
+    def in_date_range(log):
+        # Prefer jornada_date (fiscal date) over created_at (clock time)
+        check_date = log.get("jornada_date") or log.get("business_date") or (log.get("created_at", "")[:10])
+        return check_date >= date_from and check_date <= date_to
+    
     # Collect activities from various sources
     activities = []
     
-    # 0. Central system audit logs (NEW - primary source for login/logout, config changes, etc.)
+    # 0. Central system audit logs (primary source for login/logout, config changes, etc.)
     central_logs = await db.system_audit_logs.find({}, {"_id": 0}).to_list(5000)
     for log in central_logs:
-        created = log.get("created_at", "")
-        if created[:10] >= date_from and created[:10] <= date_to:
+        if in_date_range(log):
             activities.append({
-                "timestamp": created,
+                "timestamp": log.get("created_at", ""),
+                "jornada_date": log.get("jornada_date", ""),
                 "type": log.get("event_type_label", log.get("event_type", "Evento")),
                 "description": log.get("description", ""),
                 "user": log.get("user_name", "?"),
@@ -1552,12 +1564,12 @@ async def system_audit_report(
     # 1. Void/Cancellation audit logs
     void_logs = await db.void_audit_logs.find({}, {"_id": 0}).to_list(2000)
     for log in void_logs:
-        created = log.get("created_at", "")
-        if created[:10] >= date_from and created[:10] <= date_to:
+        if in_date_range(log):
             activities.append({
-                "timestamp": created,
-                "type": "Anulacion",
-                "description": f"Anulacion: {log.get('product_name', 'Item')} - {log.get('reason', 'Sin razon')}",
+                "timestamp": log.get("created_at", ""),
+                "jornada_date": log.get("jornada_date", log.get("created_at", "")[:10]),
+                "type": "Anulación",
+                "description": f"Anulación: {log.get('product_name', 'Item')} - {log.get('reason', 'Sin razón')}",
                 "user": log.get("requested_by_name", log.get("user_name", "?")),
                 "authorizer": log.get("authorized_by_name", "-"),
                 "value": log.get("total_value", 0)
@@ -1566,8 +1578,7 @@ async def system_audit_report(
     # 2. Stock movements (ALL types for complete traceability)
     movements = await db.stock_movements.find({}, {"_id": 0}).to_list(5000)
     for mov in movements:
-        created = mov.get("created_at", "")
-        if created[:10] >= date_from and created[:10] <= date_to:
+        if in_date_range(mov):
             type_names = {
                 "adjustment": "Ajuste de Stock",
                 "waste": "Merma",
@@ -1581,7 +1592,8 @@ async def system_audit_report(
                 "explosion": "Explosión de Receta"
             }
             activities.append({
-                "timestamp": created,
+                "timestamp": mov.get("created_at", ""),
+                "jornada_date": mov.get("jornada_date", mov.get("created_at", "")[:10]),
                 "type": type_names.get(mov.get("movement_type"), mov.get("movement_type", "Movimiento")),
                 "description": f"{mov.get('ingredient_name', '?')}: {mov.get('quantity', 0)} - {mov.get('notes', '')}",
                 "user": mov.get("user_name", "Sistema"),
@@ -1592,10 +1604,10 @@ async def system_audit_report(
     # 3. Purchase order status changes
     pos = await db.purchase_orders.find({}, {"_id": 0}).to_list(2000)
     for po in pos:
-        created = po.get("created_at", "")
-        if created[:10] >= date_from and created[:10] <= date_to:
+        if in_date_range(po):
             activities.append({
-                "timestamp": created,
+                "timestamp": po.get("created_at", ""),
+                "jornada_date": po.get("jornada_date", po.get("created_at", "")[:10]),
                 "type": "Orden de Compra",
                 "description": f"OC #{po.get('number', '?')} - {po.get('supplier_name', '?')} ({po.get('status', '?')})",
                 "user": po.get("created_by_name", "?"),
@@ -1606,10 +1618,10 @@ async def system_audit_report(
     # 4. Inventory difference logs
     diff_logs = await db.stock_difference_logs.find({}, {"_id": 0}).to_list(500)
     for diff in diff_logs:
-        created = diff.get("timestamp", diff.get("created_at", ""))
-        if created[:10] >= date_from and created[:10] <= date_to:
+        if in_date_range(diff):
             activities.append({
-                "timestamp": created,
+                "timestamp": diff.get("timestamp", diff.get("created_at", "")),
+                "jornada_date": diff.get("jornada_date", (diff.get("timestamp") or diff.get("created_at", ""))[:10]),
                 "type": "Diferencia Inventario (Detalle)",
                 "description": f"{diff.get('ingredient_name', '?')}: {diff.get('difference_type', '?')} ({diff.get('quantity_dispatch_units', 0)} {diff.get('dispatch_unit', '')}) - {diff.get('reason', '')}",
                 "user": diff.get("authorized_by_name", diff.get("user_name", "Sistema")),
@@ -1622,10 +1634,12 @@ async def system_audit_report(
     for shift in shifts:
         opened = shift.get("opened_at", "")
         closed = shift.get("closed_at", "")
+        shift_jornada = shift.get("jornada_date", opened[:10] if opened else "")
         
-        if opened[:10] >= date_from and opened[:10] <= date_to:
+        if shift_jornada >= date_from and shift_jornada <= date_to:
             activities.append({
                 "timestamp": opened,
+                "jornada_date": shift_jornada,
                 "type": "Apertura de Turno",
                 "description": f"Turno abierto con {shift.get('opening_cash', 0)} RD$ en caja",
                 "user": shift.get("opened_by_name", "?"),
@@ -1633,17 +1647,20 @@ async def system_audit_report(
                 "value": shift.get("opening_cash", 0)
             })
         
-        if closed and closed[:10] >= date_from and closed[:10] <= date_to:
-            activities.append({
-                "timestamp": closed,
-                "type": "Cierre de Turno",
-                "description": f"Turno cerrado con {shift.get('total_sales', 0)} RD$ en ventas",
-                "user": shift.get("closed_by_name", shift.get("opened_by_name", "?")),
-                "authorizer": "-",
-                "value": shift.get("total_sales", 0)
-            })
+        if closed:
+            # Shift close belongs to same jornada as open
+            if shift_jornada >= date_from and shift_jornada <= date_to:
+                activities.append({
+                    "timestamp": closed,
+                    "jornada_date": shift_jornada,
+                    "type": "Cierre de Turno",
+                    "description": f"Turno cerrado con {shift.get('total_sales', 0)} RD$ en ventas",
+                    "user": shift.get("closed_by_name", shift.get("opened_by_name", "?")),
+                    "authorizer": "-",
+                    "value": shift.get("total_sales", 0)
+                })
     
-    # 6. Role/Permission/User audit logs (NEW)
+    # 6. Role/Permission/User audit logs
     role_logs = await db.role_audit_logs.find({}, {"_id": 0}).to_list(2000)
     action_type_map = {
         "user_created": "Usuario Creado",
@@ -1654,8 +1671,7 @@ async def system_audit_report(
         "role_deleted": "Puesto Eliminado",
     }
     for log in role_logs:
-        created = log.get("created_at", "")
-        if created[:10] >= date_from and created[:10] <= date_to:
+        if in_date_range(log):
             action = log.get("action", "")
             audit_type = action_type_map.get(action, "Cambio de Rol/Permisos")
             
@@ -1674,7 +1690,8 @@ async def system_audit_report(
                     desc_parts.append(str(log["changes"]))
             
             activities.append({
-                "timestamp": created,
+                "timestamp": log.get("created_at", ""),
+                "jornada_date": log.get("jornada_date", log.get("created_at", "")[:10]),
                 "type": audit_type,
                 "description": " | ".join(desc_parts) if desc_parts else action,
                 "user": log.get("performed_by_name", "?"),
@@ -1682,43 +1699,43 @@ async def system_audit_report(
                 "value": 0
             })
     
-    # 7. Credit note audit logs (NEW)
+    # 7. Credit note audit logs
     credit_logs = await db.audit_logs.find({}, {"_id": 0}).to_list(1000)
     for log in credit_logs:
-        created = log.get("created_at", "")
-        if created[:10] >= date_from and created[:10] <= date_to:
+        if in_date_range(log):
             activities.append({
-                "timestamp": created,
-                "type": "Nota de Credito",
+                "timestamp": log.get("created_at", ""),
+                "jornada_date": log.get("jornada_date", log.get("created_at", "")[:10]),
+                "type": "Nota de Crédito",
                 "description": f"NC {log.get('credit_note_ncf', '?')} | Factura: {log.get('original_ncf', '?')} | {log.get('reason', '')}",
                 "user": log.get("user_name", "?"),
                 "authorizer": "-",
                 "value": log.get("total_reversed", 0)
             })
     
-    # 8. Tax override audit logs (NEW)
+    # 8. Tax override audit logs
     tax_logs = await db.tax_override_audit.find({}, {"_id": 0}).to_list(500)
     for log in tax_logs:
-        created = log.get("created_at", "")
-        if created[:10] >= date_from and created[:10] <= date_to:
+        if in_date_range(log):
             taxes = ", ".join(log.get("taxes_removed", []))
             activities.append({
-                "timestamp": created,
-                "type": "Exencion de Impuesto",
+                "timestamp": log.get("created_at", ""),
+                "jornada_date": log.get("jornada_date", log.get("created_at", "")[:10]),
+                "type": "Exención de Impuesto",
                 "description": f"Factura {log.get('bill_id', '?')} | Impuestos: {taxes} | Ref: {log.get('reference_document', '')}",
                 "user": log.get("requested_by_name", "?"),
                 "authorizer": log.get("authorized_by_name", "-"),
                 "value": 0
             })
     
-    # 9. Ingredient audit logs (NEW)
+    # 9. Ingredient audit logs
     ingr_logs = await db.ingredient_audit_logs.find({}, {"_id": 0}).to_list(2000)
     for log in ingr_logs:
-        ts = log.get("timestamp", log.get("created_at", ""))
-        if ts[:10] >= date_from and ts[:10] <= date_to:
+        if in_date_range(log):
             change_type = log.get("change_type", log.get("type", "cambio"))
             activities.append({
-                "timestamp": ts,
+                "timestamp": log.get("timestamp", log.get("created_at", "")),
+                "jornada_date": log.get("jornada_date", (log.get("timestamp") or log.get("created_at", ""))[:10]),
                 "type": "Movimiento de Ingrediente",
                 "description": f"{log.get('ingredient_name', '?')}: {change_type} | {log.get('field', '')} {log.get('old_value', '')} -> {log.get('new_value', '')}",
                 "user": log.get("user_name", log.get("changed_by", "Sistema")),
