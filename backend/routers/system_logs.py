@@ -17,6 +17,265 @@ def set_db(database):
 
 
 # ═══════════════════════════════════════════════════════════════
+# CENTRAL AUDIT LOGGING FUNCTION
+# ═══════════════════════════════════════════════════════════════
+
+async def log_audit_event(
+    event_type: str,
+    description_human: str,
+    user_id: Optional[str] = None,
+    user_name: Optional[str] = None,
+    role: Optional[str] = None,
+    entity_type: Optional[str] = None,
+    entity_id: Optional[str] = None,
+    entity_name: Optional[str] = None,
+    details: Optional[dict] = None,
+    value: float = 0
+) -> dict:
+    """
+    Central audit logging function for all system events.
+    
+    Args:
+        event_type: Type of event (login, logout, price_change, table_move, etc.)
+        description_human: Human-readable description in Spanish
+        user_id: ID of user who performed the action
+        user_name: Name of user for display
+        role: User's role
+        entity_type: Type of entity affected (product, customer, table, etc.)
+        entity_id: ID of entity affected
+        entity_name: Name of entity for display
+        details: Additional context dict
+        value: Monetary value if applicable
+    
+    Returns:
+        The created audit entry
+    """
+    audit_entry = {
+        "id": str(uuid.uuid4()),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "event_type": event_type,
+        "description": description_human,
+        "user_id": user_id,
+        "user_name": user_name or "Sistema",
+        "role": role,
+        "entity_type": entity_type,
+        "entity_id": entity_id,
+        "entity_name": entity_name,
+        "details": details or {},
+        "value": value
+    }
+    
+    try:
+        await db.central_audit_logs.insert_one(audit_entry)
+        logging.info(f"[Audit] {event_type}: {description_human}")
+    except Exception as e:
+        logging.error(f"Failed to save audit log: {e}")
+    
+    return audit_entry
+
+
+# Convenience functions for common audit events
+async def log_login(user_id: str, user_name: str, role: str, device: str = None):
+    """Log user login"""
+    details = {"device": device} if device else {}
+    return await log_audit_event(
+        event_type="login",
+        description_human=f"Usuario {user_name} inició sesión",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="user",
+        entity_id=user_id,
+        entity_name=user_name,
+        details=details
+    )
+
+
+async def log_logout(user_id: str, user_name: str, role: str):
+    """Log user logout"""
+    return await log_audit_event(
+        event_type="logout",
+        description_human=f"Usuario {user_name} cerró sesión",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="user",
+        entity_id=user_id,
+        entity_name=user_name
+    )
+
+
+async def log_price_change(product_id: str, product_name: str, old_price: float, new_price: float, user_id: str, user_name: str, role: str):
+    """Log product price change"""
+    return await log_audit_event(
+        event_type="price_change",
+        description_human=f"Producto {product_name} cambió precio de RD${old_price:,.2f} a RD${new_price:,.2f}",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="product",
+        entity_id=product_id,
+        entity_name=product_name,
+        details={"old_price": old_price, "new_price": new_price},
+        value=new_price - old_price
+    )
+
+
+async def log_table_move(table_id: str, table_name: str, area_name: str, user_id: str, user_name: str, role: str):
+    """Log table movement"""
+    return await log_audit_event(
+        event_type="table_move",
+        description_human=f"Mesa {table_name} movida en área {area_name}",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="table",
+        entity_id=table_id,
+        entity_name=table_name,
+        details={"area": area_name}
+    )
+
+
+async def log_bill_split(table_name: str, bill_id: str, user_id: str, user_name: str, role: str):
+    """Log bill splitting"""
+    return await log_audit_event(
+        event_type="bill_split",
+        description_human=f"Cuenta dividida en Mesa {table_name}",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="bill",
+        entity_id=bill_id,
+        entity_name=table_name,
+        details={"table": table_name}
+    )
+
+
+async def log_table_transfer(from_table: str, to_table: str, user_id: str, user_name: str, role: str):
+    """Log table transfer"""
+    return await log_audit_event(
+        event_type="table_transfer",
+        description_human=f"Mesa {from_table} transferida a {to_table}",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="table",
+        entity_id=from_table,
+        entity_name=from_table,
+        details={"from": from_table, "to": to_table}
+    )
+
+
+async def log_customer_edit(customer_id: str, customer_name: str, changes: list, user_id: str, user_name: str, role: str):
+    """Log customer edit"""
+    return await log_audit_event(
+        event_type="customer_edit",
+        description_human=f"Cliente {customer_name} fue editado",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="customer",
+        entity_id=customer_id,
+        entity_name=customer_name,
+        details={"changes": changes}
+    )
+
+
+async def log_config_change(config_key: str, old_value: str, new_value: str, user_id: str, user_name: str, role: str):
+    """Log system config change"""
+    return await log_audit_event(
+        event_type="config_change",
+        description_human=f"Configuración '{config_key}' fue modificada",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="config",
+        entity_id=config_key,
+        entity_name=config_key,
+        details={"old_value": str(old_value)[:100], "new_value": str(new_value)[:100]}
+    )
+
+
+async def log_category_change(category_id: str, category_name: str, action: str, user_id: str, user_name: str, role: str):
+    """Log category create/edit/delete"""
+    action_text = {"created": "creada", "edited": "editada", "deleted": "eliminada"}.get(action, action)
+    return await log_audit_event(
+        event_type=f"category_{action}",
+        description_human=f"Categoría {category_name} fue {action_text}",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="category",
+        entity_id=category_id,
+        entity_name=category_name,
+        details={"action": action}
+    )
+
+
+async def log_product_edit(product_id: str, product_name: str, changes: list, user_id: str, user_name: str, role: str):
+    """Log product edit"""
+    return await log_audit_event(
+        event_type="product_edit",
+        description_human=f"Producto {product_name} fue editado",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="product",
+        entity_id=product_id,
+        entity_name=product_name,
+        details={"changes": changes}
+    )
+
+
+async def log_discount_applied(table_name: str, discount_name: str, discount_amount: float, bill_id: str, user_id: str, user_name: str, role: str):
+    """Log discount applied"""
+    return await log_audit_event(
+        event_type="discount_applied",
+        description_human=f"Descuento '{discount_name}' aplicado en Mesa {table_name}",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="bill",
+        entity_id=bill_id,
+        entity_name=table_name,
+        details={"discount": discount_name, "amount": discount_amount},
+        value=discount_amount
+    )
+
+
+async def log_area_change(area_id: str, area_name: str, action: str, user_id: str, user_name: str, role: str):
+    """Log area create/edit/delete"""
+    action_text = {"created": "creada", "edited": "editada", "deleted": "eliminada"}.get(action, action)
+    return await log_audit_event(
+        event_type=f"area_{action}",
+        description_human=f"Área {area_name} fue {action_text}",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="area",
+        entity_id=area_id,
+        entity_name=area_name,
+        details={"action": action}
+    )
+
+
+async def log_print_channel_change(channel_id: str, channel_name: str, action: str, user_id: str, user_name: str, role: str):
+    """Log print channel change"""
+    action_text = {"created": "creado", "edited": "modificado", "deleted": "eliminado"}.get(action, action)
+    return await log_audit_event(
+        event_type=f"print_channel_{action}",
+        description_human=f"Canal de impresión {channel_name} fue {action_text}",
+        user_id=user_id,
+        user_name=user_name,
+        role=role,
+        entity_type="print_channel",
+        entity_id=channel_id,
+        entity_name=channel_name,
+        details={"action": action}
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
 # HUMAN-READABLE ERROR MESSAGES (Spanish)
 # ═══════════════════════════════════════════════════════════════
 
