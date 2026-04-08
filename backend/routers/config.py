@@ -395,9 +395,32 @@ async def create_product(input: ProductInput):
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @router.put("/products/{product_id}")
-async def update_product(product_id: str, input: dict):
+async def update_product(product_id: str, input: dict, user: dict = Depends(get_current_user)):
     if "_id" in input: del input["_id"]
+    
+    # Get old product to compare prices for audit
+    old_product = await db.products.find_one({"id": product_id}, {"_id": 0, "name": 1, "price": 1, "price_a": 1})
+    
     await db.products.update_one({"id": product_id}, {"$set": input})
+    
+    # Log price changes if detected
+    if old_product:
+        from utils.audit import log_price_change
+        old_price = old_product.get("price", old_product.get("price_a", 0))
+        new_price = input.get("price", input.get("price_a"))
+        
+        if new_price is not None and old_price != new_price:
+            await log_price_change(
+                db=db,
+                user_id=user["user_id"],
+                user_name=user.get("name", ""),
+                role=user.get("role", ""),
+                product_name=old_product.get("name", "Producto"),
+                old_price=old_price,
+                new_price=new_price,
+                product_id=product_id
+            )
+    
     return {"ok": True}
 
 @router.delete("/products/{product_id}")

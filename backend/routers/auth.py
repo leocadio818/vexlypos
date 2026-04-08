@@ -10,12 +10,18 @@ import jwt
 import os
 import uuid
 
-from models.database import db
 from models.schemas import LoginInput
 from utils.helpers import gen_id
-from utils.audit import log_audit_event, log_login, AuditEventType
+from utils.audit import log_audit_event, log_login, log_logout, AuditEventType
 
 router = APIRouter(tags=["Auth & Users"])
+
+# Database reference (set by server.py via set_db)
+db = None
+
+def set_db(database):
+    global db
+    db = database
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'fallback_secret')
 

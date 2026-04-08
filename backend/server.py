@@ -51,6 +51,7 @@ from routers.alanube import router as alanube_router, set_db as alanube_set_db
 from routers.ecf_dispatcher import router as ecf_dispatcher_router, set_db as ecf_dispatcher_set_db
 from routers.manuales import router as manuales_router
 from routers.system_logs import set_db as system_logs_set_db
+from routers.auth import set_db as auth_set_db
 from utils.timezone import get_system_timezone_name, get_system_now, invalidate_cache as tz_invalidate_cache
 
 ROOT_DIR = Path(__file__).parent
@@ -85,6 +86,7 @@ email_set_db(db)
 alanube_set_db(db)
 ecf_dispatcher_set_db(db)
 system_logs_set_db(db)
+auth_set_db(db)  # Initialize auth router with correct db
 
 # Connect KDS notifier to orders
 set_kds_notifier(notify_kds)
