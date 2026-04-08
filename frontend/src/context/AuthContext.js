@@ -239,6 +239,11 @@ export function AuthProvider({ children }) {
             });
           }
         }
+        
+        // Log logout event for audit trail
+        await fetch(`${API_BASE}/api/auth/logout`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}` }
+        });
       }
     } catch {}
     

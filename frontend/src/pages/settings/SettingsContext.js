@@ -24,6 +24,7 @@ export const PERM_LABELS = {
   view_reports: 'Reportes', export_dgii: 'Exportar DGII',
   open_shift: 'Abrir Turno', close_shift: 'Cerrar Turno', close_day: 'Cierre de Dia',
   release_reserved_table: 'Desbloquear Mesa Reservada',
+  view_audit_complete: 'Ver Auditoría Completa del Sistema',
 };
 
 const SettingsContext = createContext();

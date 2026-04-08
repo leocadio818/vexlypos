@@ -669,6 +669,34 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         })
         await db.bills.update_one({"id": bill_id}, {"$set": {"customer_id": cust_id, "points_earned": points_earned}})
 
+    # ─── AUDIT: LOG BILL PAYMENT ───
+    from utils.audit import log_bill_paid, log_discount_applied
+    table_num = bill.get("table_label", bill.get("table_id", "?"))
+    await log_bill_paid(
+        db=db,
+        user_id=user["user_id"],
+        user_name=user.get("name", ""),
+        role=user.get("role", ""),
+        bill_id=bill_id,
+        ncf=bill.get("ncf", ""),
+        total=total,
+        payment_method=primary_payment_method_name,
+        table_number=table_num
+    )
+    
+    # Log discount if applied
+    if input.discount_applied and input.discount_applied.get("amount", 0) > 0:
+        await log_discount_applied(
+            db=db,
+            user_id=user["user_id"],
+            user_name=user.get("name", ""),
+            role=user.get("role", ""),
+            bill_id=bill_id,
+            discount_name=input.discount_applied.get("name", "Descuento"),
+            discount_amount=input.discount_applied.get("amount", 0),
+            authorized_by_name=input.discount_applied.get("authorized_by", "")
+        )
+
     result = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if result:
         result["points_earned"] = points_earned

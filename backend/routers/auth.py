@@ -13,6 +13,7 @@ import uuid
 from models.database import db
 from models.schemas import LoginInput
 from utils.helpers import gen_id
+from utils.audit import log_audit_event, log_login, AuditEventType
 
 router = APIRouter(tags=["Auth & Users"])
 
@@ -44,6 +45,7 @@ DEFAULT_PERMISSIONS = {
         "transfer_tables": True,
         "create_b04": True,
         "view_system_logs": True,
+        "view_audit_complete": True,
         "config_users": True, "config_mesas": True, "config_ventas": True,
         "config_productos": True, "config_inventario": True, "config_impresion": True,
         "config_estacion": True, "config_reportes": True, "config_clientes": True,
@@ -75,6 +77,7 @@ DEFAULT_PERMISSIONS = {
         "reprint_receipt": True,
         "transfer_tables": True,
         "create_b04": True,
+        "view_audit_complete": True,
         "config_mesas": True, "config_ventas": True, "config_productos": True,
         "config_clientes": True, "config_apariencia": True,
     },
@@ -107,6 +110,7 @@ ALL_PERMISSIONS = {
     "release_reserved_table": "Desbloquear Mesa Reservada",
     "transfer_tables": "Transferir Mesas entre Usuarios",
     "create_b04": "Crear Nota de Credito (B04)",
+    "view_audit_complete": "Ver Auditoría Completa del Sistema",
     "config_users": "Config: Pestaña Usuarios",
     "config_mesas": "Config: Pestaña Mesas",
     "config_ventas": "Config: Pestaña Ventas",
@@ -246,6 +250,15 @@ async def login(input: LoginInput):
     hashed = hash_pin(input.pin)
     user = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
     if not user:
+        # Log failed login attempt
+        await log_audit_event(
+            db=db,
+            event_type=AuditEventType.LOGIN_FAILED,
+            description="Intento de login fallido - PIN incorrecto",
+            user_id="unknown",
+            user_name="Desconocido",
+            role=""
+        )
         raise HTTPException(status_code=401, detail="PIN incorrecto")
     perms = get_permissions(user["role"], user.get("permissions"))
     role_level = await get_role_level_async(user["role"])
@@ -291,6 +304,15 @@ async def login(input: LoginInput):
     except Exception as e:
         print(f"Warning: Could not auto-open business day: {e}")
 
+    # Log successful login
+    await log_login(
+        db=db,
+        user_id=user["id"],
+        user_name=user["name"],
+        role=user["role"],
+        success=True
+    )
+
     return {"token": token, "user": user_data, "business_day_opened": business_day_opened}
 
 
@@ -303,6 +325,19 @@ async def get_me(user=Depends(get_current_user)):
     u["permissions"] = get_permissions(u["role"], u.get("permissions"))
     u["role_level"] = await get_role_level_async(u["role"])
     return u
+
+
+@router.post("/auth/logout")
+async def logout(user=Depends(get_current_user)):
+    """Log user logout event for audit trail"""
+    from utils.audit import log_logout
+    await log_logout(
+        db=db,
+        user_id=user["user_id"],
+        user_name=user.get("name", ""),
+        role=user.get("role", "")
+    )
+    return {"ok": True, "message": "Sesión cerrada"}
 
 
 @router.put("/users/me/pin")

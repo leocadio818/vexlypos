@@ -398,10 +398,33 @@ async def create_product(input: dict):
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @api.put("/products/{product_id}")
-async def update_product(product_id: str, input: dict):
+async def update_product(product_id: str, input: dict, user: dict = Depends(get_current_user)):
     if "_id" in input:
         del input["_id"]
+    
+    # Get old product to compare prices
+    old_product = await db.products.find_one({"id": product_id}, {"_id": 0, "name": 1, "price": 1, "price_a": 1})
+    
     await db.products.update_one({"id": product_id}, {"$set": input})
+    
+    # Log price changes if detected
+    if old_product:
+        from utils.audit import log_price_change
+        old_price = old_product.get("price", old_product.get("price_a", 0))
+        new_price = input.get("price", input.get("price_a"))
+        
+        if new_price is not None and old_price != new_price:
+            await log_price_change(
+                db=db,
+                user_id=user["user_id"],
+                user_name=user.get("name", ""),
+                role=user.get("role", ""),
+                product_name=old_product.get("name", "Producto"),
+                old_price=old_price,
+                new_price=new_price,
+                product_id=product_id
+            )
+    
     return {"ok": True}
 
 @api.get("/products/by-barcode/{barcode}")
@@ -648,14 +671,55 @@ async def open_shift(input: dict, user=Depends(get_current_user)):
         "total_tips": 0, "cancelled_count": 0, "opened_at": now_iso()
     }
     await db.shifts.insert_one(doc)
+    
+    # Audit: Shift opened
+    from utils.audit import log_audit_event, AuditEventType
+    await log_audit_event(
+        db=db,
+        event_type=AuditEventType.SHIFT_OPENED,
+        description=f"Turno abierto en {doc['station']} con RD${doc['opening_amount']:,.2f}",
+        user_id=user["user_id"],
+        user_name=user["name"],
+        role=user.get("role", ""),
+        entity_type="shift",
+        entity_id=doc["id"],
+        entity_name=doc["station"],
+        value=doc["opening_amount"]
+    )
+    
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @api.put("/shifts/{shift_id}/close")
 async def close_shift(shift_id: str, input: dict, user=Depends(get_current_user)):
+    # Get shift info before closing
+    shift = await db.shifts.find_one({"id": shift_id}, {"_id": 0})
+    
     await db.shifts.update_one({"id": shift_id}, {"$set": {
         "status": "closed", "closing_amount": input.get("closing_amount", 0),
         "cash_count": input.get("cash_count"), "closed_at": now_iso()
     }})
+    
+    # Audit: Shift closed
+    if shift:
+        from utils.audit import log_audit_event, AuditEventType
+        await log_audit_event(
+            db=db,
+            event_type=AuditEventType.SHIFT_CLOSED,
+            description=f"Turno cerrado en {shift.get('station', '?')} - Total ventas: RD${shift.get('total_sales', 0):,.2f}",
+            user_id=user["user_id"],
+            user_name=user["name"],
+            role=user.get("role", ""),
+            entity_type="shift",
+            entity_id=shift_id,
+            entity_name=shift.get("station", "?"),
+            value=input.get("closing_amount", 0),
+            details={
+                "opening_amount": shift.get("opening_amount", 0),
+                "closing_amount": input.get("closing_amount", 0),
+                "total_sales": shift.get("total_sales", 0)
+            }
+        )
+    
     return {"ok": True}
 
 @api.get("/shifts/check")
@@ -697,9 +761,28 @@ async def get_station_config():
     return config or {"require_shift_to_sell": True, "require_cash_count": False, "auto_send_on_logout": True}
 
 @api.put("/station-config")
-async def update_station_config(input: dict):
+async def update_station_config(input: dict, user: dict = Depends(get_current_user)):
     if "_id" in input: del input["_id"]
+    
+    # Get old config for comparison
+    old_config = await db.station_config.find_one({}, {"_id": 0}) or {}
+    
     await db.station_config.update_one({}, {"$set": input}, upsert=True)
+    
+    # Log configuration change
+    from utils.audit import log_config_change
+    changed_keys = [k for k in input.keys() if old_config.get(k) != input.get(k)]
+    if changed_keys:
+        await log_config_change(
+            db=db,
+            user_id=user["user_id"],
+            user_name=user.get("name", ""),
+            role=user.get("role", ""),
+            config_name="Configuración de Estación",
+            old_value={k: old_config.get(k) for k in changed_keys},
+            new_value={k: input.get(k) for k in changed_keys}
+        )
+    
     return {"ok": True}
 
 # ─── PRINT CHANNELS ───

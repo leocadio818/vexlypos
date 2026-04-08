@@ -1512,7 +1512,20 @@ async def system_audit_report(
     date_to: Optional[str] = Query(None),
     event_type: Optional[str] = Query(None, description="Filter by event type")
 ):
-    """General system audit log - all significant activities"""
+    """
+    General system audit log - all significant activities.
+    Consolidates data from:
+    - system_audit_logs (central audit collection)
+    - void_audit_logs (item cancellations)
+    - role_audit_logs (user/role changes)
+    - stock_movements (inventory movements)
+    - stock_difference_logs (inventory counts)
+    - shifts (shift opens/closes)
+    - purchase_orders (PO creation)
+    - audit_logs (credit notes)
+    - tax_override_audit (tax exemptions)
+    - ingredient_audit_logs (ingredient changes)
+    """
     if not date_from:
         date_from = await get_active_business_date()
     if not date_to:
@@ -1520,6 +1533,21 @@ async def system_audit_report(
     
     # Collect activities from various sources
     activities = []
+    
+    # 0. Central system audit logs (NEW - primary source for login/logout, config changes, etc.)
+    central_logs = await db.system_audit_logs.find({}, {"_id": 0}).to_list(5000)
+    for log in central_logs:
+        created = log.get("created_at", "")
+        if created[:10] >= date_from and created[:10] <= date_to:
+            activities.append({
+                "timestamp": created,
+                "type": log.get("event_type_label", log.get("event_type", "Evento")),
+                "description": log.get("description", ""),
+                "user": log.get("user_name", "?"),
+                "authorizer": log.get("authorized_by_name", "-") or "-",
+                "value": log.get("value", 0),
+                "event_type_code": log.get("event_type", "")
+            })
     
     # 1. Void/Cancellation audit logs
     void_logs = await db.void_audit_logs.find({}, {"_id": 0}).to_list(2000)

@@ -290,6 +290,23 @@ async def open_business_day(input: OpenBusinessDayInput, user=Depends(get_curren
     
     await db.business_days.insert_one(business_day)
     
+    # ─── AUDIT: LOG BUSINESS DAY OPENED ───
+    from utils.audit import log_audit_event, AuditEventType
+    await log_audit_event(
+        db=db,
+        event_type=AuditEventType.BUSINESS_DAY_OPENED,
+        description=f"Jornada de trabajo abierta para {business_date}",
+        user_id=user["user_id"],
+        user_name=user.get("name", ""),
+        role=user.get("role", ""),
+        entity_type="business_day",
+        entity_id=business_day["id"],
+        entity_name=day_ref,
+        authorized_by_id=authorizer["user_id"],
+        authorized_by_name=authorizer["name"],
+        details={"business_date": business_date, "opening_notes": input.opening_notes}
+    )
+    
     # Retornar sin _id (ya está excluido en el return)
     
     return {
@@ -453,6 +470,30 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
             print(f"Auto clock-out: {len(active_records)} attendance records closed on day close")
     except Exception as e:
         print(f"Warning: Could not auto clock-out attendance: {e}")
+    
+    # ─── AUDIT: LOG BUSINESS DAY CLOSED ───
+    from utils.audit import log_audit_event, AuditEventType
+    await log_audit_event(
+        db=db,
+        event_type=AuditEventType.BUSINESS_DAY_CLOSED,
+        description=f"Jornada de trabajo {business_day['ref']} cerrada - Ventas: RD${stats.get('total_sales', 0):,.2f}",
+        user_id=user["user_id"],
+        user_name=user.get("name", ""),
+        role=user.get("role", ""),
+        entity_type="business_day",
+        entity_id=business_day["id"],
+        entity_name=business_day["ref"],
+        value=stats.get("total_sales", 0),
+        authorized_by_id=authorizer["user_id"],
+        authorized_by_name=authorizer["name"],
+        details={
+            "business_date": business_day["business_date"],
+            "total_invoices": stats.get("total_invoices", 0),
+            "total_cash": stats.get("total_cash", 0),
+            "total_card": stats.get("total_card", 0),
+            "closing_notes": input.closing_notes
+        }
+    )
     
     return {
         "ok": True,
