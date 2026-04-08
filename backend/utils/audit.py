@@ -171,7 +171,9 @@ async def log_audit_event(
     # Get human-readable label for event type
     type_label = EVENT_TYPE_LABELS.get(event_type, event_type.replace("_", " ").title())
     
+    # 🔒 DO NOT MODIFY - Business date rule
     # Get jornada date (fiscal date for grouping) - NOT calendar date
+    # ALWAYS from business_day document, NEVER from datetime.now()
     from utils.timezone import get_jornada_date_with_fallback
     jornada_date = await get_jornada_date_with_fallback(db)
     
@@ -190,8 +192,8 @@ async def log_audit_event(
         "details": details or {},
         "authorized_by_id": authorized_by_id or "",
         "authorized_by_name": authorized_by_name or "",
-        "jornada_date": jornada_date,  # Fiscal date for grouping/filtering
-        "created_at": now_iso(),  # Real clock timestamp for audit trail
+        "jornada_date": jornada_date,  # 🔒 DO NOT MODIFY - Fiscal date for grouping/filtering
+        "created_at": now_iso(),  # Print timestamp - real clock time for audit trail
     }
     
     try:

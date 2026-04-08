@@ -367,7 +367,9 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
             detail="No hay jornada de trabajo abierta. Debe abrir el día antes de procesar pagos."
         )
     
-    # Obtener la fecha de negocio (contable)
+    # 🔒 DO NOT MODIFY - Business date rule
+    # Obtener la fecha de negocio (contable) - ALWAYS from business_day document
+    # NEVER use datetime.now() for this - it's the fiscal date for grouping
     business_date = business_day["business_date"]
     
     # Use frontend-provided values (already calculated by Intelligent Tax Engine)

@@ -3,6 +3,38 @@
 ## Original Problem Statement
 Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-tenant, RBAC, printer integration, DGII compliance.
 
+## 🔒 PERMANENT ARCHITECTURAL RULES - NEVER MODIFY
+
+### Business Date Rule (Locked Forever)
+
+**This rule applies to EVERY file, module, and future feature in this system FOREVER.**
+
+1. **JORNADA DATE (Fiscal/Business Date)**
+   - ALWAYS taken from the active `business_day` document in MongoDB
+   - NEVER from system clock or `datetime.now()`
+   - Used for: ALL reports, ALL filters, ALL groupings, ALL audit logs, ALL dashboard numbers, ALL shift reports, inventory movements
+
+2. **PRINT TIMESTAMP (Clock Time)**
+   - ALWAYS the real system clock time
+   - Used ONLY for: printed documents (facturas, comandas, receipts)
+
+3. **These are TWO SEPARATE concepts that must NEVER be mixed or confused**
+
+4. **ANY future change** that touches date logic, report filters, audit logs, or dashboard totals **MUST respect this rule without exception**
+
+5. **If a future fix seems to require changing this logic — STOP and ask the user first before touching anything**
+
+**Files with protected business date logic:**
+- `/app/backend/utils/timezone.py` - `get_jornada_date()`, `get_jornada_date_with_fallback()`
+- `/app/backend/utils/audit.py` - `jornada_date` field in all audit logs
+- `/app/backend/routers/reports.py` - `in_date_range()` helper, system-audit endpoint
+- `/app/backend/routers/billing.py` - `business_date` assignment in pay endpoint
+- `/app/backend/routers/auth.py` - Auto-open jornada with local TZ date
+
+**Look for comment:** `# 🔒 DO NOT MODIFY - Business date rule`
+
+---
+
 ## Architecture
 - Frontend: React + TailwindCSS + Shadcn/UI + React Query + Framer Motion (PWA)
 - Backend: FastAPI + MongoDB

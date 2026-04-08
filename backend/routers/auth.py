@@ -284,11 +284,13 @@ async def login(input: LoginInput):
             from zoneinfo import ZoneInfo
             import uuid
             
-            # Use Dominican Republic timezone for business_date
+            # 🔒 DO NOT MODIFY - Business date rule
+            # Use LOCAL timezone (Dominican Republic) for business_date
+            # This is the FISCAL date for grouping - NOT a print timestamp
             dr_tz = ZoneInfo("America/Santo_Domingo")
             dr_now = datetime.now(dr_tz)
-            today = dr_now.strftime("%Y-%m-%d")
-            now = datetime.now(dt_timezone.utc).isoformat()
+            today = dr_now.strftime("%Y-%m-%d")  # Fiscal date
+            now = datetime.now(dt_timezone.utc).isoformat()  # Clock timestamp
             
             # Count existing days for ref
             count = await db.business_days.count_documents({})
@@ -296,9 +298,9 @@ async def login(input: LoginInput):
             new_day = {
                 "id": str(uuid.uuid4()),
                 "ref": day_ref,
-                "business_date": today,
+                "business_date": today,  # 🔒 DO NOT MODIFY - Fiscal date from local TZ
                 "status": "open",
-                "opened_at": now,
+                "opened_at": now,  # Print timestamp - UTC clock time
                 "opened_by_id": user["id"],
                 "opened_by_name": user["name"],
                 "authorized_by_id": user["id"],

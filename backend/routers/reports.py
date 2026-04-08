@@ -1515,7 +1515,8 @@ async def system_audit_report(
     """
     General system audit log - all significant activities.
     
-    IMPORTANT: Filters by jornada_date (fiscal date), NOT by created_at (clock time).
+    🔒 DO NOT MODIFY - Business date rule
+    Filters by jornada_date (fiscal date), NOT by created_at (clock time).
     This ensures events from late night (e.g., 2AM Apr 8) appear under the correct
     jornada (Apr 7) rather than the next calendar day.
     
@@ -1536,10 +1537,11 @@ async def system_audit_report(
     if not date_to:
         date_to = date_from
     
+    # 🔒 DO NOT MODIFY - Business date rule
     # Helper to check if event belongs to date range
     # Uses jornada_date if available, falls back to created_at[:10] for legacy data
     def in_date_range(log):
-        # Prefer jornada_date (fiscal date) over created_at (clock time)
+        # ALWAYS prefer jornada_date (fiscal date) over created_at (clock time)
         check_date = log.get("jornada_date") or log.get("business_date") or (log.get("created_at", "")[:10])
         return check_date >= date_from and check_date <= date_to
     

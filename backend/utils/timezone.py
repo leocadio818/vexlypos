@@ -75,29 +75,30 @@ async def utc_hour_to_local(utc_hour: int) -> int:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# JORNADA DATE - The fiscal/business date for grouping and filtering
+# 🔒 DO NOT MODIFY - PERMANENT BUSINESS DATE RULE
 # ═══════════════════════════════════════════════════════════════════════════════
 # 
-# CRITICAL BUSINESS RULE:
-# In restaurants, there are TWO different date concepts:
+# JORNADA DATE (fiscal/business date):
+# - ALWAYS taken from active business_day document in MongoDB
+# - NEVER from system clock or datetime.now()
+# - Used for: ALL reports, ALL filters, ALL groupings, ALL audit logs,
+#   ALL dashboard numbers, ALL shift reports, inventory movements
 #
-# 1. JORNADA DATE (fiscal date): The date of the active business_day.
-#    - Used for: ALL reports, ALL filters, ALL groupings, ALL audit logs,
-#      ALL dashboard numbers, ALL shift reports, inventory movements
-#    - Example: Jornada opens Apr 7 10AM, closes Apr 8 3AM → everything
-#      in between belongs to APRIL 7 in reports
+# PRINT TIMESTAMP (clock time):
+# - ALWAYS the real system clock time
+# - Used ONLY for: printed documents (facturas, comandas, receipts)
 #
-# 2. PRINT TIMESTAMP (clock time): The real system clock time.
-#    - Used ONLY for: printed documents (facturas, comandas, receipts)
-#    - Example: Factura printed at 1:29AM Apr 8 shows that timestamp
-#      BUT belongs to Apr 7 jornada in reports
+# These are TWO SEPARATE concepts that must NEVER be mixed or confused.
+# If a future fix seems to require changing this logic — STOP and ask 
+# the user first before touching anything.
 #
-# ALWAYS use get_jornada_date() for grouping/filtering events by business day.
-# NEVER use datetime.now() for this purpose.
+# This rule applies to every file, module, and future feature FOREVER.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 async def get_jornada_date() -> str:
     """
+    🔒 DO NOT MODIFY - Business date rule
+    
     Get the active jornada's business_date for grouping and filtering.
     
     This is the FISCAL date that all transactions, reports, and events
@@ -108,7 +109,7 @@ async def get_jornada_date() -> str:
              - If jornada is open: returns that jornada's business_date
              - If no jornada: returns today's date in local timezone (fallback)
     """
-    # Check for open business day
+    # DO NOT MODIFY - Business date rule: ALWAYS get from business_day document
     active_day = await _db.business_days.find_one(
         {"status": "open"}, 
         {"_id": 0, "business_date": 1}
@@ -124,6 +125,8 @@ async def get_jornada_date() -> str:
 
 async def get_jornada_date_with_fallback(db=None) -> str:
     """
+    🔒 DO NOT MODIFY - Business date rule
+    
     Same as get_jornada_date but accepts an optional db parameter
     for use in routers that have their own db connection.
     
@@ -133,6 +136,7 @@ async def get_jornada_date_with_fallback(db=None) -> str:
     Returns:
         str: The business_date in YYYY-MM-DD format
     """
+    # DO NOT MODIFY - Business date rule: ALWAYS get from business_day document
     database = db if db is not None else _db
     
     active_day = await database.business_days.find_one(
