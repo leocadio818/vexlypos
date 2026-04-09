@@ -940,4 +940,39 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - El modal SOLO aparece cuando el usuario hace click en "Otra impresora"
 - **Logs de migración**: "Auto-created receipt mapping for area 'Terraza' -> recibo", etc.
 - **Testing**: 8/9 tests passed (1 skipped), UI verified
+- **Razón de protección**: UX crítica - el mesero debe poder imprimir pre-cuenta con un solo click sin interrupciones
+- **Fecha de protección**: 2026-04-09
+
+### 🔒 Pre-Cuenta Area Auto-Routing - PROTECTED 2026-04-09
+- **Feature**: Pre-cuenta se auto-enruta a la impresora del área sin mostrar modal
+- **Archivos protegidos**:
+  1. `/app/backend/server.py`:
+     - `startup_event()` (líneas 4155-4170): Auto-migración de receipt mappings
+     - `get_order_area_printer()` (líneas 923-980): Endpoint con fallback global
+     - `send_precheck_to_printer()` (líneas 3206-3260): Prioridad de selección de impresora
+  2. `/app/frontend/src/pages/OrderScreen.js`:
+     - `handlePrintPreCheckToPhysical()` (líneas 1201-1227): NUNCA muestra modal automáticamente
+     - `handleManualPrinterSelect()` (líneas 1229-1233): Override manual
+     - Botón "Otra impresora" (líneas 3107-3116): Único trigger del modal
+- **Prioridad de impresora backend**:
+  1. `channel_override` (manual)
+  2. Area receipt mapping (`category_id="receipt"`)
+  3. Shift terminal printer
+  4. Global "receipt" channel (fallback)
+- **REGLA**: El modal "Selecciona Impresora" NUNCA debe aparecer automáticamente. Solo con "Otra impresora".
+- **Fecha de protección**: 2026-04-09
+
+### The Factory HKA Code 145 Fix - DONE 2026-04-09
+- **Bug**: Error `145: Fecha de vencimiento Secuencia inválida` al enviar E32 (Factura de Consumo)
+- **Root Cause**: The Factory retorna `fechaVencimientoSecuencia: "N/A"` para E32, y si se pasa como `null` en el payload, la API rechaza el documento
+- **Fix aplicado**:
+  1. **`_is_valid_fecha_venc()`** mejorada (líneas 64-107): Ahora maneja más casos edge ("N/A", "NA", "NULL", "-", "0", "00-00-0000", fechas expiradas, formatos inválidos)
+  2. **`build_thefactory_payload()`** (líneas 498-524): OMITE completamente `fechaVencimientoSecuencia` del payload si no es válida (no la pasa como null)
+  3. **Logging mejorado**: Ahora se registra la decisión de omitir el campo para diagnóstico
+- **Endpoint de diagnóstico**: `GET /api/ecf/thefactory/series-diagnostics` muestra el estado de todas las secuencias y alerta si alguna tiene fecha inválida
+- **Testing**: 16/16 unit tests para `_is_valid_fecha_venc()` pasaron
+- **Nota**: El sistema actual usa Alanube (no The Factory), por lo que el fix no puede ser probado en producción hasta que se cambie el proveedor
+- **Archivos modificados**:
+  - `/app/backend/routers/thefactory.py` - `_is_valid_fecha_venc()`, `build_thefactory_payload()`
+  - `/app/backend/routers/ecf_dispatcher.py` - `thefactory/series-diagnostics` endpoint
 

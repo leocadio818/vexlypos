@@ -65,11 +65,29 @@ def _is_valid_fecha_venc(val) -> bool:
     """
     Check if a fechaVencimientoSecuencia value is a valid dd-mm-yyyy date 
     AND has not expired (must be in the future or today).
+    
+    Returns False (field should be OMITTED) for:
+    - None, empty string, whitespace
+    - "N/A", "NA", "NULL", "NONE", "-", "0", "00-00-0000"
+    - Invalid date format (not dd-mm-yyyy)
+    - Expired dates (in the past)
+    
+    The Factory Code 145 Fix: If this returns False, the field must be 
+    completely OMITTED from the payload, not passed as null.
     """
-    if not val or not isinstance(val, str) or val.strip().upper() in ("N/A", "NA", "NULL", "NONE", ""):
+    if val is None:
         return False
-    import re
+    if not isinstance(val, str):
+        return False
+    
     val = val.strip()
+    
+    # Explicitly invalid values
+    if val.upper() in ("N/A", "NA", "NULL", "NONE", "", "-", "0", "00-00-0000"):
+        return False
+    
+    # Check format dd-mm-yyyy
+    import re
     if not re.match(r"^\d{2}-\d{2}-\d{4}$", val):
         return False
     
@@ -80,11 +98,11 @@ def _is_valid_fecha_venc(val) -> bool:
         fecha = date(int(year), int(month), int(day))
         today = date.today()
         if fecha < today:
-            logging.warning(f"fechaVencimientoSecuencia {val} is expired (today: {today})")
+            logging.warning(f"fechaVencimientoSecuencia {val} is expired (today: {today}) - will OMIT from payload")
             return False
         return True
     except Exception as e:
-        logging.warning(f"Error parsing fechaVencimientoSecuencia {val}: {e}")
+        logging.warning(f"Error parsing fechaVencimientoSecuencia {val}: {e} - will OMIT from payload")
         return False
 
 
@@ -482,8 +500,16 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
     buyer_name = bill.get("razon_social", "") or "CONSUMIDOR FINAL"
 
     # ── Sequence expiration date ──
-    # For E32 (Consumo) The Factory may return "N/A" — pass None to omit
+    # For E32 (Consumo) The Factory often returns "N/A" for fechaVencimientoSecuencia
+    # The Factory API REJECTS the document (Code 145) if:
+    # 1. fechaVencimientoSecuencia is passed as null/None
+    # 2. fechaVencimientoSecuencia is an invalid date format
+    # 3. fechaVencimientoSecuencia is expired
+    # SOLUTION: Completely OMIT the field from the payload if not a valid future date
     fecha_venc_seq = fecha_venc if _is_valid_fecha_venc(fecha_venc) else None
+    
+    # Log the decision for debugging Code 145 issues
+    logging.info(f"e-CF {encf} ({tipo_documento}): fecha_venc input={fecha_venc!r}, using={fecha_venc_seq!r} (omitting={fecha_venc_seq is None})")
 
     # ── Build payload ──
     # Build identificacionDocumento - OMIT fechaVencimientoSecuencia entirely if None
