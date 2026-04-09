@@ -761,19 +761,19 @@ export default function Layout() {
                   <button key={p.id} onClick={async () => {
                     setEcfPeriod(p.id);
                     if (p.id !== 'custom') await fetchEcfDashboard(p.id);
-                  }} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${ecfPeriod === p.id ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'}`}>
+                  }} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${ecfPeriod === p.id ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600'}`}>
                     {p.label}
                   </button>
                 ))}
                 {ecfPeriod === 'custom' && (
                   <>
                     <input type="date" value={ecfDateFrom} onChange={e => setEcfDateFrom(e.target.value)}
-                      className="bg-background border border-border rounded-lg px-2 py-1.5 text-xs" />
-                    <span className="text-xs text-muted-foreground">—</span>
+                      className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200" />
+                    <span className="text-xs text-slate-500 dark:text-slate-400">—</span>
                     <input type="date" value={ecfDateTo} onChange={e => setEcfDateTo(e.target.value)}
-                      className="bg-background border border-border rounded-lg px-2 py-1.5 text-xs" />
+                      className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200" />
                     <button onClick={() => fetchEcfDashboard('custom')}
-                      className="text-xs text-emerald-500 font-bold px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                      className="text-xs text-emerald-600 dark:text-emerald-400 font-bold px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
                       Filtrar
                     </button>
                   </>
