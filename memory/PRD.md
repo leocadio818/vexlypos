@@ -903,3 +903,28 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Razón de protección**: Compliance fiscal DGII - Los códigos de forma de pago deben ser correctos en todas las facturas electrónicas
 - **Fecha de protección**: 2026-04-09
 
+### Pre-Cuenta Auto-Routing to Area Printer - DONE 2026-04-09
+- **Feature**: Pre-cuenta ahora se auto-enruta a la impresora del área de la mesa sin mostrar el modal "Selecciona Impresora"
+- **Prioridad de selección de impresora**:
+  1. `channel_override` (selección manual)
+  2. Impresora de recibo del área (`area_channel_mappings` con `category_id="receipt"`)
+  3. Impresora del terminal del turno activo
+  4. Canal "receipt" global (fallback)
+- **Archivos modificados**:
+  1. `/app/backend/server.py`:
+     - Nuevo endpoint `GET /api/order/{order_id}/area-printer` (líneas 923-957)
+     - `send_precheck_to_printer()` actualizado con prioridad de área (líneas 3199-3255)
+  2. `/app/frontend/src/pages/OrderScreen.js`:
+     - `checkAreaPrinter()` - verifica impresora del área (líneas 1187-1198)
+     - `handlePrintPreCheckToPhysical()` - auto-enruta si área tiene impresora (líneas 1200-1244)
+     - `handleManualPrinterSelect()` - override manual (líneas 1246-1250)
+     - Botón "Otra impresora" con icono Settings en diálogo de pre-cuenta (líneas 3107-3116)
+- **Comportamiento**:
+  - Si el área tiene impresora configurada → imprime directo + toast "Enviado a [nombre]"
+  - Si no tiene → verifica turno activo → si tiene turno imprime directo, sino muestra modal
+  - El botón "Otra impresora" siempre disponible para override manual
+- **Configuración de área**: Crear `area_channel_mapping` con `category_id="receipt"` para cada área
+- **Testing**: 8/8 backend tests passed, UI verified
+- **Cross-platform**: Safari iOS 390px, Android Chrome 412px, Desktop 1280px ✅
+- **Theme-aware**: Botón usa colores theme-aware (slate-500/700 light, slate-400/200 dark) ✅
+
