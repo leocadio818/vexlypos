@@ -1620,24 +1620,44 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     footer_html = "<br>".join(f"<span>{m}</span>" for m in footer_msgs)
     
     # Build customer fiscal data - Show if fiscal_id or razon_social exists
-    # Also infer NCF type from NCF string if ncf_type field is not set
+    # DGII REQUIREMENT: Show customer RNC and Razón Social for fiscal invoice types:
+    # B01/E31 (Crédito Fiscal), B14/E44 (Regímenes Especiales), B15/E45 (Gubernamental)
+    # DO NOT show for B02/E32 (Consumo Final)
     customer_fiscal_html = ""
     ncf_type = bill.get("ncf_type", "")
     ncf_str = bill.get("ncf", "")
+    ecf_encf = bill.get("ecf_encf", "")
     
-    # Infer ncf_type from NCF string if not explicitly set
-    if not ncf_type and ncf_str:
-        if ncf_str.startswith("B01"):
-            ncf_type = "B01"
-        elif ncf_str.startswith("B14"):
-            ncf_type = "B14"
-        elif ncf_str.startswith("B15"):
-            ncf_type = "B15"
-        elif ncf_str.startswith("B02"):
-            ncf_type = "B02"
+    # Infer ncf_type from NCF/e-NCF string if not explicitly set
+    if not ncf_type:
+        # Check e-NCF first (E31, E32, E44, E45)
+        if ecf_encf:
+            if ecf_encf.startswith("E31"):
+                ncf_type = "E31"
+            elif ecf_encf.startswith("E32"):
+                ncf_type = "E32"
+            elif ecf_encf.startswith("E44"):
+                ncf_type = "E44"
+            elif ecf_encf.startswith("E45"):
+                ncf_type = "E45"
+            elif ecf_encf.startswith("E34"):
+                ncf_type = "E34"
+        # Fallback to legacy NCF
+        elif ncf_str:
+            if ncf_str.startswith("B01"):
+                ncf_type = "B01"
+            elif ncf_str.startswith("B14"):
+                ncf_type = "B14"
+            elif ncf_str.startswith("B15"):
+                ncf_type = "B15"
+            elif ncf_str.startswith("B02"):
+                ncf_type = "B02"
     
-    # Show fiscal data if we have fiscal_id or razon_social AND it's a fiscal invoice type
-    if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
+    # Fiscal invoice types that MUST show customer data (DGII requirement)
+    # E32/B02 (Consumo Final) must NOT show customer data
+    fiscal_types_require_customer_data = ["B01", "B14", "B15", "E31", "E44", "E45"]
+    
+    if ncf_type in fiscal_types_require_customer_data and (bill.get("fiscal_id") or bill.get("razon_social")):
         fiscal_id = bill.get("fiscal_id", "")
         fiscal_id_type = bill.get("fiscal_id_type", "RNC")
         razon_social = bill.get("razon_social", "")
@@ -1691,20 +1711,40 @@ async def print_receipt_escpos(bill_id: str):
     lines.append({"type": "left", "bold": True, "text": f"NCF: {bill.get('ncf', '')}"})
     lines.append({"type": "left", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}"})
     
-    # Datos fiscales del cliente - Inferir tipo de NCF si no está establecido
+    # Datos fiscales del cliente - DGII REQUIREMENT
+    # Show customer RNC and Razón Social for: E31, E44, E45, B01, B14, B15
+    # DO NOT show for E32/B02 (Consumo Final)
     ncf_type = bill.get("ncf_type", "")
     ncf_str = bill.get("ncf", "")
+    ecf_encf = bill.get("ecf_encf", "")
     
-    # Infer ncf_type from NCF string if not explicitly set
-    if not ncf_type and ncf_str:
-        if ncf_str.startswith("B01"):
-            ncf_type = "B01"
-        elif ncf_str.startswith("B14"):
-            ncf_type = "B14"
-        elif ncf_str.startswith("B15"):
-            ncf_type = "B15"
+    # Infer ncf_type from NCF/e-NCF string if not explicitly set
+    if not ncf_type:
+        # Check e-NCF first (E31, E32, E44, E45)
+        if ecf_encf:
+            if ecf_encf.startswith("E31"):
+                ncf_type = "E31"
+            elif ecf_encf.startswith("E32"):
+                ncf_type = "E32"
+            elif ecf_encf.startswith("E44"):
+                ncf_type = "E44"
+            elif ecf_encf.startswith("E45"):
+                ncf_type = "E45"
+            elif ecf_encf.startswith("E34"):
+                ncf_type = "E34"
+        # Fallback to legacy NCF
+        elif ncf_str:
+            if ncf_str.startswith("B01"):
+                ncf_type = "B01"
+            elif ncf_str.startswith("B14"):
+                ncf_type = "B14"
+            elif ncf_str.startswith("B15"):
+                ncf_type = "B15"
     
-    if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
+    # Fiscal invoice types that MUST show customer data (DGII requirement)
+    fiscal_types_require_customer_data = ["B01", "B14", "B15", "E31", "E44", "E45"]
+    
+    if ncf_type in fiscal_types_require_customer_data and (bill.get("fiscal_id") or bill.get("razon_social")):
         lines.append({"type": "divider"})
         lines.append({"type": "left", "bold": True, "text": "DATOS DEL CLIENTE"})
         fiscal_id_type = bill.get("fiscal_id_type", "RNC")
@@ -2612,18 +2652,37 @@ async def send_receipt_to_queue(bill_id: str):
     commands.append({"type": "center", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}"})
     commands.append({"type": "divider"})
     
-    # Datos fiscales del cliente - Inferir tipo de NCF si no está establecido
+    # Datos fiscales del cliente - DGII REQUIREMENT
+    # Show customer RNC and Razón Social for: E31, E44, E45, B01, B14, B15
+    # DO NOT show for E32/B02 (Consumo Final)
     ncf_type = bill.get("ncf_type", "")
     ncf_str = bill.get("ncf", "")
-    if not ncf_type and ncf_str:
-        if ncf_str.startswith("B01"):
-            ncf_type = "B01"
-        elif ncf_str.startswith("B14"):
-            ncf_type = "B14"
-        elif ncf_str.startswith("B15"):
-            ncf_type = "B15"
+    ecf_encf = bill.get("ecf_encf", "")
     
-    if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
+    # Infer ncf_type from NCF/e-NCF string if not explicitly set
+    if not ncf_type:
+        if ecf_encf:
+            if ecf_encf.startswith("E31"):
+                ncf_type = "E31"
+            elif ecf_encf.startswith("E32"):
+                ncf_type = "E32"
+            elif ecf_encf.startswith("E44"):
+                ncf_type = "E44"
+            elif ecf_encf.startswith("E45"):
+                ncf_type = "E45"
+            elif ecf_encf.startswith("E34"):
+                ncf_type = "E34"
+        elif ncf_str:
+            if ncf_str.startswith("B01"):
+                ncf_type = "B01"
+            elif ncf_str.startswith("B14"):
+                ncf_type = "B14"
+            elif ncf_str.startswith("B15"):
+                ncf_type = "B15"
+    
+    fiscal_types_require_customer_data = ["B01", "B14", "B15", "E31", "E44", "E45"]
+    
+    if ncf_type in fiscal_types_require_customer_data and (bill.get("fiscal_id") or bill.get("razon_social")):
         commands.append({"type": "left", "bold": True, "text": "DATOS DEL CLIENTE"})
         fiscal_id_type = bill.get("fiscal_id_type", "RNC")
         commands.append({"type": "left", "text": f"{fiscal_id_type}: {bill.get('fiscal_id', '')}"})
@@ -2965,20 +3024,39 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
         commands.append({"type": "text", "text": f"Valido hasta: {config.get('ticket_ncf_expiry', '31/12/2026')}", "align": "center"})
     commands.append({"type": "divider"})
     
-    # ─── DATOS FISCALES DEL CLIENTE (B01, B14, B15) ───
-    # Inferir ncf_type desde el NCF si no está establecido
+    # ─── DATOS FISCALES DEL CLIENTE (E31, E44, E45, B01, B14, B15) ───
+    # DGII REQUIREMENT: Show customer RNC and Razón Social for fiscal invoice types
+    # DO NOT show for E32/B02 (Consumo Final)
     ncf_type = bill.get("ncf_type", "")
     ncf_str = bill.get("ncf", "")
-    if not ncf_type and ncf_str:
-        if ncf_str.startswith("B01"):
-            ncf_type = "B01"
-        elif ncf_str.startswith("B14"):
-            ncf_type = "B14"
-        elif ncf_str.startswith("B15"):
-            ncf_type = "B15"
+    ecf_str = bill.get("ecf_encf", "")
+    
+    # Infer ncf_type from e-NCF or NCF string if not explicitly set
+    if not ncf_type:
+        if ecf_str:
+            if ecf_str.startswith("E31"):
+                ncf_type = "E31"
+            elif ecf_str.startswith("E32"):
+                ncf_type = "E32"
+            elif ecf_str.startswith("E44"):
+                ncf_type = "E44"
+            elif ecf_str.startswith("E45"):
+                ncf_type = "E45"
+            elif ecf_str.startswith("E34"):
+                ncf_type = "E34"
+        elif ncf_str:
+            if ncf_str.startswith("B01"):
+                ncf_type = "B01"
+            elif ncf_str.startswith("B14"):
+                ncf_type = "B14"
+            elif ncf_str.startswith("B15"):
+                ncf_type = "B15"
+    
+    # Fiscal invoice types that MUST show customer data (DGII requirement)
+    fiscal_types_require_customer_data = ["B01", "B14", "B15", "E31", "E44", "E45"]
     
     # Mostrar datos fiscales si es factura fiscal y tiene datos del cliente
-    if ncf_type in ["B01", "B14", "B15"] and (bill.get("fiscal_id") or bill.get("razon_social")):
+    if ncf_type in fiscal_types_require_customer_data and (bill.get("fiscal_id") or bill.get("razon_social")):
         commands.append({"type": "text", "text": "DATOS DEL CLIENTE", "align": "left", "bold": True})
         fiscal_id_type = bill.get("fiscal_id_type", "RNC")
         fiscal_id = bill.get("fiscal_id", "")
