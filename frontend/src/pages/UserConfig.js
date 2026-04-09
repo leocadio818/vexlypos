@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Trash2, Camera, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock, GraduationCap, Briefcase, Check, Pencil } from 'lucide-react';
+import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Camera, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock, GraduationCap, Briefcase, Check, Pencil } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -618,24 +618,12 @@ export default function UserConfig() {
                       <span className={`text-xs ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
                         {permCount}p {role.level != null ? `· N${role.level}` : ''}
                       </span>
-                      {/* Edit/Delete for custom roles */}
+                      {/* Edit button for custom roles - Delete removed to protect data integrity */}
                       {!role.builtin && isSystemAdmin && (
                         <span className="flex gap-0.5 ml-1" onClick={e => e.stopPropagation()}>
                           <button onClick={() => setEditRoleDialog({ open: true, id: role.id, name: role.name, level: role.level || 20 })}
-                            className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition-all" title="Editar">
-                            <Pencil size={10} />
-                          </button>
-                          <button onClick={async () => {
-                            { const ok = await showConfirm({ title: 'Eliminar Puesto', description: `¿Eliminar puesto "${role.name}"?` }); if (!ok) return; }
-                            try {
-                              await axios.delete(`${API}/roles/${role.id}`, { headers: hdrs() });
-                              notify.success(`Puesto "${role.name}" eliminado`);
-                              fetchRoles();
-                            } catch (e) {
-                              notify.error(e.response?.data?.detail || 'Error eliminando');
-                            }
-                          }} className="w-6 h-6 rounded flex items-center justify-center hover:bg-red-500/30 text-red-400 transition-all" title="Eliminar">
-                            <Trash2 size={10} />
+                            className="w-7 h-7 rounded flex items-center justify-center hover:bg-white/20 transition-all" title="Editar" data-testid={`edit-role-${role.id}`}>
+                            <Pencil size={12} />
                           </button>
                         </span>
                       )}
