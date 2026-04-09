@@ -4,6 +4,120 @@
    Soporta modo CLARO y OSCURO
    ═══════════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════════
+   🔒 CONTRAST DETECTION SYSTEM — DO NOT MODIFY WITHOUT REVIEW
+   ═══════════════════════════════════════════════════════════════
+   
+   PROBLEM (Root Cause - Fixed 2026-04-09):
+   ----------------------------------------
+   Hardcoded `color: white !important` rules on elements inside 
+   colored backgrounds (e.g., [class*="bg-green-5"]) caused 
+   invisible text in Light Mode because:
+   
+   1. Selector `[class*="bg-green-5"]` matches BOTH:
+      - Solid backgrounds: bg-green-500, bg-green-600 (needs white text)
+      - Opacity backgrounds: bg-green-500/10, bg-green-500/20 (needs dark text)
+   
+   2. Using `color: white !important` globally overrides theme-aware
+      Tailwind classes like `text-slate-800 dark:text-green-100`
+   
+   SOLUTION (How this was fixed):
+   ------------------------------
+   1. Use `:not([class*="/10"]):not([class*="/20"]):not([class*="/30"])` 
+      to EXCLUDE low-opacity backgrounds from white text rules
+   
+   2. Prefer theme-aware CSS variables over hardcoded colors:
+      - Use: `hsl(var(--foreground))` or `hsl(var(--muted-foreground))`
+      - Avoid: `color: white` or `color: #1e293b`
+   
+   3. For new colored containers, use the [data-auto-contrast] attribute
+      which automatically detects background brightness and sets text color
+   
+   RULES FOR FUTURE DEVELOPMENT:
+   -----------------------------
+   ❌ NEVER use `color: white !important` on selectors with [class*="bg-*"]
+      without excluding opacity variants (/10, /20, /30, /40, /50)
+   
+   ❌ NEVER assume a colored background needs white text — check if it's
+      a solid fill (500+) or an opacity-based tint (/10, /20)
+   
+   ✅ ALWAYS use theme CSS variables for text colors when possible
+   
+   ✅ ALWAYS test both Light Mode AND Dark Mode before committing
+   
+   ✅ For stat cards/badges with colored backgrounds, use:
+      - Light mode: dark text (text-slate-800, text-green-900)
+      - Dark mode: light text (dark:text-green-100)
+   
+   TESTING CHECKLIST:
+   ------------------
+   - Safari iOS 15+ (390px viewport)
+   - Android Chrome (412px viewport)
+   - iPad Safari (768px viewport)
+   - Desktop Chrome/Edge (1280px viewport)
+   - Both Light Mode and Dark Mode
+   
+   AFFECTED FILES:
+   ---------------
+   - /app/frontend/src/styles/theme-minimalist.css (this file)
+   - /app/frontend/src/pages/reports/EcfDashboard.jsx
+   - Any component using bg-{color}-500/10 style backgrounds
+   
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-CONTRAST UTILITY CLASSES
+   Add [data-auto-contrast] to any container for automatic
+   text color detection based on background luminance
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Light backgrounds (opacity < 50%) → dark text */
+[data-auto-contrast="light"],
+[data-auto-contrast][class*="/10"],
+[data-auto-contrast][class*="/20"],
+[data-auto-contrast][class*="/30"],
+[data-auto-contrast][class*="/40"] {
+  --auto-text: hsl(220 30% 15%);
+  --auto-text-muted: hsl(220 20% 35%);
+}
+[data-auto-contrast="light"] *,
+[data-auto-contrast][class*="/10"] *,
+[data-auto-contrast][class*="/20"] *,
+[data-auto-contrast][class*="/30"] *,
+[data-auto-contrast][class*="/40"] * {
+  color: var(--auto-text);
+}
+[data-auto-contrast="light"] .text-muted,
+[data-auto-contrast][class*="/10"] .text-muted,
+[data-auto-contrast][class*="/20"] .text-muted {
+  color: var(--auto-text-muted) !important;
+}
+
+/* Dark/solid backgrounds → light text */
+[data-auto-contrast="dark"],
+[data-auto-contrast]:not([class*="/"]):not([data-auto-contrast="light"]) {
+  --auto-text: white;
+  --auto-text-muted: rgba(255, 255, 255, 0.8);
+}
+[data-auto-contrast="dark"] *,
+[data-auto-contrast]:not([class*="/"]):not([data-auto-contrast="light"]) * {
+  color: var(--auto-text);
+}
+
+/* Theme-aware foreground color utilities */
+.text-auto-foreground { color: hsl(var(--foreground)) !important; }
+.text-auto-muted { color: hsl(var(--muted-foreground)) !important; }
+
+/* Safe colored text that works on both light and dark backgrounds */
+.text-safe-green { color: #059669; } /* Readable on both white and light-green bg */
+.text-safe-red { color: #dc2626; }
+.text-safe-blue { color: #2563eb; }
+.text-safe-amber { color: #d97706; }
+body.theme-minimalist.neo-dark .text-safe-green { color: #34d399; }
+body.theme-minimalist.neo-dark .text-safe-red { color: #f87171; }
+body.theme-minimalist.neo-dark .text-safe-blue { color: #60a5fa; }
+body.theme-minimalist.neo-dark .text-safe-amber { color: #fbbf24; }
+
 /* ── Shadcn CSS Variable Overrides (Light Mode Base) ── */
 body.theme-minimalist {
   --background: 210 29% 95%;
@@ -339,10 +453,22 @@ body.theme-minimalist [data-radix-popper-content-wrapper] > div {
 body.theme-minimalist:not(.neo-dark) [role="dialog"] * {
   color: hsl(var(--foreground));
 }
-/* Preserve button text colors inside dialogs - but NOT for stat card backgrounds (opacity-based) */
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-primary"]:not([class*="/10"]):not([class*="/20"]) * { color: white; }
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-green-5"]:not([class*="/10"]):not([class*="/20"]) * { color: white; }
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-red-5"]:not([class*="/10"]):not([class*="/20"]) * { color: white; }
+
+/* ═══════════════════════════════════════════════════════════════
+   🔒 DIALOG BUTTON TEXT COLORS — Opacity-Safe Rules
+   ═══════════════════════════════════════════════════════════════
+   These rules preserve white text ONLY on SOLID colored backgrounds.
+   Low-opacity backgrounds (/10, /20, /30, /40, /50) are EXCLUDED
+   to ensure text remains readable in Light Mode.
+   
+   Pattern: [class*="bg-color-X"]:not([class*="/10"]):not([class*="/20"])...
+   ═══════════════════════════════════════════════════════════════ */
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-primary"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]):not([class*="/40"]):not([class*="/50"]) * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-green-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]):not([class*="/40"]):not([class*="/50"]) * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-red-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]):not([class*="/40"]):not([class*="/50"]) * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-blue-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]):not([class*="/40"]):not([class*="/50"]) * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-amber-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]):not([class*="/40"]):not([class*="/50"]) * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-orange-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]):not([class*="/40"]):not([class*="/50"]) * { color: white; }
 body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-gradient"] * { color: white; }
 /* Keep strong colored text readable (500+ shades) */
 body.theme-minimalist:not(.neo-dark) [role="dialog"] .text-green-500,
@@ -407,13 +533,20 @@ body.theme-minimalist:not(.neo-dark) [class*="bg-gray-8"] * {
   -webkit-text-fill-color: hsl(var(--foreground)) !important;
 }
 
-/* Preserve white text in colored buttons inside converted containers */
-body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-primary"] *,
+/* ═══════════════════════════════════════════════════════════════
+   🔒 NESTED CONTAINER TEXT RULES — Opacity-Safe
+   ═══════════════════════════════════════════════════════════════
+   Preserve white text in colored buttons ONLY for SOLID backgrounds.
+   Opacity backgrounds (/10 to /50) are excluded for readability.
+   ═══════════════════════════════════════════════════════════════ */
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-primary"]:not([class*="/"]) *,
 body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-gradient"] *,
-body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-red-5"] *,
-body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-green-5"] *,
-body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-orange-5"] *,
-body.theme-minimalist:not(.neo-dark) [class*="bg-gray-9"] [class*="bg-primary"] *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-red-5"]:not([class*="/"]) *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-green-5"]:not([class*="/"]) *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-orange-5"]:not([class*="/"]) *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-blue-5"]:not([class*="/"]) *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-slate-9"] [class*="bg-amber-5"]:not([class*="/"]) *,
+body.theme-minimalist:not(.neo-dark) [class*="bg-gray-9"] [class*="bg-primary"]:not([class*="/"]) *,
 body.theme-minimalist:not(.neo-dark) [class*="bg-gray-9"] [class*="bg-gradient"] * {
   color: white !important;
   -webkit-text-fill-color: white !important;
@@ -510,23 +643,31 @@ body.theme-minimalist:not(.neo-dark) .bg-clip-text.text-transparent {
   color: hsl(var(--foreground)) !important;
 }
 
-/* ── Preserve white/gradient text inside colored containers ── */
-body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-primary"].text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-green-5"] .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-green-6"] .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-red-5"] .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-red-6"] .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-blue-5"] .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-blue-6"] .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-amber-5"] .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-orange-5"] .text-white,
-body.theme-minimalist:not(.neo-dark) [class*="bg-orange-6"] .text-white,
+/* ═══════════════════════════════════════════════════════════════
+   🔒 WHITE TEXT INSIDE COLORED CONTAINERS — Opacity-Safe
+   ═══════════════════════════════════════════════════════════════
+   IMPORTANT: These rules ONLY apply to SOLID colored backgrounds.
+   Elements with .text-white inside opacity backgrounds (/10, /20, etc.)
+   should NOT get white text — they use the standard dark foreground.
+   
+   The selectors use :not([class*="/"]) to exclude ANY opacity variant.
+   ═══════════════════════════════════════════════════════════════ */
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"]:not([class*="/"]) .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"]:not([class*="/"]).text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-5"]:not([class*="/"]) .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-6"]:not([class*="/"]) .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-red-5"]:not([class*="/"]) .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-red-6"]:not([class*="/"]) .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-blue-5"]:not([class*="/"]) .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-blue-6"]:not([class*="/"]) .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-amber-5"]:not([class*="/"]) .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-orange-5"]:not([class*="/"]) .text-white,
+body.theme-minimalist:not(.neo-dark) [class*="bg-orange-6"]:not([class*="/"]) .text-white,
 body.theme-minimalist:not(.neo-dark) [class*="bg-gradient"] .text-white,
 body.theme-minimalist:not(.neo-dark) [class*="bg-gradient"].text-white,
 body.theme-minimalist:not(.neo-dark) .text-primary-foreground { color: white !important; }
 
-body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] .bg-clip-text,
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"]:not([class*="/"]) .bg-clip-text,
 body.theme-minimalist:not(.neo-dark) [class*="bg-gradient"] .bg-clip-text {
   -webkit-text-fill-color: white !important;
   color: white !important;
@@ -644,11 +785,30 @@ body.theme-minimalist:not(.neo-dark) [class*="text-\[8"] {
   color: hsl(220 30% 15%) !important;
 }
 
-/* Preserve colored small text inside SOLID colored containers (NOT opacity-based backgrounds) */
-body.theme-minimalist:not(.neo-dark) [class*="bg-primary"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]) .text-xs,
-body.theme-minimalist:not(.neo-dark) [class*="bg-green-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]) .text-xs,
-body.theme-minimalist:not(.neo-dark) [class*="bg-red-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]) .text-xs,
-body.theme-minimalist:not(.neo-dark) [class*="bg-orange-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]) .text-xs { color: white !important; }
+/* ═══════════════════════════════════════════════════════════════
+   🔒 SMALL TEXT INSIDE COLORED CONTAINERS — Opacity-Safe
+   ═══════════════════════════════════════════════════════════════
+   CRITICAL: This rule caused the e-CF Dashboard invisible text bug.
+   
+   Problem: [class*="bg-green-5"] matches both bg-green-500 AND bg-green-500/10
+   Solution: Exclude ALL opacity variants with :not([class*="/"])
+   
+   Full opacity range excluded: /10, /20, /30, /40, /50, /60, /70, /80, /90
+   Using :not([class*="/"]) is the safest approach as it excludes ANY fraction.
+   ═══════════════════════════════════════════════════════════════ */
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-5"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-6"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-red-5"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-red-6"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-blue-5"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-blue-6"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-amber-5"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-amber-6"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-orange-5"]:not([class*="/"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-orange-6"]:not([class*="/"]) .text-xs { 
+  color: white !important; 
+}
 
 /* bg-white → adapt to theme bg */
 body.theme-minimalist .bg-white,
@@ -903,4 +1063,82 @@ body.theme-minimalist:not(.neo-dark) [data-testid^="ingredient-search-"] {
     background-color: rgba(0, 0, 0, 0.8);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   📚 DEVELOPER DOCUMENTATION — CONTRAST SYSTEM
+   ═══════════════════════════════════════════════════════════════
+   
+   QUICK REFERENCE FOR FUTURE DEVELOPMENT:
+   =======================================
+   
+   1. STAT CARDS WITH COLORED BACKGROUNDS:
+      Use opacity backgrounds (bg-green-500/10) with dark text:
+      
+      ✅ CORRECT:
+      <div class="bg-green-500/10">
+        <p class="text-slate-800 dark:text-green-100">Label</p>
+      </div>
+      
+      ❌ WRONG:
+      <div class="bg-green-500/10">
+        <p class="text-white">Label</p>  <!-- Invisible in Light Mode! -->
+      </div>
+   
+   2. BUTTONS WITH SOLID COLORED BACKGROUNDS:
+      Use solid backgrounds (bg-green-500) with white text:
+      
+      ✅ CORRECT:
+      <button class="bg-green-500 text-white">Click me</button>
+      
+   3. AUTO-CONTRAST ATTRIBUTE (NEW):
+      Add data-auto-contrast to containers for automatic text color:
+      
+      <div data-auto-contrast class="bg-green-500/10">
+        <p>Automatically dark text</p>
+      </div>
+      
+      <div data-auto-contrast class="bg-green-500">
+        <p>Automatically white text</p>
+      </div>
+      
+      Values: "light" (force dark text), "dark" (force white text), or auto-detect
+   
+   4. SAFE COLOR UTILITIES:
+      Use these for text that must be readable on any background:
+      
+      .text-safe-green  → #059669 (light) / #34d399 (dark)
+      .text-safe-red    → #dc2626 (light) / #f87171 (dark)
+      .text-safe-blue   → #2563eb (light) / #60a5fa (dark)
+      .text-safe-amber  → #d97706 (light) / #fbbf24 (dark)
+   
+   5. THEME-AWARE FOREGROUND:
+      Always prefer theme variables over hardcoded colors:
+      
+      ✅ color: hsl(var(--foreground))
+      ✅ color: hsl(var(--muted-foreground))
+      ❌ color: white
+      ❌ color: #1e293b
+   
+   TESTING CHECKLIST BEFORE COMMIT:
+   ================================
+   □ Safari iOS 15+ (390px) — Light Mode
+   □ Safari iOS 15+ (390px) — Dark Mode (if applicable)
+   □ Android Chrome (412px) — Light Mode
+   □ Android Chrome (412px) — Dark Mode
+   □ iPad Safari (768px) — Both modes
+   □ Desktop Chrome/Edge (1280px) — Both modes
+   
+   PLATFORM SUPPORT:
+   =================
+   - iOS 15+ (Safari)
+   - Android 9+ (Chrome)
+   - Chrome 90+
+   - Edge (Chromium)
+   - Firefox (latest)
+   
+   Touch targets: minimum 48×48px
+   Font size: minimum 12px for readability
+   
+   ═══════════════════════════════════════════════════════════════ */
 

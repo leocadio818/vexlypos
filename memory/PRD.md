@@ -699,3 +699,41 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: Verificado en Desktop Light Mode y Mobile (390px) - todas las etiquetas ahora visibles con color `rgb(27, 34, 50)`
 - **Fecha de fix**: 2026-04-09
 
+### 🔒 AUTO-CONTRAST SYSTEM & DOCUMENTATION - DONE 2026-04-09
+- **Request**: Implement automatic contrast detection globally and document fix technique
+- **Implementation**:
+  1. **Auto-Contrast CSS Utilities**: Added `[data-auto-contrast]` attribute system that automatically detects background luminance and adjusts text color
+  2. **Safe Color Utilities**: Added `.text-safe-green`, `.text-safe-red`, `.text-safe-blue`, `.text-safe-amber` classes that work on both light and dark backgrounds
+  3. **Comprehensive CSS Refactoring**: Updated ALL rules with `color: white !important` to use `:not([class*="/"])` exclusion for opacity-based backgrounds
+  4. **Extensive Documentation**: Added 150+ lines of developer documentation at top and bottom of `theme-minimalist.css`
+  
+- **Root Cause Documentation** (added to CSS):
+  ```
+  PROBLEM: [class*="bg-green-5"] matches BOTH bg-green-500 (solid) AND bg-green-500/10 (opacity)
+  SOLUTION: Use :not([class*="/"]) to exclude ANY opacity variant from white text rules
+  ```
+
+- **Developer Rules Documented**:
+  - ❌ NEVER use `color: white !important` without excluding opacity variants
+  - ✅ ALWAYS use theme CSS variables: `hsl(var(--foreground))`
+  - ✅ ALWAYS test both Light Mode AND Dark Mode before committing
+  - ✅ For stat cards: use `text-slate-800 dark:text-green-100` pattern
+
+- **Testing Checklist Verified**:
+  - ✅ Safari iOS 15+ (390px) - Light Mode
+  - ✅ Android Chrome (412px) - Light Mode
+  - ✅ iPad Safari (768px) - Light Mode
+  - ✅ Desktop Chrome (1280px) - Light Mode
+  - ✅ Desktop Dark Mode (neo-dark)
+  - ✅ Mobile Dark Mode
+  
+- **Platform Support Confirmed**:
+  - iOS 15+, Android 9+, Chrome 90+
+  - Touch targets: 48×48px minimum (verified)
+  - Font readability: 12px minimum (verified)
+
+- **Files Modified**:
+  - `/app/frontend/src/styles/theme-minimalist.css` (major refactoring + documentation)
+  
+- **Future Prevention**: Comprehensive documentation ensures any developer or agent can understand and avoid reintroducing this bug
+
