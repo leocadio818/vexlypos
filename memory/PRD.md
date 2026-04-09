@@ -820,3 +820,24 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Razón de protección**: Compliance fiscal DGII - El número visible debe ser siempre el e-NCF oficial
 - **Fecha de protección**: 2026-04-09
 
+### 🔒 Payment Flow Modals Theme-Aware Colors - DONE 2026-04-09
+- **Problema reportado**: Texto blanco invisible en dos modales de pago en Light Mode:
+  1. Modal "Datos Fiscales E31" - Campo "Cliente existente - Datos autocompletados" invisible
+  2. Modal "Tipo de Venta" - Todas las opciones de servicio con texto blanco sobre fondos claros
+- **Root Cause**: Colores hardcodeados para Dark Mode (`text-white/60`, `text-green-300`, `text-orange-300`, `bg-white/5`) sin variantes para Light Mode
+- **Archivos modificados**:
+  1. `/app/frontend/src/components/FiscalDataDrawer.jsx`:
+     - Background: `bg-white dark:bg-slate-900`
+     - Labels: `text-slate-700 dark:text-white/70`
+     - Inputs: `bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white`
+     - Status indicators: `text-green-700 dark:text-green-300` etc.
+  2. `/app/frontend/src/pages/PaymentScreen.js`:
+     - NCF Dialog background: `bg-white dark:bg-slate-900/95`
+     - NCF buttons: `text-cyan-700 dark:text-cyan-300` (selected), `text-slate-600 dark:text-white/60` (unselected)
+     - Service type options: `text-orange-800 dark:text-orange-300` (selected), `text-slate-700 dark:text-white/60` (unselected)
+     - Descriptions: `text-slate-500 dark:text-white/40`
+- **Pattern aplicado**: Siempre usar `light-color dark:dark-color` para todos los textos
+- **Testing**: Verificado en Desktop Light Mode (1280px) y Mobile (390px)
+- **Razón de protección**: UX crítica en flujo de cobro - textos deben ser legibles en ambos temas
+- **Fecha de protección**: 2026-04-09
+

@@ -1821,10 +1821,10 @@ export default function PaymentScreen() {
 
       {/* Dialog Venta/NCF */}
       <Dialog open={ncfDialogOpen} onOpenChange={setNcfDialogOpen}>
-        <DialogContent className="max-w-sm bg-slate-900/95 backdrop-blur-xl border-white/20">
+        <DialogContent className="max-w-sm bg-white dark:bg-slate-900/95 backdrop-blur-xl border-slate-200 dark:border-white/20">
           <DialogHeader>
-            <DialogTitle className="font-oswald text-white flex items-center gap-2">
-              <FileText size={18} className="text-cyan-400" />
+            <DialogTitle className="font-oswald text-slate-900 dark:text-white flex items-center gap-2">
+              <FileText size={18} className="text-cyan-600 dark:text-cyan-400" />
               Tipo de Venta
             </DialogTitle>
           </DialogHeader>
@@ -1832,7 +1832,7 @@ export default function PaymentScreen() {
           <div className="space-y-4">
             {/* Tipo Fiscal (NCF) */}
             <div>
-              <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-bold text-slate-500 dark:text-white/50 uppercase tracking-wider mb-2">
                 Comprobante Fiscal
               </h4>
               <div className="grid grid-cols-4 gap-2">
@@ -1857,8 +1857,8 @@ export default function PaymentScreen() {
                     }}
                     className={`p-3 rounded-xl text-center transition-all ${
                       selectedFiscalType === ft.code
-                        ? 'bg-cyan-500/30 border-2 border-cyan-400 text-cyan-300'
-                        : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+                        ? 'bg-cyan-500/20 dark:bg-cyan-500/30 border-2 border-cyan-500 dark:border-cyan-400 text-cyan-700 dark:text-cyan-300'
+                        : 'bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10'
                     }`}
                     data-testid={`ncf-dialog-${ft.code}`}
                   >
@@ -1873,10 +1873,10 @@ export default function PaymentScreen() {
                 <div className="mt-3 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="text-xs text-cyan-300 font-medium">{fiscalData.razonSocial}</p>
-                      <p className="text-xs text-white/60 font-mono">{fiscalData.fiscalIdType}: {fiscalData.fiscalIdFormatted}</p>
+                      <p className="text-xs text-cyan-700 dark:text-cyan-300 font-medium">{fiscalData.razonSocial}</p>
+                      <p className="text-xs text-slate-600 dark:text-white/60 font-mono">{fiscalData.fiscalIdType}: {fiscalData.fiscalIdFormatted}</p>
                       {fiscalData.email && (
-                        <p className="text-xs text-cyan-400/70 flex items-center gap-1">
+                        <p className="text-xs text-cyan-600 dark:text-cyan-400/70 flex items-center gap-1">
                           <Mail size={10} /> {fiscalData.email}
                         </p>
                       )}
@@ -1886,7 +1886,7 @@ export default function PaymentScreen() {
                         setPendingFiscalType(selectedFiscalType);
                         setFiscalDrawerOpen(true);
                       }}
-                      className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+                      className="text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 underline"
                     >
                       Cambiar
                     </button>
@@ -1894,14 +1894,14 @@ export default function PaymentScreen() {
                 </div>
               )}
               
-              <p className="text-xs text-white/40 mt-2 text-center">
+              <p className="text-xs text-slate-500 dark:text-white/40 mt-2 text-center">
                 {fiscalTypes.find(f => f.code === selectedFiscalType)?.name}
               </p>
             </div>
 
             {/* Tipo de Servicio - FILTRADO por NCF seleccionado */}
             <div>
-              <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-bold text-slate-500 dark:text-white/50 uppercase tracking-wider mb-2">
                 Tipo de Servicio
               </h4>
               <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
@@ -1933,27 +1933,27 @@ export default function PaymentScreen() {
                       onClick={() => setSelectedServiceType(st)}
                       className={`w-full p-3 rounded-xl transition-all flex items-center gap-3 ${
                         isSelected
-                          ? 'bg-orange-500/30 border-2 border-orange-400 text-orange-300'
-                          : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+                          ? 'bg-orange-500/20 dark:bg-orange-500/30 border-2 border-orange-500 dark:border-orange-400 text-orange-800 dark:text-orange-300'
+                          : 'bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10'
                       }`}
                       data-testid={`ncf-dialog-service-${st.code}`}
                     >
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isSelected ? 'bg-orange-500/30' : 'bg-white/10'
+                        isSelected ? 'bg-orange-500/30' : 'bg-slate-200 dark:bg-white/10'
                       }`}>
-                        <IconComponent size={20} />
+                        <IconComponent size={20} className={isSelected ? 'text-orange-600 dark:text-orange-400' : 'text-slate-600 dark:text-white/60'} />
                       </div>
                       <div className="flex-1 text-left">
                         <span className="font-semibold">{st.name}</span>
                         {st.description && (
-                          <p className="text-xs text-white/40">{st.description}</p>
+                          <p className="text-xs text-slate-500 dark:text-white/40">{st.description}</p>
                         )}
-                        <p className={`text-xs ${hasPropinaExemption ? 'text-amber-400/80' : 'text-green-400/80'}`}>
+                        <p className={`text-xs ${hasPropinaExemption ? 'text-amber-600 dark:text-amber-400/80' : 'text-green-600 dark:text-green-400/80'}`}>
                           {hasPropinaExemption ? 'Sin propina de ley' : 'Con propina de ley'}
                         </p>
                       </div>
                       {isSelected && (
-                        <Check size={18} className="text-orange-400" />
+                        <Check size={18} className="text-orange-600 dark:text-orange-400" />
                       )}
                     </button>
                   );
@@ -1964,9 +1964,9 @@ export default function PaymentScreen() {
                   const matchType = ECF_TO_NCF[selectedFiscalType] || selectedFiscalType;
                   return ncfId === selectedFiscalType || ncfId === matchType;
                 }).length === 0 && (
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-                    <p className="text-white/40 text-sm">No hay tipos de venta configurados para {selectedFiscalType}</p>
-                    <p className="text-xs text-white/30 mt-1">Configura en Settings → Ventas → Tipos de Venta</p>
+                  <div className="p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-center">
+                    <p className="text-slate-600 dark:text-white/40 text-sm">No hay tipos de venta configurados para {selectedFiscalType}</p>
+                    <p className="text-xs text-slate-500 dark:text-white/30 mt-1">Configura en Settings → Ventas → Tipos de Venta</p>
                   </div>
                 )}
               </div>

@@ -398,15 +398,15 @@ const FiscalDataDrawer = ({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-slate-900 border-t border-white/10 h-[100vh] rounded-t-none">
+      <DrawerContent className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-white/10 h-[100vh] rounded-t-none">
         <div className="w-full h-full flex flex-col">
           {/* Header fijo arriba */}
-          <DrawerHeader className="text-center py-4 flex-shrink-0 border-b border-white/10 bg-slate-800/50">
-            <DrawerTitle className="text-xl font-oswald text-white flex items-center justify-center gap-2">
-              <Building2 className="text-cyan-400" size={24} />
+          <DrawerHeader className="text-center py-4 flex-shrink-0 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800/50">
+            <DrawerTitle className="text-xl font-oswald text-slate-900 dark:text-white flex items-center justify-center gap-2">
+              <Building2 className="text-cyan-600 dark:text-cyan-400" size={24} />
               Datos Fiscales - {fiscalType}
             </DrawerTitle>
-            <DrawerDescription className="text-white/60 text-sm mt-1">
+            <DrawerDescription className="text-slate-600 dark:text-white/60 text-sm mt-1">
               {getFiscalTypeName()} requiere RNC o Cédula del cliente
             </DrawerDescription>
           </DrawerHeader>
@@ -415,7 +415,7 @@ const FiscalDataDrawer = ({
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             {/* Campo RNC/Cédula con validación */}
             <div className="space-y-2">
-              <Label className="text-white/70 text-sm font-medium">
+              <Label className="text-slate-700 dark:text-white/70 text-sm font-medium">
                 RNC o Cédula *
               </Label>
               <div className="flex gap-2">
@@ -424,14 +424,14 @@ const FiscalDataDrawer = ({
                     value={fiscalId}
                     onChange={(e) => setFiscalId(e.target.value.replace(/[^0-9-]/g, ''))}
                     placeholder="Ej: 123456789 o 00112345678"
-                    className={`bg-white/5 border-2 text-white text-lg h-14 pr-12 font-mono tracking-wider transition-all ${
+                    className={`bg-slate-100 dark:bg-white/5 border-2 text-slate-900 dark:text-white text-lg h-14 pr-12 font-mono tracking-wider transition-all ${
                       fiscalId && validation.valid && !validation.warning
                         ? 'border-green-500/50 focus:border-green-400' 
                         : fiscalId && validation.valid && validation.warning
                           ? 'border-amber-500/50 focus:border-amber-400'
                           : fiscalId && !validation.valid && validation.cleaned.length >= 9
                             ? 'border-red-500/50 focus:border-red-400'
-                            : 'border-white/20 focus:border-cyan-400'
+                            : 'border-slate-300 dark:border-white/20 focus:border-cyan-500 dark:focus:border-cyan-400'
                     }`}
                     data-testid="fiscal-id-input"
                     autoFocus
@@ -439,13 +439,13 @@ const FiscalDataDrawer = ({
                   {/* Indicador de validación */}
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     {fiscalId && validation.valid && !validation.warning && (
-                      <Check className="text-green-400" size={22} />
+                      <Check className="text-green-500 dark:text-green-400" size={22} />
                     )}
                     {fiscalId && validation.valid && validation.warning && (
-                      <AlertCircle className="text-amber-400" size={22} />
+                      <AlertCircle className="text-amber-500 dark:text-amber-400" size={22} />
                     )}
                     {fiscalId && !validation.valid && validation.cleaned.length >= 9 && (
-                      <AlertCircle className="text-red-400" size={22} />
+                      <AlertCircle className="text-red-500 dark:text-red-400" size={22} />
                     )}
                   </div>
                 </div>
@@ -467,22 +467,22 @@ const FiscalDataDrawer = ({
               <div className="min-h-[20px]">
                 {fiscalId && (
                   <p className={`text-xs flex items-center gap-1 ${
-                    validation.valid && !validation.warning ? 'text-green-400' :
-                    validation.valid && validation.warning ? 'text-amber-400' :
-                    validation.type === 'Incompleto' ? 'text-white/50' : 'text-red-400'
+                    validation.valid && !validation.warning ? 'text-green-600 dark:text-green-400' :
+                    validation.valid && validation.warning ? 'text-amber-600 dark:text-amber-400' :
+                    validation.type === 'Incompleto' ? 'text-slate-500 dark:text-white/50' : 'text-red-600 dark:text-red-400'
                   }`}>
                     {validation.valid && !validation.warning ? (
                       <>
                         <Check size={12} />
                         {validation.type} válido: {formatFiscalId(validation.cleaned)}
-                        {dgiiSearching && <Loader2 className="animate-spin ml-2 text-cyan-400" size={12} />}
-                        {dgiiSearching && <span className="text-cyan-400 ml-1">Buscando en DGII...</span>}
+                        {dgiiSearching && <Loader2 className="animate-spin ml-2 text-cyan-600 dark:text-cyan-400" size={12} />}
+                        {dgiiSearching && <span className="text-cyan-600 dark:text-cyan-400 ml-1">Buscando en DGII...</span>}
                       </>
                     ) : validation.valid && validation.warning ? (
                       <>
                         <AlertCircle size={12} />
                         {validation.type} aceptado: {formatFiscalId(validation.cleaned)}
-                        <span className="text-amber-300/70 ml-1">(verificar manualmente)</span>
+                        <span className="text-amber-500 dark:text-amber-300/70 ml-1">(verificar manualmente)</span>
                       </>
                     ) : validation.type === 'Inválido' ? (
                       <>
@@ -519,22 +519,22 @@ const FiscalDataDrawer = ({
                 'bg-amber-500/10 border border-amber-500/30'
               }`}>
                 {customerFound ? (
-                  <User size={20} className="text-green-400" />
+                  <User size={20} className="text-green-600 dark:text-green-400" />
                 ) : dgiiData && isNewCustomer ? (
                   <Building2 size={20} className={
-                    dgiiData.estado === 'ACTIVO' ? 'text-cyan-400' :
-                    dgiiData.estado === 'SUSPENDIDO' ? 'text-amber-400' :
-                    dgiiData.estado === 'INACTIVO' || dgiiData.estado === 'DADO DE BAJA' ? 'text-red-400' :
-                    'text-cyan-400'
+                    dgiiData.estado === 'ACTIVO' ? 'text-cyan-600 dark:text-cyan-400' :
+                    dgiiData.estado === 'SUSPENDIDO' ? 'text-amber-600 dark:text-amber-400' :
+                    dgiiData.estado === 'INACTIVO' || dgiiData.estado === 'DADO DE BAJA' ? 'text-red-600 dark:text-red-400' :
+                    'text-cyan-600 dark:text-cyan-400'
                   } />
                 ) : (
-                  <User size={20} className="text-amber-400" />
+                  <User size={20} className="text-amber-500 dark:text-amber-400" />
                 )}
                 <div className="flex-1 flex items-center gap-2">
                   <span className={`text-sm ${
-                    customerFound ? 'text-green-300' : 
-                    dgiiData && isNewCustomer ? 'text-white/80' :
-                    'text-amber-300'
+                    customerFound ? 'text-green-700 dark:text-green-300' : 
+                    dgiiData && isNewCustomer ? 'text-slate-700 dark:text-white/80' :
+                    'text-amber-600 dark:text-amber-300'
                   }`}>
                     {customerFound ? 'Cliente existente - Datos autocompletados' : 
                      dgiiData && isNewCustomer ? 'Datos de DGII' :
@@ -544,12 +544,12 @@ const FiscalDataDrawer = ({
                   {dgiiData && isNewCustomer && dgiiData.estado && (
                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
                       dgiiData.estado === 'ACTIVO' 
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                        ? 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30' :
                       dgiiData.estado === 'SUSPENDIDO' 
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30' :
                       dgiiData.estado === 'INACTIVO' || dgiiData.estado === 'DADO DE BAJA'
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                        'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                        ? 'bg-red-500/20 text-red-700 dark:text-red-400 border border-red-500/30' :
+                        'bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-500/30'
                     }`}>
                       {dgiiData.estado}
                     </span>
@@ -558,7 +558,7 @@ const FiscalDataDrawer = ({
                 {/* Alerta si el contribuyente no está activo */}
                 {dgiiData && isNewCustomer && dgiiData.estado && dgiiData.estado !== 'ACTIVO' && (
                   <AlertCircle size={18} className={
-                    dgiiData.estado === 'SUSPENDIDO' ? 'text-amber-400' : 'text-red-400'
+                    dgiiData.estado === 'SUSPENDIDO' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
                   } />
                 )}
               </div>
@@ -568,8 +568,8 @@ const FiscalDataDrawer = ({
             {dgiiData && isNewCustomer && dgiiData.estado && dgiiData.estado !== 'ACTIVO' && (
               <div className={`p-2 rounded-lg flex items-center gap-2 text-xs ${
                 dgiiData.estado === 'SUSPENDIDO' 
-                  ? 'bg-amber-500/10 border border-amber-500/20 text-amber-300'
-                  : 'bg-red-500/10 border border-red-500/20 text-red-300'
+                  ? 'bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300'
+                  : 'bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300'
               }`}>
                 <AlertCircle size={14} />
                 <span>
@@ -582,14 +582,14 @@ const FiscalDataDrawer = ({
             
             {/* Campo Razón Social */}
             <div className="space-y-2">
-              <Label className="text-white/70 text-sm font-medium">
+              <Label className="text-slate-700 dark:text-white/70 text-sm font-medium">
                 Razón Social *
               </Label>
               <Input
                 value={razonSocial}
                 onChange={(e) => setRazonSocial(e.target.value)}
                 placeholder="Nombre o Razón Social del cliente"
-                className="bg-white/5 border-2 border-white/20 text-white text-lg h-14 focus:border-cyan-400"
+                className="bg-slate-100 dark:bg-white/5 border-2 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white text-lg h-14 focus:border-cyan-500 dark:focus:border-cyan-400"
                 disabled={!!customerFound}
                 data-testid="razon-social-input"
               />
@@ -597,22 +597,22 @@ const FiscalDataDrawer = ({
             
             {/* Campo Email (Opcional) */}
             <div className="space-y-2">
-              <Label className="text-white/70 text-sm font-medium flex items-center gap-2">
+              <Label className="text-slate-700 dark:text-white/70 text-sm font-medium flex items-center gap-2">
                 <Mail size={16} />
                 Correo Electrónico
-                <span className="text-white/40 text-xs font-normal">(opcional - para envío de factura)</span>
+                <span className="text-slate-500 dark:text-white/40 text-xs font-normal">(opcional - para envío de factura)</span>
               </Label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="correo@ejemplo.com"
-                className="bg-white/5 border-2 border-white/20 text-white text-lg h-14 focus:border-cyan-400"
+                className="bg-slate-100 dark:bg-white/5 border-2 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white text-lg h-14 focus:border-cyan-500 dark:focus:border-cyan-400"
                 disabled={!!customerFound && customerFound.email}
                 data-testid="email-input"
               />
               {email && (
-                <p className="text-sm text-cyan-400/80 flex items-center gap-1">
+                <p className="text-sm text-cyan-600 dark:text-cyan-400/80 flex items-center gap-1">
                   <Mail size={14} />
                   La factura digital será enviada a este correo
                 </p>
@@ -621,12 +621,12 @@ const FiscalDataDrawer = ({
           </div>
           
           {/* Footer fijo con botones grandes - SIEMPRE VISIBLE EN LA PARTE INFERIOR */}
-          <DrawerFooter className="py-4 px-5 flex-shrink-0 border-t border-white/10 bg-slate-800/50">
+          <DrawerFooter className="py-4 px-5 flex-shrink-0 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800/50">
             <div className="flex gap-3 w-full">
               <DrawerClose asChild>
                 <Button 
                   variant="outline" 
-                  className="flex-1 h-14 text-base font-semibold border-white/20 text-white hover:bg-white/10"
+                  className="flex-1 h-14 text-base font-semibold border-slate-300 dark:border-white/20 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10"
                   data-testid="fiscal-cancel-btn"
                 >
                   <X size={20} className="mr-2" />
@@ -639,7 +639,7 @@ const FiscalDataDrawer = ({
                 className={`flex-1 h-14 text-base font-semibold transition-all ${
                   canContinue 
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white' 
-                    : 'bg-white/10 text-white/40 cursor-not-allowed'
+                    : 'bg-slate-200 dark:bg-white/10 text-slate-400 dark:text-white/40 cursor-not-allowed'
                 }`}
                 data-testid="fiscal-confirm-btn"
               >
