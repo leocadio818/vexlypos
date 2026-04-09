@@ -923,8 +923,21 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - Si el área tiene impresora configurada → imprime directo + toast "Enviado a [nombre]"
   - Si no tiene → verifica turno activo → si tiene turno imprime directo, sino muestra modal
   - El botón "Otra impresora" siempre disponible para override manual
-- **Configuración de área**: Crear `area_channel_mapping` con `category_id="receipt"` para cada área
+- **Configuración de área**: ~~Crear `area_channel_mapping` con `category_id="receipt"` para cada área~~ **AUTO-CONFIGURADO** al iniciar el backend
 - **Testing**: 8/8 backend tests passed, UI verified
 - **Cross-platform**: Safari iOS 390px, Android Chrome 412px, Desktop 1280px ✅
 - **Theme-aware**: Botón usa colores theme-aware (slate-500/700 light, slate-400/200 dark) ✅
+
+### Pre-Cuenta Modal Bug Fix - DONE 2026-04-09
+- **Bug**: El modal "Selecciona Impresora" aparecía automáticamente al imprimir pre-cuenta
+- **Root Cause**: No existían `area_channel_mappings` con `category_id="receipt"` y el frontend mostraba modal si no había impresora de área
+- **Fix aplicado**:
+  1. **Backend auto-migración** (startup): Crea automáticamente receipt mappings para todas las áreas que no tengan uno (`startup_event()` en server.py líneas 4155-4170)
+  2. **Frontend simplificado**: `handlePrintPreCheckToPhysical()` NUNCA muestra modal - siempre envía al backend
+  3. **Backend fallback**: `get_order_area_printer()` retorna el canal "receipt" global como fallback
+- **Comportamiento actual**:
+  - Click "IMPRIMIR PRE-CUENTA" → Envía directo al backend → Toast "Enviado a [impresora]"
+  - El modal SOLO aparece cuando el usuario hace click en "Otra impresora"
+- **Logs de migración**: "Auto-created receipt mapping for area 'Terraza' -> recibo", etc.
+- **Testing**: 8/9 tests passed (1 skipped), UI verified
 
