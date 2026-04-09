@@ -77,8 +77,8 @@
 [data-auto-contrast][class*="/20"],
 [data-auto-contrast][class*="/30"],
 [data-auto-contrast][class*="/40"] {
-  --auto-text: hsl(220 30% 15%);
-  --auto-text-muted: hsl(220 20% 35%);
+  --auto-text: hsl(220, 30%, 15%);
+  --auto-text-muted: hsl(220, 20%, 35%);
 }
 [data-auto-contrast="light"] *,
 [data-auto-contrast][class*="/10"] *,
@@ -782,7 +782,7 @@ body.theme-minimalist:not(.neo-dark) .text-xs,
 body.theme-minimalist:not(.neo-dark) [class*="text-\[1"],
 body.theme-minimalist:not(.neo-dark) [class*="text-\[9"],
 body.theme-minimalist:not(.neo-dark) [class*="text-\[8"] {
-  color: hsl(220 30% 15%) !important;
+  color: hsl(220, 30%, 15%) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════
