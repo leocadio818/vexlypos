@@ -976,3 +976,24 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - `/app/backend/routers/thefactory.py` - `_is_valid_fecha_venc()`, `build_thefactory_payload()`
   - `/app/backend/routers/ecf_dispatcher.py` - `thefactory/series-diagnostics` endpoint
 
+### 🔒 Pre-Cuenta Security Fix (Auto-Send Pending Items) - DONE 2026-04-09
+- **Vulnerabilidad corregida**: Items en estado "Pendiente" podían ser eliminados sin autorización después de imprimir pre-cuenta
+- **Fix aplicado**: Cuando el mesero presiona "Pre-Cuenta", el sistema PRIMERO envía automáticamente todos los items pendientes a sus canales (usando la misma lógica que el botón ENVIAR), y LUEGO imprime la pre-cuenta
+- **Flujo de seguridad**:
+  1. Mesero presiona "Pre-Cuenta"
+  2. Sistema verifica si hay items en estado "Pendiente"
+  3. Si SÍ → auto-envía items usando `ordersAPI.sendToKitchen()` (misma lógica que ENVIAR)
+  4. Todos los items ahora tienen status="sent" (Enviado)
+  5. Pre-cuenta se imprime con total completo
+  6. Items enviados requieren protocolo de auditoría (razón + PIN gerente opcional) para eliminar
+- **Archivos modificados**:
+  - `/app/frontend/src/pages/OrderScreen.js`:
+    - `autoSendPendingItems()` (líneas 1252-1271): Nueva función que usa ordersAPI.sendToKitchen()
+    - `handlePrintPreCheck()` (líneas 1273-1296): Llama autoSendPendingItems() ANTES de imprimir
+    - `handlePrintAccountPreCheck()` (líneas 1323-1337): Auto-envía items para cuenta específica
+    - `handlePrintAllAccounts()` (líneas 1340-1363): Auto-envía items para TODAS las cuentas
+- **Backend sin cambios**: Usa el endpoint existente `POST /api/orders/{order_id}/send-kitchen`
+- **Testing**: 9/9 backend tests pasaron, UI verificada
+- **Razón de protección**: Previene fraude de meseros que eliminaban items después de pre-cuenta
+- **Fecha de protección**: 2026-04-09
+
