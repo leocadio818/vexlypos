@@ -35,6 +35,45 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ---
 
+### e-NCF Display Rule (Locked Forever) — Added 2026-04-09
+
+**This rule applies to EVERY file, module, and future feature in this system FOREVER.**
+
+1. **ecf_encf (E31, E32, E34 format) — THE VISIBLE NUMBER**
+   - ALWAYS the number shown to users in:
+     - All screens and UI
+     - All reports (including Discounts Report, Audit logs, etc.)
+     - All audit logs (system-audit, bill payments, etc.)
+     - All printed documents (receipts, tickets, facturas)
+     - Any other visible output
+   - This is the official DGII fiscal document number
+
+2. **ncf (B01 format) — INTERNAL DATABASE REFERENCE ONLY**
+   - NEVER shown to users anywhere
+   - NEVER shown in reports
+   - NEVER shown in audit logs
+   - Used ONLY internally for MongoDB record linking
+   - This is the internal sequence counter, not for display
+
+3. **Pattern to use when displaying invoice numbers:**
+   ```python
+   # 🔒 DO NOT MODIFY - e-NCF display rule
+   display_ncf = bill.get("ecf_encf") or bill.get("ncf", "-")
+   ```
+
+4. **ANY future feature or fix that displays an invoice number MUST use ecf_encf — never ncf**
+
+5. **If a future fix seems to require showing ncf/B01 anywhere visible — STOP and ask the user first before implementing**
+
+**Files with protected e-NCF display logic:**
+- `/app/backend/routers/billing.py` - `audit_ncf` in log_bill_paid
+- `/app/backend/routers/reports.py` - `display_ncf` in discounts report
+- `/app/backend/server.py` - `bill_number` in receipt printing
+
+**Look for comment:** `# 🔒 DO NOT MODIFY - e-NCF display rule`
+
+---
+
 ## Architecture
 - Frontend: React + TailwindCSS + Shadcn/UI + React Query + Framer Motion (PWA)
 - Backend: FastAPI + MongoDB

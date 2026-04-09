@@ -674,7 +674,10 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     # ─── AUDIT: LOG BILL PAYMENT ───
     from utils.audit import log_bill_paid, log_discount_applied
     table_num = bill.get("table_label", bill.get("table_id", "?"))
-    # Prefer e-NCF (ecf_encf) over internal NCF (B01 series) for audit logs
+    # 🔒 DO NOT MODIFY - e-NCF display rule (Protected 2026-04-09)
+    # Always use ecf_encf (E31/E32/E34) for display
+    # Never use ncf (B01) in any visible output
+    # See PRD.md "PERMANENT ARCHITECTURAL RULES" section
     audit_ncf = bill.get("ecf_encf") or bill.get("ncf", "")
     await log_bill_paid(
         db=db,

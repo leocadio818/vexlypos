@@ -1475,6 +1475,10 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
             "business_address": biz_addr,
             "rnc": biz_rnc,
             "phone": biz_phone,
+            # 🔒 DO NOT MODIFY - e-NCF display rule (Protected 2026-04-09)
+            # Always use ecf_encf (E31/E32/E34) for display
+            # Never use ncf (B01) in any visible output
+            # See PRD.md "PERMANENT ARCHITECTURAL RULES" section
             "bill_number": bill.get("ecf_encf") or bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8],
             "table_number": bill.get("table_number", ""),
             "waiter_name": bill.get("waiter_name", ""),

@@ -2156,7 +2156,10 @@ async def get_discounts_report(
         disc = b.get("discount_applied", {})
         amount = disc.get("amount", 0) or 0
         total_discounts += amount
-        # Prefer e-NCF (ecf_encf) over internal NCF (B01 series)
+        # 🔒 DO NOT MODIFY - e-NCF display rule (Protected 2026-04-09)
+        # Always use ecf_encf (E31/E32/E34) for display
+        # Never use ncf (B01) in any visible output
+        # See PRD.md "PERMANENT ARCHITECTURAL RULES" section
         display_ncf = b.get("ecf_encf") or b.get("ncf", "-")
         rows.append({
             "NCF": display_ncf,
