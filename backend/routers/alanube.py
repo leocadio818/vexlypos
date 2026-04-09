@@ -53,15 +53,18 @@ def get_config():
 # MODULE 1: MAPEO — Convert VexlyPOS bill to Alanube JSON
 # ═══════════════════════════════════════════════════════════════
 
-# DGII Payment Type mapping
+# DGII Payment Type mapping - Códigos Oficiales DGII
+# 1=Efectivo, 2=Cheque/Transferencia/Depósito, 3=Tarjeta Crédito/Débito, 
+# 4=Venta a Crédito, 5=Bonos/Certificados, 6=Permuta, 7=Nota de Crédito, 8=Otras
 PAYMENT_TYPE_MAP = {
     "efectivo": 1, "cash": 1,
-    "tarjeta": 2, "card": 2, "tarjeta de credito": 2, "tarjeta de debito": 2,
-    "cheque": 3,
-    "transferencia": 4, "transfer": 4,
-    "bonos": 5, "gift card": 5,
+    "tarjeta": 3, "card": 3, "tarjeta de credito": 3, "tarjeta de debito": 3, "credito": 3, "debito": 3,
+    "cheque": 2, "transferencia": 2, "transfer": 2, "deposito": 2,
+    "credito fiscal": 4, "venta a credito": 4, "fiado": 4,
+    "bonos": 5, "gift card": 5, "certificado": 5,
     "permuta": 6,
-    "otro": 7, "other": 7,
+    "nota de credito": 7, "nc": 7,
+    "otro": 8, "other": 8, "otros": 8,
 }
 
 # Invoice type mapping (NCF prefix → Alanube type)
@@ -79,8 +82,16 @@ INVOICE_TYPE_MAP = {
 }
 
 
-def map_payment_type(method_name: str) -> int:
-    """Map payment method name to DGII code"""
+def map_payment_type(method_name: str, dgii_code: int = None) -> int:
+    """
+    Map payment method to DGII code.
+    Priority: 1) Explicit dgii_payment_code, 2) Name-based lookup, 3) Default (Efectivo)
+    """
+    # If explicit DGII code is provided, use it
+    if dgii_code is not None and 1 <= dgii_code <= 8:
+        return dgii_code
+    
+    # Fallback to name-based lookup
     name = (method_name or "").lower().strip()
     for key, code in PAYMENT_TYPE_MAP.items():
         if key in name:
@@ -174,19 +185,24 @@ def build_alanube_payload(bill: dict, system_config: dict, encf: str) -> dict:
     if payments:
         for p in payments:
             pm_name = p.get("payment_method_name", p.get("method", "efectivo"))
+            # Prioritize dgii_payment_code if available
+            dgii_code = p.get("dgii_payment_code")
             payment_forms.append({
-                "paymentType": map_payment_type(pm_name),
+                "paymentType": map_payment_type(pm_name, dgii_code),
                 "paymentAmount": round(p.get("amount", 0), 2)
             })
     else:
+        pm_name = bill.get("payment_method_name", "efectivo")
+        dgii_code = bill.get("dgii_payment_code")
         payment_forms.append({
-            "paymentType": map_payment_type(bill.get("payment_method_name", "efectivo")),
+            "paymentType": map_payment_type(pm_name, dgii_code),
             "paymentAmount": total_amount
         })
     
     # ── Payment type (1=cash, 2=credit/terms) ──
-    main_payment = map_payment_type(bill.get("payment_method_name", "efectivo"))
-    payment_type = 2 if main_payment in [3, 4, 5, 6] else 1  # Credit if not cash/card
+    main_dgii_code = bill.get("dgii_payment_code")
+    main_payment = map_payment_type(bill.get("payment_method_name", "efectivo"), main_dgii_code)
+    payment_type = 2 if main_payment in [4, 5, 6] else 1  # Credit if venta a crédito, bonos, permuta
     
     # ── Sender (Emisor) ──
     sender = {

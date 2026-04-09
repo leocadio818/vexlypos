@@ -106,13 +106,15 @@ class PayBillInput(BaseModel):
 async def list_payment_methods():
     methods = await db.payment_methods.find({}, {"_id": 0}).to_list(50)
     if not methods:
+        # Defaults con códigos DGII correctos:
+        # 1=Efectivo, 2=Cheque/Transferencia, 3=Tarjeta, 4=Venta a Crédito, 5=Bonos, 6=Permuta, 7=NC, 8=Otras
         defaults = [
-            {"id": gen_id(), "name": "Efectivo RD$", "icon": "banknote", "icon_type": "lucide", "brand_icon": None, "bg_color": "#16a34a", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 0, "is_cash": True},
-            {"id": gen_id(), "name": "Tarjeta de Crédito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "visa", "bg_color": "#1e40af", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 1, "is_cash": False},
-            {"id": gen_id(), "name": "Tarjeta de Débito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "mastercard", "bg_color": "#7c3aed", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 2, "is_cash": False},
-            {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "icon_type": "lucide", "brand_icon": None, "bg_color": "#0891b2", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 3, "is_cash": False},
-            {"id": gen_id(), "name": "USD Dólar", "icon": "dollar-sign", "icon_type": "lucide", "brand_icon": None, "bg_color": "#059669", "text_color": "#ffffff", "currency": "USD", "exchange_rate": 58.50, "active": True, "order": 4, "is_cash": True},
-            {"id": gen_id(), "name": "EUR Euro", "icon": "euro", "icon_type": "lucide", "brand_icon": None, "bg_color": "#d97706", "text_color": "#ffffff", "currency": "EUR", "exchange_rate": 63.20, "active": True, "order": 5, "is_cash": True},
+            {"id": gen_id(), "name": "Efectivo RD$", "icon": "banknote", "icon_type": "lucide", "brand_icon": None, "bg_color": "#16a34a", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 0, "is_cash": True, "dgii_payment_code": 1},
+            {"id": gen_id(), "name": "Tarjeta de Crédito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "visa", "bg_color": "#1e40af", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 1, "is_cash": False, "dgii_payment_code": 3},
+            {"id": gen_id(), "name": "Tarjeta de Débito", "icon": "credit-card", "icon_type": "brand", "brand_icon": "mastercard", "bg_color": "#7c3aed", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 2, "is_cash": False, "dgii_payment_code": 3},
+            {"id": gen_id(), "name": "Transferencia", "icon": "smartphone", "icon_type": "lucide", "brand_icon": None, "bg_color": "#0891b2", "text_color": "#ffffff", "currency": "DOP", "exchange_rate": 1, "active": True, "order": 3, "is_cash": False, "dgii_payment_code": 2},
+            {"id": gen_id(), "name": "USD Dólar", "icon": "dollar-sign", "icon_type": "lucide", "brand_icon": None, "bg_color": "#059669", "text_color": "#ffffff", "currency": "USD", "exchange_rate": 58.50, "active": True, "order": 4, "is_cash": True, "dgii_payment_code": 1},
+            {"id": gen_id(), "name": "EUR Euro", "icon": "euro", "icon_type": "lucide", "brand_icon": None, "bg_color": "#d97706", "text_color": "#ffffff", "currency": "EUR", "exchange_rate": 63.20, "active": True, "order": 5, "is_cash": True, "dgii_payment_code": 1},
         ]
         await db.payment_methods.insert_many(defaults)
         return defaults
@@ -158,7 +160,8 @@ async def create_payment_method(input: dict):
         "exchange_rate": input.get("exchange_rate", 1),
         "active": True,
         "order": count,
-        "is_cash": input.get("is_cash", True)
+        "is_cash": input.get("is_cash", True),
+        "dgii_payment_code": input.get("dgii_payment_code")  # Código DGII (1-8)
     }
     await db.payment_methods.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
@@ -417,7 +420,8 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                     "currency": pmt_doc.get("currency", "DOP"),
                     "exchange_rate": pmt_doc.get("exchange_rate", 1),
                     "brand_icon": pmt_doc.get("brand_icon"),
-                    "is_cash": pmt_doc.get("is_cash", False)
+                    "is_cash": pmt_doc.get("is_cash", False),
+                    "dgii_payment_code": pmt_doc.get("dgii_payment_code")  # Código DGII para e-CF
                 })
         
         # El método principal es el primero de la lista
@@ -438,7 +442,8 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                 "currency": payment_method_doc.get("currency", "DOP"),
                 "exchange_rate": payment_method_doc.get("exchange_rate", 1),
                 "brand_icon": payment_method_doc.get("brand_icon"),
-                "is_cash": is_cash_payment
+                "is_cash": is_cash_payment,
+                "dgii_payment_code": payment_method_doc.get("dgii_payment_code")  # Código DGII para e-CF
             })
         elif input.payment_method == "card":
             is_cash_payment = False

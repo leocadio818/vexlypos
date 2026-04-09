@@ -40,7 +40,7 @@ export default function VentasTab() {
   // Dialogs
   const [payDialog, setPayDialog] = useState({ 
     open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
-    bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true 
+    bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true, dgii_payment_code: null 
   });
   const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', affects_inventory: true, allowed_roles: [], active: true, editId: null });
   const [showInactiveReasons, setShowInactiveReasons] = useState(false);
@@ -60,7 +60,8 @@ export default function VentasTab() {
         text_color: payDialog.text_color,
         currency: payDialog.currency, 
         exchange_rate: parseFloat(payDialog.exchange_rate) || 1,
-        is_cash: payDialog.is_cash
+        is_cash: payDialog.is_cash,
+        dgii_payment_code: payDialog.dgii_payment_code  // Código DGII para e-CF
       };
       if (payDialog.editId) {
         await axios.put(`${API}/payment-methods/${payDialog.editId}`, data, { headers: hdrs() });
@@ -70,7 +71,7 @@ export default function VentasTab() {
       notify.success(payDialog.editId ? 'Actualizado' : 'Creado');
       setPayDialog({ 
         open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
-        bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true 
+        bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true, dgii_payment_code: null 
       }); 
       fetchAll();
     } catch { notify.error('Error'); }
@@ -164,7 +165,7 @@ export default function VentasTab() {
             {canManageSaleConfig && (
             <Button onClick={() => setPayDialog({ 
               open: true, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
-              bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null 
+              bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, dgii_payment_code: null 
             })} size="sm"
               className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-payment-btn">
               <Plus size={14} className="mr-1" /> Agregar
@@ -197,6 +198,9 @@ export default function VentasTab() {
                     })()
                   )}
                   <span className="font-oswald font-bold text-sm text-center">{m.name}</span>
+                  {m.dgii_payment_code && (
+                    <span className="text-[10px] opacity-80 bg-white/20 px-1.5 py-0.5 rounded mt-1">DGII: {m.dgii_payment_code}</span>
+                  )}
                   {m.currency && m.currency !== 'DOP' && (
                     <span className="text-xs opacity-70 mt-1">1 = {m.exchange_rate}</span>
                   )}
@@ -219,7 +223,8 @@ export default function VentasTab() {
                       currency: m.currency || 'DOP', 
                       exchange_rate: m.exchange_rate || 1, 
                       editId: m.id,
-                      is_cash: m.is_cash !== false
+                      is_cash: m.is_cash !== false,
+                      dgii_payment_code: m.dgii_payment_code || null
                     })}
                   >
                     <Pencil size={16} />
@@ -483,6 +488,28 @@ export default function VentasTab() {
             <div className="flex items-center gap-2">
               <Switch checked={payDialog.is_cash} onCheckedChange={(v) => setPayDialog({ ...payDialog, is_cash: v })} />
               <label className="text-sm">Es efectivo (afecta arqueo de caja)</label>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Código DGII</label>
+              <select 
+                value={payDialog.dgii_payment_code || ''} 
+                onChange={e => setPayDialog({ ...payDialog, dgii_payment_code: e.target.value ? parseInt(e.target.value) : null })}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
+                data-testid="dgii-code-select"
+              >
+                <option value="">Automático (por nombre)</option>
+                <option value="1">1 - Efectivo</option>
+                <option value="2">2 - Cheque/Transferencia/Depósito</option>
+                <option value="3">3 - Tarjeta de Crédito/Débito</option>
+                <option value="4">4 - Venta a Crédito</option>
+                <option value="5">5 - Bonos o Certificados</option>
+                <option value="6">6 - Permuta</option>
+                <option value="7">7 - Nota de Crédito</option>
+                <option value="8">8 - Otras Formas de Pago</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Código oficial DGII para facturación electrónica (e-CF)
+              </p>
             </div>
           </div>
           <DialogFooter>

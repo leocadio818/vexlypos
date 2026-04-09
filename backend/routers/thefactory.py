@@ -319,15 +319,18 @@ def invalidate_token():
 # MODULE 2: MAPEO — Convert VexlyPOS bill to The Factory JSON
 # ═══════════════════════════════════════════════════════════════
 
-# DGII Payment Type mapping (same codes as Alanube)
+# DGII Payment Type mapping - Códigos Oficiales DGII (strings for The Factory API)
+# 1=Efectivo, 2=Cheque/Transferencia/Depósito, 3=Tarjeta Crédito/Débito, 
+# 4=Venta a Crédito, 5=Bonos/Certificados, 6=Permuta, 7=Nota de Crédito, 8=Otras
 PAYMENT_TYPE_MAP = {
     "efectivo": "1", "cash": "1",
-    "tarjeta": "2", "card": "2", "tarjeta de credito": "2", "tarjeta de debito": "2",
-    "cheque": "3",
-    "transferencia": "4", "transfer": "4",
-    "bonos": "5", "gift card": "5",
+    "tarjeta": "3", "card": "3", "tarjeta de credito": "3", "tarjeta de debito": "3", "credito": "3", "debito": "3",
+    "cheque": "2", "transferencia": "2", "transfer": "2", "deposito": "2",
+    "credito fiscal": "4", "venta a credito": "4", "fiado": "4",
+    "bonos": "5", "gift card": "5", "certificado": "5",
     "permuta": "6",
-    "otro": "7", "other": "7",
+    "nota de credito": "7", "nc": "7",
+    "otro": "8", "other": "8", "otros": "8",
 }
 
 # Municipality/Province codes (Santo Domingo default)
@@ -335,8 +338,16 @@ DEFAULT_MUNICIPIO = "100100"
 DEFAULT_PROVINCIA = "100000"
 
 
-def map_payment_type(method_name: str) -> str:
-    """Map payment method name to DGII code (string for The Factory)"""
+def map_payment_type(method_name: str, dgii_code: int = None) -> str:
+    """
+    Map payment method to DGII code (string for The Factory API).
+    Priority: 1) Explicit dgii_payment_code, 2) Name-based lookup, 3) Default (Efectivo)
+    """
+    # If explicit DGII code is provided, use it
+    if dgii_code is not None and 1 <= dgii_code <= 8:
+        return str(dgii_code)
+    
+    # Fallback to name-based lookup
     name = (method_name or "").lower().strip()
     for key, code in PAYMENT_TYPE_MAP.items():
         if key in name:
@@ -447,19 +458,24 @@ def build_thefactory_payload(bill: dict, system_config: dict, encf: str, token: 
     if payments:
         for p in payments:
             pm_name = p.get("payment_method_name", p.get("method", "efectivo"))
+            # Prioritize dgii_payment_code if available
+            dgii_code = p.get("dgii_payment_code")
             payment_forms.append({
-                "forma": map_payment_type(pm_name),
+                "forma": map_payment_type(pm_name, dgii_code),
                 "monto": f"{round(p.get('amount', 0), 2):.2f}"
             })
     else:
+        pm_name = bill.get("payment_method_name", "efectivo")
+        dgii_code = bill.get("dgii_payment_code")
         payment_forms.append({
-            "forma": map_payment_type(bill.get("payment_method_name", "efectivo")),
+            "forma": map_payment_type(pm_name, dgii_code),
             "monto": f"{total_amount:.2f}"
         })
 
     # tipoPago: 1=Contado, 2=Crédito
-    main_payment = map_payment_type(bill.get("payment_method_name", "efectivo"))
-    tipo_pago = "2" if main_payment in ["3", "4", "5", "6"] else "1"
+    main_dgii_code = bill.get("dgii_payment_code")
+    main_payment = map_payment_type(bill.get("payment_method_name", "efectivo"), main_dgii_code)
+    tipo_pago = "2" if main_payment in ["4", "5", "6"] else "1"  # Crédito si venta a crédito, bonos, permuta
 
     # ── Buyer (Comprador) ──
     buyer_rnc = (bill.get("fiscal_id", "") or "").replace("-", "")
