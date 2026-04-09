@@ -928,13 +928,33 @@ async def get_area_channel_mapping(area_id: str):
 
 @api.get("/order/{order_id}/area-printer")
 async def get_order_area_printer(order_id: str):
-    """Check if the order's table area has a receipt printer configured"""
+    """Check if the order's table area has a receipt printer configured, with global fallback"""
     order = await db.orders.find_one({"id": order_id}, {"_id": 0, "table_id": 1})
     if not order or not order.get("table_id"):
+        # No table - use global receipt channel as fallback
+        global_channel = await db.print_channels.find_one({"code": {"$in": ["receipt", "recibo"]}}, {"_id": 0})
+        if global_channel:
+            return {
+                "has_area_printer": True,
+                "area_id": None,
+                "area_name": "Global",
+                "channel_code": global_channel.get("code"),
+                "printer_name": global_channel.get("name", "Recibo")
+            }
         return {"has_area_printer": False, "area_id": None, "area_name": None, "channel_code": None, "printer_name": None}
     
     table = await db.tables.find_one({"id": order["table_id"]}, {"_id": 0, "area_id": 1})
     if not table or not table.get("area_id"):
+        # No area - use global receipt channel as fallback
+        global_channel = await db.print_channels.find_one({"code": {"$in": ["receipt", "recibo"]}}, {"_id": 0})
+        if global_channel:
+            return {
+                "has_area_printer": True,
+                "area_id": None,
+                "area_name": "Global",
+                "channel_code": global_channel.get("code"),
+                "printer_name": global_channel.get("name", "Recibo")
+            }
         return {"has_area_printer": False, "area_id": None, "area_name": None, "channel_code": None, "printer_name": None}
     
     area_id = table["area_id"]
@@ -946,20 +966,30 @@ async def get_order_area_printer(order_id: str):
         {"area_id": area_id, "category_id": "receipt"}, {"_id": 0}
     )
     
-    if not area_mapping or not area_mapping.get("channel_code"):
-        return {"has_area_printer": False, "area_id": area_id, "area_name": area_name, "channel_code": None, "printer_name": None}
+    if area_mapping and area_mapping.get("channel_code"):
+        channel_code = area_mapping["channel_code"]
+        channel = await db.print_channels.find_one({"code": channel_code}, {"_id": 0, "name": 1})
+        printer_name = channel.get("name", channel_code) if channel else channel_code
+        return {
+            "has_area_printer": True,
+            "area_id": area_id,
+            "area_name": area_name,
+            "channel_code": channel_code,
+            "printer_name": printer_name
+        }
     
-    channel_code = area_mapping["channel_code"]
-    channel = await db.print_channels.find_one({"code": channel_code}, {"_id": 0, "name": 1})
-    printer_name = channel.get("name", channel_code) if channel else channel_code
+    # No area mapping - use global receipt channel as fallback
+    global_channel = await db.print_channels.find_one({"code": {"$in": ["receipt", "recibo"]}}, {"_id": 0})
+    if global_channel:
+        return {
+            "has_area_printer": True,
+            "area_id": area_id,
+            "area_name": area_name,
+            "channel_code": global_channel.get("code"),
+            "printer_name": global_channel.get("name", "Recibo")
+        }
     
-    return {
-        "has_area_printer": True,
-        "area_id": area_id,
-        "area_name": area_name,
-        "channel_code": channel_code,
-        "printer_name": printer_name
-    }
+    return {"has_area_printer": False, "area_id": area_id, "area_name": area_name, "channel_code": None, "printer_name": None}
 
 @api.post("/area-channel-mappings")
 async def create_area_channel_mapping(input: dict):
@@ -4118,6 +4148,27 @@ async def startup_event():
     if not existing_tz:
         await db.system_config.insert_one({"id": "timezone", "timezone": "America/Santo_Domingo"})
         logger.info("Timezone config seeded: America/Santo_Domingo")
+    
+    # AUTO-MIGRATE: Create receipt channel mappings for all areas that don't have one
+    # This ensures pre-cuenta auto-routing works without manual configuration
+    try:
+        areas = await db.areas.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+        receipt_channel = await db.print_channels.find_one({"code": {"$in": ["receipt", "recibo"]}}, {"_id": 0, "code": 1})
+        if receipt_channel and areas:
+            receipt_code = receipt_channel["code"]
+            for area in areas:
+                existing = await db.area_channel_mappings.find_one(
+                    {"area_id": area["id"], "category_id": "receipt"}
+                )
+                if not existing:
+                    await db.area_channel_mappings.insert_one({
+                        "area_id": area["id"],
+                        "category_id": "receipt",
+                        "channel_code": receipt_code
+                    })
+                    logger.info(f"Auto-created receipt mapping for area '{area.get('name', area['id'])}' -> {receipt_code}")
+    except Exception as e:
+        logger.warning(f"Area receipt mapping migration warning (non-fatal): {e}")
     
     # Create MongoDB indexes for faster queries
     try:

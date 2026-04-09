@@ -1199,46 +1199,32 @@ export default function OrderScreen() {
   };
 
   const handlePrintPreCheckToPhysical = async () => {
-    // NEW PRIORITY:
-    // 1. Area-based printer (auto-route to area's receipt printer)
-    // 2. Active shift terminal printer
-    // 3. Manual selection (show modal)
+    // ALWAYS send to printer - backend handles the fallback chain:
+    // 1. Area receipt printer (if configured)
+    // 2. Shift terminal printer (if user has active shift)
+    // 3. Global "receipt" channel (always available)
+    // Modal is NEVER shown automatically - only via "Otra impresora" button
     
-    // First check if the area has a configured printer
-    const areaInfo = await checkAreaPrinter(order?.id);
-    if (areaInfo.has_area_printer) {
-      // Area has printer → send directly without modal
-      try {
-        const resp = await fetch(`${API_BASE}/api/print/pre-check/${order?.id}/send`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-        });
-        const data = await resp.json();
-        if (data.ok) {
+    try {
+      const resp = await fetch(`${API_BASE}/api/print/pre-check/${order?.id}/send`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        // Check if area had printer to show specific message
+        const areaInfo = await checkAreaPrinter(order?.id);
+        if (areaInfo.has_area_printer) {
           notify.success(`Enviado a ${areaInfo.printer_name}`);
-          setPreCheckOpen(false);
+        } else {
+          notify.success('Pre-cuenta enviada a impresora');
         }
-      } catch { notify.error('Error al imprimir'); }
-      return;
-    }
-    
-    // No area printer → check if user has active shift
-    const hasShift = await checkUserHasActiveShift();
-    if (hasShift) {
-      // Cajero con turno abierto → imprime directo en su caja
-      try {
-        const resp = await fetch(`${API_BASE}/api/print/pre-check/${order?.id}/send`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
-        });
-        const data = await resp.json();
-        if (data.ok) setPreCheckOpen(false);
-      } catch { notify.error('Error al imprimir'); }
-    } else {
-      // Sin turno y sin impresora de área → mostrar selector de impresora
-      setPreCheckOpen(false);
-      await fetchAvailablePrinters();
-      setPrinterSelectDialog({ open: true, pendingOrderId: order?.id });
+        setPreCheckOpen(false);
+      } else {
+        notify.error(data.detail || 'Error al imprimir');
+      }
+    } catch { 
+      notify.error('Error al imprimir'); 
     }
   };
 
