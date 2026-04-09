@@ -90,7 +90,7 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ## Completed Tasks (2026-04-09)
 
-- **DGII Payment Type Mapping Fix + dgii_payment_code Feature** (DONE - 2026-04-09):
+- **🔒 DGII Payment Type Mapping Fix + dgii_payment_code Feature** (DONE - 2026-04-09):
   - **BUG FIX**: El mapeo de tipos de pago DGII estaba incorrecto:
     - "tarjeta" mapeaba a código 2 (Transferencia) → Corregido a código 3 (Tarjeta)
     - "transferencia" mapeaba a código 4 → Corregido a código 2 (Cheque/Transferencia)
@@ -865,5 +865,41 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Pattern aplicado**: Siempre usar `light-color dark:dark-color` para todos los textos
 - **Testing**: Verificado en Desktop Light Mode (1280px) y Mobile (390px)
 - **Razón de protección**: UX crítica en flujo de cobro - textos deben ser legibles en ambos temas
+- **Fecha de protección**: 2026-04-09
+
+### 🔒 DGII Payment Type Mapping + dgii_payment_code - DONE 2026-04-09
+- **Bug corregido**: Mapeo incorrecto de tipos de pago a códigos DGII:
+  - `tarjeta` mapeaba a código 2 (Transferencia) → Corregido a **código 3** (Tarjeta Crédito/Débito)
+  - `transferencia` mapeaba a código 4 → Corregido a **código 2** (Cheque/Transferencia)
+- **Feature agregada**: Campo `dgii_payment_code` en métodos de pago permite override manual
+- **Archivos modificados**:
+  1. `/app/backend/routers/alanube.py`:
+     - `PAYMENT_TYPE_MAP` actualizado con códigos DGII oficiales (líneas 57-72)
+     - `map_payment_type()` ahora acepta `dgii_code` opcional que tiene prioridad (líneas 85-99)
+     - `build_alanube_payload()` pasa `dgii_payment_code` de cada pago (líneas 183-205)
+  2. `/app/backend/routers/thefactory.py`:
+     - `PAYMENT_TYPE_MAP` actualizado (líneas 323-338)
+     - `map_payment_type()` con prioridad de `dgii_code` (líneas 341-355)
+     - `build_thefactory_payload()` pasa `dgii_payment_code` (líneas 445-470)
+  3. `/app/backend/routers/billing.py`:
+     - `POST /api/payment-methods` guarda `dgii_payment_code` (líneas 147-165)
+     - `pay_bill()` incluye `dgii_payment_code` en cada pago (líneas 410-447)
+  4. `/app/frontend/src/pages/settings/VentasTab.js`:
+     - Dropdown "Código DGII" con opciones 1-8 en diálogo de métodos de pago
+     - Badge "DGII: X" visible en tarjetas de métodos de pago
+- **Códigos DGII oficiales**:
+  ```
+  1 = Efectivo
+  2 = Cheque/Transferencia/Depósito
+  3 = Tarjeta de Crédito/Débito
+  4 = Venta a Crédito
+  5 = Bonos o Certificados
+  6 = Permuta
+  7 = Nota de Crédito
+  8 = Otras Formas de Pago
+  ```
+- **Lógica de prioridad**: `dgii_payment_code` explícito > mapeo por nombre > default (1=Efectivo)
+- **Testing**: 16/16 backend tests pasaron
+- **Razón de protección**: Compliance fiscal DGII - Los códigos de forma de pago deben ser correctos en todas las facturas electrónicas
 - **Fecha de protección**: 2026-04-09
 
