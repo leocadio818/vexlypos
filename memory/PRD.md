@@ -88,6 +88,32 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **CRITICAL**: The Factory `itbiS1` field expects TAX RATE ("18"), NOT amount. Amount goes in `totalITBIS1`
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
+## Completed Tasks (2026-04-09)
+
+- **DGII Payment Type Mapping Fix + dgii_payment_code Feature** (DONE - 2026-04-09):
+  - **BUG FIX**: El mapeo de tipos de pago DGII estaba incorrecto:
+    - "tarjeta" mapeaba a código 2 (Transferencia) → Corregido a código 3 (Tarjeta)
+    - "transferencia" mapeaba a código 4 → Corregido a código 2 (Cheque/Transferencia)
+  - **Files Modified**:
+    - `/app/backend/routers/alanube.py` - `PAYMENT_TYPE_MAP` actualizado con códigos DGII oficiales
+    - `/app/backend/routers/thefactory.py` - `PAYMENT_TYPE_MAP` actualizado con códigos DGII oficiales
+  - **NEW FEATURE**: Campo `dgii_payment_code` en métodos de pago:
+    - Backend: `POST/PUT /api/payment-methods` ahora acepta y guarda `dgii_payment_code`
+    - Backend: `map_payment_type()` ahora prioriza `dgii_payment_code` explícito sobre mapeo por nombre
+    - Frontend: Nuevo dropdown "Código DGII" (opciones 1-8) en el diálogo de edición de métodos de pago
+    - UI: Badge "DGII: X" visible en cada tarjeta de método de pago
+  - **DGII Official Codes Reference**:
+    - 1 = Efectivo
+    - 2 = Cheque/Transferencia/Depósito  
+    - 3 = Tarjeta de Crédito/Débito
+    - 4 = Venta a Crédito
+    - 5 = Bonos o Certificados
+    - 6 = Permuta
+    - 7 = Nota de Crédito
+    - 8 = Otras Formas de Pago
+  - **Testing**: 16/16 backend tests passed, UI verified via screenshots
+  - **Impact**: Facturas electrónicas (e-CF) ahora reportan el tipo de pago correcto a la DGII
+
 ## Completed Tasks (2026-04-07)
 
 - **🔒 Area-Based Print Channel Routing - BUG FIX** (DONE - 2026-04-07):
