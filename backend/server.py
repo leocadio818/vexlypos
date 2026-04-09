@@ -1475,7 +1475,7 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
             "business_address": biz_addr,
             "rnc": biz_rnc,
             "phone": biz_phone,
-            "bill_number": bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8],
+            "bill_number": bill.get("ecf_encf") or bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8],
             "table_number": bill.get("table_number", ""),
             "waiter_name": bill.get("waiter_name", ""),
             "cashier_name": bill.get("paid_by_name", ""),

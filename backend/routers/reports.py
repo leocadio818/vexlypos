@@ -2146,7 +2146,7 @@ async def get_discounts_report(
     
     bills = await db.bills.find(
         query,
-        {"_id": 0, "id": 1, "ncf": 1, "table_number": 1, "waiter_name": 1,
+        {"_id": 0, "id": 1, "ncf": 1, "ecf_encf": 1, "table_number": 1, "waiter_name": 1,
          "subtotal": 1, "total": 1, "discount_applied": 1, "paid_at": 1}
     ).sort("paid_at", -1).to_list(500)
     
@@ -2156,8 +2156,10 @@ async def get_discounts_report(
         disc = b.get("discount_applied", {})
         amount = disc.get("amount", 0) or 0
         total_discounts += amount
+        # Prefer e-NCF (ecf_encf) over internal NCF (B01 series)
+        display_ncf = b.get("ecf_encf") or b.get("ncf", "-")
         rows.append({
-            "NCF": b.get("ncf", "-"),
+            "NCF": display_ncf,
             "Mesa": b.get("table_number", "-"),
             "Mesero": b.get("waiter_name", "-"),
             "Subtotal": round(b.get("subtotal", 0), 2),

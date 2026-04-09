@@ -755,3 +755,29 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Razón de protección**: Consistencia visual crítica del e-CF Dashboard en todos los temas
 - **Fecha de protección**: 2026-04-09
 
+### 🔒 e-NCF Display Priority Over Internal NCF (B01→E31/E32/E34) - DONE 2026-04-09
+- **Problema reportado**: El sistema mostraba el número de secuencia interno "B0100000032" en los logs de auditoría en lugar del número e-NCF fiscal "E312391385525"
+- **Root Cause**: El código usaba `bill.get("ncf")` (secuencia interna B01) en lugar de `bill.get("ecf_encf")` (número e-NCF real)
+- **Archivos modificados**:
+  1. `/app/backend/routers/billing.py` (línea 683):
+     ```python
+     # ANTES: ncf=bill.get("ncf", "")
+     # DESPUÉS: 
+     audit_ncf = bill.get("ecf_encf") or bill.get("ncf", "")
+     ```
+  2. `/app/backend/routers/reports.py` (líneas 2149-2162):
+     ```python
+     # Prefer e-NCF over internal NCF for discounts report
+     display_ncf = b.get("ecf_encf") or b.get("ncf", "-")
+     ```
+  3. `/app/backend/server.py` (línea 1478):
+     ```python
+     # Receipt printing now uses e-NCF first
+     "bill_number": bill.get("ecf_encf") or bill.get("ncf") or bill.get("number") or bill.get("id", "")[:8]
+     ```
+- **Regla permanente**: 
+  - `ecf_encf` = Número e-NCF fiscal oficial (E31, E32, E34) — USAR SIEMPRE para display
+  - `ncf` = Secuencia interna de control (B01, B02) — NUNCA mostrar al usuario
+- **Razón de protección**: Compliance fiscal DGII - El número visible debe ser siempre el e-NCF oficial
+- **Fecha de protección**: 2026-04-09
+
