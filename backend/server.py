@@ -926,6 +926,41 @@ async def get_area_channel_mapping(area_id: str):
     mappings = await db.area_channel_mappings.find({"area_id": area_id}, {"_id": 0}).to_list(100)
     return mappings
 
+@api.get("/order/{order_id}/area-printer")
+async def get_order_area_printer(order_id: str):
+    """Check if the order's table area has a receipt printer configured"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0, "table_id": 1})
+    if not order or not order.get("table_id"):
+        return {"has_area_printer": False, "area_id": None, "area_name": None, "channel_code": None, "printer_name": None}
+    
+    table = await db.tables.find_one({"id": order["table_id"]}, {"_id": 0, "area_id": 1})
+    if not table or not table.get("area_id"):
+        return {"has_area_printer": False, "area_id": None, "area_name": None, "channel_code": None, "printer_name": None}
+    
+    area_id = table["area_id"]
+    area = await db.areas.find_one({"id": area_id}, {"_id": 0, "name": 1})
+    area_name = area.get("name", "") if area else ""
+    
+    # Look for "receipt" category mapping for this area
+    area_mapping = await db.area_channel_mappings.find_one(
+        {"area_id": area_id, "category_id": "receipt"}, {"_id": 0}
+    )
+    
+    if not area_mapping or not area_mapping.get("channel_code"):
+        return {"has_area_printer": False, "area_id": area_id, "area_name": area_name, "channel_code": None, "printer_name": None}
+    
+    channel_code = area_mapping["channel_code"]
+    channel = await db.print_channels.find_one({"code": channel_code}, {"_id": 0, "name": 1})
+    printer_name = channel.get("name", channel_code) if channel else channel_code
+    
+    return {
+        "has_area_printer": True,
+        "area_id": area_id,
+        "area_name": area_name,
+        "channel_code": channel_code,
+        "printer_name": printer_name
+    }
+
 @api.post("/area-channel-mappings")
 async def create_area_channel_mapping(input: dict):
     """Create a single area-category-channel mapping"""
@@ -3168,11 +3203,33 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
         "printed_at": now_iso()
     })
     
-    # Obtener impresora — override manual o por turno activo del cajero
-    receipt_channel_code = "receipt"
+    # Obtener impresora — PRIORIDAD:
+    # 1. channel_override (manual)
+    # 2. Área de la mesa → buscar canal de recibo configurado para esa área
+    # 3. Turno activo del cajero → terminal printer
+    # 4. Canal "receipt" global (fallback)
+    receipt_channel_code = None
+    
+    # Priority 1: Manual override
     if channel_override:
         receipt_channel_code = channel_override
-    else:
+    
+    # Priority 2: Area-based printer (NEW)
+    if not receipt_channel_code:
+        table_id = order.get("table_id")
+        if table_id:
+            table = await db.tables.find_one({"id": table_id}, {"_id": 0, "area_id": 1})
+            if table and table.get("area_id"):
+                area_id = table["area_id"]
+                # Look for "receipt" category mapping for this area
+                area_receipt_mapping = await db.area_channel_mappings.find_one(
+                    {"area_id": area_id, "category_id": "receipt"}, {"_id": 0}
+                )
+                if area_receipt_mapping and area_receipt_mapping.get("channel_code"):
+                    receipt_channel_code = area_receipt_mapping["channel_code"]
+    
+    # Priority 3: Active shift terminal printer
+    if not receipt_channel_code:
         try:
             from supabase import create_client as sc
             sb_url = os.environ.get("SUPABASE_URL", "")
@@ -3188,6 +3245,10 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
                             receipt_channel_code = terminal["print_channel"]
         except Exception as e:
             print(f"Warning: Could not resolve terminal printer for pre-check: {e}")
+    
+    # Priority 4: Global "receipt" fallback
+    if not receipt_channel_code:
+        receipt_channel_code = "receipt"
     
     receipt_channel = await db.print_channels.find_one({"code": receipt_channel_code}, {"_id": 0})
     if not receipt_channel:

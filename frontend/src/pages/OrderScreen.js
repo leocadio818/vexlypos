@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ordersAPI, categoriesAPI, productsAPI, modifiersAPI, reasonsAPI, tablesAPI, areasAPI, billsAPI, inventorySettingsAPI, posSessionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search, Pencil } from 'lucide-react';
+import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search, Pencil, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -1185,7 +1185,44 @@ export default function OrderScreen() {
     } catch {}
   };
 
+  // Check if the order's area has a receipt printer configured
+  const checkAreaPrinter = async (orderId) => {
+    try {
+      const r = await fetch(`${API_BASE}/api/order/${orderId}/area-printer`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+      });
+      if (r.ok) {
+        return await r.json();
+      }
+    } catch {}
+    return { has_area_printer: false };
+  };
+
   const handlePrintPreCheckToPhysical = async () => {
+    // NEW PRIORITY:
+    // 1. Area-based printer (auto-route to area's receipt printer)
+    // 2. Active shift terminal printer
+    // 3. Manual selection (show modal)
+    
+    // First check if the area has a configured printer
+    const areaInfo = await checkAreaPrinter(order?.id);
+    if (areaInfo.has_area_printer) {
+      // Area has printer → send directly without modal
+      try {
+        const resp = await fetch(`${API_BASE}/api/print/pre-check/${order?.id}/send`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          notify.success(`Enviado a ${areaInfo.printer_name}`);
+          setPreCheckOpen(false);
+        }
+      } catch { notify.error('Error al imprimir'); }
+      return;
+    }
+    
+    // No area printer → check if user has active shift
     const hasShift = await checkUserHasActiveShift();
     if (hasShift) {
       // Cajero con turno abierto → imprime directo en su caja
@@ -1198,11 +1235,18 @@ export default function OrderScreen() {
         if (data.ok) setPreCheckOpen(false);
       } catch { notify.error('Error al imprimir'); }
     } else {
-      // Sin turno → cerrar pre-cuenta y mostrar selector de impresora
+      // Sin turno y sin impresora de área → mostrar selector de impresora
       setPreCheckOpen(false);
       await fetchAvailablePrinters();
       setPrinterSelectDialog({ open: true, pendingOrderId: order?.id });
     }
+  };
+
+  // Manual override - show printer selection modal
+  const handleManualPrinterSelect = async () => {
+    setPreCheckOpen(false);
+    await fetchAvailablePrinters();
+    setPrinterSelectDialog({ open: true, pendingOrderId: order?.id });
   };
 
   // Pre-check (pre-cuenta) functions
@@ -3056,6 +3100,14 @@ export default function OrderScreen() {
           <Button onClick={handlePrintPreCheckToPhysical} className="w-full h-11 bg-gray-900 text-white font-oswald font-bold active:scale-95" data-testid="print-precheck-btn">
             <Printer size={16} className="mr-2" /> IMPRIMIR PRE-CUENTA
           </Button>
+          {/* Manual override - select different printer */}
+          <button 
+            onClick={handleManualPrinterSelect} 
+            className="w-full text-center text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 py-2 transition-colors flex items-center justify-center gap-1.5"
+            data-testid="manual-printer-select-btn"
+          >
+            <Settings size={12} /> Otra impresora
+          </button>
         </DialogContent>
       </Dialog>
 
