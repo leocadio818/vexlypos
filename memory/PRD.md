@@ -596,16 +596,13 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 
 ## Completed Tasks (2026-04-08)
 
-- **🔒 Feature: Remove Delete Button from Custom Roles** (DONE - 2026-04-09):
+- **🔒 LOCKED: Remove Delete Button from Custom Roles** (DONE - 2026-04-09):
   - **Change**: Removed the delete (trash) button from all custom role cards in "Seleccionar Puesto" section
   - **Reason**: Deleting a role could affect users who have that role assigned, causing data integrity issues
-  - **File modified**: `/app/frontend/src/pages/UserConfig.js`
+  - **File protected**: `/app/frontend/src/pages/UserConfig.js`
   - **What stays**: Edit (pencil) button, "+ Crear Puesto" button
   - **What removed**: Trash button, axios.delete call for roles
-  - **Testing verified**:
-    - Desktop (1280px): ✅ ADMINISTRADOR, GERENTE, TestRole only have edit button
-    - Safari iOS (390px): ✅ Custom roles only have edit button
-    - iPad (768px): ✅ Custom roles only have edit button
+  - **Protection marker**: `🔒 DO NOT MODIFY - Role delete protection`
   - **Cross-platform**: Safari iOS 15+, Android Chrome, Desktop Chrome/Edge, iPad Safari
   - **Fecha de protección**: 2026-04-09
 

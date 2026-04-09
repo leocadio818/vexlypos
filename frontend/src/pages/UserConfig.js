@@ -618,7 +618,10 @@ export default function UserConfig() {
                       <span className={`text-xs ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
                         {permCount}p {role.level != null ? `· N${role.level}` : ''}
                       </span>
-                      {/* Edit button for custom roles - Delete removed to protect data integrity */}
+                      {/* 🔒 DO NOT MODIFY - Role delete protection
+                          Delete button intentionally removed to protect data integrity.
+                          Roles can only be CREATED and EDITED, never deleted.
+                          Deleting a role could affect users who have that role assigned. */}
                       {!role.builtin && isSystemAdmin && (
                         <span className="flex gap-0.5 ml-1" onClick={e => e.stopPropagation()}>
                           <button onClick={() => setEditRoleDialog({ open: true, id: role.id, name: role.name, level: role.level || 20 })}
