@@ -751,6 +751,40 @@ export default function SystemTab() {
             )}
           </div>
 
+          {/* Cleanup Orphan Tables */}
+          <div className="bg-amber-500/5 border border-amber-500/30 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <Trash2 size={20} className="text-amber-500" />
+              </div>
+              <div>
+                <h2 className="font-oswald text-base font-bold text-amber-400">Limpiar Mesas Huérfanas</h2>
+                <p className="text-xs text-muted-foreground">Libera mesas que quedaron ocupadas sin órdenes activas</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Corrige inconsistencias de datos: cierra órdenes pagadas que quedaron abiertas, elimina facturas huérfanas y libera mesas sin órdenes activas.
+            </p>
+            <Button 
+              variant="outline" 
+              className="font-oswald font-bold border-amber-500/50 text-amber-400 hover:bg-amber-500/10" 
+              onClick={async () => {
+                try {
+                  const r = await fetch(`${API}/system/cleanup-orphan-tables`, { method: 'POST', headers: hdrs() });
+                  const d = await r.json();
+                  if (d.freed_tables?.length > 0 || d.orders_closed?.length > 0) {
+                    notify.success(`Limpieza completada: ${d.total_freed || 0} mesas liberadas, ${d.orders_closed?.length || 0} órdenes cerradas`);
+                  } else {
+                    notify.info('No se encontraron inconsistencias');
+                  }
+                } catch { notify.error('Error al ejecutar limpieza'); }
+              }}
+              data-testid="cleanup-orphan-tables-btn"
+            >
+              <Trash2 size={16} className="mr-2" /> LIMPIAR MESAS
+            </Button>
+          </div>
+
           {/* Full System Reset */}
           <div className="bg-red-500/5 border-2 border-red-500/30 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-3">
