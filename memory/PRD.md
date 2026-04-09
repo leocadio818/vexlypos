@@ -737,3 +737,21 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   
 - **Future Prevention**: Comprehensive documentation ensures any developer or agent can understand and avoid reintroducing this bug
 
+### 🔒 e-CF Dashboard Filter Buttons - Theme-Aware Styles - DONE 2026-04-09
+- **Problema**: Botones de filtro (Ayer, Semana, Mes, Personalizado) aparecían oscuros/invisibles cuando el sistema estaba en Dark Mode
+- **Root Cause**: Usaban clases genéricas `bg-muted text-muted-foreground` que no se adaptaban correctamente al contexto del modal
+- **Fix aplicado en** `/app/frontend/src/components/Layout.js` (líneas 753-780):
+  ```jsx
+  // Botones inactivos - theme-aware
+  className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+  
+  // Inputs de fecha - theme-aware
+  className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200"
+  
+  // Botón Filtrar - theme-aware
+  className="text-emerald-600 dark:text-emerald-400"
+  ```
+- **Testing**: Verificado en Desktop Light/Dark Mode y Mobile iOS (390px)
+- **Razón de protección**: Consistencia visual crítica del e-CF Dashboard en todos los temas
+- **Fecha de protección**: 2026-04-09
+
