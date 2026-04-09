@@ -686,3 +686,16 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - **Razón de protección**: Sistema de auditoría crítico para compliance y trazabilidad
   - **Fecha de protección**: 2026-04-08
 
+### 🔒 e-CF Dashboard Text Contrast Fix (Light Mode) - DONE 2026-04-09
+- **Problema**: Etiquetas "Aprobadas" y "Rechazadas" invisibles en modo claro (Light Mode) debido a reglas CSS del tema que forzaban `color: white !important` en elementos `.text-xs` dentro de contenedores con clases `bg-green-5*` y `bg-red-5*`.
+- **Root Cause**: Regla CSS en `/app/frontend/src/styles/theme-minimalist.css` línea ~650 que aplicaba color blanco a todo texto pequeño dentro de fondos coloreados, sin distinguir entre fondos sólidos y fondos con opacidad.
+- **Fix aplicado**: 
+  - Modificada regla CSS para excluir fondos con opacidad baja (`/10`, `/20`, `/30`)
+  - Regla original: `[class*="bg-green-5"] .text-xs { color: white !important; }`
+  - Regla corregida: `[class*="bg-green-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]) .text-xs { color: white !important; }`
+- **Archivos modificados**:
+  - `/app/frontend/src/styles/theme-minimalist.css` (líneas 344-346 y 648-651)
+  - `/app/frontend/src/pages/reports/EcfDashboard.jsx` (estilos de texto)
+- **Testing**: Verificado en Desktop Light Mode y Mobile (390px) - todas las etiquetas ahora visibles con color `rgb(27, 34, 50)`
+- **Fecha de fix**: 2026-04-09
+

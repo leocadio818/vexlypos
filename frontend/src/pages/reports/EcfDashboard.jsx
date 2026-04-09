@@ -117,24 +117,24 @@ export default function EcfDashboard({ data }) {
           <p className="text-xs text-muted-foreground">Total</p>
         </button>
         <button onClick={() => setFilter('FINISHED')} className={`bg-green-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'FINISHED' ? 'border-green-500 ring-2 ring-green-500/20' : 'border-green-500/30'}`}>
-          <CheckCircle2 size={20} className="text-green-500 mx-auto mb-1" />
-          <p className="font-oswald text-2xl font-bold text-green-500">{summary.approved || 0}</p>
-          <p className="text-xs text-muted-foreground">Aprobadas</p>
+          <CheckCircle2 size={20} className="text-green-600 dark:text-green-400 mx-auto mb-1" />
+          <p className="font-oswald text-2xl font-bold text-green-600 dark:text-green-400">{summary.approved || 0}</p>
+          <p className="text-xs font-bold text-slate-800 dark:text-green-100">Aprobadas</p>
         </button>
         <button onClick={() => setFilter('REGISTERED')} className={`bg-blue-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'REGISTERED' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-blue-500/30'}`}>
-          <Clock size={20} className="text-blue-500 mx-auto mb-1" />
-          <p className="font-oswald text-2xl font-bold text-blue-500">{summary.registered || 0}</p>
-          <p className="text-xs text-muted-foreground">Pendientes</p>
+          <Clock size={20} className="text-blue-600 dark:text-blue-400 mx-auto mb-1" />
+          <p className="font-oswald text-2xl font-bold text-blue-600 dark:text-blue-400">{summary.registered || 0}</p>
+          <p className="text-xs font-bold text-slate-800 dark:text-blue-100">Pendientes</p>
         </button>
         <button onClick={() => setFilter('CONTINGENCIA')} className={`bg-amber-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'CONTINGENCIA' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-amber-500/30'}`}>
-          <AlertTriangle size={20} className="text-amber-500 mx-auto mb-1" />
-          <p className="font-oswald text-2xl font-bold text-amber-500">{summary.contingencia || 0}</p>
-          <p className="text-xs text-muted-foreground">Contingencia</p>
+          <AlertTriangle size={20} className="text-amber-600 dark:text-amber-400 mx-auto mb-1" />
+          <p className="font-oswald text-2xl font-bold text-amber-600 dark:text-amber-400">{summary.contingencia || 0}</p>
+          <p className="text-xs font-bold text-slate-800 dark:text-amber-100">Contingencia</p>
         </button>
         <button onClick={() => setFilter('REJECTED')} className={`bg-red-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'REJECTED' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-red-500/30'}`}>
-          <XCircle size={20} className="text-red-500 mx-auto mb-1" />
-          <p className="font-oswald text-2xl font-bold text-red-500">{summary.rejected || 0}</p>
-          <p className="text-xs text-muted-foreground">Rechazadas</p>
+          <XCircle size={20} className="text-red-600 dark:text-red-400 mx-auto mb-1" />
+          <p className="font-oswald text-2xl font-bold text-red-600 dark:text-red-400">{summary.rejected || 0}</p>
+          <p className="text-xs font-bold text-slate-800 dark:text-red-100">Rechazadas</p>
         </button>
       </div>
 

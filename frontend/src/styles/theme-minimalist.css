@@ -339,10 +339,10 @@ body.theme-minimalist [data-radix-popper-content-wrapper] > div {
 body.theme-minimalist:not(.neo-dark) [role="dialog"] * {
   color: hsl(var(--foreground));
 }
-/* Preserve button text colors inside dialogs */
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-primary"] * { color: white; }
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-green-5"] * { color: white; }
-body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-red-5"] * { color: white; }
+/* Preserve button text colors inside dialogs - but NOT for stat card backgrounds (opacity-based) */
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-primary"]:not([class*="/10"]):not([class*="/20"]) * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-green-5"]:not([class*="/10"]):not([class*="/20"]) * { color: white; }
+body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-red-5"]:not([class*="/10"]):not([class*="/20"]) * { color: white; }
 body.theme-minimalist:not(.neo-dark) [role="dialog"] [class*="bg-gradient"] * { color: white; }
 /* Keep strong colored text readable (500+ shades) */
 body.theme-minimalist:not(.neo-dark) [role="dialog"] .text-green-500,
@@ -644,11 +644,11 @@ body.theme-minimalist:not(.neo-dark) [class*="text-\[8"] {
   color: hsl(220 30% 15%) !important;
 }
 
-/* Preserve colored small text inside colored containers */
-body.theme-minimalist:not(.neo-dark) [class*="bg-primary"] .text-xs,
-body.theme-minimalist:not(.neo-dark) [class*="bg-green-5"] .text-xs,
-body.theme-minimalist:not(.neo-dark) [class*="bg-red-5"] .text-xs,
-body.theme-minimalist:not(.neo-dark) [class*="bg-orange-5"] .text-xs { color: white !important; }
+/* Preserve colored small text inside SOLID colored containers (NOT opacity-based backgrounds) */
+body.theme-minimalist:not(.neo-dark) [class*="bg-primary"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-green-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-red-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]) .text-xs,
+body.theme-minimalist:not(.neo-dark) [class*="bg-orange-5"]:not([class*="/10"]):not([class*="/20"]):not([class*="/30"]) .text-xs { color: white !important; }
 
 /* bg-white → adapt to theme bg */
 body.theme-minimalist .bg-white,
