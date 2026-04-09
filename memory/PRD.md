@@ -997,3 +997,26 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Razón de protección**: Previene fraude de meseros que eliminaban items después de pre-cuenta
 - **Fecha de protección**: 2026-04-09
 
+### E31 Receipt Customer Fiscal Data Fix - DONE 2026-04-09
+- **Bug**: Recibos impresos de E31 (Crédito Fiscal) no mostraban RNC y Razón Social del cliente
+- **DGII Requirement**:
+  - E31, E44, E45: DEBEN imprimir datos fiscales del cliente (RNC + Razón Social)
+  - E32: NO debe imprimir datos del cliente (Consumo Final)
+- **Fix aplicado en 4 lugares**:
+  1. `/app/backend/server.py` líneas 1622-1668: HTML receipt logic
+  2. `/app/backend/server.py` líneas 1711-1748: ESC/POS receipt logic
+  3. `/app/backend/server.py` líneas 2673-2710: send_formatted_receipt
+  4. `/app/backend/server.py` líneas 3027-3065: print queue job
+- **Cambios clave**:
+  - `fiscal_types_require_customer_data = ["B01", "B14", "B15", "E31", "E44", "E45"]`
+  - `ecf_encf` se verifica PRIMERO antes de legacy NCF para inferir el tipo
+  - E32 explícitamente excluido de mostrar datos del cliente
+- **Formato en recibo**:
+  ```
+  DATOS DEL CLIENTE
+  RNC: 131-06282-2
+  Razón Social: SSTECH SRL
+  ```
+- **Testing**: 11/11 tests críticos pasaron
+- **Verificado con bills reales**: E31 (E314643538373) y E32 (E321943598537)
+
