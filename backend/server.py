@@ -2024,6 +2024,69 @@ async def factory_reset(request: FactoryResetRequest):
         raise HTTPException(status_code=500, detail=f"Error durante el reset: {str(e)}")
 
 
+# ─── CLEANUP ORPHAN TABLES ───
+@api.post("/system/cleanup-orphan-tables")
+async def cleanup_orphan_tables(user: dict = Depends(get_current_user)):
+    """Clean up tables that are marked occupied but have no active orders"""
+    user_role = user.get("role", "")
+    if user_role not in ["admin", "manager", "gerente"]:
+        raise HTTPException(403, "Permission denied - admin/manager only")
+    
+    # First, close any orders that have paid bills but are still marked as sent/active
+    orders_fixed = []
+    orders_with_paid_bills = await db.orders.find({"status": {"$in": ["active", "sent", "pending"]}}, {"_id": 0, "id": 1, "transaction_number": 1}).to_list(100)
+    for order in orders_with_paid_bills:
+        order_id = order.get("id")
+        # Check if there's a paid bill for this order
+        paid_bill = await db.bills.find_one({"order_id": order_id, "status": "paid"})
+        if paid_bill:
+            # Order has paid bill - close it
+            await db.orders.update_one({"id": order_id}, {"$set": {"status": "closed"}})
+            orders_fixed.append(order.get("transaction_number"))
+    
+    # Delete orphan open bills (bills with status=open that have a paid sibling for same order)
+    orphan_bills_deleted = 0
+    open_bills = await db.bills.find({"status": "open"}, {"_id": 0, "id": 1, "order_id": 1}).to_list(100)
+    for ob in open_bills:
+        paid_sibling = await db.bills.find_one({"order_id": ob.get("order_id"), "status": "paid"})
+        if paid_sibling:
+            await db.bills.delete_one({"id": ob.get("id")})
+            orphan_bills_deleted += 1
+    
+    # Now cleanup orphan tables
+    occupied_tables = await db.tables.find({"status": {"$nin": ["free", "available"]}}, {"_id": 0}).to_list(100)
+    
+    freed = []
+    kept = []
+    
+    for table in occupied_tables:
+        table_id = table.get("id")
+        table_num = table.get("number")
+        
+        # Check if there's an active/sent/pending order for this table
+        active_order = await db.orders.find_one({
+            "table_id": table_id,
+            "status": {"$in": ["active", "sent", "pending"]}
+        })
+        
+        if not active_order:
+            # No active order - free the table
+            await db.tables.update_one(
+                {"id": table_id},
+                {"$set": {"status": "free", "current_order_id": None, "active_order_id": None}}
+            )
+            freed.append(table_num)
+        else:
+            kept.append({"table": table_num, "order": active_order.get("transaction_number")})
+    
+    return {
+        "orders_closed": orders_fixed,
+        "orphan_bills_deleted": orphan_bills_deleted,
+        "freed_tables": freed,
+        "tables_with_orders": kept,
+        "total_freed": len(freed)
+    }
+
 # ─── SELECTIVE CLEANUP ───
 @api.post("/system/selective-cleanup")
 async def selective_cleanup(input: dict, user: dict = Depends(get_current_user)):
