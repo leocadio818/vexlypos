@@ -1247,8 +1247,40 @@ export default function OrderScreen() {
 
   useEffect(() => { if (order) fetchPreCheckCount(); }, [order]);
 
+  // SECURITY FIX: Auto-send pending items before printing pre-cuenta
+  // This prevents waiters from deleting items after pre-cuenta is printed
+  const autoSendPendingItems = async (targetOrder) => {
+    if (!targetOrder) return false;
+    
+    const pendingItems = targetOrder.items?.filter(i => i.status === 'pending') || [];
+    if (pendingItems.length === 0) return true; // No pending items, continue
+    
+    try {
+      // Use the SAME routing logic as the ENVIAR button
+      const res = await ordersAPI.sendToKitchen(targetOrder.id);
+      // Update local order state with the response (items now have status='sent')
+      if (res.data) {
+        setOrder(res.data);
+      }
+      return true;
+    } catch (e) {
+      console.warn('Error auto-enviando items pendientes:', e);
+      notify.error('Error enviando items a cocina');
+      return false;
+    }
+  };
+
   const handlePrintPreCheck = async () => {
     if (!order) return;
+    
+    // SECURITY: First auto-send any pending items to their channels
+    // This ensures all items are in "Enviado" status and require authorization to delete
+    const pendingItems = order.items?.filter(i => i.status === 'pending') || [];
+    if (pendingItems.length > 0) {
+      const sent = await autoSendPendingItems(order);
+      if (!sent) return; // Failed to send, don't print pre-cuenta
+    }
+    
     // If already printed, check permission
     if (preCheckCount > 0) {
       // User has reprint_precuenta permission → reprint directly, no PIN needed
@@ -1289,6 +1321,18 @@ export default function OrderScreen() {
 
   // Print pre-check for a specific account
   const handlePrintAccountPreCheck = async (orderId, accountNumber) => {
+    // SECURITY: Auto-send pending items for this specific order
+    const targetOrder = tableOrders.find(o => o.id === orderId);
+    if (targetOrder) {
+      const pendingItems = targetOrder.items?.filter(i => i.status === 'pending') || [];
+      if (pendingItems.length > 0) {
+        try {
+          await ordersAPI.sendToKitchen(orderId);
+        } catch (e) {
+          console.warn('Error auto-enviando items pendientes:', e);
+        }
+      }
+    }
     await doPrintPreCheck(orderId);
   };
 
@@ -1299,6 +1343,19 @@ export default function OrderScreen() {
     );
     if (ordersWithItems.length === 0) return;
     
+    // SECURITY: First auto-send pending items for ALL orders
+    for (const ord of ordersWithItems) {
+      const pendingItems = ord.items?.filter(i => i.status === 'pending') || [];
+      if (pendingItems.length > 0) {
+        try {
+          await ordersAPI.sendToKitchen(ord.id);
+        } catch (e) {
+          console.warn(`Error auto-enviando items para orden ${ord.id}:`, e);
+        }
+      }
+    }
+    
+    // Then print all pre-cuentas
     for (const ord of ordersWithItems) {
       await doPrintPreCheck(ord.id);
     }
