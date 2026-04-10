@@ -2054,33 +2054,73 @@ async def cleanup_orphan_tables(user: dict = Depends(get_current_user)):
             orphan_bills_deleted += 1
     
     # Now cleanup orphan tables
-    occupied_tables = await db.tables.find({"status": {"$nin": ["free", "available"]}}, {"_id": 0}).to_list(100)
+    # Note: table.status in DB may be stale. We need to check based on actual orders
+    # like GET /api/tables does dynamically
+    
+    # Get all tables
+    all_tables = await db.tables.find({}, {"_id": 0, "id": 1, "number": 1, "status": 1}).to_list(200)
+    
+    # Get all non-finished orders (same logic as GET /api/tables)
+    non_finished_orders = await db.orders.find(
+        {"status": {"$nin": ["closed", "paid", "cancelled"]}},
+        {"_id": 0, "id": 1, "table_id": 1, "transaction_number": 1, "status": 1, "merged_into": 1}
+    ).to_list(500)
+    
+    # Group orders by table_id
+    orders_by_table = {}
+    for order in non_finished_orders:
+        tid = order.get("table_id")
+        if tid:
+            if tid not in orders_by_table:
+                orders_by_table[tid] = []
+            orders_by_table[tid].append(order)
     
     freed = []
     kept = []
+    merged_orders_closed = []
     
-    for table in occupied_tables:
+    for table in all_tables:
         table_id = table.get("id")
         table_num = table.get("number")
+        table_orders = orders_by_table.get(table_id, [])
         
-        # Check if there's an active/sent/pending order for this table
-        active_order = await db.orders.find_one({
-            "table_id": table_id,
-            "status": {"$in": ["active", "sent", "pending"]}
-        })
-        
-        if not active_order:
-            # No active order - free the table
-            await db.tables.update_one(
-                {"id": table_id},
-                {"$set": {"status": "free", "current_order_id": None, "active_order_id": None}}
-            )
-            freed.append(table_num)
+        if not table_orders:
+            # No non-finished orders - table should be free
+            # Update DB status to free if it's not already
+            if table.get("status") not in ["free", "available"]:
+                await db.tables.update_one(
+                    {"id": table_id},
+                    {"$set": {"status": "free", "current_order_id": None, "active_order_id": None, "owner_id": None, "owner_name": None}}
+                )
+                freed.append(table_num)
         else:
-            kept.append({"table": table_num, "order": active_order.get("transaction_number")})
+            # Has non-finished orders - check if they're all "merged" (orphan merged orders)
+            active_orders = [o for o in table_orders if o.get("status") in ["active", "sent", "pending"]]
+            merged_orders = [o for o in table_orders if o.get("status") == "merged"]
+            
+            if not active_orders and merged_orders:
+                # Only merged orders remain - these are orphans (their parent was closed/paid)
+                # Close these merged orders and free the table
+                for mo in merged_orders:
+                    await db.orders.update_one(
+                        {"id": mo.get("id")},
+                        {"$set": {"status": "closed"}}
+                    )
+                    merged_orders_closed.append(mo.get("transaction_number"))
+                
+                # Free the table
+                await db.tables.update_one(
+                    {"id": table_id},
+                    {"$set": {"status": "free", "current_order_id": None, "active_order_id": None, "owner_id": None, "owner_name": None}}
+                )
+                freed.append(table_num)
+            elif active_orders:
+                # Has real active orders - keep the table occupied
+                kept.append({"table": table_num, "orders": [o.get("transaction_number") for o in active_orders]})
     
     return {
         "orders_closed": orders_fixed,
+        "merged_orders_closed": merged_orders_closed,
         "orphan_bills_deleted": orphan_bills_deleted,
         "freed_tables": freed,
         "tables_with_orders": kept,
