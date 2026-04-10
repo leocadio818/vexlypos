@@ -7,8 +7,13 @@
 
 - Cuenta en Emergent (app.emergent.sh) con membresía activa
 - Cuenta en GitHub (github.com) conectada a Emergent
+- Cuenta en Supabase (supabase.com) — para secuencias NCF y notas de crédito
 - Dominio vexlyapp.com configurado en Cloudflare (dash.cloudflare.com)
 - Repositorio base: github.com/leocadio818/vexlypos
+- Credenciales de integraciones (si el cliente las necesita):
+  - Alanube: API Key para e-CF DGII
+  - The Factory HKA: Usuario y contraseña sandbox/producción
+  - Resend: API Key para emails
 
 ---
 
@@ -16,6 +21,23 @@
 
 - 50 créditos/mes por cada despliegue activo
 - Sin costo adicional por actualizaciones (re-deploy)
+
+---
+
+## VARIABLES DE ENTORNO REQUERIDAS
+
+Estas son las variables que DEBES configurar para cada nuevo cliente en `backend/.env`:
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| DB_NAME | Nombre de la base de datos MongoDB | blendbar_pos |
+| SUPABASE_URL | URL del proyecto Supabase | https://xxxxx.supabase.co |
+| SUPABASE_SERVICE_KEY | Service Key de Supabase | eyJhbGciOiJIUzI1NiIsInR5cCI6... |
+| ALANUBE_API_KEY | API Key de Alanube (si usa e-CF) | (proporcionado por Alanube) |
+| THEFACTORY_* | Credenciales The Factory HKA (si usa) | (proporcionado por The Factory) |
+| RESEND_API_KEY | API Key para emails (opcional) | re_xxxxx |
+
+**NOTA:** Las variables MONGO_URL y REACT_APP_BACKEND_URL son gestionadas automáticamente por Emergent. NO las cambies.
 
 ---
 
@@ -36,6 +58,8 @@
 
 IMPORTANTE: Cada cliente DEBE tener su propia base de datos para que sus datos estén completamente separados.
 
+### 2A. Configurar MongoDB (Base de datos principal)
+
 1. En el mismo chat de Emergent, escribe:
 
    "Cambia el DB_NAME en backend/.env a [nombre_del_cliente]_pos"
@@ -52,6 +76,34 @@ IMPORTANTE: Cada cliente DEBE tener su propia base de datos para que sus datos e
 
 2. El agente cambiará el archivo automáticamente
 3. Verifica que te confirme el cambio
+
+### 2B. Configurar Supabase (Secuencias NCF y Notas de Crédito)
+
+IMPORTANTE: Supabase se usa para manejar secuencias de NCF y algunas funcionalidades específicas de DGII. Cada cliente necesita su propia configuración.
+
+**Opción A: Crear nuevo proyecto de Supabase para el cliente**
+
+1. Ve a https://supabase.com e inicia sesión
+2. Haz clic en "New Project"
+3. Nombra el proyecto igual que el cliente (ej: "blendbar-pos")
+4. Espera a que se cree el proyecto (1-2 minutos)
+5. Ve a Settings > API y copia:
+   - Project URL (es tu SUPABASE_URL)
+   - anon public key (es tu SUPABASE_ANON_KEY)
+
+**Opción B: Usar el mismo proyecto de Supabase (clientes pequeños)**
+
+Si prefieres gestionar todos los clientes en un solo proyecto de Supabase, puedes usar las mismas credenciales, pero asegúrate de que las tablas usen el `tenant_id` para separar los datos.
+
+6. En el chat de Emergent, escribe:
+
+   "Actualiza backend/.env con estas credenciales de Supabase:
+   SUPABASE_URL=https://xxxxx.supabase.co
+   SUPABASE_SERVICE_KEY=eyJxxxxx"
+
+7. Ejecutar migraciones en Supabase (solo la primera vez para cada proyecto nuevo):
+   - En Supabase, ve a SQL Editor
+   - Ejecuta las migraciones que están en /app/backend/migrations/supabase/
 
 ---
 
@@ -136,7 +188,8 @@ Cuando hagas mejoras al código y quieras actualizar un cliente específico:
 | Paso | Acción | Resultado |
 |------|--------|-----------|
 | 1 | Nuevo chat en Emergent + importar repo | Código cargado |
-| 2 | DB_NAME = blendbar_pos | Base de datos separada |
+| 2A | DB_NAME = blendbar_pos | MongoDB separado |
+| 2B | Crear proyecto Supabase + configurar credenciales | Secuencias NCF listas |
 | 3 | Config > Sistema > "BlendBar" + logo | App personalizada |
 | 4 | Deploy Now | blendbar-pos.emergent.host |
 | 5 | CNAME: blendbar > blendbar-pos.emergent.host | DNS configurado |
@@ -179,4 +232,4 @@ Cuando hagas mejoras al código y quieras actualizar un cliente específico:
 ---
 
 Documento creado: Marzo 2026
-Versión: 1.0
+Versión: 1.1 (Abril 2026 - Agregada configuración de Supabase y variables de entorno)
