@@ -497,6 +497,7 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 
 ### P2
 - Reporte DGII 608, Caché imágenes, Print Agent Installer
+- Notificaciones Push para pedidos de Delivery Platforms (Uber Eats, Pedidos Ya)
 - `test_credentials.md` not in .gitignore
 
 ### P3
