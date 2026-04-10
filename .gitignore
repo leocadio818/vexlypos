@@ -34,9 +34,6 @@ dist
 *token.json*
 *credentials.json*
 
-# Test credentials
-memory/test_credentials.md
-
 # Logs and debug files
 npm-debug.log*
 yarn-debug.log*
@@ -85,42 +82,4 @@ android-sdk/
 # Reference
 _referencia_dolibarr/
 frontend/node_modules/.cache/default-development/26.pack
-frontend/node_modules/.cache/default-development/0.pack
-frontend/node_modules/.cache/default-development/1.pack
-frontend/node_modules/.cache/default-development/3.pack
-frontend/node_modules/.cache/default-development/2.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/6.pack
-frontend/node_modules/.cache/default-development/11.pack
-frontend/node_modules/.cache/default-development/4.pack
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/19.pack
-frontend/node_modules/.cache/default-development/16.pack
-frontend/node_modules/.cache/default-development/20.pack
-frontend/node_modules/.cache/default-development/22.pack
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/18.pack
--e 
-# Environment files
-*.env
-*.env.*
-frontend/node_modules/.cache/default-development/24.pack
-frontend/node_modules/.cache/default-development/25.pack
 frontend/node_modules/.cache/default-development/27.pack
