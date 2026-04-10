@@ -7,13 +7,13 @@
 
 - Cuenta en Emergent (app.emergent.sh) con membresía activa
 - Cuenta en GitHub (github.com) conectada a Emergent
-- Cuenta en Supabase (supabase.com) — para secuencias NCF y notas de crédito
+- Cuenta en Supabase (supabase.com) — **Ver MANUAL_SUPABASE.md para configuración detallada**
 - Dominio vexlyapp.com configurado en Cloudflare (dash.cloudflare.com)
 - Repositorio base: github.com/leocadio818/vexlypos
 - Credenciales de integraciones (si el cliente las necesita):
   - Alanube: API Key para e-CF DGII
   - The Factory HKA: Usuario y contraseña sandbox/producción
-  - Resend: API Key para emails
+  - Resend: API Key para emails (puede ser compartida entre clientes)
 
 ---
 
@@ -233,3 +233,10 @@ Cuando hagas mejoras al código y quieras actualizar un cliente específico:
 
 Documento creado: Marzo 2026
 Versión: 1.1 (Abril 2026 - Agregada configuración de Supabase y variables de entorno)
+
+## DOCUMENTOS RELACIONADOS
+
+- **MANUAL_SUPABASE.md** - Guía completa para configurar Supabase paso a paso
+- **MANUAL_PRINT_AGENT.md** - Configuración del agente de impresión para Windows
+- **CHANGELOG.md** - Historial de cambios y versiones
+- **VERSION** - Versión actual del sistema (1.0.0)
