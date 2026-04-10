@@ -3249,32 +3249,34 @@ export default function OrderScreen() {
                   {allTables.filter(t => t.area_id === area.id && t.id !== tableId).map(t => {
                     const isFree = t.status === 'free';
                     const isDivided = t.status === 'divided';
-                    const isOccupied = t.status === 'occupied' || t.status === 'billed';
+                    const isOccupied = t.status === 'occupied';
+                    const isBilled = t.status === 'billed';
                     const isReserved = t.status === 'reserved';
                     const isOtherUser = t.owner_id && t.owner_id !== user?.id;
                     
-                    // Determine color based on status and ownership
-                    let colorClass = 'border-green-500/50 bg-green-500/10 text-green-400 hover:bg-green-500/20'; // Free
+                    // Status colors matching TableMap.js exactly
+                    // Libre=#1E88E5, Mis mesas=#C62828, De otros=#F9A825, Por Facturar=#2E7D4E, Reservada=#7C4DFF, Dividida=#FF6600
+                    let bgColor = '#1E88E5'; // Libre (Azul)
                     let statusText = 'Libre';
                     
                     if (isReserved) {
-                      colorClass = 'border-purple-500/50 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20';
+                      bgColor = '#7C4DFF'; // Morado
                       statusText = 'Reservada';
                     } else if (isDivided) {
-                      colorClass = isOtherUser 
-                        ? 'border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
-                        : 'border-orange-500/50 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20';
-                      statusText = 'Dividida';
+                      bgColor = isOtherUser ? '#F9A825' : '#FF6600'; // Amarillo si de otro, Naranja si mía
+                      statusText = isOtherUser ? 'Div. otro' : 'Dividida';
+                    } else if (isBilled) {
+                      bgColor = isOtherUser ? '#F9A825' : '#2E7D4E'; // Amarillo si de otro, Verde si por facturar
+                      statusText = isOtherUser ? 'De otro' : 'Por fact.';
                     } else if (isOccupied) {
-                      colorClass = isOtherUser
-                        ? 'border-blue-500/50 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
-                        : 'border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20';
+                      bgColor = isOtherUser ? '#F9A825' : '#C62828'; // Amarillo si de otro, Rojo si mía
                       statusText = isOtherUser ? 'De otro' : 'Ocupada';
                     }
                     
                     return (
                       <button
                         key={t.id}
+                        data-testid={`move-table-btn-${t.number}`}
                         onClick={() => {
                           if (isReserved) {
                             setReservedAlert({ open: true, tableNumber: t.number });
@@ -3282,10 +3284,15 @@ export default function OrderScreen() {
                           }
                           handleMoveTable(t.id);
                         }}
-                        className={`p-2 rounded-lg text-center font-oswald transition-all border ${colorClass}`}
+                        className="min-w-[48px] min-h-[48px] p-2 rounded-lg text-center font-oswald transition-all border-2 border-white/20 hover:scale-105 hover:border-white/40 active:scale-95"
+                        style={{ 
+                          backgroundColor: bgColor,
+                          color: '#FFFFFF',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        }}
                       >
-                        <span className="text-sm font-bold">#{t.number}</span>
-                        <span className="block text-[8px] mt-0.5">{statusText}</span>
+                        <span className="text-sm font-bold block">#{t.number}</span>
+                        <span className="block text-[9px] opacity-90 font-medium">{statusText}</span>
                       </button>
                     );
                   })}
