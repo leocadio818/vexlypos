@@ -807,6 +807,20 @@ export default function SystemTab() {
         </div>
       )}
 
+      {/* Version Info */}
+      <div className="bg-card border border-border rounded-xl p-4 mt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold">Versión del Sistema</h3>
+            <p className="text-xs text-muted-foreground">VexlyPOS - Sistema de Punto de Venta</p>
+          </div>
+          <div className="text-right">
+            <span className="text-lg font-oswald font-bold text-primary">v1.0.0</span>
+            <p className="text-xs text-muted-foreground">Abril 2026</p>
+          </div>
+        </div>
+      </div>
+
       {/* Reset Confirmation Dialog */}
       <Dialog open={resetDialog} onOpenChange={setResetDialog}>
         <DialogContent className="max-w-md bg-card border-red-500/30">

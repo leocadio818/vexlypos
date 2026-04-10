@@ -318,6 +318,11 @@ export default function Login() {
 
         </div>
       </div>
+      
+      {/* Version Footer - Fixed at bottom of screen */}
+      <div className="fixed bottom-4 left-0 right-0 text-center z-10">
+        <span className="text-sm font-medium px-3 py-1 rounded-full bg-black/30 backdrop-blur-sm" style={{ color: '#e4e4e7' }}>VexlyPOS v1.0.0</span>
+      </div>
 
       {/* Clock-In Modal - Neumorphic */}
       {askClockIn && (
