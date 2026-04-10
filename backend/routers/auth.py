@@ -346,7 +346,6 @@ async def get_me(user=Depends(get_current_user)):
 @router.post("/auth/logout")
 async def logout(user=Depends(get_current_user)):
     """Log user logout event for audit trail"""
-    from utils.audit import log_logout
     await log_logout(
         db=db,
         user_id=user["user_id"],

@@ -514,8 +514,8 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
             is_cash_payment = False
             primary_payment_method_name = "Tarjeta"
             force_contingency = False
-    else:
-        force_contingency = False
+        else:
+            force_contingency = False
 
     update_fields = {
         "status": "paid", "payment_method": input.payment_method,
