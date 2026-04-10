@@ -1527,6 +1527,7 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     biz_rnc = printer_config.get("rnc", "1-31-75577-1")
     biz_phone = printer_config.get("phone", "809-301-3858")
     footer = printer_config.get("footer_text", "Gracias por su visita!")
+    logo_url = config.get("logo_url", "")
     
     # If send_to_queue, add to print queue
     if send_to_queue:
@@ -1536,6 +1537,7 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
         receipt_data = {
             "type": "receipt",
             "paper_width": 80,
+            "logo_url": logo_url,  # Logo del restaurante (opcional)
             "business_name": biz_name,
             "business_address": biz_addr,
             "rnc": biz_rnc,
@@ -1668,8 +1670,14 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
         </div>"""
     
     # Factura HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
+    # Build logo HTML (only if logo_url is set)
+    logo_html = ""
+    if logo_url:
+        logo_html = f"""<img src="{logo_url}" alt="{biz_name}" style="max-width:200px;max-height:100px;width:auto;height:auto;display:block;margin:0 auto 8px auto;" onerror="this.style.display='none'" />"""
+    
     return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:12px;margin:0 auto;box-sizing:border-box;'>
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
+    {logo_html}
     <b style='font-size:16px;'>{biz_name}</b><br>
     <span style='font-size:10px;font-weight:bold;'>RNC: {biz_rnc}</span><br>
     <span style='font-size:9px;'>{biz_addr_line}<br>Tel: {biz_phone}</span>
@@ -1700,8 +1708,12 @@ async def print_receipt_escpos(bill_id: str):
     biz_rnc = config.get('rnc', '1-31-75577-1')
     biz_addr = config.get('business_address', 'C/ Las Flores #12, Jarabacoa')
     biz_phone = config.get('phone', '809-301-3858')
+    logo_url = config.get('logo_url', '')
     
     lines = []
+    # Add logo as first element if available (thermal printer will render if supported)
+    if logo_url:
+        lines.append({"type": "image", "url": logo_url, "align": "center", "max_width": 200, "max_height": 100})
     lines.append({"type": "center", "bold": True, "size": "large", "text": biz_name})
     lines.append({"type": "center", "bold": True, "text": f"RNC: {biz_rnc}"})
     if biz_addr:
