@@ -161,7 +161,8 @@ async def create_payment_method(input: dict):
         "active": True,
         "order": count,
         "is_cash": input.get("is_cash", True),
-        "dgii_payment_code": input.get("dgii_payment_code")  # Código DGII (1-8)
+        "dgii_payment_code": input.get("dgii_payment_code"),  # Código DGII (1-8)
+        "force_contingency": input.get("force_contingency", False)  # Para Uber Eats, Pedidos Ya, etc.
     }
     await db.payment_methods.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
@@ -177,6 +178,65 @@ async def update_payment_method(mid: str, input: dict):
 async def delete_payment_method(mid: str):
     await db.payment_methods.delete_one({"id": mid})
     return {"ok": True}
+
+# ─── EDIT e-CF TYPE (for contingency bills only) ───
+@router.patch("/bills/{bill_id}/ecf-type")
+async def update_bill_ecf_type(bill_id: str, input: dict, user=Depends(get_current_user)):
+    """
+    Change the e-CF type of a bill in CONTINGENCIA status.
+    Only allowed for authorized users (admin, manager, or users with edit_ecf_type permission).
+    """
+    # Check permission
+    from routers.auth import get_permissions
+    permissions = get_permissions(user.get("role", ""), user.get("permissions"))
+    user_role = user.get("role", "")
+    
+    if user_role not in ["admin", "manager", "gerente"] and not permissions.get("edit_ecf_type"):
+        raise HTTPException(status_code=403, detail="No tienes permiso para editar el tipo de e-CF")
+    
+    # Get the bill
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    
+    # Only allow editing CONTINGENCIA bills
+    ecf_status = (bill.get("ecf_status") or "").upper()
+    if ecf_status != "CONTINGENCIA":
+        raise HTTPException(status_code=400, detail="Solo se puede editar el tipo de e-CF en facturas en CONTINGENCIA")
+    
+    # Validate new ecf_type
+    new_ecf_type = input.get("ecf_type", "").upper()
+    valid_types = ["E31", "E32", "E34", "E44", "E45"]
+    if new_ecf_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"Tipo de e-CF inválido. Válidos: {', '.join(valid_types)}")
+    
+    # Update the bill
+    old_ncf = bill.get("ncf", "")
+    new_ncf = f"PENDING-{new_ecf_type}"
+    
+    await db.bills.update_one(
+        {"id": bill_id},
+        {"$set": {
+            "ncf": new_ncf,
+            "ncf_type": new_ecf_type,
+            "ecf_type_modified": True,
+            "ecf_type_modified_by": user.get("user_id"),
+            "ecf_type_modified_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Log the change
+    from utils.audit import log_action
+    await log_action(
+        user_id=user.get("user_id"),
+        user_name=user.get("name", ""),
+        action="ecf_type_changed",
+        details=f"Tipo e-CF cambiado de {old_ncf} a {new_ncf} para factura {bill.get('transaction_number')}",
+        entity_type="bill",
+        entity_id=bill_id
+    )
+    
+    return {"ok": True, "old_ncf": old_ncf, "new_ncf": new_ncf, "message": f"Tipo cambiado a {new_ecf_type}. Presiona 'Reenviar' para enviar a DGII."}
 
 # ─── BILLS ───
 @router.get("/bills")
@@ -421,13 +481,16 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                     "exchange_rate": pmt_doc.get("exchange_rate", 1),
                     "brand_icon": pmt_doc.get("brand_icon"),
                     "is_cash": pmt_doc.get("is_cash", False),
-                    "dgii_payment_code": pmt_doc.get("dgii_payment_code")  # Código DGII para e-CF
+                    "dgii_payment_code": pmt_doc.get("dgii_payment_code"),  # Código DGII para e-CF
+                    "force_contingency": pmt_doc.get("force_contingency", False)  # Uber Eats, Pedidos Ya, etc.
                 })
         
         # El método principal es el primero de la lista
         if payments_list:
             primary_payment_method_name = payments_list[0]["payment_method_name"]
             is_cash_payment = payments_list[0].get("is_cash", True)
+            # Check if any payment method forces contingency
+            force_contingency = any(p.get("force_contingency", False) for p in payments_list)
     else:
         # Pago único (compatibilidad hacia atrás)
         payment_method_doc = await db.payment_methods.find_one({"id": input.payment_method_id}, {"_id": 0})
@@ -443,11 +506,16 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                 "exchange_rate": payment_method_doc.get("exchange_rate", 1),
                 "brand_icon": payment_method_doc.get("brand_icon"),
                 "is_cash": is_cash_payment,
-                "dgii_payment_code": payment_method_doc.get("dgii_payment_code")  # Código DGII para e-CF
+                "dgii_payment_code": payment_method_doc.get("dgii_payment_code"),  # Código DGII para e-CF
+                "force_contingency": payment_method_doc.get("force_contingency", False)  # Uber Eats, Pedidos Ya, etc.
             })
+            force_contingency = payment_method_doc.get("force_contingency", False)
         elif input.payment_method == "card":
             is_cash_payment = False
             primary_payment_method_name = "Tarjeta"
+            force_contingency = False
+    else:
+        force_contingency = False
 
     update_fields = {
         "status": "paid", "payment_method": input.payment_method,
@@ -467,6 +535,7 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         "customer_email": input.customer_email,
         "send_email": input.send_email,
         "ecf_type": input.ecf_type,
+        "force_contingency": force_contingency,  # Mark bill for manual contingency (Uber Eats, etc.)
         # Update NCF to reflect e-CF when applicable
         **({"ncf": f"PENDING-{input.ecf_type}"} if input.ecf_type and bill.get("ncf", "").startswith("B") else {}),
         # Doble marcación de tiempo (Jornada de Trabajo)
@@ -489,6 +558,15 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     if input.amount_received is not None:
         update_fields["amount_received"] = input.amount_received
     await db.bills.update_one({"id": bill_id}, {"$set": update_fields})
+
+    # ─── FORCE CONTINGENCY: Mark bill as CONTINGENCIA immediately ───
+    # For payment methods like Uber Eats, Pedidos Ya that generate their own e-CF
+    if force_contingency and input.ecf_type:
+        await db.bills.update_one({"id": bill_id}, {"$set": {
+            "ecf_status": "CONTINGENCIA",
+            "ecf_error": "Contingencia manual - plataforma externa genera e-CF",
+            "ecf_manual_contingency": True
+        }})
 
     # ─── MODO ENTRENAMIENTO: No afectar totales reales ───
     user_doc_pay = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "training_mode": 1})

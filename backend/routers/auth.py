@@ -131,6 +131,8 @@ ALL_PERMISSIONS = {
     "config_apariencia": "Config: Pestaña Apariencia",
     "config_sistema": "Config: Pestaña Sistema",
     "config_descuentos": "Config: Pestaña Descuentos",
+    "edit_ecf_type": "Editar Tipo e-CF en Contingencia",
+    "retry_ecf": "Reenviar e-CF en Contingencia",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───

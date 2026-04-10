@@ -40,7 +40,7 @@ export default function VentasTab() {
   // Dialogs
   const [payDialog, setPayDialog] = useState({ 
     open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
-    bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true, dgii_payment_code: null 
+    bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true, dgii_payment_code: null, force_contingency: false 
   });
   const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', affects_inventory: true, allowed_roles: [], active: true, editId: null });
   const [showInactiveReasons, setShowInactiveReasons] = useState(false);
@@ -61,7 +61,8 @@ export default function VentasTab() {
         currency: payDialog.currency, 
         exchange_rate: parseFloat(payDialog.exchange_rate) || 1,
         is_cash: payDialog.is_cash,
-        dgii_payment_code: payDialog.dgii_payment_code  // Código DGII para e-CF
+        dgii_payment_code: payDialog.dgii_payment_code,  // Código DGII para e-CF
+        force_contingency: payDialog.force_contingency || false  // Uber Eats, Pedidos Ya, etc.
       };
       if (payDialog.editId) {
         await axios.put(`${API}/payment-methods/${payDialog.editId}`, data, { headers: hdrs() });
@@ -71,7 +72,7 @@ export default function VentasTab() {
       notify.success(payDialog.editId ? 'Actualizado' : 'Creado');
       setPayDialog({ 
         open: false, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
-        bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true, dgii_payment_code: null 
+        bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, is_cash: true, dgii_payment_code: null, force_contingency: false 
       }); 
       fetchAll();
     } catch { notify.error('Error'); }
@@ -165,7 +166,7 @@ export default function VentasTab() {
             {canManageSaleConfig && (
             <Button onClick={() => setPayDialog({ 
               open: true, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
-              bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, dgii_payment_code: null 
+              bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, dgii_payment_code: null, force_contingency: false 
             })} size="sm"
               className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-payment-btn">
               <Plus size={14} className="mr-1" /> Agregar
@@ -201,6 +202,9 @@ export default function VentasTab() {
                   {m.dgii_payment_code && (
                     <span className="text-[10px] opacity-80 bg-white/20 px-1.5 py-0.5 rounded mt-1">DGII: {m.dgii_payment_code}</span>
                   )}
+                  {m.force_contingency && (
+                    <span className="text-[10px] bg-amber-500/80 text-white px-1.5 py-0.5 rounded mt-1">CONTINGENCIA</span>
+                  )}
                   {m.currency && m.currency !== 'DOP' && (
                     <span className="text-xs opacity-70 mt-1">1 = {m.exchange_rate}</span>
                   )}
@@ -224,7 +228,8 @@ export default function VentasTab() {
                       exchange_rate: m.exchange_rate || 1, 
                       editId: m.id,
                       is_cash: m.is_cash !== false,
-                      dgii_payment_code: m.dgii_payment_code || null
+                      dgii_payment_code: m.dgii_payment_code || null,
+                      force_contingency: m.force_contingency || false
                     })}
                   >
                     <Pencil size={16} />
@@ -510,6 +515,28 @@ export default function VentasTab() {
               <p className="text-xs text-muted-foreground mt-1">
                 Código oficial DGII para facturación electrónica (e-CF)
               </p>
+            </div>
+            <div className="border-t border-border pt-4 mt-2">
+              <div className="flex items-center gap-2">
+                <Switch 
+                  checked={payDialog.force_contingency} 
+                  onCheckedChange={(v) => setPayDialog({ ...payDialog, force_contingency: v })} 
+                  data-testid="force-contingency-toggle"
+                />
+                <label className="text-sm font-medium">Forzar Contingencia</label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Para plataformas como Uber Eats y Pedidos Ya que generan su propio comprobante.
+                La venta queda en contingencia para revisión sin enviar a DGII automáticamente.
+              </p>
+              {payDialog.force_contingency && (
+                <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <p className="text-xs text-amber-500">
+                    ⚠️ Las ventas con este método NO se enviarán a DGII automáticamente.
+                    Aparecerán en el Dashboard e-CF → Contingencia para revisión.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>

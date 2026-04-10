@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, RefreshCw, Printer, AlertTriangle, CheckCircle2, Clock, XCircle, Search } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FileText, RefreshCw, Printer, AlertTriangle, CheckCircle2, Clock, XCircle, Search, Pencil } from 'lucide-react';
 import { notify } from '@/lib/notify';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -15,11 +16,20 @@ const STATUS_MAP = {
   ERROR: { label: 'Error', color: 'bg-red-500/20 text-red-500', icon: XCircle },
 };
 
+const ECF_TYPES = [
+  { value: 'E31', label: 'E31 - Crédito Fiscal' },
+  { value: 'E32', label: 'E32 - Consumo Final' },
+  { value: 'E34', label: 'E34 - Nota de Crédito' },
+  { value: 'E44', label: 'E44 - Regímenes Especiales' },
+  { value: 'E45', label: 'E45 - Gubernamental' },
+];
+
 export default function EcfDashboard({ data }) {
   const [bills, setBills] = useState([]);
   const [summary, setSummary] = useState({});
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [editDialog, setEditDialog] = useState({ open: false, bill: null, newType: '' });
 
   useEffect(() => {
     if (data?.bills) {
@@ -98,6 +108,31 @@ export default function EcfDashboard({ data }) {
       await fetch(`${API}/api/print/receipt/${billId}/send`, { method: 'POST', headers: hdrs() });
       notify.success('Factura enviada a impresora');
     } catch { notify.error('Error al imprimir'); }
+  };
+
+  const handleEditEcfType = async () => {
+    if (!editDialog.bill || !editDialog.newType) return;
+    setLoading(true);
+    try {
+      const r = await fetch(`${API}/api/bills/${editDialog.bill.id}/ecf-type`, {
+        method: 'PATCH',
+        headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ecf_type: editDialog.newType })
+      });
+      const d = await r.json();
+      if (d.ok) {
+        notify.success(d.message || 'Tipo de e-CF actualizado');
+        setEditDialog({ open: false, bill: null, newType: '' });
+        // Refresh data
+        const res = await fetch(`${API}/api/ecf/dashboard`, { headers: hdrs() });
+        const fresh = await res.json();
+        setBills(fresh.bills || []);
+        setSummary(fresh.summary || {});
+      } else {
+        notify.error(d.detail || d.message || 'Error al actualizar');
+      }
+    } catch { notify.error('Error de conexión'); }
+    setLoading(false);
   };
 
   const formatDate = (d) => {
@@ -189,9 +224,19 @@ export default function EcfDashboard({ data }) {
                           <Search size={14} className="text-blue-500" />
                         </button>
                         {status === 'CONTINGENCIA' && (
-                          <button onClick={() => handleRetry(b.id)} title="Reintentar" disabled={loading} className="p-1.5 rounded-lg hover:bg-muted transition-all">
-                            <RefreshCw size={14} className={`text-amber-500 ${loading ? 'animate-spin' : ''}`} />
-                          </button>
+                          <>
+                            <button 
+                              onClick={() => setEditDialog({ open: true, bill: b, newType: b.ncf?.replace('PENDING-', '') || 'E32' })} 
+                              title="Editar tipo e-CF" 
+                              className="p-1.5 rounded-lg hover:bg-muted transition-all"
+                              data-testid="edit-ecf-type-btn"
+                            >
+                              <Pencil size={14} className="text-purple-500" />
+                            </button>
+                            <button onClick={() => handleRetry(b.id)} title="Reintentar" disabled={loading} className="p-1.5 rounded-lg hover:bg-muted transition-all">
+                              <RefreshCw size={14} className={`text-amber-500 ${loading ? 'animate-spin' : ''}`} />
+                            </button>
+                          </>
                         )}
                         <button onClick={() => handleReprint(b.id)} title="Reimprimir" className="p-1.5 rounded-lg hover:bg-muted transition-all">
                           <Printer size={14} className="text-muted-foreground" />
@@ -208,6 +253,48 @@ export default function EcfDashboard({ data }) {
           )}
         </div>
       </div>
+
+      {/* Edit e-CF Type Dialog */}
+      <Dialog open={editDialog.open} onOpenChange={(open) => !open && setEditDialog({ open: false, bill: null, newType: '' })}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-oswald">Editar Tipo de e-CF</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Factura <span className="font-bold text-foreground">T-{editDialog.bill?.transaction_number}</span> — 
+              RD$ {(editDialog.bill?.total || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Tipo actual: <span className="font-mono font-bold">{editDialog.bill?.ncf || '—'}</span>
+            </p>
+            <div>
+              <label className="text-sm font-medium">Nuevo Tipo de e-CF</label>
+              <select 
+                value={editDialog.newType} 
+                onChange={(e) => setEditDialog({ ...editDialog, newType: e.target.value })}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
+                data-testid="ecf-type-select"
+              >
+                {ECF_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditDialog({ open: false, bill: null, newType: '' })} className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={handleEditEcfType} disabled={loading} className="flex-1 bg-purple-600 hover:bg-purple-700" data-testid="save-ecf-type-btn">
+                {loading ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Después de guardar, presiona <RefreshCw size={10} className="inline mx-0.5 text-amber-500" /> Reenviar para enviar a DGII
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

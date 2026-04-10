@@ -921,7 +921,12 @@ export default function PaymentScreen() {
         } catch {}
         
         // STEP 1: Auto e-CF FIRST (before printing, so ticket has e-CF data)
-        if (sysConfigData.ecf_enabled) {
+        // SKIP if payment method has force_contingency=true (Uber Eats, Pedidos Ya, etc.)
+        const billData = res.data;
+        const hasForceContingency = billData.force_contingency || 
+          billData.payments?.some(p => p.force_contingency) || false;
+        
+        if (sysConfigData.ecf_enabled && !hasForceContingency) {
           try {
             const ecfResp = await fetch(`${API_BASE}/api/ecf/send/${res.data.id}`, {
               method: 'POST',
@@ -937,6 +942,9 @@ export default function PaymentScreen() {
           } catch {
             notify.error('e-CF en Modo Contingencia — sin conexión');
           }
+        } else if (hasForceContingency && sysConfigData.ecf_enabled) {
+          // Force contingency mode - bill already marked in backend
+          notify.info('Venta en Contingencia (plataforma externa genera e-CF)');
         }
         
         // STEP 2: Print receipt (now with e-CF data if enabled) — SINGLE PRINT ONLY
