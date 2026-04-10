@@ -88,6 +88,31 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **CRITICAL**: The Factory `itbiS1` field expects TAX RATE ("18"), NOT amount. Amount goes in `totalITBIS1`
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
+## Completed Tasks (2026-04-10)
+
+- **🔒 Manual Contingency Payment Methods + Edit e-CF Type** (DONE - 2026-04-10):
+  - **NEW FEATURE**: Campo `force_contingency` en métodos de pago:
+    - Para plataformas como Uber Eats, Pedidos Ya que generan su propio comprobante fiscal
+    - Backend: `POST/PUT /api/payment-methods` ahora acepta y guarda `force_contingency` boolean
+    - Backend: `pay_bill()` omite envío automático a DGII cuando `force_contingency=true`
+    - La factura queda con status `CONTINGENCIA` y NCF `PENDING-{ecf_type}` para revisión manual
+    - Frontend: Toggle "Forzar Contingencia" en el diálogo de edición de métodos de pago
+    - UI: Badge "CONTINGENCIA" verde visible en tarjetas de métodos de pago configurados
+  - **NEW FEATURE**: Endpoint `PATCH /api/bills/{bill_id}/ecf-type`:
+    - Permite cambiar el tipo e-CF (E31, E32, E34, E33, E44, E45, E46, E47) de facturas en CONTINGENCIA
+    - Requiere permisos: admin, manager, gerente, o `edit_ecf_type`
+    - Frontend: Icono de lápiz (Pencil) en EcfDashboard para facturas en CONTINGENCIA
+    - Modal con dropdown para seleccionar nuevo tipo y botón "Guardar"
+  - **Files Modified**:
+    - `/app/backend/routers/billing.py` - lines 183-239 (PATCH endpoint), lines 510-540 (force_contingency checkout logic)
+    - `/app/backend/routers/auth.py` - line 134 (edit_ecf_type permission added to ALL_PERMISSIONS)
+    - `/app/frontend/src/pages/settings/VentasTab.js` - lines 205-207 (CONTINGENCIA badge), lines 522-539 (toggle in dialog)
+    - `/app/frontend/src/pages/reports/EcfDashboard.jsx` - lines 117-119 (PATCH call), lines 232-235 (Pencil edit icon)
+    - `/app/frontend/src/pages/PaymentScreen.js` - force_contingency field passed to checkout
+  - **Testing**: 14/14 backend tests passed, UI verified via screenshots
+  - **Impact**: Restaurantes pueden manejar ventas de delivery platforms sin duplicar comprobantes fiscales
+  - **⚠️ PROTEGIDO**: Esta funcionalidad NO debe modificarse sin autorización del usuario
+
 ## Completed Tasks (2026-04-09)
 
 - **🔒 DGII Payment Type Mapping Fix + dgii_payment_code Feature** (DONE - 2026-04-09):
