@@ -7,6 +7,28 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.0.2] - 2026-04-11
+
+### 🔒 Sistema de Permisos Granulares para Configuración (NO MODIFICAR)
+
+#### Permisos de Pestañas de Configuración
+- **15 permisos `config_*` visibles en UI**: Ahora los admins pueden asignar/quitar acceso a cada pestaña de Configuración individualmente
+  - Nueva categoría "Pestañas de Configuración" en Config → Usuarios → Permisos
+  - Incluye: config_users, config_mesas, config_ventas, config_productos, config_inventario, config_impresion, config_estacion, config_reportes, config_clientes, config_impuestos, config_ncf, config_apariencia, config_sistema, config_descuentos
+
+#### Permisos de Sub-Pestañas
+- **`config_tipos_venta`**: Controla visibilidad del sub-tab "Tipos de Venta" en Config → Ventas
+  - Solo Admin tiene TRUE por defecto
+  - Supervisor/Cajero/Mesero/Cocina tienen FALSE
+
+#### Permisos de Acciones Específicas
+- **`config_formas_pago`**: Controla botones "+Agregar" y "Eliminar" en Formas de Pago
+  - Solo Admin tiene TRUE por defecto
+  - Usuarios con `edit_exchange_rate` pueden EDITAR pero no agregar/eliminar
+  - Permite separar quién actualiza tasas de cambio vs quién administra métodos de pago
+
+---
+
 ## [1.0.1] - 2026-04-10
 
 ### 🔒 Funcionalidades Protegidas (NO MODIFICAR)
