@@ -1197,3 +1197,19 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: 100% passed - Admin ve 3 sub-tabs, Cajero no tiene acceso a Ventas tab
 - **Fecha de protección**: 2026-04-11
 
+### 16. 🔒 Permiso config_formas_pago para Agregar/Eliminar Formas de Pago (2026-04-11)
+- **Feature**: Nuevo permiso `config_formas_pago` que controla botones de AGREGAR y ELIMINAR métodos de pago en Config → Ventas → Formas de Pago
+- **Comportamiento**:
+  - Solo usuarios con `config_formas_pago: true` ven el botón "+Agregar" y los botones de eliminar (trash)
+  - El botón de EDITAR (pencil) sigue visible para usuarios con `edit_exchange_rate` o `manage_sale_config`
+  - Esto permite que supervisores/cajeros editen tasas de cambio sin poder agregar/eliminar métodos de pago
+  - Admin tiene el permiso TRUE por defecto
+  - Supervisor, Cajero, Mesero, Cocina tienen FALSE por defecto
+- **Archivos protegidos**:
+  - `/app/frontend/src/pages/settings/VentasTab.js`: Líneas 38, 169, 242 - `canAddDeletePayMethods`
+  - `/app/frontend/src/pages/UserConfig.js`: `PERMISSION_CATEGORIES.pestanas_config` incluye `config_formas_pago`
+  - `/app/frontend/src/pages/settings/SettingsContext.js`: `PERM_LABELS` con etiqueta
+  - `/app/backend/routers/auth.py`: `DEFAULT_PERMISSIONS` y `ALL_PERMISSIONS`
+- **Testing**: 100% passed - Admin ve +Agregar y trash, otros roles solo ven pencil (si tienen edit_exchange_rate)
+- **Fecha de protección**: 2026-04-11
+
