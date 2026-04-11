@@ -112,6 +112,7 @@ const PERMISSION_CATEGORIES = {
       config_sistema: 'Pestaña Sistema',
       config_descuentos: 'Pestaña Descuentos',
       config_tipos_venta: 'Sub-Pestaña Tipos de Venta',
+      config_formas_pago: 'Agregar/Eliminar Formas de Pago',
     }
   },
 };

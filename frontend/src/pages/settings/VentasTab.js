@@ -35,6 +35,7 @@ export default function VentasTab() {
   const canManageSaleConfig = isAdmin || hasPermission('manage_sale_config');
   const canEditExchangeRate = isAdmin || hasPermission('edit_exchange_rate') || canManageSaleConfig;
   const canConfigTiposVenta = isAdmin || hasPermission('config_tipos_venta');
+  const canAddDeletePayMethods = isAdmin || hasPermission('config_formas_pago');
   const [ventasSubTab, setVentasSubTab] = useState('pagos');
   const [quickAmountInput, setQuickAmountInput] = useState('');
   
@@ -166,7 +167,7 @@ export default function VentasTab() {
         <>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-oswald text-base font-bold">Formas de Pago</h2>
-            {canManageSaleConfig && (
+            {canAddDeletePayMethods && (
             <Button onClick={() => setPayDialog({ 
               open: true, name: '', icon: 'banknote', icon_type: 'lucide', brand_icon: null, 
               bg_color: '#6b7280', text_color: '#ffffff', currency: 'DOP', exchange_rate: 1, editId: null, dgii_payment_code: null, force_contingency: false 
@@ -238,7 +239,7 @@ export default function VentasTab() {
                     <Pencil size={16} />
                   </Button>
                   )}
-                  {canManageSaleConfig && (
+                  {canAddDeletePayMethods && (
                   <Button 
                     variant="ghost" 
                     size="icon" 

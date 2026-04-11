@@ -1,0 +1,126 @@
+{
+  "summary": "config_formas_pago Permission Feature - ALL TESTS PASSED. Verified new permission controls ADD (+Agregar) and DELETE (trash) buttons for payment methods in Config → Ventas → Formas de Pago. Admin (PIN 1000) CAN see both buttons, Cajero (PIN 1111) does NOT have access to Ventas tab (config_ventas: false). Permission appears in 'Pestañas de Configuracion' category in UserConfig permissions UI with label 'Agregar/Eliminar Formas de Pago'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "UserConfig.js",
+        "issues": ["Console warning: nested button inside button in role selector (line 627-654) - accessibility issue but not blocking functionality"]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "VentasTab.js line 38: canAddDeletePayMethods = isAdmin || hasPermission('config_formas_pago') - correctly implemented",
+    "VentasTab.js lines 169-178: +Agregar button wrapped in {canAddDeletePayMethods && ...} - correctly hidden for users without permission",
+    "VentasTab.js lines 242-251: Delete (Trash2) button wrapped in {canAddDeletePayMethods && ...} - correctly hidden for users without permission",
+    "VentasTab.js lines 218-240: Edit (Pencil) button remains controlled by canManageSaleConfig || canEditExchangeRate - users can still edit exchange rates",
+    "UserConfig.js line 115: config_formas_pago added to PERMISSION_CATEGORIES under pestanas_config with label 'Agregar/Eliminar Formas de Pago'",
+    "SettingsContext.js line 45: config_formas_pago added to PERM_LABELS",
+    "auth.py line 60: Admin has config_formas_pago: True in DEFAULT_PERMISSIONS",
+    "auth.py line 139: config_formas_pago added to ALL_PERMISSIONS with label 'Config: Agregar/Eliminar Formas de Pago'"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "Admin PIN": "1000",
+    "OSCAR (Cajero)": "1111",
+    "Carlos (Mesero)": "100"
+  },
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "config_formas_pago permission feature fully implemented and tested. The permission controls visibility of +Agregar button and delete (trash) buttons for payment methods in Config → Ventas → Formas de Pago. Admin role has this permission TRUE by default, all other roles have it FALSE. The EDIT (pencil) button remains visible for users with edit_exchange_rate or manage_sale_config permissions. Cajero role does not have access to Ventas tab at all (config_ventas: false).",
+  "features_tested": {
+    "config_formas_pago_permission_in_backend_api": {
+      "status": "WORKING",
+      "description": "Backend API /api/permissions/all returns config_formas_pago: 'Config: Agregar/Eliminar Formas de Pago'"
+    },
+    "admin_has_config_formas_pago_true": {
+      "status": "WORKING",
+      "description": "Admin (PIN 1000) login returns config_formas_pago: True"
+    },
+    "cajero_has_config_formas_pago_false": {
+      "status": "WORKING",
+      "description": "Cajero (PIN 1111) login returns config_formas_pago: False"
+    },
+    "config_formas_pago_permission_in_ui": {
+      "status": "WORKING",
+      "description": "'config_formas_pago' permission appears in 'Pestañas de Configuracion' category in UserConfig permissions grid"
+    },
+    "admin_sees_agregar_button": {
+      "status": "WORKING",
+      "description": "Admin (PIN 1000) CAN see '+Agregar' button in Config → Ventas → Formas de Pago"
+    },
+    "admin_sees_delete_buttons": {
+      "status": "WORKING",
+      "description": "Admin (PIN 1000) CAN see delete (trash) buttons on payment method cards on hover"
+    },
+    "admin_sees_edit_buttons": {
+      "status": "WORKING",
+      "description": "Admin (PIN 1000) CAN see edit (pencil) buttons on payment method cards on hover"
+    },
+    "cajero_no_access_to_ventas_tab": {
+      "status": "WORKING",
+      "description": "Cajero (PIN 1111) does NOT have access to Ventas tab (config_ventas: false) - cannot see payment methods section at all"
+    },
+    "desktop_1280px_dark_mode": {
+      "status": "WORKING",
+      "description": "UI works correctly on Desktop 1280px in Dark Mode - +Agregar button and payment cards visible"
+    },
+    "desktop_1280px_light_mode": {
+      "status": "WORKING",
+      "description": "UI works correctly on Desktop 1280px in Light Mode - +Agregar button, edit and delete buttons visible on hover"
+    },
+    "mobile_ios_390px": {
+      "status": "WORKING",
+      "description": "UI works correctly on Mobile Safari iOS viewport (390px) - +Agregar button visible, 7 payment cards displayed"
+    },
+    "android_412px": {
+      "status": "WORKING",
+      "description": "UI works correctly on Android Chrome viewport (412px) - +Agregar button visible, 7 payment cards displayed"
+    }
+  },
+  "viewport_tests": {
+    "desktop_1280px_admin_light": "PASSED - Admin sees +Agregar button, edit and delete buttons on hover",
+    "desktop_1280px_admin_dark": "PASSED - Admin sees +Agregar button, payment cards with proper contrast",
+    "mobile_ios_390px_admin": "PASSED - Admin sees +Agregar button, 7 payment cards",
+    "android_412px_admin": "PASSED - Admin sees +Agregar button, 7 payment cards"
+  },
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  },
+  "permission_verification": {
+    "backend_api_check": "curl https://factura-consumo-app.preview.emergentagent.com/api/permissions/all returns config_formas_pago: 'Config: Agregar/Eliminar Formas de Pago'",
+    "admin_default_permissions": "config_formas_pago: true (verified in auth.py DEFAULT_PERMISSIONS and via login API)",
+    "cajero_default_permissions": "config_formas_pago: false (not in cashier defaults, verified via login API)",
+    "mesero_default_permissions": "config_formas_pago: false (not in waiter defaults)"
+  },
+  "button_visibility_matrix": {
+    "admin_with_config_formas_pago": {
+      "agregar_button": "VISIBLE",
+      "delete_button": "VISIBLE on hover",
+      "edit_button": "VISIBLE on hover"
+    },
+    "user_without_config_formas_pago_but_with_edit_exchange_rate": {
+      "agregar_button": "HIDDEN",
+      "delete_button": "HIDDEN",
+      "edit_button": "VISIBLE on hover (can still edit exchange rates)"
+    },
+    "user_without_any_ventas_permissions": {
+      "agregar_button": "N/A - no access to Ventas tab",
+      "delete_button": "N/A - no access to Ventas tab",
+      "edit_button": "N/A - no access to Ventas tab"
+    }
+  }
+}
