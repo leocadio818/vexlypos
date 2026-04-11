@@ -1183,3 +1183,17 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: 100% passed en Desktop (1280px Dark/Light), Mobile iOS (390px), Android (412px)
 - **Fecha de protección**: 2026-04-11
 
+### 15. 🔒 Permiso config_tipos_venta para Sub-Pestaña Tipos de Venta (2026-04-11)
+- **Feature**: Nuevo permiso `config_tipos_venta` que controla visibilidad del sub-tab "Tipos de Venta" dentro de Config → Ventas
+- **Comportamiento**:
+  - Solo usuarios con `config_tipos_venta: true` ven el sub-tab "Tipos de Venta"
+  - Admin tiene el permiso TRUE por defecto
+  - Supervisor, Cajero, Mesero, Cocina tienen FALSE por defecto
+- **Archivos protegidos**:
+  - `/app/frontend/src/pages/settings/VentasTab.js`: Líneas 37, 160-162, 405 - renderizado condicional con `canConfigTiposVenta`
+  - `/app/frontend/src/pages/UserConfig.js`: `PERMISSION_CATEGORIES.pestanas_config` incluye `config_tipos_venta`
+  - `/app/frontend/src/pages/settings/SettingsContext.js`: `PERM_LABELS` con etiqueta
+  - `/app/backend/routers/auth.py`: `DEFAULT_PERMISSIONS` y `ALL_PERMISSIONS`
+- **Testing**: 100% passed - Admin ve 3 sub-tabs, Cajero no tiene acceso a Ventas tab
+- **Fecha de protección**: 2026-04-11
+
