@@ -1168,3 +1168,18 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **REGLA**: Versión debe actualizarse siguiendo Semantic Versioning en TODOS los archivos
 - **Fecha de protección**: 2026-04-10
 
+### 14. 🔒 Permisos config_* Visibles en UI (2026-04-11)
+- **Feature**: Los 14 permisos `config_*` que controlan visibilidad de pestañas de Configuración ahora son visibles y configurables en la UI de permisos
+- **Archivos protegidos**:
+  - `/app/frontend/src/pages/UserConfig.js`: Nueva categoría `pestanas_config` con 14 permisos
+  - `/app/frontend/src/pages/settings/SettingsContext.js`: `PERM_LABELS` con etiquetas de los 14 permisos
+  - `/app/backend/routers/auth.py`: `ALL_PERMISSIONS` y `DEFAULT_PERMISSIONS` ya definidos
+- **Permisos incluidos**:
+  - `config_users`, `config_mesas`, `config_ventas`, `config_productos`
+  - `config_inventario`, `config_impresion`, `config_estacion`, `config_reportes`
+  - `config_clientes`, `config_impuestos`, `config_ncf`, `config_apariencia`
+  - `config_sistema`, `config_descuentos`
+- **Comportamiento**: Admin puede ir a Config → Usuarios → seleccionar usuario → ver/editar permisos de "Pestañas de Configuración"
+- **Testing**: 100% passed en Desktop (1280px Dark/Light), Mobile iOS (390px), Android (412px)
+- **Fecha de protección**: 2026-04-11
+
