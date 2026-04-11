@@ -54,6 +54,7 @@ const PERMISSION_CATEGORIES = {
     icon: 'ClipboardList',
     permissions: {
       view_dashboard: 'Ver Dashboard',
+      access_caja: 'Acceso a Caja',
       open_shift: 'Abrir Turno',
       close_shift: 'Cerrar Turno',
       close_day: 'Cierre de Dia',
