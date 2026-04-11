@@ -1046,3 +1046,125 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: 11/11 tests críticos pasaron
 - **Verificado con bills reales**: E31 (E314643538373) y E32 (E321943598537)
 
+---
+
+## Completed Tasks (2026-04-10)
+
+### 🔒 Permiso `access_caja` - Control de Acceso a Caja - DONE 2026-04-10
+- **Feature**: Nuevo permiso `access_caja` que controla quién puede acceder al botón "Caja" en el modal de Opciones
+- **Comportamiento**:
+  - Solo usuarios con permiso `access_caja` ven el botón "Caja" en Opciones
+  - Por defecto: Admin (nivel 100), Gerente (nivel 60+), Cajero tienen acceso
+  - Meseros y otros roles NO tienen acceso por defecto
+- **Archivos modificados**:
+  1. `/app/backend/routers/auth.py`:
+     - `ALL_PERMISSIONS` ahora incluye `"access_caja"`
+     - `DEFAULT_PERMISSIONS` para roles con acceso incluye el permiso
+  2. `/app/frontend/src/components/Layout.js`:
+     - Botón "Caja" condicionalmente renderizado con `hasPermission('access_caja')`
+  3. `/app/frontend/src/context/SettingsContext.js`:
+     - `PERM_LABELS` incluye `access_caja: "Acceso a Caja"`
+  4. `/app/frontend/src/pages/UserConfig.js`:
+     - `PERMISSION_CATEGORIES.Administracion` incluye `access_caja`
+     - Visible en UI de configuración de permisos de usuario
+- **Testing**: Screenshots verificados en UI de permisos
+- **Razón de protección**: Control de acceso crítico a funciones de caja
+- **Fecha de protección**: 2026-04-10
+
+### 🔒 Logo del Negocio en Recibos Impresos - DONE 2026-04-10
+- **Feature**: Los recibos (facturas) ahora incluyen el logo del negocio configurado en `system_config.logo_url`
+- **Implementación**:
+  - **Recibos HTML** (`/print/receipt/{bill_id}`): Logo como `<img>` centrado de 120px de ancho
+  - **Recibos ESC/POS** (`/print/receipt-escpos/{bill_id}`): Logo convertido a bitmap ESC/POS compatible
+  - **Fallback graceful**: Si no hay logo configurado, el recibo se genera sin logo sin errores
+- **Archivos modificados**:
+  - `/app/backend/server.py`: Endpoints de impresión con fetch de `logo_url` desde `system_config`
+- **Configuración**: Subir logo en Ajustes → Sistema → "Logo del Negocio"
+- **Testing**: Verificado con impresora térmica real
+- **Razón de protección**: Branding crítico en documentos impresos
+- **Fecha de protección**: 2026-04-10
+
+### 🔒 Limpieza de Mesas Huérfanas - Fix para 'merged' - DONE 2026-04-10
+- **Bug corregido**: El endpoint `/api/system/cleanup-orphan-tables` no limpiaba mesas con órdenes en estado `merged`
+- **Root Cause**: El filtro solo buscaba órdenes con status `active` o `sent`, ignorando `merged` (cuentas unidas/divididas)
+- **Fix aplicado**:
+  - Cambio de filtro: `{"status": {"$in": ["active", "sent"]}}` → `{"status": {"$nin": ["closed", "paid", "cancelled"]}}`
+  - Ahora detecta correctamente mesas con órdenes `merged` que no fueron cerradas
+- **Archivo modificado**: `/app/backend/server.py` (endpoint `cleanup-orphan-tables`)
+- **Testing**: Verificado que mesas con órdenes 'merged' ahora se limpian correctamente
+- **Razón de protección**: Integridad del mapa de mesas
+- **Fecha de protección**: 2026-04-10
+
+### 🔒 Mover a otra Mesa - Colores de Estado - DONE 2026-04-10
+- **Feature**: El modal "Mover a otra Mesa" ahora muestra los colores exactos de estado de cada mesa
+- **Colores implementados**:
+  - 🔵 Azul (`#3B82F6`): Mesa libre
+  - 🔴 Rojo (`#EF4444`): Mesa ocupada
+  - 🟠 Naranja (`#F97316`): Mesa dividida
+  - 🟣 Morado (`#8B5CF6`): Mesa reservada
+  - 🟡 Amarillo (`#EAB308`): Mesa de otro mesero
+- **Archivo modificado**: `/app/frontend/src/pages/OrderScreen.js` (modal de mover mesa)
+- **Antes**: Texto genérico "ocupada", "libre", etc.
+- **Después**: Indicador de color visual idéntico al mapa de mesas
+- **Testing**: Verificado en móvil y desktop
+- **Razón de protección**: UX crítica para operaciones de mesas
+- **Fecha de protección**: 2026-04-10
+
+### 🔒 Versionamiento Formal v1.0.0 - DONE 2026-04-10
+- **Feature**: Sistema de versionamiento semántico implementado
+- **Archivos creados/modificados**:
+  - `/app/VERSION`: Contiene `1.0.0`
+  - `/app/CHANGELOG.md`: Historial completo de cambios
+  - `/app/frontend/package.json`: `"version": "1.0.0"`
+  - `/app/frontend/src/pages/Login.js`: Footer muestra `v1.0.0`
+  - `/app/frontend/src/pages/settings/SystemTab.js`: Sección de versión visible
+- **Formato**: Semantic Versioning (MAJOR.MINOR.PATCH)
+- **Visibilidad**: Versión visible en Login y en Ajustes → Sistema
+- **Testing**: Screenshots verificados
+- **Razón de protección**: Tracking de versiones para clientes/tenants
+- **Fecha de protección**: 2026-04-10
+
+### 🔒 Documentación de Despliegue para Tenants - DONE 2026-04-10
+- **Documentos creados/actualizados**:
+  1. `/app/MANUAL_SUPABASE.md` (NUEVO):
+     - Guía completa para crear instancia Supabase por tenant
+     - Creación de tablas: `pos_sessions`, `business_hours`
+     - Configuración de Row Level Security (RLS)
+     - Variables de entorno requeridas
+  2. `/app/MANUAL_DESPLIEGUE_CLIENTES.md` (v1.1):
+     - Checklist completo de despliegue
+     - Configuración de credenciales e-CF (Alanube/The Factory)
+     - Setup de impresoras y canales
+     - Verificación post-despliegue
+- **Uso**: Replicar VexlyPOS para nuevos clientes (ej: BlackBurguer)
+- **Razón de protección**: Documentación crítica de despliegue
+- **Fecha de protección**: 2026-04-10
+
+---
+
+## 🔒 CÓDIGO PROTEGIDO - ACTUALIZACIÓN 2026-04-10
+
+### 10. 🔒 Permiso `access_caja` (2026-04-10)
+- **Archivos protegidos**:
+  - `/app/backend/routers/auth.py`: `ALL_PERMISSIONS` y `DEFAULT_PERMISSIONS`
+  - `/app/frontend/src/components/Layout.js`: Renderizado condicional del botón Caja
+  - `/app/frontend/src/context/SettingsContext.js`: Label del permiso
+  - `/app/frontend/src/pages/UserConfig.js`: Categoría del permiso en UI
+- **REGLA**: El botón "Caja" SOLO debe mostrarse a usuarios con `access_caja`
+- **Fecha de protección**: 2026-04-10
+
+### 11. 🔒 Logo en Recibos Impresos (2026-04-10)
+- **Archivo protegido**: `/app/backend/server.py` (endpoints de impresión)
+- **REGLA**: Los recibos SIEMPRE deben intentar incluir el logo si está configurado
+- **Fecha de protección**: 2026-04-10
+
+### 12. 🔒 Limpieza de Mesas Huérfanas con 'merged' (2026-04-10)
+- **Archivo protegido**: `/app/backend/server.py` (endpoint `cleanup-orphan-tables`)
+- **REGLA**: El filtro debe usar `$nin: ["closed", "paid", "cancelled"]` para capturar TODOS los estados activos
+- **Fecha de protección**: 2026-04-10
+
+### 13. 🔒 Versionamiento v1.0.0 (2026-04-10)
+- **Archivos protegidos**: `/app/VERSION`, `/app/CHANGELOG.md`, `/app/frontend/package.json`
+- **REGLA**: Versión debe actualizarse siguiendo Semantic Versioning en TODOS los archivos
+- **Fecha de protección**: 2026-04-10
+

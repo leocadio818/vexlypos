@@ -7,6 +7,29 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.0.1] - 2026-04-10
+
+### 🔒 Funcionalidades Protegidas (NO MODIFICAR)
+
+#### Seguridad
+- **Permiso `access_caja`**: Nuevo control de acceso para el botón "Caja" en modal Opciones
+  - Solo usuarios con permiso `access_caja` ven el botón
+  - Configurable desde UI de permisos de usuario (Administración)
+
+#### Impresión
+- **Logo del negocio en recibos**: Facturas HTML y ESC/POS ahora incluyen logo configurado
+  - Fallback graceful si no hay logo
+
+#### Operaciones
+- **Limpieza mesas huérfanas (merged)**: Fix para detectar órdenes con status 'merged'
+- **Mover a otra Mesa - Colores**: Modal muestra colores exactos de estado (libre/ocupada/dividida/reservada)
+
+#### Sistema
+- **Versionamiento formal v1.0.0**: VERSION, CHANGELOG, package.json sincronizados
+- **Documentación de despliegue**: MANUAL_SUPABASE.md y MANUAL_DESPLIEGUE_CLIENTES.md v1.1
+
+---
+
 ## [1.0.0] - 2026-04-10
 
 ### 🎉 Primera versión estable de producción
