@@ -57,6 +57,7 @@ DEFAULT_PERMISSIONS = {
         "config_estacion": True, "config_reportes": True, "config_clientes": True,
         "config_impuestos": True, "config_ncf": True, "config_apariencia": True,
         "config_sistema": True, "config_descuentos": True,
+        "access_caja": True,
     },
     "waiter": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
@@ -71,6 +72,7 @@ DEFAULT_PERMISSIONS = {
         "open_shift": True, "close_shift": True, "manage_customers": True,
         "access_all_tables": True,
         "reprint_receipt": True,
+        "access_caja": True,
     },
     "supervisor": {
         "view_dashboard": True, "move_tables": True,
@@ -86,6 +88,7 @@ DEFAULT_PERMISSIONS = {
         "view_audit_complete": True,
         "config_mesas": True, "config_ventas": True, "config_productos": True,
         "config_clientes": True, "config_apariencia": True,
+        "access_caja": True,
     },
     "kitchen": {},
 }
@@ -133,6 +136,7 @@ ALL_PERMISSIONS = {
     "config_descuentos": "Config: Pestaña Descuentos",
     "edit_ecf_type": "Editar Tipo e-CF en Contingencia",
     "retry_ecf": "Reenviar e-CF en Contingencia",
+    "access_caja": "Acceso a Caja",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───

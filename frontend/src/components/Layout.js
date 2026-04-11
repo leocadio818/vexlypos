@@ -910,7 +910,7 @@ export default function Layout() {
                   <span className="font-semibold text-sm">Cocina</span>
                 </button>
               )}
-              {(isAdmin || isCashier) && (
+              {hasPermission('access_caja') && (
                 <button onClick={() => { setOptionsMenuOpen(false); navigate('/cash-register'); }}
                   className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-95"
                   data-testid="opt-caja">
