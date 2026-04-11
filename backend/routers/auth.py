@@ -56,7 +56,7 @@ DEFAULT_PERMISSIONS = {
         "config_productos": True, "config_inventario": True, "config_impresion": True,
         "config_estacion": True, "config_reportes": True, "config_clientes": True,
         "config_impuestos": True, "config_ncf": True, "config_apariencia": True,
-        "config_sistema": True, "config_descuentos": True,
+        "config_sistema": True, "config_descuentos": True, "config_tipos_venta": True,
         "access_caja": True,
     },
     "waiter": {
@@ -134,6 +134,7 @@ ALL_PERMISSIONS = {
     "config_apariencia": "Config: Pestaña Apariencia",
     "config_sistema": "Config: Pestaña Sistema",
     "config_descuentos": "Config: Pestaña Descuentos",
+    "config_tipos_venta": "Config: Sub-Pestaña Tipos de Venta",
     "edit_ecf_type": "Editar Tipo e-CF en Contingencia",
     "retry_ecf": "Reenviar e-CF en Contingencia",
     "access_caja": "Acceso a Caja",

@@ -41,6 +41,7 @@ export const PERM_LABELS = {
   config_apariencia: 'Pestaña Apariencia',
   config_sistema: 'Pestaña Sistema',
   config_descuentos: 'Pestaña Descuentos',
+  config_tipos_venta: 'Sub-Pestaña Tipos de Venta',
 };
 
 const SettingsContext = createContext();

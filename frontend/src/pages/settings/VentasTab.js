@@ -34,6 +34,7 @@ export default function VentasTab() {
   const { user, hasPermission, isAdmin } = useAuth();
   const canManageSaleConfig = isAdmin || hasPermission('manage_sale_config');
   const canEditExchangeRate = isAdmin || hasPermission('edit_exchange_rate') || canManageSaleConfig;
+  const canConfigTiposVenta = isAdmin || hasPermission('config_tipos_venta');
   const [ventasSubTab, setVentasSubTab] = useState('pagos');
   const [quickAmountInput, setQuickAmountInput] = useState('');
   
@@ -156,7 +157,9 @@ export default function VentasTab() {
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <SubTabButton active={ventasSubTab === 'pagos'} onClick={() => setVentasSubTab('pagos')} icon={CreditCard} label="Formas de Pago" />
         <SubTabButton active={ventasSubTab === 'anulaciones'} onClick={() => setVentasSubTab('anulaciones')} icon={AlertTriangle} label="Anulaciones" />
-        <SubTabButton active={ventasSubTab === 'tipos'} onClick={() => setVentasSubTab('tipos')} icon={ShoppingBag} label="Tipos de Venta" />
+        {canConfigTiposVenta && (
+          <SubTabButton active={ventasSubTab === 'tipos'} onClick={() => setVentasSubTab('tipos')} icon={ShoppingBag} label="Tipos de Venta" />
+        )}
       </div>
 
       {ventasSubTab === 'pagos' && (
@@ -399,7 +402,7 @@ export default function VentasTab() {
         </>
       )}
 
-      {ventasSubTab === 'tipos' && (
+      {ventasSubTab === 'tipos' && canConfigTiposVenta && (
         <>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-oswald text-base font-bold">Tipos de Venta</h2>
