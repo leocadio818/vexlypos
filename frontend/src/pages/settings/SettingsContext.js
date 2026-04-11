@@ -26,6 +26,21 @@ export const PERM_LABELS = {
   release_reserved_table: 'Desbloquear Mesa Reservada',
   view_audit_complete: 'Ver Auditoría Completa del Sistema',
   access_caja: 'Acceso a Caja',
+  // Config tab permissions (14 total)
+  config_users: 'Pestaña Usuarios',
+  config_mesas: 'Pestaña Mesas',
+  config_ventas: 'Pestaña Ventas',
+  config_productos: 'Pestaña Productos',
+  config_inventario: 'Pestaña Inventario Maestro',
+  config_impresion: 'Pestaña Impresion',
+  config_estacion: 'Pestaña Estacion',
+  config_reportes: 'Pestaña Reportes',
+  config_clientes: 'Pestaña Clientes',
+  config_impuestos: 'Pestaña Impuestos',
+  config_ncf: 'Pestaña NCF',
+  config_apariencia: 'Pestaña Apariencia',
+  config_sistema: 'Pestaña Sistema',
+  config_descuentos: 'Pestaña Descuentos',
 };
 
 const SettingsContext = createContext();

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Camera, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock, GraduationCap, Briefcase, Check, Pencil } from 'lucide-react';
+import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Camera, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock, GraduationCap, Briefcase, Check, Pencil, Sliders } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -91,6 +91,26 @@ const PERMISSION_CATEGORIES = {
       manage_sale_types: 'Tipos de Venta',
       manage_print_channels: 'Gestion Impresion',
       manage_station_config: 'Config Estacion',
+    }
+  },
+  pestanas_config: {
+    label: 'Pestañas de Configuracion',
+    icon: 'Sliders',
+    permissions: {
+      config_users: 'Pestaña Usuarios',
+      config_mesas: 'Pestaña Mesas',
+      config_ventas: 'Pestaña Ventas',
+      config_productos: 'Pestaña Productos',
+      config_inventario: 'Pestaña Inventario Maestro',
+      config_impresion: 'Pestaña Impresion',
+      config_estacion: 'Pestaña Estacion',
+      config_reportes: 'Pestaña Reportes',
+      config_clientes: 'Pestaña Clientes',
+      config_impuestos: 'Pestaña Impuestos',
+      config_ncf: 'Pestaña NCF',
+      config_apariencia: 'Pestaña Apariencia',
+      config_sistema: 'Pestaña Sistema',
+      config_descuentos: 'Pestaña Descuentos',
     }
   },
 };
