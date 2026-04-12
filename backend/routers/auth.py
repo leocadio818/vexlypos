@@ -493,7 +493,7 @@ async def create_user(input: dict, caller=Depends(get_current_user)):
     hashed = hash_pin(pin)
     existing = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
     if existing:
-        raise HTTPException(status_code=400, detail="Ya existe un usuario con ese PIN")
+        raise HTTPException(status_code=409, detail="Este PIN ya está en uso, elige otro")
     
     new_id = gen_id()
     doc = {
@@ -622,7 +622,7 @@ async def update_user(user_id: str, input: dict, caller=Depends(get_current_user
         hashed = hash_pin(pin)
         existing = await db.users.find_one({"pin_hash": hashed, "active": True, "id": {"$ne": user_id}}, {"_id": 0})
         if existing:
-            raise HTTPException(status_code=400, detail="Ya existe un usuario con ese PIN")
+            raise HTTPException(status_code=409, detail="Este PIN ya está en uso, elige otro")
         input["pin_hash"] = hashed
         changes_log.append("PIN actualizado")
     
