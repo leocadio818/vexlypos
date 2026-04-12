@@ -1213,3 +1213,18 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: 100% passed - Admin ve +Agregar y trash, otros roles solo ven pencil (si tienen edit_exchange_rate)
 - **Fecha de protección**: 2026-04-11
 
+### 17. 🔒 Validación de Unicidad de PIN (2026-04-11)
+- **Feature**: Validación de seguridad que impide que dos usuarios tengan el mismo PIN
+- **Comportamiento**:
+  - Al CREAR usuario: Si el PIN ya existe, retorna HTTP 409 con "Este PIN ya está en uso, elige otro"
+  - Al EDITAR usuario: Si el nuevo PIN ya pertenece a otro usuario, retorna HTTP 409
+  - Al EDITAR usuario manteniendo su propio PIN: Funciona sin error
+  - NUNCA revela a qué usuario pertenece el PIN existente (seguridad)
+- **Archivos protegidos**:
+  - `/app/backend/routers/auth.py`: 
+    - Línea 494-496: `create_user` - validación con HTTP 409
+    - Línea 622-625: `update_user` - validación con `id: {"$ne": user_id}` y HTTP 409
+  - `/app/frontend/src/pages/UserConfig.js`: Línea 339 muestra error del backend
+- **Testing**: 100% passed - 9/9 pytest tests, todos los viewports y temas
+- **Fecha de protección**: 2026-04-11
+
