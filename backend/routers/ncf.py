@@ -95,7 +95,7 @@ async def get_ncf_type(code: str):
     
     try:
         # The table uses 'id' instead of 'code'
-        response = supabase_client.table("ncf_types_config").select("*").eq("id", code.upper()).single().execute()
+        response = supabase_client.table("ncf_types_config").select("*").eq("code", code.upper()).single().execute()
         return response.data
     except Exception:
         raise HTTPException(status_code=404, detail=f"Tipo NCF {code} no encontrado")
@@ -218,7 +218,7 @@ async def create_ncf_sequence(input: NCFSequenceInput):
     
     try:
         # Verificar que el tipo de NCF existe (table uses 'id' as the code column)
-        ncf_type = supabase_client.table("ncf_types_config").select("id").eq("id", input.ncf_type_code.upper()).execute()
+        ncf_type = supabase_client.table("ncf_types_config").select("id").eq("code", input.ncf_type_code.upper()).execute()
         if not ncf_type.data:
             raise HTTPException(status_code=400, detail=f"Tipo NCF {input.ncf_type_code} no existe")
         
