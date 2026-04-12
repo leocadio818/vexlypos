@@ -47,7 +47,7 @@ export default function VentasTab() {
   const [reasonDialog, setReasonDialog] = useState({ open: false, name: '', affects_inventory: true, allowed_roles: [], active: true, editId: null });
   const [showInactiveReasons, setShowInactiveReasons] = useState(false);
   const [confirmAction, setConfirmAction] = useState({ open: false, title: '', description: '', onConfirm: null, variant: 'default' });
-  const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null });
+  const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'E32', editId: null });
 
   // Payment method handlers
   const handleSavePayMethod = async () => {
@@ -131,12 +131,12 @@ export default function VentasTab() {
         name: saleDialog.name, 
         code: autoCode, 
         tax_exemptions: saleDialog.tax_exemptions || [],
-        default_ncf_type_id: saleDialog.default_ncf_type_id || 'B02'
+        default_ncf_type_id: saleDialog.default_ncf_type_id || 'E32'
       };
       if (saleDialog.editId) await axios.put(`${API}/sale-types/${saleDialog.editId}`, data, { headers: hdrs() });
       else await axios.post(`${API}/sale-types`, data, { headers: hdrs() });
       notify.success(saleDialog.editId ? 'Actualizado' : 'Creado');
-      setSaleDialog({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null }); fetchAll();
+      setSaleDialog({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'E32', editId: null }); fetchAll();
     } catch { notify.error('Error'); }
   };
 
@@ -408,7 +408,7 @@ export default function VentasTab() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-oswald text-base font-bold">Tipos de Venta</h2>
             {canManageSaleConfig && (
-            <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'B02', editId: null })} size="sm"
+            <Button onClick={() => setSaleDialog({ open: true, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'E32', editId: null })} size="sm"
               className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-saletype-btn">
               <Plus size={14} className="mr-1" /> Agregar
             </Button>
@@ -438,7 +438,7 @@ export default function VentasTab() {
                   {canManageSaleConfig && (
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_exemptions: st.tax_exemptions || [], default_ncf_type_id: st.default_ncf_type_id || 'B02', editId: st.id })}>
+                      onClick={() => setSaleDialog({ open: true, name: st.name, code: st.code, tax_exemptions: st.tax_exemptions || [], default_ncf_type_id: st.default_ncf_type_id || 'E32', editId: st.id })}>
                       <Pencil size={14} />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/60 hover:text-destructive"
@@ -621,7 +621,7 @@ export default function VentasTab() {
               <select value={saleDialog.default_ncf_type_id} onChange={e => setSaleDialog({ ...saleDialog, default_ncf_type_id: e.target.value })}
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm">
                 {ncfTypes.map(n => (
-                  <option key={n.id} value={n.id}>{n.id} - {n.description}</option>
+                  <option key={n.code || n.id} value={n.code || n.id}>{n.code || n.id} - {n.description}</option>
                 ))}
               </select>
             </div>
