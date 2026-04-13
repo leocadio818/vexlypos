@@ -544,9 +544,10 @@ export default function IngredientsTab({
                       ? 'border-red-500' 
                       : 'border-border'
                   }`}
+                  style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
                 >
-                  {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-                  {customUnits.map(u => <option key={u.id} value={u.abbreviation}>{u.name} ({u.abbreviation})</option>)}
+                  {UNITS.map(u => <option key={u.value} value={u.value} style={{ color: '#1E293B', backgroundColor: '#FFFFFF' }}>{u.label}</option>)}
+                  {customUnits.map(u => <option key={u.id} value={u.abbreviation} style={{ color: '#1E293B', backgroundColor: '#FFFFFF' }}>{u.name} ({u.abbreviation})</option>)}
                 </select>
                 {validationAttempted && currentValidation.errors.unit && (
                   <p className="text-xs text-red-500 mt-1">{currentValidation.errors.unit}</p>
@@ -564,8 +565,9 @@ export default function IngredientsTab({
                       ? 'border-red-500' 
                       : 'border-border'
                   }`}
+                  style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
                 >
-                  {INGREDIENT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  {INGREDIENT_CATEGORIES.map(c => <option key={c.value} value={c.value} style={{ color: '#1E293B', backgroundColor: '#FFFFFF' }}>{c.label}</option>)}
                 </select>
                 {validationAttempted && currentValidation.errors.category && (
                   <p className="text-xs text-red-500 mt-1">{currentValidation.errors.category}</p>
@@ -582,7 +584,10 @@ export default function IngredientsTab({
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <ArrowLeftRight size={16} className="text-primary" />
-                  <span className="font-medium text-sm">Conversión de Unidades *</span>
+                  <span 
+                    className="font-medium text-sm"
+                    style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}
+                  >Conversión de Unidades *</span>
                 </div>
                 {validationAttempted && currentValidation.errors.dispatch_quantity && (
                   <span className="text-xs text-red-500">{currentValidation.errors.dispatch_quantity}</span>
@@ -611,13 +616,13 @@ export default function IngredientsTab({
                     }}
                     className="px-2 py-1 text-sm border rounded-md font-medium min-w-[100px]"
                     style={isLightMode 
-                      ? { backgroundColor: '#EFF6FF', borderColor: '#3B82F6', color: '#1D4ED8', WebkitTextFillColor: '#1D4ED8' } 
+                      ? { backgroundColor: '#EFF6FF', borderColor: '#3B82F6', color: '#1E293B', WebkitTextFillColor: '#1E293B' } 
                       : { backgroundColor: 'rgb(var(--primary) / 0.1)', borderColor: 'rgb(var(--primary) / 0.3)', color: 'hsl(var(--primary))' }
                     }
                     data-testid="purchase-unit-select"
                   >
-                    {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-                    {customUnits.map(u => <option key={u.id} value={u.abbreviation}>{u.name}</option>)}
+                    {UNITS.map(u => <option key={u.value} value={u.value} style={{ color: '#1E293B', backgroundColor: '#FFFFFF' }}>{u.label}</option>)}
+                    {customUnits.map(u => <option key={u.id} value={u.abbreviation} style={{ color: '#1E293B', backgroundColor: '#FFFFFF' }}>{u.name}</option>)}
                   </select>
                   
                   <span style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}>y despacho por</span>
