@@ -1228,3 +1228,17 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: 100% passed - 9/9 pytest tests, todos los viewports y temas
 - **Fecha de protección**: 2026-04-11
 
+### 18. 🔒 Fix Textos Invisibles en Modal Inventario - Light Mode (2026-04-11)
+- **Bug corregido**: En el modal "Nuevo Insumo" de Inventario, los textos de selects y labels eran invisibles en Light Mode
+- **Causa raíz**: Los `<select>` y `<span>` heredaban color blanco del tema dark, haciéndolos ilegibles sobre fondo claro
+- **Fix aplicado**:
+  - Agregado `style={isLightMode ? { color: '#1E293B', WebkitTextFillColor: '#1E293B' } : {}}` a:
+    - Select "Unidad de Despacho" (línea 547)
+    - Select "Categoría" (línea 568)
+    - Label "Conversión de Unidades *" (línea 587-590)
+    - Select "Yo compro por" (línea 618)
+  - Agregado `style={{ color: '#1E293B', backgroundColor: '#FFFFFF' }}` a todas las `<option>` de los selects
+- **Archivo protegido**: `/app/frontend/src/pages/inventory/components/IngredientsTab.jsx`
+- **Testing**: 100% passed - Desktop 1280px, Safari iOS 390px, Android Chrome 412px (Light Mode)
+- **Fecha de protección**: 2026-04-11
+
