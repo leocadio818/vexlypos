@@ -189,31 +189,31 @@ export default function SimpleInventoryTab() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" data-testid="inventory-table">
                   <thead>
-                    <tr className="bg-muted/50 border-b border-border text-left">
-                      <th className="px-3 py-2 font-semibold">Producto</th>
-                      <th className="px-3 py-2 font-semibold text-center">Stock</th>
-                      <th className="px-3 py-2 font-semibold text-center">Alerta</th>
-                      <th className="px-3 py-2 font-semibold hidden sm:table-cell">Ultima Mod.</th>
-                      <th className="px-3 py-2 font-semibold text-right">Accion</th>
+                    <tr className="bg-muted border-b border-border text-left">
+                      <th className="px-3 py-2.5 font-semibold text-auto-foreground">Producto</th>
+                      <th className="px-3 py-2.5 font-semibold text-auto-foreground text-center">Stock</th>
+                      <th className="px-3 py-2.5 font-semibold text-auto-foreground text-center">Alerta</th>
+                      <th className="px-3 py-2.5 font-semibold text-auto-foreground hidden sm:table-cell">Ultima Mod.</th>
+                      <th className="px-3 py-2.5 font-semibold text-auto-foreground text-right">Accion</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map(p => (
-                      <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30" data-testid={`inv-row-${p.id}`}>
-                        <td className="px-3 py-2 font-medium">{p.name}</td>
-                        <td className="px-3 py-2 text-center">
+                      <tr key={p.id} className="border-b border-border/50 hover:bg-muted/50" data-testid={`inv-row-${p.id}`}>
+                        <td className="px-3 py-2.5 font-medium text-auto-foreground">{p.name}</td>
+                        <td className="px-3 py-2.5 text-center">
                           <StockBadge qty={p.simple_inventory_qty || 0} alertQty={p.simple_inventory_alert_qty || 3} />
                         </td>
-                        <td className="px-3 py-2 text-center text-muted-foreground">{p.simple_inventory_alert_qty || 3}</td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">
+                        <td className="px-3 py-2.5 text-center text-auto-foreground font-medium">{`≤ ${p.simple_inventory_alert_qty || 3} uds`}</td>
+                        <td className="px-3 py-2.5 text-xs text-muted-foreground hidden sm:table-cell">
                           {p.last_modified_at ? (
                             <>
                               {p.last_modified_at.slice(0, 10)} - {p.last_modified_by || ''}
-                              <span className="ml-1 text-primary/60">({ACTION_LABELS[p.last_action_type] || p.last_action_type})</span>
+                              <span className="ml-1 text-safe-amber">({ACTION_LABELS[p.last_action_type] || p.last_action_type})</span>
                             </>
                           ) : '-'}
                         </td>
-                        <td className="px-3 py-2 text-right">
+                        <td className="px-3 py-2.5 text-right">
                           <Button size="sm" variant="outline" onClick={() => handleOpenAdjust(p)} data-testid={`adjust-btn-${p.id}`}>
                             Ajustar stock
                           </Button>
@@ -287,44 +287,44 @@ export default function SimpleInventoryTab() {
             <div className="border border-border rounded-lg overflow-hidden">
               <ScrollArea className="max-h-[400px]">
                 <table className="w-full text-sm" data-testid="audit-table">
-                  <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
+                  <thead className="sticky top-0 bg-muted backdrop-blur-sm">
                     <tr className="border-b border-border text-left">
-                      <th className="px-2 py-2 font-semibold">Fecha</th>
-                      <th className="px-2 py-2 font-semibold">Producto</th>
-                      <th className="px-2 py-2 font-semibold">Usuario</th>
-                      <th className="px-2 py-2 font-semibold">Tipo</th>
-                      <th className="px-2 py-2 font-semibold text-center">Antes</th>
-                      <th className="px-2 py-2 font-semibold text-center">Despues</th>
-                      <th className="px-2 py-2 font-semibold text-center">Cambio</th>
-                      <th className="px-2 py-2 font-semibold hidden sm:table-cell">Motivo</th>
+                      <th className="px-2 py-2.5 font-semibold text-auto-foreground">Fecha</th>
+                      <th className="px-2 py-2.5 font-semibold text-auto-foreground">Producto</th>
+                      <th className="px-2 py-2.5 font-semibold text-auto-foreground">Usuario</th>
+                      <th className="px-2 py-2.5 font-semibold text-auto-foreground">Tipo</th>
+                      <th className="px-2 py-2.5 font-semibold text-auto-foreground text-center">Antes</th>
+                      <th className="px-2 py-2.5 font-semibold text-auto-foreground text-center">Despues</th>
+                      <th className="px-2 py-2.5 font-semibold text-auto-foreground text-center">Cambio</th>
+                      <th className="px-2 py-2.5 font-semibold text-auto-foreground hidden sm:table-cell">Motivo</th>
                     </tr>
                   </thead>
                   <tbody>
                     {auditLogs.map(log => (
-                      <tr key={log.id} className="border-b border-border/50 hover:bg-muted/30" data-testid={`audit-row-${log.id}`}>
-                        <td className="px-2 py-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                      <tr key={log.id} className="border-b border-border/50 hover:bg-muted/50" data-testid={`audit-row-${log.id}`}>
+                        <td className="px-2 py-1.5 text-xs text-auto-muted whitespace-nowrap">
                           {log.created_at?.slice(0, 16).replace('T', ' ')}
                         </td>
-                        <td className="px-2 py-1.5 font-medium">{log.product_name}</td>
-                        <td className="px-2 py-1.5 text-muted-foreground">{log.user_name}</td>
+                        <td className="px-2 py-1.5 font-medium text-auto-foreground">{log.product_name}</td>
+                        <td className="px-2 py-1.5 text-auto-muted">{log.user_name}</td>
                         <td className="px-2 py-1.5">
                           <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
-                            log.action_type === 'sale' ? 'bg-blue-500/20 text-blue-400' :
-                            log.action_type === 'cancel' ? 'bg-orange-500/20 text-orange-400' :
-                            log.action_type === 'restock' ? 'bg-green-500/20 text-green-400' :
-                            'bg-gray-500/20 text-gray-400'
+                            log.action_type === 'sale' ? 'bg-blue-100 text-safe-blue' :
+                            log.action_type === 'cancel' ? 'bg-orange-100 text-safe-amber' :
+                            log.action_type === 'restock' ? 'bg-green-100 text-safe-green' :
+                            'bg-secondary text-muted-foreground'
                           }`}>
                             {ACTION_LABELS[log.action_type] || log.action_type}
                           </span>
                         </td>
-                        <td className="px-2 py-1.5 text-center">{log.qty_before}</td>
-                        <td className="px-2 py-1.5 text-center">{log.qty_after}</td>
+                        <td className="px-2 py-1.5 text-center text-auto-foreground">{log.qty_before}</td>
+                        <td className="px-2 py-1.5 text-center text-auto-foreground">{log.qty_after}</td>
                         <td className="px-2 py-1.5 text-center font-bold">
-                          <span className={log.qty_change > 0 ? 'text-green-400' : log.qty_change < 0 ? 'text-red-400' : ''}>
+                          <span className={log.qty_change > 0 ? 'text-safe-green' : log.qty_change < 0 ? 'text-safe-red' : 'text-muted-foreground'}>
                             {log.qty_change > 0 ? '+' : ''}{log.qty_change}
                           </span>
                         </td>
-                        <td className="px-2 py-1.5 text-xs text-muted-foreground hidden sm:table-cell">{log.reason || '-'}</td>
+                        <td className="px-2 py-1.5 text-xs text-auto-muted hidden sm:table-cell">{log.reason || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
