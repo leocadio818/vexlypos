@@ -228,6 +228,15 @@ export const posSessionsAPI = {
   salesBreakdown: (sessionId) => api.get(`/pos-sessions/${sessionId}/sales-breakdown`),
 };
 
+// Simple Inventory
+export const simpleInventoryAPI = {
+  list: () => api.get('/simple-inventory'),
+  adjust: (productId, data) => api.put(`/simple-inventory/${productId}/adjust`, data),
+  auditLog: (params) => api.get('/simple-inventory/audit-log', { params }),
+  exportCsv: (params) => api.get('/simple-inventory/audit-log/export-csv', { params, responseType: 'blob' }),
+  productsWithSimple: () => api.get('/simple-inventory/products-with-simple'),
+};
+
 // Business Days (Jornadas de Trabajo)
 export const businessDaysAPI = {
   // Estado actual

@@ -246,6 +246,23 @@ async def get_products_stock_status(warehouse_id: Optional[str] = Query(None)):
     result = []
     for product in products:
         product_id = product.get("id")
+        
+        # Check simple inventory first (mutually exclusive with recipes)
+        if product.get("simple_inventory_enabled"):
+            qty = product.get("simple_inventory_qty", 0)
+            alert_qty = product.get("simple_inventory_alert_qty", 3)
+            result.append({
+                "product_id": product_id,
+                "product_name": product.get("name", ""),
+                "in_stock": qty > 0,
+                "available_quantity": qty,
+                "is_low_stock": 0 < qty <= alert_qty,
+                "has_recipe": False,
+                "simple_inventory": True,
+                "simple_inventory_alert_qty": alert_qty,
+            })
+            continue
+        
         recipe = await db.recipes.find_one({"product_id": product_id}, {"_id": 0})
         
         # If no recipe, assume always in stock

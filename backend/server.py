@@ -50,6 +50,7 @@ from routers.email import router as email_router, set_db as email_set_db
 from routers.alanube import router as alanube_router, set_db as alanube_set_db
 from routers.ecf_dispatcher import router as ecf_dispatcher_router, set_db as ecf_dispatcher_set_db
 from routers.manuales import router as manuales_router
+from routers.simple_inventory import router as simple_inventory_router, set_db as simple_inventory_set_db
 from routers.system_logs import set_db as system_logs_set_db
 from routers.auth import set_db as auth_set_db
 from utils.timezone import get_system_timezone_name, get_system_now, invalidate_cache as tz_invalidate_cache
@@ -87,6 +88,7 @@ alanube_set_db(db)
 ecf_dispatcher_set_db(db)
 system_logs_set_db(db)
 auth_set_db(db)  # Initialize auth router with correct db
+simple_inventory_set_db(db)
 
 # Connect KDS notifier to orders
 set_kds_notifier(notify_kds)
@@ -108,6 +110,7 @@ api.include_router(attendance_router)
 api.include_router(billing_router)
 api.include_router(kitchen_router)
 api.include_router(customers_router)
+api.include_router(simple_inventory_router)
 
 @api.get("/health")
 async def health_check():

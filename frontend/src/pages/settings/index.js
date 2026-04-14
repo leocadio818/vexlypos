@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { SettingsProvider } from './SettingsContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Table2, CreditCard, Package, Printer, Cog, BarChart3, Heart, Calculator, FileText, Palette, Warehouse, Tag, AlertCircle } from 'lucide-react';
+import { Users, Table2, CreditCard, Package, Printer, Cog, BarChart3, Heart, Calculator, FileText, Palette, Warehouse, Tag, AlertCircle, Boxes } from 'lucide-react';
 
 import UsersTab from './UsersTab';
 import MesasTab from './MesasTab';
@@ -19,6 +19,7 @@ import SystemTab from './SystemTab';
 import ThemeTab from './ThemeTab';
 import DescuentosTab from './DescuentosTab';
 import SystemLogsTab from './SystemLogsTab';
+import SimpleInventoryTab from './SimpleInventoryTab';
 
 // Tab definitions with permission mapping (new config_* + old manage_* fallback)
 const ALL_TABS = [
@@ -27,6 +28,7 @@ const ALL_TABS = [
   { value: 'ventas', label: 'Ventas', icon: CreditCard, permissions: ['config_ventas','manage_payment_methods','manage_cancellation_reasons','manage_sale_types'], component: VentasTab },
   { value: 'inventario', label: 'Config. Productos', icon: Package, permissions: ['config_productos','manage_products'], component: InventarioTab },
   { value: 'inventario-maestro', label: 'Inventario Maestro', icon: Warehouse, permissions: ['config_inventario','manage_inventory','manage_suppliers'], navigate: '/inventory' },
+  { value: 'inventario-simple', label: 'Inv. Simple', icon: Boxes, permissions: ['config_inventario','manage_inventory'], component: SimpleInventoryTab },
   { value: 'channels', label: 'Impresion', icon: Printer, permissions: ['config_impresion','manage_print_channels'], component: ChannelsTab },
   { value: 'station', label: 'Estacion', icon: Cog, permissions: ['config_estacion','manage_station_config'], component: StationTab },
   { value: 'reports-cfg', label: 'Reportes', icon: BarChart3, permissions: ['config_reportes'], component: ReportsTab },

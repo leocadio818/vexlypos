@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { ordersAPI, categoriesAPI, productsAPI, modifiersAPI, reasonsAPI, tablesAPI, areasAPI, billsAPI, inventorySettingsAPI, posSessionsAPI } from '@/lib/api';
+import { ordersAPI, categoriesAPI, productsAPI, modifiersAPI, reasonsAPI, tablesAPI, areasAPI, billsAPI, inventorySettingsAPI, posSessionsAPI, simpleInventoryAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search, Pencil, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -178,6 +178,9 @@ export default function OrderScreen() {
   const [stockStatus, setStockStatus] = useState({}); // { productId: { in_stock: bool, available_quantity: num } }
   const [allowSaleWithoutStock, setAllowSaleWithoutStock] = useState(true); // Default to true (no restrictions)
   const [stockLoading, setStockLoading] = useState(false);
+  
+  // Simple Inventory State
+  const [simpleInvMap, setSimpleInvMap] = useState({}); // { productId: { qty, alert_qty } }
   
   // Business Day State - block operations when no active day
   const [hasActiveDay, setHasActiveDay] = useState(true); // Assume true until checked
@@ -416,6 +419,24 @@ export default function OrderScreen() {
       }
     };
     loadStockData();
+  }, []);
+
+  // Load simple inventory data
+  useEffect(() => {
+    const loadSimpleInv = async () => {
+      try {
+        const res = await simpleInventoryAPI.productsWithSimple();
+        const map = {};
+        (res.data || []).forEach(p => {
+          map[p.id] = { qty: p.simple_inventory_qty || 0, alert_qty: p.simple_inventory_alert_qty || 3 };
+        });
+        setSimpleInvMap(map);
+      } catch {}
+    };
+    loadSimpleInv();
+    // Refresh every 15s for near-realtime updates
+    const interval = setInterval(loadSimpleInv, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   // Re-sync tax config AND sale types every 30s so admin changes reflect immediately
@@ -723,7 +744,21 @@ export default function OrderScreen() {
         const res = await ordersAPI.addItems(order.id, [item]);
         setOrder(res.data);
       }
-    } catch { console.warn('Error agregando item'); }
+      // Refresh simple inventory after adding items
+      try {
+        const siRes = await simpleInventoryAPI.productsWithSimple();
+        const map = {};
+        (siRes.data || []).forEach(p => { map[p.id] = { qty: p.simple_inventory_qty || 0, alert_qty: p.simple_inventory_alert_qty || 3 }; });
+        setSimpleInvMap(map);
+      } catch {}
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      if (detail && detail.includes('agotado')) {
+        notify.error(detail);
+      } else {
+        console.warn('Error agregando item');
+      }
+    }
   };
 
   const handleConfirmModifiers = () => {
@@ -2350,8 +2385,13 @@ export default function OrderScreen() {
                 const hasModifiers = [...new Set([...assignmentIds, ...legacyIds])].length > 0;
                 let pressTimer = null;
                 const productStock = stockStatus[product.id];
-                const isOutOfStock = !allowSaleWithoutStock && productStock && !productStock.in_stock;
-                const isLowStock = productStock?.is_low_stock && !isOutOfStock;
+                const recipeOutOfStock = !allowSaleWithoutStock && productStock && !productStock.in_stock;
+                const simpleInv = simpleInvMap[product.id];
+                const hasSimpleInv = !!simpleInv;
+                const simpleQty = simpleInv?.qty ?? 0;
+                const simpleAlert = simpleInv?.alert_qty ?? 3;
+                const simpleOutOfStock = hasSimpleInv && simpleQty <= 0;
+                const isOutOfStock = simpleOutOfStock || recipeOutOfStock;
                 let touchStartY = 0;
                 let touchMoved = false;
                 const catName = categories.find(c => c.id === product.category_id)?.name || '';
@@ -2378,6 +2418,12 @@ export default function OrderScreen() {
                     <span className={`font-semibold leading-tight line-clamp-2 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{product.name}</span>
                     <span className={`text-[10px] text-muted-foreground truncate block`}>{catName}</span>
                     <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${product.button_bg_color ? '' : 'text-primary'}`}>{formatMoney(product.price)}</span>
+                    {hasSimpleInv && !isOutOfStock && (
+                      <div
+                        className={`absolute top-1 right-1 min-w-[1.25rem] h-5 text-[10px] rounded-full flex items-center justify-center px-1 font-bold text-white shadow-sm`}
+                        style={{ backgroundColor: simpleQty > simpleAlert ? '#22c55e' : simpleQty > 1 ? '#eab308' : '#ef4444' }}
+                      >{simpleQty}</div>
+                    )}
                     {isOutOfStock && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="px-3 py-1.5 rounded-lg bg-red-600/90 text-white text-xs font-bold uppercase">Agotado</span>
@@ -2463,10 +2509,20 @@ export default function OrderScreen() {
                 const hasModifiers = [...new Set([...assignmentIds, ...legacyIds])].length > 0;
                 let pressTimer = null;
                 
-                // Stock control logic
+                // Stock control logic (recipe-based)
                 const productStock = stockStatus[product.id];
-                const isOutOfStock = !allowSaleWithoutStock && productStock && !productStock.in_stock;
-                const isLowStock = productStock?.is_low_stock && !isOutOfStock;
+                const recipeOutOfStock = !allowSaleWithoutStock && productStock && !productStock.in_stock;
+                const isLowStockRecipe = productStock?.is_low_stock && !recipeOutOfStock;
+                
+                // Simple inventory logic (takes priority if enabled)
+                const simpleInv = simpleInvMap[product.id];
+                const hasSimpleInv = !!simpleInv;
+                const simpleQty = simpleInv?.qty ?? 0;
+                const simpleAlert = simpleInv?.alert_qty ?? 3;
+                const simpleOutOfStock = hasSimpleInv && simpleQty <= 0;
+                
+                const isOutOfStock = simpleOutOfStock || recipeOutOfStock;
+                const isLowStock = (hasSimpleInv ? (simpleQty > 0 && simpleQty <= simpleAlert) : isLowStockRecipe) && !isOutOfStock;
                 
                 // Touch scroll protection: track if finger moved during touch
                 let touchStartY = 0;
@@ -2545,7 +2601,26 @@ export default function OrderScreen() {
                     {/* Nombre arriba, precio al fondo */}
                     <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
                     <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : product.button_bg_color ? '' : 'text-primary'}`}>{formatMoney(product.price)}</span>
-                    {hasModifiers && !isOutOfStock && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
+                    {hasModifiers && !isOutOfStock && !hasSimpleInv && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
+                    
+                    {/* Simple Inventory Badge */}
+                    {hasSimpleInv && !isOutOfStock && (
+                      <div
+                        className={`absolute top-1 right-1 ${largeMode ? 'min-w-[1.5rem] h-6 text-xs' : 'min-w-[1.25rem] h-5 text-[10px]'} rounded-full flex items-center justify-center px-1 font-bold text-white shadow-sm`}
+                        style={{ backgroundColor: simpleQty > simpleAlert ? '#22c55e' : simpleQty > 1 ? '#eab308' : '#ef4444' }}
+                        data-testid={`simple-inv-badge-${product.id}`}
+                      >
+                        {simpleQty}
+                      </div>
+                    )}
+                    {hasSimpleInv && isOutOfStock && (
+                      <div
+                        className={`absolute top-1 right-1 ${largeMode ? 'min-w-[1.5rem] h-6 text-xs' : 'min-w-[1.25rem] h-5 text-[10px]'} rounded-full flex items-center justify-center px-1 font-bold text-white shadow-sm bg-gray-500 line-through`}
+                        data-testid={`simple-inv-badge-${product.id}`}
+                      >
+                        0
+                      </div>
+                    )}
                     
                     {/* Out of Stock Badge */}
                     {isOutOfStock && (
@@ -2556,8 +2631,8 @@ export default function OrderScreen() {
                       </div>
                     )}
                     
-                    {/* Low Stock Indicator */}
-                    {isLowStock && !isOutOfStock && (
+                    {/* Low Stock Indicator (recipe-based only, simple uses badge color) */}
+                    {isLowStock && !isOutOfStock && !hasSimpleInv && (
                       <div className={`absolute top-2 ${hasModifiers ? 'right-5' : 'right-2'}`}>
                         <AlertTriangle size={largeMode ? 16 : 14} className="text-yellow-500" />
                       </div>

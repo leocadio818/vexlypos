@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { productsAPI, categoriesAPI, modifiersAPI, reportCategoriesAPI, recipesAPI, formatMoney } from '@/lib/api';
-import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List, Printer, Check, Image, ImageIcon, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, X, Pencil, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Save, Package, Tag, DollarSign, Palette, ListChecks, Plus, Trash2, GripVertical, FileText, List, Printer, Check, Image, ImageIcon, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, X, Pencil, AlertTriangle, RefreshCw, Boxes, Info } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -84,6 +84,9 @@ export default function ProductConfig() {
     image_url: '',  // URL de imagen del producto
     icon: '',       // Icono de Lucide (ej: 'pizza', 'coffee', 'sandwich')
     track_inventory: false,
+    simple_inventory_enabled: false,
+    simple_inventory_qty: 0,
+    simple_inventory_alert_qty: 3,
     print_channels: [],  // Array of channel codes for multi-channel printing
     tax_exemptions: [],  // Array of tax IDs this product is exempt from
     use_category_taxes: true,  // If true, inherit tax settings from category
@@ -142,6 +145,9 @@ export default function ProductConfig() {
           image_url: p.image_url || '',
           icon: p.icon || '',
           track_inventory: p.track_inventory || false,
+          simple_inventory_enabled: p.simple_inventory_enabled || false,
+          simple_inventory_qty: p.simple_inventory_qty || 0,
+          simple_inventory_alert_qty: p.simple_inventory_alert_qty || 3,
           print_channels: p.print_channels || [],
           tax_exemptions: p.tax_exemptions || [],
           use_category_taxes: p.use_category_taxes !== false,  // Default to true
@@ -168,7 +174,8 @@ export default function ProductConfig() {
 
   // Load recipe when switching to receta tab or when product loads
   useEffect(() => {
-    if (activeTab === 'receta' && productId && !isNew) {
+    if ((activeTab === 'receta' || activeTab === 'general') && productId && !isNew) {
+      if (activeTab === 'general' && recipeData !== null) return; // Already loaded
       setLoadingRecipe(true);
       Promise.all([
         recipesAPI.get(productId).then(res => res.data && res.data.id ? res.data : null).catch(() => null),
@@ -248,6 +255,9 @@ export default function ProductConfig() {
           barcode: '',
           printed_name: '',
           track_inventory: false,
+          simple_inventory_enabled: false,
+          simple_inventory_qty: 0,
+          simple_inventory_alert_qty: 3,
           print_channels: [],
           tax_exemptions: []
         });
@@ -477,6 +487,65 @@ export default function ProductConfig() {
                   <p className="text-xs text-muted-foreground mt-1">
                     Escanea con el lector o escribe manualmente. Se usa para agregar productos rápidamente.
                   </p>
+                </div>
+
+                {/* Inventario Simple por Conteo */}
+                <div className="p-3 rounded-lg bg-background border border-border" data-testid="simple-inventory-section">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Boxes size={14} className="text-emerald-500" />
+                    <span className="text-sm font-semibold">Inventario Simple por Conteo</span>
+                  </div>
+                  {/* Check if product has a recipe (mutually exclusive) */}
+                  {!isNew && recipeData && recipeData.ingredients?.length > 0 ? (
+                    <div className="flex items-start gap-2 p-2 rounded-md bg-blue-500/10 border border-blue-500/20">
+                      <Info size={14} className="text-blue-400 mt-0.5 shrink-0" />
+                      <p className="text-xs text-blue-300">
+                        Este producto usa control de inventario por receta. El inventario simple no está disponible cuando hay una receta activa.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <span className="text-xs text-muted-foreground">Activar inventario simple</span>
+                        </div>
+                        <Switch
+                          checked={product.simple_inventory_enabled}
+                          onCheckedChange={v => setProduct(p => ({ ...p, simple_inventory_enabled: v }))}
+                          data-testid="simple-inventory-toggle"
+                        />
+                      </div>
+                      {product.simple_inventory_enabled && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Cantidad actual</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={product.simple_inventory_qty}
+                              onChange={e => setProduct(p => ({ ...p, simple_inventory_qty: Math.max(0, parseInt(e.target.value) || 0) }))}
+                              className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
+                              data-testid="simple-inventory-qty"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Alertar cuando queden</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="1"
+                                value={product.simple_inventory_alert_qty}
+                                onChange={e => setProduct(p => ({ ...p, simple_inventory_alert_qty: Math.max(1, parseInt(e.target.value) || 3) }))}
+                                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm"
+                                data-testid="simple-inventory-alert-qty"
+                              />
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">uds.</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 {/* Categoría del Menu */}

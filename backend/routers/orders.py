@@ -114,6 +114,7 @@ from routers.auth import get_current_user, can_access_table_orders, get_table_ow
 
 # Import inventory functions
 from routers.inventory import explode_and_deduct_recipe
+from routers.simple_inventory import decrement_simple_inventory, increment_simple_inventory
 
 # ─── HELPER: Restore inventory from recipe ───
 async def restore_inventory_for_item(item: dict, warehouse_id: str, user_id: str, user_name: str, order_id: str):
@@ -372,6 +373,63 @@ async def add_items_to_order(order_id: str, input: AddItemsInput):
     items_to_add = []
     items_to_update = []
     
+    # Pre-check simple inventory for all items
+    for item in input.items:
+        product = await db.products.find_one(
+            {"id": item.product_id},
+            {"_id": 0, "simple_inventory_enabled": 1, "simple_inventory_qty": 1, "name": 1}
+        )
+        if product and product.get("simple_inventory_enabled"):
+            current_qty = product.get("simple_inventory_qty", 0)
+            needed = int(item.quantity)
+            # Check if existing pending item will also add qty
+            existing_pending = next(
+                (e for e in existing_items
+                 if e.get("product_id") == item.product_id and e.get("status") == "pending"
+                 and e.get("notes", "") == (item.notes or "") and e.get("modifiers", []) == (item.modifiers or [])),
+                None
+            )
+            if existing_pending:
+                needed = int(item.quantity)  # Only the new qty being added
+            if current_qty < needed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Producto agotado: {product.get('name', '')}. Stock disponible: {current_qty}"
+                )
+    
+    # Decrement simple inventory atomically for each item
+    simple_inv_decremented = []
+    try:
+        for item in input.items:
+            product = await db.products.find_one(
+                {"id": item.product_id},
+                {"_id": 0, "simple_inventory_enabled": 1}
+            )
+            if product and product.get("simple_inventory_enabled"):
+                qty_to_decrement = int(item.quantity)
+                success, name, new_qty = await decrement_simple_inventory(
+                    product_id=item.product_id,
+                    qty=qty_to_decrement,
+                    user_id=order.get("waiter_id", "system"),
+                    user_name=order.get("waiter_name", "Sistema"),
+                )
+                if not success:
+                    # Rollback previously decremented items
+                    for prev in simple_inv_decremented:
+                        await increment_simple_inventory(
+                            prev["product_id"], prev["qty"],
+                            order.get("waiter_id", "system"),
+                            order.get("waiter_name", "Sistema"),
+                            action_type="cancel"
+                        )
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Producto agotado: {name}. Stock disponible: {new_qty}"
+                    )
+                simple_inv_decremented.append({"product_id": item.product_id, "qty": qty_to_decrement})
+    except HTTPException:
+        raise
+
     for item in input.items:
         existing_item = None
         for existing in existing_items:
@@ -469,6 +527,23 @@ async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput,
     
     item_was_sent = item.get("status") == "sent" or item.get("sent_to_kitchen", False)
     inventory_was_deducted = item.get("inventory_deducted", False) or item_was_sent
+    
+    # Restore simple inventory (always restore on cancel, regardless of sent status)
+    try:
+        product_doc = await db.products.find_one(
+            {"id": item["product_id"], "simple_inventory_enabled": True},
+            {"_id": 0, "id": 1}
+        )
+        if product_doc:
+            await increment_simple_inventory(
+                product_id=item["product_id"],
+                qty=int(item.get("quantity", 1)),
+                user_id=user["user_id"],
+                user_name=user["name"],
+                action_type="cancel"
+            )
+    except Exception as e:
+        print(f"Error restoring simple inventory: {e}")
     
     if input.return_to_inventory and inventory_was_deducted:
         inventory_config = await db.system_config.find_one({"id": "inventory_settings"}, {"_id": 0})
@@ -622,6 +697,25 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
         
         # Express void: Direct deletion without audit log or inventory impact
         for item_id in input.item_ids:
+            item = next((i for i in order["items"] if i["id"] == item_id), None)
+            # Restore simple inventory for express-voided items
+            if item:
+                try:
+                    product_doc = await db.products.find_one(
+                        {"id": item["product_id"], "simple_inventory_enabled": True},
+                        {"_id": 0, "id": 1}
+                    )
+                    if product_doc:
+                        await increment_simple_inventory(
+                            product_id=item["product_id"],
+                            qty=int(item.get("quantity", 1)),
+                            user_id=user["user_id"],
+                            user_name=user["name"],
+                            action_type="cancel"
+                        )
+                except Exception as e:
+                    print(f"Error restoring simple inventory on express void: {e}")
+
             await db.orders.update_one(
                 {"id": order_id, "items.id": item_id},
                 {"$set": {
@@ -717,6 +811,23 @@ async def cancel_multiple_items(order_id: str, input: BulkCancelInput, user: dic
             "was_sent": item.get("status") == "sent" or item.get("sent_to_kitchen", False)
         })
         total_value += item.get("unit_price", 0) * item.get("quantity", 1)
+        
+        # Restore simple inventory on audit-protocol cancel
+        try:
+            product_doc = await db.products.find_one(
+                {"id": item.get("product_id"), "simple_inventory_enabled": True},
+                {"_id": 0, "id": 1}
+            )
+            if product_doc:
+                await increment_simple_inventory(
+                    product_id=item["product_id"],
+                    qty=int(item.get("quantity", 1)),
+                    user_id=user["user_id"],
+                    user_name=user["name"],
+                    action_type="cancel"
+                )
+        except Exception as e:
+            print(f"Error restoring simple inventory on bulk cancel: {e}")
         
         item_was_sent = item.get("status") == "sent" or item.get("sent_to_kitchen", False)
         inventory_was_deducted = item.get("inventory_deducted", False) or item_was_sent
