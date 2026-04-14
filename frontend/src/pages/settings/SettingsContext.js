@@ -43,6 +43,7 @@ export const PERM_LABELS = {
   config_descuentos: 'Pestaña Descuentos',
   config_tipos_venta: 'Sub-Pestaña Tipos de Venta',
   config_formas_pago: 'Agregar/Eliminar Formas de Pago',
+  manage_credit_notes: 'Generar Notas de Crédito E34',
 };
 
 const SettingsContext = createContext();

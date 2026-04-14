@@ -228,6 +228,279 @@ async def get_607_credit_notes_data(
     }
 
 
+# ─── STANDALONE E34 GENERATOR (No shift required) ───
+# IMPORTANT: These routes must be defined BEFORE /{note_id} to avoid route conflicts
+
+@router.get("/find-bill")
+async def find_bill_for_credit_note(search: str, user=Depends(get_current_user)):
+    """
+    Busca una factura por número de transacción o e-NCF para generar nota de crédito
+    """
+    from routers.auth import get_permissions
+    
+    # Check permission
+    user_perms = get_permissions(user.get("role", "waiter"), user.get("permissions", {}))
+    if not user_perms.get("manage_credit_notes") and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permiso para generar notas de crédito")
+    
+    search = search.strip()
+    if not search:
+        raise HTTPException(status_code=400, detail="Debes proporcionar un número de transacción o e-NCF")
+    
+    # Build query - try both string and int for transaction_number
+    search_conditions = [
+        {"ecf_encf": search.upper()},
+        {"ecf_encf": search},
+    ]
+    # Try parsing as int for transaction_number
+    try:
+        search_int = int(search)
+        search_conditions.append({"transaction_number": search_int})
+    except ValueError:
+        search_conditions.append({"transaction_number": search})
+    
+    # Search by transaction_number or ecf_encf
+    bill = await db.bills.find_one({
+        "$or": search_conditions,
+        "status": "paid"
+    }, {"_id": 0})
+    
+    if not bill:
+        raise HTTPException(status_code=404, detail="Factura no encontrada o no está pagada")
+    
+    # Check if already has credit note
+    existing_cn = await db.credit_notes.find_one({
+        "original_bill_id": bill["id"],
+        "status": {"$in": ["pending", "completed"]}
+    }, {"_id": 0, "id": 1, "ncf": 1, "ecf_encf": 1})
+    
+    has_credit_note = existing_cn is not None
+    credit_note_encf = existing_cn.get("ecf_encf") or existing_cn.get("ncf") if existing_cn else None
+    
+    return {
+        "id": bill.get("id"),
+        "transaction_number": bill.get("transaction_number"),
+        "ecf_encf": bill.get("ecf_encf"),
+        "ncf": bill.get("ncf"),
+        "ecf_type": bill.get("ecf_type"),
+        "total": bill.get("total", 0),
+        "subtotal": bill.get("subtotal", 0),
+        "itbis": bill.get("itbis", 0),
+        "propina_legal": bill.get("propina_legal", 0),
+        "table_number": bill.get("table_name") or bill.get("table_number"),
+        "waiter_name": bill.get("waiter_name"),
+        "cashier_name": bill.get("cashier_name"),
+        "paid_at": bill.get("paid_at"),
+        "items": bill.get("items", []),
+        "customer_name": bill.get("customer_name") or bill.get("razon_social"),
+        "customer_rnc": bill.get("customer_rnc") or bill.get("fiscal_id"),
+        "has_credit_note": has_credit_note,
+        "credit_note_encf": credit_note_encf,
+    }
+
+
+@router.post("/generate-e34")
+async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current_user)):
+    """
+    Genera una Nota de Crédito E34 independiente de turno de cajero
+    Solo para admin/propietario con permiso manage_credit_notes
+    """
+    from routers.auth import get_permissions
+    from routers.alanube import build_alanube_payload, send_to_alanube, save_alanube_response
+    
+    # Check permission
+    user_perms = get_permissions(user.get("role", "waiter"), user.get("permissions", {}))
+    if not user_perms.get("manage_credit_notes") and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permiso para generar notas de crédito")
+    
+    search = input.get("search", "").strip()
+    reason = input.get("reason", "").strip()
+    
+    if not search:
+        raise HTTPException(status_code=400, detail="Debes proporcionar un número de transacción o e-NCF")
+    if not reason:
+        raise HTTPException(status_code=400, detail="Debes proporcionar un motivo para la nota de crédito")
+    
+    # Build query - try both string and int for transaction_number
+    search_conditions = [
+        {"ecf_encf": search.upper()},
+        {"ecf_encf": search},
+    ]
+    try:
+        search_int = int(search)
+        search_conditions.append({"transaction_number": search_int})
+    except ValueError:
+        search_conditions.append({"transaction_number": search})
+    
+    # 1. Find the original bill
+    bill = await db.bills.find_one({
+        "$or": search_conditions,
+        "status": "paid"
+    }, {"_id": 0})
+    
+    if not bill:
+        raise HTTPException(status_code=404, detail="Factura no encontrada o no está pagada")
+    
+    # 2. Validate bill has valid e-NCF (not contingency)
+    original_encf = bill.get("ecf_encf", "")
+    if not original_encf or original_encf.startswith("PENDING-"):
+        raise HTTPException(status_code=400, detail="Esta factura está en contingencia y no tiene e-NCF válido para generar nota de crédito")
+    
+    # 3. Check if already has credit note
+    existing_cn = await db.credit_notes.find_one({
+        "original_bill_id": bill["id"],
+        "status": {"$in": ["pending", "completed"]}
+    }, {"_id": 0, "id": 1, "ncf": 1, "ecf_encf": 1})
+    
+    if existing_cn:
+        cn_encf = existing_cn.get("ecf_encf") or existing_cn.get("ncf")
+        raise HTTPException(status_code=400, detail=f"Esta factura ya tiene una nota de crédito: {cn_encf}")
+    
+    # 4. Generate E34 sequence from Supabase
+    e34_encf = None
+    if supabase_client:
+        try:
+            seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", "E34").eq("is_active", True).limit(1).execute()
+            if not seq_result.data:
+                # Fallback to ncf_type_code
+                seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_code", "E34").eq("is_active", True).limit(1).execute()
+            
+            if seq_result.data and len(seq_result.data) > 0:
+                seq = seq_result.data[0]
+                current_num = seq.get("current_number", 1)
+                serie = seq.get("serie", "E")
+                e34_encf = f"{serie}34{current_num:08d}"
+                
+                # Update sequence
+                supabase_client.table("ncf_sequences").update({
+                    "current_number": current_num + 1
+                }).eq("id", seq["id"]).execute()
+            else:
+                raise HTTPException(status_code=400, detail="No hay secuencia E34 activa en Supabase")
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"Error getting E34 sequence: {e}")
+            raise HTTPException(status_code=500, detail=f"Error obteniendo secuencia E34: {str(e)}")
+    else:
+        raise HTTPException(status_code=500, detail="Supabase no configurado")
+    
+    # 5. Calculate amounts (100% reversal)
+    subtotal = bill.get("subtotal", 0)
+    itbis = bill.get("itbis", 0)
+    propina = bill.get("propina_legal", 0)
+    total = bill.get("total", 0)
+    
+    # 6. Create credit note document
+    credit_note = {
+        "id": gen_id(),
+        "ncf": e34_encf,
+        "ecf_encf": e34_encf,
+        "ncf_type": "E34",
+        "ecf_type": "E34",
+        "original_bill_id": bill["id"],
+        "original_ncf": original_encf,
+        "original_encf": original_encf,
+        "original_date": bill.get("paid_at") or bill.get("created_at"),
+        
+        # Customer info
+        "customer_id": bill.get("customer_id"),
+        "customer_name": bill.get("customer_name") or bill.get("razon_social"),
+        "customer_rnc": bill.get("customer_rnc") or bill.get("fiscal_id"),
+        
+        # Reason
+        "reason_code": "ANULACION_ADMIN",
+        "reason_name": reason,
+        "notes": f"Generada por {user['name']} - {reason}",
+        "is_full_reversal": True,
+        
+        # Items
+        "items": bill.get("items", []),
+        
+        # Amounts (negative for accounting)
+        "subtotal": round(-subtotal, 2),
+        "itbis": round(-itbis, 2),
+        "propina_legal": round(-propina, 2),
+        "total": round(-total, 2),
+        
+        # Positive for display
+        "subtotal_reversed": round(subtotal, 2),
+        "itbis_reversed": round(itbis, 2),
+        "propina_reversed": round(propina, 2),
+        "total_reversed": round(total, 2),
+        
+        # Status
+        "status": "pending",
+        "ecf_status": "pending",
+        "created_at": now_iso(),
+        "created_by": user["user_id"],
+        "created_by_name": user["name"],
+    }
+    
+    # 7. Send to Alanube
+    try:
+        system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+        
+        # Build E34 payload with credit note indicator
+        payload = build_credit_note_payload(bill, credit_note, system_config, e34_encf)
+        
+        # Send to Alanube
+        result = await send_to_alanube(payload)
+        
+        if result.get("ok"):
+            credit_note["status"] = "completed"
+            credit_note["ecf_status"] = "accepted"
+            credit_note["alanube_id"] = result.get("alanube_id")
+            credit_note["alanube_track_id"] = result.get("trackId")
+        else:
+            credit_note["status"] = "completed"  # Still save locally
+            credit_note["ecf_status"] = "error"
+            credit_note["ecf_error"] = result.get("error", "Error desconocido")
+    except Exception as e:
+        print(f"Alanube E34 error: {e}")
+        credit_note["status"] = "completed"
+        credit_note["ecf_status"] = "error"
+        credit_note["ecf_error"] = str(e)
+    
+    # 8. Save credit note
+    await db.credit_notes.insert_one(credit_note)
+    
+    # 9. Update original bill
+    await db.bills.update_one(
+        {"id": bill["id"]},
+        {"$set": {
+            "has_credit_note": True,
+            "credit_note_id": credit_note["id"],
+            "credit_note_encf": e34_encf,
+        }}
+    )
+    
+    # 10. Audit log
+    await db.role_audit_logs.insert_one({
+        "id": gen_id(),
+        "action": "credit_note_e34_generated",
+        "original_bill_id": bill["id"],
+        "original_encf": original_encf,
+        "credit_note_id": credit_note["id"],
+        "credit_note_encf": e34_encf,
+        "reason": reason,
+        "total_reversed": total,
+        "performed_by_id": user["user_id"],
+        "performed_by_name": user["name"],
+        "created_at": now_iso(),
+    })
+    
+    return {
+        "ok": True,
+        "credit_note_id": credit_note["id"],
+        "ecf_encf": e34_encf,
+        "ecf_status": credit_note.get("ecf_status"),
+        "ecf_error": credit_note.get("ecf_error"),
+        "total_reversed": total,
+        "message": f"Nota de Crédito E34 generada: {e34_encf}"
+    }
+
+
 # ─── DYNAMIC ROUTES ───
 
 @router.get("/{note_id}")
@@ -700,3 +973,100 @@ async def print_credit_note(note_id: str, user=Depends(get_current_user)):
     await db.print_queue.insert_one(job)
     
     return {"ok": True, "job_id": job["id"], "message": "Nota de crédito enviada a impresora"}
+
+
+def build_credit_note_payload(original_bill: dict, credit_note: dict, system_config: dict, encf: str) -> dict:
+    """Build Alanube payload for E34 credit note"""
+    import os
+    from datetime import datetime, timezone
+    
+    now = datetime.now(timezone.utc)
+    stamp_date = now.strftime("%Y-%m-%d")
+    
+    # Items
+    items_detail = []
+    total_taxed = 0
+    total_itbis = 0
+    line = 0
+    
+    for item in original_bill.get("items", []):
+        if item.get("status") == "cancelled":
+            continue
+        line += 1
+        qty = item.get("quantity", 1)
+        unit_price = item.get("unit_price", 0)
+        item_amount = round(qty * unit_price, 2)
+        
+        tax_exemptions = item.get("tax_exemptions", [])
+        if not tax_exemptions:
+            total_taxed += item_amount
+            total_itbis += round(item_amount * 0.18, 2)
+        
+        items_detail.append({
+            "lineNumber": line,
+            "billingIndicator": 4 if tax_exemptions else 1,
+            "itemName": (item.get("product_name", "") or "Producto")[:80],
+            "goodServiceIndicator": 1,
+            "quantityItem": qty,
+            "unitPriceItem": unit_price,
+            "itemAmount": item_amount,
+        })
+    
+    total_amount = round(credit_note.get("total_reversed", 0), 2)
+    
+    # Sender
+    sender = {
+        "rnc": os.environ.get("ALANUBE_SANDBOX_RNC", (system_config.get("rnc", "") or "").replace("-", "")),
+        "companyName": system_config.get("restaurant_name", "VexlyPOS"),
+        "tradeName": system_config.get("restaurant_name", "VexlyPOS"),
+        "stampDate": stamp_date,
+        "address": system_config.get("address", "Calle Principal #1") or "Calle Principal #1",
+        "phoneNumber": [system_config.get("phone", "000-000-0000") or "000-000-0000"],
+    }
+    
+    # Buyer
+    buyer_rnc = (original_bill.get("fiscal_id", "") or original_bill.get("customer_rnc", "") or "").replace("-", "")
+    buyer_name = original_bill.get("razon_social", "") or original_bill.get("customer_name", "") or "CONSUMIDOR FINAL"
+    buyer = {
+        "rnc": buyer_rnc or "000000000",
+        "companyName": buyer_name,
+    }
+    
+    # Totals
+    totals = {
+        "totalTaxedAmount": total_taxed,
+        "taxedAmount1Total": total_taxed if total_taxed > 0 else None,
+        "itbis1Total": total_itbis if total_itbis > 0 else None,
+        "totalITBIS": total_itbis,
+        "totalAmount": total_amount,
+        "totalPaid": total_amount,
+        "paymentForms": [{"paymentType": 4, "paymentAmount": total_amount}],  # Nota de Crédito
+    }
+    totals = {k: v for k, v in totals.items() if v is not None}
+    
+    # Information reference (required for credit notes)
+    original_encf = credit_note.get("original_encf") or credit_note.get("original_ncf", "")
+    original_date = credit_note.get("original_date", "")[:10] if credit_note.get("original_date") else stamp_date
+    
+    payload = {
+        "idDoc": {
+            "encf": encf,
+            "invoiceType": 34,  # E34 = Nota de Crédito Electrónica
+            "paymentType": 1,
+            "incomeType": 1,
+            "voucherNumber": encf,
+            "sequenceDueDate": "2027-12-31",
+        },
+        "sender": sender,
+        "buyer": buyer,
+        "totals": totals,
+        "itemDetails": items_detail,
+        # Credit note indicator and reference
+        "creditNoteIndicator": 1,
+        "informationReference": [{
+            "ncfModified": original_encf,
+            "ncfModifiedDate": original_date,
+        }],
+    }
+    
+    return payload

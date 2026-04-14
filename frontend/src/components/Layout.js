@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { GraduationCap } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud, MoreHorizontal, Wrench, MoveRight, SplitSquareHorizontal, Ban, Sun, Moon, AlertTriangle, Palette, ArrowRightLeft, Clock, LogOut as LogOutIcon, Lock, FileText, Pencil, HelpCircle } from 'lucide-react';
+import { LayoutGrid, ChefHat, Receipt, Settings, LogOut, Wifi, WifiOff, CircleDollarSign, Package, Truck, Heart, Gauge, CalendarDays, Type, Smartphone, Tablet, Monitor, CloudOff, RefreshCw, Cloud, MoreHorizontal, Wrench, MoveRight, SplitSquareHorizontal, Ban, Sun, Moon, AlertTriangle, Palette, ArrowRightLeft, Clock, LogOut as LogOutIcon, Lock, FileText, Pencil, HelpCircle, ReceiptText, Search, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -37,6 +37,68 @@ export default function Layout() {
   const [ecfDateFrom, setEcfDateFrom] = useState('');
   const [ecfDateTo, setEcfDateTo] = useState('');
   const [ecfPeriod, setEcfPeriod] = useState('jornada');
+  
+  // Credit Note E34 modal states
+  const [creditNoteModalOpen, setCreditNoteModalOpen] = useState(false);
+  const [creditNoteStep, setCreditNoteStep] = useState(1);
+  const [creditNoteSearch, setCreditNoteSearch] = useState('');
+  const [creditNoteBill, setCreditNoteBill] = useState(null);
+  const [creditNoteReason, setCreditNoteReason] = useState('');
+  const [creditNoteLoading, setCreditNoteLoading] = useState(false);
+  const [creditNoteResult, setCreditNoteResult] = useState(null);
+  const [creditNoteConfirmOpen, setCreditNoteConfirmOpen] = useState(false);
+  
+  const resetCreditNoteModal = () => {
+    setCreditNoteStep(1);
+    setCreditNoteSearch('');
+    setCreditNoteBill(null);
+    setCreditNoteReason('');
+    setCreditNoteLoading(false);
+    setCreditNoteResult(null);
+    setCreditNoteConfirmOpen(false);
+  };
+  
+  const searchBillForCreditNote = async () => {
+    if (!creditNoteSearch.trim()) {
+      notify.error('Ingresa un número de transacción o e-NCF');
+      return;
+    }
+    setCreditNoteLoading(true);
+    setCreditNoteBill(null);
+    try {
+      const res = await api.get(`/api/credit-notes/find-bill?search=${encodeURIComponent(creditNoteSearch.trim())}`);
+      setCreditNoteBill(res.data);
+    } catch (err) {
+      notify.error(err.response?.data?.detail || 'Factura no encontrada');
+    } finally {
+      setCreditNoteLoading(false);
+    }
+  };
+  
+  const generateE34 = async () => {
+    if (!creditNoteBill || !creditNoteReason.trim()) {
+      notify.error('Debes proporcionar un motivo');
+      return;
+    }
+    setCreditNoteLoading(true);
+    try {
+      const res = await api.post('/api/credit-notes/generate-e34', {
+        search: creditNoteSearch.trim(),
+        reason: creditNoteReason.trim()
+      });
+      setCreditNoteResult(res.data);
+      setCreditNoteStep(3);
+      setCreditNoteConfirmOpen(false);
+      notify.success(`Nota de Crédito E34 generada: ${res.data.ecf_encf}`);
+    } catch (err) {
+      setCreditNoteResult({ ok: false, error: err.response?.data?.detail || 'Error generando E34' });
+      setCreditNoteStep(3);
+      setCreditNoteConfirmOpen(false);
+      notify.error(err.response?.data?.detail || 'Error generando E34');
+    } finally {
+      setCreditNoteLoading(false);
+    }
+  };
   
   const getEcfDates = (period) => {
     const today = new Date();
@@ -969,6 +1031,17 @@ export default function Layout() {
                 </div>
                 <span className="font-semibold text-sm">Ayuda</span>
               </button>
+              {/* Nota de Crédito E34 - solo para usuarios con permiso */}
+              {(isAdmin || hasPermission('manage_credit_notes')) && (
+                <button onClick={() => { setOptionsMenuOpen(false); resetCreditNoteModal(); setCreditNoteModalOpen(true); }}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-amber-500/50 hover:bg-amber-500/5 transition-all active:scale-95"
+                  data-testid="opt-nota-credito">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                    <ReceiptText size={20} className="text-amber-500" />
+                  </div>
+                  <span className="font-semibold text-sm">Nota de Crédito</span>
+                </button>
+              )}
               {(isAdmin || hasPermission('view_ecf_dashboard')) && (
                 <button onClick={async () => {
                   setOptionsMenuOpen(false);
@@ -1062,6 +1135,211 @@ export default function Layout() {
           />
           <button type="button" onClick={() => { setChangePinOpen(false); setNewPinValue(''); }}
             className="w-full text-xs text-muted-foreground hover:text-foreground py-2">Cancelar</button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credit Note E34 Modal */}
+      <Dialog open={creditNoteModalOpen} onOpenChange={(open) => { if (!open) { setCreditNoteModalOpen(false); resetCreditNoteModal(); } else { setCreditNoteModalOpen(true); } }}>
+        <DialogContent className="max-w-lg mx-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ReceiptText className="text-amber-500" size={22} />
+              Generar Nota de Crédito E34
+            </DialogTitle>
+            <DialogDescription>
+              {creditNoteStep === 1 && 'Busca la factura a la que deseas generar nota de crédito'}
+              {creditNoteStep === 2 && 'Confirma los datos y proporciona el motivo'}
+              {creditNoteStep === 3 && (creditNoteResult?.ok ? 'Nota de crédito generada exitosamente' : 'Error al generar nota de crédito')}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Step 1: Search */}
+          {creditNoteStep === 1 && (
+            <div className="space-y-4 py-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={creditNoteSearch}
+                  onChange={e => setCreditNoteSearch(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && searchBillForCreditNote()}
+                  placeholder="Número de transacción o e-NCF"
+                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                  data-testid="credit-note-search-input"
+                />
+                <Button onClick={searchBillForCreditNote} disabled={creditNoteLoading} className="min-w-[100px]">
+                  {creditNoteLoading ? <Loader2 className="animate-spin" size={16} /> : <><Search size={16} className="mr-1" /> Buscar</>}
+                </Button>
+              </div>
+
+              {creditNoteBill && (
+                <div className="bg-muted/50 rounded-xl p-4 border border-border space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs text-muted-foreground">e-NCF Original</p>
+                      <p className="font-mono font-bold text-primary">{creditNoteBill.ecf_encf || creditNoteBill.ncf || 'N/A'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Total a Acreditar</p>
+                      <p className="font-bold text-lg text-amber-500">RD$ {(creditNoteBill.total || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Mesa:</span> {creditNoteBill.table_number || 'N/A'}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Cajero:</span> {creditNoteBill.cashier_name || 'N/A'}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Fecha:</span> {creditNoteBill.paid_at ? new Date(creditNoteBill.paid_at).toLocaleDateString('es-DO') : 'N/A'}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Trans:</span> {creditNoteBill.transaction_number || 'N/A'}
+                    </div>
+                  </div>
+
+                  {creditNoteBill.items?.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-border">
+                      <p className="text-xs text-muted-foreground mb-1">Items ({creditNoteBill.items.filter(i => i.status !== 'cancelled').length})</p>
+                      <div className="max-h-24 overflow-y-auto text-xs space-y-1">
+                        {creditNoteBill.items.filter(i => i.status !== 'cancelled').slice(0, 5).map((item, idx) => (
+                          <div key={idx} className="flex justify-between">
+                            <span>{item.quantity}x {item.product_name}</span>
+                            <span>RD$ {((item.quantity || 1) * (item.unit_price || 0)).toFixed(2)}</span>
+                          </div>
+                        ))}
+                        {creditNoteBill.items.filter(i => i.status !== 'cancelled').length > 5 && (
+                          <p className="text-muted-foreground">...y {creditNoteBill.items.filter(i => i.status !== 'cancelled').length - 5} más</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {creditNoteBill.has_credit_note && (
+                    <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2">
+                      <XCircle size={16} className="text-red-500" />
+                      <span className="text-sm text-red-500">Ya tiene nota de crédito: <strong>{creditNoteBill.credit_note_encf}</strong></span>
+                    </div>
+                  )}
+
+                  {!creditNoteBill.has_credit_note && (
+                    <Button onClick={() => setCreditNoteStep(2)} className="w-full bg-amber-500 hover:bg-amber-600 text-white">
+                      Continuar
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 2: Confirm */}
+          {creditNoteStep === 2 && creditNoteBill && (
+            <div className="space-y-4 py-2">
+              <div className="bg-muted/50 rounded-xl p-4 border border-border">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="font-mono text-primary">{creditNoteBill.ecf_encf}</span>
+                  <span className="font-bold text-amber-500">RD$ {(creditNoteBill.total || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Se generará una Nota de Crédito E34 por el 100% del total de esta factura.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium block mb-1">Motivo de la nota de crédito *</label>
+                <textarea
+                  value={creditNoteReason}
+                  onChange={e => setCreditNoteReason(e.target.value)}
+                  placeholder="Ej: Error en facturación, devolución de producto..."
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm min-h-[80px]"
+                  data-testid="credit-note-reason-input"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setCreditNoteStep(1)} className="flex-1">
+                  Atrás
+                </Button>
+                <Button 
+                  onClick={() => setCreditNoteConfirmOpen(true)} 
+                  disabled={!creditNoteReason.trim()}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
+                >
+                  Generar E34
+                </Button>
+              </div>
+
+              {/* Confirmation Dialog */}
+              <Dialog open={creditNoteConfirmOpen} onOpenChange={setCreditNoteConfirmOpen}>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-amber-500">
+                      <AlertTriangle size={20} /> Confirmar Generación
+                    </DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-muted-foreground py-2">
+                    ¿Está seguro? Esta acción generará una <strong>Nota de Crédito E34</strong> ante la DGII y <strong>no puede deshacerse</strong>.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setCreditNoteConfirmOpen(false)} className="flex-1">
+                      Cancelar
+                    </Button>
+                    <Button onClick={generateE34} disabled={creditNoteLoading} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white">
+                      {creditNoteLoading ? <Loader2 className="animate-spin mr-1" size={16} /> : null}
+                      Sí, generar E34
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
+
+          {/* Step 3: Result */}
+          {creditNoteStep === 3 && (
+            <div className="space-y-4 py-2">
+              {creditNoteResult?.ok ? (
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-green-500/15 flex items-center justify-center">
+                    <CheckCircle size={32} className="text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold">Nota de Crédito Generada</p>
+                    <p className="font-mono text-xl text-primary mt-1">{creditNoteResult.ecf_encf}</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Total acreditado: <strong>RD$ {(creditNoteResult.total_reversed || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}</strong>
+                  </p>
+                  {creditNoteResult.ecf_status === 'error' && (
+                    <div className="p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600">
+                      Advertencia: {creditNoteResult.ecf_error || 'Error al enviar a DGII'}
+                    </div>
+                  )}
+                  <Button onClick={() => { setCreditNoteModalOpen(false); resetCreditNoteModal(); }} className="w-full">
+                    Cerrar
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-red-500/15 flex items-center justify-center">
+                    <XCircle size={32} className="text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-red-500">Error</p>
+                    <p className="text-sm text-muted-foreground mt-1">{creditNoteResult?.error || 'Error desconocido'}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setCreditNoteStep(1)} className="flex-1">
+                      Intentar de nuevo
+                    </Button>
+                    <Button onClick={() => { setCreditNoteModalOpen(false); resetCreditNoteModal(); }} className="flex-1">
+                      Cerrar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -59,6 +59,7 @@ DEFAULT_PERMISSIONS = {
         "config_sistema": True, "config_descuentos": True, "config_tipos_venta": True,
         "config_formas_pago": True,
         "access_caja": True,
+        "manage_credit_notes": True,
     },
     "waiter": {
         "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
@@ -140,6 +141,7 @@ ALL_PERMISSIONS = {
     "edit_ecf_type": "Editar Tipo e-CF en Contingencia",
     "retry_ecf": "Reenviar e-CF en Contingencia",
     "access_caja": "Acceso a Caja",
+    "manage_credit_notes": "Generar Notas de Crédito E34",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───

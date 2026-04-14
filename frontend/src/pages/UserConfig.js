@@ -66,6 +66,7 @@ const PERMISSION_CATEGORIES = {
       manage_customers: 'Gestionar Clientes',
       manager_on_duty: 'Gerente en Turno',
       can_manage_tax_override: 'Exencion de Impuestos',
+      manage_credit_notes: 'Generar Notas de Crédito E34',
     }
   },
   inventario: {
