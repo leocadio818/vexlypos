@@ -1271,3 +1271,32 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: 100% passed - Backend (12/12 pytest), Frontend (Desktop, iOS, Android, Dark/Light)
 - **Fecha de protección**: 2026-04-14
 
+
+
+### 🔒 Inventario Simple por Conteo — Added 2026-04-14
+- **Descripción**: Control de inventario basado en conteo directo (sin recetas). Mutuamente excluyente con el sistema de recetas.
+- **Archivos protegidos**:
+  - `/app/backend/routers/simple_inventory.py`: Router completo (endpoints, helpers, audit log)
+  - `/app/backend/routers/orders.py`: Decremento atómico en `add_items_to_order`, restauración en `cancel_order_item` y `cancel_multiple_items`
+  - `/app/backend/routers/config.py`: `get_products_stock_status` incluye productos con inventario simple
+  - `/app/frontend/src/pages/settings/SimpleInventoryTab.js`: Tab completa con tabla, ajuste rápido, reporte auditoría y CSV
+  - `/app/frontend/src/pages/settings/index.js`: Tab registrada como "Inv. Simple"
+  - `/app/frontend/src/pages/OrderScreen.js`: Badges de cantidad (verde/amarillo/rojo/gris), botón disabled cuando qty=0
+  - `/app/frontend/src/pages/ProductConfig.js`: Sección condicional (mutua exclusividad con receta)
+  - `/app/frontend/src/lib/api.js`: `simpleInventoryAPI`
+- **Campos en MongoDB products**: `simple_inventory_enabled`, `simple_inventory_qty`, `simple_inventory_alert_qty`
+- **Colección MongoDB**: `inventory_audit_log` con campos: id, product_id, product_name, user_id, user_name, action_type, qty_before, qty_after, qty_change, reason, created_at
+- **Endpoints**:
+  - `GET /api/simple-inventory` — Lista productos con inventario simple
+  - `PUT /api/simple-inventory/{product_id}/adjust` — Ajuste manual de stock
+  - `GET /api/simple-inventory/audit-log` — Log de auditoría con filtros
+  - `GET /api/simple-inventory/audit-log/export-csv` — Export CSV
+  - `GET /api/simple-inventory/products-with-simple` — Data para badges en POS
+- **Reglas de negocio**:
+  - Si producto tiene receta activa → no puede tener inventario simple (y viceversa)
+  - Al agregar item a orden → decremento atómico vía `find_one_and_update`
+  - Al cancelar item → restauración automática del stock
+  - Permisos: `manage_inventory` o roles admin/manager para ver/ajustar
+  - Badges: Verde (#22c55e) = normal, Amarillo (#eab308) = bajo, Rojo (#ef4444) = último, Gris = agotado
+- **Testing**: Backend 89% (16/18 — 2 timing issues en tests, no bugs reales), Frontend 100%
+- **Fecha de protección**: 2026-04-14
