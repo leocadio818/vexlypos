@@ -14,6 +14,7 @@ import api, { businessDaysAPI, ordersAPI } from '@/lib/api';
 import { notify } from '@/lib/notify';
 import BusinessDayManager from '@/components/BusinessDayManager';
 import EcfDashboardInline from '@/pages/reports/EcfDashboard';
+import StockAlertModal from '@/components/StockAlertModal';
 import '@/App.css';
 
 const navItems = [
@@ -356,6 +357,8 @@ export default function Layout() {
       style={bgStyle}
       data-testid="main-layout"
     >
+      {/* Stock Alert Modal - shows on login if low stock products exist */}
+      <StockAlertModal />
       {/* Animated orbs for glass pages (original theme only) */}
       {useGlassStyle && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">

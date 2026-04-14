@@ -288,3 +288,79 @@ async def get_products_with_simple_inventory():
         {"_id": 0, "id": 1, "simple_inventory_qty": 1, "simple_inventory_alert_qty": 1}
     ).to_list(500)
     return products
+
+
+# ─── STOCK ALERTS ───
+
+@router.get("/alerts/pending")
+async def get_pending_alerts(user=Depends(get_current_user)):
+    """
+    Returns low-stock products that this user hasn't dismissed at the current qty.
+    Logic: Show alert if product qty <= alert_qty AND (user never dismissed it OR dismissed at a different qty).
+    """
+    # Get all products with low stock
+    low_stock = await db.products.find(
+        {
+            "simple_inventory_enabled": True,
+            "active": True,
+            "$expr": {"$lte": ["$simple_inventory_qty", "$simple_inventory_alert_qty"]},
+            "simple_inventory_qty": {"$gt": 0}
+        },
+        {"_id": 0, "id": 1, "name": 1, "simple_inventory_qty": 1, "simple_inventory_alert_qty": 1}
+    ).to_list(500)
+
+    if not low_stock:
+        return []
+
+    user_id = user.get("user_id", "")
+
+    # Get this user's dismissals
+    dismissals = await db.inventory_alert_dismissals.find(
+        {"user_id": user_id},
+        {"_id": 0, "product_id": 1, "dismissed_at_qty": 1}
+    ).to_list(500)
+    dismiss_map = {d["product_id"]: d["dismissed_at_qty"] for d in dismissals}
+
+    # Filter: only show if not dismissed at current qty
+    pending = []
+    for p in low_stock:
+        dismissed_qty = dismiss_map.get(p["id"])
+        current_qty = p.get("simple_inventory_qty", 0)
+        if dismissed_qty is None or dismissed_qty != current_qty:
+            pending.append(p)
+
+    return pending
+
+
+class DismissAlertsInput(BaseModel):
+    product_ids: list
+
+
+@router.post("/alerts/dismiss")
+async def dismiss_alerts(input: DismissAlertsInput, user=Depends(get_current_user)):
+    """
+    Dismiss alerts for the current user at the current qty level.
+    Next time the user logs in, if qty hasn't changed, they won't see the alert.
+    """
+    user_id = user.get("user_id", "")
+
+    for product_id in input.product_ids:
+        product = await db.products.find_one(
+            {"id": product_id},
+            {"_id": 0, "simple_inventory_qty": 1}
+        )
+        current_qty = product.get("simple_inventory_qty", 0) if product else 0
+
+        await db.inventory_alert_dismissals.update_one(
+            {"user_id": user_id, "product_id": product_id},
+            {"$set": {
+                "user_id": user_id,
+                "product_id": product_id,
+                "dismissed_at_qty": current_qty,
+                "dismissed_at": now_iso(),
+            }},
+            upsert=True
+        )
+
+    return {"ok": True, "dismissed": len(input.product_ids)}
+

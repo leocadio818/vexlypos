@@ -235,6 +235,8 @@ export const simpleInventoryAPI = {
   auditLog: (params) => api.get('/simple-inventory/audit-log', { params }),
   exportCsv: (params) => api.get('/simple-inventory/audit-log/export-csv', { params, responseType: 'blob' }),
   productsWithSimple: () => api.get('/simple-inventory/products-with-simple'),
+  pendingAlerts: () => api.get('/simple-inventory/alerts/pending'),
+  dismissAlerts: (productIds) => api.post('/simple-inventory/alerts/dismiss', { product_ids: productIds }),
 };
 
 // Business Days (Jornadas de Trabajo)

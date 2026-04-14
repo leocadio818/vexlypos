@@ -1338,13 +1338,26 @@ async def check_low_stock_alerts(send_email: bool = Query(False)):
                 "deficit": min_stock - total_stock
             })
     
+    # Also check simple inventory products
+    simple_low = await db.products.find(
+        {
+            "simple_inventory_enabled": True,
+            "active": True,
+            "$expr": {"$lte": ["$simple_inventory_qty", "$simple_inventory_alert_qty"]},
+            "simple_inventory_qty": {"$gt": 0}
+        },
+        {"_id": 0, "id": 1, "name": 1, "simple_inventory_qty": 1, "simple_inventory_alert_qty": 1}
+    ).to_list(500)
+    
     result = {
         "alert_count": len(low_stock_items),
         "items": low_stock_items,
+        "simple_inventory_alerts": simple_low,
+        "simple_inventory_alert_count": len(simple_low),
         "checked_at": now_iso()
     }
     
-    if send_email and low_stock_items:
+    if send_email and (low_stock_items or simple_low):
         config = await db.system_config.find_one({"id": "stock_alerts"}, {"_id": 0})
         alert_emails = config.get("emails", []) if config else []
         
@@ -1359,26 +1372,44 @@ async def check_low_stock_alerts(send_email: bool = Query(False)):
                     <td style='padding:8px;border-bottom:1px solid #333;text-align:center;'>{item['min_stock']:.2f} {item['unit']}</td>
                 </tr>"""
             
+            # Simple inventory items section
+            simple_html = ""
+            if simple_low:
+                simple_html = """
+                <div style='margin-top:25px;border-top:2px solid #22c55e;padding-top:15px;'>
+                    <h3 style='color:#22c55e;margin:0 0 10px;'>Inventario Simple - Stock Bajo</h3>
+                    <table style='width:100%;border-collapse:collapse;background:#252542;border-radius:8px;overflow:hidden;'>
+                        <thead>
+                            <tr style='background:#22c55e;color:white;'>
+                                <th style='padding:10px;text-align:left;'>Producto</th>
+                                <th style='padding:10px;text-align:center;'>Cantidad Actual</th>
+                                <th style='padding:10px;text-align:center;'>Alerta Configurada</th>
+                            </tr>
+                        </thead>
+                        <tbody>"""
+                for sp in simple_low:
+                    sq = sp.get("simple_inventory_qty", 0)
+                    sc = "#dc2626" if sq <= 1 else "#f59e0b"
+                    simple_html += f"""<tr>
+                        <td style='padding:8px;border-bottom:1px solid #333;'>{sp['name']}</td>
+                        <td style='padding:8px;border-bottom:1px solid #333;text-align:center;color:{sc};font-weight:bold;'>{sq} uds</td>
+                        <td style='padding:8px;border-bottom:1px solid #333;text-align:center;'>{sp.get('simple_inventory_alert_qty', 3)} uds</td>
+                    </tr>"""
+                simple_html += "</tbody></table></div>"
+            
+            total_alerts = len(low_stock_items) + len(simple_low)
+            
             html = f"""
             <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#1a1a2e;color:#eee;padding:20px;border-radius:10px;'>
                 <div style='border-bottom:2px solid #FF6600;padding-bottom:15px;margin-bottom:20px;'>
                     <h2 style='color:#FF6600;margin:0;'>Alerta de Stock Bajo</h2>
-                    <p style='color:#888;margin:5px 0 0;font-size:14px;'>Mesa POS RD - Sistema de Inventario</p>
+                    <p style='color:#888;margin:5px 0 0;font-size:14px;'>VexlyPOS - Sistema de Inventario</p>
                 </div>
-                <p style='margin-bottom:15px;'>Se detectaron <strong style='color:#FF6600;'>{len(low_stock_items)}</strong> insumos por debajo del stock minimo:</p>
-                <table style='width:100%;border-collapse:collapse;background:#252542;border-radius:8px;overflow:hidden;'>
-                    <thead>
-                        <tr style='background:#FF6600;color:white;'>
-                            <th style='padding:10px;text-align:left;'>Insumo</th>
-                            <th style='padding:10px;text-align:left;'>Categoria</th>
-                            <th style='padding:10px;text-align:center;'>Stock Actual</th>
-                            <th style='padding:10px;text-align:center;'>Stock Minimo</th>
-                        </tr>
-                    </thead>
-                    <tbody>{items_html}</tbody>
-                </table>
+                <p style='margin-bottom:15px;'>Se detectaron <strong style='color:#FF6600;'>{total_alerts}</strong> alertas de stock bajo:</p>
+                {"<table style='width:100%%;border-collapse:collapse;background:#252542;border-radius:8px;overflow:hidden;'><thead><tr style='background:#FF6600;color:white;'><th style='padding:10px;text-align:left;'>Insumo</th><th style='padding:10px;text-align:left;'>Categoria</th><th style='padding:10px;text-align:center;'>Stock Actual</th><th style='padding:10px;text-align:center;'>Stock Minimo</th></tr></thead><tbody>" + items_html + "</tbody></table>" if items_html else ""}
+                {simple_html}
                 <div style='margin-top:20px;padding:15px;background:#252542;border-radius:8px;border-left:4px solid #FF6600;'>
-                    <p style='margin:0;font-size:14px;'><strong>Accion recomendada:</strong> Crear una orden de compra para reponer estos insumos.</p>
+                    <p style='margin:0;font-size:14px;'><strong>Accion recomendada:</strong> Reponer los productos e insumos con stock bajo.</p>
                 </div>
                 <p style='margin-top:20px;font-size:12px;color:#666;text-align:center;'>
                     Generado automaticamente el {now_iso()[:19].replace('T', ' ')}
@@ -1391,7 +1422,7 @@ async def check_low_stock_alerts(send_email: bool = Query(False)):
                     params = {
                         "from": SENDER_EMAIL, 
                         "to": [email], 
-                        "subject": f"Alerta de Stock Bajo - {len(low_stock_items)} items", 
+                        "subject": f"Alerta de Stock Bajo - {total_alerts} alertas", 
                         "html": html
                     }
                     await asyncio.to_thread(resend.Emails.send, params)
