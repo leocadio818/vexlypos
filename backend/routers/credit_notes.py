@@ -384,9 +384,10 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
     
     # 4. Generate E34 sequence from Supabase
     e34_encf = None
+    seq_due_date = None
     if supabase_client:
         try:
-            seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", "E34").eq("is_active", True).limit(1).execute()
+            seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type", "E34").eq("is_active", True).limit(1).execute()
             if not seq_result.data:
                 # Fallback to ncf_type_code
                 seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_code", "E34").eq("is_active", True).limit(1).execute()
@@ -395,7 +396,8 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
                 seq = seq_result.data[0]
                 current_num = seq.get("current_number", 1)
                 serie = seq.get("serie", "E")
-                e34_encf = f"{serie}34{current_num:08d}"
+                seq_due_date = seq.get("expiration_date") or "2027-12-31"
+                e34_encf = f"{serie}34{str(current_num).zfill(10)}"
                 
                 # Update sequence
                 supabase_client.table("ncf_sequences").update({
@@ -468,7 +470,7 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
         system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
         
         # Build E34 payload with credit note indicator
-        payload = build_credit_note_payload(bill, credit_note, system_config, e34_encf)
+        payload = build_credit_note_payload(bill, credit_note, system_config, e34_encf, seq_due_date)
         
         # Send to Alanube
         result = await send_to_alanube(payload)
@@ -1001,7 +1003,7 @@ async def print_credit_note(note_id: str, user=Depends(get_current_user)):
     return {"ok": True, "job_id": job["id"], "message": "Nota de crédito enviada a impresora"}
 
 
-def build_credit_note_payload(original_bill: dict, credit_note: dict, system_config: dict, encf: str) -> dict:
+def build_credit_note_payload(original_bill: dict, credit_note: dict, system_config: dict, encf: str, seq_due_date: str = None) -> dict:
     """Build Alanube payload for E34 credit note"""
     import os
     from datetime import datetime, timezone
