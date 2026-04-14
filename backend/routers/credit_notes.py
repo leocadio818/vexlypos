@@ -259,16 +259,37 @@ async def find_bill_for_credit_note(search: str, user=Depends(get_current_user))
     except ValueError:
         search_conditions.append({"transaction_number": search})
     
-    # Search by transaction_number or ecf_encf
+    # First, search for ANY bill matching the criteria (regardless of status)
     bill = await db.bills.find_one({
-        "$or": search_conditions,
-        "status": "paid"
+        "$or": search_conditions
     }, {"_id": 0})
     
+    # Case 1: Bill doesn't exist at all
     if not bill:
-        raise HTTPException(status_code=404, detail="Factura no encontrada o no está pagada")
+        raise HTTPException(status_code=404, detail="Factura no encontrada. Verifica el número de transacción o e-NCF.")
     
-    # Check if already has credit note
+    # Case 2: Check if bill is in contingency (PENDING- prefix in ecf_encf)
+    ecf_encf = bill.get("ecf_encf", "")
+    if ecf_encf and ecf_encf.startswith("PENDING-"):
+        raise HTTPException(status_code=400, detail="Esta factura está en contingencia. Resuélvela primero desde el Dashboard e-CF antes de generar una nota de crédito.")
+    
+    # Case 3: Check if bill is pending DGII approval (ecf_status not accepted)
+    ecf_status = bill.get("ecf_status", "")
+    bill_status = bill.get("status", "")
+    
+    if bill_status != "paid":
+        if bill_status == "pending" or bill_status == "active":
+            raise HTTPException(status_code=400, detail="Esta factura aún no ha sido cobrada. Solo se pueden generar notas de crédito sobre facturas pagadas.")
+        elif bill_status == "cancelled":
+            raise HTTPException(status_code=400, detail="Esta factura fue anulada. No se puede generar nota de crédito sobre facturas anuladas.")
+    
+    if ecf_status == "pending" or ecf_status == "processing":
+        raise HTTPException(status_code=400, detail="Esta factura está pendiente de aprobación por la DGII. Solo se pueden generar notas de crédito sobre facturas aprobadas.")
+    
+    if ecf_status == "error" or ecf_status == "rejected":
+        raise HTTPException(status_code=400, detail="Esta factura tiene un error de validación con la DGII. Resuélvela primero desde el Dashboard e-CF antes de generar una nota de crédito.")
+    
+    # Case 4: Check if already has credit note
     existing_cn = await db.credit_notes.find_one({
         "original_bill_id": bill["id"],
         "status": {"$in": ["pending", "completed"]}
@@ -277,12 +298,17 @@ async def find_bill_for_credit_note(search: str, user=Depends(get_current_user))
     has_credit_note = existing_cn is not None
     credit_note_encf = existing_cn.get("ecf_encf") or existing_cn.get("ncf") if existing_cn else None
     
+    # If has credit note, return 400 with specific message
+    if has_credit_note:
+        raise HTTPException(status_code=400, detail=f"Esta factura ya tiene una Nota de Crédito generada (e-NCF: {credit_note_encf}).")
+    
     return {
         "id": bill.get("id"),
         "transaction_number": bill.get("transaction_number"),
         "ecf_encf": bill.get("ecf_encf"),
         "ncf": bill.get("ncf"),
         "ecf_type": bill.get("ecf_type"),
+        "ecf_status": bill.get("ecf_status"),
         "total": bill.get("total", 0),
         "subtotal": bill.get("subtotal", 0),
         "itbis": bill.get("itbis", 0),
@@ -294,8 +320,8 @@ async def find_bill_for_credit_note(search: str, user=Depends(get_current_user))
         "items": bill.get("items", []),
         "customer_name": bill.get("customer_name") or bill.get("razon_social"),
         "customer_rnc": bill.get("customer_rnc") or bill.get("fiscal_id"),
-        "has_credit_note": has_credit_note,
-        "credit_note_encf": credit_note_encf,
+        "has_credit_note": False,
+        "credit_note_encf": None,
     }
 
 

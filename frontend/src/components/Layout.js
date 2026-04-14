@@ -47,6 +47,7 @@ export default function Layout() {
   const [creditNoteLoading, setCreditNoteLoading] = useState(false);
   const [creditNoteResult, setCreditNoteResult] = useState(null);
   const [creditNoteConfirmOpen, setCreditNoteConfirmOpen] = useState(false);
+  const [creditNoteSearchError, setCreditNoteSearchError] = useState(null);
   
   const resetCreditNoteModal = () => {
     setCreditNoteStep(1);
@@ -56,20 +57,25 @@ export default function Layout() {
     setCreditNoteLoading(false);
     setCreditNoteResult(null);
     setCreditNoteConfirmOpen(false);
+    setCreditNoteSearchError(null);
   };
   
   const searchBillForCreditNote = async () => {
     if (!creditNoteSearch.trim()) {
-      notify.error('Ingresa un número de transacción o e-NCF');
+      setCreditNoteSearchError('Ingresa un número de transacción o e-NCF');
       return;
     }
     setCreditNoteLoading(true);
     setCreditNoteBill(null);
+    setCreditNoteSearchError(null);
     try {
       const res = await api.get(`/api/credit-notes/find-bill?search=${encodeURIComponent(creditNoteSearch.trim())}`);
       setCreditNoteBill(res.data);
+      setCreditNoteSearchError(null);
     } catch (err) {
-      notify.error(err.response?.data?.detail || 'Factura no encontrada');
+      const errorMsg = err.response?.data?.detail || 'Factura no encontrada';
+      setCreditNoteSearchError(errorMsg);
+      setCreditNoteBill(null);
     } finally {
       setCreditNoteLoading(false);
     }
@@ -1160,16 +1166,24 @@ export default function Layout() {
                 <input
                   type="text"
                   value={creditNoteSearch}
-                  onChange={e => setCreditNoteSearch(e.target.value)}
+                  onChange={e => { setCreditNoteSearch(e.target.value); setCreditNoteSearchError(null); }}
                   onKeyDown={e => e.key === 'Enter' && searchBillForCreditNote()}
                   placeholder="Número de transacción o e-NCF"
-                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                  className={`flex-1 px-3 py-2 bg-background border rounded-lg text-sm ${creditNoteSearchError ? 'border-red-500' : 'border-border'}`}
                   data-testid="credit-note-search-input"
                 />
                 <Button onClick={searchBillForCreditNote} disabled={creditNoteLoading} className="min-w-[100px]">
                   {creditNoteLoading ? <Loader2 className="animate-spin" size={16} /> : <><Search size={16} className="mr-1" /> Buscar</>}
                 </Button>
               </div>
+
+              {/* Error Message */}
+              {creditNoteSearchError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-2">
+                  <XCircle size={18} className="text-red-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-red-500">{creditNoteSearchError}</p>
+                </div>
+              )}
 
               {creditNoteBill && (
                 <div className="bg-muted/50 rounded-xl p-4 border border-border space-y-3">
@@ -1216,18 +1230,9 @@ export default function Layout() {
                     </div>
                   )}
 
-                  {creditNoteBill.has_credit_note && (
-                    <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2">
-                      <XCircle size={16} className="text-red-500" />
-                      <span className="text-sm text-red-500">Ya tiene nota de crédito: <strong>{creditNoteBill.credit_note_encf}</strong></span>
-                    </div>
-                  )}
-
-                  {!creditNoteBill.has_credit_note && (
-                    <Button onClick={() => setCreditNoteStep(2)} className="w-full bg-amber-500 hover:bg-amber-600 text-white">
-                      Continuar
-                    </Button>
-                  )}
+                  <Button onClick={() => setCreditNoteStep(2)} className="w-full bg-amber-500 hover:bg-amber-600 text-white">
+                    Continuar
+                  </Button>
                 </div>
               )}
             </div>
