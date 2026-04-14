@@ -1300,3 +1300,22 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - Badges: Verde (#22c55e) = normal, Amarillo (#eab308) = bajo, Rojo (#ef4444) = último, Gris = agotado
 - **Testing**: Backend 89% (16/18 — 2 timing issues en tests, no bugs reales), Frontend 100%
 - **Fecha de protección**: 2026-04-14
+
+### 🔒 Notificaciones Push de Stock Bajo — Added 2026-04-14
+- **Descripción**: Modal obligatorio centrado que alerta sobre productos con stock bajo al entrar a la app. El usuario debe dar ACEPTAR. No se repite si el qty no cambió. Se re-muestra si el qty cambió. Email periódico integrado con scheduler existente.
+- **Archivos protegidos**:
+  - `/app/backend/routers/simple_inventory.py`: Endpoints `alerts/pending` y `alerts/dismiss`
+  - `/app/backend/server.py`: `check_low_stock_alerts` modificado para incluir inventario simple en emails
+  - `/app/frontend/src/components/StockAlertModal.js`: Componente modal completo
+  - `/app/frontend/src/components/Layout.js`: Render del StockAlertModal
+  - `/app/frontend/src/lib/api.js`: `pendingAlerts` y `dismissAlerts`
+- **Colección MongoDB**: `inventory_alert_dismissals` con: `user_id`, `product_id`, `dismissed_at_qty`, `dismissed_at`
+- **Lógica clave**:
+  - Solo para inventario simple (no recetas)
+  - Se muestra si qty <= alert_qty AND (nunca dismissed OR dismissed at different qty)
+  - Dismiss es per-user, per-product, per-qty
+  - Modal obligatorio — no se puede cerrar sin dar ACEPTAR
+  - Email incluye sección "Inventario Simple - Stock Bajo" en el email periódico existente
+- **Testing**: Backend 92%, Frontend 100%
+- **Fecha de protección**: 2026-04-14
+
