@@ -1242,3 +1242,32 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: 100% passed - Desktop 1280px, Safari iOS 390px, Android Chrome 412px (Light Mode)
 - **Fecha de protección**: 2026-04-11
 
+### 19. 🔒 Generador de Nota de Crédito E34 Independiente de Turno (2026-04-14)
+- **Feature**: Admin/Propietario puede generar Notas de Crédito E34 sin estar dentro de un turno de cajero
+- **Nuevo permiso**: `manage_credit_notes` (Admin: TRUE, otros: FALSE)
+- **Nuevos endpoints**:
+  - `GET /api/credit-notes/find-bill?search=<transaction_number|e-NCF>`: Busca factura
+  - `POST /api/credit-notes/generate-e34`: Genera E34 (valida permiso, razón, factura)
+- **Frontend**:
+  - Botón "Nota de Crédito" en modal de Opciones (color amber/naranja)
+  - Solo visible para usuarios con `manage_credit_notes` o Admin
+  - Modal con flujo de 3 pasos:
+    1. Buscar factura por número de transacción o e-NCF
+    2. Mostrar datos + campo para motivo + confirmación
+    3. Resultado (éxito con e-NCF generado o error)
+- **Archivos protegidos**:
+  - `/app/backend/routers/credit_notes.py`: Líneas 230-450 (find-bill, generate-e34)
+  - `/app/backend/routers/auth.py`: `manage_credit_notes` en DEFAULT_PERMISSIONS y ALL_PERMISSIONS
+  - `/app/frontend/src/components/Layout.js`: Estados del modal (líneas 50-95), botón (líneas 1035-1050), modal UI (líneas 1150-1300)
+  - `/app/frontend/src/pages/settings/SettingsContext.js`: Label del permiso
+  - `/app/frontend/src/pages/UserConfig.js`: Permiso en categoría Administración
+- **Reglas de negocio**:
+  - NO requiere turno abierto
+  - NO modifica factura original, solo crea E34
+  - Si factura ya tiene E34, bloquea y muestra e-NCF existente
+  - Genera secuencia E34 desde Supabase
+  - Envía a Alanube con creditNoteIndicator y informationReference
+  - Guarda en MongoDB credit_notes + audit log
+- **Testing**: 100% passed - Backend (12/12 pytest), Frontend (Desktop, iOS, Android, Dark/Light)
+- **Fecha de protección**: 2026-04-14
+
