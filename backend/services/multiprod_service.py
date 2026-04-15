@@ -327,7 +327,20 @@ class MultiprodService:
                     content=xml_content,
                     headers={"Content-Type": "application/xml; charset=utf-8"},
                 )
-                data = response.json()
+                raw_text = response.text
+                # Try JSON first
+                try:
+                    data = response.json()
+                except Exception:
+                    # Multiprod might respond with non-JSON (XML, HTML, plain text)
+                    return {
+                        "ok": False,
+                        "estado": "error_formato",
+                        "motivo": f"Multiprod respondio con formato no-JSON (HTTP {response.status_code}): {raw_text[:300]}",
+                        "raw_text": raw_text[:500],
+                        "http_status": response.status_code,
+                    }
+
                 if response.status_code in [200, 201]:
                     estado = (data.get("estado") or data.get("status") or "").lower()
                     return {
@@ -344,6 +357,7 @@ class MultiprodService:
                         "ok": False, "estado": "error",
                         "motivo": data.get("message") or data.get("error") or f"HTTP {response.status_code}",
                         "raw": data,
+                        "http_status": response.status_code,
                     }
         except httpx.TimeoutException:
             return {"ok": False, "estado": "timeout", "motivo": "Multiprod no respondio en 15 segundos"}

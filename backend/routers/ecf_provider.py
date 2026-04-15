@@ -568,7 +568,8 @@ async def test_multiprod_connection(user=Depends(get_current_user)):
         if send_result.get("ok") or send_result.get("estado") == "aceptado":
             return {"ok": True, "message": f"Conexion exitosa. TrackId: {send_result.get('trackId', 'N/A')}", "results": results}
         else:
-            return {"ok": False, "message": f"Multiprod respondio: {send_result.get('motivo', 'Error')}", "results": results}
+            motivo = send_result.get("motivo") or send_result.get("raw_text", "Error desconocido")
+            return {"ok": False, "message": f"Multiprod respondio: {motivo[:200]}", "results": results}
     else:
         return {"ok": True, "message": "Validacion Megaplus exitosa. Configure URL Multiprod para probar envio.", "results": results}
 
