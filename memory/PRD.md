@@ -1375,5 +1375,12 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - `GET /api/ecf/status/{bill_id}` — Polling
   - `POST /api/ecf/test-multiprod` — Probar conexión
 - **Pendiente**:
-  - Entrega 2: Frontend completo (tareas 5, 6, 7)
-- **Testing**: Backend 100% (15/15) + XML validation E31/E32/E34/E44/E45 PASS + Megaplus validator PASS
+  - ~~Entrega 2: Frontend completo (tareas 5, 6, 7)~~
+- **Testing**: Backend 100% (15/15 + 7/7) + XML validation E31/E32/E34/E44/E45 PASS + Megaplus validator PASS + Frontend 100%
+- **QA Cross-Platform**:
+  - Safari iOS 390px: PASS
+  - Android Chrome 412px: PASS
+  - Desktop Chrome 1280px: PASS
+  - Dark mode: PASS (usa text-auto-foreground, no colores hardcoded)
+  - Light mode: PASS (verificado en todas las screenshots)
+- **MANUAL_SUPABASE.md**: Actualizado con V1.1 migration script (idempotente + auditoria)
