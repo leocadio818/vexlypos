@@ -402,7 +402,7 @@ async def send_ecf_multiprod(bill_id: str, background_tasks: BackgroundTasks, us
         raise HTTPException(status_code=500, detail=f"Error construyendo XML: {str(e)}")
 
     # Validate XML locally
-    valid, validation_msg = multiprod_service.validate_xml_local(xml_content)
+    valid, validation_msg = multiprod_service.validate_xml_local(xml_content, ecf_type)
     if not valid:
         await release_reservation(reservation_id)
         raise HTTPException(status_code=400, detail=f"XML no valido: {validation_msg}")
@@ -525,46 +525,25 @@ async def test_multiprod_connection(user=Depends(get_current_user)):
     system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
     rnc = system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "000000000"
 
-    # Step 1: Generate minimal test XML
+    # Step 1: Generate test XML using the real builder
     test_encf = "E320000000099"
-    test_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<ECF>
-  <Encabezado>
-    <Version>1.0</Version>
-    <IdDoc>
-      <TipoeCF>32</TipoeCF>
-      <eNCF>{test_encf}</eNCF>
-      <FechaVencimientoSecuencia>31-12-2027</FechaVencimientoSecuencia>
-      <TipoIngresos>01</TipoIngresos>
-      <TipoPago>1</TipoPago>
-    </IdDoc>
-    <Emisor>
-      <RNCEmisor>{rnc}</RNCEmisor>
-      <RazonSocialEmisor>{system_config.get('business_name', 'Test')}</RazonSocialEmisor>
-      <DireccionEmisor>{system_config.get('address', 'Test')}</DireccionEmisor>
-      <FechaEmision>{datetime.now(timezone.utc).strftime('%d-%m-%Y')}</FechaEmision>
-    </Emisor>
-    <Totales>
-      <MontoGravadoTotal>100.00</MontoGravadoTotal>
-      <TotalITBIS>18.00</TotalITBIS>
-      <MontoTotal>118.00</MontoTotal>
-    </Totales>
-  </Encabezado>
-  <DetallesItem>
-    <Item>
-      <NumeroLinea>1</NumeroLinea>
-      <IndicadorFacturacion>1</IndicadorFacturacion>
-      <NombreItem>Producto de prueba</NombreItem>
-      <IndicadorBienoServicio>1</IndicadorBienoServicio>
-      <CantidadItem>1.00</CantidadItem>
-      <PrecioUnitarioItem>100.00</PrecioUnitarioItem>
-      <MontoItem>100.00</MontoItem>
-    </Item>
-  </DetallesItem>
-  <FechaHoraFirma>{datetime.now(timezone.utc).strftime('%d-%m-%Y %H:%M:%S')}</FechaHoraFirma>
-</ECF>"""
+    test_bill = {
+        "items": [{"product_name": "Producto de prueba", "unit_price": 100, "quantity": 1}],
+        "total": 118,
+        "payments": [{"method": "efectivo"}],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    results = {"step0_local_validation": None, "step1_validator": None, "step2_multiprod": None}
+    try:
+        test_xml = multiprod_service.build_xml(test_bill, system_config, "E32", test_encf)
+    except Exception as e:
+        return {"ok": False, "message": f"Error construyendo XML de prueba: {str(e)}", "results": results}
 
-    results = {"step1_validator": None, "step2_multiprod": None}
+    # Step 1.5: Local XSD validation
+    valid, validation_msg = multiprod_service.validate_xml_local(test_xml, "32")
+    results["step0_local_validation"] = {"ok": valid, "message": validation_msg}
+    if not valid:
+        return {"ok": False, "message": f"XML no pasa validacion XSD local: {validation_msg}", "results": results}
 
     # Step 2: Validate against Megaplus
     validator_result = await multiprod_service.validate_xml_remote(test_xml, rnc, test_encf)

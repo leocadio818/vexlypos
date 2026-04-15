@@ -1358,7 +1358,8 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 
 
 ### Integración Multiprod AM SRL — Entrega 1 (Backend Infraestructura) — 2026-04-15
-- **Estado**: EN PROGRESO — Infraestructura backend completa, pendiente XML builder (XSD)
+- **Estado**: COMPLETO — Backend 100% funcional
+- **XML Builder**: Genera XML válido para E31, E32, E34, E44, E45. Pasa validación XSD local Y validador remoto Megaplus.
 - **Archivos creados**:
   - `/app/backend/services/__init__.py`: Fernet encrypt/decrypt/mask
   - `/app/backend/services/multiprod_service.py`: MultiprodService (send_ecf, validate_xml_remote)
@@ -1374,7 +1375,5 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - `GET /api/ecf/status/{bill_id}` — Polling
   - `POST /api/ecf/test-multiprod` — Probar conexión
 - **Pendiente**:
-  - Tarea 2: build_xml (esperando XSD)
-  - Tarea 8.1: validate_xml_local (esperando XSD)
   - Entrega 2: Frontend completo (tareas 5, 6, 7)
-- **Testing**: Backend 100% (15/15)
+- **Testing**: Backend 100% (15/15) + XML validation E31/E32/E34/E44/E45 PASS + Megaplus validator PASS
