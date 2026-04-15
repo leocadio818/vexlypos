@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { useAuth } from '../../context/AuthContext';
-import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe, Clock, Trash2, Save, Key } from 'lucide-react';
+import { Printer, Building2, ShieldAlert, MapPin, Phone, Mail, FileText, Eye, EyeOff, RotateCcw, AlertTriangle, Globe, Clock, Trash2, Save, Key, CheckCircle2, XCircle } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -188,6 +188,163 @@ function EcfCredentialsForm({ provider }) {
         <Save size={14} />
         {saving ? 'Guardando...' : 'Guardar Credenciales'}
       </button>
+    </div>
+  );
+}
+
+// ── Multiprod Credentials Form Component ──
+function MultiprodCredentialsForm() {
+  const [config, setConfig] = useState({ multiprod_endpoint: '', multiprod_token: '' });
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`${API}/ecf/config`, { headers: hdrs() });
+        if (r.ok) {
+          const d = await r.json();
+          setConfig({
+            multiprod_endpoint: d.has_multiprod_endpoint ? '****configurado****' : '',
+            multiprod_token: d.has_multiprod_token ? '****configurado****' : '',
+          });
+        }
+      } catch {}
+      setLoaded(true);
+    })();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const body = { provider: 'multiprod' };
+      if (config.multiprod_endpoint && !config.multiprod_endpoint.startsWith('****'))
+        body.multiprod_endpoint = config.multiprod_endpoint;
+      if (config.multiprod_token && !config.multiprod_token.startsWith('****'))
+        body.multiprod_token = config.multiprod_token;
+      const r = await fetch(`${API}/ecf/config`, {
+        method: 'PUT', headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (d.ok) notify.success('Configuracion Multiprod guardada');
+      else notify.error(d.detail || 'Error al guardar');
+    } catch { notify.error('Error de conexion'); }
+    setSaving(false);
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const r = await fetch(`${API}/ecf/test-multiprod`, { method: 'POST', headers: hdrs() });
+      const d = await r.json();
+      setTestResult(d);
+    } catch { setTestResult({ ok: false, message: 'Error de conexion' }); }
+    setTesting(false);
+  };
+
+  if (!loaded) return <div className="bg-card border border-border rounded-xl p-4 mb-4 animate-pulse h-24" />;
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-4 mb-4" data-testid="multiprod-credentials-form">
+      <div className="flex items-center gap-2 mb-3">
+        <Key size={14} className="text-muted-foreground" />
+        <h3 className="text-sm font-semibold text-auto-foreground">Credenciales Multiprod AM SRL</h3>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Ingresa la URL de endpoint y token proporcionados por Multiprod al completar la certificacion DGII.
+      </p>
+      <div className="space-y-2">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">URL Endpoint Multiprod</label>
+          <input
+            type="text"
+            value={config.multiprod_endpoint}
+            onChange={e => setConfig(p => ({ ...p, multiprod_endpoint: e.target.value }))}
+            onFocus={() => { if (config.multiprod_endpoint.startsWith('****')) setConfig(p => ({ ...p, multiprod_endpoint: '' })); }}
+            placeholder="https://portalmultiprod.com/api/ecf/enviar/..."
+            className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground"
+            data-testid="multiprod-endpoint-input"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Token API (opcional si va embebido en la URL)</label>
+          <div className="relative">
+            <input
+              type={showToken ? 'text' : 'password'}
+              value={config.multiprod_token}
+              onChange={e => setConfig(p => ({ ...p, multiprod_token: e.target.value }))}
+              onFocus={() => { if (config.multiprod_token.startsWith('****')) setConfig(p => ({ ...p, multiprod_token: '' })); }}
+              placeholder="Token proporcionado por Multiprod"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground"
+              data-testid="multiprod-token-input"
+            />
+            <button
+              type="button"
+              onClick={() => setShowToken(!showToken)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+            >
+              {showToken ? <EyeOff size={14} className="text-muted-foreground" /> : <Eye size={14} className="text-muted-foreground" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mt-3 flex-wrap">
+        <button onClick={handleSave} disabled={saving}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 min-h-[40px]"
+          data-testid="multiprod-save-btn"
+        >
+          <Save size={14} />
+          {saving ? 'Guardando...' : 'Guardar'}
+        </button>
+        <button onClick={handleTest} disabled={testing}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 min-h-[40px]"
+          data-testid="multiprod-test-btn"
+        >
+          {testing ? <RotateCcw size={14} className="animate-spin" /> : <Globe size={14} />}
+          {testing ? 'Probando...' : 'Probar conexion'}
+        </button>
+      </div>
+
+      {/* Test Results */}
+      {testResult && (
+        <div className={`mt-3 border rounded-lg p-3 text-xs space-y-1.5 ${testResult.ok ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-red-500/50 bg-red-500/5'}`} data-testid="multiprod-test-result">
+          <div className="flex items-center gap-1.5 font-semibold">
+            {testResult.ok
+              ? <><CheckCircle2 size={14} className="text-emerald-500" /> <span className="text-emerald-600 dark:text-emerald-400">Conexion exitosa</span></>
+              : <><AlertTriangle size={14} className="text-red-500" /> <span className="text-red-600 dark:text-red-400">Error en la prueba</span></>
+            }
+          </div>
+          <p className="text-muted-foreground">{testResult.message}</p>
+          {testResult.results && (
+            <div className="space-y-1 pt-1 border-t border-border/50">
+              {testResult.results.step0_local_validation && (
+                <div className="flex items-center gap-1">
+                  {testResult.results.step0_local_validation.ok ? <CheckCircle2 size={10} className="text-emerald-500" /> : <XCircle size={10} className="text-red-500" />}
+                  <span>XSD Local: {testResult.results.step0_local_validation.message}</span>
+                </div>
+              )}
+              {testResult.results.step1_validator && (
+                <div className="flex items-center gap-1">
+                  {testResult.results.step1_validator.ok ? <CheckCircle2 size={10} className="text-emerald-500" /> : <XCircle size={10} className="text-red-500" />}
+                  <span>Megaplus: {testResult.results.step1_validator.message}</span>
+                </div>
+              )}
+              {testResult.results.step2_multiprod && (
+                <div className="flex items-center gap-1">
+                  {testResult.results.step2_multiprod.ok ? <CheckCircle2 size={10} className="text-emerald-500" /> : <XCircle size={10} className="text-red-500" />}
+                  <span>Multiprod: {testResult.results.step2_multiprod.motivo || (testResult.results.step2_multiprod.ok ? 'OK' : 'Error')}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -394,24 +551,25 @@ export default function SystemTab() {
         {/* Proveedor e-CF */}
         {systemConfig.ecf_enabled && (
         <div className="bg-card border border-border rounded-xl p-4 mb-4">
-          <h3 className="text-sm font-semibold mb-2">Proveedor e-CF</h3>
+          <h3 className="text-sm font-semibold mb-2 text-auto-foreground">Proveedor e-CF</h3>
           <p className="text-xs text-muted-foreground mb-3">Selecciona el proveedor de facturación electrónica que procesará los e-CF ante la DGII.</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {[
               { id: 'alanube', label: 'Alanube', desc: 'Alanube.co' },
               { id: 'thefactory', label: 'The Factory HKA', desc: 'TheFactoryHKA.com.do' },
+              { id: 'multiprod', label: 'Multiprod AM SRL', desc: 'portalmultiprod.com' },
             ].map(p => (
               <button
                 key={p.id}
                 onClick={() => setSystemConfig(prev => ({ ...prev, ecf_provider: p.id }))}
-                className={`flex-1 p-3 rounded-lg border-2 transition-all text-left ${
+                className={`flex-1 min-w-[140px] p-3 rounded-lg border-2 transition-all text-left ${
                   (systemConfig.ecf_provider || 'alanube') === p.id
                     ? 'border-emerald-500 bg-emerald-500/10'
                     : 'border-border hover:border-muted-foreground/30'
                 }`}
                 data-testid={`ecf-provider-${p.id}`}
               >
-                <div className="text-sm font-semibold">{p.label}</div>
+                <div className="text-sm font-semibold text-auto-foreground">{p.label}</div>
                 <div className="text-xs text-muted-foreground">{p.desc}</div>
               </button>
             ))}
@@ -428,13 +586,18 @@ export default function SystemTab() {
             className="mt-3 text-xs text-blue-400 hover:underline"
             data-testid="ecf-test-connection"
           >
-            Probar conexión con {(systemConfig.ecf_provider || 'alanube') === 'thefactory' ? 'The Factory HKA' : 'Alanube'}
+            Probar conexión con {(systemConfig.ecf_provider || 'alanube') === 'thefactory' ? 'The Factory HKA' : (systemConfig.ecf_provider || 'alanube') === 'multiprod' ? 'Multiprod' : 'Alanube'}
           </button>
         </div>
         )}
 
-        {/* Credenciales e-CF */}
-        {systemConfig.ecf_enabled && <EcfCredentialsForm provider={systemConfig.ecf_provider || 'alanube'} />}
+        {/* Credenciales Multiprod */}
+        {systemConfig.ecf_enabled && (systemConfig.ecf_provider === 'multiprod') && (
+          <MultiprodCredentialsForm />
+        )}
+
+        {/* Credenciales e-CF (Alanube/TheFactory) */}
+        {systemConfig.ecf_enabled && (systemConfig.ecf_provider !== 'multiprod') && <EcfCredentialsForm provider={systemConfig.ecf_provider || 'alanube'} />}
 
         {/* Auto-retry e-CF */}
         {systemConfig.ecf_enabled && (

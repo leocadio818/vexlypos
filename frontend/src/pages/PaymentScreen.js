@@ -933,7 +933,33 @@ export default function PaymentScreen() {
               headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
             });
             const ecfData = await ecfResp.json();
-            if (!ecfData.ok) {
+            if (ecfData.status === 'processing' || ecfData.ecf_status === 'processing') {
+              // Multiprod: async processing — start polling
+              notify.info('Procesando con DGII... puedes seguir trabajando');
+              const billId = res.data.id;
+              const pollInterval = setInterval(async () => {
+                try {
+                  const pr = await fetch(`${API_BASE}/api/ecf/status/${billId}`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+                  });
+                  const ps = await pr.json();
+                  if (ps.ecf_status === 'aceptado') {
+                    clearInterval(pollInterval);
+                    notify.success(`e-CF aprobado: ${ps.ecf_encf || ''}`);
+                  } else if (ps.ecf_status === 'rechazado') {
+                    clearInterval(pollInterval);
+                    notify.error(`e-CF rechazado: ${ps.motivo || 'Ver dashboard'}`);
+                  } else if (ps.ecf_status === 'contingencia') {
+                    clearInterval(pollInterval);
+                    notify.error('e-CF en contingencia — revisar en Dashboard e-CF');
+                  } else if (ps.ecf_status !== 'processing') {
+                    clearInterval(pollInterval);
+                  }
+                } catch { /* keep polling */ }
+              }, 5000);
+              // Auto-stop polling after 2 minutes
+              setTimeout(() => clearInterval(pollInterval), 120000);
+            } else if (!ecfData.ok) {
               // e-CF failed — bill is in CONTINGENCIA mode
               notify.error('e-CF en Modo Contingencia — se reintentará automáticamente');
             }

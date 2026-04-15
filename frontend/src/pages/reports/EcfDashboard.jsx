@@ -2,18 +2,21 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, RefreshCw, Printer, AlertTriangle, CheckCircle2, Clock, XCircle, Search, Pencil } from 'lucide-react';
+import { FileText, RefreshCw, Printer, AlertTriangle, CheckCircle2, Clock, XCircle, Search, Pencil, Loader2, Ban } from 'lucide-react';
 import { notify } from '@/lib/notify';
+import { useAuth } from '@/context/AuthContext';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
 
 const STATUS_MAP = {
-  FINISHED: { label: 'Aprobada', color: 'bg-green-500/20 text-green-500', icon: CheckCircle2 },
-  REGISTERED: { label: 'Pendiente', color: 'bg-blue-500/20 text-blue-500', icon: Clock },
-  CONTINGENCIA: { label: 'Contingencia', color: 'bg-amber-500/20 text-amber-500', icon: AlertTriangle },
-  REJECTED: { label: 'Rechazada', color: 'bg-red-500/20 text-red-500', icon: XCircle },
-  ERROR: { label: 'Error', color: 'bg-red-500/20 text-red-500', icon: XCircle },
+  FINISHED: { label: 'Aprobada', color: 'bg-green-500/20 text-green-600 dark:text-green-400', icon: CheckCircle2 },
+  REGISTERED: { label: 'Pendiente', color: 'bg-blue-500/20 text-blue-600 dark:text-blue-400', icon: Clock },
+  PROCESSING: { label: 'Procesando', color: 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400', icon: Loader2 },
+  CONTINGENCIA: { label: 'Contingencia', color: 'bg-amber-500/20 text-amber-600 dark:text-amber-400', icon: AlertTriangle },
+  CONTINGENCIA_MANUAL: { label: 'Cont. Manual', color: 'bg-gray-500/20 text-gray-600 dark:text-gray-400', icon: Ban },
+  REJECTED: { label: 'Rechazada', color: 'bg-red-500/20 text-red-600 dark:text-red-400', icon: XCircle },
+  ERROR: { label: 'Error', color: 'bg-red-500/20 text-red-600 dark:text-red-400', icon: XCircle },
 };
 
 const ECF_TYPES = [
@@ -25,11 +28,13 @@ const ECF_TYPES = [
 ];
 
 export default function EcfDashboard({ data }) {
+  const { user } = useAuth();
   const [bills, setBills] = useState([]);
   const [summary, setSummary] = useState({});
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(false);
   const [editDialog, setEditDialog] = useState({ open: false, bill: null, newType: '' });
+  const [onlyMine, setOnlyMine] = useState(false);
 
   useEffect(() => {
     if (data?.bills) {
@@ -41,10 +46,13 @@ export default function EcfDashboard({ data }) {
   const getStatus = (bill) => {
     const s = (bill.ecf_status || '').toUpperCase();
     if (bill.ecf_reject_reason) return 'REJECTED';
+    if (s === 'PROCESSING') return 'PROCESSING';
+    if (s === 'CONTINGENCIA' && (bill.ecf_error || '').includes('contingencia_manual')) return 'CONTINGENCIA_MANUAL';
     return STATUS_MAP[s] ? s : 'ERROR';
   };
 
   const filteredBills = bills.filter(b => {
+    if (onlyMine && user?.id && b.cashier_id !== user.id && b.waiter_id !== user.id) return false;
     if (filter === 'all') return true;
     return getStatus(b) === filter;
   });
@@ -145,39 +153,57 @@ export default function EcfDashboard({ data }) {
   return (
     <div className="space-y-5" data-testid="ecf-dashboard">
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <button onClick={() => setFilter('all')} className={`bg-card border rounded-xl p-4 text-center transition-all ${filter === 'all' ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}>
-          <FileText size={20} className="text-primary mx-auto mb-1" />
-          <p className="font-oswald text-2xl font-bold">{summary.total || 0}</p>
-          <p className="text-xs text-muted-foreground">Total</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
+        <button onClick={() => setFilter('all')} className={`bg-card border rounded-xl p-3 text-center transition-all ${filter === 'all' ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}>
+          <FileText size={18} className="text-primary mx-auto mb-1" />
+          <p className="font-oswald text-xl font-bold">{summary.total || 0}</p>
+          <p className="text-[10px] text-muted-foreground">Total</p>
         </button>
-        <button onClick={() => setFilter('FINISHED')} className={`bg-green-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'FINISHED' ? 'border-green-500 ring-2 ring-green-500/20' : 'border-green-500/30'}`}>
-          <CheckCircle2 size={20} className="text-green-600 dark:text-green-400 mx-auto mb-1" />
-          <p className="font-oswald text-2xl font-bold text-green-600 dark:text-green-400">{summary.approved || 0}</p>
-          <p className="text-xs font-bold text-slate-800 dark:text-green-100">Aprobadas</p>
+        <button onClick={() => setFilter('FINISHED')} className={`bg-green-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'FINISHED' ? 'border-green-500 ring-2 ring-green-500/20' : 'border-green-500/30'}`}>
+          <CheckCircle2 size={18} className="text-green-600 dark:text-green-400 mx-auto mb-1" />
+          <p className="font-oswald text-xl font-bold text-green-600 dark:text-green-400">{summary.approved || 0}</p>
+          <p className="text-[10px] font-bold text-slate-800 dark:text-green-100">Aprobadas</p>
         </button>
-        <button onClick={() => setFilter('REGISTERED')} className={`bg-blue-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'REGISTERED' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-blue-500/30'}`}>
-          <Clock size={20} className="text-blue-600 dark:text-blue-400 mx-auto mb-1" />
-          <p className="font-oswald text-2xl font-bold text-blue-600 dark:text-blue-400">{summary.registered || 0}</p>
-          <p className="text-xs font-bold text-slate-800 dark:text-blue-100">Pendientes</p>
+        <button onClick={() => setFilter('REGISTERED')} className={`bg-blue-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'REGISTERED' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-blue-500/30'}`}>
+          <Clock size={18} className="text-blue-600 dark:text-blue-400 mx-auto mb-1" />
+          <p className="font-oswald text-xl font-bold text-blue-600 dark:text-blue-400">{summary.registered || 0}</p>
+          <p className="text-[10px] font-bold text-slate-800 dark:text-blue-100">Pendientes</p>
         </button>
-        <button onClick={() => setFilter('CONTINGENCIA')} className={`bg-amber-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'CONTINGENCIA' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-amber-500/30'}`}>
-          <AlertTriangle size={20} className="text-amber-600 dark:text-amber-400 mx-auto mb-1" />
-          <p className="font-oswald text-2xl font-bold text-amber-600 dark:text-amber-400">{summary.contingencia || 0}</p>
-          <p className="text-xs font-bold text-slate-800 dark:text-amber-100">Contingencia</p>
+        <button onClick={() => setFilter('PROCESSING')} className={`bg-cyan-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'PROCESSING' ? 'border-cyan-500 ring-2 ring-cyan-500/20' : 'border-cyan-500/30'}`}>
+          <Loader2 size={18} className="text-cyan-600 dark:text-cyan-400 mx-auto mb-1 animate-spin" />
+          <p className="font-oswald text-xl font-bold text-cyan-600 dark:text-cyan-400">{bills.filter(b => getStatus(b) === 'PROCESSING').length}</p>
+          <p className="text-[10px] font-bold text-slate-800 dark:text-cyan-100">Procesando</p>
         </button>
-        <button onClick={() => setFilter('REJECTED')} className={`bg-red-500/10 border rounded-xl p-4 text-center transition-all ${filter === 'REJECTED' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-red-500/30'}`}>
-          <XCircle size={20} className="text-red-600 dark:text-red-400 mx-auto mb-1" />
-          <p className="font-oswald text-2xl font-bold text-red-600 dark:text-red-400">{summary.rejected || 0}</p>
-          <p className="text-xs font-bold text-slate-800 dark:text-red-100">Rechazadas</p>
+        <button onClick={() => setFilter('CONTINGENCIA')} className={`bg-amber-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'CONTINGENCIA' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-amber-500/30'}`}>
+          <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 mx-auto mb-1" />
+          <p className="font-oswald text-xl font-bold text-amber-600 dark:text-amber-400">{summary.contingencia || 0}</p>
+          <p className="text-[10px] font-bold text-slate-800 dark:text-amber-100">Contingencia</p>
+        </button>
+        <button onClick={() => setFilter('CONTINGENCIA_MANUAL')} className={`bg-gray-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'CONTINGENCIA_MANUAL' ? 'border-gray-500 ring-2 ring-gray-500/20' : 'border-gray-500/30'}`}>
+          <Ban size={18} className="text-gray-500 dark:text-gray-400 mx-auto mb-1" />
+          <p className="font-oswald text-xl font-bold text-gray-600 dark:text-gray-400">{bills.filter(b => getStatus(b) === 'CONTINGENCIA_MANUAL').length}</p>
+          <p className="text-[10px] font-bold text-slate-800 dark:text-gray-300">Cont. Manual</p>
+        </button>
+        <button onClick={() => setFilter('REJECTED')} className={`bg-red-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'REJECTED' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-red-500/30'}`}>
+          <XCircle size={18} className="text-red-600 dark:text-red-400 mx-auto mb-1" />
+          <p className="font-oswald text-xl font-bold text-red-600 dark:text-red-400">{summary.rejected || 0}</p>
+          <p className="text-[10px] font-bold text-slate-800 dark:text-red-100">Rechazadas</p>
         </button>
       </div>
 
+      {/* Filter: Only mine */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+          <input type="checkbox" checked={onlyMine} onChange={e => setOnlyMine(e.target.checked)} className="rounded" data-testid="only-mine-filter" />
+          Solo mis facturas en proceso
+        </label>
+      </div>
+
       {/* Action buttons */}
-      {summary.contingencia > 0 && (
-        <div className="flex gap-2">
+      {(summary.contingencia > 0 || bills.some(b => getStatus(b) === 'CONTINGENCIA_MANUAL')) && (
+        <div className="flex gap-2 flex-wrap">
           <Button onClick={handleRetryAll} disabled={loading} variant="outline" className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10">
-            <RefreshCw size={14} className={`mr-2 ${loading ? 'animate-spin' : ''}`} /> Reintentar Todas las Contingencias ({summary.contingencia})
+            <RefreshCw size={14} className={`mr-2 ${loading ? 'animate-spin' : ''}`} /> Reintentar Todas las Contingencias ({summary.contingencia || 0})
           </Button>
         </div>
       )}
@@ -212,28 +238,28 @@ export default function EcfDashboard({ data }) {
                     <td className="p-3 text-right font-oswald font-bold">RD$ {(b.total || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}</td>
                     <td className="p-3">
                       <Badge className={`text-xs ${statusInfo.color}`}>
-                        <StatusIcon size={10} className="mr-1" />{statusInfo.label}
+                        <StatusIcon size={10} className={`mr-1 ${status === 'PROCESSING' ? 'animate-spin' : ''}`} />{statusInfo.label}
                       </Badge>
                     </td>
                     <td className="p-3 text-xs text-muted-foreground max-w-[200px] truncate">
-                      {b.ecf_reject_reason || b.ecf_error || (b.ecf_security_code ? `Código: ${b.ecf_security_code}` : '—')}
+                      {b.ecf_reject_reason || b.ecf_error || (b.ecf_provider ? `via ${b.ecf_provider}` : '') || (b.ecf_security_code ? `Código: ${b.ecf_security_code}` : '—')}
                     </td>
                     <td className="p-3">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => handleRefreshStatus(b.id)} title="Actualizar status" className="p-1.5 rounded-lg hover:bg-muted transition-all">
+                        <button onClick={() => handleRefreshStatus(b.id)} title="Actualizar status" className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]">
                           <Search size={14} className="text-blue-500" />
                         </button>
-                        {status === 'CONTINGENCIA' && (
+                        {(status === 'CONTINGENCIA' || status === 'CONTINGENCIA_MANUAL') && (
                           <>
                             <button 
                               onClick={() => setEditDialog({ open: true, bill: b, newType: b.ncf?.replace('PENDING-', '') || 'E32' })} 
                               title="Editar tipo e-CF" 
-                              className="p-1.5 rounded-lg hover:bg-muted transition-all"
+                              className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]"
                               data-testid="edit-ecf-type-btn"
                             >
                               <Pencil size={14} className="text-purple-500" />
                             </button>
-                            <button onClick={() => handleRetry(b.id)} title="Reintentar" disabled={loading} className="p-1.5 rounded-lg hover:bg-muted transition-all">
+                            <button onClick={() => handleRetry(b.id)} title="Reintentar" disabled={loading} className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]">
                               <RefreshCw size={14} className={`text-amber-500 ${loading ? 'animate-spin' : ''}`} />
                             </button>
                           </>

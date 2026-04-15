@@ -218,3 +218,85 @@ Si tienes problemas:
 **Documento creado:** Abril 2026  
 **Autor:** Sistema VexlyPOS  
 **Versión:** 1.0
+
+
+---
+
+## Migracion V1.1 — Multiprod e-NCF Reservation Support
+
+**Fecha:** Abril 2026  
+**Aplica para:** Clientes que activen Multiprod AM SRL como proveedor e-CF
+
+### Contexto
+La integracion con Multiprod requiere un sistema de reserva temporal de secuencias e-NCF
+para evitar consumir numeros cuando el envio falla por errores transitorios (timeout, red caida).
+
+### Tabla afectada: `ncf_sequences`
+
+### Columnas nuevas:
+- `status` (text, default 'available') — 'available', 'reserved', 'consumed'
+- `reserved_until` (timestamptz, nullable) — Hasta cuando esta reservada
+- `reserved_for_invoice_id` (text, nullable) — ID de la factura que reservo
+
+### Script de migracion (idempotente — seguro ejecutar multiples veces):
+
+```sql
+-- ============================================================
+-- Multiprod e-NCF Reservation Support
+-- Version: 1.1
+-- Ejecutar en: Supabase SQL Editor de cada cliente
+-- ============================================================
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'ncf_sequences' AND column_name = 'status'
+    ) THEN
+        ALTER TABLE ncf_sequences ADD COLUMN status text DEFAULT 'available';
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'ncf_sequences' AND column_name = 'reserved_until'
+    ) THEN
+        ALTER TABLE ncf_sequences ADD COLUMN reserved_until timestamptz;
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'ncf_sequences' AND column_name = 'reserved_for_invoice_id'
+    ) THEN
+        ALTER TABLE ncf_sequences ADD COLUMN reserved_for_invoice_id text;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_ncf_sequences_status
+    ON ncf_sequences (status)
+    WHERE status = 'reserved';
+
+SELECT 'Migracion V1.1 completada' AS resultado;
+```
+
+### Script de auditoria:
+
+```sql
+-- Si retorna "No rows returned" = columnas existen correctamente
+SELECT column_name AS columna_faltante
+FROM (VALUES ('status'), ('reserved_until'), ('reserved_for_invoice_id')) AS expected(column_name)
+WHERE column_name NOT IN (
+    SELECT column_name FROM information_schema.columns WHERE table_name = 'ncf_sequences'
+);
+```
+
+### Clientes donde aplicar (solo al activar Multiprod):
+- [ ] Alonzo
+- [ ] BlackBurguer
+- [ ] Casa Oliva
+- [ ] Lungomare
