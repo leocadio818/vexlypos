@@ -358,7 +358,7 @@ export default function Layout() {
       data-testid="main-layout"
     >
       {/* Stock Alert Modal - shows on login if low stock products exist */}
-      <StockAlertModal />
+      <StockAlertModal blocked={cashierNeedsShift} />
       {/* Animated orbs for glass pages (original theme only) */}
       {useGlassStyle && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">

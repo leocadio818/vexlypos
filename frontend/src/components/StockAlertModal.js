@@ -3,10 +3,11 @@ import { simpleInventoryAPI } from '@/lib/api';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function StockAlertModal() {
+export default function StockAlertModal({ blocked }) {
   const [alerts, setAlerts] = useState([]);
   const [visible, setVisible] = useState(false);
   const [dismissing, setDismissing] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const checkAlerts = async () => {
@@ -15,14 +16,20 @@ export default function StockAlertModal() {
         const data = res.data || [];
         if (data.length > 0) {
           setAlerts(data);
-          setVisible(true);
+          setReady(true);
         }
       } catch {}
     };
-    // Small delay to not block initial load
     const timer = setTimeout(checkAlerts, 1500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Only show when ready AND not blocked by another modal (e.g. shift required)
+  useEffect(() => {
+    if (ready && !blocked) {
+      setVisible(true);
+    }
+  }, [ready, blocked]);
 
   const handleDismiss = async () => {
     setDismissing(true);
