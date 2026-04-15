@@ -1355,3 +1355,26 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: Backend 100% (13/13), Frontend 100%
 - **Fecha de protección**: 2026-04-15
 
+
+
+### Integración Multiprod AM SRL — Entrega 1 (Backend Infraestructura) — 2026-04-15
+- **Estado**: EN PROGRESO — Infraestructura backend completa, pendiente XML builder (XSD)
+- **Archivos creados**:
+  - `/app/backend/services/__init__.py`: Fernet encrypt/decrypt/mask
+  - `/app/backend/services/multiprod_service.py`: MultiprodService (send_ecf, validate_xml_remote)
+  - `/app/backend/routers/ecf_provider.py`: Config, dispatcher, retries, polling, reservations, cleanup
+- **Archivos modificados**:
+  - `/app/backend/routers/alanube.py`: Dispatcher en send_ecf
+  - `/app/backend/server.py`: Router + cleanup job registration
+  - `/app/backend/.env`: MULTIPROD_VALIDATOR_URL, ECF_ENCRYPTION_KEY
+- **Endpoints nuevos**:
+  - `GET /api/ecf/providers` — Lista proveedores
+  - `GET/PUT /api/ecf/config` — Config del proveedor activo
+  - `POST /api/ecf/send-multiprod/{bill_id}` — Envío directo Multiprod
+  - `GET /api/ecf/status/{bill_id}` — Polling
+  - `POST /api/ecf/test-multiprod` — Probar conexión
+- **Pendiente**:
+  - Tarea 2: build_xml (esperando XSD)
+  - Tarea 8.1: validate_xml_local (esperando XSD)
+  - Entrega 2: Frontend completo (tareas 5, 6, 7)
+- **Testing**: Backend 100% (15/15)
