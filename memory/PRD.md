@@ -1319,3 +1319,22 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Testing**: Backend 92%, Frontend 100%
 - **Fecha de protección**: 2026-04-14
 
+### 🔒 Importación Masiva de Productos CSV/Excel — Added 2026-04-15
+- **Descripción**: Permite cargar +1000 productos desde un archivo CSV o XLSX. Validación de categorías, precios, duplicados. Modal de 4 pasos.
+- **Archivos protegidos**:
+  - `/app/backend/routers/config.py`: Endpoints `import-template` y `import-bulk`
+  - `/app/frontend/src/components/ImportProductsModal.js`: Modal completo de 4 pasos
+  - `/app/frontend/src/pages/settings/InventarioTab.js`: Botón "Importar" y integración del modal
+- **Endpoints**:
+  - `GET /api/products/import-template` — Descarga plantilla CSV
+  - `POST /api/products/import-bulk` — Importa productos desde CSV/XLSX (multipart/form-data)
+- **Reglas de negocio**:
+  - Columnas requeridas: nombre, precio, categoria
+  - Categoría debe coincidir (case-insensitive) con categoría existente
+  - Duplicados (mismo nombre + categoría) se omiten
+  - Máximo 2000 productos por importación
+  - No borra productos existentes
+- **Testing**: Backend 100% (16/16), Frontend 100% (Desktop + Mobile 390px)
+- **Fecha de protección**: 2026-04-15
+
+
