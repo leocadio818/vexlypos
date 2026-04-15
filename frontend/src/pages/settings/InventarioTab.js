@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettings } from './SettingsContext';
 import { categoriesAPI, productsAPI, warehousesAPI, inventorySettingsAPI } from '@/lib/api';
-import { Tag, Package, Plus, Trash2, Pencil, Search, X, Sparkles, ListChecks, Receipt } from 'lucide-react';
+import { Tag, Package, Plus, Trash2, Pencil, Search, X, Sparkles, ListChecks, Receipt, Upload } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import axios from 'axios';
 import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
+import ImportProductsModal from '@/components/ImportProductsModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -41,6 +42,7 @@ export default function InventarioTab() {
   const [showInactiveProducts, setShowInactiveProducts] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [taxConfigs, setTaxConfigs] = useState([]);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   
   // Dialogs
   const [categoryDialog, setCategoryDialog] = useState({ open: false, name: '', color: '#FF6600', text_color: '#FFFFFF', editId: null, print_channel: '', tax_ids: [] });
@@ -323,9 +325,14 @@ export default function InventarioTab() {
               Productos
               <Badge variant="secondary" className="text-xs">{products.length}</Badge>
             </h2>
-            <Link to="/product/new?from=products" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold" data-testid="add-product-btn">
-              <Plus size={14} /> Nuevo Producto
-            </Link>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setImportModalOpen(true)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-muted border border-border text-auto-foreground text-sm font-bold hover:bg-muted/80 transition-all min-h-[40px]" data-testid="import-products-btn">
+                <Upload size={14} /> Importar
+              </button>
+              <Link to="/product/new?from=products" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold min-h-[40px]" data-testid="add-product-btn">
+                <Plus size={14} /> Nuevo Producto
+              </Link>
+            </div>
           </div>
           
           {/* Active/Inactive Tabs */}
@@ -607,6 +614,7 @@ export default function InventarioTab() {
         </DialogContent>
       </Dialog>
     <ConfirmDialog {...confirmProps} />
+    <ImportProductsModal open={importModalOpen} onClose={() => setImportModalOpen(false)} onComplete={fetchAll} />
     </div>
     );
 }

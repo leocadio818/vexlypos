@@ -1,5 +1,5 @@
 # Config Router - System Configuration, Shifts, Categories, Products, Modifiers
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -394,6 +394,129 @@ async def list_products(category_id: Optional[str] = Query(None), include_inacti
         query["active"] = True
     return await db.products.find(query, {"_id": 0}).to_list(500)
 
+# ─── PRODUCT BULK IMPORT (must be before /products/{product_id}) ───
+
+@router.get("/products/import-template")
+async def download_import_template():
+    """Download a CSV template for bulk product import"""
+    import csv, io
+    from fastapi.responses import StreamingResponse
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["nombre", "precio", "categoria", "descripcion", "codigo_barras", "disponible"])
+    writer.writerow(["Hamburguesa Clasica", "350", "Comida", "Con lechuga y tomate", "7501234567890", "TRUE"])
+    writer.writerow(["Coca Cola 12oz", "100", "Bebidas", "", "", "TRUE"])
+    writer.writerow(["Papas Fritas", "150", "Acompanantes", "Porcion grande", "", "TRUE"])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=plantilla_productos.csv"}
+    )
+
+@router.post("/products/import-bulk")
+async def import_products_bulk(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Bulk import products from CSV or XLSX file."""
+    from routers.auth import get_permissions
+    import pandas as pd
+    import io as sio
+
+    user_perms = get_permissions(user.get("role", "waiter"), user.get("permissions", {}))
+    if user.get("role") != "admin" and not user_perms.get("config_productos"):
+        raise HTTPException(status_code=403, detail="No tienes permiso para importar productos")
+
+    filename = (file.filename or "").lower()
+    if not filename.endswith((".csv", ".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="Formato no soportado. Use CSV o XLSX.")
+
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Archivo demasiado grande (max 5MB)")
+
+    try:
+        if filename.endswith(".csv"):
+            for enc in ["utf-8", "latin-1", "cp1252"]:
+                try:
+                    df = pd.read_csv(sio.BytesIO(content), encoding=enc, dtype=str)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                raise HTTPException(status_code=400, detail="No se pudo leer el CSV. Verifique la codificacion.")
+        else:
+            df = pd.read_excel(sio.BytesIO(content), dtype=str)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error leyendo archivo: {str(e)}")
+
+    df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
+    required = {"nombre", "precio", "categoria"}
+    missing = required - set(df.columns)
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Columnas faltantes: {', '.join(missing)}")
+    if len(df) > 2000:
+        raise HTTPException(status_code=400, detail=f"Maximo 2000 productos por importacion. El archivo tiene {len(df)} filas.")
+    if len(df) == 0:
+        raise HTTPException(status_code=400, detail="El archivo esta vacio")
+
+    categories = await db.categories.find({}, {"_id": 0}).to_list(200)
+    cat_map = {cat["name"].strip().lower(): cat["id"] for cat in categories}
+
+    existing_products = await db.products.find({"active": True}, {"_id": 0, "name": 1, "category_id": 1}).to_list(5000)
+    existing_set = {(p.get("name", "").strip().lower(), p.get("category_id", "")) for p in existing_products}
+
+    created = 0
+    skipped = 0
+    errors = []
+    preview = []
+
+    for idx, row in df.iterrows():
+        row_num = idx + 2
+        nombre = str(row.get("nombre", "")).strip()
+        precio_str = str(row.get("precio", "")).strip().replace(",", ".").replace("$", "").replace("RD", "").strip()
+        categoria = str(row.get("categoria", "")).strip()
+        descripcion = str(row.get("descripcion", "")).strip() if pd.notna(row.get("descripcion")) else ""
+        codigo_barras = str(row.get("codigo_barras", "")).strip() if pd.notna(row.get("codigo_barras")) else ""
+        disponible = str(row.get("disponible", "TRUE")).strip().upper()
+
+        if len(preview) < 5:
+            preview.append({"row": row_num, "nombre": nombre, "precio": precio_str, "categoria": categoria})
+
+        if not nombre or nombre.lower() == "nan":
+            errors.append({"row": row_num, "nombre": nombre or "(vacio)", "error": "Nombre vacio"})
+            continue
+        try:
+            precio = float(precio_str)
+            if precio < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            errors.append({"row": row_num, "nombre": nombre, "error": f"Precio invalido: '{precio_str}'"})
+            continue
+
+        cat_id = cat_map.get(categoria.lower())
+        if not cat_id:
+            errors.append({"row": row_num, "nombre": nombre, "error": f"Categoria '{categoria}' no encontrada"})
+            continue
+
+        if (nombre.lower(), cat_id) in existing_set:
+            skipped += 1
+            continue
+
+        doc = {
+            "id": gen_id(), "name": nombre, "category_id": cat_id,
+            "price": round(precio, 2), "price_a": round(precio, 2),
+            "active": disponible != "FALSE",
+            "description": descripcion if descripcion.lower() != "nan" else "",
+            "barcode": codigo_barras if codigo_barras.lower() != "nan" else "",
+            "created_at": now_iso(), "imported": True, "imported_by": user.get("user_id"),
+        }
+        await db.products.insert_one(doc)
+        existing_set.add((nombre.lower(), cat_id))
+        created += 1
+
+    return {"total": len(df), "created": created, "skipped": skipped, "errors": len(errors), "error_details": errors, "preview": preview}
+
 @router.get("/products/{product_id}")
 async def get_product(product_id: str):
     product = await db.products.find_one({"id": product_id}, {"_id": 0})
@@ -444,6 +567,7 @@ async def update_product(product_id: str, input: dict, user: dict = Depends(get_
 async def delete_product(product_id: str):
     await db.products.delete_one({"id": product_id})
     return {"ok": True}
+
 
 # ─── MODIFIER GROUPS ───
 @router.get("/modifier-groups")
