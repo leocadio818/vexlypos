@@ -51,6 +51,10 @@ export function formatMoney(amount) {
 export const authAPI = {
   login: (pin) => api.post('/auth/login', { pin }),
   me: () => api.get('/auth/me'),
+  activeSessions: () => api.get('/auth/active-sessions'),
+  revokeSession: (userId) => api.post(`/auth/revoke-session/${userId}`),
+  getAutoLogoutConfig: () => api.get('/auth/auto-logout-config'),
+  updateAutoLogoutConfig: (data) => api.put('/auth/auto-logout-config', data),
 };
 
 // Seed

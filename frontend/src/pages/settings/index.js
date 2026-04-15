@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { SettingsProvider } from './SettingsContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Table2, CreditCard, Package, Printer, Cog, BarChart3, Heart, Calculator, FileText, Palette, Warehouse, Tag, AlertCircle, Boxes } from 'lucide-react';
+import { Users, Table2, CreditCard, Package, Printer, Cog, BarChart3, Heart, Calculator, FileText, Palette, Warehouse, Tag, AlertCircle, Boxes, Shield } from 'lucide-react';
 
 import UsersTab from './UsersTab';
 import MesasTab from './MesasTab';
@@ -20,6 +20,7 @@ import ThemeTab from './ThemeTab';
 import DescuentosTab from './DescuentosTab';
 import SystemLogsTab from './SystemLogsTab';
 import SimpleInventoryTab from './SimpleInventoryTab';
+import SessionsTab from './SessionsTab';
 
 // Tab definitions with permission mapping (new config_* + old manage_* fallback)
 const ALL_TABS = [
@@ -39,6 +40,7 @@ const ALL_TABS = [
   { value: 'system', label: 'Sistema', icon: Cog, permissions: ['config_sistema'], component: SystemTab },
   { value: 'logs', label: 'Logs', icon: AlertCircle, permissions: ['view_system_logs','config_sistema'], component: SystemLogsTab },
   { value: 'descuentos', label: 'Descuentos', icon: Tag, permissions: ['config_descuentos','manage_cancellation_reasons'], component: DescuentosTab },
+  { value: 'sesiones', label: 'Sesiones', icon: Shield, adminOnly: true, component: SessionsTab },
 ];
 
 function SettingsContent() {
@@ -47,9 +49,13 @@ function SettingsContent() {
   const { hasPermission } = useAuth();
 
   // Filter tabs by user permissions (check any of the tab's permissions)
+  const { user } = useAuth();
   const allowedTabs = useMemo(() => {
-    return ALL_TABS.filter(tab => tab.permissions.some(p => hasPermission(p)));
-  }, [hasPermission]);
+    return ALL_TABS.filter(tab => {
+      if (tab.adminOnly) return user?.role === 'admin';
+      return tab.permissions?.some(p => hasPermission(p));
+    });
+  }, [hasPermission, user]);
 
   // Smart default: first allowed tab (or requested tab if allowed)
   const requestedTab = searchParams.get('tab');

@@ -21,6 +21,10 @@ export function AuthProvider({ children }) {
   const isOnlineRef = useRef(navigator.onLine);
   const syncIntervalRef = useRef(null);
   
+  // Auto-logout state
+  const inactivityTimerRef = useRef(null);
+  const [autoLogoutConfig, setAutoLogoutConfig] = useState({ enabled: false, timeout_minutes: 30 });
+  
   // Device detection for responsive UI
   const device = useDeviceDetect();
   
@@ -180,6 +184,66 @@ export function AuthProvider({ children }) {
   }, [cacheForOffline]);
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
+
+  // Load auto-logout config and set up inactivity timer
+  useEffect(() => {
+    if (!user) return;
+    const API_BASE = process.env.REACT_APP_BACKEND_URL;
+    const token = localStorage.getItem('pos_token');
+    if (!token) return;
+
+    // Load auto-logout config
+    fetch(`${API_BASE}/api/auth/auto-logout-config`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(cfg => { if (cfg) setAutoLogoutConfig(cfg); })
+      .catch(() => {});
+
+    // Session validation interval — check every 30s if session was revoked
+    const sessionCheck = setInterval(async () => {
+      try {
+        const t = localStorage.getItem('pos_token');
+        if (!t) return;
+        const res = await fetch(`${API_BASE}/api/auth/heartbeat`, {
+          method: 'POST', headers: { Authorization: `Bearer ${t}` }
+        });
+        if (res.status === 401) {
+          notify.error('Tu sesion fue cerrada por un administrador');
+          localStorage.removeItem('pos_token');
+          setUser(null);
+          resetThemeOnLogout();
+        }
+      } catch {}
+    }, 30000);
+
+    return () => clearInterval(sessionCheck);
+  }, [user, resetThemeOnLogout]);
+
+  // Auto-logout by inactivity
+  useEffect(() => {
+    if (!user || !autoLogoutConfig.enabled) {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      return;
+    }
+
+    const timeoutMs = autoLogoutConfig.timeout_minutes * 60 * 1000;
+
+    const resetTimer = () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = setTimeout(() => {
+        notify.info(`Sesion cerrada por inactividad (${autoLogoutConfig.timeout_minutes} min)`);
+        logout();
+      }, timeoutMs);
+    };
+
+    const events = ['mousedown', 'touchstart', 'keydown', 'scroll'];
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
+  }, [user, autoLogoutConfig]);
 
   const login = async (pin) => {
     // Try online login first

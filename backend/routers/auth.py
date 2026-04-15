@@ -14,6 +14,9 @@ from models.schemas import LoginInput
 from utils.helpers import gen_id
 from utils.audit import log_audit_event, log_login, log_logout, AuditEventType
 
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
 router = APIRouter(tags=["Auth & Users"])
 
 # Database reference (set by server.py via set_db)
@@ -220,6 +223,12 @@ async def get_current_user(request: Request):
     token = auth.split(" ")[1]
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        # Check if session was revoked by admin
+        session_id = payload.get("session_id")
+        if session_id and db is not None:
+            revoked = await db.revoked_sessions.find_one({"session_id": session_id})
+            if revoked:
+                raise HTTPException(status_code=401, detail="Sesion cerrada por administrador")
         return payload
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
@@ -279,12 +288,27 @@ async def login(input: LoginInput):
         raise HTTPException(status_code=401, detail="PIN incorrecto")
     perms = get_permissions(user["role"], user.get("permissions"))
     role_level = await get_role_level_async(user["role"])
-    token = jwt.encode({"user_id": user["id"], "name": user["name"], "role": user["role"], "role_level": role_level, "training_mode": user.get("training_mode", False)}, JWT_SECRET, algorithm="HS256")
+    session_id = gen_id()
+    token = jwt.encode({"user_id": user["id"], "name": user["name"], "role": user["role"], "role_level": role_level, "training_mode": user.get("training_mode", False), "session_id": session_id}, JWT_SECRET, algorithm="HS256")
     user_data = {k: v for k, v in user.items() if k != "pin_hash"}
     user_data["permissions"] = perms
     user_data["role_level"] = role_level
     # Include ui_preferences for theme persistence per user
     user_data["ui_preferences"] = user.get("ui_preferences", {})
+
+    # Track active session
+    await db.active_sessions.update_one(
+        {"user_id": user["id"]},
+        {"$set": {
+            "user_id": user["id"],
+            "user_name": user["name"],
+            "role": user["role"],
+            "session_id": session_id,
+            "logged_in_at": now_iso(),
+            "last_activity": now_iso(),
+        }},
+        upsert=True
+    )
 
     # Auto-open business day if none is active
     business_day_opened = False
@@ -361,7 +385,84 @@ async def logout(user=Depends(get_current_user)):
         user_name=user.get("name", ""),
         role=user.get("role", "")
     )
+    # Remove active session
+    await db.active_sessions.delete_one({"user_id": user["user_id"]})
     return {"ok": True, "message": "Sesión cerrada"}
+
+
+# ─── SESSION MANAGEMENT (Admin only) ───
+
+@router.get("/auth/active-sessions")
+async def list_active_sessions(user=Depends(get_current_user)):
+    """List all active sessions. Admin only."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo admin puede ver sesiones activas")
+    sessions = await db.active_sessions.find({}, {"_id": 0}).to_list(100)
+    return sessions
+
+
+@router.post("/auth/revoke-session/{user_id}")
+async def revoke_session(user_id: str, user=Depends(get_current_user)):
+    """Revoke a user's session. Admin only."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo admin puede cerrar sesiones")
+    if user_id == user.get("user_id"):
+        raise HTTPException(status_code=400, detail="No puedes cerrar tu propia sesion desde aqui")
+    
+    session = await db.active_sessions.find_one({"user_id": user_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Sesion no encontrada")
+    
+    # Revoke the session_id so get_current_user rejects it
+    await db.revoked_sessions.insert_one({
+        "session_id": session["session_id"],
+        "user_id": user_id,
+        "revoked_by": user.get("user_id"),
+        "revoked_at": now_iso(),
+    })
+    # Remove from active sessions
+    await db.active_sessions.delete_one({"user_id": user_id})
+    
+    return {"ok": True, "message": f"Sesion de {session.get('user_name', '')} cerrada"}
+
+
+@router.get("/auth/auto-logout-config")
+async def get_auto_logout_config():
+    """Get auto-logout configuration"""
+    config = await db.system_config.find_one({"id": "auto_logout"}, {"_id": 0})
+    if not config:
+        return {"enabled": False, "timeout_minutes": 30}
+    return {"enabled": config.get("enabled", False), "timeout_minutes": config.get("timeout_minutes", 30)}
+
+
+class AutoLogoutConfigInput(BaseModel):
+    enabled: bool
+    timeout_minutes: int
+
+
+@router.put("/auth/auto-logout-config")
+async def update_auto_logout_config(input: AutoLogoutConfigInput, user=Depends(get_current_user)):
+    """Update auto-logout configuration. Admin only."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Solo admin puede configurar auto-logout")
+    if input.timeout_minutes < 1 or input.timeout_minutes > 480:
+        raise HTTPException(status_code=400, detail="Timeout debe ser entre 1 y 480 minutos")
+    await db.system_config.update_one(
+        {"id": "auto_logout"},
+        {"$set": {"id": "auto_logout", "enabled": input.enabled, "timeout_minutes": input.timeout_minutes}},
+        upsert=True
+    )
+    return {"ok": True}
+
+
+@router.post("/auth/heartbeat")
+async def session_heartbeat(user=Depends(get_current_user)):
+    """Update last_activity for the current session"""
+    await db.active_sessions.update_one(
+        {"user_id": user.get("user_id")},
+        {"$set": {"last_activity": now_iso()}}
+    )
+    return {"ok": True}
 
 
 @router.put("/users/me/pin")
