@@ -1338,3 +1338,20 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
 - **Fecha de protección**: 2026-04-15
 
 
+
+### 🔒 Auto-Logout + Gestión de Sesiones Activas — Added 2026-04-15
+- **Descripción**: Auto-logout por inactividad configurable + panel admin para ver y cerrar sesiones remotamente.
+- **Archivos protegidos**:
+  - `/app/backend/routers/auth.py`: session_id en JWT, revoked_sessions check, endpoints de sesiones
+  - `/app/frontend/src/pages/settings/SessionsTab.js`: Tab completa de sesiones
+  - `/app/frontend/src/context/AuthContext.js`: Auto-logout timer + heartbeat
+  - `/app/frontend/src/lib/api.js`: authAPI con nuevos endpoints
+- **Colecciones MongoDB**: `active_sessions`, `revoked_sessions`, `system_config` (id=auto_logout)
+- **Endpoints**:
+  - `GET /api/auth/active-sessions` — Lista sesiones activas (admin only)
+  - `POST /api/auth/revoke-session/{user_id}` — Cierra sesión remotamente (admin only)
+  - `GET/PUT /api/auth/auto-logout-config` — Configuración de timeout
+  - `POST /api/auth/heartbeat` — Actualiza actividad + detecta revocación
+- **Testing**: Backend 100% (13/13), Frontend 100%
+- **Fecha de protección**: 2026-04-15
+
