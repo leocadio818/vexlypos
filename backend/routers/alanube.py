@@ -13,7 +13,7 @@ import os
 import httpx
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from motor.motor_asyncio import AsyncIOMotorClient
 
 router = APIRouter()
@@ -385,8 +385,31 @@ async def log_ecf_attempt(bill_id: str, encf: str, action: str, result: dict):
 # ═══════════════════════════════════════════════════════════════
 
 @router.post("/send/{bill_id}")
-async def send_ecf(bill_id: str):
-    """Send a bill as e-CF to Alanube"""
+async def send_ecf(bill_id: str, request: Request):
+    """
+    Send a bill as e-CF — DISPATCHER.
+    Detects active provider and routes to the correct service.
+    """
+    from routers.ecf_provider import get_active_provider, send_ecf_multiprod
+    from fastapi import BackgroundTasks
+
+    # Check active provider
+    provider_config = await get_active_provider()
+    active_provider = provider_config.get("provider", "alanube")
+
+    if active_provider == "multiprod":
+        # Dispatch to Multiprod — create BackgroundTasks manually
+        bg = BackgroundTasks()
+        # Get current user from request
+        from routers.auth import get_current_user
+        user = await get_current_user(request)
+        result = await send_ecf_multiprod(bill_id, bg, user)
+        # Execute background tasks
+        for task in bg.tasks:
+            await task()
+        return result
+
+    # Default: Alanube/TheFactory — existing flow (untouched)
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
