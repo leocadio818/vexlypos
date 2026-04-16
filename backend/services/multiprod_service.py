@@ -173,11 +173,14 @@ class MultiprodService:
         elif tipo_num == "32":
             if rnc_comp and len(rnc_comp) in (9, 11):
                 _sub(comprador, "RNCComprador", rnc_comp)
-                _sub(comprador, "RazonSocialComprador", customer.get("name") or customer.get("business_name") or "")
+                _sub(comprador, "RazonSocialComprador", customer.get("name") or customer.get("business_name") or "CONSUMIDOR FINAL")
                 has_comprador_data = True
             elif total_amount >= 250000:
                 _sub(comprador, "RNCComprador", rnc_comp or "000000000")
                 _sub(comprador, "RazonSocialComprador", customer.get("name") or "CONSUMIDOR")
+                has_comprador_data = True
+            else:
+                _sub(comprador, "RazonSocialComprador", "CONSUMIDOR FINAL")
                 has_comprador_data = True
         elif tipo_num == "34":
             if rnc_comp:
