@@ -14,7 +14,9 @@
       <DireccionEmisor>SIN DIRECCION</DireccionEmisor>
       <FechaEmision>15-04-2026</FechaEmision>
     </Emisor>
-    <Comprador/>
+    <Comprador>
+      <RazonSocialComprador>CONSUMIDOR FINAL</RazonSocialComprador>
+    </Comprador>
     <Totales>
       <MontoGravadoTotal>100.00</MontoGravadoTotal>
       <MontoGravadoI1>100.00</MontoGravadoI1>
@@ -35,6 +37,6 @@
       <MontoItem>100.00</MontoItem>
     </Item>
   </DetallesItems>
-  <FechaHoraFirma>15-04-2026 21:29:00</FechaHoraFirma>
+  <FechaHoraFirma>15-04-2026 21:50:01</FechaHoraFirma>
   <Signature>MULTIPROD_FIRMA_PENDIENTE</Signature>
 </ECF>
