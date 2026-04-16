@@ -257,8 +257,10 @@ async def process_retry(bill_id: str):
     if wait_seconds > 0:
         await asyncio.sleep(wait_seconds)
 
-    # Send to Multiprod
-    result = await multiprod_service.send_ecf(xml, endpoint)
+    # Send to Multiprod — fetch RNC for proper filename
+    sys_cfg = await db.system_config.find_one({}, {"_id": 0}) or {}
+    rnc_emisor = (sys_cfg.get("rnc") or sys_cfg.get("ecf_alanube_rnc") or "").replace("-", "").strip()
+    result = await multiprod_service.send_ecf(xml, endpoint, rnc=rnc_emisor, encf=encf)
 
     # Log attempt
     await db.ecf_logs.insert_one({
@@ -421,7 +423,8 @@ async def send_ecf_multiprod(bill_id: str, background_tasks: BackgroundTasks, us
     if token and token not in endpoint:
         full_endpoint = f"{endpoint.rstrip('/')}/{token}"
 
-    result = await multiprod_service.send_ecf(xml_content, full_endpoint)
+    rnc_emisor = (system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "").replace("-", "").strip()
+    result = await multiprod_service.send_ecf(xml_content, full_endpoint, rnc=rnc_emisor, encf=encf)
 
     # Log attempt
     await db.ecf_logs.insert_one({
@@ -562,7 +565,8 @@ async def test_multiprod_connection(user=Depends(get_current_user)):
         if token and token not in endpoint:
             full_endpoint = f"{endpoint.rstrip('/')}/{token}"
 
-        send_result = await multiprod_service.send_ecf(test_xml, full_endpoint)
+        clean_rnc = rnc.replace("-", "").strip()
+        send_result = await multiprod_service.send_ecf(test_xml, full_endpoint, rnc=clean_rnc, encf=test_encf)
         results["step2_multiprod"] = {k: v for k, v in send_result.items() if k != "raw"}
 
         if send_result.get("ok") or send_result.get("estado") == "aceptado":

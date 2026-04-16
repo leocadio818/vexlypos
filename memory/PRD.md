@@ -88,6 +88,22 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **CRITICAL**: The Factory `itbiS1` field expects TAX RATE ("18"), NOT amount. Amount goes in `totalITBIS1`
 - **Provider selector**: Settings > Sistema tab with toggle between Alanube and The Factory HKA
 
+## Completed Tasks (2026-04-16)
+
+- **🔒 Multiprod AM SRL — send_ecf() Fix (multipart/form-data + JSON parsing)** (DONE - 2026-04-16):
+  - **Fix 1**: Confirmado envío XML como `multipart/form-data`, campo `xml`, filename `{RNC}{eNCF}.xml`
+  - **Fix 2**: Corregido parseo de respuesta JSON anidada de Multiprod:
+    - Estructura real: `{ result: { success, response: { estado, encf, codigo, mensajes }, qr } }`
+    - Añadido `result_wrapper = data.get("result") or data` para desempaquetar nivel `result`
+    - Mejorada extracción de `mensajes` (array de `{codigo, valor}`)
+  - **Fix 3**: Todos los callers de `send_ecf()` ahora pasan `rnc` y `encf` para filename correcto
+  - **Archivos modificados**:
+    - `/app/backend/services/multiprod_service.py` — parseo JSON y extracción de mensajes
+    - `/app/backend/routers/ecf_provider.py` — 3 callers actualizados (test, dispatcher, retry)
+  - **Testing end-to-end**: Enviado XML E32 a `portalmultiprod.com/api/testecf` → `estado: "Aceptado"`, `codigo: 1`, `encf: "E320000000199"`, QR DGII generado, response_time ~1500ms
+  - **Razón de protección**: Fix crítico para facturación electrónica vía Multiprod
+  - **Fecha de protección**: 2026-04-16
+
 ## Completed Tasks (2026-04-10)
 
 - **🔒 Manual Contingency Payment Methods + Edit e-CF Type** (DONE - 2026-04-10):

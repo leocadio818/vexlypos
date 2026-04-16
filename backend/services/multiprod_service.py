@@ -357,20 +357,27 @@ class MultiprodService:
                         "diagnostics": diagnostics,
                     }
 
-                # Parse Multiprod response: { success, response: { estado, encf, codigo, mensajes }, qr }
-                mp_response = data.get("response") or {}
-                estado = (mp_response.get("estado") or data.get("estado") or data.get("status") or "").lower()
-                encf_resp = mp_response.get("encf") or data.get("encf") or data.get("eNCF")
+                # Parse Multiprod response: { result: { success, response: { estado, encf, codigo, mensajes }, qr } }
+                result_wrapper = data.get("result") or data
+                mp_response = result_wrapper.get("response") or {}
+                estado = (mp_response.get("estado") or result_wrapper.get("estado") or "").lower()
+                encf_resp = mp_response.get("encf") or result_wrapper.get("encf")
                 codigo = mp_response.get("codigo")
                 mensajes = mp_response.get("mensajes")
-                qr = data.get("qr") or data.get("qrCode")
-                success = data.get("success", False)
-                track_id = data.get("trackId") or data.get("track_id") or mp_response.get("trackId")
+                qr = result_wrapper.get("qr") or data.get("qr")
+                success = result_wrapper.get("success", False)
+                track_id = result_wrapper.get("trackId") or mp_response.get("trackId")
 
                 motivo = None
                 if mensajes:
                     if isinstance(mensajes, list):
-                        motivo = "; ".join(str(m) for m in mensajes)
+                        parts = []
+                        for m in mensajes:
+                            if isinstance(m, dict):
+                                parts.append(m.get("valor") or m.get("message") or str(m))
+                            else:
+                                parts.append(str(m))
+                        motivo = "; ".join(parts)
                     else:
                         motivo = str(mensajes)
                 if not motivo:
