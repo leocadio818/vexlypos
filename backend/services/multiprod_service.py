@@ -321,16 +321,16 @@ class MultiprodService:
         except Exception as e:
             return False, f"Error de parseo: {str(e)}"
 
-    async def send_ecf(self, xml_content: str, endpoint_url: str) -> dict:
-        """POST synchronous to the client's Multiprod URL. Timeout 15s."""
+    async def send_ecf(self, xml_content: str, endpoint_url: str, rnc: str = "", encf: str = "") -> dict:
+        """POST multipart/form-data to the client's Multiprod URL. Timeout 15s."""
         import time
+        filename = f"{rnc}{encf}.xml" if rnc and encf else "ecf.xml"
         try:
             t_start = time.monotonic()
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.post(
                     endpoint_url,
-                    content=xml_content,
-                    headers={"Content-Type": "application/xml; charset=utf-8"},
+                    files={"xml": (filename, xml_content.encode("utf-8"), "application/xml")},
                 )
                 t_elapsed = round((time.monotonic() - t_start) * 1000)
                 raw_text = response.text
@@ -339,7 +339,6 @@ class MultiprodService:
                     "Content-Length": response.headers.get("content-length", "no presente"),
                 }
 
-                # Diagnostics dict (always included)
                 diagnostics = {
                     "http_status": response.status_code,
                     "headers": resp_headers,
@@ -348,7 +347,6 @@ class MultiprodService:
                     "response_time_ms": t_elapsed,
                 }
 
-                # Try JSON parse
                 try:
                     data = response.json()
                 except Exception:
@@ -359,25 +357,36 @@ class MultiprodService:
                         "diagnostics": diagnostics,
                     }
 
-                if response.status_code in [200, 201]:
-                    estado = (data.get("estado") or data.get("status") or "").lower()
-                    return {
-                        "ok": estado == "aceptado",
-                        "estado": estado,
-                        "trackId": data.get("trackId") or data.get("track_id"),
-                        "encf": data.get("encf") or data.get("eNCF"),
-                        "qr": data.get("qr") or data.get("qrCode"),
-                        "motivo": data.get("motivo") or data.get("mensaje") or data.get("message"),
-                        "diagnostics": diagnostics,
-                        "raw": data,
-                    }
-                else:
-                    return {
-                        "ok": False, "estado": "error",
-                        "motivo": data.get("message") or data.get("error") or f"HTTP {response.status_code}",
-                        "diagnostics": diagnostics,
-                        "raw": data,
-                    }
+                # Parse Multiprod response: { success, response: { estado, encf, codigo, mensajes }, qr }
+                mp_response = data.get("response") or {}
+                estado = (mp_response.get("estado") or data.get("estado") or data.get("status") or "").lower()
+                encf_resp = mp_response.get("encf") or data.get("encf") or data.get("eNCF")
+                codigo = mp_response.get("codigo")
+                mensajes = mp_response.get("mensajes")
+                qr = data.get("qr") or data.get("qrCode")
+                success = data.get("success", False)
+                track_id = data.get("trackId") or data.get("track_id") or mp_response.get("trackId")
+
+                motivo = None
+                if mensajes:
+                    if isinstance(mensajes, list):
+                        motivo = "; ".join(str(m) for m in mensajes)
+                    else:
+                        motivo = str(mensajes)
+                if not motivo:
+                    motivo = data.get("motivo") or data.get("mensaje") or data.get("message")
+
+                return {
+                    "ok": estado == "aceptado" or success,
+                    "estado": estado,
+                    "trackId": track_id,
+                    "encf": encf_resp,
+                    "qr": qr,
+                    "codigo": codigo,
+                    "motivo": motivo,
+                    "diagnostics": diagnostics,
+                    "raw": data,
+                }
         except httpx.TimeoutException:
             return {"ok": False, "estado": "timeout", "motivo": "Multiprod no respondio en 15 segundos"}
         except httpx.ConnectError:
