@@ -274,7 +274,7 @@ async def process_retry(bill_id: str):
 
     estado = result.get("estado", "")
 
-    if estado == "aceptado":
+    if estado.startswith("aceptado"):
         # Success
         await consume_reservation(reservation_id)
         await db.bills.update_one({"id": bill_id}, {"$set": {
@@ -438,7 +438,7 @@ async def send_ecf_multiprod(bill_id: str, background_tasks: BackgroundTasks, us
 
     estado = result.get("estado", "")
 
-    if estado == "aceptado":
+    if estado.startswith("aceptado"):
         await consume_reservation(reservation_id)
         await db.bills.update_one({"id": bill_id}, {"$set": {
             "ecf_status": "FINISHED",
@@ -528,8 +528,10 @@ async def test_multiprod_connection(user=Depends(get_current_user)):
     system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
     rnc = system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "000000000"
 
-    # Step 1: Generate test XML using the real builder
-    test_encf = "E320000000099"
+    # Step 1: Generate test XML using the real builder — unique e-NCF per test
+    import random
+    test_seq = random.randint(100000, 9999999999)
+    test_encf = f"E32{str(test_seq).zfill(10)}"
     test_bill = {
         "items": [{"product_name": "Producto de prueba", "unit_price": 100, "quantity": 1}],
         "total": 118,
@@ -569,7 +571,7 @@ async def test_multiprod_connection(user=Depends(get_current_user)):
         send_result = await multiprod_service.send_ecf(test_xml, full_endpoint, rnc=clean_rnc, encf=test_encf)
         results["step2_multiprod"] = {k: v for k, v in send_result.items() if k != "raw"}
 
-        if send_result.get("ok") or send_result.get("estado") == "aceptado":
+        if send_result.get("ok") or (send_result.get("estado") or "").startswith("aceptado"):
             return {"ok": True, "message": f"Conexion exitosa. TrackId: {send_result.get('trackId', 'N/A')}", "results": results}
         else:
             motivo = send_result.get("motivo") or send_result.get("raw_text", "Error desconocido")

@@ -384,7 +384,7 @@ class MultiprodService:
                     motivo = data.get("motivo") or data.get("mensaje") or data.get("message")
 
                 return {
-                    "ok": estado == "aceptado" or success,
+                    "ok": estado.startswith("aceptado") or success,
                     "estado": estado,
                     "trackId": track_id,
                     "encf": encf_resp,
