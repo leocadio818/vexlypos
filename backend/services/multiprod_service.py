@@ -320,25 +320,40 @@ class MultiprodService:
 
     async def send_ecf(self, xml_content: str, endpoint_url: str) -> dict:
         """POST synchronous to the client's Multiprod URL. Timeout 15s."""
+        import time
         try:
+            t_start = time.monotonic()
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.post(
                     endpoint_url,
                     content=xml_content,
                     headers={"Content-Type": "application/xml; charset=utf-8"},
                 )
+                t_elapsed = round((time.monotonic() - t_start) * 1000)
                 raw_text = response.text
-                # Try JSON first
+                resp_headers = {
+                    "Content-Type": response.headers.get("content-type", "no presente"),
+                    "Content-Length": response.headers.get("content-length", "no presente"),
+                }
+
+                # Diagnostics dict (always included)
+                diagnostics = {
+                    "http_status": response.status_code,
+                    "headers": resp_headers,
+                    "body_raw": raw_text[:500] if raw_text.strip() else "<vacio>",
+                    "body_length": len(raw_text),
+                    "response_time_ms": t_elapsed,
+                }
+
+                # Try JSON parse
                 try:
                     data = response.json()
                 except Exception:
-                    # Multiprod might respond with non-JSON (XML, HTML, plain text)
                     return {
                         "ok": False,
                         "estado": "error_formato",
-                        "motivo": f"Multiprod respondio con formato no-JSON (HTTP {response.status_code}): {raw_text[:300]}",
-                        "raw_text": raw_text[:500],
-                        "http_status": response.status_code,
+                        "motivo": f"Respuesta no-JSON (HTTP {response.status_code}, {t_elapsed}ms, Content-Type: {resp_headers['Content-Type']}, Body: {raw_text[:200] if raw_text.strip() else '<vacio>'})",
+                        "diagnostics": diagnostics,
                     }
 
                 if response.status_code in [200, 201]:
@@ -350,14 +365,15 @@ class MultiprodService:
                         "encf": data.get("encf") or data.get("eNCF"),
                         "qr": data.get("qr") or data.get("qrCode"),
                         "motivo": data.get("motivo") or data.get("mensaje") or data.get("message"),
+                        "diagnostics": diagnostics,
                         "raw": data,
                     }
                 else:
                     return {
                         "ok": False, "estado": "error",
                         "motivo": data.get("message") or data.get("error") or f"HTTP {response.status_code}",
+                        "diagnostics": diagnostics,
                         "raw": data,
-                        "http_status": response.status_code,
                     }
         except httpx.TimeoutException:
             return {"ok": False, "estado": "timeout", "motivo": "Multiprod no respondio en 15 segundos"}

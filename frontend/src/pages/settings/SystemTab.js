@@ -336,9 +336,20 @@ function MultiprodCredentialsForm() {
                 </div>
               )}
               {testResult.results.step2_multiprod && (
-                <div className="flex items-center gap-1">
-                  {testResult.results.step2_multiprod.ok ? <CheckCircle2 size={10} className="text-emerald-500" /> : <XCircle size={10} className="text-red-500" />}
-                  <span>Multiprod: {testResult.results.step2_multiprod.motivo || (testResult.results.step2_multiprod.ok ? 'OK' : 'Error')}</span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    {testResult.results.step2_multiprod.ok ? <CheckCircle2 size={10} className="text-emerald-500" /> : <XCircle size={10} className="text-red-500" />}
+                    <span>Multiprod: {testResult.results.step2_multiprod.motivo || (testResult.results.step2_multiprod.ok ? 'OK' : 'Error')}</span>
+                  </div>
+                  {testResult.results.step2_multiprod.diagnostics && (
+                    <div className="ml-4 text-[10px] text-muted-foreground font-mono space-y-0.5 bg-background/50 rounded p-1.5 border border-border/50">
+                      <div>HTTP Status: <strong>{testResult.results.step2_multiprod.diagnostics.http_status}</strong></div>
+                      <div>Content-Type: {testResult.results.step2_multiprod.diagnostics.headers?.['Content-Type']}</div>
+                      <div>Content-Length: {testResult.results.step2_multiprod.diagnostics.headers?.['Content-Length']}</div>
+                      <div>Body ({testResult.results.step2_multiprod.diagnostics.body_length} bytes): <strong>{testResult.results.step2_multiprod.diagnostics.body_raw}</strong></div>
+                      <div>Tiempo: {testResult.results.step2_multiprod.diagnostics.response_time_ms}ms</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
