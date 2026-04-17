@@ -14,11 +14,26 @@ from services import encrypt_value, decrypt_value, mask_value
 
 router = APIRouter(prefix="/ecf", tags=["ECF Provider"])
 db = None
+supabase_client = None
 
 
 def set_db(database):
     global db
     db = database
+
+
+def init_supabase():
+    """Initialize Supabase client for NCF sequence management."""
+    global supabase_client
+    import os
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_KEY")
+    if url and key:
+        try:
+            from supabase import create_client
+            supabase_client = create_client(url, key)
+        except Exception as e:
+            print(f"ECF Provider: Supabase init failed: {e}")
 
 
 def now_iso():
@@ -121,11 +136,13 @@ async def get_active_provider():
 
 
 async def get_multiprod_credentials():
-    """Get decrypted Multiprod credentials."""
+    """Get decrypted Multiprod credentials. Returns (endpoint, token) regardless of active provider flag."""
     config = await db.ecf_provider_config.find_one({}, {"_id": 0})
-    if not config or config.get("provider") != "multiprod":
+    if not config:
         return None, None
     endpoint = config.get("multiprod_endpoint")
+    if not endpoint:
+        return None, None
     token_enc = config.get("multiprod_token_encrypted")
     token = decrypt_value(token_enc) if token_enc else None
     return endpoint, token
@@ -139,20 +156,19 @@ async def reserve_encf(ecf_type: str, invoice_id: str) -> tuple:
     Returns (encf: str, sequence_id: str) or raises.
     Uses MongoDB as fallback reservation tracker since Supabase doesn't support transactions.
     """
-    from server import supabase_client
     if not supabase_client:
         raise HTTPException(status_code=500, detail="Supabase no configurado")
 
-    # Get active sequence for this type
-    seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type", ecf_type).eq("is_active", True).limit(1).execute()
+    # Get active sequence for this type — try ncf_type_id first (actual column name)
+    seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", ecf_type).eq("is_active", True).limit(1).execute()
     if not seq_result.data:
-        seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_code", ecf_type).eq("is_active", True).limit(1).execute()
+        seq_result = supabase_client.table("ncf_sequences").select("*").eq("sequence_prefix", ecf_type).eq("is_active", True).limit(1).execute()
     if not seq_result.data:
         raise HTTPException(status_code=400, detail=f"No hay secuencia activa para {ecf_type}")
 
     seq = seq_result.data[0]
     current_num = seq.get("current_number", 1)
-    serie = seq.get("serie", "E")
+    serie = seq.get("serie") or seq.get("sequence_prefix", "E")[:1]
     tipo_num = ecf_type[1:]  # "E32" -> "32"
     encf = f"{serie}{tipo_num}{str(current_num).zfill(10)}"
 
@@ -196,7 +212,6 @@ async def release_reservation(reservation_id: str):
     if not res:
         return
 
-    from server import supabase_client
     if supabase_client:
         try:
             supabase_client.table("ncf_sequences").update({

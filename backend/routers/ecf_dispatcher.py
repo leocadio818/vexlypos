@@ -1,7 +1,7 @@
 """
 VexlyPOS — e-CF Dispatcher (Unified Router)
 ============================================
-Routes e-CF requests to the active provider (Alanube or The Factory HKA).
+Routes e-CF requests to the active provider (Alanube, The Factory HKA, or Multiprod AM SRL).
 Reads `ecf_provider` from system_config to determine which module to use.
 
 This replaces the direct Alanube router mount and provides a unified API
@@ -16,14 +16,18 @@ from fastapi import APIRouter, HTTPException, Query
 router = APIRouter()
 db = None
 
+VALID_PROVIDERS = ("alanube", "thefactory", "multiprod")
+
 def set_db(database):
     global db
     db = database
     # Propagate to sub-modules
     from routers.alanube import set_db as alanube_set_db
     from routers.thefactory import set_db as thefactory_set_db
+    from routers.ecf_provider import set_db as ecf_provider_set_db
     alanube_set_db(database)
     thefactory_set_db(database)
+    ecf_provider_set_db(database)
 
 
 async def get_provider() -> str:
@@ -87,6 +91,10 @@ async def send_ecf(bill_id: str):
             logging.warning(f"e-CF {ecf_prefix}: fechaVencimientoSecuencia is missing/invalid. The Factory may reject the document. Check series configuration.")
         
         result = await _send_via_thefactory(bill, config, encf, bill_id, fecha_venc)
+    elif provider == "multiprod":
+        result = await _send_via_multiprod(bill, config, bill_id)
+        if result.get("ok"):
+            encf = result.get("encf") or result.get("ecf_encf") or encf
     else:
         result = await _send_via_alanube(bill, config, encf, bill_id)
 
@@ -209,6 +217,120 @@ async def _send_via_thefactory(bill, config, encf, bill_id, fecha_venc=None):
     return result
 
 
+async def _send_via_multiprod(bill, config, bill_id):
+    """
+    Send via Multiprod AM SRL.
+    Delegates to ecf_provider.send_ecf_multiprod_internal() which handles:
+    reservation, XML build, XSD validation, multipart/form-data send, retries.
+    Returns dict compatible with dispatcher: {ok, encf, error/motivo, status, ...}
+    """
+    from routers.ecf_provider import get_multiprod_credentials, reserve_encf, consume_reservation, release_reservation, gen_id, now_iso, enqueue_retry, run_background_retries, RETRY_BACKOFFS
+    from services.multiprod_service import multiprod_service
+    from datetime import timedelta
+
+    # Get Multiprod credentials
+    endpoint, token = await get_multiprod_credentials()
+    if not endpoint:
+        return {"ok": False, "error": "Multiprod no configurado. Configure URL y token en Configuracion > Sistema"}
+
+    # Determine e-CF type
+    ecf_type = bill.get("ecf_type", "")
+    if not ecf_type or not ecf_type.startswith("E"):
+        ncf = bill.get("ncf", "")
+        prefix = ncf[:3] if isinstance(ncf, str) and len(ncf) >= 3 else "B02"
+        ecf_type = {"B01": "E31", "B02": "E32", "B14": "E34", "B15": "E31"}.get(prefix, "E32")
+
+    # Reserve e-NCF from Supabase
+    try:
+        encf, reservation_id = await reserve_encf(ecf_type, bill_id)
+    except Exception as e:
+        return {"ok": False, "error": f"Error reservando e-NCF: {str(e)}"}
+
+    # Get system config for XML building
+    system_config = config or await db.system_config.find_one({}, {"_id": 0}) or {}
+
+    # Build XML
+    try:
+        xml_content = multiprod_service.build_xml(bill, system_config, ecf_type, encf)
+    except Exception as e:
+        await release_reservation(reservation_id)
+        return {"ok": False, "error": f"Error construyendo XML: {str(e)}"}
+
+    # Validate XML locally
+    valid, validation_msg = multiprod_service.validate_xml_local(xml_content, ecf_type)
+    if not valid:
+        await release_reservation(reservation_id)
+        return {"ok": False, "error": f"XML no valido: {validation_msg}"}
+
+    # Mark as processing
+    await db.bills.update_one({"id": bill_id}, {"$set": {
+        "ecf_status": "PROCESSING",
+        "ecf_provider": "multiprod",
+        "ecf_encf": encf,
+        "ecf_attempts": 1,
+    }})
+
+    # Build full endpoint (append token if not embedded)
+    full_endpoint = endpoint
+    if token and token not in endpoint:
+        full_endpoint = f"{endpoint.rstrip('/')}/{token}"
+
+    rnc_emisor = (system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "").replace("-", "").strip()
+    result = await multiprod_service.send_ecf(xml_content, full_endpoint, rnc=rnc_emisor, encf=encf)
+
+    # Log attempt
+    await db.ecf_logs.insert_one({
+        "id": gen_id(),
+        "bill_id": bill_id,
+        "encf": encf,
+        "action": "multiprod_send_1",
+        "provider": "multiprod",
+        "result": {k: v for k, v in result.items() if k != "raw"},
+        "created_at": now_iso(),
+    })
+
+    estado = result.get("estado", "")
+
+    if estado.startswith("aceptado"):
+        await consume_reservation(reservation_id)
+        await db.bills.update_one({"id": bill_id}, {"$set": {
+            "ecf_status": "FINISHED",
+            "ecf_encf": encf,
+            "ecf_qr": result.get("qr"),
+            "ecf_trackid": result.get("trackId"),
+            "ecf_provider": "multiprod",
+            "ecf_attempts": 1,
+            "ecf_sent_at": now_iso(),
+        }})
+        return {"ok": True, "encf": encf, "ecf_encf": encf, "status": "aceptado", "qr": result.get("qr"), "trackId": result.get("trackId")}
+
+    if estado == "rechazado":
+        await consume_reservation(reservation_id)
+        await db.bills.update_one({"id": bill_id}, {"$set": {
+            "ecf_status": "REJECTED",
+            "ecf_encf": encf,
+            "ecf_provider": "multiprod",
+            "ecf_reject_reason": result.get("motivo", "Rechazado por DGII"),
+            "ecf_attempts": 1,
+            "ecf_sent_at": now_iso(),
+        }})
+        return {"ok": False, "encf": encf, "error": result.get("motivo", "Rechazado por DGII"), "status": "rechazado"}
+
+    # Transient error — enqueue retries
+    await enqueue_retry(bill_id, encf, reservation_id, 2, full_endpoint, xml_content)
+    next_retry = datetime.now(timezone.utc) + timedelta(seconds=RETRY_BACKOFFS[1])
+    await db.bills.update_one({"id": bill_id}, {"$set": {"ecf_next_retry_at": next_retry.isoformat()}})
+
+    # Background retries (best-effort, non-blocking)
+    try:
+        import asyncio
+        asyncio.create_task(run_background_retries(bill_id))
+    except Exception:
+        pass
+
+    return {"ok": True, "encf": encf, "ecf_encf": encf, "status": "processing", "motivo": "Procesando con DGII... reintentando automaticamente"}
+
+
 # ═══════════════════════════════════════════════════════════════
 # RETRY
 # ═══════════════════════════════════════════════════════════════
@@ -236,6 +358,10 @@ async def retry_ecf(bill_id: str):
         ncf_info = await get_next_ncf(tipo_doc)
         encf = ncf_info["ncf"]
         result = await _send_via_thefactory(bill, config, encf, bill_id, ncf_info.get("fecha_venc"))
+    elif provider == "multiprod":
+        result = await _send_via_multiprod(bill, config, bill_id)
+        if result.get("ok"):
+            encf = result.get("encf") or result.get("ecf_encf") or encf
     else:
         result = await _send_via_alanube(bill, config, encf, bill_id)
 
@@ -245,7 +371,7 @@ async def retry_ecf(bill_id: str):
     if result["ok"]:
         return {"ok": True, "message": f"e-CF enviado exitosamente (reintento via {provider})", "encf": encf}
     else:
-        return {"ok": False, "message": f"Reintento fallido: {result.get('error', '')}", "retry_count": retry_count}
+        return {"ok": False, "message": f"Reintento fallido: {result.get('error', result.get('motivo', ''))}", "retry_count": retry_count}
 
 
 @router.post("/retry-all")
@@ -272,6 +398,8 @@ async def retry_all_contingencia():
             ncf_info = await get_next_ncf(tipo_doc)
             encf = ncf_info["ncf"]
             result = await _send_via_thefactory(bill, config, encf, bill_doc["id"], ncf_info.get("fecha_venc"))
+        elif provider == "multiprod":
+            result = await _send_via_multiprod(bill, config, bill_doc["id"])
         else:
             result = await _send_via_alanube(bill, config, encf, bill_doc["id"])
 

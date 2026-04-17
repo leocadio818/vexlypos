@@ -97,12 +97,24 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
     - Añadido `result_wrapper = data.get("result") or data` para desempaquetar nivel `result`
     - Mejorada extracción de `mensajes` (array de `{codigo, valor}`)
   - **Fix 3**: Todos los callers de `send_ecf()` ahora pasan `rnc` y `encf` para filename correcto
-  - **Archivos modificados**:
-    - `/app/backend/services/multiprod_service.py` — parseo JSON y extracción de mensajes
-    - `/app/backend/routers/ecf_provider.py` — 3 callers actualizados (test, dispatcher, retry)
-  - **Testing end-to-end**: Enviado XML E32 a `portalmultiprod.com/api/testecf` → `estado: "Aceptado"`, `codigo: 1`, `encf: "E320000000199"`, QR DGII generado, response_time ~1500ms
-  - **Razón de protección**: Fix crítico para facturación electrónica vía Multiprod
+  - **Testing end-to-end**: Enviado XML E32 a `portalmultiprod.com/api/testecf` → `estado: "Aceptado"`, `codigo: 1`, QR DGII generado
   - **Fecha de protección**: 2026-04-16
+
+- **🔒 CRITICAL: Dispatcher e-CF ahora enruta a Multiprod** (DONE - 2026-04-17):
+  - **BUG**: El dispatcher principal (`ecf_dispatcher.py`) solo tenía ramas para `thefactory` y `else → alanube`. Si `ecf_provider = "multiprod"`, las facturas iban silenciosamente a Alanube.
+  - **Fix aplicado en 4 archivos**:
+    1. **`ecf_dispatcher.py`** — Agregada rama `elif provider == "multiprod"` en:
+       - `send_ecf()` (flujo principal de cobro)
+       - `retry_ecf()` (reintento individual)
+       - `retry_all_contingencia()` (reintento masivo)
+       - Nueva función `_send_via_multiprod()` que reutiliza la lógica de `ecf_provider.py`
+    2. **`ecf_provider.py`** — Agregado `init_supabase()` propio + corregida consulta Supabase (`ncf_type_id` en vez de `ncf_type`)
+    3. **`credit_notes.py`** — E34 ahora respeta el proveedor seleccionado (Multiprod/TheFactory/Alanube)
+    4. **`server.py`** — Inicializa Supabase para `ecf_provider` al arrancar
+  - **`get_multiprod_credentials()`** ya no exige `provider == "multiprod"` en `ecf_provider_config`; devuelve credenciales si existen
+  - **Testing e2e**: `ecf_provider=multiprod` → Dispatcher envió a Multiprod → `E320000000001` → DGII "Aceptado" → `ecf_status: FINISHED`, `ecf_provider: multiprod` en DB → Secuencia Supabase incrementada correctamente
+  - **Razón de protección**: Fix crítico de enrutamiento de facturación electrónica
+  - **Fecha de protección**: 2026-04-17
 
 ## Completed Tasks (2026-04-10)
 

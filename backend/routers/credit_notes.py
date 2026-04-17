@@ -332,7 +332,6 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
     Solo para admin/propietario con permiso manage_credit_notes
     """
     from routers.auth import get_permissions
-    from routers.alanube import build_alanube_payload, send_to_alanube, save_alanube_response
     
     # Check permission
     user_perms = get_permissions(user.get("role", "waiter"), user.get("permissions", {}))
@@ -465,27 +464,99 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
         "created_by_name": user["name"],
     }
     
-    # 7. Send to Alanube
+    # 7. Send to e-CF provider (reads from system_config.ecf_provider)
     try:
         system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+        provider = system_config.get("ecf_provider", "alanube")
         
-        # Build E34 payload with credit note indicator
-        payload = build_credit_note_payload(bill, credit_note, system_config, e34_encf, seq_due_date)
+        if provider == "multiprod":
+            # Send E34 via Multiprod XML
+            from services.multiprod_service import multiprod_service
+            from routers.ecf_provider import get_multiprod_credentials, gen_id as mp_gen_id, now_iso as mp_now_iso
+            
+            endpoint, token = await get_multiprod_credentials()
+            if not endpoint:
+                raise Exception("Multiprod no configurado. Configure URL y token en Configuracion > Sistema")
+            
+            xml_content = multiprod_service.build_xml(credit_note, system_config, "E34", e34_encf)
+            valid, validation_msg = multiprod_service.validate_xml_local(xml_content, "E34")
+            if not valid:
+                raise Exception(f"XML E34 no valido: {validation_msg}")
+            
+            full_endpoint = endpoint
+            if token and token not in endpoint:
+                full_endpoint = f"{endpoint.rstrip('/')}/{token}"
+            
+            rnc_emisor = (system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "").replace("-", "").strip()
+            mp_result = await multiprod_service.send_ecf(xml_content, full_endpoint, rnc=rnc_emisor, encf=e34_encf)
+            
+            # Log attempt
+            await db.ecf_logs.insert_one({
+                "id": mp_gen_id(),
+                "bill_id": bill["id"],
+                "encf": e34_encf,
+                "action": "multiprod_e34_send",
+                "provider": "multiprod",
+                "result": {k: v for k, v in mp_result.items() if k != "raw"},
+                "created_at": mp_now_iso(),
+            })
+            
+            estado = mp_result.get("estado", "")
+            if estado.startswith("aceptado") or mp_result.get("ok"):
+                credit_note["status"] = "completed"
+                credit_note["ecf_status"] = "accepted"
+                credit_note["ecf_provider"] = "multiprod"
+                credit_note["ecf_qr"] = mp_result.get("qr")
+            else:
+                credit_note["status"] = "completed"
+                credit_note["ecf_status"] = "error"
+                credit_note["ecf_provider"] = "multiprod"
+                credit_note["ecf_error"] = mp_result.get("motivo") or mp_result.get("error", "Error desconocido")
         
-        # Send to Alanube
-        result = await send_to_alanube(payload)
+        elif provider == "thefactory":
+            # Send E34 via The Factory HKA
+            from routers.thefactory import (
+                authenticate, build_thefactory_payload, send_to_thefactory,
+                save_thefactory_response, get_config_from_db, get_config as tf_env_config, get_next_ncf
+            )
+            ecf_config = await get_config_from_db() or tf_env_config()
+            auth = await authenticate()
+            if not auth["ok"]:
+                raise Exception(f"TheFactory auth failed: {auth.get('error', '')}")
+            
+            payload = build_thefactory_payload(credit_note, system_config, e34_encf, auth["token"], None, ecf_config)
+            tf_result = await send_to_thefactory(payload, ecf_config)
+            
+            if tf_result.get("ok"):
+                credit_note["status"] = "completed"
+                credit_note["ecf_status"] = "accepted"
+                credit_note["ecf_provider"] = "thefactory"
+            else:
+                credit_note["status"] = "completed"
+                credit_note["ecf_status"] = "error"
+                credit_note["ecf_provider"] = "thefactory"
+                credit_note["ecf_error"] = tf_result.get("error", "Error desconocido")
         
-        if result.get("ok"):
-            credit_note["status"] = "completed"
-            credit_note["ecf_status"] = "accepted"
-            credit_note["alanube_id"] = result.get("alanube_id")
-            credit_note["alanube_track_id"] = result.get("trackId")
         else:
-            credit_note["status"] = "completed"  # Still save locally
-            credit_note["ecf_status"] = "error"
-            credit_note["ecf_error"] = result.get("error", "Error desconocido")
+            # Send E34 via Alanube (default)
+            from routers.alanube import send_to_alanube, save_alanube_response
+            
+            payload = build_credit_note_payload(bill, credit_note, system_config, e34_encf, seq_due_date)
+            result = await send_to_alanube(payload)
+            
+            if result.get("ok"):
+                credit_note["status"] = "completed"
+                credit_note["ecf_status"] = "accepted"
+                credit_note["ecf_provider"] = "alanube"
+                credit_note["alanube_id"] = result.get("alanube_id")
+                credit_note["alanube_track_id"] = result.get("trackId")
+            else:
+                credit_note["status"] = "completed"
+                credit_note["ecf_status"] = "error"
+                credit_note["ecf_provider"] = "alanube"
+                credit_note["ecf_error"] = result.get("error", "Error desconocido")
     except Exception as e:
-        print(f"Alanube E34 error: {e}")
+        print(f"e-CF E34 error ({provider if 'provider' in dir() else 'unknown'}): {e}")
         credit_note["status"] = "completed"
         credit_note["ecf_status"] = "error"
         credit_note["ecf_error"] = str(e)
