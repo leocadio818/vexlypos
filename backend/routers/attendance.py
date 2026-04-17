@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
 import uuid
 import os
+from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 
 router = APIRouter(tags=["attendance"])
 
@@ -50,7 +51,7 @@ async def check_attendance_status(input: PinInput):
         sb_key = os.environ.get("SUPABASE_ANON_KEY", "")
         if sb_url and sb_key:
             sb = sc(sb_url, sb_key)
-            session = sb.table("pos_sessions").select("id").eq("opened_by", user["id"]).eq("status", "open").limit(1).execute()
+            session = sb_select(sb.table("pos_sessions").select("id")).eq("opened_by", user["id"]).eq("status", "open").limit(1).execute()
             if session.data and len(session.data) > 0:
                 # Has open POS session — auto clock-in and let them through
                 await auto_clock_in_for_active_session(user, today)
@@ -169,7 +170,7 @@ async def clock_out(input: PinInput):
     try:
         from routers.pos_sessions import get_supabase
         sb = get_supabase()
-        open_shift = sb.table("pos_sessions").select("id, ref").eq("opened_by", user_id).eq("status", "open").limit(1).execute()
+        open_shift = sb_select(sb.table("pos_sessions").select("id, ref")).eq("opened_by", user_id).eq("status", "open").limit(1).execute()
         if open_shift.data and len(open_shift.data) > 0:
             raise HTTPException(status_code=400, detail=f"Tienes un turno de caja abierto ({open_shift.data[0]['ref']}). Debes hacer Cierre X primero.")
     except HTTPException:

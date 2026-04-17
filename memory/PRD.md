@@ -137,6 +137,13 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **Testing**: 7/7 verificaciones automatizadas pasaron, 0 errores post-restart
   - **Fecha de protección**: 2026-04-17
 
+
+- **🔒 Multi-tenancy Supabase con client_id** (DONE - 2026-04-17):
+  - Todas las consultas Supabase filtran por `SUPABASE_CLIENT_ID` (81+ queries en 11 archivos)
+  - Helper centralizado: `/app/backend/utils/supabase_helpers.py` — `sb_select()`, `sb_insert()`, `sb_update_filter()`
+  - Backwards compatible: sin variable → sin filtro
+  - **Fecha de protección**: 2026-04-17
+
 ## Completed Tasks (2026-04-10)
 
 - **🔒 Manual Contingency Payment Methods + Edit e-CF Type** (DONE - 2026-04-10):

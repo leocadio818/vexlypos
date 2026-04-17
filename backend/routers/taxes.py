@@ -9,6 +9,7 @@ from typing import List, Optional, Dict
 from datetime import datetime, timezone
 import uuid
 import os
+from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 
 router = APIRouter(prefix="/taxes", tags=["Taxes"])
 
@@ -644,7 +645,7 @@ async def calculate_cart_taxes(input: IntelligentTaxCalculationInput):
     
     if supabase_client:
         try:
-            result = supabase_client.table("sale_types").select("*").eq("id", input.sale_type_id).single().execute()
+            result = sb_select(supabase_client.table("sale_types").select("*")).eq("id", input.sale_type_id).single().execute()
             sale_type = result.data
             sale_type_exemptions = sale_type.get("tax_exemptions", []) if sale_type else []
             

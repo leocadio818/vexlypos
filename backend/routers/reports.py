@@ -7,6 +7,7 @@ from typing import Optional, List
 from datetime import datetime, timezone, timedelta
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 import uuid
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
@@ -158,7 +159,7 @@ async def dashboard():
     try:
         from routers.pos_sessions import get_supabase
         sb = get_supabase()
-        shifts_result = sb.table("pos_sessions").select("id", count="exact").eq("status", "open").execute()
+        shifts_result = sb_select(sb.table("pos_sessions").select("id", count="exact")).eq("status", "open").execute()
         open_shifts = shifts_result.count or 0
     except Exception:
         # Fallback to MongoDB if Supabase unavailable

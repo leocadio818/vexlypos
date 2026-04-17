@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 import asyncio
+from utils.supabase_helpers import sb_select, sb_insert, sb_update_filter
 
 from routers.auth import get_current_user, get_permissions
 from services import encrypt_value, decrypt_value, mask_value
@@ -160,9 +161,9 @@ async def reserve_encf(ecf_type: str, invoice_id: str) -> tuple:
         raise HTTPException(status_code=500, detail="Supabase no configurado")
 
     # Get active sequence for this type — try ncf_type_id first (actual column name)
-    seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", ecf_type).eq("is_active", True).limit(1).execute()
+    seq_result = sb_select(supabase_client.table("ncf_sequences").select("*")).eq("ncf_type_id", ecf_type).eq("is_active", True).limit(1).execute()
     if not seq_result.data:
-        seq_result = supabase_client.table("ncf_sequences").select("*").eq("sequence_prefix", ecf_type).eq("is_active", True).limit(1).execute()
+        seq_result = sb_select(supabase_client.table("ncf_sequences").select("*")).eq("sequence_prefix", ecf_type).eq("is_active", True).limit(1).execute()
     if not seq_result.data:
         raise HTTPException(status_code=400, detail=f"No hay secuencia activa para {ecf_type}")
 
@@ -173,9 +174,9 @@ async def reserve_encf(ecf_type: str, invoice_id: str) -> tuple:
     encf = f"{serie}{tipo_num}{str(current_num).zfill(10)}"
 
     # Increment in Supabase
-    supabase_client.table("ncf_sequences").update({
+    sb_update_filter(supabase_client.table("ncf_sequences").update({
         "current_number": current_num + 1
-    }).eq("id", seq["id"]).execute()
+    }).eq("id", seq["id"])).execute()
 
     # Track reservation in MongoDB
     reservation = {
@@ -214,9 +215,9 @@ async def release_reservation(reservation_id: str):
 
     if supabase_client:
         try:
-            supabase_client.table("ncf_sequences").update({
+            sb_update_filter(supabase_client.table("ncf_sequences").update({
                 "current_number": res["original_number"]
-            }).eq("id", res["sequence_id"]).execute()
+            }).eq("id", res["sequence_id"])).execute()
         except Exception as e:
             print(f"Warning: Could not release e-NCF sequence: {e}")
 

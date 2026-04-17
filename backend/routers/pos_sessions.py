@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from supabase import create_client, Client
 import os
 import uuid
+from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 
 # Import MongoDB db from server
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -46,7 +47,7 @@ def generate_session_ref() -> str:
     # Get count for this year
     try:
         sb = get_supabase()
-        result = sb.table("pos_sessions").select("ref", count="exact").like("ref", f"TURNO-{year}-%").execute()
+        result = sb_select(sb.table("pos_sessions").select("ref", count="exact")).like("ref", f"TURNO-{year}-%").execute()
         count = result.count or 0
         return f"TURNO-{year}-{str(count + 1).zfill(5)}"
     except:
@@ -57,7 +58,7 @@ def generate_movement_ref() -> str:
     year = datetime.now().year
     try:
         sb = get_supabase()
-        result = sb.table("cash_movements").select("ref", count="exact").like("ref", f"MOV-{year}-%").execute()
+        result = sb_select(sb.table("cash_movements").select("ref", count="exact")).like("ref", f"MOV-{year}-%").execute()
         count = result.count or 0
         return f"MOV-{year}-{str(count + 1).zfill(5)}"
     except:
@@ -105,7 +106,7 @@ async def health_check():
     try:
         sb = get_supabase()
         # Try to access pos_sessions table
-        result = sb.table("pos_sessions").select("id").limit(1).execute()
+        result = sb_select(sb.table("pos_sessions").select("id")).limit(1).execute()
         return {"status": "ok", "supabase": "connected", "sessions_found": len(result.data) if result.data else 0}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
@@ -116,7 +117,7 @@ async def get_current_session(user=Depends(get_current_user)):
     """Obtiene la sesion activa del usuario actual"""
     try:
         sb = get_supabase()
-        result = sb.table("pos_sessions").select("*").eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
+        result = sb_select(sb.table("pos_sessions").select("*")).eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
         
         if result.data and len(result.data) > 0:
             return result.data[0]
@@ -130,7 +131,7 @@ async def check_session_status(user=Depends(get_current_user)):
     """Verifica si el usuario tiene sesion abierta"""
     try:
         sb = get_supabase()
-        result = sb.table("pos_sessions").select("id, ref, terminal_name, opened_at, opening_amount").eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
+        result = sb_select(sb.table("pos_sessions").select("id, ref, terminal_name, opened_at, opening_amount")).eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
         
         has_session = len(result.data) > 0 if result.data else False
         return {
@@ -148,7 +149,7 @@ async def open_session(input: OpenSessionInput, user=Depends(get_current_user)):
         sb = get_supabase()
         
         # Verificar si ya tiene sesion abierta
-        existing = sb.table("pos_sessions").select("*").eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
+        existing = sb_select(sb.table("pos_sessions").select("*")).eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
         
         if existing.data and len(existing.data) > 0:
             return existing.data[0]  # Retornar sesion existente
@@ -181,7 +182,7 @@ async def open_session(input: OpenSessionInput, user=Depends(get_current_user)):
             "notes": input.notes
         }
         
-        result = sb.table("pos_sessions").insert(session_data).execute()
+        result = sb.table("pos_sessions").insert(sb_insert(session_data)).execute()
         
         if not result.data:
             raise HTTPException(status_code=500, detail="Error creando sesion")
@@ -203,7 +204,7 @@ async def open_session(input: OpenSessionInput, user=Depends(get_current_user)):
                 "created_by_name": user["name"]
             }
             
-            sb.table("cash_movements").insert(movement_data).execute()
+            sb.table("cash_movements").insert(sb_insert(movement_data)).execute()
         
         return session
         
@@ -220,7 +221,7 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
         sb = get_supabase()
         
         # Obtener sesion actual
-        session_result = sb.table("pos_sessions").select("*").eq("id", session_id).single().execute()
+        session_result = sb_select(sb.table("pos_sessions").select("*")).eq("id", session_id).single().execute()
         
         if not session_result.data:
             raise HTTPException(status_code=404, detail="Sesion no encontrada")
@@ -285,7 +286,7 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
             "notes": input.difference_notes or ""
         }
         
-        result = sb.table("pos_sessions").update(update_data).eq("id", session_id).execute()
+        sb_update_filter(sb.table("pos_sessions").update(update_data).eq("id", session_id)).execute()
         
         # Guardar datos de cuadre en MongoDB (Supabase no tiene estas columnas)
         reconciliation_doc = {
@@ -323,7 +324,7 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
                 "created_by_name": user["name"]
             }
             
-            sb.table("cash_movements").insert(adjustment_data).execute()
+            sb.table("cash_movements").insert(sb_insert(adjustment_data)).execute()
         
         # ── AUTO CLOCK-OUT: Register attendance exit for the cashier ──
         try:
@@ -383,7 +384,7 @@ async def add_cash_movement(session_id: str, input: CashMovementInput, user=Depe
         sb = get_supabase()
         
         # Verificar sesion existe y esta abierta
-        session_result = sb.table("pos_sessions").select("*").eq("id", session_id).single().execute()
+        session_result = sb_select(sb.table("pos_sessions").select("*")).eq("id", session_id).single().execute()
         
         if not session_result.data:
             raise HTTPException(status_code=404, detail="Sesion no encontrada")
@@ -422,7 +423,7 @@ async def add_cash_movement(session_id: str, input: CashMovementInput, user=Depe
             "created_by_name": user["name"]
         }
         
-        result = sb.table("cash_movements").insert(movement_data).execute()
+        result = sb.table("cash_movements").insert(sb_insert(movement_data)).execute()
         
         if not result.data:
             raise HTTPException(status_code=500, detail="Error creando movimiento")
@@ -438,7 +439,7 @@ async def add_cash_movement(session_id: str, input: CashMovementInput, user=Depe
         elif input.movement_type in ["cash_out", "deposit", "petty_cash", "tip_out"]:
             update_session["cash_out"] = session.get("cash_out", 0) + input.amount
         
-        sb.table("pos_sessions").update(update_session).eq("id", session_id).execute()
+        sb_update_filter(sb.table("pos_sessions").update(update_session).eq("id", session_id)).execute()
         
         return result.data[0]
         
@@ -454,7 +455,7 @@ async def get_session_movements(session_id: str, user=Depends(get_current_user))
     try:
         sb = get_supabase()
         
-        result = sb.table("cash_movements").select("*").eq("session_id", session_id).order("created_at", desc=True).execute()
+        result = sb_select(sb.table("cash_movements").select("*")).eq("session_id", session_id).order("created_at", desc=True).execute()
         
         return result.data or []
         
@@ -475,7 +476,7 @@ async def get_sessions_history(
         # Obtener jornada actual para filtrar por fecha
         business_day = await db.business_days.find_one({"status": "open"}, {"_id": 0, "opened_at": 1})
         
-        query = sb.table("pos_sessions").select("*").order("opened_at", desc=True).limit(limit)
+        query = sb_select(sb.table("pos_sessions").select("*")).order("opened_at", desc=True).limit(limit)
         
         if status:
             query = query.eq("status", status)
@@ -536,7 +537,7 @@ async def get_terminals():
             terminals = default_terminals
         
         # Obtener turnos abiertos de Supabase para marcar terminales en uso
-        open_sessions = sb.table("pos_sessions").select("terminal_name, opened_by_name").eq("status", "open").execute()
+        open_sessions = sb_select(sb.table("pos_sessions").select("terminal_name, opened_by_name")).eq("status", "open").execute()
         open_terminal_names = {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in (open_sessions.data or [])}
         
         # Marcar terminales en uso
@@ -559,7 +560,7 @@ async def get_my_session(user: dict = Depends(get_current_user)):
     """Check if current user has an active POS session"""
     try:
         sb = get_supabase()
-        session = sb.table("pos_sessions").select("id,status,terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+        session = sb_select(sb.table("pos_sessions").select("id,status,terminal_name")).eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
         if session.data and len(session.data) > 0:
             return session.data[0]
         return {"status": "none"}
@@ -668,7 +669,7 @@ async def delete_terminal(terminal_id: str):
         
         # Verificar si el terminal tiene un turno activo (en uso)
         sb = get_supabase()
-        open_sessions = sb.table("pos_sessions").select("id, opened_by_name").eq("terminal_name", terminal["name"]).eq("status", "open").execute()
+        open_sessions = sb_select(sb.table("pos_sessions").select("id, opened_by_name")).eq("terminal_name", terminal["name"]).eq("status", "open").execute()
         
         if open_sessions.data and len(open_sessions.data) > 0:
             session = open_sessions.data[0]
@@ -697,7 +698,7 @@ async def get_terminals_in_use():
         sb = get_supabase()
         
         # Obtener turnos abiertos de Supabase
-        result = sb.table("pos_sessions").select("terminal_name, opened_by_name").eq("status", "open").execute()
+        result = sb_select(sb.table("pos_sessions").select("terminal_name, opened_by_name")).eq("status", "open").execute()
         
         return {s["terminal_name"]: s.get("opened_by_name", "En uso") for s in (result.data or [])}
         
@@ -715,9 +716,9 @@ async def get_all_open_shifts(user=Depends(get_current_user)):
         sb = get_supabase()
         
         # Obtener todos los turnos abiertos sin filtrar por usuario
-        result = sb.table("pos_sessions").select(
+        result = sb_select(sb.table("pos_sessions").select(
             "id, ref, terminal_name, opened_by, opened_by_name, opened_at, status"
-        ).eq("status", "open").execute()
+        )).eq("status", "open").execute()
         
         open_sessions = result.data or []
         
@@ -737,7 +738,7 @@ async def get_movement_reasons():
     try:
         sb = get_supabase()
         
-        result = sb.table("movement_reasons").select("*").eq("is_active", True).eq("affects_cash_balance", True).order("sort_order").execute()
+        result = sb_select(sb.table("movement_reasons").select("*")).eq("is_active", True).eq("affects_cash_balance", True).order("sort_order").execute()
         
         return result.data or []
         
@@ -756,7 +757,7 @@ async def register_sale_to_session(
     try:
         sb = get_supabase()
         
-        session_result = sb.table("pos_sessions").select("*").eq("id", session_id).single().execute()
+        session_result = sb_select(sb.table("pos_sessions").select("*")).eq("id", session_id).single().execute()
         
         if not session_result.data:
             raise HTTPException(status_code=404, detail="Sesion no encontrada")
@@ -777,7 +778,7 @@ async def register_sale_to_session(
         else:
             update_data["other_sales"] = session.get("other_sales", 0) + amount
         
-        sb.table("pos_sessions").update(update_data).eq("id", session_id).execute()
+        sb_update_filter(sb.table("pos_sessions").update(update_data).eq("id", session_id)).execute()
         
         return {"ok": True}
         
@@ -793,7 +794,7 @@ async def sync_session_sales(session_id: str, user=Depends(get_current_user)):
     """Resincroniza totales de ventas de la sesion basandose en las facturas reales de MongoDB"""
     try:
         sb = get_supabase()
-        session_result = sb.table("pos_sessions").select("*").eq("id", session_id).single().execute()
+        session_result = sb_select(sb.table("pos_sessions").select("*")).eq("id", session_id).single().execute()
         if not session_result.data:
             raise HTTPException(status_code=404, detail="Sesion no encontrada")
         
@@ -857,7 +858,7 @@ async def sync_session_sales(session_id: str, user=Depends(get_current_user)):
             "updated_at": now_iso()
         }
         
-        sb.table("pos_sessions").update(update_data).eq("id", session_id).execute()
+        sb_update_filter(sb.table("pos_sessions").update(update_data).eq("id", session_id)).execute()
         
         return {
             "ok": True,
@@ -880,7 +881,7 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
     """Devuelve desglose detallado de ventas por forma de pago para una sesion"""
     try:
         sb = get_supabase()
-        session_result = sb.table("pos_sessions").select("*").eq("id", session_id).single().execute()
+        session_result = sb_select(sb.table("pos_sessions").select("*")).eq("id", session_id).single().execute()
         if not session_result.data:
             raise HTTPException(status_code=404, detail="Sesion no encontrada")
         
@@ -960,7 +961,7 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
         credit_notes_total = 0
         credit_notes_count = 0
         try:
-            movements = sb.table("cash_movements").select("*").eq("session_id", session_id).execute()
+            movements = sb_select(sb.table("cash_movements").select("*")).eq("session_id", session_id).execute()
             for mov in movements.data:
                 if mov.get("movement_type") == "cash_out":
                     withdrawals += mov.get("amount", 0)

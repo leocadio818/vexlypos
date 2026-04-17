@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pymongo import ReturnDocument
 import uuid
 import os
+from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 
 router = APIRouter(tags=["billing"])
 
@@ -624,7 +625,7 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         if supabase_client:
             try:
                 # Find active session for this user
-                session_result = supabase_client.table("pos_sessions").select("*").eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
+                session_result = sb_select(supabase_client.table("pos_sessions").select("*")).eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
                 
                 if session_result.data and len(session_result.data) > 0:
                     session = session_result.data[0]
@@ -660,7 +661,7 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                     movement_payment_method = "mixed" if len(payments_list) > 1 else ("cash" if is_cash_payment else "other")
                     
                     # Update session totals
-                    supabase_client.table("pos_sessions").update(update_data).eq("id", session_id).execute()
+                    sb_update_filter(supabase_client.table("pos_sessions").update(update_data).eq("id", session_id)).execute()
                     
                     # Create cash_movement record for this sale
                     txn_num = ""
@@ -696,7 +697,7 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
                         "created_by": user["user_id"],
                         "created_by_name": user["name"]
                     }
-                    supabase_client.table("cash_movements").insert(movement_data).execute()
+                    supabase_client.table("cash_movements").insert(sb_insert(movement_data)).execute()
                     
                     # ── TRACEABILITY BRIDGE: Save Supabase reference in MongoDB bill ──
                     await db.bills.update_one({"id": bill_id}, {"$set": {

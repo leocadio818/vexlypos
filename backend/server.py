@@ -7,6 +7,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
 import os
+from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 import logging
 import uuid
 import hashlib
@@ -2212,7 +2213,7 @@ async def selective_cleanup(input: dict, user: dict = Depends(get_current_user))
             try:
                 from supabase import create_client as sc
                 sb = sc(os.environ.get("SUPABASE_URL",""), os.environ.get("SUPABASE_ANON_KEY",""))
-                sb.table("pos_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+                sb_update_filter(sb.table("pos_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000")).execute()
                 total_deleted += 1
             except:
                 pass
@@ -2222,9 +2223,9 @@ async def selective_cleanup(input: dict, user: dict = Depends(get_current_user))
             try:
                 from supabase import create_client as sc
                 sb = sc(os.environ.get("SUPABASE_URL",""), os.environ.get("SUPABASE_ANON_KEY",""))
-                seqs = sb.table("ncf_sequences").select("id").execute()
+                seqs = sb_select(sb.table("ncf_sequences").select("id")).execute()
                 for seq in seqs.data:
-                    sb.table("ncf_sequences").update({"current_number": 0}).eq("id", seq["id"]).execute()
+                    sb_update_filter(sb.table("ncf_sequences").update({"current_number": 0}).eq("id", seq["id"])).execute()
                 # Also reset MongoDB ecf_sequences
                 await db.ecf_sequences.delete_many({})
                 total_deleted += len(seqs.data)
@@ -3127,7 +3128,7 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
         sb_key = os.environ.get("SUPABASE_ANON_KEY", "")
         if sb_url and sb_key:
             sb = sc(sb_url, sb_key)
-            session = sb.table("pos_sessions").select("terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+            session = sb_select(sb.table("pos_sessions").select("terminal_name")).eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
             if session.data and len(session.data) > 0:
                 terminal_name = session.data[0].get("terminal_name", "")
                 if terminal_name:
@@ -3497,7 +3498,7 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
             sb_key = os.environ.get("SUPABASE_ANON_KEY", "")
             if sb_url and sb_key:
                 sb = sc(sb_url, sb_key)
-                session = sb.table("pos_sessions").select("terminal_name").eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+                session = sb_select(sb.table("pos_sessions").select("terminal_name")).eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
                 if session.data and len(session.data) > 0:
                     terminal_name = session.data[0].get("terminal_name", "")
                     if terminal_name:

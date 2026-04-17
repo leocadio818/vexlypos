@@ -8,6 +8,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
 import os
+from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 
 router = APIRouter(prefix="/credit-notes", tags=["Credit Notes - Notas de Crédito"])
 
@@ -477,9 +478,9 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
     seq_due_date = None
     if supabase_client:
         try:
-            seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", "E34").eq("is_active", True).limit(1).execute()
+            seq_result = sb_select(supabase_client.table("ncf_sequences").select("*")).eq("ncf_type_id", "E34").eq("is_active", True).limit(1).execute()
             if not seq_result.data:
-                seq_result = supabase_client.table("ncf_sequences").select("*").eq("sequence_prefix", "E34").eq("is_active", True).limit(1).execute()
+                seq_result = sb_select(supabase_client.table("ncf_sequences").select("*")).eq("sequence_prefix", "E34").eq("is_active", True).limit(1).execute()
             
             if seq_result.data and len(seq_result.data) > 0:
                 seq = seq_result.data[0]
@@ -489,9 +490,9 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
                 e34_encf = f"{serie}34{str(current_num).zfill(10)}"
                 
                 # Update sequence
-                supabase_client.table("ncf_sequences").update({
+                sb_update_filter(supabase_client.table("ncf_sequences").update({
                     "current_number": current_num + 1
-                }).eq("id", seq["id"]).execute()
+                }).eq("id", seq["id"])).execute()
             else:
                 raise HTTPException(status_code=400, detail="No hay secuencia E34 activa en Supabase")
         except HTTPException:
@@ -702,9 +703,9 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
     if supabase_client:
         try:
             # Get active E34 sequence (fallback to B04 for migration)
-            seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", "E34").eq("is_active", True).limit(1).execute()
+            seq_result = sb_select(supabase_client.table("ncf_sequences").select("*")).eq("ncf_type_id", "E34").eq("is_active", True).limit(1).execute()
             if not seq_result.data:
-                seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", "B04").eq("is_active", True).limit(1).execute()
+                seq_result = sb_select(supabase_client.table("ncf_sequences").select("*")).eq("ncf_type_id", "B04").eq("is_active", True).limit(1).execute()
             
             if seq_result.data and len(seq_result.data) > 0:
                 seq = seq_result.data[0]
@@ -715,9 +716,9 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
                 ncf_e34 = f"{prefix}{current_num:010d}"
                 
                 # Update sequence
-                supabase_client.table("ncf_sequences").update({
+                sb_update_filter(supabase_client.table("ncf_sequences").update({
                     "current_number": current_num + 1
-                }).eq("id", seq["id"]).execute()
+                }).eq("id", seq["id"])).execute()
             else:
                 # Fallback: generate from MongoDB
                 ncf_doc = await db.ncf_sequences.find_one_and_update(
@@ -843,10 +844,10 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
     if supabase_client:
         try:
             # Find the current user's open session (the cashier who is executing the B04)
-            session_result = supabase_client.table("pos_sessions").select("*").eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
+            session_result = sb_select(supabase_client.table("pos_sessions").select("*")).eq("opened_by", user["user_id"]).eq("status", "open").limit(1).execute()
             if not session_result.data or len(session_result.data) == 0:
                 # Fallback: find any open session (in case cashier opened with different user_id)
-                session_result = supabase_client.table("pos_sessions").select("*").eq("status", "open").limit(1).execute()
+                session_result = sb_select(supabase_client.table("pos_sessions").select("*")).eq("status", "open").limit(1).execute()
             
             if session_result.data and len(session_result.data) > 0:
                 session = session_result.data[0]
@@ -864,7 +865,7 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
                     "created_by": user["user_id"],
                     "created_by_name": user["name"]
                 }
-                supabase_client.table("cash_movements").insert(movement_data).execute()
+                supabase_client.table("cash_movements").insert(sb_insert(movement_data)).execute()
         except Exception as e:
             import traceback
             print(f"WARNING: Could not create credit note movement in Supabase: {e}")

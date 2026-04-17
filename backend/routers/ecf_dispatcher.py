@@ -10,6 +10,7 @@ that the frontend consumes without caring which provider is active.
 import random
 import logging
 from datetime import datetime, timezone
+from utils.supabase_helpers import sb_select, sb_insert, sb_update_filter
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 
@@ -106,7 +107,7 @@ async def send_ecf(bill_id: str):
         try:
             from routers.pos_sessions import get_supabase
             sb = get_supabase()
-            movements = sb.table("cash_movements").select("id, description").like("description", f"%[BILL:{bill_id}]%").execute()
+            movements = sb_select(sb.table("cash_movements").select("id, description")).like("description", f"%[BILL:{bill_id}]%").execute()
             if movements.data:
                 for mov in movements.data:
                     old_desc = mov.get("description", "")
@@ -114,7 +115,7 @@ async def send_ecf(bill_id: str):
                     import re
                     new_desc = re.sub(r'Venta\s+(B\d{10}|PENDING-E\d{2})', f'Venta {encf}', old_desc)
                     if new_desc != old_desc:
-                        sb.table("cash_movements").update({"description": new_desc}).eq("id", mov["id"]).execute()
+                        sb_update_filter(sb.table("cash_movements").update({"description": new_desc}).eq("id", mov["id"])).execute()
         except Exception:
             pass  # Non-critical: movement display update is best-effort
 

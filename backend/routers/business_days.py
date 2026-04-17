@@ -16,6 +16,7 @@ from datetime import datetime, timezone, date
 from pymongo import ReturnDocument
 import uuid
 import os
+from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 
 router = APIRouter(prefix="/business-days", tags=["Business Days"])
 
@@ -377,9 +378,9 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
     # 2. Verificar turnos POS abiertos en Supabase
     if not input.force_close and supabase_client:
         try:
-            open_sessions = supabase_client.table("pos_sessions").select(
+            open_sessions = sb_select(supabase_client.table("pos_sessions").select(
                 "id, ref, opened_by_name, terminal_name"
-            ).eq("status", "open").execute()
+            )).eq("status", "open").execute()
             if open_sessions.data and len(open_sessions.data) > 0:
                 session_details = [
                     f"{s['opened_by_name']} ({s.get('terminal_name', '')})"
@@ -429,11 +430,11 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
     # Forzar cierre de turnos abiertos si force_close
     if input.force_close and supabase_client:
         try:
-            supabase_client.table("pos_sessions").update({
+            sb_update_filter(supabase_client.table("pos_sessions").update({
                 "status": "force_closed",
                 "closed_at": now,
                 "notes": f"Cierre forzado por cierre de jornada {business_day['ref']}"
-            }).eq("status", "open").execute()
+            }).eq("status", "open")).execute()
         except Exception as e:
             print(f"Warning: Could not force close sessions: {e}")
     
@@ -1003,7 +1004,7 @@ async def generate_z_report_internal(
     if supabase_client:
         try:
             # Obtener sesiones del día
-            sessions_response = supabase_client.table("pos_sessions").select("*").gte(
+            sessions_response = sb_select(supabase_client.table("pos_sessions").select("*")).gte(
                 "opened_at", f"{business_date}T00:00:00"
             ).lte(
                 "opened_at", f"{business_date}T23:59:59"
@@ -1014,7 +1015,7 @@ async def generate_z_report_internal(
                     initial_fund += session.get("initial_cash", 0) or 0
                     
                     # Obtener movimientos de cada sesión
-                    movements = supabase_client.table("pos_movements").select("*").eq(
+                    movements = sb_select(supabase_client.table("pos_movements").select("*")).eq(
                         "session_id", session["id"]
                     ).execute()
                     
@@ -1131,7 +1132,7 @@ async def generate_x_report(
         raise HTTPException(status_code=500, detail="Supabase no configurado")
     
     try:
-        session_response = supabase_client.table("pos_sessions").select("*").eq("id", session_id).single().execute()
+        session_response = sb_select(supabase_client.table("pos_sessions").select("*")).eq("id", session_id).single().execute()
         session = session_response.data
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Sesión no encontrada: {e}")
@@ -1338,7 +1339,7 @@ async def generate_x_report(
     deposits = 0
     
     try:
-        movements = supabase_client.table("pos_movements").select("*").eq(
+        movements = sb_select(supabase_client.table("pos_movements").select("*")).eq(
             "session_id", session_id
         ).execute()
         
