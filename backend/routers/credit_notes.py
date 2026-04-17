@@ -325,6 +325,87 @@ async def find_bill_for_credit_note(search: str, user=Depends(get_current_user))
     }
 
 
+
+async def _send_e34_to_provider(credit_note: dict, original_bill: dict, system_config: dict, e34_encf: str, seq_due_date: str = None):
+    """
+    Send E34 credit note to the active e-CF provider.
+    Reads provider from system_config.ecf_provider. Updates credit_note dict in-place.
+    """
+    provider = system_config.get("ecf_provider", "alanube")
+
+    if provider == "multiprod":
+        from services.multiprod_service import multiprod_service
+        from routers.ecf_provider import get_multiprod_credentials
+
+        endpoint, token = await get_multiprod_credentials()
+        if not endpoint:
+            raise Exception("Multiprod no configurado. Configure URL y token en Configuracion > Sistema")
+
+        xml_content = multiprod_service.build_xml(credit_note, system_config, "E34", e34_encf)
+        valid, validation_msg = multiprod_service.validate_xml_local(xml_content, "E34")
+        if not valid:
+            raise Exception(f"XML E34 no valido: {validation_msg}")
+
+        full_endpoint = endpoint
+        if token and token not in endpoint:
+            full_endpoint = f"{endpoint.rstrip('/')}/{token}"
+
+        rnc_emisor = (system_config.get("ecf_alanube_rnc") or system_config.get("ticket_rnc") or system_config.get("rnc") or "").replace("-", "").strip()
+        mp_result = await multiprod_service.send_ecf(xml_content, full_endpoint, rnc=rnc_emisor, encf=e34_encf)
+
+        await db.ecf_logs.insert_one({
+            "id": gen_id(), "bill_id": original_bill.get("id", ""), "encf": e34_encf,
+            "action": "multiprod_e34_send", "provider": "multiprod",
+            "result": {k: v for k, v in mp_result.items() if k != "raw"}, "created_at": now_iso(),
+        })
+
+        estado = mp_result.get("estado", "")
+        if estado.startswith("aceptado") or mp_result.get("ok"):
+            credit_note["ecf_status"] = "accepted"
+            credit_note["ecf_provider"] = "multiprod"
+            credit_note["ecf_qr"] = mp_result.get("qr")
+        else:
+            credit_note["ecf_status"] = "error"
+            credit_note["ecf_provider"] = "multiprod"
+            credit_note["ecf_error"] = mp_result.get("motivo") or mp_result.get("error", "Error desconocido")
+
+    elif provider == "thefactory":
+        from routers.thefactory import (
+            authenticate, build_thefactory_payload, send_to_thefactory,
+            get_config_from_db, get_config as tf_env_config
+        )
+        ecf_config = await get_config_from_db() or tf_env_config()
+        auth = await authenticate()
+        if not auth["ok"]:
+            raise Exception(f"TheFactory auth failed: {auth.get('error', '')}")
+
+        payload = build_thefactory_payload(credit_note, system_config, e34_encf, auth["token"], None, ecf_config)
+        tf_result = await send_to_thefactory(payload, ecf_config)
+
+        if tf_result.get("ok"):
+            credit_note["ecf_status"] = "accepted"
+            credit_note["ecf_provider"] = "thefactory"
+        else:
+            credit_note["ecf_status"] = "error"
+            credit_note["ecf_provider"] = "thefactory"
+            credit_note["ecf_error"] = tf_result.get("error", "Error desconocido")
+
+    else:
+        from routers.alanube import send_to_alanube
+        payload = build_credit_note_payload(original_bill, credit_note, system_config, e34_encf, seq_due_date)
+        result = await send_to_alanube(payload)
+
+        if result.get("ok"):
+            credit_note["ecf_status"] = "accepted"
+            credit_note["ecf_provider"] = "alanube"
+            credit_note["alanube_id"] = result.get("alanube_id")
+            credit_note["alanube_track_id"] = result.get("trackId")
+        else:
+            credit_note["ecf_status"] = "error"
+            credit_note["ecf_provider"] = "alanube"
+            credit_note["ecf_error"] = result.get("error", "Error desconocido")
+
+
 @router.post("/generate-e34")
 async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current_user)):
     """
@@ -371,6 +452,16 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
     if not original_encf or original_encf.startswith("PENDING-"):
         raise HTTPException(status_code=400, detail="Esta factura está en contingencia y no tiene e-NCF válido para generar nota de crédito")
     
+    # 2b. Validate ecf_status — only allow E34 on DGII-approved invoices
+    ecf_status = (bill.get("ecf_status") or "").upper()
+    if ecf_status in ("PROCESSING", "PENDING"):
+        raise HTTPException(status_code=400, detail="La factura aún está siendo procesada por DGII. Espere la aprobación antes de generar Nota de Crédito.")
+    elif ecf_status in ("ERROR", "REJECTED"):
+        raise HTTPException(status_code=400, detail="La factura fue rechazada por DGII. No se puede generar Nota de Crédito sobre una factura rechazada.")
+    elif not ecf_status or ecf_status == "CONTINGENCIA":
+        raise HTTPException(status_code=400, detail="La factura no ha sido aprobada por DGII. Envíela y espere aprobación antes de generar Nota de Crédito.")
+    # Accepted statuses: FINISHED, REGISTERED, ACCEPTED, ACEPTADO — proceed
+    
     # 3. Check if already has credit note
     existing_cn = await db.credit_notes.find_one({
         "original_bill_id": bill["id"],
@@ -386,16 +477,15 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
     seq_due_date = None
     if supabase_client:
         try:
-            seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type", "E34").eq("is_active", True).limit(1).execute()
+            seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_id", "E34").eq("is_active", True).limit(1).execute()
             if not seq_result.data:
-                # Fallback to ncf_type_code
-                seq_result = supabase_client.table("ncf_sequences").select("*").eq("ncf_type_code", "E34").eq("is_active", True).limit(1).execute()
+                seq_result = supabase_client.table("ncf_sequences").select("*").eq("sequence_prefix", "E34").eq("is_active", True).limit(1).execute()
             
             if seq_result.data and len(seq_result.data) > 0:
                 seq = seq_result.data[0]
                 current_num = seq.get("current_number", 1)
-                serie = seq.get("serie", "E")
-                seq_due_date = seq.get("expiration_date") or "2027-12-31"
+                serie = seq.get("serie") or seq.get("sequence_prefix", "E")[:1] or "E"
+                seq_due_date = seq.get("expiration_date") or seq.get("valid_until") or "2027-12-31"
                 e34_encf = f"{serie}34{str(current_num).zfill(10)}"
                 
                 # Update sequence
@@ -467,96 +557,10 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
     # 7. Send to e-CF provider (reads from system_config.ecf_provider)
     try:
         system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
-        provider = system_config.get("ecf_provider", "alanube")
-        
-        if provider == "multiprod":
-            # Send E34 via Multiprod XML
-            from services.multiprod_service import multiprod_service
-            from routers.ecf_provider import get_multiprod_credentials, gen_id as mp_gen_id, now_iso as mp_now_iso
-            
-            endpoint, token = await get_multiprod_credentials()
-            if not endpoint:
-                raise Exception("Multiprod no configurado. Configure URL y token en Configuracion > Sistema")
-            
-            xml_content = multiprod_service.build_xml(credit_note, system_config, "E34", e34_encf)
-            valid, validation_msg = multiprod_service.validate_xml_local(xml_content, "E34")
-            if not valid:
-                raise Exception(f"XML E34 no valido: {validation_msg}")
-            
-            full_endpoint = endpoint
-            if token and token not in endpoint:
-                full_endpoint = f"{endpoint.rstrip('/')}/{token}"
-            
-            rnc_emisor = (system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "").replace("-", "").strip()
-            mp_result = await multiprod_service.send_ecf(xml_content, full_endpoint, rnc=rnc_emisor, encf=e34_encf)
-            
-            # Log attempt
-            await db.ecf_logs.insert_one({
-                "id": mp_gen_id(),
-                "bill_id": bill["id"],
-                "encf": e34_encf,
-                "action": "multiprod_e34_send",
-                "provider": "multiprod",
-                "result": {k: v for k, v in mp_result.items() if k != "raw"},
-                "created_at": mp_now_iso(),
-            })
-            
-            estado = mp_result.get("estado", "")
-            if estado.startswith("aceptado") or mp_result.get("ok"):
-                credit_note["status"] = "completed"
-                credit_note["ecf_status"] = "accepted"
-                credit_note["ecf_provider"] = "multiprod"
-                credit_note["ecf_qr"] = mp_result.get("qr")
-            else:
-                credit_note["status"] = "completed"
-                credit_note["ecf_status"] = "error"
-                credit_note["ecf_provider"] = "multiprod"
-                credit_note["ecf_error"] = mp_result.get("motivo") or mp_result.get("error", "Error desconocido")
-        
-        elif provider == "thefactory":
-            # Send E34 via The Factory HKA
-            from routers.thefactory import (
-                authenticate, build_thefactory_payload, send_to_thefactory,
-                save_thefactory_response, get_config_from_db, get_config as tf_env_config, get_next_ncf
-            )
-            ecf_config = await get_config_from_db() or tf_env_config()
-            auth = await authenticate()
-            if not auth["ok"]:
-                raise Exception(f"TheFactory auth failed: {auth.get('error', '')}")
-            
-            payload = build_thefactory_payload(credit_note, system_config, e34_encf, auth["token"], None, ecf_config)
-            tf_result = await send_to_thefactory(payload, ecf_config)
-            
-            if tf_result.get("ok"):
-                credit_note["status"] = "completed"
-                credit_note["ecf_status"] = "accepted"
-                credit_note["ecf_provider"] = "thefactory"
-            else:
-                credit_note["status"] = "completed"
-                credit_note["ecf_status"] = "error"
-                credit_note["ecf_provider"] = "thefactory"
-                credit_note["ecf_error"] = tf_result.get("error", "Error desconocido")
-        
-        else:
-            # Send E34 via Alanube (default)
-            from routers.alanube import send_to_alanube, save_alanube_response
-            
-            payload = build_credit_note_payload(bill, credit_note, system_config, e34_encf, seq_due_date)
-            result = await send_to_alanube(payload)
-            
-            if result.get("ok"):
-                credit_note["status"] = "completed"
-                credit_note["ecf_status"] = "accepted"
-                credit_note["ecf_provider"] = "alanube"
-                credit_note["alanube_id"] = result.get("alanube_id")
-                credit_note["alanube_track_id"] = result.get("trackId")
-            else:
-                credit_note["status"] = "completed"
-                credit_note["ecf_status"] = "error"
-                credit_note["ecf_provider"] = "alanube"
-                credit_note["ecf_error"] = result.get("error", "Error desconocido")
+        credit_note["status"] = "completed"
+        await _send_e34_to_provider(credit_note, bill, system_config, e34_encf, seq_due_date)
     except Exception as e:
-        print(f"e-CF E34 error ({provider if 'provider' in dir() else 'unknown'}): {e}")
+        print(f"e-CF E34 error: {e}")
         credit_note["status"] = "completed"
         credit_note["ecf_status"] = "error"
         credit_note["ecf_error"] = str(e)
@@ -708,7 +712,7 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
                 prefix = seq.get("sequence_prefix", "E34")
                 if prefix == "B04":
                     prefix = "E34"
-                ncf_e34 = f"{prefix}{current_num:08d}"
+                ncf_e34 = f"{prefix}{current_num:010d}"
                 
                 # Update sequence
                 supabase_client.table("ncf_sequences").update({
@@ -723,7 +727,7 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
                     return_document=True
                 )
                 ncf_num = ncf_doc.get("current_number", 1) if ncf_doc else 1
-                ncf_e34 = f"E34{ncf_num:08d}"
+                ncf_e34 = f"E34{ncf_num:010d}"
         except Exception as e:
             print(f"Warning: NCF E34 generation error: {e}")
             ncf_doc = await db.ncf_sequences.find_one_and_update(
@@ -733,7 +737,7 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
                 return_document=True
             )
             ncf_num = ncf_doc.get("current_number", 1) if ncf_doc else 1
-            ncf_e34 = f"E34{ncf_num:08d}"
+            ncf_e34 = f"E34{ncf_num:010d}"
     else:
         ncf_doc = await db.ncf_sequences.find_one_and_update(
             {"prefix": "E34"},
@@ -742,7 +746,7 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
             return_document=True
         )
         ncf_num = ncf_doc.get("current_number", 1) if ncf_doc else 1
-        ncf_e34 = f"E34{ncf_num:08d}"
+        ncf_e34 = f"E34{ncf_num:010d}"
     
     # 7. Crear nota de crédito
     credit_note = {
@@ -791,6 +795,25 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
     }
     
     await db.credit_notes.insert_one(credit_note)
+    
+    # 7b. Send E34 to active e-CF provider
+    try:
+        system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+        await _send_e34_to_provider(credit_note, original_bill, system_config, ncf_e34)
+        # Update the saved credit note with ecf result
+        await db.credit_notes.update_one({"id": credit_note["id"]}, {"$set": {
+            "ecf_status": credit_note.get("ecf_status"),
+            "ecf_provider": credit_note.get("ecf_provider"),
+            "ecf_error": credit_note.get("ecf_error"),
+            "ecf_qr": credit_note.get("ecf_qr"),
+            "alanube_id": credit_note.get("alanube_id"),
+            "alanube_track_id": credit_note.get("alanube_track_id"),
+        }})
+    except Exception as e:
+        print(f"e-CF E34 send error in create_credit_note: {e}")
+        await db.credit_notes.update_one({"id": credit_note["id"]}, {"$set": {
+            "ecf_status": "error", "ecf_error": str(e)
+        }})
     
     # 8. Update original bill status
     await db.bills.update_one(
@@ -1113,13 +1136,14 @@ def build_credit_note_payload(original_bill: dict, credit_note: dict, system_con
     
     total_amount = round(credit_note.get("total_reversed", 0), 2)
     
-    # Sender
+    # Sender — DB fields first, .env fallback
+    rnc_raw = system_config.get("ecf_alanube_rnc") or system_config.get("ticket_rnc") or system_config.get("rnc") or os.environ.get("ALANUBE_SANDBOX_RNC", "")
     sender = {
-        "rnc": os.environ.get("ALANUBE_SANDBOX_RNC", (system_config.get("rnc", "") or "").replace("-", "")),
-        "companyName": system_config.get("restaurant_name", "VexlyPOS"),
-        "tradeName": system_config.get("restaurant_name", "VexlyPOS"),
+        "rnc": (rnc_raw or "").replace("-", ""),
+        "companyName": system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("restaurant_name") or "VexlyPOS",
+        "tradeName": system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("restaurant_name") or "VexlyPOS",
         "stampDate": stamp_date,
-        "address": system_config.get("address", "Calle Principal #1") or "Calle Principal #1",
+        "address": system_config.get("ticket_address") or system_config.get("address") or "Calle Principal #1",
         "phoneNumber": [system_config.get("phone", "000-000-0000") or "000-000-0000"],
     }
     

@@ -122,7 +122,19 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **BUG**: XML builder buscaba `address`, `business_name`, `email` pero system_config usa `ticket_address`, `ticket_business_name`, `ticket_email`
   - **Fix**: Cadena de fallback: `ticket_rnc` → `rnc` → `ecf_alanube_rnc`; `ticket_address` → `address` → "SIN DIRECCION"; etc.
   - **Archivos**: `multiprod_service.py` (build_xml), `ecf_provider.py` (rnc_emisor en 3 lugares), `ecf_dispatcher.py` (rnc_emisor)
-  - **Testing**: XML con ticket_* ✅, XML sin campos opcionales (XSD OK) ✅, municipio/provincia omitidos sin error ✅
+  - **Testing**: XML con ticket_* OK, XML sin campos opcionales (XSD OK), municipio/provincia omitidos sin error
+  - **Fecha de protección**: 2026-04-17
+
+- **🔒 credit_notes.py — 1 Bug + 6 Warnings corregidos** (DONE - 2026-04-17):
+  - **BUG 1 (CRÍTICO)**: `generate-e34` no validaba `ecf_status` → podía generar E34 sobre factura no aprobada por DGII. Fix: valida PROCESSING/PENDING/ERROR/REJECTED/empty antes de proceder.
+  - **WARNING 1**: Columnas Supabase `ncf_type`/`ncf_type_code` → corregido a `ncf_type_id`/`sequence_prefix`
+  - **WARNING 2**: `serie` null generaba e-NCF malformado → `seq.get("serie") or seq.get("sequence_prefix", "E")[:1] or "E"`
+  - **WARNING 3**: RNC emisor Multiprod E34 sin `ticket_rnc` → cadena completa `ecf_alanube_rnc → ticket_rnc → rnc`
+  - **WARNING 4**: `create_credit_note` no enviaba a proveedor → extraída función `_send_e34_to_provider()` reutilizable, llamada desde ambas funciones
+  - **WARNING 5**: `build_credit_note_payload` RNC priorizaba .env → ahora DB-first con fallback a .env
+  - **WARNING 6**: Padding inconsistente 8 vs 10 dígitos → unificado a 10 dígitos (`010d`) en todas las ocurrencias
+  - **Archivo**: `/app/backend/routers/credit_notes.py`
+  - **Testing**: 7/7 verificaciones automatizadas pasaron, 0 errores post-restart
   - **Fecha de protección**: 2026-04-17
 
 ## Completed Tasks (2026-04-10)
