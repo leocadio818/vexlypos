@@ -425,8 +425,8 @@ export default function VentasTab() {
                     {st.default_ncf_type_id && (
                       <Badge variant="outline" className="text-[11px] border-blue-500/50 text-blue-400 bg-blue-500/10">
                         <FileText size={10} className="mr-1" />
-                        {st.default_ncf_type_id}
-                        {ncfType && <span className="ml-1 opacity-70">({ncfType.description?.split(' ')[0] || ''})</span>}
+                        {ncfType?.code || st.default_ncf_type_id}
+                        {ncfType && <span className="ml-1 opacity-70">({ncfType.name?.split(' ')[0] || ncfType.description?.split(' ')[0] || ''})</span>}
                       </Badge>
                     )}
                     {exemptCount > 0 && (
@@ -621,7 +621,7 @@ export default function VentasTab() {
               <select value={saleDialog.default_ncf_type_id} onChange={e => setSaleDialog({ ...saleDialog, default_ncf_type_id: e.target.value })}
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm">
                 {ncfTypes.map(n => (
-                  <option key={n.code || n.id} value={n.code || n.id}>{n.code || n.id} - {n.description}</option>
+                  <option key={n.code || n.id} value={n.code || n.id}>{n.code || n.id} - {n.name || n.description}</option>
                 ))}
               </select>
             </div>

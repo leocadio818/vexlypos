@@ -323,9 +323,9 @@ export default function NcfTab() {
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {displayTypes.map((type) => (
-            <div key={type.id || type.code} className="flex items-center gap-2 text-xs p-2 bg-background rounded-lg">
-              <Badge variant="outline" className={`font-mono text-xs ${ecfEnabled ? 'border-emerald-500/50 text-emerald-500' : ''}`}>{type.id || type.code}</Badge>
-              <span className="text-muted-foreground truncate">{type.description || type.name}</span>
+            <div key={type.code || type.id} className="flex items-center gap-2 text-xs p-2 bg-background rounded-lg">
+              <Badge variant="outline" className={`font-mono text-xs ${ecfEnabled ? 'border-emerald-500/50 text-emerald-500' : ''}`}>{type.code || type.id}</Badge>
+              <span className="text-muted-foreground truncate">{type.name || type.description}</span>
             </div>
           ))}
         </div>
@@ -344,7 +344,7 @@ export default function NcfTab() {
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" disabled={!!ncfDialog.editId}>
                 <option value="">Seleccionar...</option>
                 {displayTypes.map(t => (
-                  <option key={t.id || t.code} value={t.id || t.code}>{t.id || t.code} - {t.description || t.name}</option>
+                  <option key={t.code || t.id} value={t.code || t.id}>{t.code || t.id} - {t.name || t.description}</option>
                 ))}
               </select>
             </div>
