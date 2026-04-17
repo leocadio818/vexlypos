@@ -103,17 +103,26 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
 - **🔒 CRITICAL: Dispatcher e-CF ahora enruta a Multiprod** (DONE - 2026-04-17):
   - **BUG**: El dispatcher principal (`ecf_dispatcher.py`) solo tenía ramas para `thefactory` y `else → alanube`. Si `ecf_provider = "multiprod"`, las facturas iban silenciosamente a Alanube.
   - **Fix aplicado en 4 archivos**:
-    1. **`ecf_dispatcher.py`** — Agregada rama `elif provider == "multiprod"` en:
-       - `send_ecf()` (flujo principal de cobro)
-       - `retry_ecf()` (reintento individual)
-       - `retry_all_contingencia()` (reintento masivo)
-       - Nueva función `_send_via_multiprod()` que reutiliza la lógica de `ecf_provider.py`
-    2. **`ecf_provider.py`** — Agregado `init_supabase()` propio + corregida consulta Supabase (`ncf_type_id` en vez de `ncf_type`)
-    3. **`credit_notes.py`** — E34 ahora respeta el proveedor seleccionado (Multiprod/TheFactory/Alanube)
-    4. **`server.py`** — Inicializa Supabase para `ecf_provider` al arrancar
-  - **`get_multiprod_credentials()`** ya no exige `provider == "multiprod"` en `ecf_provider_config`; devuelve credenciales si existen
-  - **Testing e2e**: `ecf_provider=multiprod` → Dispatcher envió a Multiprod → `E320000000001` → DGII "Aceptado" → `ecf_status: FINISHED`, `ecf_provider: multiprod` en DB → Secuencia Supabase incrementada correctamente
-  - **Razón de protección**: Fix crítico de enrutamiento de facturación electrónica
+    1. **`ecf_dispatcher.py`** — Agregada rama `elif provider == "multiprod"` en send, retry, retry-all + `_send_via_multiprod()`
+    2. **`ecf_provider.py`** — `init_supabase()` + fix `ncf_type_id` + `get_multiprod_credentials()` sin restricción de provider
+    3. **`credit_notes.py`** — E34 ahora respeta el proveedor seleccionado
+    4. **`server.py`** — Inicializa Supabase para `ecf_provider`
+  - **Testing e2e**: Dispatcher → Multiprod → DGII "Aceptado" → `E320000000001` → `ecf_status: FINISHED`
+  - **Fecha de protección**: 2026-04-17
+
+- **🔒 Credenciales Alanube: DB first, .env fallback** (DONE - 2026-04-17):
+  - **BUG**: `send_to_alanube()` usaba `get_config()` (solo .env) en vez de `get_config_from_db()` (DB primero)
+  - **Fix**: Todas las funciones en `alanube.py` ahora usan `await get_config_from_db() or get_config()`
+  - **Emisor RNC/nombre/dirección**: Ahora lee `ecf_alanube_rnc` → `ticket_rnc` → `rnc` → .env como fallback
+  - **Archivos**: `alanube.py` (send_to_alanube, get_ecf_config, refresh_status)
+  - **Testing**: DB token priorizado sobre .env ✅, fallback a .env cuando DB vacía ✅
+  - **Fecha de protección**: 2026-04-17
+
+- **🔒 Multiprod XML: Mapeo campos ticket_* del negocio** (DONE - 2026-04-17):
+  - **BUG**: XML builder buscaba `address`, `business_name`, `email` pero system_config usa `ticket_address`, `ticket_business_name`, `ticket_email`
+  - **Fix**: Cadena de fallback: `ticket_rnc` → `rnc` → `ecf_alanube_rnc`; `ticket_address` → `address` → "SIN DIRECCION"; etc.
+  - **Archivos**: `multiprod_service.py` (build_xml), `ecf_provider.py` (rnc_emisor en 3 lugares), `ecf_dispatcher.py` (rnc_emisor)
+  - **Testing**: XML con ticket_* ✅, XML sin campos opcionales (XSD OK) ✅, municipio/provincia omitidos sin error ✅
   - **Fecha de protección**: 2026-04-17
 
 ## Completed Tasks (2026-04-10)

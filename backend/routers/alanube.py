@@ -204,13 +204,14 @@ def build_alanube_payload(bill: dict, system_config: dict, encf: str) -> dict:
     main_payment = map_payment_type(bill.get("payment_method_name", "efectivo"), main_dgii_code)
     payment_type = 2 if main_payment in [4, 5, 6] else 1  # Credit if venta a crédito, bonos, permuta
     
-    # ── Sender (Emisor) ──
+    # ── Sender (Emisor) — DB fields first, then fallback ──
+    rnc_raw = system_config.get("ecf_alanube_rnc") or system_config.get("ticket_rnc") or system_config.get("rnc") or os.environ.get("ALANUBE_SANDBOX_RNC", "")
     sender = {
-        "rnc": os.environ.get("ALANUBE_SANDBOX_RNC", (system_config.get("rnc", "") or "").replace("-", "")),
-        "companyName": system_config.get("restaurant_name", "VexlyPOS"),
-        "tradeName": system_config.get("restaurant_name", "VexlyPOS"),
+        "rnc": (rnc_raw or "").replace("-", ""),
+        "companyName": system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("restaurant_name") or "VexlyPOS",
+        "tradeName": system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("restaurant_name") or "VexlyPOS",
         "stampDate": stamp_date,
-        "address": system_config.get("address", "Calle Principal #1") or "Calle Principal #1",
+        "address": system_config.get("ticket_address") or system_config.get("address") or "Calle Principal #1",
         "phoneNumber": [system_config.get("phone", "000-000-0000") or "000-000-0000"],
     }
     
@@ -274,7 +275,7 @@ def build_alanube_payload(bill: dict, system_config: dict, encf: str) -> dict:
 
 async def send_to_alanube(payload: dict) -> dict:
     """Send e-CF to Alanube API (async, non-blocking)"""
-    config = get_config()
+    config = await get_config_from_db() or get_config()
     if not config["token"]:
         return {"ok": False, "error": "Token de Alanube no configurado"}
     
@@ -505,7 +506,7 @@ async def get_all_ecf_logs(limit: int = Query(50)):
 @router.get("/config")
 async def get_ecf_config():
     """Check if Alanube is configured"""
-    config = get_config()
+    config = await get_config_from_db() or get_config()
     return {
         "configured": bool(config["token"]),
         "is_sandbox": config["is_sandbox"],
@@ -605,7 +606,7 @@ async def refresh_ecf_status(bill_id: str):
     if not alanube_id:
         return {"ok": False, "message": "No tiene ID de Alanube"}
     
-    cfg = get_config()
+    cfg = await get_config_from_db() or get_config()
     if not cfg["token"]:
         return {"ok": False, "message": "Token no configurado"}
     

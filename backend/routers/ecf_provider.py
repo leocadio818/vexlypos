@@ -274,7 +274,7 @@ async def process_retry(bill_id: str):
 
     # Send to Multiprod — fetch RNC for proper filename
     sys_cfg = await db.system_config.find_one({}, {"_id": 0}) or {}
-    rnc_emisor = (sys_cfg.get("rnc") or sys_cfg.get("ecf_alanube_rnc") or "").replace("-", "").strip()
+    rnc_emisor = (sys_cfg.get("ticket_rnc") or sys_cfg.get("rnc") or sys_cfg.get("ecf_alanube_rnc") or "").replace("-", "").strip()
     result = await multiprod_service.send_ecf(xml, endpoint, rnc=rnc_emisor, encf=encf)
 
     # Log attempt
@@ -438,7 +438,7 @@ async def send_ecf_multiprod(bill_id: str, background_tasks: BackgroundTasks, us
     if token and token not in endpoint:
         full_endpoint = f"{endpoint.rstrip('/')}/{token}"
 
-    rnc_emisor = (system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "").replace("-", "").strip()
+    rnc_emisor = (system_config.get("ticket_rnc") or system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "").replace("-", "").strip()
     result = await multiprod_service.send_ecf(xml_content, full_endpoint, rnc=rnc_emisor, encf=encf)
 
     # Log attempt
@@ -541,7 +541,7 @@ async def test_multiprod_connection(user=Depends(get_current_user)):
 
     endpoint, token = await get_multiprod_credentials()
     system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
-    rnc = system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "000000000"
+    rnc = system_config.get("ticket_rnc") or system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "000000000"
 
     # Step 1: Generate test XML using the real builder — unique e-NCF per test
     import random

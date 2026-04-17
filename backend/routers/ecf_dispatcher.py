@@ -275,7 +275,7 @@ async def _send_via_multiprod(bill, config, bill_id):
     if token and token not in endpoint:
         full_endpoint = f"{endpoint.rstrip('/')}/{token}"
 
-    rnc_emisor = (system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "").replace("-", "").strip()
+    rnc_emisor = (system_config.get("ticket_rnc") or system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "").replace("-", "").strip()
     result = await multiprod_service.send_ecf(xml_content, full_endpoint, rnc=rnc_emisor, encf=encf)
 
     # Log attempt

@@ -133,21 +133,21 @@ class MultiprodService:
                 tipo_pago = "3"
         _sub(id_doc, "TipoPago", tipo_pago)
 
-        # Emisor
+        # Emisor — map ticket_* fields from system_config as primary, then generic fallbacks
         emisor = etree.SubElement(encabezado, "Emisor")
-        rnc = system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or ""
+        rnc = system_config.get("ticket_rnc") or system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or ""
         rnc = rnc.replace("-", "").strip()
         _sub(emisor, "RNCEmisor", rnc or "000000000")
-        _sub(emisor, "RazonSocialEmisor", system_config.get("business_name") or system_config.get("razon_social") or "SIN NOMBRE")
-        _sub(emisor, "NombreComercial", system_config.get("commercial_name") or system_config.get("business_name") or system_config.get("razon_social"))
-        _sub(emisor, "DireccionEmisor", system_config.get("address") or system_config.get("direccion") or "SIN DIRECCION")
+        _sub(emisor, "RazonSocialEmisor", system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("razon_social") or "SIN NOMBRE")
+        _sub(emisor, "NombreComercial", system_config.get("commercial_name") or system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("razon_social"))
+        _sub(emisor, "DireccionEmisor", system_config.get("ticket_address") or system_config.get("address") or system_config.get("direccion") or "SIN DIRECCION")
         mun = system_config.get("municipality") or system_config.get("municipio")
-        if mun and len(str(mun)) == 6:
-            _sub(emisor, "Municipio", str(mun))
+        if mun and len(str(mun)) >= 4:
+            _sub(emisor, "Municipio", str(mun)[:6])
         prov = system_config.get("province") or system_config.get("provincia")
         if prov and len(str(prov)) >= 2:
             _sub(emisor, "Provincia", str(prov).zfill(2)[:6])
-        _sub(emisor, "CorreoEmisor", system_config.get("email") or system_config.get("correo"))
+        _sub(emisor, "CorreoEmisor", system_config.get("ticket_email") or system_config.get("email") or system_config.get("correo"))
 
         # NumeroFacturaInterna
         txn = invoice_data.get("transaction_number") or invoice_data.get("id", "")
