@@ -415,13 +415,24 @@ export default function EcfDashboard({ data }) {
                           </>
                         )}
                         {status === 'CONTINGENCIA_MANUAL' && (
-                          <span
-                            className="text-[10px] px-2 py-1 rounded bg-gray-500/10 text-gray-500 dark:text-gray-400"
-                            title="Plataforma externa (Uber Eats/PedidosYa) — la plataforma genera su propio comprobante. No se envía a DGII."
-                            data-testid="manual-contingency-note"
-                          >
-                            Plataforma externa
-                          </span>
+                          <>
+                            <span
+                              className="text-[10px] px-2 py-1 rounded bg-gray-500/10 text-gray-500 dark:text-gray-400"
+                              title="Plataforma externa (Uber Eats/PedidosYa) — no se envía en lote. Usa el botón Reintentar solo si decides forzar el envío manualmente."
+                              data-testid="manual-contingency-note"
+                            >
+                              Plataforma externa
+                            </span>
+                            <button
+                              onClick={() => handleRetry(b.id)}
+                              title="Reintentar manualmente (forzar envío a DGII)"
+                              disabled={loading}
+                              className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]"
+                              data-testid={`retry-btn-${b.id}`}
+                            >
+                              <RefreshCw size={14} className={`text-amber-500 ${loading ? 'animate-spin' : ''}`} />
+                            </button>
+                          </>
                         )}
                         <button onClick={() => handleReprint(b.id)} title="Reimprimir" className="p-1.5 rounded-lg hover:bg-muted transition-all">
                           <Printer size={14} className="text-muted-foreground" />
