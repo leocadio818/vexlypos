@@ -204,6 +204,22 @@ async def update_bill_ecf_type(bill_id: str, input: dict, user=Depends(get_curre
     ecf_status = (bill.get("ecf_status") or "").upper()
     if ecf_status != "CONTINGENCIA":
         raise HTTPException(status_code=400, detail="Solo se puede editar el tipo de e-CF en facturas en CONTINGENCIA")
+
+    # Block editing of "manual contingencia" bills (Uber Eats/PedidosYa force_contingency)
+    # These are NOT meant to be sent to DGII — the external platform issues its own receipt.
+    is_manual = (
+        "contingencia_manual" in (bill.get("ecf_error") or "").lower()
+        or bill.get("force_contingency") is True
+        or any(
+            (p or {}).get("skip_ecf") is True or (p or {}).get("force_contingency") is True
+            for p in (bill.get("payments") or [])
+        )
+    )
+    if is_manual:
+        raise HTTPException(
+            status_code=400,
+            detail="Esta factura es de una plataforma externa (Uber Eats/PedidosYa). No puede enviarse a DGII porque la plataforma genera su propio comprobante."
+        )
     
     # Validate new ecf_type
     new_ecf_type = input.get("ecf_type", "").upper()
@@ -220,22 +236,32 @@ async def update_bill_ecf_type(bill_id: str, input: dict, user=Depends(get_curre
         {"$set": {
             "ncf": new_ncf,
             "ncf_type": new_ecf_type,
+            "ecf_type": new_ecf_type,
             "ecf_type_modified": True,
             "ecf_type_modified_by": user.get("user_id"),
             "ecf_type_modified_at": datetime.now(timezone.utc).isoformat()
         }}
     )
     
-    # Log the change
-    from utils.audit import log_action
-    await log_action(
-        user_id=user.get("user_id"),
-        user_name=user.get("name", ""),
-        action="ecf_type_changed",
-        details=f"Tipo e-CF cambiado de {old_ncf} a {new_ncf} para factura {bill.get('transaction_number')}",
-        entity_type="bill",
-        entity_id=bill_id
-    )
+    # Log the change via central audit system
+    try:
+        from utils.audit import log_audit_event
+        await log_audit_event(
+            db=db,
+            event_type="ecf_type_changed",
+            description=f"Tipo e-CF cambiado de {old_ncf} a {new_ncf} para factura T-{bill.get('transaction_number')}",
+            user_id=user.get("user_id"),
+            user_name=user.get("name", ""),
+            role=user.get("role", ""),
+            entity_type="bill",
+            entity_id=bill_id,
+            entity_name=f"T-{bill.get('transaction_number')}",
+            details={"old_ncf": old_ncf, "new_ncf": new_ncf, "old_type": bill.get("ecf_type"), "new_type": new_ecf_type},
+        )
+    except Exception as e:
+        # Audit failure must not break the main operation
+        import logging
+        logging.warning(f"Audit log failed for ecf_type_changed: {e}")
     
     return {"ok": True, "old_ncf": old_ncf, "new_ncf": new_ncf, "message": f"Tipo cambiado a {new_ecf_type}. Presiona 'Reenviar' para enviar a DGII."}
 

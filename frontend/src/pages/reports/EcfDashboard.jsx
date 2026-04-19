@@ -399,7 +399,7 @@ export default function EcfDashboard({ data }) {
                         <button onClick={() => handleRefreshStatus(b.id)} title="Actualizar status" className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]">
                           <Search size={14} className="text-blue-500" />
                         </button>
-                        {(status === 'CONTINGENCIA' || status === 'CONTINGENCIA_MANUAL' || status === 'REJECTED') && (
+                        {(status === 'CONTINGENCIA' || status === 'REJECTED') && (
                           <>
                             <button 
                               onClick={() => setEditDialog({ open: true, bill: b, newType: b.ncf?.replace('PENDING-', '') || 'E32' })} 
@@ -413,6 +413,15 @@ export default function EcfDashboard({ data }) {
                               <RefreshCw size={14} className={`text-amber-500 ${loading ? 'animate-spin' : ''}`} />
                             </button>
                           </>
+                        )}
+                        {status === 'CONTINGENCIA_MANUAL' && (
+                          <span
+                            className="text-[10px] px-2 py-1 rounded bg-gray-500/10 text-gray-500 dark:text-gray-400"
+                            title="Plataforma externa (Uber Eats/PedidosYa) — la plataforma genera su propio comprobante. No se envía a DGII."
+                            data-testid="manual-contingency-note"
+                          >
+                            Plataforma externa
+                          </span>
                         )}
                         <button onClick={() => handleReprint(b.id)} title="Reimprimir" className="p-1.5 rounded-lg hover:bg-muted transition-all">
                           <Printer size={14} className="text-muted-foreground" />
