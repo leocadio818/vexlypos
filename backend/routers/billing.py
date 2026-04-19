@@ -851,12 +851,14 @@ async def list_sale_types():
     types = await db.sale_types.find({}, {"_id": 0}).to_list(20)
     if not types:
         defaults = [
-            {"id": gen_id(), "code": "dine_in", "name": "Para comer aquí", "active": True, "tax_exemptions": [], "default_ncf_type_id": "B02"},
-            {"id": gen_id(), "code": "takeout", "name": "Para llevar", "active": True, "tax_exemptions": [], "default_ncf_type_id": "B02"},
-            {"id": gen_id(), "code": "delivery", "name": "Delivery", "active": True, "tax_exemptions": [], "default_ncf_type_id": "B02"}
+            {"id": gen_id(), "code": "dine_in", "name": "AQUI", "active": True, "tax_exemptions": [], "default_ncf_type_id": "E32", "ncf_type": "E32"},
+            {"id": gen_id(), "code": "takeout", "name": "LLEVAR", "active": True, "tax_exemptions": [], "default_ncf_type_id": "E32", "ncf_type": "E32"},
+            {"id": gen_id(), "code": "delivery", "name": "DELIVERY", "active": True, "tax_exemptions": [], "default_ncf_type_id": "E32", "ncf_type": "E32"}
         ]
         await db.sale_types.insert_many(defaults)
-        return defaults
+        # Re-fetch to avoid ObjectId serialization issue from insert_many mutation
+        types = await db.sale_types.find({}, {"_id": 0}).to_list(20)
+        return types
     return types
 
 @router.post("/sale-types")

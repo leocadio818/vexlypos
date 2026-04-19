@@ -147,6 +147,14 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **Archivos**: `EcfDashboard.jsx`, `Reports.js`, `NcfTab.js`, `AuthContext.js`
   - **Fecha de protección**: 2026-04-19
 
+- **🔒 3 Backend Bugs corregidos** (DONE - 2026-04-19):
+  - **Bug 6**: `billing.py` — Sale types auto-seed usa E32 (no B02), re-fetch después de insert_many para evitar ObjectId serialization
+  - **Bug 7**: `ncf.py` — Crear secuencia ahora incluye `ncf_type`, `serie`, `start_number` en Supabase
+  - **Bug 8**: `multiprod_service.py` — FechaVencimientoSecuencia lee `seq_valid_until` de Supabase, fallback "31-12-2027", formato DD-MM-YYYY
+  - **Archivos**: `billing.py`, `ncf.py`, `multiprod_service.py`, `ecf_dispatcher.py`, `ecf_provider.py`
+  - **Fecha de protección**: 2026-04-19
+
+
 
 - **🔒 Multi-tenancy Supabase con client_id** (DONE - 2026-04-17):
   - Todas las consultas Supabase filtran por `SUPABASE_CLIENT_ID` (81+ queries en 11 archivos)

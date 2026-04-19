@@ -243,16 +243,17 @@ async def _send_via_multiprod(bill, config, bill_id):
 
     # Reserve e-NCF from Supabase
     try:
-        encf, reservation_id = await reserve_encf(ecf_type, bill_id)
+        encf, reservation_id, seq_valid_until = await reserve_encf(ecf_type, bill_id)
     except Exception as e:
         return {"ok": False, "error": f"Error reservando e-NCF: {str(e)}"}
 
     # Get system config for XML building
     system_config = config or await db.system_config.find_one({}, {"_id": 0}) or {}
 
-    # Build XML
+    # Build XML — pass seq_valid_until for FechaVencimientoSecuencia
     try:
-        xml_content = multiprod_service.build_xml(bill, system_config, ecf_type, encf)
+        bill_for_xml = {**bill, "seq_valid_until": seq_valid_until}
+        xml_content = multiprod_service.build_xml(bill_for_xml, system_config, ecf_type, encf)
     except Exception as e:
         await release_reservation(reservation_id)
         return {"ok": False, "error": f"Error construyendo XML: {str(e)}"}

@@ -116,7 +116,16 @@ class MultiprodService:
 
         # FechaVencimientoSecuencia — mandatory for E31, E44, E45 (not E32, E34)
         if tipo_num in ("31", "44", "45"):
-            _sub(id_doc, "FechaVencimientoSecuencia", "31-12-2027")
+            # Read from invoice_data (passed from dispatcher with seq valid_until) or fallback
+            fecha_venc = invoice_data.get("seq_valid_until") or invoice_data.get("fecha_vencimiento_secuencia")
+            if fecha_venc:
+                # Convert YYYY-MM-DD to DD-MM-YYYY if needed
+                if len(str(fecha_venc)) == 10 and fecha_venc[4] == '-':
+                    parts = str(fecha_venc).split('-')
+                    fecha_venc = f"{parts[2]}-{parts[1]}-{parts[0]}"
+            else:
+                fecha_venc = "31-12-2027"
+            _sub(id_doc, "FechaVencimientoSecuencia", fecha_venc)
 
         # TipoIngresos (not required for E34, mandatory for others)
         if tipo_num != "34":

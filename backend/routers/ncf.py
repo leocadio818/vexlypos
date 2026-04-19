@@ -235,8 +235,11 @@ async def create_ncf_sequence(input: NCFSequenceInput):
         prefix = input.prefix if input.prefix else f"{input.serie}{input.ncf_type_code[1:]}"
         data = {
             "ncf_type_id": input.ncf_type_code.upper(),
+            "ncf_type": input.ncf_type_code.upper(),
             "sequence_prefix": prefix,
+            "serie": input.serie or prefix[:1],
             "current_number": input.current_number,
+            "start_number": input.current_number,
             "end_number": input.range_end,
             "valid_until": input.expiration_date,
             "is_active": input.is_active if input.is_active is not None else True

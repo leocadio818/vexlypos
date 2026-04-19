@@ -192,7 +192,7 @@ async def reserve_encf(ecf_type: str, invoice_id: str) -> tuple:
     }
     await db.encf_reservations.insert_one(reservation)
 
-    return encf, reservation["id"]
+    return encf, reservation["id"], seq.get("valid_until")
 
 
 async def consume_reservation(reservation_id: str):
@@ -401,16 +401,17 @@ async def send_ecf_multiprod(bill_id: str, background_tasks: BackgroundTasks, us
 
     # Reserve e-NCF
     try:
-        encf, reservation_id = await reserve_encf(ecf_type, bill_id)
+        encf, reservation_id, seq_valid_until = await reserve_encf(ecf_type, bill_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reservando e-NCF: {str(e)}")
 
     # Get system config for XML building
     system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
 
-    # Build XML
+    # Build XML — pass seq_valid_until for FechaVencimientoSecuencia
     try:
-        xml_content = multiprod_service.build_xml(bill, system_config, ecf_type, encf)
+        bill_for_xml = {**bill, "seq_valid_until": seq_valid_until}
+        xml_content = multiprod_service.build_xml(bill_for_xml, system_config, ecf_type, encf)
     except NotImplementedError:
         # XML builder not yet implemented — release reservation
         await release_reservation(reservation_id)
