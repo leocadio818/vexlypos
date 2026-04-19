@@ -1503,3 +1503,24 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - Botón "Reintentar" también disponible en la tabla principal para bills en status REJECTED.
 - **Testing**: curl `/api/ecf/rejections` OK + screenshots smoke test (badge "5" visible en Opciones, tarjeta rechazos visible con 5 items y motivos completos) + retry real de REJECTED → eNCF E320000000281 generado.
 - **CÓDIGO PROTEGIDO**: No modificar sin permiso del usuario.
+
+### 🔒 Auto-Retry Inteligente con Backoff Exponencial — Added 2026-04-19
+- **Problema**: Rechazos DGII transitorios (HTTP 500 Multiprod caído, timeouts, errores de red) requerían clics manuales de "Reintentar".
+- **Solución**: Worker en background que reintenta automáticamente SOLO errores transitorios, dejando los permanentes para intervención manual.
+- **Backoff**: `[0s, 30s, 2min, 10min, 1h]` (max 5 intentos, ~1h13min total).
+- **Clasificador** (`_is_permanent_error` en `ecf_provider.py`):
+  - **Permanente (NO reintenta)**: `rechazado` (DGII refusó estructuralmente), HTTP 4xx excepto 408/429.
+  - **Transitorio (SÍ reintenta)**: `error_formato`, `error_conexion`, HTTP 5xx, HTTP 408/429, timeouts.
+- **Arquitectura**:
+  - `ecf_retry_queue` (MongoDB) almacena intentos programados con `next_retry_at`.
+  - `auto_retry_worker()` APScheduler job — corre cada 60s, procesa entradas listas.
+  - `process_retry()` refactorizado: no recursivo, una sola vuelta, cede al worker para backoffs largos.
+  - Campos nuevos en `bills`: `ecf_auto_retry_attempt`, `ecf_auto_retry_next_at`, `ecf_auto_retry_status` (pending/completed/rejected/exhausted/permanent_error), `ecf_auto_retry_max`.
+- **Frontend** (`EcfDashboard.jsx`):
+  - Badge azul "🔄 Auto-retry 3/5 · en 2m 15s" en tarjeta de rechazos cuando hay reintento programado.
+  - Badge gris "Auto-retry agotado" cuando se agotan los 5 intentos.
+- **Testing**:
+  - Clasificador: **10/10 casos PASS** (rechazado, HTTP 500/502/408/429/404/401/422, connection error, aceptado).
+  - Worker end-to-end: Entry inyectada con HTTP 500 → worker la recoge → reclasifica como transient → incrementa `attempt 2→3` → agenda siguiente retry en 120s (2min). ✅
+- **CÓDIGO PROTEGIDO**: No modificar `_is_permanent_error` ni `RETRY_BACKOFFS` sin permiso del usuario.
+

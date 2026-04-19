@@ -183,7 +183,26 @@ export default function EcfDashboard({ data }) {
               </span>
             </div>
             <ul className="divide-y divide-red-500/20">
-              {rejectedBills.slice(0, 5).map((b) => (
+              {rejectedBills.slice(0, 5).map((b) => {
+                const arStatus = b.ecf_auto_retry_status;
+                const arAttempt = b.ecf_auto_retry_attempt || 0;
+                const arMax = b.ecf_auto_retry_max || 5;
+                const arNextAt = b.ecf_auto_retry_next_at;
+                const isAutoRetrying = arStatus === 'pending' && arNextAt;
+                let autoRetryLabel = '';
+                if (isAutoRetrying) {
+                  try {
+                    const ms = new Date(arNextAt) - new Date();
+                    if (ms > 0) {
+                      const mins = Math.floor(ms / 60000);
+                      const secs = Math.floor((ms % 60000) / 1000);
+                      autoRetryLabel = mins >= 1 ? `${mins}m ${secs}s` : `${secs}s`;
+                    } else {
+                      autoRetryLabel = 'pronto';
+                    }
+                  } catch { autoRetryLabel = ''; }
+                }
+                return (
                 <li
                   key={b.id}
                   className="px-4 py-3 flex items-start gap-3 hover:bg-red-500/5 transition-all"
@@ -202,6 +221,20 @@ export default function EcfDashboard({ data }) {
                       <span className="text-xs font-semibold">
                         RD$ {(b.total || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
                       </span>
+                      {isAutoRetrying && (
+                        <Badge
+                          className="text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30"
+                          data-testid={`auto-retry-badge-${b.id}`}
+                        >
+                          <RefreshCw size={9} className="mr-1 animate-spin" />
+                          Auto-retry {arAttempt}/{arMax}{autoRetryLabel ? ` · en ${autoRetryLabel}` : ''}
+                        </Badge>
+                      )}
+                      {arStatus === 'exhausted' && (
+                        <Badge className="text-[10px] bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30">
+                          Auto-retry agotado ({arAttempt}/{arMax})
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-xs mt-1 text-red-600 dark:text-red-400 break-words">
                       <AlertTriangle size={11} className="inline mr-1 -mt-0.5" />
@@ -223,7 +256,8 @@ export default function EcfDashboard({ data }) {
                     Reintentar
                   </Button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
             {rejectedBills.length > 5 && (
               <div className="px-4 py-2 text-[11px] text-center text-muted-foreground border-t border-red-500/20">

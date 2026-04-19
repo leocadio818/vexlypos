@@ -4376,6 +4376,9 @@ async def startup_event():
     await update_scheduler_from_config()
     # e-NCF reservation cleanup job (every 60 seconds)
     scheduler.add_job(cleanup_expired_reservations, "interval", seconds=60, id="encf_reservation_cleanup", replace_existing=True)
+    # Auto-retry worker for e-CF transient errors (every 60 seconds)
+    from routers.ecf_provider import auto_retry_worker
+    scheduler.add_job(auto_retry_worker, "interval", seconds=60, id="ecf_auto_retry_worker", replace_existing=True)
     logger.info("Scheduler started and configured")
     # Seed timezone config if not present
     existing_tz = await db.system_config.find_one({"id": "timezone"})

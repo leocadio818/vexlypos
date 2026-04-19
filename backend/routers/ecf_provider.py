@@ -228,8 +228,33 @@ async def release_reservation(reservation_id: str):
 
 
 # ─── RETRY QUEUE ───
+# Backoff intervals for auto-retry (seconds): 0s (immediate), 30s, 2min, 10min, 1h
+# Total max wait: ~1h13min across 5 attempts
+RETRY_BACKOFFS = [0, 30, 120, 600, 3600]
 
-RETRY_BACKOFFS = [0, 2, 4, 8, 16]  # seconds before each attempt (attempt 1=0s, 2=2s, etc.)
+
+def _is_permanent_error(result: dict) -> bool:
+    """
+    Classifier: is this error permanent (requires manual action) or transient (safe to auto-retry)?
+    Permanent:
+      - estado == "rechazado" → DGII refused the document structurally (eNCF consumed)
+      - 4xx HTTP errors (except 408 timeout, 429 rate limit)
+    Transient (auto-retry):
+      - estado == "error_formato" / "error_http" / "error_conexion" → Multiprod server issues
+      - HTTP 500, 502, 503, 504, 408, 429
+      - Timeouts, network failures
+    """
+    if not isinstance(result, dict):
+        return False
+    estado = (result.get("estado") or "").lower()
+    if estado == "rechazado":
+        return True
+    http_status = result.get("diagnostics", {}).get("http_status") if isinstance(result.get("diagnostics"), dict) else None
+    if isinstance(http_status, int):
+        # 4xx except timeout/rate-limit → permanent (auth, validation, not found)
+        if 400 <= http_status < 500 and http_status not in (408, 429):
+            return True
+    return False
 
 
 async def enqueue_retry(bill_id: str, encf: str, reservation_id: str, attempt: int, endpoint: str, xml: str):
@@ -252,10 +277,22 @@ async def enqueue_retry(bill_id: str, encf: str, reservation_id: str, attempt: i
         }},
         upsert=True
     )
+    # Mirror to bill for UI visibility
+    await db.bills.update_one({"id": bill_id}, {"$set": {
+        "ecf_auto_retry_attempt": attempt,
+        "ecf_auto_retry_next_at": next_retry.isoformat(),
+        "ecf_auto_retry_status": "pending",
+        "ecf_auto_retry_max": 5,
+    }})
 
 
 async def process_retry(bill_id: str):
-    """Process a single retry from the queue."""
+    """
+    Process ONE retry attempt from the queue (no recursion, no sleep).
+    Called by:
+      - Direct fire-and-forget after initial send failure (waits brief initial backoff if any).
+      - Scheduled worker `auto_retry_worker` that polls the queue every 60s.
+    """
     from services.multiprod_service import multiprod_service
 
     entry = await db.ecf_retry_queue.find_one({"bill_id": bill_id, "status": "pending"}, {"_id": 0})
@@ -268,10 +305,14 @@ async def process_retry(bill_id: str):
     encf = entry.get("encf")
     reservation_id = entry.get("reservation_id")
 
-    # Wait for backoff
-    wait_seconds = RETRY_BACKOFFS[min(attempt, len(RETRY_BACKOFFS) - 1)]
-    if wait_seconds > 0:
+    # Brief initial sleep only for first attempt's small backoff (≤30s acceptable inline)
+    # Longer backoffs (≥2min) are handled by the scheduled worker, never inline.
+    wait_seconds = RETRY_BACKOFFS[min(attempt - 1, len(RETRY_BACKOFFS) - 1)]
+    if 0 < wait_seconds <= 30:
         await asyncio.sleep(wait_seconds)
+    elif wait_seconds > 30:
+        # Long backoff — let the worker handle it; don't block here
+        return
 
     # Send to Multiprod — fetch RNC for proper filename
     sys_cfg = await db.system_config.find_one({}, {"_id": 0}) or {}
@@ -283,7 +324,7 @@ async def process_retry(bill_id: str):
         "id": gen_id(),
         "bill_id": bill_id,
         "encf": encf,
-        "action": f"multiprod_retry_{attempt}",
+        "action": f"multiprod_auto_retry_{attempt}",
         "result": {k: v for k, v in result.items() if k != "raw"},
         "created_at": now_iso(),
     })
@@ -301,12 +342,15 @@ async def process_retry(bill_id: str):
             "ecf_provider": "multiprod",
             "ecf_attempts": attempt,
             "ecf_sent_at": now_iso(),
+            "ecf_auto_retry_status": "completed",
+            "ecf_auto_retry_next_at": None,
         }})
         await db.ecf_retry_queue.update_one({"bill_id": bill_id}, {"$set": {"status": "completed", "updated_at": now_iso()}})
         return
 
-    if estado == "rechazado":
-        # DGII rejected — burn the e-NCF, don't retry
+    # Classify the error
+    if _is_permanent_error(result):
+        # Permanent — stop auto-retry, require manual intervention
         await consume_reservation(reservation_id)
         await db.bills.update_one({"id": bill_id}, {"$set": {
             "ecf_status": "REJECTED",
@@ -315,6 +359,8 @@ async def process_retry(bill_id: str):
             "ecf_reject_reason": result.get("motivo", "Rechazado por DGII"),
             "ecf_attempts": attempt,
             "ecf_sent_at": now_iso(),
+            "ecf_auto_retry_status": "permanent_error",
+            "ecf_auto_retry_next_at": None,
         }})
         await db.ecf_retry_queue.update_one({"bill_id": bill_id}, {"$set": {"status": "rejected", "updated_at": now_iso()}})
         return
@@ -327,34 +373,58 @@ async def process_retry(bill_id: str):
         await db.bills.update_one({"id": bill_id}, {"$set": {
             "ecf_status": "CONTINGENCIA",
             "ecf_provider": "multiprod",
-            "ecf_error": result.get("motivo", "Agoto reintentos"),
+            "ecf_error": result.get("motivo", "Agoto reintentos automáticos"),
             "ecf_attempts": attempt,
-            "ecf_next_retry_at": None,
+            "ecf_auto_retry_status": "exhausted",
+            "ecf_auto_retry_next_at": None,
         }})
         await db.ecf_retry_queue.update_one({"bill_id": bill_id}, {"$set": {"status": "exhausted", "updated_at": now_iso()}})
         return
 
-    # Schedule next retry
-    next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=RETRY_BACKOFFS[min(next_attempt - 1, len(RETRY_BACKOFFS) - 1)])
+    # Schedule next retry — worker will pick it up
+    next_wait = RETRY_BACKOFFS[min(next_attempt - 1, len(RETRY_BACKOFFS) - 1)]
+    next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=next_wait)
     await db.bills.update_one({"id": bill_id}, {"$set": {
         "ecf_attempts": attempt,
-        "ecf_next_retry_at": next_retry_at.isoformat(),
+        "ecf_auto_retry_attempt": next_attempt,
+        "ecf_auto_retry_next_at": next_retry_at.isoformat(),
+        "ecf_auto_retry_status": "pending",
     }})
     await db.ecf_retry_queue.update_one({"bill_id": bill_id}, {"$set": {
         "attempt": next_attempt,
         "next_retry_at": next_retry_at.isoformat(),
         "updated_at": now_iso(),
     }})
-    # Recursively process next retry
-    await process_retry(bill_id)
 
 
 async def run_background_retries(bill_id: str):
-    """Run retries 2-5 in background."""
+    """Run the immediate retry (attempts 1-2 if short backoff)."""
     try:
         await process_retry(bill_id)
     except Exception as e:
         print(f"Background retry error for {bill_id}: {e}")
+
+
+async def auto_retry_worker():
+    """
+    Scheduled worker: runs every 60 seconds.
+    Picks entries from ecf_retry_queue where status=pending AND next_retry_at <= now,
+    and processes them. This enables long backoffs (2min, 10min, 1h) without holding coroutines.
+    """
+    try:
+        now_dt = datetime.now(timezone.utc).isoformat()
+        # Pick all ready entries (cap at 50 to avoid flooding)
+        ready = await db.ecf_retry_queue.find(
+            {"status": "pending", "next_retry_at": {"$lte": now_dt}},
+            {"_id": 0, "bill_id": 1}
+        ).limit(50).to_list(50)
+        for entry in ready:
+            try:
+                await process_retry(entry["bill_id"])
+            except Exception as e:
+                print(f"auto_retry_worker: error processing {entry.get('bill_id')}: {e}")
+    except Exception as e:
+        print(f"auto_retry_worker: unexpected error: {e}")
 
 
 # ─── DISPATCHER — Main send endpoint ───

@@ -594,6 +594,8 @@ async def ecf_dashboard(
         "ecf_reject_reason": 1, "ecf_retry_count": 1, "ecf_sent_at": 1,
         "ecf_legal_status": 1, "ecf_provider": 1, "paid_at": 1, "table_number": 1,
         "waiter_name": 1, "cashier_name": 1, "razon_social": 1,
+        "ecf_auto_retry_attempt": 1, "ecf_auto_retry_next_at": 1,
+        "ecf_auto_retry_status": 1, "ecf_auto_retry_max": 1,
     }).sort("paid_at", -1).to_list(500)
 
     summary = {"total": len(bills), "approved": 0, "contingencia": 0, "rejected": 0, "pending": 0, "registered": 0}
@@ -631,6 +633,8 @@ async def ecf_rejections(limit: int = Query(20, ge=1, le=100)):
         "ecf_type": 1, "ecf_status": 1, "ecf_encf": 1, "ecf_reject_reason": 1,
         "ecf_provider": 1, "ecf_sent_at": 1, "paid_at": 1, "razon_social": 1,
         "fiscal_id": 1, "table_number": 1, "cashier_name": 1,
+        "ecf_auto_retry_attempt": 1, "ecf_auto_retry_next_at": 1,
+        "ecf_auto_retry_status": 1, "ecf_auto_retry_max": 1,
     }).sort("ecf_sent_at", -1).to_list(limit)
 
     # Filter to truly rejected only (exclude already re-accepted)
