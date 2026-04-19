@@ -365,6 +365,12 @@ class MultiprodService:
         try:
             t_start = time.monotonic()
             async with httpx.AsyncClient(timeout=15.0) as client:
+                # DEBUG: Log the exact XML being sent
+                import logging
+                logging.warning(f"=== XML ENVIADO A MULTIPROD ({filename}) ===")
+                logging.warning(xml_content)
+                logging.warning("=== FIN XML ===")
+                
                 response = await client.post(
                     endpoint_url,
                     files={"xml": (filename, xml_content.encode("utf-8"), "application/xml")},
