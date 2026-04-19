@@ -1484,3 +1484,22 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - T-1184 reenviada → eNCF E310000000201 → **ACEPTADO por DGII** (código 1).
   - T-1178 reenviada → eNCF E310000000202 → **ACEPTADO por DGII** (código 1).
 - **CÓDIGO PROTEGIDO**: No modificar `build_xml()` sin permiso del usuario.
+
+
+### 🔒 Alertas en Tiempo Real de Rechazos DGII — Added 2026-04-19
+- **Problema**: Los rechazos de DGII solo aparecían como un KPI pasivo en el dashboard; el `motivo` quedaba enterrado en logs.
+- **Solución**: Sistema de polling 60s + badge + toast + tarjeta destacada.
+- **Backend** (`/app/backend/routers/ecf_dispatcher.py`):
+  - `GET /api/ecf/rejections?limit=20` → lista de rechazos recientes con motivo completo.
+  - `POST /api/ecf/retry/{bill_id}` → ahora acepta también status `REJECTED` (antes solo CONTINGENCIA/ERROR).
+- **Frontend** (`/app/frontend/src/components/Layout.js`):
+  - Polling automático cada 60s para usuarios con `view_ecf_dashboard` o admin.
+  - Badge rojo animado (`animate-pulse`) en botón "Opciones" (desktop + mobile) y dentro del menú en opción "e-CF Dashboard" con contador de rechazos no vistos.
+  - Toast rojo al detectar nuevo rechazo (muestra T-number, tipo e-CF y motivo, 10s).
+  - `localStorage: pos_ecf_rejections_last_seen` — marca automáticamente como "visto" al abrir el e-CF Dashboard.
+- **Frontend** (`/app/frontend/src/pages/reports/EcfDashboard.jsx`):
+  - Nueva tarjeta "Rechazos DGII · Acción requerida" al tope del modal, en rojo, con los últimos 5 rechazos.
+  - Muestra T-number, tipo, eNCF, monto, motivo completo, timestamp, proveedor, y botón "Reintentar" por fila.
+  - Botón "Reintentar" también disponible en la tabla principal para bills en status REJECTED.
+- **Testing**: curl `/api/ecf/rejections` OK + screenshots smoke test (badge "5" visible en Opciones, tarjeta rechazos visible con 5 items y motivos completos) + retry real de REJECTED → eNCF E320000000281 generado.
+- **CÓDIGO PROTEGIDO**: No modificar sin permiso del usuario.

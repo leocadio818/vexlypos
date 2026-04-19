@@ -133,6 +133,56 @@ export default function Layout() {
       setEcfDashboardData(r.data);
     } catch {}
   };
+
+  // ═════ e-CF DGII Rejection Real-Time Alerts (polling 60s) ═════
+  const [ecfRejections, setEcfRejections] = useState([]);
+  const [ecfLastSeenAt, setEcfLastSeenAt] = useState(
+    () => localStorage.getItem('pos_ecf_rejections_last_seen') || ''
+  );
+  const canViewEcf = (user?.role === 'admin') || hasPermission('view_ecf_dashboard');
+  const unseenRejections = ecfRejections.filter(
+    (r) => (r.ecf_sent_at || '') > (ecfLastSeenAt || '')
+  );
+  const unseenRejectionCount = unseenRejections.length;
+
+  const markRejectionsSeen = useCallback(() => {
+    const latest = ecfRejections[0]?.ecf_sent_at;
+    if (latest && latest !== ecfLastSeenAt) {
+      localStorage.setItem('pos_ecf_rejections_last_seen', latest);
+      setEcfLastSeenAt(latest);
+    }
+  }, [ecfRejections, ecfLastSeenAt]);
+
+  useEffect(() => {
+    if (!canViewEcf) return;
+    let mounted = true;
+    let prevLatest = localStorage.getItem('pos_ecf_rejections_last_seen') || '';
+
+    const poll = async () => {
+      try {
+        const r = await api.get('/ecf/rejections', { params: { limit: 20 } });
+        if (!mounted) return;
+        const list = r.data?.rejections || [];
+        setEcfRejections(list);
+        const newestAt = list[0]?.ecf_sent_at || '';
+        // Toast only on transitions (new rejection detected after first poll)
+        if (newestAt && prevLatest && newestAt > prevLatest) {
+          const newest = list[0];
+          notify.error(
+            `DGII rechazó T-${newest.transaction_number || ''} (${newest.ecf_type || 'e-CF'}): ${newest.ecf_reject_reason || 'sin motivo'}`,
+            { duration: 10000 }
+          );
+        }
+        prevLatest = newestAt || prevLatest;
+      } catch {}
+    };
+
+    poll();
+    const id = setInterval(poll, 60000);
+    return () => { mounted = false; clearInterval(id); };
+  }, [canViewEcf]);
+  // ═════════════════════════════════════════════════════════════
+
   const [clockOutDialogOpen, setClockOutDialogOpen] = useState(false);
   const [clockOutLoading, setClockOutLoading] = useState(false);
   const [changePinOpen, setChangePinOpen] = useState(false);
@@ -451,12 +501,21 @@ export default function Layout() {
             <button
               onClick={() => setOptionsMenuOpen(true)}
               data-testid="nav-opciones-mobile"
-              className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl transition-all min-w-[50px] ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl transition-all min-w-[50px] ${
                 useGlassStyle ? 'text-white/60 hover:text-white' : 'text-muted-foreground'
               }`}
             >
               <MoreHorizontal size={20} />
               <span className="text-[11px] font-medium">Opciones</span>
+              {unseenRejectionCount > 0 && (
+                <span
+                  data-testid="ecf-rejection-badge-mobile"
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-lg ring-2 ring-background animate-pulse"
+                  title={`${unseenRejectionCount} rechazo(s) DGII nuevo(s)`}
+                >
+                  {unseenRejectionCount > 9 ? '9+' : unseenRejectionCount}
+                </span>
+              )}
             </button>
             )}
             {location.pathname.startsWith('/order/') && (
@@ -566,7 +625,7 @@ export default function Layout() {
             <button
               onClick={() => setOptionsMenuOpen(true)}
               data-testid="nav-opciones"
-              className={`${isTablet ? 'w-12 h-12' : largeMode ? 'w-14 h-14 lg:w-16 lg:h-16' : 'w-12 h-12 lg:w-14 lg:h-14'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all btn-press ${
+              className={`relative ${isTablet ? 'w-12 h-12' : largeMode ? 'w-14 h-14 lg:w-16 lg:h-16' : 'w-12 h-12 lg:w-14 lg:h-14'} rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all btn-press ${
                 useGlassStyle
                   ? 'text-white/60 hover:bg-white/10 hover:text-white'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -574,6 +633,15 @@ export default function Layout() {
             >
               <MoreHorizontal size={isTablet ? 18 : largeMode ? 24 : 20} />
               <span className={`font-medium leading-none ${isTablet ? 'text-[8px]' : largeMode ? 'text-[11px]' : 'text-[11px]'}`}>Opciones</span>
+              {unseenRejectionCount > 0 && (
+                <span
+                  data-testid="ecf-rejection-badge-desktop"
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-lg ring-2 ring-background animate-pulse"
+                  title={`${unseenRejectionCount} rechazo(s) DGII nuevo(s)`}
+                >
+                  {unseenRejectionCount > 9 ? '9+' : unseenRejectionCount}
+                </span>
+              )}
             </button>
             )}
             
@@ -1057,13 +1125,23 @@ export default function Layout() {
                   setEcfPeriod('jornada');
                   await fetchEcfDashboard('jornada');
                   setEcfDashboardOpen(true);
+                  markRejectionsSeen();
                 }}
-                  className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95"
+                  className="relative flex items-center gap-3 p-4 rounded-xl bg-background border border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95"
                   data-testid="opt-ecf-dashboard">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
                     <FileText size={20} className="text-emerald-500" />
                   </div>
                   <span className="font-semibold text-sm">e-CF Dashboard</span>
+                  {unseenRejectionCount > 0 && (
+                    <span
+                      data-testid="ecf-rejection-badge-option"
+                      className="ml-auto min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center shadow-lg animate-pulse"
+                      title={`${unseenRejectionCount} rechazo(s) DGII nuevo(s)`}
+                    >
+                      {unseenRejectionCount > 9 ? '9+' : unseenRejectionCount}
+                    </span>
+                  )}
                 </button>
               )}
             </div>

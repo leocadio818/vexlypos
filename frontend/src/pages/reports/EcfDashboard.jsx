@@ -164,6 +164,76 @@ export default function EcfDashboard({ data }) {
 
   return (
     <div className="space-y-5" data-testid="ecf-dashboard">
+      {/* 🚨 Rechazos DGII — Alerta visible al tope con motivo completo y botón Reintentar */}
+      {(() => {
+        const rejectedBills = bills.filter((b) => getStatus(b) === 'REJECTED');
+        if (rejectedBills.length === 0) return null;
+        return (
+          <div
+            className="rounded-xl border border-red-500/40 bg-red-500/5 overflow-hidden"
+            data-testid="ecf-rejections-alert-card"
+          >
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-red-500/30 bg-red-500/10">
+              <XCircle size={18} className="text-red-500" />
+              <h3 className="font-oswald font-bold text-red-600 dark:text-red-400 text-sm uppercase tracking-wide">
+                Rechazos DGII · Acción requerida
+              </h3>
+              <span className="ml-auto text-xs font-bold text-red-500">
+                {rejectedBills.length} rechazada{rejectedBills.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <ul className="divide-y divide-red-500/20">
+              {rejectedBills.slice(0, 5).map((b) => (
+                <li
+                  key={b.id}
+                  className="px-4 py-3 flex items-start gap-3 hover:bg-red-500/5 transition-all"
+                  data-testid={`ecf-rejection-item-${b.id}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-sm">T-{b.transaction_number}</span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {b.ecf_type || '—'}
+                      </Badge>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {b.ecf_encf || '—'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">·</span>
+                      <span className="text-xs font-semibold">
+                        RD$ {(b.total || 0).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <p className="text-xs mt-1 text-red-600 dark:text-red-400 break-words">
+                      <AlertTriangle size={11} className="inline mr-1 -mt-0.5" />
+                      {b.ecf_reject_reason || 'Rechazado por DGII sin motivo especificado'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {formatDate(b.ecf_sent_at || b.paid_at)}
+                      {b.ecf_provider ? ` · via ${b.ecf_provider}` : ''}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleRetry(b.id)}
+                    disabled={loading}
+                    className="bg-red-600 hover:bg-red-700 text-white text-xs h-8"
+                    data-testid={`ecf-rejection-retry-${b.id}`}
+                  >
+                    <RefreshCw size={12} className={`mr-1 ${loading ? 'animate-spin' : ''}`} />
+                    Reintentar
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            {rejectedBills.length > 5 && (
+              <div className="px-4 py-2 text-[11px] text-center text-muted-foreground border-t border-red-500/20">
+                + {rejectedBills.length - 5} rechazo(s) adicional(es) — filtra por "Rechazadas" abajo para verlos todos
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
         <button onClick={() => setFilter('all')} className={`bg-card border rounded-xl p-3 text-center transition-all ${filter === 'all' ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}>
@@ -261,7 +331,7 @@ export default function EcfDashboard({ data }) {
                         <button onClick={() => handleRefreshStatus(b.id)} title="Actualizar status" className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]">
                           <Search size={14} className="text-blue-500" />
                         </button>
-                        {(status === 'CONTINGENCIA' || status === 'CONTINGENCIA_MANUAL') && (
+                        {(status === 'CONTINGENCIA' || status === 'CONTINGENCIA_MANUAL' || status === 'REJECTED') && (
                           <>
                             <button 
                               onClick={() => setEditDialog({ open: true, bill: b, newType: b.ncf?.replace('PENDING-', '') || 'E32' })} 
@@ -271,7 +341,7 @@ export default function EcfDashboard({ data }) {
                             >
                               <Pencil size={14} className="text-purple-500" />
                             </button>
-                            <button onClick={() => handleRetry(b.id)} title="Reintentar" disabled={loading} className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]">
+                            <button onClick={() => handleRetry(b.id)} title="Reintentar" disabled={loading} className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]" data-testid={`retry-btn-${b.id}`}>
                               <RefreshCw size={14} className={`text-amber-500 ${loading ? 'animate-spin' : ''}`} />
                             </button>
                           </>

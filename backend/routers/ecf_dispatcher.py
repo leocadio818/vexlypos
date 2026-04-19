@@ -339,12 +339,12 @@ async def _send_via_multiprod(bill, config, bill_id):
 
 @router.post("/retry/{bill_id}")
 async def retry_ecf(bill_id: str):
-    """Retry sending a CONTINGENCIA bill"""
+    """Retry sending a CONTINGENCIA / REJECTED / ERROR bill"""
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
 
-    if bill.get("ecf_status") not in ["CONTINGENCIA", "ERROR", None]:
+    if bill.get("ecf_status") not in ["CONTINGENCIA", "ERROR", "REJECTED", None]:
         return {"ok": False, "message": f"Status '{bill.get('ecf_status')}' no requiere reintento"}
 
     config = await db.system_config.find_one({}, {"_id": 0}) or {}
@@ -611,6 +611,42 @@ async def ecf_dashboard(
             summary["pending"] += 1
 
     return {"summary": summary, "bills": bills}
+
+
+@router.get("/rejections")
+async def ecf_rejections(limit: int = Query(20, ge=1, le=100)):
+    """
+    Lightweight endpoint for real-time rejection alerts.
+    Returns the N most recent REJECTED e-CF bills with motivo fully visible.
+    Used by Layout.js polling (60s interval) for badge + toast alerts.
+    """
+    query = {
+        "$or": [
+            {"ecf_status": "REJECTED"},
+            {"ecf_reject_reason": {"$exists": True, "$nin": [None, ""]}},
+        ],
+    }
+    bills = await db.bills.find(query, {
+        "_id": 0, "id": 1, "transaction_number": 1, "total": 1,
+        "ecf_type": 1, "ecf_status": 1, "ecf_encf": 1, "ecf_reject_reason": 1,
+        "ecf_provider": 1, "ecf_sent_at": 1, "paid_at": 1, "razon_social": 1,
+        "fiscal_id": 1, "table_number": 1, "cashier_name": 1,
+    }).sort("ecf_sent_at", -1).to_list(limit)
+
+    # Filter to truly rejected only (exclude already re-accepted)
+    rejections = [
+        b for b in bills
+        if (b.get("ecf_status") or "").upper() == "REJECTED"
+        or (b.get("ecf_reject_reason") and (b.get("ecf_status") or "").upper() != "FINISHED")
+    ]
+
+    return {
+        "count": len(rejections),
+        "rejections": rejections,
+        "latest_at": rejections[0].get("ecf_sent_at") if rejections else None,
+    }
+
+
 
 
 # ═══════════════════════════════════════════════════════════════
