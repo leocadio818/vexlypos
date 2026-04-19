@@ -114,8 +114,8 @@ class MultiprodService:
                     pass
             _sub(id_doc, "IndicadorNotaCredito", indicator)
 
-        # IndicadorMontoGravado — required for E44 (0 = montos no incluyen impuestos)
-        if tipo_num == "44":
+        # IndicadorMontoGravado — required for E31, E44, E45 (0 = montos no incluyen impuestos)
+        if tipo_num in ("31", "44", "45"):
             _sub(id_doc, "IndicadorMontoGravado", "0")
 
         # FechaVencimientoSecuencia — mandatory for E31, E44, E45 (not E32, E34)
@@ -178,10 +178,17 @@ class MultiprodService:
         total_amount = float(invoice_data.get("total", 0))
         has_comprador_data = False
 
-        # E31, E44, E45: RNC comprador mandatory
+        # E31, E44, E45: RNC comprador mandatory — BLOCK if missing for E31/E45
         # E32: RNC mandatory if total >= 250000
         # E34: same as original
-        if tipo_num in ("31", "44", "45"):
+        if tipo_num in ("31", "45"):
+            if not rnc_comp or rnc_comp == "000000000":
+                tipo_label = "Crédito Fiscal" if tipo_num == "31" else "Gubernamental"
+                raise ValueError(f"E{tipo_num} ({tipo_label}) requiere RNC del comprador. Ingrese el RNC antes de facturar.")
+            _sub(comprador, "RNCComprador", rnc_comp)
+            _sub(comprador, "RazonSocialComprador", customer.get("name") or customer.get("business_name") or "SIN NOMBRE")
+            has_comprador_data = True
+        elif tipo_num == "44":
             _sub(comprador, "RNCComprador", rnc_comp or "000000000")
             _sub(comprador, "RazonSocialComprador", customer.get("name") or customer.get("business_name") or "CONSUMIDOR FINAL")
             has_comprador_data = True
@@ -349,11 +356,11 @@ class MultiprodService:
             err_msg = str(e)
             # Known exceptions for local XSD vs DGII requirements:
             # 1. Missing Signature wildcard — Multiprod (PSFE) adds digital signature, not us
-            # 2. E44 IndicadorMontoGravado — required by DGII but not in local XSD v1.0
+            # 2. IndicadorMontoGravado — required by DGII for E31/E44/E45 but not in local XSD v1.0
             if "Expected is one of ( {*}*" in err_msg or "Expected is ( {*}*" in err_msg:
                 return True, "OK (Signature sera agregada por PSFE)"
-            if tipo_num == "44" and "IndicadorMontoGravado" in err_msg:
-                return True, "OK (IndicadorMontoGravado aceptado para E44)"
+            if tipo_num in ("31", "44", "45") and "IndicadorMontoGravado" in err_msg:
+                return True, "OK (IndicadorMontoGravado aceptado para E" + tipo_num + ")"
             return False, err_msg
         except Exception as e:
             return False, f"Error de parseo: {str(e)}"
@@ -365,12 +372,6 @@ class MultiprodService:
         try:
             t_start = time.monotonic()
             async with httpx.AsyncClient(timeout=15.0) as client:
-                # DEBUG: Log the exact XML being sent
-                import logging
-                logging.warning(f"=== XML ENVIADO A MULTIPROD ({filename}) ===")
-                logging.warning(xml_content)
-                logging.warning("=== FIN XML ===")
-                
                 response = await client.post(
                     endpoint_url,
                     files={"xml": (filename, xml_content.encode("utf-8"), "application/xml")},
