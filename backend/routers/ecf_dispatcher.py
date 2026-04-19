@@ -378,12 +378,47 @@ async def retry_ecf(bill_id: str):
 
 @router.post("/retry-all")
 async def retry_all_contingencia():
-    """Retry ALL bills in CONTINGENCIA status"""
-    bills = await db.bills.find({"ecf_status": "CONTINGENCIA"}, {"_id": 0, "id": 1}).to_list(100)
+    """
+    Retry ALL bills in CONTINGENCIA status, EXCLUDING those marked as 'contingencia_manual'.
+    Manual-contingencia bills (Uber Eats, PedidosYa, and any payment method with
+    force_contingency=true or skip_ecf=true) must only be retried manually by the user.
+    """
+    # Build filter: CONTINGENCIA status AND NOT manual
+    query = {
+        "ecf_status": "CONTINGENCIA",
+        "$and": [
+            {"$or": [
+                {"ecf_error": {"$exists": False}},
+                {"ecf_error": None},
+                {"ecf_error": {"$not": {"$regex": "contingencia_manual", "$options": "i"}}},
+            ]},
+            {"$or": [
+                {"force_contingency": {"$exists": False}},
+                {"force_contingency": {"$ne": True}},
+            ]},
+            # Exclude if ANY payment has skip_ecf or force_contingency
+            {"payments": {"$not": {"$elemMatch": {"$or": [
+                {"skip_ecf": True},
+                {"force_contingency": True},
+            ]}}}},
+        ],
+    }
+    bills = await db.bills.find(query, {"_id": 0, "id": 1}).to_list(100)
     config = await db.system_config.find_one({}, {"_id": 0}) or {}
     provider = config.get("ecf_provider", "alanube")
 
-    results = {"total": len(bills), "success": 0, "failed": 0, "provider": provider}
+    results = {"total": len(bills), "success": 0, "failed": 0, "provider": provider, "skipped_manual": 0}
+
+    # Count skipped manual (for transparency in UI)
+    manual_count = await db.bills.count_documents({
+        "ecf_status": "CONTINGENCIA",
+        "$or": [
+            {"ecf_error": {"$regex": "contingencia_manual", "$options": "i"}},
+            {"force_contingency": True},
+            {"payments": {"$elemMatch": {"$or": [{"skip_ecf": True}, {"force_contingency": True}]}}},
+        ],
+    })
+    results["skipped_manual"] = manual_count
 
     for bill_doc in bills:
         bill = await db.bills.find_one({"id": bill_doc["id"]}, {"_id": 0})
@@ -596,15 +631,28 @@ async def ecf_dashboard(
         "waiter_name": 1, "cashier_name": 1, "razon_social": 1,
         "ecf_auto_retry_attempt": 1, "ecf_auto_retry_next_at": 1,
         "ecf_auto_retry_status": 1, "ecf_auto_retry_max": 1,
+        "force_contingency": 1, "payments": 1,
     }).sort("paid_at", -1).to_list(500)
 
-    summary = {"total": len(bills), "approved": 0, "contingencia": 0, "rejected": 0, "pending": 0, "registered": 0}
+    summary = {"total": len(bills), "approved": 0, "contingencia": 0, "contingencia_manual": 0, "rejected": 0, "pending": 0, "registered": 0}
     for b in bills:
         status = (b.get("ecf_status") or "").upper()
+        ecf_err = (b.get("ecf_error") or "").lower()
+        is_manual_contingencia = (
+            "contingencia_manual" in ecf_err
+            or b.get("force_contingency") is True
+            or any(
+                (p or {}).get("skip_ecf") is True or (p or {}).get("force_contingency") is True
+                for p in (b.get("payments") or [])
+            )
+        )
         if status == "FINISHED":
             summary["approved"] += 1
         elif status == "CONTINGENCIA":
-            summary["contingencia"] += 1
+            if is_manual_contingencia:
+                summary["contingencia_manual"] += 1
+            else:
+                summary["contingencia"] += 1
         elif status == "REJECTED" or b.get("ecf_reject_reason"):
             summary["rejected"] += 1
         elif status == "REGISTERED":

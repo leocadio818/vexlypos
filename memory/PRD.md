@@ -1553,3 +1553,23 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - curl cashier → 403 "Solo administradores pueden acceder al panel de diagnóstico".
   - Screenshot end-to-end: panel expandido muestra gráfica 24h + top motivos + cola.
 - **CÓDIGO PROTEGIDO**: No modificar `health_metrics` ni `EcfHealthPanel` sin permiso del usuario.
+
+### 🔒 Exclusión Contingencia Manual (Uber Eats/PedidosYa) del Reintento en Lote — Added 2026-04-19
+- **Problema**: El botón "Reintentar Todas las Contingencias" incluía facturas de plataformas externas (Uber Eats, PedidosYa) con `force_contingency: true` que JAMÁS deben enviarse a DGII automáticamente — esas plataformas generan su propio comprobante.
+- **Fix backend** (`/app/backend/routers/ecf_dispatcher.py`):
+  - `/retry-all` ahora EXCLUYE bills donde: `ecf_error` contiene "contingencia_manual" OR `force_contingency: true` OR cualquier `payment` tiene `skip_ecf: true` o `force_contingency: true`.
+  - Response incluye `skipped_manual: int` (número de contingencias manuales omitidas, para transparencia).
+  - `/dashboard` summary ahora separa `contingencia` (auto-retryables) de `contingencia_manual`.
+  - Proyección del dashboard incluye ahora `force_contingency` y `payments` para clasificación correcta.
+- **Fix frontend** (`/app/frontend/src/pages/reports/EcfDashboard.jsx`):
+  - `getStatus()` detecta manual via `ecf_error`, `force_contingency` bill-level, O cualquier payment con flags.
+  - KPI card "Cont. Manual" usa `summary.contingencia_manual` del backend.
+  - Botón "Reintentar Todas" usa `summary.contingencia` (sin manuales) y se oculta cuando es 0.
+  - Toast de resultado incluye "N omitida(s) (contingencia manual — reintentar individualmente)".
+  - Leyenda permanente bajo el botón cuando hay manuales: *"N contingencia(s) manual(es) (Uber Eats / PedidosYa) NO se incluyen en el lote"*.
+- **Testing**:
+  - Bill T-1189 con `force_contingency: true` y `payments[0].force_contingency: true` → clasificado como `contingencia_manual` ✓
+  - `/retry-all` → `total: 0, skipped_manual: 1` ✓
+  - Frontend: botón oculto, card "Cont. Manual: 1" visible ✓
+- **CÓDIGO PROTEGIDO**: No modificar la lógica de exclusión sin permiso del usuario.
+

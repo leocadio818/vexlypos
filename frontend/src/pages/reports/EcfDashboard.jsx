@@ -50,8 +50,16 @@ export default function EcfDashboard({ data }) {
     if (s === 'FINISHED') return 'FINISHED';
     if (s === 'PROCESSING') return 'PROCESSING';
     if (s === 'REGISTERED') return 'REGISTERED';
-    if (s === 'CONTINGENCIA' && (bill.ecf_error || '').includes('contingencia_manual')) return 'CONTINGENCIA_MANUAL';
-    if (s === 'CONTINGENCIA') return 'CONTINGENCIA';
+    if (s === 'CONTINGENCIA') {
+      const err = (bill.ecf_error || '').toLowerCase();
+      const forcedByPayment = Array.isArray(bill.payments) && bill.payments.some(
+        (p) => p && (p.skip_ecf === true || p.force_contingency === true)
+      );
+      if (err.includes('contingencia_manual') || bill.force_contingency === true || forcedByPayment) {
+        return 'CONTINGENCIA_MANUAL';
+      }
+      return 'CONTINGENCIA';
+    }
     if (bill.ecf_reject_reason && s !== 'FINISHED') return 'REJECTED';
     return STATUS_MAP[s] ? s : 'ERROR';
   };
@@ -110,7 +118,11 @@ export default function EcfDashboard({ data }) {
     try {
       const r = await fetch(`${API}/api/ecf/retry-all`, { method: 'POST', headers: hdrs() });
       const d = await r.json();
-      notify.success(`Reintentos: ${d.success} exitosos, ${d.failed} fallidos de ${d.total}`);
+      let msg = `Reintentos: ${d.success} exitosos, ${d.failed} fallidos de ${d.total}`;
+      if (d.skipped_manual > 0) {
+        msg += ` · ${d.skipped_manual} omitida(s) (contingencia manual — reintentar individualmente)`;
+      }
+      notify.success(msg, { duration: 8000 });
       const res = await fetch(`${API}/api/ecf/dashboard`, { headers: hdrs() });
       const fresh = await res.json();
       setBills(fresh.bills || []);
@@ -298,7 +310,7 @@ export default function EcfDashboard({ data }) {
         </button>
         <button onClick={() => setFilter('CONTINGENCIA_MANUAL')} className={`bg-gray-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'CONTINGENCIA_MANUAL' ? 'border-gray-500 ring-2 ring-gray-500/20' : 'border-gray-500/30'}`}>
           <Ban size={18} className="text-gray-500 dark:text-gray-400 mx-auto mb-1" />
-          <p className="font-oswald text-xl font-bold text-gray-600 dark:text-gray-400">{bills.filter(b => getStatus(b) === 'CONTINGENCIA_MANUAL').length}</p>
+          <p className="font-oswald text-xl font-bold text-gray-600 dark:text-gray-400">{summary.contingencia_manual ?? bills.filter(b => getStatus(b) === 'CONTINGENCIA_MANUAL').length}</p>
           <p className="text-[10px] font-bold text-slate-800 dark:text-gray-300">Cont. Manual</p>
         </button>
         <button onClick={() => setFilter('REJECTED')} className={`bg-red-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'REJECTED' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-red-500/30'}`}>
@@ -316,12 +328,26 @@ export default function EcfDashboard({ data }) {
         </label>
       </div>
 
-      {/* Action buttons */}
-      {(summary.contingencia > 0 || bills.some(b => getStatus(b) === 'CONTINGENCIA_MANUAL')) && (
-        <div className="flex gap-2 flex-wrap">
-          <Button onClick={handleRetryAll} disabled={loading} variant="outline" className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10">
-            <RefreshCw size={14} className={`mr-2 ${loading ? 'animate-spin' : ''}`} /> Reintentar Todas las Contingencias ({summary.contingencia || 0})
-          </Button>
+      {/* Action buttons — "Reintentar Todas" EXCLUYE contingencia manual (Uber Eats/PedidosYa) */}
+      {summary.contingencia > 0 && (
+        <div className="flex flex-col gap-1">
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={handleRetryAll}
+              disabled={loading}
+              variant="outline"
+              className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+              data-testid="retry-all-contingencias-btn"
+            >
+              <RefreshCw size={14} className={`mr-2 ${loading ? 'animate-spin' : ''}`} /> Reintentar Todas las Contingencias ({summary.contingencia || 0})
+            </Button>
+          </div>
+          {(summary.contingencia_manual || 0) > 0 && (
+            <p className="text-[10px] text-muted-foreground">
+              <Ban size={10} className="inline mr-1" />
+              {summary.contingencia_manual} contingencia(s) manual(es) (Uber Eats / PedidosYa) NO se incluyen en el lote — reintentarlas individualmente si aplica.
+            </p>
+          )}
         </div>
       )}
 
