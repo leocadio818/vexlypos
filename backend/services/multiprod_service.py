@@ -220,31 +220,44 @@ class MultiprodService:
 
             tax_rate = item.get("tax_rate", item.get("itbis_rate"))
             if tax_rate is None:
-                # Default: 18% ITBIS for E31/E32/E34/E45, Exento for E44
                 if tipo_num == "44":
                     tax_rate = 0
                 else:
                     tax_rate = 18
 
             tax_rate = float(tax_rate)
-            if tax_rate > 0:
+
+            # E44 is always exempt regardless of item tax_rate
+            if tipo_num == "44":
+                monto_exento += item_total
+            elif tax_rate > 0:
                 monto_gravado_18 += item_total
                 total_itbis += item_total * (tax_rate / 100.0)
             else:
                 monto_exento += item_total
 
-        monto_total = monto_gravado_18 + monto_exento + total_itbis
-
-        if monto_gravado_18 > 0:
-            _sub(totales, "MontoGravadoTotal", _fmt_money(monto_gravado_18))
-            _sub(totales, "MontoGravadoI1", _fmt_money(monto_gravado_18))
-        if monto_exento > 0:
-            _sub(totales, "MontoExento", _fmt_money(monto_exento))
-        if total_itbis > 0:
-            _sub(totales, "ITBIS1", "18")
-            _sub(totales, "TotalITBIS", _fmt_money(total_itbis))
-            _sub(totales, "TotalITBIS1", _fmt_money(total_itbis))
-        _sub(totales, "MontoTotal", _fmt_money(monto_total))
+        if tipo_num == "44":
+            # E44 Régimen Especial — only exempt amounts, NO ITBIS fields allowed by XSD
+            if monto_exento > 0:
+                _sub(totales, "MontoExento", _fmt_money(monto_exento))
+            _sub(totales, "MontoTotal", _fmt_money(monto_exento))
+        else:
+            # E31, E32, E34, E45 — include ITBIS if applicable
+            monto_total = monto_gravado_18 + monto_exento + total_itbis
+            if monto_gravado_18 > 0:
+                _sub(totales, "MontoGravadoTotal", _fmt_money(monto_gravado_18))
+                _sub(totales, "MontoGravadoI1", _fmt_money(monto_gravado_18))
+            if monto_exento > 0:
+                _sub(totales, "MontoExento", _fmt_money(monto_exento))
+            if total_itbis > 0:
+                _sub(totales, "ITBIS1", "18")
+                _sub(totales, "TotalITBIS", _fmt_money(total_itbis))
+                _sub(totales, "TotalITBIS1", _fmt_money(total_itbis))
+            _sub(totales, "MontoTotal", _fmt_money(monto_total))
+            # Propina goes into MontoNoFacturable
+            tip = float(invoice_data.get("tip") or invoice_data.get("propina") or 0)
+            if tip > 0:
+                _sub(totales, "MontoNoFacturable", _fmt_money(tip))
 
         # DetallesItems
         detalles = etree.SubElement(root, "DetallesItems")
@@ -252,19 +265,22 @@ class MultiprodService:
             item_el = etree.SubElement(detalles, "Item")
             _sub(item_el, "NumeroLinea", str(idx))
 
-            # IndicadorFacturacion
-            tax_rate = item.get("tax_rate", item.get("itbis_rate"))
-            if tax_rate is None:
-                tax_rate = 0 if tipo_num == "44" else 18
-            tax_rate = float(tax_rate)
-            if tax_rate >= 18:
-                ind_fact = "1"  # ITBIS 18%
-            elif tax_rate >= 16:
-                ind_fact = "2"  # ITBIS 16%
-            elif tax_rate > 0:
-                ind_fact = "3"  # ITBIS 0%
+            # IndicadorFacturacion — E44 is always exento (3)
+            if tipo_num == "44":
+                ind_fact = "3"  # Exento for E44 Régimen Especial
             else:
-                ind_fact = "4" if tipo_num == "44" else "3"  # Exento for E44
+                tax_rate = item.get("tax_rate", item.get("itbis_rate"))
+                if tax_rate is None:
+                    tax_rate = 18
+                tax_rate = float(tax_rate)
+                if tax_rate >= 18:
+                    ind_fact = "1"  # ITBIS 18%
+                elif tax_rate >= 16:
+                    ind_fact = "2"  # ITBIS 16%
+                elif tax_rate > 0:
+                    ind_fact = "3"  # ITBIS 0%
+                else:
+                    ind_fact = "3"  # Exento
             _sub(item_el, "IndicadorFacturacion", ind_fact)
 
             name = (item.get("product_name") or item.get("name") or "Producto")[:80]
