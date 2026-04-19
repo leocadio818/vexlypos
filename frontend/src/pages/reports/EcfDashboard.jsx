@@ -299,8 +299,15 @@ export default function EcfDashboard({ data }) {
           <p className="text-[10px] font-bold text-slate-800 dark:text-blue-100">Pendientes</p>
         </button>
         <button onClick={() => setFilter('PROCESSING')} className={`bg-cyan-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'PROCESSING' ? 'border-cyan-500 ring-2 ring-cyan-500/20' : 'border-cyan-500/30'}`}>
-          <Loader2 size={18} className="text-cyan-600 dark:text-cyan-400 mx-auto mb-1 animate-spin" />
-          <p className="font-oswald text-xl font-bold text-cyan-600 dark:text-cyan-400">{bills.filter(b => getStatus(b) === 'PROCESSING').length}</p>
+          {(() => {
+            const count = bills.filter(b => getStatus(b) === 'PROCESSING').length;
+            return (
+              <>
+                <Loader2 size={18} className={`text-cyan-600 dark:text-cyan-400 mx-auto mb-1 ${count > 0 ? 'animate-spin' : ''}`} />
+                <p className="font-oswald text-xl font-bold text-cyan-600 dark:text-cyan-400">{count}</p>
+              </>
+            );
+          })()}
           <p className="text-[10px] font-bold text-slate-800 dark:text-cyan-100">Procesando</p>
         </button>
         <button onClick={() => setFilter('CONTINGENCIA')} className={`bg-amber-500/10 border rounded-xl p-3 text-center transition-all ${filter === 'CONTINGENCIA' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-amber-500/30'}`}>
