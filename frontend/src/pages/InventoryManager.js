@@ -577,7 +577,7 @@ export default function InventoryManager() {
                     </div>
                   </div>
                   
-                  <div className="mt-3 p-2 rounded bg-muted/50 text-xs text-center text-muted-foreground">
+                  <div className="mt-3 p-2 rounded bg-muted border border-border text-xs text-center text-muted-foreground">
                     <strong className="text-foreground">{conversionAnalysis.data.ingredient?.conversion_explanation}</strong>
                   </div>
                 </div>
