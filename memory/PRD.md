@@ -147,6 +147,17 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **Archivos**: `EcfDashboard.jsx`, `Reports.js`, `NcfTab.js`, `AuthContext.js`
   - **Fecha de protección**: 2026-04-19
 
+- **🔒 Multi-proveedor por insumo** (DONE - 2026-04-19):
+  - **Backend**: Campo `suppliers: [{supplier_id, supplier_name, unit_price, is_default}]` en ingredientes
+  - **Migración**: `POST /api/ingredients/migrate-suppliers` convierte formato legacy a array (7 ingredientes migrados)
+  - **PO filtering**: `purchasing.py` filtra ingredientes por supplier desde `default_supplier_id` Y `suppliers` array
+  - **Frontend**: IngredientsTab reemplaza dropdown único por lista multi-proveedor con selector + precio + estrella default + eliminar
+  - **Frontend**: PurchasesTab usa precio del proveedor seleccionado en PO (no avg_cost genérico)
+  - **Testing**: 13/13 tests backend pasados (CRUD, sync, migración, edge cases)
+  - **Archivos**: `schemas.py`, `inventory.py`, `purchasing.py`, `IngredientsTab.jsx`, `PurchasesTab.jsx`
+  - **Fecha de protección**: 2026-04-19
+
+
 - **🔒 3 Backend Bugs corregidos** (DONE - 2026-04-19):
   - **Bug 6**: `billing.py` — Sale types auto-seed usa E32 (no B02), re-fetch después de insert_many para evitar ObjectId serialization
   - **Bug 7**: `ncf.py` — Crear secuencia ahora incluye `ncf_type`, `serie`, `start_number` en Supabase
