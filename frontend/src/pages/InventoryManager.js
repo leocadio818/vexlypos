@@ -537,21 +537,21 @@ export default function InventoryManager() {
           ) : conversionAnalysis.data ? (
             <div className="space-y-4">
               {/* Ingredient Info Card */}
-              <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 border border-emerald-500/30">
-                <h3 className="font-oswald text-xl font-bold text-emerald-100 mb-3">
+              <div className="p-4 rounded-xl bg-card border border-border">
+                <h3 className="font-oswald text-xl font-bold text-foreground mb-3">
                   {conversionAnalysis.data.ingredient?.name}
                 </h3>
-                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 mb-3">
+                <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30 mb-3">
                   {getCategoryLabel(conversionAnalysis.data.ingredient?.category)}
                 </Badge>
                 
                 {/* Conversion Flow Visual */}
-                <div className="mt-4 p-4 rounded-lg bg-background/50 border border-border">
+                <div className="mt-4 p-4 rounded-lg bg-muted border border-border">
                   <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Lógica de Conversión</div>
                   <div className="flex items-center gap-3 flex-wrap">
-                    <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                      <div className="text-xs text-blue-400 mb-1">Unidad de Compra</div>
-                      <div className="font-oswald font-bold text-lg text-blue-300">
+                    <div className="text-center p-3 rounded-lg bg-blue-500/10 dark:bg-blue-500/10 bg-blue-50 border border-blue-500/30">
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mb-1">Unidad de Compra</div>
+                      <div className="font-oswald font-bold text-lg text-blue-700 dark:text-blue-300">
                         {conversionAnalysis.data.ingredient?.purchase_quantity} {conversionAnalysis.data.ingredient?.purchase_unit}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
@@ -560,15 +560,15 @@ export default function InventoryManager() {
                     </div>
                     
                     <div className="flex flex-col items-center">
-                      <ChevronRight size={24} className="text-emerald-500" />
-                      <div className="text-xs text-emerald-400 font-mono">
+                      <ChevronRight size={24} className="text-emerald-600 dark:text-emerald-500" />
+                      <div className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">
                         ×{conversionAnalysis.data.ingredient?.conversion_factor}
                       </div>
                     </div>
                     
-                    <div className="text-center p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                      <div className="text-xs text-emerald-400 mb-1">Unidad de Despacho (Base)</div>
-                      <div className="font-oswald font-bold text-lg text-emerald-300">
+                    <div className="text-center p-3 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/10 bg-emerald-50 border border-emerald-500/30">
+                      <div className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Unidad de Despacho (Base)</div>
+                      <div className="font-oswald font-bold text-lg text-emerald-700 dark:text-emerald-300">
                         {conversionAnalysis.data.ingredient?.dispatch_quantity} {conversionAnalysis.data.ingredient?.dispatch_unit}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
