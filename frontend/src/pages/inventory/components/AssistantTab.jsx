@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { notify } from '@/lib/notify';
 import { 
   ShoppingCart, TrendingUp, Target, RefreshCw, Search, Check, X, Zap,
-  AlertTriangle, ChevronRight, ArrowUpRight, LineChart
+  AlertTriangle, ChevronRight, ArrowUpRight, LineChart, Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { purchasingAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
 import { INGREDIENT_CATEGORIES } from '../constants';
@@ -288,7 +289,27 @@ export default function AssistantTab({ suppliers, warehouses, onRefreshAll, onCh
             </div>
             <div className="flex items-end gap-2">
               <div className="flex flex-col">
-                <label className="text-xs text-muted-foreground mb-1">Incluir OK</label>
+                <div className="flex items-center gap-1 mb-1">
+                  <label className="text-xs text-muted-foreground">Pedido completo</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 min-w-[3rem] min-h-[3rem] flex items-center justify-center" data-testid="include-ok-info-btn">
+                        <Info size={13} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" align="end" className="w-72 text-sm">
+                      <p className="text-foreground font-medium mb-2">Pedido completo</p>
+                      <p className="text-muted-foreground text-xs leading-relaxed mb-2">
+                        Activa esto para ver TODOS los insumos, incluyendo los que tienen stock suficiente. 
+                        Para cuando vas a hacer un pedido grande al proveedor y quieres comprar todo lo que puedas necesitar, no solo lo urgente.
+                      </p>
+                      <div className="text-xs space-y-1 text-muted-foreground">
+                        <div><strong className="text-foreground">Desactivado:</strong> solo insumos con stock bajo o agotado</div>
+                        <div><strong className="text-foreground">Activado:</strong> todos los insumos</div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={assistantFilters.include_ok_stock}
