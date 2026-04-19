@@ -197,15 +197,15 @@ export default function PaymentScreen() {
 
   // NCF Fiscal Types — changes based on e-CF mode
   const fiscalTypes = ecfEnabled ? [
-    { code: 'E32', name: 'Consumidor Final', short: 'CF' },
-    { code: 'E31', name: 'Crédito Fiscal', short: 'CF' },
-    { code: 'E44', name: 'Régimen Especial', short: 'RE' },
-    { code: 'E45', name: 'Gubernamental', short: 'GOB' },
+    { code: 'E32', name: 'Consumidor Final', short: 'CF', label1: 'CONSUMO', label2: 'FINAL' },
+    { code: 'E31', name: 'Crédito Fiscal', short: 'CF', label1: 'CREDITO', label2: 'FISCAL' },
+    { code: 'E44', name: 'Régimen Especial', short: 'RE', label1: 'REGIMEN', label2: 'ESPECIAL' },
+    { code: 'E45', name: 'Gubernamental', short: 'GOB', label1: 'GUBERNA', label2: 'MENTAL' },
   ] : [
-    { code: 'B02', name: 'Consumidor Final', short: 'CF' },
-    { code: 'B01', name: 'Crédito Fiscal', short: 'CF' },
-    { code: 'B14', name: 'Gubernamental', short: 'GOB' },
-    { code: 'B15', name: 'Régimen Especial', short: 'RE' }
+    { code: 'B02', name: 'Consumidor Final', short: 'CF', label1: 'CONSUMO', label2: 'FINAL' },
+    { code: 'B01', name: 'Crédito Fiscal', short: 'CF', label1: 'CREDITO', label2: 'FISCAL' },
+    { code: 'B14', name: 'Gubernamental', short: 'GOB', label1: 'GUBERNA', label2: 'MENTAL' },
+    { code: 'B15', name: 'Régimen Especial', short: 'RE', label1: 'REGIMEN', label2: 'ESPECIAL' }
   ];
 
   const API_BASE = process.env.REACT_APP_BACKEND_URL;
@@ -1896,8 +1896,8 @@ export default function PaymentScreen() {
                     }`}
                     data-testid={`ncf-dialog-${ft.code}`}
                   >
-                    <span className="font-oswald font-bold text-sm">{ft.code}</span>
-                    <p className="text-[11px] mt-0.5 opacity-70">{ft.short}</p>
+                    <span className="font-oswald font-bold text-sm leading-tight block">{ft.label1}</span>
+                    <span className="font-oswald font-bold text-sm leading-tight block">{ft.label2}</span>
                   </button>
                 ))}
               </div>
