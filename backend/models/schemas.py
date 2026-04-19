@@ -168,6 +168,7 @@ class IngredientInput(BaseModel):
     dispatch_quantity: float = 1
     conversion_factor: float = 1
     default_supplier_id: str = ""
+    suppliers: list = []  # [{supplier_id, supplier_name, unit_price, is_default}]
     margin_threshold: float = 30.0
 
 class UnitDefinitionInput(BaseModel):

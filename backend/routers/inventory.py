@@ -80,6 +80,18 @@ async def create_ingredient(input: IngredientInput):
     # Calculate dispatch unit cost
     dispatch_unit_cost = input.avg_cost / input.conversion_factor if input.conversion_factor > 0 else input.avg_cost
     
+    # Build suppliers array — migrate from default_supplier_id if suppliers list is empty
+    suppliers_list = input.suppliers or []
+    if not suppliers_list and input.default_supplier_id:
+        suppliers_list = [{"supplier_id": input.default_supplier_id, "supplier_name": "", "unit_price": input.avg_cost, "is_default": True}]
+    
+    # Derive default_supplier_id from suppliers array
+    default_sid = input.default_supplier_id
+    if suppliers_list and not default_sid:
+        default_entry = next((s for s in suppliers_list if s.get("is_default")), suppliers_list[0] if suppliers_list else None)
+        if default_entry:
+            default_sid = default_entry.get("supplier_id", "")
+    
     doc = {
         "id": gen_id(), "name": input.name, "unit": input.unit,
         "category": input.category, "min_stock": input.min_stock,
@@ -91,7 +103,8 @@ async def create_ingredient(input: IngredientInput):
         "dispatch_quantity": input.dispatch_quantity,
         "conversion_factor": input.conversion_factor,
         "dispatch_unit_cost": round(dispatch_unit_cost, 4),
-        "default_supplier_id": input.default_supplier_id,
+        "default_supplier_id": default_sid,
+        "suppliers": suppliers_list,
         "margin_threshold": input.margin_threshold,
         "created_at": now_iso()
     }
@@ -106,6 +119,24 @@ async def update_ingredient(ingredient_id: str, input: dict, request: Request):
     old_ingredient = await db.ingredients.find_one({"id": ingredient_id}, {"_id": 0})
     if not old_ingredient:
         raise HTTPException(404, "Ingrediente no encontrado")
+    
+    # Sync suppliers ↔ default_supplier_id
+    if "suppliers" in input:
+        sup_list = input["suppliers"] or []
+        default_entry = next((s for s in sup_list if s.get("is_default")), sup_list[0] if sup_list else None)
+        if default_entry:
+            input["default_supplier_id"] = default_entry.get("supplier_id", "")
+        elif not sup_list:
+            input["default_supplier_id"] = ""
+    elif "default_supplier_id" in input and "suppliers" not in input:
+        # Legacy: update from single supplier — add to suppliers array if not present
+        new_sid = input["default_supplier_id"]
+        existing_suppliers = old_ingredient.get("suppliers", [])
+        if new_sid and not any(s.get("supplier_id") == new_sid for s in existing_suppliers):
+            existing_suppliers.append({"supplier_id": new_sid, "supplier_name": "", "unit_price": input.get("avg_cost", old_ingredient.get("avg_cost", 0)), "is_default": True})
+            for s in existing_suppliers:
+                s["is_default"] = s.get("supplier_id") == new_sid
+            input["suppliers"] = existing_suppliers
     
     # Get user from token for audit
     user_id, user_name = get_user_from_request(request)
@@ -158,6 +189,46 @@ async def get_affected_recipes(ingredient_id: str):
         "count": len(recipes),
         "recipes": recipes
     }
+
+@router.post("/ingredients/migrate-suppliers")
+async def migrate_ingredient_suppliers():
+    """
+    Migrate existing ingredients from single default_supplier_id to multi-supplier array.
+    Ingredients that already have a suppliers array are skipped.
+    """
+    # Find ingredients that have default_supplier_id but no suppliers array (or empty)
+    cursor = db.ingredients.find(
+        {"default_supplier_id": {"$ne": ""}, "$or": [{"suppliers": {"$exists": False}}, {"suppliers": []}, {"suppliers": None}]},
+        {"_id": 0, "id": 1, "default_supplier_id": 1, "avg_cost": 1, "name": 1}
+    )
+    to_migrate = await cursor.to_list(1000)
+    
+    if not to_migrate:
+        return {"ok": True, "migrated": 0, "message": "No hay insumos para migrar"}
+    
+    # Get all suppliers for name lookup
+    all_suppliers = await db.suppliers.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(200)
+    supplier_map = {s["id"]: s["name"] for s in all_suppliers}
+    
+    migrated = 0
+    for ing in to_migrate:
+        sid = ing["default_supplier_id"]
+        sname = supplier_map.get(sid, "")
+        suppliers_array = [{
+            "supplier_id": sid,
+            "supplier_name": sname,
+            "unit_price": ing.get("avg_cost", 0),
+            "is_default": True
+        }]
+        await db.ingredients.update_one(
+            {"id": ing["id"]},
+            {"$set": {"suppliers": suppliers_array}}
+        )
+        migrated += 1
+    
+    return {"ok": True, "migrated": migrated}
+
+
 
 @router.get("/ingredients/{ingredient_id}/conversion-analysis")
 async def get_ingredient_conversion_analysis(ingredient_id: str):

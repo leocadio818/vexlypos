@@ -423,7 +423,10 @@ async def _get_purchase_suggestions_internal(
     ingredients = await db.ingredients.find({}, {"_id": 0}).to_list(500)
     
     if supplier_id:
-        ingredients = [i for i in ingredients if i.get("default_supplier_id") == supplier_id]
+        ingredients = [i for i in ingredients if 
+            i.get("default_supplier_id") == supplier_id or
+            any(s.get("supplier_id") == supplier_id for s in (i.get("suppliers") or []))
+        ]
     
     suggestions = []
     
@@ -501,7 +504,8 @@ async def _get_purchase_suggestions_internal(
             "is_low_stock": is_low,
             "is_out_of_stock": current_stock <= 0,
             "default_supplier_id": ing.get("default_supplier_id"),
-            "default_supplier_name": supplier_name
+            "default_supplier_name": supplier_name,
+            "suppliers": ing.get("suppliers", [])
         })
     
     suggestions.sort(key=lambda x: (not x["is_out_of_stock"], not x["is_low_stock"], x["days_of_stock"]))

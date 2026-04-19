@@ -76,8 +76,8 @@ export default function IngredientsTab({
     if (!data?.avg_cost && data?.avg_cost !== 0 && !data?.is_subrecipe) {
       errors.avg_cost = 'Ingresa el costo promedio de compra';
     }
-    if (!data?.default_supplier_id) {
-      errors.default_supplier_id = 'Selecciona un proveedor predeterminado';
+    if (!data?.default_supplier_id && !(data?.suppliers?.length > 0)) {
+      errors.default_supplier_id = 'Agrega al menos un proveedor';
     }
     
     return {
@@ -223,7 +223,7 @@ export default function IngredientsTab({
           <Button 
             onClick={() => {
               setValidationAttempted(false);
-              setIngredientDialog({ open: true, data: { name: '', unit: 'unidad', category: 'general', min_stock: 0, avg_cost: 0, purchase_unit: '', purchase_quantity: 1, dispatch_quantity: 1, conversion_factor: 1 } });
+              setIngredientDialog({ open: true, data: { name: '', unit: 'unidad', category: 'general', min_stock: 0, avg_cost: 0, purchase_unit: '', purchase_quantity: 1, dispatch_quantity: 1, conversion_factor: 1, suppliers: [] } });
             }}
             className="bg-primary text-primary-foreground font-oswald text-xs flex-1 sm:flex-none"
             data-testid="add-ingredient-btn"
@@ -409,7 +409,7 @@ export default function IngredientsTab({
                   className="h-7 w-7"
                   onClick={() => {
                     setValidationAttempted(false);
-                    setIngredientDialog({ open: true, data: { ...ing } });
+                    setIngredientDialog({ open: true, data: { ...ing, suppliers: ing.suppliers || [] } });
                   }}
                 >
                   <Pencil size={13} />
@@ -987,7 +987,7 @@ export default function IngredientsTab({
               )}
             </div>
 
-            {/* Default Supplier - OBLIGATORIO */}
+            {/* Multi-Supplier List — OBLIGATORIO */}
             <div className={`p-3 rounded-lg bg-card border ${
               validationAttempted && currentValidation.errors.default_supplier_id 
                 ? 'border-red-500' 
@@ -997,35 +997,111 @@ export default function IngredientsTab({
                 <div className="flex items-center gap-2">
                   <Truck size={14} className={validationAttempted && currentValidation.errors.default_supplier_id ? 'text-red-500' : 'text-cyan-500'} />
                   <span className={`font-medium text-sm ${validationAttempted && currentValidation.errors.default_supplier_id ? 'text-red-500' : ''}`}>
-                    Proveedor Predeterminado *
+                    Proveedores *
                   </span>
                 </div>
                 {validationAttempted && currentValidation.errors.default_supplier_id && (
                   <span className="text-xs text-red-500">Obligatorio</span>
                 )}
               </div>
-              <select
-                value={ingredientDialog.data?.default_supplier_id || ''}
-                onChange={e => setIngredientDialog(p => ({ ...p, data: { ...p.data, default_supplier_id: e.target.value || null } }))}
-                className={`w-full px-3 py-2 bg-background border rounded-lg text-sm ${
-                  validationAttempted && currentValidation.errors.default_supplier_id 
-                    ? 'border-red-500' 
-                    : 'border-border'
-                }`}
-                data-testid="ingredient-default-supplier"
-              >
-                <option value="">Seleccionar proveedor...</option>
-                {suppliers.filter(s => s.active !== false).map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+              
+              {/* Supplier rows */}
+              <div className="space-y-2 mb-2">
+                {(ingredientDialog.data?.suppliers || []).map((sup, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-md bg-background border border-border" data-testid={`supplier-row-${idx}`}>
+                    <select
+                      value={sup.supplier_id || ''}
+                      onChange={e => {
+                        const sName = suppliers.find(s => s.id === e.target.value)?.name || '';
+                        setIngredientDialog(p => {
+                          const list = [...(p.data?.suppliers || [])];
+                          list[idx] = { ...list[idx], supplier_id: e.target.value, supplier_name: sName };
+                          return { ...p, data: { ...p.data, suppliers: list } };
+                        });
+                      }}
+                      className="flex-1 min-w-0 px-2 py-2 bg-background border border-border rounded text-sm"
+                    >
+                      <option value="">Proveedor...</option>
+                      {suppliers.filter(s => s.active !== false).map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Precio"
+                      value={sup.unit_price || ''}
+                      onChange={e => {
+                        setIngredientDialog(p => {
+                          const list = [...(p.data?.suppliers || [])];
+                          list[idx] = { ...list[idx], unit_price: parseFloat(e.target.value) || 0 };
+                          return { ...p, data: { ...p.data, suppliers: list } };
+                        });
+                      }}
+                      className="w-24 px-2 py-2 bg-background border border-border rounded text-sm text-right"
+                    />
+                    <button
+                      type="button"
+                      title={sup.is_default ? 'Proveedor principal' : 'Marcar como principal'}
+                      onClick={() => {
+                        setIngredientDialog(p => {
+                          const list = (p.data?.suppliers || []).map((s, i) => ({ ...s, is_default: i === idx }));
+                          const defaultSid = list[idx]?.supplier_id || '';
+                          return { ...p, data: { ...p.data, suppliers: list, default_supplier_id: defaultSid } };
+                        });
+                      }}
+                      className={`p-2 rounded-md shrink-0 min-w-[2.5rem] min-h-[2.5rem] flex items-center justify-center transition-colors ${
+                        sup.is_default
+                          ? 'bg-cyan-500/20 text-cyan-500 border border-cyan-500/40'
+                          : 'bg-muted text-muted-foreground border border-transparent hover:border-border'
+                      }`}
+                      data-testid={`supplier-default-${idx}`}
+                    >
+                      {sup.is_default ? '\u2605' : '\u2606'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIngredientDialog(p => {
+                          const list = (p.data?.suppliers || []).filter((_, i) => i !== idx);
+                          if (list.length > 0 && !list.some(s => s.is_default)) list[0].is_default = true;
+                          const defaultSid = list.find(s => s.is_default)?.supplier_id || '';
+                          return { ...p, data: { ...p.data, suppliers: list, default_supplier_id: defaultSid } };
+                        });
+                      }}
+                      className="p-2 rounded-md text-red-500/70 hover:text-red-500 hover:bg-red-500/10 shrink-0 min-w-[2.5rem] min-h-[2.5rem] flex items-center justify-center"
+                      data-testid={`supplier-remove-${idx}`}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 ))}
-              </select>
+              </div>
+              
+              {/* Add supplier button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIngredientDialog(p => {
+                    const list = [...(p.data?.suppliers || [])];
+                    list.push({ supplier_id: '', supplier_name: '', unit_price: 0, is_default: list.length === 0 });
+                    return { ...p, data: { ...p.data, suppliers: list } };
+                  });
+                }}
+                className="w-full py-2 rounded-md border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex items-center justify-center gap-1 min-h-[3rem]"
+                data-testid="supplier-add-btn"
+              >
+                <Plus size={14} /> Agregar proveedor
+              </button>
+              
               {validationAttempted && currentValidation.errors.default_supplier_id ? (
                 <p className="text-xs text-red-500 mt-1">
-                  Este campo es necesario para que tus órdenes de compra y costos sean exactos.
+                  Agrega al menos un proveedor para generar ordenes de compra correctas.
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Usado por el Asistente de Compras para generar órdenes automáticas
+                  Asigna proveedores con precios para comparar en ordenes de compra
                 </p>
               )}
             </div>

@@ -254,12 +254,15 @@ export default function PurchasesTab({
     notify.success('Archivo exportado');
   };
 
-  // Get ingredients filtered by selected supplier
+  // Get ingredients filtered by selected supplier — check both default_supplier_id AND suppliers array
   const filteredIngredients = useMemo(() => {
     const supplierId = poDialog.data?.supplier_id;
     if (!supplierId) return [];
     
-    return ingredients.filter(ing => ing.default_supplier_id === supplierId);
+    return ingredients.filter(ing => 
+      ing.default_supplier_id === supplierId ||
+      (ing.suppliers || []).some(s => s.supplier_id === supplierId)
+    );
   }, [poDialog.data?.supplier_id, ingredients]);
 
   // Get unit label helper
@@ -965,6 +968,10 @@ export default function PurchasesTab({
                           value={item.ingredient_id}
                           onChange={e => {
                             const ing = ingredients.find(i => i.id === e.target.value);
+                            const poSupplierId = poDialog.data?.supplier_id;
+                            // Find price from supplier-specific entry, or fallback to avg_cost
+                            const supplierEntry = (ing?.suppliers || []).find(s => s.supplier_id === poSupplierId);
+                            const unitPrice = supplierEntry?.unit_price || ing?.avg_cost || 0;
                             setPODialog(p => ({
                               ...p,
                               data: {
@@ -973,7 +980,7 @@ export default function PurchasesTab({
                                   ...i, 
                                   ingredient_id: e.target.value,
                                   ingredient_name: ing?.name || '',
-                                  unit_price: ing?.avg_cost || 0,
+                                  unit_price: unitPrice,
                                   purchase_unit: ing?.purchase_unit || ing?.unit || 'unidad',
                                   dispatch_unit: ing?.unit || 'unidad',
                                   conversion_factor: ing?.conversion_factor || 1
