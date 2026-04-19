@@ -645,18 +645,13 @@ async def calculate_cart_taxes(input: IntelligentTaxCalculationInput):
     
     if supabase_client:
         try:
-            result = sb_select(supabase_client.table("sale_types").select("*")).eq("id", input.sale_type_id).single().execute()
-            sale_type = result.data
-            sale_type_exemptions = sale_type.get("tax_exemptions", []) if sale_type else []
-            
-            # Check if this is a government/special regime type (ITBIS = 0 for all)
-            code = (sale_type.get("code") or "").lower() if sale_type else ""
-            is_government_exempt = "gubernamental" in code or "regimen" in code or "especial" in code or "exento" in code
+            # sale_types lives in MongoDB, not Supabase — skip Supabase query
+            pass
         except Exception as e:
             print(f"Warning: Could not fetch sale type: {e}")
     
     if not sale_type:
-        # Fallback to MongoDB
+        # Read from MongoDB (primary source for sale_types)
         sale_type = await db.sale_types.find_one({"id": input.sale_type_id}, {"_id": 0})
         if sale_type:
             sale_type_exemptions = sale_type.get("tax_exemptions", [])

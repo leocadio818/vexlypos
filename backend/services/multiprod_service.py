@@ -174,7 +174,15 @@ class MultiprodService:
         # Comprador
         comprador = etree.SubElement(encabezado, "Comprador")
         customer = invoice_data.get("customer") or {}
-        rnc_comp = (customer.get("rnc") or customer.get("cedula") or invoice_data.get("customer_rnc") or "").replace("-", "").strip()
+        rnc_comp = (
+            customer.get("rnc") or customer.get("fiscal_id") or customer.get("cedula") or
+            invoice_data.get("customer_rnc") or invoice_data.get("fiscal_id") or ""
+        )
+        rnc_comp = rnc_comp.replace("-", "").strip() if rnc_comp else ""
+        nombre_comp = (
+            customer.get("razon_social") or customer.get("name") or customer.get("business_name") or
+            invoice_data.get("razon_social") or invoice_data.get("customer_name") or "CONSUMIDOR FINAL"
+        )
         total_amount = float(invoice_data.get("total", 0))
         has_comprador_data = False
 
@@ -186,16 +194,16 @@ class MultiprodService:
                 tipo_label = "Crédito Fiscal" if tipo_num == "31" else "Gubernamental"
                 raise ValueError(f"E{tipo_num} ({tipo_label}) requiere RNC del comprador. Ingrese el RNC antes de facturar.")
             _sub(comprador, "RNCComprador", rnc_comp)
-            _sub(comprador, "RazonSocialComprador", customer.get("name") or customer.get("business_name") or "SIN NOMBRE")
+            _sub(comprador, "RazonSocialComprador", nombre_comp)
             has_comprador_data = True
         elif tipo_num == "44":
             _sub(comprador, "RNCComprador", rnc_comp or "000000000")
-            _sub(comprador, "RazonSocialComprador", customer.get("name") or customer.get("business_name") or "CONSUMIDOR FINAL")
+            _sub(comprador, "RazonSocialComprador", nombre_comp)
             has_comprador_data = True
         elif tipo_num == "32":
             if rnc_comp and len(rnc_comp) in (9, 11):
                 _sub(comprador, "RNCComprador", rnc_comp)
-                _sub(comprador, "RazonSocialComprador", customer.get("name") or customer.get("business_name") or "CONSUMIDOR FINAL")
+                _sub(comprador, "RazonSocialComprador", nombre_comp)
                 has_comprador_data = True
             elif total_amount >= 250000:
                 _sub(comprador, "RNCComprador", rnc_comp or "000000000")
