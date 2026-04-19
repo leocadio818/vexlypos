@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ECF>
+  <Encabezado>
+    <Version>1.0</Version>
+    <IdDoc>
+      <TipoeCF>31</TipoeCF>
+      <eNCF>E310000000179</eNCF>
+      <FechaVencimientoSecuencia>31-12-2027</FechaVencimientoSecuencia>
+      <TipoIngresos>01</TipoIngresos>
+      <TipoPago>1</TipoPago>
+    </IdDoc>
+    <Emisor>
+      <RNCEmisor>131886388</RNCEmisor>
+      <RazonSocialEmisor>LA TERRAZA</RazonSocialEmisor>
+      <NombreComercial>LA TERRAZA</NombreComercial>
+      <DireccionEmisor>C/ Las Flores #12, Jarabacoa</DireccionEmisor>
+      <NumeroFacturaInterna>1182</NumeroFacturaInterna>
+      <FechaEmision>19-04-2026</FechaEmision>
+    </Emisor>
+    <Comprador>
+      <RNCComprador>101841621</RNCComprador>
+      <RazonSocialComprador>AAA DOMINICANA S A</RazonSocialComprador>
+    </Comprador>
+    <Totales>
+      <MontoGravadoTotal>600.00</MontoGravadoTotal>
+      <MontoGravadoI1>600.00</MontoGravadoI1>
+      <ITBIS1>18</ITBIS1>
+      <TotalITBIS>108.00</TotalITBIS>
+      <TotalITBIS1>108.00</TotalITBIS1>
+      <MontoTotal>708.00</MontoTotal>
+    </Totales>
+  </Encabezado>
+  <DetallesItems>
+    <Item>
+      <NumeroLinea>1</NumeroLinea>
+      <IndicadorFacturacion>1</IndicadorFacturacion>
+      <NombreItem>PRESIDENTE</NombreItem>
+      <IndicadorBienoServicio>1</IndicadorBienoServicio>
+      <CantidadItem>2.00</CantidadItem>
+      <PrecioUnitarioItem>300.00</PrecioUnitarioItem>
+      <MontoItem>600.00</MontoItem>
+    </Item>
+  </DetallesItems>
+  <FechaHoraFirma>19-04-2026 17:33:18</FechaHoraFirma>
+</ECF>

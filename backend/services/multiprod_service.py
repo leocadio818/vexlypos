@@ -114,9 +114,8 @@ class MultiprodService:
                     pass
             _sub(id_doc, "IndicadorNotaCredito", indicator)
 
-        # IndicadorMontoGravado — required for E31, E44, E45 (0 = montos no incluyen impuestos)
-        if tipo_num in ("31", "44", "45"):
-            _sub(id_doc, "IndicadorMontoGravado", "0")
+        # IndicadorMontoGravado — removed for ALL types; Megaplus/DGII XSD rejects it
+        # E44 exento status is handled via IndicadorFacturacion=4 in items + MontoExento in Totales
 
         # FechaVencimientoSecuencia — mandatory for E31, E44, E45 (not E32, E34)
         if tipo_num in ("31", "44", "45"):
@@ -367,8 +366,8 @@ class MultiprodService:
             # 2. IndicadorMontoGravado — required by DGII for E31/E44/E45 but not in local XSD v1.0
             if "Expected is one of ( {*}*" in err_msg or "Expected is ( {*}*" in err_msg:
                 return True, "OK (Signature sera agregada por PSFE)"
-            if tipo_num in ("31", "44", "45") and "IndicadorMontoGravado" in err_msg:
-                return True, "OK (IndicadorMontoGravado aceptado para E" + tipo_num + ")"
+            if tipo_num == "44" and "IndicadorMontoGravado" in err_msg:
+                return True, "OK (IndicadorMontoGravado aceptado para E44)"
             return False, err_msg
         except Exception as e:
             return False, f"Error de parseo: {str(e)}"
