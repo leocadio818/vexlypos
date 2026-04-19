@@ -138,6 +138,16 @@ Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-
   - **Fecha de protección**: 2026-04-17
 
 
+- **🔒 5 Frontend Bugs corregidos** (DONE - 2026-04-19):
+  - **Bug 1**: EcfDashboard — `handleRefreshStatus` ya no llama refresh-status para Multiprod/TheFactory (solo Alanube)
+  - **Bug 2**: EcfDashboard — `getStatus()` ahora prioriza `ecf_status` sobre `ecf_reject_reason` para evitar contar facturas FINISHED como REJECTED
+  - **Bug 3**: Reports.js — Filtro Jornada elimina `date_from`/`date_to` cuando usa `business_day_id`
+  - **Bug 4**: NcfTab.js — `ecfEnabled` default `true`, serie default `E`, botón rápido usa `E32` en vez de `B02`
+  - **Bug 5**: AuthContext.js — `isAdmin` exportado en Provider value (role=admin o level>=100)
+  - **Archivos**: `EcfDashboard.jsx`, `Reports.js`, `NcfTab.js`, `AuthContext.js`
+  - **Fecha de protección**: 2026-04-19
+
+
 - **🔒 Multi-tenancy Supabase con client_id** (DONE - 2026-04-17):
   - Todas las consultas Supabase filtran por `SUPABASE_CLIENT_ID` (81+ queries en 11 archivos)
   - Helper centralizado: `/app/backend/utils/supabase_helpers.py` — `sb_select()`, `sb_insert()`, `sb_update_filter()`

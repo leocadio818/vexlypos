@@ -338,6 +338,8 @@ export function AuthProvider({ children }) {
     cacheData: cacheForOffline,
   };
 
+  const isAdmin = user?.role === 'admin' || (user?.role_level || 0) >= 100;
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -347,6 +349,7 @@ export function AuthProvider({ children }) {
       isOnline, 
       ensureSeed, 
       hasPermission, 
+      isAdmin,
       largeMode, 
       toggleLargeMode, 
       device,

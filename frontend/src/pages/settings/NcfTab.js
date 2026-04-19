@@ -17,17 +17,17 @@ const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')
 export default function NcfTab() {
   const { ncfTypes, ncfSequences, ncfAlerts, refreshNCFData } = useSettings();
   const [saleTypes, setSaleTypes] = useState([]);
-  const [ecfEnabled, setEcfEnabled] = useState(false);
+  const [ecfEnabled, setEcfEnabled] = useState(true);
   const [ncfDialog, setNcfDialog] = useState({ 
-    open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, 
+    open: false, ncf_type_code: '', serie: 'E', prefix: '', current_number: 1, 
     range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null,
     authorized_sale_types: [], alert_threshold: '', alert_interval: ''
   });
 
-  // Check e-CF mode
+  // Check e-CF mode — default to true if not explicitly set
   useEffect(() => {
     fetch(`${API}/system/config`, { headers: hdrs() })
-      .then(r => r.json()).then(d => setEcfEnabled(!!d.ecf_enabled)).catch(() => {});
+      .then(r => r.json()).then(d => setEcfEnabled(d.ecf_enabled !== false)).catch(() => {});
   }, []);
 
   // e-CF types reference
@@ -94,7 +94,7 @@ export default function NcfTab() {
         await ncfAPI.createSequence(data);
         notify.success('Secuencia NCF creada');
       }
-      setNcfDialog({ open: false, ncf_type_code: '', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' });
+      setNcfDialog({ open: false, ncf_type_code: '', serie: 'E', prefix: '', current_number: 1, range_start: 1, range_end: 100, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' });
       refreshNCFData();
     } catch (err) {
       notify.error(err.response?.data?.detail || 'Error al guardar secuencia');
@@ -131,7 +131,7 @@ export default function NcfTab() {
             {ecfEnabled ? 'Comprobantes Fiscales Electrónicos (e-CF)' : 'Comprobantes Fiscales (NCF)'}
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            {ecfEnabled ? 'Gestiona las secuencias de comprobantes electrónicos DGII — Serie E (via Alanube)' : 'Gestiona las secuencias de comprobantes fiscales DGII — Serie B'}
+            {ecfEnabled ? 'Gestiona las secuencias de comprobantes electrónicos DGII — Serie E' : 'Gestiona las secuencias de comprobantes fiscales DGII — Serie B'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -176,7 +176,7 @@ export default function NcfTab() {
           <h3 className="font-oswald font-bold mb-2">No hay secuencias NCF configuradas</h3>
           <p className="text-sm text-muted-foreground mb-4">Crea una secuencia para empezar a emitir comprobantes fiscales</p>
           <Button 
-            onClick={() => setNcfDialog({ open: true, ncf_type_code: 'B02', serie: 'B', prefix: '', current_number: 1, range_start: 1, range_end: 500, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' })}
+            onClick={() => setNcfDialog({ open: true, ncf_type_code: 'E32', serie: 'E', prefix: '', current_number: 1, range_start: 1, range_end: 500, expiration_date: '', notes: '', editId: null, authorized_sale_types: [], alert_threshold: '', alert_interval: '' })}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Plus size={14} className="mr-1" /> Crear Secuencia B02

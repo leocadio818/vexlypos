@@ -45,9 +45,13 @@ export default function EcfDashboard({ data }) {
 
   const getStatus = (bill) => {
     const s = (bill.ecf_status || '').toUpperCase();
-    if (bill.ecf_reject_reason) return 'REJECTED';
+    if (s === 'REJECTED') return 'REJECTED';
+    if (s === 'FINISHED') return 'FINISHED';
     if (s === 'PROCESSING') return 'PROCESSING';
+    if (s === 'REGISTERED') return 'REGISTERED';
     if (s === 'CONTINGENCIA' && (bill.ecf_error || '').includes('contingencia_manual')) return 'CONTINGENCIA_MANUAL';
+    if (s === 'CONTINGENCIA') return 'CONTINGENCIA';
+    if (bill.ecf_reject_reason && s !== 'FINISHED') return 'REJECTED';
     return STATUS_MAP[s] ? s : 'ERROR';
   };
 
@@ -58,12 +62,20 @@ export default function EcfDashboard({ data }) {
   });
 
   const handleRefreshStatus = async (billId) => {
+    const bill = bills.find(b => b.id === billId);
+    const provider = bill?.ecf_provider || '';
+    
+    // For non-Alanube providers, refresh-status is not applicable
+    if (provider === 'multiprod' || provider === 'thefactory') {
+      notify.info(`Status actual: ${bill?.ecf_status || 'Sin status'} (via ${provider})`);
+      return;
+    }
+    
     try {
       const r = await fetch(`${API}/api/ecf/refresh-status/${billId}`, { headers: hdrs() });
       const d = await r.json();
       if (d.ok) {
         notify.success(`Status: ${d.status}${d.reject_reason ? ' — ' + d.reject_reason : ''}`);
-        // Refresh data
         const res = await fetch(`${API}/api/ecf/dashboard`, { headers: hdrs() });
         const fresh = await res.json();
         setBills(fresh.bills || []);

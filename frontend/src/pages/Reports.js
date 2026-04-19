@@ -642,8 +642,11 @@ export default function Reports() {
         params.event_type = auditEventFilter;
       }
       // For e-CF dashboard, pass business_day_id to filter by current jornada
+      // When filtering by jornada, remove date filters to avoid conflicts
       if (reportId === 'ecf-dashboard' && activeBusinessDayId) {
         params.business_day_id = activeBusinessDayId;
+        delete params.date_from;
+        delete params.date_to;
       }
       
       const res = await axios.get(`${API}${endpoint}`, { 
