@@ -1,5 +1,18 @@
 # VexlyPOS — Changelog
 
+## 2026-04-19 — Bug Fix: E31 Rechazado por DGII (`IndicadorMontoGravado`) 🔒
+- **Root cause**: DGII valida `IndicadorMontoGravado` como OBLIGATORIO para E31/E32/E34/E45 (error código 176 "El campo IndicadorMontoGravado del área IdDoc de la sección Encabezado no es válido" cuando está ausente).
+- **Evidencia**: `ecf_logs` mostró respuesta EXACTA de Multiprod/DGII para T-1184 y T-1178 rechazadas.
+- **XSD V1.0 oficial**: define `IndicadorMontoGravado` como `minOccurs="0"` pero DGII lo valida como requerido por reglas de negocio. Valor `0` = `PrecioUnitarioItem` SIN ITBIS incluido (como nuestro POS lo envía).
+- **Fix aplicado** (`multiprod_service.py`):
+  - Reinsertado `<IndicadorMontoGravado>0</IndicadorMontoGravado>` para E31/E32/E34/E45 en la posición XSD correcta (después de `FechaVencimientoSecuencia` + `IndicadorEnvioDiferido`, antes de `TipoIngresos`).
+  - E44 (régimen especial exento) sigue SIN el campo (no permitido en su XSD).
+- **Verificación end-to-end**:
+  - Validación XSD local: OK para 5 tipos (E31, E32, E34, E44, E45).
+  - Reenvío T-1184 → eNCF `E310000000201` → **Aceptado por DGII** (código 1).
+  - Reenvío T-1178 → eNCF `E310000000202` → **Aceptado por DGII** (código 1).
+- Testing: curl end-to-end + validación XSD + confirmación DGII "estado: aceptado".
+
 ## 2026-04-01 — Integration: The Factory HKA e-CF + Credential Self-Service
 - **The Factory HKA**: Full e-CF integration (auth JWT, payload mapping, send, status check, anulación, audit logs)
 - **e-CF Dispatcher**: Unified `/api/ecf/*` router dispatches to Alanube or The Factory based on system_config

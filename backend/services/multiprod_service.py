@@ -114,10 +114,8 @@ class MultiprodService:
                     pass
             _sub(id_doc, "IndicadorNotaCredito", indicator)
 
-        # IndicadorMontoGravado — removed for ALL types; Megaplus/DGII XSD rejects it
-        # E44 exento status is handled via IndicadorFacturacion=4 in items + MontoExento in Totales
-
         # FechaVencimientoSecuencia — mandatory for E31, E44, E45 (not E32, E34)
+        # XSD order: must come BEFORE IndicadorEnvioDiferido/IndicadorMontoGravado
         if tipo_num in ("31", "44", "45"):
             # Read from invoice_data (passed from dispatcher with seq valid_until) or fallback
             fecha_venc = invoice_data.get("seq_valid_until") or invoice_data.get("fecha_vencimiento_secuencia")
@@ -130,7 +128,15 @@ class MultiprodService:
                 fecha_venc = "31-12-2027"
             _sub(id_doc, "FechaVencimientoSecuencia", fecha_venc)
 
-        # TipoIngresos (not required for E34, mandatory for others)
+        # IndicadorMontoGravado — required by DGII for E31, E32, E34, E45
+        # (NOT E44: régimen especial exento, no ITBIS fields allowed)
+        # Value "0" = PrecioUnitarioItem does NOT include ITBIS (our POS sends NET prices)
+        # Value "1" = PrecioUnitarioItem INCLUDES ITBIS
+        # XSD order: after FechaVencimientoSecuencia/IndicadorEnvioDiferido, before TipoIngresos
+        if tipo_num in ("31", "32", "34", "45"):
+            _sub(id_doc, "IndicadorMontoGravado", "0")
+
+        # TipoIngresos (optional for E34, mandatory for others)
         if tipo_num != "34":
             _sub(id_doc, "TipoIngresos", "01")
 

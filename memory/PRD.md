@@ -1469,3 +1469,18 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - Dark mode: PASS (usa text-auto-foreground, no colores hardcoded)
   - Light mode: PASS (verificado en todas las screenshots)
 - **MANUAL_SUPABASE.md**: Actualizado con V1.1 migration script (idempotente + auditoria)
+
+
+### 🔒 Fix E31 Rechazo DGII `IndicadorMontoGravado` — Added 2026-04-19
+- **Problema**: E31 enviadas a Multiprod → DGII devolvía "Rechazado" código 2 con mensaje 176: "El campo IndicadorMontoGravado del área IdDoc de la sección Encabezado no es válido".
+- **Raíz del problema**: El agente anterior removió `IndicadorMontoGravado` basándose en Megaplus, pero DGII sí lo exige (es obligatorio por reglas de negocio aunque el XSD lo marque como `minOccurs="0"`).
+- **Evidencia definitiva**: `db.ecf_logs` registró la respuesta EXACTA de Multiprod (código 176) para T-1178 y T-1184.
+- **Fix aplicado** en `/app/backend/services/multiprod_service.py`:
+  - Se volvió a agregar `<IndicadorMontoGravado>0</IndicadorMontoGravado>` para **E31, E32, E34, E45** (NO E44 — régimen especial exento no lo admite).
+  - Posición XSD correcta: después de `FechaVencimientoSecuencia` + `IndicadorEnvioDiferido`, antes de `TipoIngresos`.
+  - Valor `"0"`: `PrecioUnitarioItem` es NET (sin ITBIS incluido) como nuestro POS lo envía.
+- **Verificación end-to-end**:
+  - XSD V1.0 local: 5/5 tipos PASS.
+  - T-1184 reenviada → eNCF E310000000201 → **ACEPTADO por DGII** (código 1).
+  - T-1178 reenviada → eNCF E310000000202 → **ACEPTADO por DGII** (código 1).
+- **CÓDIGO PROTEGIDO**: No modificar `build_xml()` sin permiso del usuario.
