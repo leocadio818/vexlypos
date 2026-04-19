@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, RefreshCw, Printer, AlertTriangle, CheckCircle2, Clock, XCircle, Search, Pencil, Loader2, Ban } from 'lucide-react';
+import { FileText, RefreshCw, Printer, AlertTriangle, CheckCircle2, Clock, XCircle, Search, Pencil, Loader2, Ban, Activity, ChevronDown, ChevronUp, Zap, TrendingUp } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { useAuth } from '@/context/AuthContext';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -396,6 +397,9 @@ export default function EcfDashboard({ data }) {
         </div>
       </div>
 
+      {/* 📊 Panel de Diagnóstico Multiprod — solo visible para admin */}
+      {user?.role === 'admin' && <EcfHealthPanel />}
+
       {/* Edit e-CF Type Dialog */}
       <Dialog open={editDialog.open} onOpenChange={(open) => !open && setEditDialog({ open: false, bill: null, newType: '' })}>
         <DialogContent className="max-w-sm">
@@ -437,6 +441,238 @@ export default function EcfDashboard({ data }) {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// 🔒 EcfHealthPanel — Admin-only diagnostic panel for Multiprod health
+// ══════════════════════════════════════════════════════════════════
+function EcfHealthPanel() {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMetrics = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`${API}/api/ecf/health-metrics`, { headers: hdrs() });
+      if (r.ok) {
+        const d = await r.json();
+        setData(d);
+      } else if (r.status !== 403) {
+        notify.error('Error cargando métricas');
+      }
+    } catch {
+      notify.error('Error de conexión');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (open && !data) fetchMetrics();
+  }, [open]); // eslint-disable-line
+
+  const tierColor = {
+    excellent: 'text-emerald-500',
+    good: 'text-green-500',
+    warning: 'text-amber-500',
+    critical: 'text-red-500',
+    unknown: 'text-muted-foreground',
+  }[data?.health_tier || 'unknown'];
+
+  const tierBg = {
+    excellent: 'bg-emerald-500/10 border-emerald-500/30',
+    good: 'bg-green-500/10 border-green-500/30',
+    warning: 'bg-amber-500/10 border-amber-500/30',
+    critical: 'bg-red-500/10 border-red-500/30',
+    unknown: 'bg-muted/20 border-border',
+  }[data?.health_tier || 'unknown'];
+
+  const tierEmoji = {
+    excellent: '🟢',
+    good: '🟢',
+    warning: '🟡',
+    critical: '🔴',
+    unknown: '⚪',
+  }[data?.health_tier || 'unknown'];
+
+  return (
+    <div
+      className="rounded-xl border border-border bg-card overflow-hidden"
+      data-testid="ecf-health-panel"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-all"
+        data-testid="ecf-health-panel-toggle"
+      >
+        <Activity size={18} className="text-indigo-500" />
+        <div className="flex-1 text-left">
+          <h3 className="font-oswald font-bold text-sm uppercase tracking-wide">
+            Diagnóstico Multiprod · Últimas 24h
+          </h3>
+          <p className="text-[10px] text-muted-foreground">
+            Panel exclusivo para administradores
+          </p>
+        </div>
+        {data && (
+          <Badge className={`${tierBg} ${tierColor} text-xs font-bold`}>
+            {tierEmoji} {data.acceptance_rate !== null ? `${data.acceptance_rate}%` : 'Sin datos'}
+          </Badge>
+        )}
+        {open ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
+      </button>
+
+      {open && (
+        <div className="px-4 py-4 border-t border-border space-y-4">
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={20} className="animate-spin text-indigo-500" />
+              <span className="ml-2 text-sm text-muted-foreground">Cargando métricas...</span>
+            </div>
+          )}
+
+          {!loading && data && (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className={`rounded-lg border p-3 ${tierBg}`} data-testid="metric-acceptance-rate">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Tasa de aceptación</p>
+                  <p className={`font-oswald text-2xl font-bold ${tierColor}`}>
+                    {data.acceptance_rate !== null ? `${data.acceptance_rate}%` : '—'}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {data.accepted} de {data.total_sends} envíos
+                  </p>
+                </div>
+                <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3" data-testid="metric-rejected">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Rechazadas DGII</p>
+                  <p className="font-oswald text-2xl font-bold text-red-500">{data.rejected}</p>
+                  <p className="text-[10px] text-muted-foreground">Requieren acción manual</p>
+                </div>
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3" data-testid="metric-transient">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Errores transitorios</p>
+                  <p className="font-oswald text-2xl font-bold text-amber-500">{data.transient_errors}</p>
+                  <p className="text-[10px] text-muted-foreground">Reintentados automáticamente</p>
+                </div>
+                <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3" data-testid="metric-response-time">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Tiempo respuesta</p>
+                  <p className="font-oswald text-2xl font-bold text-blue-500">
+                    {data.response_times?.avg_ms || 0}<span className="text-sm">ms</span>
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    P95: {data.response_times?.p95_ms || 0}ms · {data.response_times?.samples || 0} muestras
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border bg-background/50 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp size={14} className="text-indigo-500" />
+                  <h4 className="font-semibold text-xs uppercase tracking-wide">Actividad por hora (24h)</h4>
+                </div>
+                <div style={{ width: '100%', height: 200 }}>
+                  <ResponsiveContainer>
+                    <BarChart data={data.hourly_series || []} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(120,120,120,0.15)" />
+                      <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={2} />
+                      <YAxis tick={{ fontSize: 9 }} allowDecimals={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'var(--background)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 8,
+                          fontSize: 11,
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 10 }} iconSize={8} />
+                      <Bar dataKey="accepted" stackId="a" fill="#10b981" name="Aceptadas" />
+                      <Bar dataKey="rejected" stackId="a" fill="#ef4444" name="Rechazadas" />
+                      <Bar dataKey="retry" stackId="a" fill="#3b82f6" name="Retry" />
+                      <Bar dataKey="error" stackId="a" fill="#f59e0b" name="Error" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="rounded-lg border border-border bg-background/50 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle size={14} className="text-red-500" />
+                    <h4 className="font-semibold text-xs uppercase tracking-wide">
+                      Top motivos de rechazo
+                    </h4>
+                  </div>
+                  {(data.top_reject_reasons || []).length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground italic">
+                      Sin rechazos en las últimas 24h 🎉
+                    </p>
+                  ) : (
+                    <ul className="space-y-1.5" data-testid="top-reject-list">
+                      {data.top_reject_reasons.map((r, i) => (
+                        <li key={i} className="text-[11px] flex items-start gap-2">
+                          <span className="font-bold font-mono text-red-500 min-w-[24px]">
+                            {r.count}×
+                          </span>
+                          <span className="text-foreground/80 break-words">{r.motivo}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-border bg-background/50 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap size={14} className="text-amber-500" />
+                    <h4 className="font-semibold text-xs uppercase tracking-wide">
+                      Cola de auto-retry
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1">
+                    {[1, 2, 3, 4, 5].map((n) => {
+                      const count = data.queue_state?.[`attempt_${n}`] || 0;
+                      return (
+                        <div
+                          key={n}
+                          className={`rounded p-2 text-center ${count > 0 ? 'bg-blue-500/15 border border-blue-500/30' : 'bg-muted/20 border border-border'}`}
+                          data-testid={`queue-attempt-${n}`}
+                        >
+                          <p className="font-oswald font-bold text-lg">{count}</p>
+                          <p className="text-[9px] text-muted-foreground">#{n}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {(data.queue_state?.exhausted || 0) > 0 && (
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      <Ban size={10} className="inline mr-1" />
+                      {data.queue_state.exhausted} agotadas (5/5 intentos fallidos)
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border">
+                <span>
+                  Generado: {data.generated_at ? new Date(data.generated_at).toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'medium' }) : '—'}
+                </span>
+                <Button
+                  onClick={fetchMetrics}
+                  disabled={loading}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  data-testid="refresh-health-metrics"
+                >
+                  <RefreshCw size={11} className={`mr-1 ${loading ? 'animate-spin' : ''}`} />
+                  Refrescar
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1524,3 +1524,32 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - Worker end-to-end: Entry inyectada con HTTP 500 → worker la recoge → reclasifica como transient → incrementa `attempt 2→3` → agenda siguiente retry en 120s (2min). ✅
 - **CÓDIGO PROTEGIDO**: No modificar `_is_permanent_error` ni `RETRY_BACKOFFS` sin permiso del usuario.
 
+
+
+### 🔒 Panel de Diagnóstico Multiprod (Admin-Only) — Added 2026-04-19
+- **Objetivo**: Dar visibilidad proactiva de la salud de la integración DGII antes de que los cajeros noten problemas. Solo visible para admin.
+- **Backend** (`/app/backend/routers/ecf_dispatcher.py`):
+  - `GET /api/ecf/health-metrics` — autenticado con `get_current_user`, rechaza 403 si `role != admin`.
+  - Métricas últimas 24h computadas de `ecf_logs` + `ecf_retry_queue`:
+    - Tasa de aceptación (%), con `health_tier`: excellent ≥98, good ≥90, warning ≥75, critical <75.
+    - Conteos: aceptadas, rechazadas, transitorios, total envíos.
+    - Tiempos de respuesta: avg, P95, min, max, # muestras.
+    - Top 5 motivos de rechazo (agrupados por mensaje).
+    - Series por hora (24 buckets) con aceptadas/rechazadas/retry/error.
+    - Estado cola auto-retry (conteo por intento #1-#5 + exhausted).
+- **Frontend** (`/app/frontend/src/pages/reports/EcfDashboard.jsx`):
+  - Componente `EcfHealthPanel` (solo render si `user.role === 'admin'`).
+  - Colapsable al final del e-CF Dashboard.
+  - Cards de KPIs con semáforo (🟢🟡🔴) según `health_tier`.
+  - Gráfica de barras apiladas 24h usando `recharts` (4 colores: emerald/red/blue/amber).
+  - Grid 5 celdas para cola de auto-retry.
+  - Botón "Refrescar" manual.
+- **Alerta admin-only** (`/app/frontend/src/components/Layout.js`):
+  - Polling cada 5min a `/ecf/health-metrics` solo si `user.role === 'admin'`.
+  - Badge ámbar (pequeño punto animado) en botón "Opciones" (desktop + mobile) cuando tasa < 90% Y total ≥ 5 envíos (evita falsos positivos).
+  - Prioriza badge rojo de rechazos (si hay) sobre badge ámbar de salud.
+- **Testing**:
+  - curl admin → 200 OK con métricas completas (110 envíos, 15.5%, 17 aceptadas, 7 rechazadas).
+  - curl cashier → 403 "Solo administradores pueden acceder al panel de diagnóstico".
+  - Screenshot end-to-end: panel expandido muestra gráfica 24h + top motivos + cola.
+- **CÓDIGO PROTEGIDO**: No modificar `health_metrics` ni `EcfHealthPanel` sin permiso del usuario.

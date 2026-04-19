@@ -139,6 +139,7 @@ export default function Layout() {
   const [ecfLastSeenAt, setEcfLastSeenAt] = useState(
     () => localStorage.getItem('pos_ecf_rejections_last_seen') || ''
   );
+  const [ecfHealthAlert, setEcfHealthAlert] = useState(false); // admin only
   const canViewEcf = (user?.role === 'admin') || hasPermission('view_ecf_dashboard');
   const unseenRejections = ecfRejections.filter(
     (r) => (r.ecf_sent_at || '') > (ecfLastSeenAt || '')
@@ -181,6 +182,27 @@ export default function Layout() {
     const id = setInterval(poll, 60000);
     return () => { mounted = false; clearInterval(id); };
   }, [canViewEcf]);
+
+  // ═════ Admin-only: Multiprod Health alert (polling 5min) ═════
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    let mounted = true;
+    const pollHealth = async () => {
+      try {
+        const r = await api.get('/ecf/health-metrics');
+        if (!mounted) return;
+        const rate = r.data?.acceptance_rate;
+        const total = r.data?.total_sends || 0;
+        // Alert only when there's enough data (min 5 sends) AND rate dropped below 90%
+        setEcfHealthAlert(total >= 5 && rate !== null && rate < 90);
+      } catch {
+        if (mounted) setEcfHealthAlert(false);
+      }
+    };
+    pollHealth();
+    const id = setInterval(pollHealth, 300000); // 5 min
+    return () => { mounted = false; clearInterval(id); };
+  }, [user?.role]);
   // ═════════════════════════════════════════════════════════════
 
   const [clockOutDialogOpen, setClockOutDialogOpen] = useState(false);
@@ -516,6 +538,13 @@ export default function Layout() {
                   {unseenRejectionCount > 9 ? '9+' : unseenRejectionCount}
                 </span>
               )}
+              {unseenRejectionCount === 0 && ecfHealthAlert && user?.role === 'admin' && (
+                <span
+                  data-testid="ecf-health-alert-badge-mobile"
+                  className="absolute -top-1 -right-1 w-[14px] h-[14px] rounded-full bg-amber-500 ring-2 ring-background animate-pulse"
+                  title="Tasa de aceptación DGII < 90% — revisa el Diagnóstico Multiprod"
+                />
+              )}
             </button>
             )}
             {location.pathname.startsWith('/order/') && (
@@ -641,6 +670,13 @@ export default function Layout() {
                 >
                   {unseenRejectionCount > 9 ? '9+' : unseenRejectionCount}
                 </span>
+              )}
+              {unseenRejectionCount === 0 && ecfHealthAlert && user?.role === 'admin' && (
+                <span
+                  data-testid="ecf-health-alert-badge-desktop"
+                  className="absolute -top-1 -right-1 w-[14px] h-[14px] rounded-full bg-amber-500 ring-2 ring-background animate-pulse"
+                  title="Tasa de aceptación DGII < 90% — revisa el Diagnóstico Multiprod"
+                />
               )}
             </button>
             )}

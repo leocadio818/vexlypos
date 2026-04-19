@@ -12,7 +12,7 @@ import logging
 from datetime import datetime, timezone
 from utils.supabase_helpers import sb_select, sb_insert, sb_update_filter
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 
 router = APIRouter()
 db = None
@@ -649,6 +649,157 @@ async def ecf_rejections(limit: int = Query(20, ge=1, le=100)):
         "rejections": rejections,
         "latest_at": rejections[0].get("ecf_sent_at") if rejections else None,
     }
+
+
+@router.get("/health-metrics")
+async def ecf_health_metrics(user=Depends(__import__("routers.auth", fromlist=["get_current_user"]).get_current_user)):
+    """
+    Admin-only diagnostic panel for Multiprod/e-CF integration health.
+    Returns 24h metrics: acceptance rate, hourly chart, top reject reasons,
+    response times, and current retry queue state.
+    """
+    # Admin-only guard
+    if (user.get("role") or "").lower() != "admin":
+        raise HTTPException(status_code=403, detail="Solo administradores pueden acceder al panel de diagnóstico")
+
+    from datetime import datetime, timezone, timedelta
+    from collections import Counter, defaultdict
+
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(hours=24)
+    since_iso = since.isoformat()
+
+    # Pull last 24h e-CF activity from ecf_logs (has response_time_ms in diagnostics)
+    logs = await db.ecf_logs.find(
+        {"created_at": {"$gte": since_iso}},
+        {"_id": 0, "action": 1, "created_at": 1, "result": 1, "provider": 1, "encf": 1}
+    ).sort("created_at", -1).to_list(2000)
+
+    # Classify each log
+    accepted = 0
+    rejected = 0
+    transient_errors = 0
+    total_sends = 0
+    response_times = []
+    reject_reasons = Counter()
+    hourly = defaultdict(lambda: {"accepted": 0, "rejected": 0, "retry": 0, "error": 0})
+
+    for log in logs:
+        action = (log.get("action") or "").lower()
+        # Only count send/retry actions (skip auth, status polls, etc.)
+        if not any(k in action for k in ("send", "retry", "multiprod")):
+            continue
+
+        result = log.get("result") or {}
+        estado = (result.get("estado") or "").lower()
+        diagnostics = result.get("diagnostics") or {}
+        rt = diagnostics.get("response_time_ms")
+        if isinstance(rt, (int, float)) and rt > 0:
+            response_times.append(int(rt))
+
+        total_sends += 1
+        # Hour bucket (YYYY-MM-DD HH:00)
+        try:
+            dt = datetime.fromisoformat(str(log.get("created_at")).replace("Z", "+00:00"))
+            hour_key = dt.replace(minute=0, second=0, microsecond=0).isoformat()
+        except Exception:
+            hour_key = now.replace(minute=0, second=0, microsecond=0).isoformat()
+
+        if estado.startswith("aceptado"):
+            accepted += 1
+            hourly[hour_key]["accepted"] += 1
+        elif estado == "rechazado":
+            rejected += 1
+            motivo = str(result.get("motivo") or "Sin motivo")[:150]
+            reject_reasons[motivo] += 1
+            hourly[hour_key]["rejected"] += 1
+        else:
+            # Transient / format error
+            transient_errors += 1
+            if "retry" in action:
+                hourly[hour_key]["retry"] += 1
+            else:
+                hourly[hour_key]["error"] += 1
+
+    # Build 24h hourly series (fill missing hours with zeros)
+    series = []
+    for i in range(23, -1, -1):
+        h = (now - timedelta(hours=i)).replace(minute=0, second=0, microsecond=0)
+        key = h.isoformat()
+        bucket = hourly.get(key, {"accepted": 0, "rejected": 0, "retry": 0, "error": 0})
+        series.append({
+            "hour": h.strftime("%H:00"),
+            "iso": key,
+            "accepted": bucket["accepted"],
+            "rejected": bucket["rejected"],
+            "retry": bucket["retry"],
+            "error": bucket["error"],
+        })
+
+    # Acceptance rate
+    acceptance_rate = round((accepted / total_sends * 100), 1) if total_sends > 0 else None
+
+    # Health tier for visual semaphore
+    if acceptance_rate is None:
+        health_tier = "unknown"
+    elif acceptance_rate >= 98:
+        health_tier = "excellent"
+    elif acceptance_rate >= 90:
+        health_tier = "good"
+    elif acceptance_rate >= 75:
+        health_tier = "warning"
+    else:
+        health_tier = "critical"
+
+    # Response time stats
+    def _percentile(arr, p):
+        if not arr:
+            return 0
+        s = sorted(arr)
+        idx = min(len(s) - 1, int(round(len(s) * p / 100)) - 1)
+        return s[max(0, idx)]
+
+    rt_stats = {
+        "avg_ms": int(sum(response_times) / len(response_times)) if response_times else 0,
+        "p95_ms": _percentile(response_times, 95),
+        "min_ms": min(response_times) if response_times else 0,
+        "max_ms": max(response_times) if response_times else 0,
+        "samples": len(response_times),
+    }
+
+    # Top 5 reject reasons
+    top_reasons = [
+        {"motivo": m, "count": c} for m, c in reject_reasons.most_common(5)
+    ]
+
+    # Current retry queue state — count pending by attempt
+    queue_state = {"attempt_1": 0, "attempt_2": 0, "attempt_3": 0, "attempt_4": 0, "attempt_5": 0, "exhausted": 0}
+    async for entry in db.ecf_retry_queue.find(
+        {"status": {"$in": ["pending", "exhausted"]}},
+        {"_id": 0, "attempt": 1, "status": 1}
+    ):
+        st = entry.get("status")
+        att = entry.get("attempt", 1)
+        if st == "exhausted":
+            queue_state["exhausted"] += 1
+        elif 1 <= att <= 5:
+            queue_state[f"attempt_{att}"] += 1
+
+    return {
+        "period_hours": 24,
+        "total_sends": total_sends,
+        "accepted": accepted,
+        "rejected": rejected,
+        "transient_errors": transient_errors,
+        "acceptance_rate": acceptance_rate,
+        "health_tier": health_tier,
+        "response_times": rt_stats,
+        "top_reject_reasons": top_reasons,
+        "hourly_series": series,
+        "queue_state": queue_state,
+        "generated_at": now.isoformat(),
+    }
+
 
 
 
