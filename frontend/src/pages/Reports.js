@@ -74,10 +74,10 @@ const REPORT_CATEGORIES = [
       { id: 'taxes', name: 'Impuestos (ITBIS y Propina)', description: 'Recaudación fiscal para declaraciones' },
       { id: 'by-supplier', name: 'Gastos por Proveedor', description: 'Desglose para reportes 606/607' },
       { id: 'bill-history', name: 'Historial de Facturas', description: 'Facturas pagadas y notas de crédito (E34)', link: '/reports/facturas' },
-      { id: 'revel-607', name: '📊 Reporte 607 (Excel estilo Revel)', description: 'Ventas DGII con columna ESTADO y formato profesional', download_xlsx: '/reports/revel/607' },
-      { id: 'revel-606', name: '📊 Reporte 606 (Excel estilo Revel)', description: 'Compras y gastos a proveedores', download_xlsx: '/reports/revel/606' },
-      { id: 'revel-608', name: '📊 Reporte 608 (Excel estilo Revel)', description: 'Anulaciones: Notas de Crédito + Rechazadas', download_xlsx: '/reports/revel/608' },
-      { id: 'revel-ventas', name: '📊 Reporte General de Ventas (Excel)', description: 'Todas las facturas del período con columna ESTADO', download_xlsx: '/reports/revel/ventas-generales' },
+      { id: 'xlsx-607', name: '📊 Reporte 607 (Excel detallado)', description: 'Ventas DGII con columna ESTADO y formato profesional', download_xlsx: '/reports/xlsx/607' },
+      { id: 'xlsx-606', name: '📊 Reporte 606 (Excel detallado)', description: 'Compras y gastos a proveedores', download_xlsx: '/reports/xlsx/606' },
+      { id: 'xlsx-608', name: '📊 Reporte 608 (Excel detallado)', description: 'Anulaciones: Notas de Crédito + Rechazadas', download_xlsx: '/reports/xlsx/608' },
+      { id: 'xlsx-ventas', name: '📊 Reporte General de Ventas (Excel)', description: 'Todas las facturas del período con columna ESTADO', download_xlsx: '/reports/xlsx/ventas-generales' },
     ]
   },
   {
@@ -596,15 +596,15 @@ export default function Reports() {
 
   // Load report data
   const loadReport = useCallback(async (reportId) => {
-    // ═════ Revel-style XLSX direct downloads ═════
-    const revelDownloads = {
-      'revel-607': { endpoint: '/reports/revel/607', filename: '607' },
-      'revel-606': { endpoint: '/reports/revel/606', filename: '606' },
-      'revel-608': { endpoint: '/reports/revel/608', filename: '608' },
-      'revel-ventas': { endpoint: '/reports/revel/ventas-generales', filename: 'ventas_generales' },
+    // ═════ XLSX Excel direct downloads ═════
+    const xlsxDownloads = {
+      'xlsx-607': { endpoint: '/reports/xlsx/607', filename: '607' },
+      'xlsx-606': { endpoint: '/reports/xlsx/606', filename: '606' },
+      'xlsx-608': { endpoint: '/reports/xlsx/608', filename: '608' },
+      'xlsx-ventas': { endpoint: '/reports/xlsx/ventas-generales', filename: 'ventas_generales' },
     };
-    if (revelDownloads[reportId]) {
-      const cfg = revelDownloads[reportId];
+    if (xlsxDownloads[reportId]) {
+      const cfg = xlsxDownloads[reportId];
       notify.info('Generando Excel...', { duration: 2500 });
       try {
         const res = await axios.get(`${API}${cfg.endpoint}`, {

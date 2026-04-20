@@ -1,5 +1,5 @@
 """
-Reportes estilo Revel — formato XLSX con 2 hojas (RESUMEN + DETALLE).
+Reportes XLSX detallados — formato XLSX con 2 hojas (RESUMEN + DETALLE).
 Tipos soportados:
   - 607 (ventas DGII)
   - 606 (compras DGII)
@@ -25,7 +25,7 @@ from routers.auth import get_current_user
 _client = AsyncIOMotorClient(os.environ['MONGO_URL'])
 db = _client[os.environ.get('DB_NAME', 'pos_db')]
 
-router = APIRouter(prefix="/reports/revel", tags=["reports-revel"])
+router = APIRouter(prefix="/reports/xlsx", tags=["reports-xlsx"])
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -531,7 +531,7 @@ async def report_607(
     date_to: str = Query(..., description="YYYY-MM-DD"),
     user=Depends(get_current_user),
 ):
-    """Reporte 607 — Ventas a DGII (formato Revel)."""
+    """Reporte 607 — Ventas a DGII (formato detallado)."""
     bills = await _fetch_sales_bills(date_from, date_to)
     # 607 covers ALL sales (consumidor final + crédito fiscal + gubernamental)
     bills_607 = [b for b in bills if b.get("paid_at")]
@@ -553,7 +553,7 @@ async def report_606(
     date_to: str = Query(...),
     user=Depends(get_current_user),
 ):
-    """Reporte 606 — Compras DGII (formato Revel)."""
+    """Reporte 606 — Compras DGII (formato detallado)."""
     expenses = await _fetch_expenses(date_from, date_to)
     business = await _get_business_info()
     buf = _build_compras_workbook(expenses, _period_label(date_from, date_to), business)
@@ -567,7 +567,7 @@ async def report_608(
     date_to: str = Query(...),
     user=Depends(get_current_user),
 ):
-    """Reporte 608 — Anulaciones / Notas de Crédito (formato Revel)."""
+    """Reporte 608 — Anulaciones / Notas de Crédito (formato detallado)."""
     bills = await _fetch_sales_bills(date_from, date_to)
     notes = await _fetch_credit_notes(date_from, date_to)
     business = await _get_business_info()

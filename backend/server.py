@@ -35,7 +35,7 @@ from routers.inventory import (
 )
 from routers.recipes import router as recipes_router
 from routers.reports import router as reports_router
-from routers.reports_revel import router as reports_revel_router
+from routers.reports_xlsx import router as reports_xlsx_router
 from routers.orders import router as orders_router, set_db as orders_set_db, set_kds_notifier
 from routers.tables import router as tables_router, set_db as tables_set_db
 from routers.attendance import router as attendance_router, set_db as attendance_set_db
@@ -109,7 +109,7 @@ api.include_router(taxes_router)
 api.include_router(inventory_router)
 api.include_router(recipes_router)
 api.include_router(reports_router)
-api.include_router(reports_revel_router)
+api.include_router(reports_xlsx_router)
 api.include_router(orders_router)
 api.include_router(tables_router)
 api.include_router(attendance_router)
