@@ -473,7 +473,18 @@ async def refresh_ecf_status(bill_id: str):
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
 
-    bill_provider = bill.get("ecf_provider", "alanube")
+    # Fallback to system provider if bill doesn't have one set (ERROR bills often have none)
+    bill_provider = bill.get("ecf_provider")
+    if not bill_provider:
+        sys_cfg = await db.system_config.find_one({}, {"_id": 0, "ecf_provider": 1}) or {}
+        bill_provider = sys_cfg.get("ecf_provider") or "multiprod"
+
+    if bill_provider == "multiprod":
+        encf = bill.get("ecf_encf")
+        if not encf:
+            return {"ok": False, "message": "Esta factura no tiene e-NCF asignado. Usa el botón 'Reintentar' para enviarla a DGII."}
+        # Multiprod doesn't expose a query-status endpoint currently; surface what we have.
+        return {"ok": True, "status": bill.get("ecf_status"), "message": f"Status actual: {bill.get('ecf_status')} (via multiprod)"}
 
     if bill_provider == "thefactory":
         encf = bill.get("ecf_encf")
@@ -499,11 +510,11 @@ async def refresh_ecf_status(bill_id: str):
             return {"ok": False, "message": result.get("error", "Error consultando status")}
 
     else:
-        # Alanube refresh
+        # Alanube refresh (only when explicitly configured)
         from routers.alanube import router as _unused
         alanube_id = bill.get("ecf_alanube_id")
         if not alanube_id:
-            return {"ok": False, "message": "No tiene ID de Alanube"}
+            return {"ok": False, "message": "Esta factura no tiene ID del proveedor e-CF. Usa 'Reintentar' para enviarla."}
 
         # Delegate to existing alanube refresh logic
         import os

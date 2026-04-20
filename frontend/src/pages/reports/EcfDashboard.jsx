@@ -73,8 +73,9 @@ export default function EcfDashboard({ data }) {
   const handleRefreshStatus = async (billId) => {
     const bill = bills.find(b => b.id === billId);
     const provider = bill?.ecf_provider || '';
-    
-    // For non-Alanube providers, refresh-status is not applicable
+
+    // If bill has no provider set (ERROR bills), or provider is multiprod/thefactory, the backend
+    // will fallback to system provider. We still call it so ERROR bills get a clear message.
     if (provider === 'multiprod' || provider === 'thefactory') {
       notify.info(`Status actual: ${bill?.ecf_status || 'Sin status'} (via ${provider})`);
       return;
@@ -84,13 +85,14 @@ export default function EcfDashboard({ data }) {
       const r = await fetch(`${API}/api/ecf/refresh-status/${billId}`, { headers: hdrs() });
       const d = await r.json();
       if (d.ok) {
-        notify.success(`Status: ${d.status}${d.reject_reason ? ' — ' + d.reject_reason : ''}`);
+        const msg = d.message || `Status: ${d.status}${d.reject_reason ? ' — ' + d.reject_reason : ''}`;
+        notify.success(msg);
         const res = await fetch(`${API}/api/ecf/dashboard`, { headers: hdrs() });
         const fresh = await res.json();
         setBills(fresh.bills || []);
         setSummary(fresh.summary || {});
       } else {
-        notify.error(d.message);
+        notify.error(d.message || 'Error consultando status');
       }
     } catch { notify.error('Error de conexión'); }
   };
