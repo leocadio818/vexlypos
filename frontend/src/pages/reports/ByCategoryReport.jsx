@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { COLORS, CustomTooltip, formatMoney, PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from './reportUtils';
 import { FileDown, FileSpreadsheet, ChevronDown, ChevronRight } from 'lucide-react';
 import axios from 'axios';
@@ -129,9 +129,8 @@ export default function ByCategoryReport({ data: reportData, dateRange }) {
                   const products = Array.isArray(cat.products) ? cat.products : [];
                   const catColor = COLORS[i % COLORS.length];
                   return (
-                    <>
+                    <Fragment key={`cat-${i}`}>
                       <tr
-                        key={`cat-${i}`}
                         onClick={() => toggle(cat.category)}
                         className="border-t border-border cursor-pointer hover:bg-muted/20 transition-all"
                         data-testid={`category-row-${i}`}
@@ -158,7 +157,7 @@ export default function ByCategoryReport({ data: reportData, dateRange }) {
                           <td className="py-1.5 px-2 text-right font-variant-numeric-tabular">{p.quantity}</td>
                         </tr>
                       ))}
-                    </>
+                    </Fragment>
                   );
                 })}
                 <tr className="border-t-2 border-foreground bg-muted/40" data-testid="grand-total-row">

@@ -487,7 +487,20 @@ export default function Reports() {
   const [reportZDayId, setReportZDayId] = useState(null);
   const [auditEventFilter, setAuditEventFilter] = useState('Todos');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
+  // Responsive: only mount mobile OR desktop branch (avoid duplicate DOM + duplicate data-testids)
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener ? mq.addEventListener('change', handler) : mq.addListener(handler);
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener('change', handler) : mq.removeListener(handler);
+    };
+  }, []);
+
   // Load active business date on mount
   useEffect(() => {
     fetch(`${API}/business-days/active-date`)
@@ -908,6 +921,7 @@ export default function Reports() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Mobile Report Selector */}
+        {isMobile && (
         <div className="md:hidden flex flex-col flex-1 overflow-hidden">
           {/* Mobile category/report selector */}
           {!selectedReport || mobileMenuOpen ? (
@@ -983,8 +997,10 @@ export default function Reports() {
             </div>
           )}
         </div>
+        )}
 
         {/* Desktop/Tablet Sidebar - Hidden on mobile */}
+        {!isMobile && (<>
         <div className="hidden md:block w-72 border-r border-border bg-card/30 overflow-y-auto pb-28 sm:pb-0">
           <div className="p-3">
             {REPORT_CATEGORIES.map(category => (
@@ -1097,6 +1113,7 @@ export default function Reports() {
             </div>
           </div>
         </div>
+        </>)}
       </div>
       
       {/* Report Z Dialog */}
