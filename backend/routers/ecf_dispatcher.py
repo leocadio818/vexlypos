@@ -614,24 +614,29 @@ async def ecf_dashboard(
     if business_day_id:
         query["business_day_id"] = business_day_id
     else:
-        # Frontend sends dates in local (DR) timezone YYYY-MM-DD.
-        # paid_at is stored as UTC ISO string. DR is UTC-4 year-round (no DST).
-        # Convert local [00:00 - 23:59:59] DR → equivalent UTC instants for string comparison.
-        # Local 2026-04-19T00:00:00-04:00 → UTC 2026-04-19T04:00:00+00:00
-        # Local 2026-04-19T23:59:59-04:00 → UTC 2026-04-20T03:59:59+00:00
-        from datetime import datetime, timezone, timedelta
-        DR_OFFSET = timedelta(hours=-4)
+        # Frontend sends dates in LOCAL system timezone (America/Santo_Domingo).
+        # paid_at is stored as UTC ISO. Convert local [00:00 - 23:59:59] day window
+        # to equivalent UTC instants using the configured system timezone.
+        from zoneinfo import ZoneInfo
+        from datetime import datetime as _dt, timezone as _tz
+        from utils.timezone import get_system_timezone_name
+        try:
+            tz_name = await get_system_timezone_name()
+            local_tz = ZoneInfo(tz_name)
+        except Exception:
+            local_tz = ZoneInfo("America/Santo_Domingo")
+
         if date_from:
             try:
-                local_start = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone(DR_OFFSET))
-                utc_start = local_start.astimezone(timezone.utc).isoformat()
+                local_start = _dt.strptime(date_from, "%Y-%m-%d").replace(tzinfo=local_tz)
+                utc_start = local_start.astimezone(_tz.utc).isoformat()
                 query["paid_at"] = {"$gte": utc_start}
             except Exception:
                 query["paid_at"] = {"$gte": date_from}
         if date_to:
             try:
-                local_end = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone(DR_OFFSET))
-                utc_end = local_end.astimezone(timezone.utc).isoformat()
+                local_end = _dt.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=local_tz)
+                utc_end = local_end.astimezone(_tz.utc).isoformat()
                 if "paid_at" in query:
                     query["paid_at"]["$lte"] = utc_end
                 else:

@@ -12,6 +12,7 @@ import { PinPad } from '@/components/PinPad';
 import { useState, useEffect, useCallback } from 'react';
 import api, { businessDaysAPI, ordersAPI } from '@/lib/api';
 import { notify } from '@/lib/notify';
+import { getSystemToday } from '@/lib/timezone';
 import BusinessDayManager from '@/components/BusinessDayManager';
 import EcfDashboardInline from '@/pages/reports/EcfDashboard';
 import StockAlertModal from '@/components/StockAlertModal';
@@ -108,9 +109,13 @@ export default function Layout() {
   };
   
   const getEcfDates = (period) => {
-    const today = new Date();
-    // Use LOCAL date (not UTC) so DR timezone doesn't cross midnight boundary at 8pm
-    const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    // ALWAYS use system timezone (RD America/Santo_Domingo) — not browser local.
+    // Critical: test machine may be in NJ but the POS must behave as if in RD.
+    const todayStr = getSystemToday(); // YYYY-MM-DD in RD timezone
+    const [yy, mm, dd] = todayStr.split('-').map(Number);
+    // Build a local Date anchored at the RD "today" noon (avoids DST edge cases)
+    const today = new Date(yy, mm - 1, dd, 12, 0, 0);
+    const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
     const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 7);
     const monthAgo = new Date(today); monthAgo.setDate(today.getDate() - 30);
