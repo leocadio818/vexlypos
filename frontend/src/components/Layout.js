@@ -71,7 +71,7 @@ export default function Layout() {
     setCreditNoteBill(null);
     setCreditNoteSearchError(null);
     try {
-      const res = await api.get(`/api/credit-notes/find-bill?search=${encodeURIComponent(creditNoteSearch.trim())}`);
+      const res = await api.get(`/credit-notes/find-bill?search=${encodeURIComponent(creditNoteSearch.trim())}`);
       setCreditNoteBill(res.data);
       setCreditNoteSearchError(null);
     } catch (err) {
@@ -90,7 +90,7 @@ export default function Layout() {
     }
     setCreditNoteLoading(true);
     try {
-      const res = await api.post('/api/credit-notes/generate-e34', {
+      const res = await api.post('/credit-notes/generate-e34', {
         search: creditNoteSearch.trim(),
         reason: creditNoteReason.trim()
       });
