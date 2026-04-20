@@ -1634,3 +1634,37 @@ Archivos bajo protección total:
 - `/app/frontend/src/pages/reports/EcfDashboard.jsx` (tarjeta rechazos, badge auto-retry, panel diagnóstico, lógica manual)
 - `/app/frontend/src/components/Layout.js` (polling rechazos, polling health, badges, timezone RD)
 
+
+---
+
+## ✅ 2026-04-20 — Reporte "Ventas por Categoría" (Prompt 1) — CONFIRMADO 🔒
+
+**Estado:** Backend 100% verde (iter 149), Frontend 100% verde (iter 151).
+
+**Implementación:**
+- Backend: `GET /api/reports/sales-by-category` extendido con breakdown jerárquico (categorías → productos) — `/app/backend/routers/reports.py` líneas 440-500.
+- Backend: nuevos endpoints `GET /api/reports/xlsx/ventas-por-categoria/xlsx` (XlsxWriter) y `/pdf` (WeasyPrint) — `/app/backend/routers/reports_xlsx.py` líneas 885-920.
+- Frontend: componente jerárquico con pie chart + tabla expandible + botones Descargar PDF/Excel — `/app/frontend/src/pages/reports/ByCategoryReport.jsx`.
+
+**Fixes aplicados en esta sesión:**
+1. Render duplicado de ByCategoryReport en Reports.js → corregido con hook `isMobile` + `matchMedia('(max-width: 767px)')` que monta UNA sola rama (mobile o desktop) — `/app/frontend/src/pages/Reports.js` líneas ~489-502 y wrappers `{isMobile && ...}{!isMobile && (<>...</>)}` en las dos ramas.
+2. React Fragment sin `key` → importado `Fragment` y usado `<Fragment key={`cat-${i}`}>` — `/app/frontend/src/pages/reports/ByCategoryReport.jsx` líneas 1 y ~132.
+3. `localStorage.getItem('token')` → `localStorage.getItem('pos_token')` para enviar correctamente el header `Authorization: Bearer <jwt>` en descargas PDF/XLSX — `/app/frontend/src/pages/reports/ByCategoryReport.jsx` línea 9.
+4. `/app/memory/test_credentials.md` actualizado con Admin PIN correcto `11338585`.
+
+**Test artifacts:**
+- `/app/test_reports/iteration_149.json` (backend 7/7 pytest verde)
+- `/app/test_reports/iteration_150.json` (regresión duplicate render verde)
+- `/app/test_reports/iteration_151.json` (descargas PDF/XLSX verde, 7/7 criterios)
+- `/app/backend/tests/test_ventas_por_categoria_report.py` (suite pytest dedicada)
+
+**Archivos protegidos 🔒 (no modificar sin autorización):**
+- `/app/backend/routers/reports.py` (sales_by_category_report con products hierarchy)
+- `/app/backend/routers/reports_xlsx.py` (_fetch_category_breakdown, ventas-por-categoria/xlsx, ventas-por-categoria/pdf)
+- `/app/frontend/src/pages/reports/ByCategoryReport.jsx` (versión jerárquica con exports)
+- `/app/frontend/src/pages/Reports.js` (hook isMobile anti-duplicado)
+
+**Recomendaciones no bloqueantes (P2 backlog):**
+- Auditar otros componentes bajo `/app/frontend/src/pages/reports/` por patrón `localStorage.getItem('token')` (actualmente sólo ByCategoryReport.jsx usaba ese patrón, pero al agregar nuevos reportes recordar usar `'pos_token'`).
+- Extraer `headers()` a `/app/frontend/src/lib/auth.js` compartido.
+
