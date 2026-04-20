@@ -592,6 +592,27 @@ export default function SystemTab() {
           <p className="text-[11px] text-muted-foreground mt-3 italic">
             💡 Estos campos son opcionales en el XSD de DGII. Si los llenas, deben ser códigos válidos. Si los dejas vacíos, el e-CF se envía sin ellos y DGII igual lo acepta.
           </p>
+
+          {/* Dirección Fiscal DGII — separada de la del ticket */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <label className="text-xs text-muted-foreground mb-1 block font-semibold">
+              Dirección Fiscal (DGII)
+            </label>
+            <p className="text-[11px] text-muted-foreground mb-2">
+              Dirección registrada en DGII para tu RNC. Se envía como <span className="font-mono">&lt;DireccionEmisor&gt;</span> en el e-CF. A veces no coincide con la dirección del ticket.
+            </p>
+            <input
+              value={systemConfig.fiscal_address || ''}
+              onChange={(e) => setSystemConfig((p) => ({ ...p, fiscal_address: e.target.value }))}
+              placeholder="Ej: Av. 27 de Febrero #123, Ensanche Piantini, Santo Domingo"
+              maxLength={100}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+              data-testid="fiscal-address-input"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {(systemConfig.fiscal_address || '').length}/100 caracteres
+            </p>
+          </div>
         </div>
 
         {/* Email Automático */}

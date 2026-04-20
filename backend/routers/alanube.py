@@ -211,7 +211,7 @@ def build_alanube_payload(bill: dict, system_config: dict, encf: str) -> dict:
         "companyName": system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("restaurant_name") or "VexlyPOS",
         "tradeName": system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("restaurant_name") or "VexlyPOS",
         "stampDate": stamp_date,
-        "address": system_config.get("ticket_address") or system_config.get("address") or "Calle Principal #1",
+        "address": system_config.get("fiscal_address") or system_config.get("ticket_address") or system_config.get("address") or "Calle Principal #1",
         "phoneNumber": [system_config.get("phone", "000-000-0000") or "000-000-0000"],
     }
     

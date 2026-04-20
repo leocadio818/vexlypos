@@ -158,7 +158,7 @@ class MultiprodService:
         _sub(emisor, "RNCEmisor", rnc or "000000000")
         _sub(emisor, "RazonSocialEmisor", system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("razon_social") or "SIN NOMBRE")
         _sub(emisor, "NombreComercial", system_config.get("commercial_name") or system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("razon_social"))
-        _sub(emisor, "DireccionEmisor", system_config.get("ticket_address") or system_config.get("address") or system_config.get("direccion") or "SIN DIRECCION")
+        _sub(emisor, "DireccionEmisor", system_config.get("fiscal_address") or system_config.get("ticket_address") or system_config.get("address") or system_config.get("direccion") or "SIN DIRECCION")
         mun = system_config.get("municipality") or system_config.get("municipio")
         if mun and len(str(mun)) >= 4:
             _sub(emisor, "Municipio", str(mun)[:6])
