@@ -6,7 +6,7 @@ import { notify } from '@/lib/notify';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const headers = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('pos_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
