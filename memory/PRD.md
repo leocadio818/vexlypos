@@ -1668,3 +1668,40 @@ Archivos bajo protección total:
 - Auditar otros componentes bajo `/app/frontend/src/pages/reports/` por patrón `localStorage.getItem('token')` (actualmente sólo ByCategoryReport.jsx usaba ese patrón, pero al agregar nuevos reportes recordar usar `'pos_token'`).
 - Extraer `headers()` a `/app/frontend/src/lib/auth.js` compartido.
 
+
+---
+
+## ✅ 2026-04-20 — Reporte "Cierre de Caja Jerárquico" (Prompt 2) — CONFIRMADO 🔒
+
+**Estado:** Backend 100% verde (9/9 pytest), Frontend 100% verde (iter 152). Sin regresiones.
+
+**Lo que se implementó (sin tocar el dashboard superior):**
+- Nuevo endpoint backend `GET /api/reports/cash-close-hierarchical?date_from&date_to&employee&payment_method` que devuelve árbol Empleado → Turno → Método de Pago → Transacciones con subtotales por cada nivel y `grand_totals`.
+- Nuevos endpoints de export:
+  - `GET /api/reports/xlsx/cierre-caja/xlsx?view=resumida|detallada` — openpyxl con `row_dimensions.outlineLevel` (agrupación plegable de Excel) y fórmulas `=SUM(...)` reales en subtotales y totales.
+  - `GET /api/reports/xlsx/cierre-caja/pdf?view=resumida|detallada` — WeasyPrint con plantilla B/N (header negro, sin zebra rows, `@media print` page-break-inside: avoid).
+- Nuevo componente `CashCloseHierarchy.jsx` debajo del dashboard de KPIs existente. Toggle `Resumida | Detallada` (default Resumida). Botones PDF/Excel que respetan la vista activa. Tabla jerárquica con expand/collapse por empleado, turno y método (en vista detallada).
+- Asignación de turnos por cajero: un bill se asigna al shift donde `opened_at ≤ paid_at ≤ closed_at`; si no hay match, fallback a un bucket sintético por `business_date`.
+
+**Archivos protegidos 🔒 (no modificar sin autorización):**
+- `/app/backend/routers/reports.py` — `_cash_close_hierarchical_impl` + endpoint `/cash-close-hierarchical` (líneas 730-933)
+- `/app/backend/routers/reports_xlsx.py` — `_fetch_cash_close_tree`, `_build_cash_close_xlsx`, `_build_cash_close_html`, endpoints `/cierre-caja/xlsx` y `/cierre-caja/pdf` (líneas 925-1310)
+- `/app/frontend/src/pages/reports/CashCloseHierarchy.jsx` (nuevo, ~280 líneas)
+- `/app/frontend/src/pages/reports/CashCloseReport.jsx` — ahora recibe `dateRange` prop y monta `<CashCloseHierarchy>` antes del bloque de Firmas
+- `/app/frontend/src/pages/Reports.js` — pasa `dateRange` al componente `CashCloseReport`
+
+**Criterios Vexly cumplidos:**
+- Dashboard original de KPIs INTACTO (no se tocó layout, valores ni colores) ✅
+- Fecha basada en jornada (`business_date`), no calendar date ✅
+- 5 viewports verificados (Desktop, Android, iOS, Dark, Light) ✅
+- Impresión B/N de la tabla jerárquica (header negro sólido, sin fondos de color) ✅
+- Excel con `outlineLevel` (agrupación plegable) y `=SUM()` reales en subtotales ✅
+- Admin PIN `11338585` y token en `localStorage['pos_token']` consistentes ✅
+
+**Test artifacts:**
+- `/app/test_reports/iteration_152.json` (9/9 backend + 100% frontend)
+- `/app/backend/tests/test_cash_close_hierarchical.py` (9 pytest ~2s)
+
+**Optional polish (no bloqueante):**
+- En viewport < 420px, la columna "Descripción" de la tabla jerárquica envuelve algunos labels (`[13]`, `Shift Totals`) en 2 líneas. Legible pero apretado. Reducir padding horizontal en <md o bajar tipografía 1px para resolverlo cuando haya tiempo.
+
