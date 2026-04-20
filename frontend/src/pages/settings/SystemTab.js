@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { invalidateTimezoneCache } from '@/lib/timezone';
 import ThermalTicket from '@/components/ThermalTicket';
 import axios from 'axios';
+import { PROVINCIAS, MUNICIPIOS_BY_PROVINCIA } from '@/data/dgii_territories';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -523,6 +524,74 @@ export default function SystemTab() {
             placeholder="000-000000-0"
             className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono"
           />
+        </div>
+
+        {/* Provincia y Municipio (códigos DGII/ONE para e-CF) */}
+        <div className="bg-card border border-border rounded-xl p-4 mb-4">
+          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <MapPin size={14} className="text-blue-500" /> Ubicación Fiscal (DGII)
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Códigos oficiales ONE que DGII exige en el XML del e-CF. Selecciona provincia y municipio; el sistema guarda el código correcto automáticamente.
+          </p>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Provincia</label>
+              <select
+                value={systemConfig.province || ''}
+                onChange={(e) => {
+                  const newProv = e.target.value;
+                  setSystemConfig((p) => ({
+                    ...p,
+                    province: newProv,
+                    // Reset municipio if the province changed
+                    municipality: newProv && (p.municipality || '').startsWith(newProv) ? p.municipality : '',
+                  }));
+                }}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                data-testid="province-select"
+              >
+                <option value="">— Seleccionar provincia —</option>
+                {PROVINCIAS.map((p) => (
+                  <option key={p.code} value={p.code}>
+                    {p.code} — {p.name}
+                  </option>
+                ))}
+              </select>
+              {systemConfig.province && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Código XML: <span className="font-mono font-bold">{systemConfig.province}</span>
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Municipio</label>
+              <select
+                value={systemConfig.municipality || ''}
+                onChange={(e) => setSystemConfig((p) => ({ ...p, municipality: e.target.value }))}
+                disabled={!systemConfig.province}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm disabled:opacity-50"
+                data-testid="municipality-select"
+              >
+                <option value="">
+                  {systemConfig.province ? '— Seleccionar municipio —' : '— Elige provincia primero —'}
+                </option>
+                {(MUNICIPIOS_BY_PROVINCIA[systemConfig.province] || []).map((m) => (
+                  <option key={m.code} value={m.code}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+              {systemConfig.municipality && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Código XML: <span className="font-mono font-bold">{systemConfig.municipality}</span>
+                </p>
+              )}
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3 italic">
+            💡 Estos campos son opcionales en el XSD de DGII. Si los llenas, deben ser códigos válidos. Si los dejas vacíos, el e-CF se envía sin ellos y DGII igual lo acepta.
+          </p>
         </div>
 
         {/* Email Automático */}
