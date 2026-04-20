@@ -1573,3 +1573,64 @@ Los siguientes componentes/funcionalidades están **BLOQUEADOS** y NO deben ser 
   - Frontend: botón oculto, card "Cont. Manual: 1" visible ✓
 - **CÓDIGO PROTEGIDO**: No modificar la lógica de exclusión sin permiso del usuario.
 
+
+### 🔒 Fix Lápiz "Editar Tipo e-CF" (HTTP 500) + Plataformas Externas — Added 2026-04-19
+- **Problema**: El botón lápiz morado en e-CF Dashboard daba "Error de conexión" al guardar porque importaba `log_action` que no existía en `utils/audit.py`.
+- **Fix backend** (`/app/backend/routers/billing.py` PATCH `/bills/{bill_id}/ecf-type`):
+  - Usar `log_audit_event` (la función real) en lugar de `log_action` inexistente.
+  - Agregar guard para BLOQUEAR edición de contingencias manuales (Uber Eats/PedidosYa) con mensaje: *"Esta factura es de una plataforma externa. No puede enviarse a DGII porque la plataforma genera su propio comprobante."*
+  - También establecer `ecf_type` además de `ncf_type` en el $set (antes solo actualizaba uno).
+- **Fix frontend** (`/app/frontend/src/pages/reports/EcfDashboard.jsx`):
+  - Ocultar el lápiz para status `CONTINGENCIA_MANUAL` (no tiene sentido editar tipo si la factura no se envía a DGII).
+  - Mostrar badge gris "Plataforma externa" en su lugar, CON el botón Reintentar disponible (para que admin pueda forzar envío manual si decide).
+- **Testing**: T-1189 (Uber Eats) → HTTP 400 con mensaje claro ✓; T-1184 no-manual → HTTP 200, tipo cambiado E31→E32 ✓.
+- **CÓDIGO PROTEGIDO**: No modificar sin permiso.
+
+### 🔒 Fix Spinner "Procesando" Girando en Vacío — Added 2026-04-19
+- **Problema**: El ícono Loader2 de la tarjeta "Procesando" giraba siempre (`animate-spin` constante), incluso cuando el contador era 0. Daba falsa impresión de "cargando".
+- **Fix frontend** (`EcfDashboard.jsx`): aplicar `animate-spin` solo cuando `count > 0`.
+- **CÓDIGO PROTEGIDO**: No modificar.
+
+### 🔒 Dropdowns DGII/ONE (Provincia + Municipio) + Dirección Fiscal — Added 2026-04-19
+- **Problema**: Los campos `province` y `municipality` exigen **códigos numéricos ONE** (no nombres). Usuario no los conocía. Dirección del ticket con 4 campos separados no se enviaba a DGII (XML buscaba `ticket_address` inexistente, resultando en literal `"SIN DIRECCION"` en todos los e-CF).
+- **Fix frontend** (`/app/frontend/src/data/dgii_territories.js` + `SystemTab.js`):
+  - Nuevo archivo con 32 provincias y ~150 municipios (códigos ONE oficiales).
+  - Nueva sección "Ubicación Fiscal (DGII)" en pestaña Sistema con 3 campos:
+    - Dropdown Provincia (muestra "25 — Santiago", guarda `25`).
+    - Dropdown Municipio filtrado por provincia (guarda código 6 dígitos ej. `250101`).
+    - Campo texto "Dirección Fiscal (DGII)" → se guarda como `fiscal_address`.
+  - UI muestra el código XML que se guardará para transparencia.
+- **Fix backend** (3 archivos): priorizar `fiscal_address` sobre `ticket_address` en `multiprod_service.py`, `alanube.py`, `credit_notes.py`.
+- **CÓDIGO PROTEGIDO**: No modificar `dgii_territories.js` ni la sección "Ubicación Fiscal (DGII)".
+
+### 🔒 Fix Timezone Jornada / Ayer (NJ → RD) — Added 2026-04-19
+- **Problema**: Los filtros "Jornada" y "Ayer" usaban `toISOString()` que convierte a UTC. Cuando el navegador estaba en NJ (UTC-5) o pasaba medianoche UTC en RD (8 PM RD), las facturas del día se distribuían incorrectamente entre "Jornada" (día siguiente UTC) y "Ayer" (día real RD).
+- **Fix frontend** (`Layout.js`):
+  - Uso del helper existente `getSystemToday()` de `@/lib/timezone` (ya tenía `Intl.DateTimeFormat` con `America/Santo_Domingo`).
+  - Fecha anclada al mediodía RD para evitar edge cases de DST.
+  - Sin importar en qué zona horaria esté el navegador (NJ, FL, PR, RD), el POS calcula "hoy" SIEMPRE como la fecha actual en RD.
+- **Fix backend** (`/app/backend/routers/ecf_dispatcher.py` GET `/dashboard`):
+  - Convertir el rango `[00:00, 23:59:59]` de RD al rango UTC equivalente usando `zoneinfo.ZoneInfo` desde la config del sistema.
+  - Lee timezone dinámicamente de `get_system_timezone_name()` (no hardcoded -04:00).
+- **Testing**: Con reloj 8:17 PM RD (00:17 UTC del día siguiente), Jornada trae 22 facturas incluyendo T-1190 (paid 00:16 UTC). Ayer trae 0. ✓
+- **CÓDIGO PROTEGIDO**: No modificar la lógica de conversión TZ.
+
+---
+
+## 🛡️ CANDADO GLOBAL DE SESIÓN 2026-04-19
+
+Todas las funcionalidades anteriores con 🔒 son parte de un bloque coherente de mejoras e-CF/DGII y **NO deben modificarse** sin autorización explícita de Leo (el usuario/owner).
+
+Archivos bajo protección total:
+- `/app/backend/services/multiprod_service.py` (XML builder, fix IndicadorMontoGravado)
+- `/app/backend/routers/ecf_dispatcher.py` (rejections, health-metrics, retry-all, timezone query)
+- `/app/backend/routers/ecf_provider.py` (auto_retry_worker, _is_permanent_error, RETRY_BACKOFFS)
+- `/app/backend/routers/billing.py` (update_bill_ecf_type con bloqueo de manual)
+- `/app/backend/routers/alanube.py` (fiscal_address fallback)
+- `/app/backend/routers/credit_notes.py` (fiscal_address fallback)
+- `/app/backend/server.py` (registro de auto_retry_worker en scheduler)
+- `/app/frontend/src/data/dgii_territories.js` (códigos ONE/DGII)
+- `/app/frontend/src/pages/settings/SystemTab.js` (sección Ubicación Fiscal DGII)
+- `/app/frontend/src/pages/reports/EcfDashboard.jsx` (tarjeta rechazos, badge auto-retry, panel diagnóstico, lógica manual)
+- `/app/frontend/src/components/Layout.js` (polling rechazos, polling health, badges, timezone RD)
+

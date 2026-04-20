@@ -10,7 +10,7 @@ Prioridades:
 
 ## 🔴 P0 — Crítico
 
-- [ ] **Generar prompt distribuible Multiprod** — instrucciones manuales paso a paso (sin git ni comandos DB) para replicar la integración Multiprod en los otros repos tenants del usuario.
+- [x] **Generar prompt distribuible Multiprod** — ✅ COMPLETADO 2026-04-19. Ver `/app/memory/REPLICATION_GUIDE_2026-04-19.md` (instrucciones manuales paso a paso, 10 cambios, checklist de validación).
 - [ ] **Módulo Contable RD — Fase 1: Cuentas por Pagar / Cobrar (AP/AR)**
   - Registro de facturas proveedor (entrada).
   - Registro de cuentas por cobrar (clientes a crédito).
