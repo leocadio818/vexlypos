@@ -109,7 +109,8 @@ export default function Layout() {
   
   const getEcfDates = (period) => {
     const today = new Date();
-    const fmt = d => d.toISOString().split('T')[0];
+    // Use LOCAL date (not UTC) so DR timezone doesn't cross midnight boundary at 8pm
+    const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
     const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 7);
     const monthAgo = new Date(today); monthAgo.setDate(today.getDate() - 30);

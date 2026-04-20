@@ -614,13 +614,30 @@ async def ecf_dashboard(
     if business_day_id:
         query["business_day_id"] = business_day_id
     else:
+        # Frontend sends dates in local (DR) timezone YYYY-MM-DD.
+        # paid_at is stored as UTC ISO string. DR is UTC-4 year-round (no DST).
+        # Convert local [00:00 - 23:59:59] DR → equivalent UTC instants for string comparison.
+        # Local 2026-04-19T00:00:00-04:00 → UTC 2026-04-19T04:00:00+00:00
+        # Local 2026-04-19T23:59:59-04:00 → UTC 2026-04-20T03:59:59+00:00
+        from datetime import datetime, timezone, timedelta
+        DR_OFFSET = timedelta(hours=-4)
         if date_from:
-            query["paid_at"] = {"$gte": date_from}
+            try:
+                local_start = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone(DR_OFFSET))
+                utc_start = local_start.astimezone(timezone.utc).isoformat()
+                query["paid_at"] = {"$gte": utc_start}
+            except Exception:
+                query["paid_at"] = {"$gte": date_from}
         if date_to:
-            if "paid_at" in query:
-                query["paid_at"]["$lte"] = date_to + "T23:59:59"
-            else:
-                query["paid_at"] = {"$lte": date_to + "T23:59:59"}
+            try:
+                local_end = datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone(DR_OFFSET))
+                utc_end = local_end.astimezone(timezone.utc).isoformat()
+                if "paid_at" in query:
+                    query["paid_at"]["$lte"] = utc_end
+                else:
+                    query["paid_at"] = {"$lte": utc_end}
+            except Exception:
+                pass
 
     bills = await db.bills.find(query, {
         "_id": 0, "id": 1, "transaction_number": 1, "total": 1, "ncf": 1,
