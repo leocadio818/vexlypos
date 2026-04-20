@@ -727,6 +727,227 @@ async def cash_close_report(date: Optional[str] = Query(None)):
     }
 
 
+# ─── CASH CLOSE — HIERARCHICAL (Empleado → Turno → Método de Pago → Transacciones) ───
+async def _cash_close_hierarchical_impl(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    employee: Optional[str] = None,
+    payment_method: Optional[str] = None,
+):
+    """Pure helper so other modules (reports_xlsx) can call it directly."""
+    d_from = date_from or await get_active_business_date()
+    d_to = date_to or d_from
+
+    # 1) Paid bills in range (by business_date = jornada date — protected rule)
+    bills = await db.bills.find({"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}).to_list(20000)
+    bills = [b for b in bills if d_from <= (b.get("business_date") or (b.get("paid_at") or "")[:10]) <= d_to]
+
+    # 2) Payment methods (for is_cash + canonical names)
+    pms = await db.payment_methods.find({}, {"_id": 0}).to_list(100)
+    pm_map, pm_name_map = build_pm_maps(pms)
+
+    # 3) Shifts whose window overlaps the range (slack: include all shifts with either side in range)
+    shifts = await db.shifts.find({
+        "$or": [
+            {"opened_at": {"$gte": d_from, "$lte": d_to + "T99"}},
+            {"closed_at": {"$gte": d_from, "$lte": d_to + "T99"}},
+            {"opened_at": {"$lt": d_from}, "$or": [{"closed_at": {"$gte": d_from}}, {"closed_at": None}]},
+        ]
+    }, {"_id": 0}).to_list(500)
+
+    # Index shifts by user
+    shifts_by_user = {}
+    for s in shifts:
+        uid = s.get("user_id") or s.get("user_name") or "_"
+        shifts_by_user.setdefault(uid, []).append(s)
+
+    def _find_shift(bill):
+        uid = bill.get("cashier_id") or bill.get("paid_by_id")
+        uname = bill.get("cashier_name") or bill.get("paid_by_name") or ""
+        paid_at = bill.get("paid_at") or ""
+        candidates = shifts_by_user.get(uid) or shifts_by_user.get(uname) or []
+        for s in candidates:
+            op = s.get("opened_at") or ""
+            cl = s.get("closed_at") or ""
+            if not op:
+                continue
+            if paid_at >= op and (not cl or paid_at <= cl):
+                return s
+        return None
+
+    # 4) Build tree
+    tree = {}  # employee_key -> {name, shifts: {shift_key -> shift_bucket}}
+    for b in bills:
+        emp_name = b.get("cashier_name") or b.get("paid_by_name") or "Sin Cajero"
+        emp_id = b.get("cashier_id") or b.get("paid_by_id") or emp_name
+        if employee and employee.strip() and employee.lower() != emp_name.lower():
+            continue
+
+        shift = _find_shift(b)
+        if shift:
+            sk = shift.get("id") or f"{shift.get('opened_at','')}__{shift.get('closed_at','')}"
+            shift_start = shift.get("opened_at")
+            shift_end = shift.get("closed_at")
+        else:
+            bdate = b.get("business_date") or (b.get("paid_at") or "")[:10]
+            sk = f"jornada::{emp_id}::{bdate}"
+            shift_start = f"{bdate}T00:00:00"
+            shift_end = f"{bdate}T23:59:59"
+
+        emp_bucket = tree.setdefault(emp_id, {"id": emp_id, "name": emp_name, "shifts": {}})
+        shift_bucket = emp_bucket["shifts"].setdefault(sk, {
+            "shift_id": sk,
+            "shift_start": shift_start,
+            "shift_end": shift_end,
+            "payment_methods": {},
+        })
+
+        # Payment splits (match canonical name; fallback to raw)
+        payments = b.get("payments") or []
+        n = max(len(payments), 1)
+        tips_share = round((b.get("propina_legal") or 0) / n, 2) if payments else (b.get("propina_legal") or 0)
+
+        if payments:
+            for p in payments:
+                p_id = p.get("payment_method_id", "")
+                pm = pm_map.get(p_id, {}) or pm_name_map.get((p.get("payment_method_name") or "").lower(), {})
+                pm_name = pm.get("name") or p.get("payment_method_name") or "Otro"
+                if payment_method and payment_method.strip() and payment_method.lower() != pm_name.lower():
+                    continue
+                amt = round(p.get("amount_dop", p.get("amount", 0)) or 0, 2)
+                pbucket = shift_bucket["payment_methods"].setdefault(pm_name, {
+                    "name": pm_name,
+                    "is_cash": resolve_is_cash(pm) if pm else ("efectivo" in pm_name.lower()),
+                    "transactions": [],
+                })
+                pbucket["transactions"].append({
+                    "trans_number": b.get("transaction_number") or b.get("id"),
+                    "total": amt,
+                    "tips": tips_share,
+                    "total_with_tips": round(amt + tips_share, 2),
+                    "paid_at": b.get("paid_at"),
+                })
+        else:
+            pm_name_raw = b.get("payment_method_name") or b.get("payment_method") or "Otro"
+            pm = pm_name_map.get(pm_name_raw.lower(), {})
+            pm_name = pm.get("name") or pm_name_raw
+            if payment_method and payment_method.strip() and payment_method.lower() != pm_name.lower():
+                continue
+            total = round(b.get("total") or 0, 2)
+            pbucket = shift_bucket["payment_methods"].setdefault(pm_name, {
+                "name": pm_name,
+                "is_cash": resolve_is_cash(pm) if pm else ("efectivo" in pm_name.lower()),
+                "transactions": [],
+            })
+            pbucket["transactions"].append({
+                "trans_number": b.get("transaction_number") or b.get("id"),
+                "total": total,
+                "tips": tips_share,
+                "total_with_tips": round(total + tips_share, 2),
+                "paid_at": b.get("paid_at"),
+            })
+
+    # 5) Flatten with subtotals
+    def _sum(items, key):
+        return round(sum(float(x.get(key) or 0) for x in items), 2)
+
+    employees_out = []
+    gt_count = 0
+    gt_total = 0.0
+    gt_tips = 0.0
+    for emp_id, emp in tree.items():
+        shifts_out = []
+        emp_count = 0
+        emp_total = 0.0
+        emp_tips = 0.0
+        # Sort shifts by start
+        for sk, sh in sorted(emp["shifts"].items(), key=lambda kv: kv[1].get("shift_start") or ""):
+            pms_out = []
+            sh_count = 0
+            sh_total = 0.0
+            sh_tips = 0.0
+            for pm_name, pb in sorted(sh["payment_methods"].items(), key=lambda kv: kv[0].lower()):
+                txs = pb["transactions"]
+                sub_count = len(txs)
+                sub_total = _sum(txs, "total")
+                sub_tips = _sum(txs, "tips")
+                pms_out.append({
+                    "name": pm_name,
+                    "is_cash": pb["is_cash"],
+                    "transactions": txs,
+                    "subtotal": {
+                        "count": sub_count,
+                        "total": sub_total,
+                        "tips": sub_tips,
+                        "total_with_tips": round(sub_total + sub_tips, 2),
+                    },
+                })
+                sh_count += sub_count
+                sh_total += sub_total
+                sh_tips += sub_tips
+            shifts_out.append({
+                "shift_id": sh["shift_id"],
+                "shift_start": sh["shift_start"],
+                "shift_end": sh["shift_end"],
+                "payment_methods": pms_out,
+                "shift_totals": {
+                    "count": sh_count,
+                    "total": round(sh_total, 2),
+                    "tips": round(sh_tips, 2),
+                    "total_with_tips": round(sh_total + sh_tips, 2),
+                },
+            })
+            emp_count += sh_count
+            emp_total += sh_total
+            emp_tips += sh_tips
+        employees_out.append({
+            "id": emp["id"],
+            "name": emp["name"],
+            "shifts": shifts_out,
+            "employee_totals": {
+                "count": emp_count,
+                "total": round(emp_total, 2),
+                "tips": round(emp_tips, 2),
+                "total_with_tips": round(emp_total + emp_tips, 2),
+            },
+        })
+        gt_count += emp_count
+        gt_total += emp_total
+        gt_tips += emp_tips
+
+    employees_out.sort(key=lambda e: e["name"].upper())
+
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "employees": employees_out,
+        "grand_totals": {
+            "count": gt_count,
+            "total": round(gt_total, 2),
+            "tips": round(gt_tips, 2),
+            "total_with_tips": round(gt_total + gt_tips, 2),
+        },
+    }
+
+
+@router.get("/cash-close-hierarchical")
+async def cash_close_hierarchical(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    employee: Optional[str] = Query(None),
+    payment_method: Optional[str] = Query(None),
+):
+    """
+    Returns hierarchical cash close tree: employees → shifts → payment methods → transactions.
+    Shifts are matched per cashier: bills paid within a shift's opened_at/closed_at window
+    are assigned to that shift. Bills with no matching shift fall back to a synthetic
+    per-business_date bucket.
+    """
+    return await _cash_close_hierarchical_impl(date_from, date_to, employee, payment_method)
+
+
+
+
 # ─── TOP PRODUCTS WITH SELECTOR ───
 @router.get("/top-products-extended")
 async def top_products_extended(

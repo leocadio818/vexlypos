@@ -918,3 +918,388 @@ async def ventas_por_categoria_pdf(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
 
+
+
+# ═══════════════════════════════════════════════════════════════
+# CIERRE DE CAJA — Hierarchical (Empleado → Turno → Método → Trans)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_cash_close_tree(date_from: str, date_to: str) -> dict:
+    """Reuse the pure hierarchical helper from reports router."""
+    from routers.reports import _cash_close_hierarchical_impl  # local import to avoid circular at module load
+    return await _cash_close_hierarchical_impl(date_from=date_from, date_to=date_to)
+
+
+def _fmt_dt(s: str) -> str:
+    """Format ISO datetime to 'DD/MM/YYYY HH:MM' (fallbacks to raw value)."""
+    if not s:
+        return "-"
+    try:
+        if "T" in s:
+            base = s.split(".")[0].replace("Z", "")
+            return datetime.fromisoformat(base).strftime("%d/%m/%Y %I:%M %p")
+        return s
+    except Exception:
+        return s
+
+
+def _build_cash_close_xlsx(tree: dict, period_label: str, business: dict, detailed: bool) -> BytesIO:
+    """Build XLSX with Employee → Shift → Payment Method (→ Transactions if detailed).
+    Uses openpyxl row outline grouping and real SUM() formulas for subtotals/totals.
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Cierre de Caja"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    BOLD = Font(bold=True)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    # Title block
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value=f"Cierre de Caja — {'Detallado' if detailed else 'Resumido'}").font = Font(bold=True, size=12)
+    ws.cell(row=4, column=1, value=period_label).font = Font(size=10, color="555555")
+
+    # Header row (row 6)
+    headers = ["Descripción", "Shift Start", "Shift End", "Trans #", "Total", "Propinas", "Total + Propinas"]
+    for i, h in enumerate(headers, start=1):
+        c = ws.cell(row=6, column=i, value=h)
+        c.font = WHITE_FONT
+        c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 4 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    row = 7
+    employee_total_rows = []
+
+    for emp in tree.get("employees", []):
+        # Employee header (outlineLevel 0)
+        ws.cell(row=row, column=1, value=emp["name"]).font = Font(bold=True, size=11)
+        row += 1
+
+        shift_total_rows_for_emp = []
+
+        for sh in emp.get("shifts", []):
+            # Shift header (outlineLevel 1)
+            c = ws.cell(row=row, column=1, value="   Turno")
+            c.font = BOLD
+            ws.cell(row=row, column=2, value=_fmt_dt(sh.get("shift_start"))).font = Font(size=10)
+            ws.cell(row=row, column=3, value=_fmt_dt(sh.get("shift_end"))).font = Font(size=10)
+            ws.row_dimensions[row].outlineLevel = 1
+            row += 1
+
+            pm_subtotal_rows_for_shift = []
+
+            for pm in sh.get("payment_methods", []):
+                # Payment method header (outlineLevel 2)
+                ws.cell(row=row, column=1, value=f"      {pm['name']}").font = BOLD
+                ws.row_dimensions[row].outlineLevel = 2
+                row += 1
+
+                tx_rows = []
+                if detailed:
+                    for tx in pm.get("transactions", []):
+                        ws.cell(row=row, column=1, value="         " + (tx.get("paid_at") or ""))
+                        ws.cell(row=row, column=4, value=tx.get("trans_number")).alignment = CENTER
+                        t_cell = ws.cell(row=row, column=5, value=float(tx.get("total") or 0))
+                        p_cell = ws.cell(row=row, column=6, value=float(tx.get("tips") or 0))
+                        tp_cell = ws.cell(row=row, column=7, value=float(tx.get("total_with_tips") or 0))
+                        for cc in (t_cell, p_cell, tp_cell):
+                            cc.number_format = '#,##0.00'
+                            cc.alignment = RIGHT
+                        ws.row_dimensions[row].outlineLevel = 3
+                        tx_rows.append(row)
+                        row += 1
+
+                # Payment method subtotal
+                sub = pm.get("subtotal", {})
+                c1 = ws.cell(row=row, column=1, value=f"      {pm['name']} [{sub.get('count', 0)}]")
+                c1.font = BOLD
+                if detailed and tx_rows:
+                    ws.cell(row=row, column=5, value=f"=SUM(E{tx_rows[0]}:E{tx_rows[-1]})").number_format = '#,##0.00'
+                    ws.cell(row=row, column=6, value=f"=SUM(F{tx_rows[0]}:F{tx_rows[-1]})").number_format = '#,##0.00'
+                    ws.cell(row=row, column=7, value=f"=SUM(G{tx_rows[0]}:G{tx_rows[-1]})").number_format = '#,##0.00'
+                else:
+                    ws.cell(row=row, column=5, value=float(sub.get("total", 0) or 0)).number_format = '#,##0.00'
+                    ws.cell(row=row, column=6, value=float(sub.get("tips", 0) or 0)).number_format = '#,##0.00'
+                    ws.cell(row=row, column=7, value=float(sub.get("total_with_tips", 0) or 0)).number_format = '#,##0.00'
+                for col in (5, 6, 7):
+                    cc = ws.cell(row=row, column=col)
+                    cc.font = BOLD
+                    cc.alignment = RIGHT
+                    cc.border = Border(top=THIN_BLACK)
+                ws.row_dimensions[row].outlineLevel = 2
+                pm_subtotal_rows_for_shift.append(row)
+                row += 1
+
+            # Shift totals
+            sht = sh.get("shift_totals", {})
+            c1 = ws.cell(row=row, column=1, value=f"   Shift Totals [{sht.get('count', 0)}]")
+            c1.font = Font(bold=True, size=11)
+            if pm_subtotal_rows_for_shift:
+                cells_e = ",".join([f"E{r}" for r in pm_subtotal_rows_for_shift])
+                cells_f = ",".join([f"F{r}" for r in pm_subtotal_rows_for_shift])
+                cells_g = ",".join([f"G{r}" for r in pm_subtotal_rows_for_shift])
+                ws.cell(row=row, column=5, value=f"=SUM({cells_e})").number_format = '#,##0.00'
+                ws.cell(row=row, column=6, value=f"=SUM({cells_f})").number_format = '#,##0.00'
+                ws.cell(row=row, column=7, value=f"=SUM({cells_g})").number_format = '#,##0.00'
+            else:
+                ws.cell(row=row, column=5, value=0).number_format = '#,##0.00'
+                ws.cell(row=row, column=6, value=0).number_format = '#,##0.00'
+                ws.cell(row=row, column=7, value=0).number_format = '#,##0.00'
+            for col in (5, 6, 7):
+                cc = ws.cell(row=row, column=col)
+                cc.font = Font(bold=True)
+                cc.alignment = RIGHT
+                cc.border = Border(top=THIN_BLACK, bottom=THIN_BLACK)
+            ws.row_dimensions[row].outlineLevel = 1
+            shift_total_rows_for_emp.append(row)
+            row += 1
+
+        # Employee total
+        et = emp.get("employee_totals", {})
+        c1 = ws.cell(row=row, column=1, value=f"TOTAL EMPLEADO [{et.get('count', 0)}]")
+        c1.font = Font(bold=True, size=11)
+        if shift_total_rows_for_emp:
+            cells_e = ",".join([f"E{r}" for r in shift_total_rows_for_emp])
+            cells_f = ",".join([f"F{r}" for r in shift_total_rows_for_emp])
+            cells_g = ",".join([f"G{r}" for r in shift_total_rows_for_emp])
+            ws.cell(row=row, column=5, value=f"=SUM({cells_e})").number_format = '#,##0.00'
+            ws.cell(row=row, column=6, value=f"=SUM({cells_f})").number_format = '#,##0.00'
+            ws.cell(row=row, column=7, value=f"=SUM({cells_g})").number_format = '#,##0.00'
+        else:
+            ws.cell(row=row, column=5, value=0).number_format = '#,##0.00'
+            ws.cell(row=row, column=6, value=0).number_format = '#,##0.00'
+            ws.cell(row=row, column=7, value=0).number_format = '#,##0.00'
+        for col in (5, 6, 7):
+            cc = ws.cell(row=row, column=col)
+            cc.font = Font(bold=True)
+            cc.alignment = RIGHT
+            cc.border = Border(top=Side(style="medium", color="000000"), bottom=THIN_BLACK)
+        employee_total_rows.append(row)
+        row += 2  # spacer
+
+    # Grand total
+    gt = tree.get("grand_totals", {})
+    c1 = ws.cell(row=row, column=1, value=f"TOTAL GENERAL [{gt.get('count', 0)}]")
+    c1.font = Font(bold=True, size=12)
+    if employee_total_rows:
+        cells_e = ",".join([f"E{r}" for r in employee_total_rows])
+        cells_f = ",".join([f"F{r}" for r in employee_total_rows])
+        cells_g = ",".join([f"G{r}" for r in employee_total_rows])
+        ws.cell(row=row, column=5, value=f"=SUM({cells_e})").number_format = '#,##0.00'
+        ws.cell(row=row, column=6, value=f"=SUM({cells_f})").number_format = '#,##0.00'
+        ws.cell(row=row, column=7, value=f"=SUM({cells_g})").number_format = '#,##0.00'
+    else:
+        for col, v in ((5, 0), (6, 0), (7, 0)):
+            ws.cell(row=row, column=col, value=v).number_format = '#,##0.00'
+    for col in (5, 6, 7):
+        cc = ws.cell(row=row, column=col)
+        cc.font = Font(bold=True, size=12)
+        cc.alignment = RIGHT
+        cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+
+    # Footer
+    row += 2
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=7)
+    footer = ws.cell(
+        row=row, column=1,
+        value=f"Documento generado por {business.get('name','')} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno"
+    )
+    footer.font = Font(italic=True, size=9, color="555555")
+    footer.alignment = CENTER
+
+    ws.column_dimensions["A"].width = 42
+    ws.column_dimensions["B"].width = 20
+    ws.column_dimensions["C"].width = 20
+    ws.column_dimensions["D"].width = 10
+    ws.column_dimensions["E"].width = 14
+    ws.column_dimensions["F"].width = 12
+    ws.column_dimensions["G"].width = 16
+    ws.freeze_panes = "A7"
+    ws.sheet_properties.outlinePr.summaryBelow = True
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def _build_cash_close_html(tree: dict, period_label: str, business: dict, detailed: bool) -> str:
+    """Print-friendly B/W HTML for PDF generation."""
+    rows = []
+    for emp in tree.get("employees", []):
+        rows.append(
+            f'<tr class="emp-header"><td colspan="7"><strong>{emp["name"]}</strong></td></tr>'
+        )
+        for sh in emp.get("shifts", []):
+            rows.append(
+                f'<tr class="shift-header">'
+                f'<td class="ind1"><em>Turno</em></td>'
+                f'<td>{_fmt_dt(sh.get("shift_start"))}</td>'
+                f'<td>{_fmt_dt(sh.get("shift_end"))}</td>'
+                f'<td colspan="4"></td></tr>'
+            )
+            for pm in sh.get("payment_methods", []):
+                rows.append(
+                    f'<tr class="pm-header"><td class="ind2"><strong>{pm["name"]}</strong></td>'
+                    f'<td colspan="6"></td></tr>'
+                )
+                if detailed:
+                    for tx in pm.get("transactions", []):
+                        rows.append(
+                            f'<tr class="tx">'
+                            f'<td class="ind3">{_fmt_dt(tx.get("paid_at"))}</td>'
+                            f'<td></td><td></td>'
+                            f'<td class="center">{tx.get("trans_number", "")}</td>'
+                            f'<td class="money">{float(tx.get("total") or 0):,.2f}</td>'
+                            f'<td class="money">{float(tx.get("tips") or 0):,.2f}</td>'
+                            f'<td class="money">{float(tx.get("total_with_tips") or 0):,.2f}</td></tr>'
+                        )
+                sub = pm.get("subtotal", {})
+                rows.append(
+                    f'<tr class="pm-sub">'
+                    f'<td class="ind2"><strong>{pm["name"]} [{sub.get("count", 0)}]</strong></td>'
+                    f'<td colspan="3"></td>'
+                    f'<td class="money"><strong>{float(sub.get("total") or 0):,.2f}</strong></td>'
+                    f'<td class="money"><strong>{float(sub.get("tips") or 0):,.2f}</strong></td>'
+                    f'<td class="money"><strong>{float(sub.get("total_with_tips") or 0):,.2f}</strong></td></tr>'
+                )
+            sht = sh.get("shift_totals", {})
+            rows.append(
+                f'<tr class="shift-sub">'
+                f'<td class="ind1"><strong>Shift Totals [{sht.get("count", 0)}]</strong></td>'
+                f'<td colspan="3"></td>'
+                f'<td class="money"><strong>{float(sht.get("total") or 0):,.2f}</strong></td>'
+                f'<td class="money"><strong>{float(sht.get("tips") or 0):,.2f}</strong></td>'
+                f'<td class="money"><strong>{float(sht.get("total_with_tips") or 0):,.2f}</strong></td></tr>'
+            )
+        et = emp.get("employee_totals", {})
+        rows.append(
+            f'<tr class="emp-total">'
+            f'<td><strong>TOTAL EMPLEADO [{et.get("count", 0)}]</strong></td>'
+            f'<td colspan="3"></td>'
+            f'<td class="money"><strong>{float(et.get("total") or 0):,.2f}</strong></td>'
+            f'<td class="money"><strong>{float(et.get("tips") or 0):,.2f}</strong></td>'
+            f'<td class="money"><strong>{float(et.get("total_with_tips") or 0):,.2f}</strong></td></tr>'
+        )
+        rows.append('<tr class="spacer"><td colspan="7">&nbsp;</td></tr>')
+
+    gt = tree.get("grand_totals", {})
+    rows.append(
+        f'<tr class="grand-total">'
+        f'<td><strong>TOTAL GENERAL [{gt.get("count", 0)}]</strong></td>'
+        f'<td colspan="3"></td>'
+        f'<td class="money"><strong>{float(gt.get("total") or 0):,.2f}</strong></td>'
+        f'<td class="money"><strong>{float(gt.get("tips") or 0):,.2f}</strong></td>'
+        f'<td class="money"><strong>{float(gt.get("total_with_tips") or 0):,.2f}</strong></td></tr>'
+    )
+
+    view_label = "Detallado" if detailed else "Resumido"
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Cierre de Caja — {view_label}</title>
+      <style>
+        @page {{ size: Letter; margin: 16mm 12mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 10pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }}
+        .header h1 {{ margin: 0; font-size: 15pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 9pt; margin-top: 2px; }}
+        .header .title {{ font-size: 11pt; font-weight: bold; margin-top: 4px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 6px; }}
+        thead th {{ background: #111; color: #fff; padding: 5px 6px; font-size: 9pt; }}
+        thead th.money {{ text-align: right; }}
+        td {{ padding: 3px 6px; font-size: 9pt; vertical-align: middle; }}
+        td.money {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.center {{ text-align: center; }}
+        td.ind1 {{ padding-left: 14px; }}
+        td.ind2 {{ padding-left: 28px; }}
+        td.ind3 {{ padding-left: 42px; color: #333; }}
+        tr.emp-header td {{ border-top: 1.5px solid #000; padding-top: 6px; font-size: 10pt; }}
+        tr.shift-header td {{ border-top: 1px solid #888; }}
+        tr.pm-sub td {{ border-top: 1px solid #000; }}
+        tr.shift-sub td {{ border-top: 1px solid #000; border-bottom: 1px solid #000; }}
+        tr.emp-total td {{ border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 6px; }}
+        tr.spacer td {{ padding: 3px; }}
+        tr.grand-total td {{ border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 7px 6px; font-size: 11pt; }}
+        .footer {{ margin-top: 16px; text-align: center; color: #555; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} thead {{ display: table-header-group; }} tr {{ page-break-inside: avoid; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Cierre de Caja — {view_label}</div>
+        <div class="date">{period_label} · Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Descripción</th>
+            <th>Shift Start</th>
+            <th>Shift End</th>
+            <th>Trans #</th>
+            <th class="money">Total</th>
+            <th class="money">Propinas</th>
+            <th class="money">Total + Prop.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {''.join(rows)}
+        </tbody>
+      </table>
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/cierre-caja/xlsx")
+async def cierre_caja_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    view: str = Query("resumida", regex="^(resumida|detallada)$"),
+    user=Depends(get_current_user),
+):
+    detailed = (view == "detallada")
+    tree = await _fetch_cash_close_tree(date_from, date_to)
+    business = await _get_business_info()
+    buf = _build_cash_close_xlsx(tree, _period_label(date_from, date_to), business, detailed)
+    label = "Detallada" if detailed else "Resumida"
+    fname = f"CierreCaja_{label}_{date_from}_al_{date_to}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/cierre-caja/pdf")
+async def cierre_caja_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    view: str = Query("resumida", regex="^(resumida|detallada)$"),
+    user=Depends(get_current_user),
+):
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    detailed = (view == "detallada")
+    tree = await _fetch_cash_close_tree(date_from, date_to)
+    business = await _get_business_info()
+    html = _build_cash_close_html(tree, _period_label(date_from, date_to), business, detailed)
+    pdf_bytes = HTML(string=html).write_pdf()
+    label = "Detallada" if detailed else "Resumida"
+    fname = f"CierreCaja_{label}_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )

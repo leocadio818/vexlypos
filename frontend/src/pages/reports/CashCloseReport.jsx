@@ -1,7 +1,8 @@
 import { formatMoney, Badge } from './reportUtils';
 import { Receipt, CreditCard, Banknote, Users, AlertTriangle, Percent, FileText, Clock, Hash, PenLine } from 'lucide-react';
+import CashCloseHierarchy from './CashCloseHierarchy';
 
-export default function CashCloseReport({ data }) {
+export default function CashCloseReport({ data, dateRange }) {
   if (!data?.summary) return null;
   const s = data.summary;
 
@@ -210,6 +211,9 @@ export default function CashCloseReport({ data }) {
           </div>
         </div>
       )}
+
+      {/* NUEVA SECCIÓN: Desglose Jerárquico (Empleado → Turno → Método → Transacciones) */}
+      <CashCloseHierarchy dateRange={dateRange} />
 
       {/* Firmas */}
       <div className="bg-card border border-border rounded-xl p-6 print:mt-8">

@@ -1,0 +1,42 @@
+{
+  "summary": "Tested Prompt 2 'Cierre de Caja Jerárquico' — fully functional end-to-end. Backend: 9/9 pytest tests PASS (JSON structure, employee/payment_method filters, PDF/XLSX resumida+detallada with %PDF/PK magic, auth requirement on /xlsx endpoints, openpyxl validates =SUM formulas + outlineLevel grouping, classic /api/reports/cash-close regression OK). Frontend on desktop 1920x1080: Admin PIN 11338585 login OK (pos_token len=309), /reports?report=cash-close renders original dashboard INTACT (Cierre de Caja Details: T-1186…T-1191, TOTALES RD$10,600/1,908/1,076/13,584, Firmas de Cierre) + NEW 'Desglose Jerárquico' section below. data-testid counts: cash-close-report=1, cash-close-hierarchy=1, cash-close-hierarchy-table=1, cch-grand-total=1 (no duplicates). Resumida active by default (primary class). Clicking Detallada adds 'Trans #' column header and 21 tx-row-* rows. Clicking emp-row-0/shift-row-0-* toggles expand/collapse. PDF button → CierreCaja_Resumida_2026-04-19_al_2026-04-19.pdf 17375 bytes starting with %PDF. Excel button → .xlsx 5902 bytes starting with PK. Success toasts 'PDF descargado' and 'XLSX descargado' appear. Mobile 390x844 and 412x915: grand total remains visible, Shift Start/End columns hidden via md:table-cell as designed. Backend data used: Admin / 1 shift / 3 payment methods (Efectivo RD$, Tarjeta Credito, Uber Eats) / 21 trans / RD$14,192 total + RD$1,076 tips = RD$15,268.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mobile 390x844 hierarchy table", "issues": ["Leyendas '[13]', '[6]', '[2]' y 'Shift Totals' envuelven a 2 líneas por ancho reducido. Legible pero algo apretado; considerar reducir padding horizontal en <md o usar tipografía ligeramente menor en columna Descripción para dispositivos < 420px."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_cash_close_hierarchical.py",
+    "/app/test_reports/pytest/cash_close_hierarchical.xml"
+  ],
+  "action_items": [
+    "No blocking action. Optional UX polish: tighten column widths on mobile (<420px) for the hierarchy table so 'Efectivo RD$ [13]' doesn't wrap to 2 lines.",
+    "Optional: replace silent 'catch {}' in CashCloseHierarchy.jsx download() with 'catch (err) { console.error(err); }' to mirror the same recommendation from iter 151."
+  ],
+  "critical_code_review_comments": [
+    "CashCloseHierarchy.jsx correctly reads JWT from localStorage.getItem('pos_token') — consistent with iter 151 fix on ByCategoryReport.jsx. Same class of token-key bug will NOT re-appear here.",
+    "Backend endpoint /api/reports/cash-close-hierarchical is public (no auth) while PDF/XLSX endpoints require Bearer JWT — behaviour matches spec. Verified test_pdf_requires_auth returns 401/403 without header.",
+    "XLSX generated via openpyxl includes real =SUM formulas AND outlineLevel>0 on transaction/method rows (test_xlsx_resumida asserts both). Matches requirement in prompt.",
+    "Upper dashboard (Resumen Fiscal, Anulaciones, Detalle de Facturas, TOTALES, Firmas) is NOT touched — zero regression.",
+    "No console errors on login or report rendering. data-testid uniqueness preserved (1 occurrence each)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_cash_close_hierarchical.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 pytest)",
+    "frontend": "100% (all acceptance criteria verified on desktop + mobile)"
+  },
+  "test_credentials": "Admin PIN 11338585 (from /app/memory/test_credentials.md). JWT under localStorage['pos_token'].",
+  "seed_data_creation": "None — used existing jornada data. Backend tests used 2026-04-01→2026-04-20 (42 invoices). Frontend test used default 2026-04-19 (21 trans, RD$14,192 + RD$1,076 tips).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompt 2 (Cierre de Caja Jerárquico) fully validated. Backend regression test lives at /app/backend/tests/test_cash_close_hierarchical.py (9 tests, all passing in ~2s). Key endpoints: GET /api/reports/cash-close-hierarchical?date_from=&date_to=&employee=&payment_method= (public JSON), GET /api/reports/xlsx/cierre-caja/pdf?view=resumida|detallada (auth), GET /api/reports/xlsx/cierre-caja/xlsx?view=... (auth). Frontend component: /app/frontend/src/pages/reports/CashCloseHierarchy.jsx. Default view = 'resumida'. All expected data-testids exist and are unique.",
+  "rca of the issue": "N/A — no bugs found. Prompt 2 implementation is clean and meets every acceptance criterion in the review request."
+}

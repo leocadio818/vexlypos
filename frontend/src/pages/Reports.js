@@ -778,7 +778,7 @@ export default function Reports() {
       case 'daily-close':
         return <DailySalesReport data={reportData} sparklineData={sparklineData} />;
       case 'cash-close':
-        return <CashCloseReport data={reportData} />;
+        return <CashCloseReport data={reportData} dateRange={dateRange} />;
       case 'by-category':
         return <ByCategoryReport data={reportData} dateRange={dateRange} />;
       case 'top-products':
