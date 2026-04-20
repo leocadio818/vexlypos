@@ -767,7 +767,7 @@ export default function Reports() {
       case 'cash-close':
         return <CashCloseReport data={reportData} />;
       case 'by-category':
-        return <ByCategoryReport data={reportData} />;
+        return <ByCategoryReport data={reportData} dateRange={dateRange} />;
       case 'top-products':
         return <TopProductsReport data={reportData} topLimit={topLimit} onChangeLimit={(n) => { setTopLimit(n); loadReport('top-products'); }} />;
       case 'by-type':

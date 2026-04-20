@@ -623,3 +623,298 @@ async def report_ventas_generales(
     )
     fname = f"ventas_generales_{date_from}_al_{date_to}.xlsx"
     return _xlsx_response(buf, fname)
+
+
+# ═══════════════════════════════════════════════════════════════
+# Ventas por Categoría — Hierarchical report (HTML/PDF/Excel)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_category_breakdown(date_from: str, date_to: str) -> list:
+    """Fetch category → products breakdown directly (avoids FastAPI endpoint invocation issues)."""
+    bills = await db.bills.find(
+        {"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}
+    ).to_list(10000)
+    filtered = [b for b in bills if date_from <= b.get("business_date", (b.get("paid_at") or "")[:10]) <= date_to]
+
+    products = await db.products.find({}, {"_id": 0}).to_list(5000)
+    prod_map = {p["id"]: p for p in products}
+    prod_name_map = {p.get("name", "").lower(): p for p in products}
+    cats_db = await db.categories.find({}, {"_id": 0}).to_list(200)
+    cat_name_map = {c["id"]: c.get("name", c["id"]) for c in cats_db}
+
+    categories = {}
+    for bill in filtered:
+        for item in bill.get("items", []):
+            prod = prod_map.get(item.get("product_id"), prod_map.get(item.get("item_id"), {}))
+            if not prod:
+                prod = prod_name_map.get((item.get("product_name") or "").lower(), {})
+            cat = prod.get("category_id", "sin_categoria")
+            prod_name = item.get("product_name") or prod.get("name") or "Sin Nombre"
+            if cat not in categories:
+                categories[cat] = {"category": cat, "total": 0, "quantity": 0, "products": {}}
+            item_total = item.get("total", item.get("subtotal", item.get("unit_price", 0) * item.get("quantity", 1)))
+            item_qty = item.get("quantity", 1)
+            categories[cat]["total"] += item_total
+            categories[cat]["quantity"] += item_qty
+            p_bucket = categories[cat]["products"].setdefault(prod_name, {"name": prod_name, "total": 0, "quantity": 0})
+            p_bucket["total"] += item_total
+            p_bucket["quantity"] += item_qty
+
+    result = []
+    for cat_id, data in categories.items():
+        data["category"] = cat_name_map.get(cat_id, cat_id if len(str(cat_id)) < 30 else "Sin Categoría")
+        data["total"] = round(data["total"], 2)
+        plist = [{"name": p["name"], "total": round(p["total"], 2), "quantity": p["quantity"]}
+                 for p in data["products"].values()]
+        plist.sort(key=lambda x: x["name"].upper())
+        data["products"] = plist
+        result.append(data)
+    result.sort(key=lambda x: -x["total"])
+    return result
+
+
+def _build_category_xlsx(data: list, period_label: str, business: dict) -> BytesIO:
+    """
+    Build hierarchical Ventas por Categoría XLSX.
+    Columns: Descripción | Total | Cantidad
+    Layout: Category (bold) → Products (indent) → Subtotal (bold, SUM formula) → blank row
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Ventas por Categoría"
+
+    # Header block (sober B/W)
+    title_font = Font(bold=True, size=14, color="000000")
+    subtitle_font = Font(size=10, color="555555")
+
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=3)
+    c = ws.cell(row=1, column=1, value=business["name"])
+    c.font = title_font; c.alignment = CENTER
+    ws.row_dimensions[1].height = 22
+
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=3)
+    c = ws.cell(row=2, column=1, value=f"RNC: {business['rnc']}")
+    c.font = subtitle_font; c.alignment = CENTER
+
+    ws.merge_cells(start_row=3, start_column=1, end_row=3, end_column=3)
+    c = ws.cell(row=3, column=1, value=f"Ventas por Categoría · {period_label}")
+    c.font = Font(bold=True, size=11); c.alignment = CENTER
+
+    ws.merge_cells(start_row=4, start_column=1, end_row=4, end_column=3)
+    c = ws.cell(row=4, column=1, value=f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    c.font = subtitle_font; c.alignment = CENTER
+
+    # Column headers (B/W: black fill, white text)
+    headers = ["Descripción", "Total", "Cantidad"]
+    bw_header_fill = PatternFill("solid", fgColor="111111")
+    bw_header_font = Font(bold=True, color="FFFFFF", size=11)
+    for idx, h in enumerate(headers, start=1):
+        cc = ws.cell(row=6, column=idx, value=h)
+        cc.fill = bw_header_fill; cc.font = bw_header_font
+        cc.alignment = CENTER; cc.border = BORDER
+
+    row = 7
+    grand_total_cells = []  # rows containing category subtotals (for grand-total SUM)
+    for cat in data:
+        # Category name (bold)
+        c_name = ws.cell(row=row, column=1, value=cat["category"])
+        c_name.font = Font(bold=True, size=11)
+        c_name.alignment = LEFT
+        row += 1
+
+        # Products
+        product_first_row = row
+        for p in cat.get("products", []):
+            # Indent via cell alignment
+            pc1 = ws.cell(row=row, column=1, value=p["name"])
+            pc1.alignment = Alignment(horizontal="left", vertical="center", indent=2)
+            pc2 = ws.cell(row=row, column=2, value=round(p["total"], 2))
+            pc2.number_format = '#,##0.00'; pc2.alignment = RIGHT
+            pc3 = ws.cell(row=row, column=3, value=p["quantity"])
+            pc3.alignment = RIGHT
+            row += 1
+        product_last_row = row - 1
+
+        # Subtotal row (same category name repeated, bold, with SUM formula)
+        sub1 = ws.cell(row=row, column=1, value=cat["category"])
+        sub1.font = Font(bold=True, size=11); sub1.alignment = LEFT
+        sub1.border = Border(top=Side(style="thin", color="000000"))
+        if product_last_row >= product_first_row:
+            sub2 = ws.cell(row=row, column=2, value=f"=SUM(B{product_first_row}:B{product_last_row})")
+            sub3 = ws.cell(row=row, column=3, value=f"=SUM(C{product_first_row}:C{product_last_row})")
+        else:
+            sub2 = ws.cell(row=row, column=2, value=0)
+            sub3 = ws.cell(row=row, column=3, value=0)
+        sub2.font = Font(bold=True); sub2.number_format = '#,##0.00'; sub2.alignment = RIGHT
+        sub2.border = Border(top=Side(style="thin", color="000000"))
+        sub3.font = Font(bold=True); sub3.alignment = RIGHT
+        sub3.border = Border(top=Side(style="thin", color="000000"))
+        grand_total_cells.append(row)
+        row += 1
+
+        # Blank spacer
+        row += 1
+
+    # Grand total row
+    gt1 = ws.cell(row=row, column=1, value="TOTAL GENERAL")
+    gt1.font = Font(bold=True, size=12)
+    gt1.border = Border(top=Side(style="medium", color="000000"))
+    gt1.alignment = LEFT
+    if grand_total_cells:
+        cells_total = ",".join([f"B{r}" for r in grand_total_cells])
+        cells_qty = ",".join([f"C{r}" for r in grand_total_cells])
+        gt2 = ws.cell(row=row, column=2, value=f"=SUM({cells_total})")
+        gt3 = ws.cell(row=row, column=3, value=f"=SUM({cells_qty})")
+    else:
+        gt2 = ws.cell(row=row, column=2, value=0)
+        gt3 = ws.cell(row=row, column=3, value=0)
+    gt2.font = Font(bold=True, size=12); gt2.number_format = '#,##0.00'; gt2.alignment = RIGHT
+    gt2.border = Border(top=Side(style="medium", color="000000"))
+    gt3.font = Font(bold=True, size=12); gt3.alignment = RIGHT
+    gt3.border = Border(top=Side(style="medium", color="000000"))
+
+    # Footer row
+    row += 2
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=3)
+    footer = ws.cell(row=row, column=1,
+                     value=f"Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Válido para auditoría interna")
+    footer.font = Font(italic=True, size=9, color="555555")
+    footer.alignment = CENTER
+
+    ws.column_dimensions["A"].width = 45
+    ws.column_dimensions["B"].width = 16
+    ws.column_dimensions["C"].width = 12
+    ws.freeze_panes = "A7"
+
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return buf
+
+
+def _build_category_html(data: list, period_label: str, business: dict, for_pdf: bool = False) -> str:
+    """Build sober B/W HTML for PDF generation. for_pdf=True applies print-optimized styles."""
+    rows = []
+    grand_total = 0.0
+    grand_qty = 0
+
+    for cat in data:
+        cat_total = sum(p["total"] for p in cat.get("products", []))
+        cat_qty = sum(p["quantity"] for p in cat.get("products", []))
+        grand_total += cat_total
+        grand_qty += cat_qty
+        rows.append(f'<tr class="cat-header"><td colspan="3"><strong>{cat["category"]}</strong></td></tr>')
+        for p in cat.get("products", []):
+            rows.append(
+                f'<tr class="prod-row">'
+                f'<td class="indent">{p["name"]}</td>'
+                f'<td class="money">{p["total"]:,.2f}</td>'
+                f'<td class="qty">{p["quantity"]}</td></tr>'
+            )
+        rows.append(
+            f'<tr class="cat-subtotal">'
+            f'<td><strong>{cat["category"]}</strong></td>'
+            f'<td class="money"><strong>{cat_total:,.2f}</strong></td>'
+            f'<td class="qty"><strong>{cat_qty}</strong></td></tr>'
+        )
+        rows.append('<tr class="spacer"><td colspan="3">&nbsp;</td></tr>')
+
+    rows.append(
+        f'<tr class="grand-total">'
+        f'<td><strong>TOTAL GENERAL</strong></td>'
+        f'<td class="money"><strong>{grand_total:,.2f}</strong></td>'
+        f'<td class="qty"><strong>{grand_qty}</strong></td></tr>'
+    )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Ventas por Categoría</title>
+      <style>
+        @page {{ size: Letter; margin: 18mm 14mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 11pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }}
+        .header h1 {{ margin: 0; font-size: 16pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 10pt; margin-top: 4px; }}
+        .header .title {{ font-size: 12pt; font-weight: bold; margin-top: 6px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 8px; }}
+        thead th {{ background: #111; color: #fff; padding: 6px 8px; text-align: left; font-size: 10pt; }}
+        thead th.money, thead th.qty {{ text-align: right; }}
+        td {{ padding: 4px 8px; font-size: 10pt; vertical-align: middle; }}
+        td.money {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.qty {{ text-align: right; font-variant-numeric: tabular-nums; width: 80px; }}
+        td.indent {{ padding-left: 24px; }}
+        tr.cat-header td {{ background: transparent; border-top: 1px solid #000; padding-top: 6px; }}
+        tr.cat-subtotal td {{ border-top: 1px solid #000; padding-top: 4px; }}
+        tr.spacer td {{ padding: 2px; }}
+        tr.grand-total td {{ border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 8px; background: #f5f5f5; font-size: 11pt; }}
+        .footer {{ margin-top: 24px; text-align: center; color: #666; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} tr.grand-total td {{ background: #fff; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Ventas por Categoría</div>
+        <div class="date">{period_label} · Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Descripción</th>
+            <th class="money">Total</th>
+            <th class="qty">Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          {''.join(rows)}
+        </tbody>
+      </table>
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Válido para auditoría interna
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/ventas-por-categoria/xlsx")
+async def ventas_por_categoria_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_category_breakdown(date_from, date_to)
+    business = await _get_business_info()
+    buf = _build_category_xlsx(data, _period_label(date_from, date_to), business)
+    fname = f"VentasPorCategoria_{date_from}_al_{date_to}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/ventas-por-categoria/pdf")
+async def ventas_por_categoria_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    """Server-side PDF generation via WeasyPrint (stable, pure-Python, no Chromium needed)."""
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+
+    data = await _fetch_category_breakdown(date_from, date_to)
+    business = await _get_business_info()
+    html = _build_category_html(data, _period_label(date_from, date_to), business, for_pdf=True)
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"VentasPorCategoria_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+

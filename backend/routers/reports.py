@@ -463,11 +463,19 @@ async def sales_by_category_report(
             if not prod:
                 prod = prod_name_map.get(item.get("product_name", "").lower(), {})
             cat = prod.get("category_id", "sin_categoria")
+            prod_name = item.get("product_name") or prod.get("name") or "Sin Nombre"
             if cat not in categories:
-                categories[cat] = {"category": cat, "total": 0, "quantity": 0}
+                categories[cat] = {"category": cat, "total": 0, "quantity": 0, "products": {}}
             item_total = item.get("total", item.get("subtotal", item.get("unit_price", 0) * item.get("quantity", 1)))
+            item_qty = item.get("quantity", 1)
             categories[cat]["total"] += item_total
-            categories[cat]["quantity"] += item.get("quantity", 1)
+            categories[cat]["quantity"] += item_qty
+            # Product-level breakdown (hierarchical detail)
+            p_bucket = categories[cat]["products"].setdefault(
+                prod_name, {"name": prod_name, "total": 0, "quantity": 0}
+            )
+            p_bucket["total"] += item_total
+            p_bucket["quantity"] += item_qty
     
     # Get category names
     cats_db = await db.categories.find({}, {"_id": 0}).to_list(200)
@@ -477,8 +485,16 @@ async def sales_by_category_report(
     for cat_id, data in categories.items():
         data["category"] = cat_name_map.get(cat_id, cat_id if len(cat_id) < 30 else "Sin Categoria")
         data["total"] = round(data["total"], 2)
+        # Build sorted product list (alphabetic)
+        products_list = [
+            {"name": p["name"], "total": round(p["total"], 2), "quantity": p["quantity"]}
+            for p in data["products"].values()
+        ]
+        products_list.sort(key=lambda x: x["name"].upper())
+        data["products"] = products_list
         result.append(data)
     
+    # Categories sorted by total desc (header of current report behavior preserved)
     result.sort(key=lambda x: -x["total"])
     
     return result
