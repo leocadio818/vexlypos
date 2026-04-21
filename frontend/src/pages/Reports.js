@@ -19,7 +19,7 @@ import {
   TransfersReport, DifferencesReport, WasteReport, PurchaseOrdersReport,
   BySupplierReport, TaxesReport, ProfitLossReport, TableMovementsReport,
   ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport,
-  DiscountsReport, HourlySalesReport, OpenChecksReport
+  DiscountsReport, HourlySalesReport, OpenChecksReport, SalesComparativeReport
 } from './reports';
 import ReservationsReport from './reports/ReservationsReport';
 import EcfDashboard from './reports/EcfDashboard';
@@ -48,6 +48,7 @@ const REPORT_CATEGORIES = [
       { id: 'discounts', name: 'Descuentos Aplicados', description: 'Detalle de descuentos aplicados a facturas' },
       { id: 'hourly-sales', name: 'Ventas por Hora', description: 'Distribución horaria con pico/valle y gráfico' },
       { id: 'open-checks', name: 'Cuentas Abiertas', description: 'Bills sin cobrar con KPIs de antigüedad y monto en riesgo' },
+      { id: 'sales-comparative', name: 'Ventas Comparativas', description: 'Período A vs B side-by-side con deltas y % de cambio' },
     ]
   },
   {
@@ -644,7 +645,14 @@ export default function Reports() {
 
     setLoading(true);
     setSelectedReport(reportId);
-    
+
+    // Reports that manage their own fetching (self-fetching components)
+    if (reportId === 'sales-comparative') {
+      setReportData({}); // non-null so renderReportContent will mount the component
+      setLoading(false);
+      return;
+    }
+
     // All reports use global date filters
     const endpoints = {
       'daily-close': '/reports/daily-sales',
@@ -789,6 +797,8 @@ export default function Reports() {
         return <HourlySalesReport data={reportData} dateRange={dateRange} />;
       case 'open-checks':
         return <OpenChecksReport data={reportData} dateRange={dateRange} />;
+      case 'sales-comparative':
+        return <SalesComparativeReport dateRange={dateRange} />;
       case 'top-products':
         return <TopProductsReport data={reportData} topLimit={topLimit} onChangeLimit={(n) => { setTopLimit(n); loadReport('top-products'); }} />;
       case 'by-type':

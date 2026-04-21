@@ -1,0 +1,45 @@
+{
+  "summary": "A8 Ventas Comparativas (Sales Comparative period vs period) validated end-to-end. All 9 backend pytest cases passed and Playwright UI flow confirms sidebar entry, self-fetching component, side-by-side headlines, 9-metric table with correct deltas (-4,464 / -24.39% for total_sales; +4 / +21.05% for bills_count), TrendingUp/Down icons, N/A edge case, PDF/XLSX downloads with valid magic bytes, and responsive mobile stacking.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_sales_comparative.py",
+    "/app/test_reports/pytest/sales_comparative_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Reports.js is 1150 lines — still within acceptable range but future splits recommended if more self-fetching reports are added",
+    "SalesComparativeReport.jsx is clean (244 lines), uses useCallback correctly, and respects the pos_token auth pattern consistently with other reports"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_sales_comparative.py"
+  ],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "100%"},
+  "test_credentials": "Admin PIN 11338585 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None - used existing real dataset 2026-04-01..20 (42 paid invoices)",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "A8 Ventas Comparativas verified green. Backend endpoint /api/reports/sales-comparative returns period_a/period_b snapshots + metrics[] with diff/pct (null when period_a value=0). XLSX has real formulas in col D (=C{row}-B{row}) and col E (=IF(B{row}=0,\"N/A\",(C{row}-B{row})/B{row})) - verified via openpyxl. Auth Bearer enforced on /xlsx/sales-comparative/{xlsx,pdf}. Regression: /api/reports/daily-sales and /api/reports/open-checks still 200 OK.",
+  "verified_flows": [
+    "Login Admin PIN 11338585",
+    "Sidebar 'Ventas y Caja' -> 'Ventas Comparativas' entry at end (data-testid=report-sales-comparative)",
+    "Self-fetching component (data-testid=sales-comparative-report appears exactly once)",
+    "Date pickers sc-a-from/to, sc-b-from/to, Actualizar button triggers GET /api/reports/sales-comparative with all 4 params",
+    "Headlines side-by-side with ArrowRight (sc-vs-arrow visible in desktop)",
+    "9-metric table (sc-metric-row-0..8) with Métrica | Período A | Período B | Diferencia | % Cambio",
+    "Expected values: total_sales 18304 vs 13840 (-4464, -24.39%), bills_count 19 vs 23 (+4, +21.05%)",
+    "N/A displayed when diff=0 (Descuentos row)",
+    "Emerald/Red coloring + TrendingUp/Down/Minus icons applied",
+    "PDF download valid (%PDF, 20765B) and XLSX valid (PK, 5933B)",
+    "XLSX col D contains string formula =C{row}-B{row} and col E =IF(B{row}=0,\"N/A\",(C{row}-B{row})/B{row}) (verified by load_workbook with default data_only=False)",
+    "Mobile viewport 390x844: date pickers stack vertically",
+    "Auth enforced: /xlsx/sales-comparative/xlsx and /pdf both return 401/403 without Bearer"
+  ]
+}

@@ -361,6 +361,15 @@ async def daily_sales_report(
     date: Optional[str] = Query(None)
 ):
     """Complete daily sales summary"""
+    return await _daily_sales_impl(date_from, date_to, date)
+
+
+async def _daily_sales_impl(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    date: Optional[str] = None,
+):
+    """Pure helper — reusable from /sales-comparative and other modules."""
     d_from = date or date_from or await get_active_business_date()
     d_to = date_to or d_from
     
@@ -1088,6 +1097,86 @@ async def _open_checks_impl(
             key=lambda x: -x["total"],
         ),
     }
+
+
+# ─── SALES COMPARATIVE — Periodo A vs Periodo B ───
+def _sales_snapshot(dsr: dict) -> dict:
+    """Extract the comparable metrics from a daily_sales_report payload."""
+    return {
+        "date_from": dsr.get("date_from"),
+        "date_to": dsr.get("date_to"),
+        "total_sales": float(dsr.get("total_sales") or 0),
+        "subtotal": float(dsr.get("subtotal") or 0),
+        "total_itbis": float(dsr.get("total_itbis") or 0),
+        "total_tips": float(dsr.get("total_tips") or 0),
+        "total_discount": float(dsr.get("total_discount") or 0),
+        "bills_count": int(dsr.get("bills_count") or 0),
+        "avg_ticket": float(dsr.get("avg_ticket") or 0),
+        "cash_sales": float(dsr.get("cash_sales") or 0),
+        "card_sales": float(dsr.get("card_sales") or 0),
+    }
+
+
+def _delta(a: float, b: float) -> dict:
+    """Return {diff, pct} where pct is None when a is 0 (can't divide)."""
+    diff = round(b - a, 2)
+    if a == 0:
+        return {"diff": diff, "pct": None}
+    return {"diff": diff, "pct": round((b - a) / a * 100, 2)}
+
+
+async def _sales_comparative_impl(
+    period_a_from: str,
+    period_a_to: str,
+    period_b_from: str,
+    period_b_to: str,
+):
+    snap_a = _sales_snapshot(await _daily_sales_impl(date_from=period_a_from, date_to=period_a_to))
+    snap_b = _sales_snapshot(await _daily_sales_impl(date_from=period_b_from, date_to=period_b_to))
+
+    metrics = [
+        ("total_sales", "Ventas Totales", "money"),
+        ("bills_count", "Facturas", "int"),
+        ("avg_ticket", "Ticket Promedio", "money"),
+        ("subtotal", "Subtotal (sin ITBIS)", "money"),
+        ("total_itbis", "ITBIS Recaudado", "money"),
+        ("total_tips", "Propina Legal 10%", "money"),
+        ("total_discount", "Descuentos", "money"),
+        ("cash_sales", "Ventas en Efectivo", "money"),
+        ("card_sales", "Ventas con Tarjeta", "money"),
+    ]
+    deltas = []
+    for key, label, kind in metrics:
+        a_val = float(snap_a.get(key) or 0)
+        b_val = float(snap_b.get(key) or 0)
+        d = _delta(a_val, b_val)
+        deltas.append({
+            "key": key,
+            "label": label,
+            "kind": kind,
+            "period_a": a_val,
+            "period_b": b_val,
+            "diff": d["diff"],
+            "pct": d["pct"],
+        })
+
+    return {
+        "period_a": snap_a,
+        "period_b": snap_b,
+        "metrics": deltas,
+    }
+
+
+@router.get("/sales-comparative")
+async def sales_comparative(
+    period_a_from: str = Query(...),
+    period_a_to: str = Query(...),
+    period_b_from: str = Query(...),
+    period_b_to: str = Query(...),
+):
+    """Side-by-side comparison of two periods (A vs B) with deltas and percentage changes."""
+    return await _sales_comparative_impl(period_a_from, period_a_to, period_b_from, period_b_to)
+
 
 
 

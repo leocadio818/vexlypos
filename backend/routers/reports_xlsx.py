@@ -2199,3 +2199,228 @@ async def open_checks_pdf(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
 
+
+
+# ═══════════════════════════════════════════════════════════════
+# VENTAS COMPARATIVAS — PDF + XLSX (Periodo A vs Periodo B)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_sales_comparative(pa_from, pa_to, pb_from, pb_to) -> dict:
+    from routers.reports import _sales_comparative_impl
+    return await _sales_comparative_impl(pa_from, pa_to, pb_from, pb_to)
+
+
+def _build_sales_comparative_xlsx(data: dict, business: dict) -> BytesIO:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Comparativo"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    BOLD = Font(bold=True, size=11)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    pa = data.get("period_a", {}) or {}
+    pb = data.get("period_b", {}) or {}
+    metrics = data.get("metrics", []) or []
+
+    # Title block
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value="Ventas Comparativas — Período A vs Período B").font = Font(bold=True, size=12)
+    period_a_label = f"A: {pa.get('date_from','')} al {pa.get('date_to','')}"
+    period_b_label = f"B: {pb.get('date_from','')} al {pb.get('date_to','')}"
+    ws.cell(row=4, column=1, value=f"{period_a_label}   ·   {period_b_label}").font = Font(size=10, color="555555")
+
+    # Header row 6
+    headers = ["Métrica", period_a_label, period_b_label, "Diferencia", "% Cambio"]
+    hdr_row = 6
+    for i, h in enumerate(headers, start=1):
+        c = ws.cell(row=hdr_row, column=i, value=h)
+        c.font = WHITE_FONT
+        c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 2 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    row_n = hdr_row + 1
+    for m in metrics:
+        kind = m.get("kind", "money")
+        ws.cell(row=row_n, column=1, value=m["label"]).alignment = LEFT
+        b_cell = ws.cell(row=row_n, column=2, value=float(m.get("period_a") or 0))
+        c_cell = ws.cell(row=row_n, column=3, value=float(m.get("period_b") or 0))
+        # Diff formula: =C-B (real formula, not static value)
+        d_cell = ws.cell(row=row_n, column=4, value=f"=C{row_n}-B{row_n}")
+        # % formula: =IF(B=0,"N/A",(C-B)/B)
+        e_cell = ws.cell(row=row_n, column=5, value=f'=IF(B{row_n}=0,"N/A",(C{row_n}-B{row_n})/B{row_n})')
+
+        fmt_num = '#,##0' if kind == "int" else '#,##0.00'
+        for cc in (b_cell, c_cell, d_cell):
+            cc.number_format = fmt_num
+            cc.alignment = RIGHT
+        e_cell.number_format = '0.00%'
+        e_cell.alignment = RIGHT
+        # Highlight positive/negative direction via bold on diff
+        d_cell.font = Font(bold=True, color="1F7A1F" if float(m.get("diff") or 0) >= 0 else "9C0006")
+        row_n += 1
+
+    # Footer
+    row_n += 2
+    ws.merge_cells(start_row=row_n, start_column=1, end_row=row_n, end_column=5)
+    footer = ws.cell(
+        row=row_n, column=1,
+        value=f"Documento generado por {business.get('name','')} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno"
+    )
+    footer.font = Font(italic=True, size=9, color="555555")
+    footer.alignment = CENTER
+
+    ws.column_dimensions["A"].width = 28
+    ws.column_dimensions["B"].width = 22
+    ws.column_dimensions["C"].width = 22
+    ws.column_dimensions["D"].width = 16
+    ws.column_dimensions["E"].width = 12
+    ws.freeze_panes = "A7"
+
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return buf
+
+
+def _build_sales_comparative_html(data: dict, business: dict) -> str:
+    pa = data.get("period_a", {}) or {}
+    pb = data.get("period_b", {}) or {}
+    metrics = data.get("metrics", []) or []
+
+    def _fmt(v, kind):
+        if kind == "int":
+            return f"{int(v):,}"
+        return f"{float(v):,.2f}"
+
+    def _fmt_pct(pct):
+        if pct is None:
+            return "N/A"
+        sign = "▲" if pct >= 0 else "▼"
+        return f"{sign} {pct:+.2f}%"
+
+    trs = []
+    for m in metrics:
+        pct = m.get("pct")
+        diff = m.get("diff", 0)
+        color_cls = "pos" if diff >= 0 else "neg"
+        trs.append(
+            f'<tr>'
+            f'<td>{m["label"]}</td>'
+            f'<td class="money">{_fmt(m["period_a"], m["kind"])}</td>'
+            f'<td class="money">{_fmt(m["period_b"], m["kind"])}</td>'
+            f'<td class="money {color_cls}"><strong>{_fmt(diff, m["kind"])}</strong></td>'
+            f'<td class="num {color_cls}"><strong>{_fmt_pct(pct)}</strong></td>'
+            f'</tr>'
+        )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Ventas Comparativas</title>
+      <style>
+        @page {{ size: Letter; margin: 18mm 14mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 10.5pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }}
+        .header h1 {{ margin: 0; font-size: 15pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 10pt; margin-top: 2px; }}
+        .header .title {{ font-size: 12pt; font-weight: bold; margin-top: 4px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        .periods {{ display: flex; gap: 14px; margin: 10px 0; }}
+        .periods .box {{ flex: 1; border: 1.5px solid #000; padding: 8px 10px; }}
+        .periods .box .hd {{ font-weight: bold; font-size: 10pt; margin-bottom: 3px; }}
+        .periods .box .rg {{ color: #333; font-size: 9pt; font-family: 'Courier New', monospace; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
+        thead th {{ background: #111; color: #fff; padding: 6px 8px; font-size: 10pt; text-align: left; }}
+        thead th.money, thead th.num {{ text-align: right; }}
+        td {{ padding: 5px 8px; font-size: 10pt; border-bottom: 1px solid #ddd; }}
+        td.money, td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.pos {{ /* kept monochrome in print; visual hint preserved via bold */ }}
+        td.neg {{ /* kept monochrome in print */ }}
+        .footer {{ margin-top: 24px; text-align: center; color: #666; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Ventas Comparativas — Período A vs Período B</div>
+        <div class="date">Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+
+      <div class="periods">
+        <div class="box">
+          <div class="hd">Período A</div>
+          <div class="rg">{pa.get('date_from','')} al {pa.get('date_to','')}</div>
+        </div>
+        <div class="box">
+          <div class="hd">Período B</div>
+          <div class="rg">{pb.get('date_from','')} al {pb.get('date_to','')}</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            <th class="money">Período A</th>
+            <th class="money">Período B</th>
+            <th class="money">Diferencia</th>
+            <th class="num">% Cambio</th>
+          </tr>
+        </thead>
+        <tbody>{''.join(trs) or '<tr><td colspan="5" style="text-align:center;color:#777">Sin datos</td></tr>'}</tbody>
+      </table>
+
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/sales-comparative/xlsx")
+async def sales_comparative_xlsx(
+    period_a_from: str = Query(...),
+    period_a_to: str = Query(...),
+    period_b_from: str = Query(...),
+    period_b_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_sales_comparative(period_a_from, period_a_to, period_b_from, period_b_to)
+    business = await _get_business_info()
+    buf = _build_sales_comparative_xlsx(data, business)
+    fname = f"VentasComparativas_A{period_a_from}_B{period_b_from}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/sales-comparative/pdf")
+async def sales_comparative_pdf(
+    period_a_from: str = Query(...),
+    period_a_to: str = Query(...),
+    period_b_from: str = Query(...),
+    period_b_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    data = await _fetch_sales_comparative(period_a_from, period_a_to, period_b_from, period_b_to)
+    business = await _get_business_info()
+    html = _build_sales_comparative_html(data, business)
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"VentasComparativas_A{period_a_from}_B{period_b_from}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
