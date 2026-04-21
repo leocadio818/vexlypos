@@ -124,25 +124,89 @@ const ROLE_DEFAULTS = {
     Object.keys(cat.permissions).forEach(p => acc[p] = true);
     return acc;
   }, {}),
+
+  kitchen: {
+    send_kitchen: true,
+    view_dashboard: true,
+  },
+
   waiter: {
-    open_table: true, add_products: true, send_kitchen: true, create_bill: true,
-    split_bill: true, view_dashboard: true, manage_reservations: true,
+    open_table: true,
+    add_products: true,
+    send_kitchen: true,
   },
+
   cashier: {
-    open_table: true, add_products: true, void_items: true, send_kitchen: true,
-    create_bill: true, collect_payment: true, split_bill: true, apply_discount: true,
-    reprint_receipt: true, view_dashboard: true, open_shift: true, close_shift: true,
-    view_reports: true, manage_customers: true, access_all_tables: true,
-  },
-  supervisor: {
-    open_table: true, add_products: true, void_items: true, send_kitchen: true,
-    create_bill: true, collect_payment: true, split_bill: true, apply_discount: true,
-    move_tables: true, transfer_table: true, merge_tables: true, release_reserved_table: true,
-    view_dashboard: true, open_shift: true, close_shift: true, view_reports: true,
-    manage_reservations: true, manage_customers: true, reprint_receipt: true,
+    open_table: true,
+    add_products: true,
+    send_kitchen: true,
+    create_bill: true,
+    collect_payment: true,
+    split_bill: true,
+    apply_discount: true,
+    reprint_receipt: true,
+    access_caja: true,
+    open_shift: true,
+    close_shift: true,
     access_all_tables: true,
   },
-  kitchen: { view_dashboard: true, send_kitchen: true },
+
+  supervisor: {
+    open_table: true,
+    add_products: true,
+    send_kitchen: true,
+    create_bill: true,
+    collect_payment: true,
+    split_bill: true,
+    apply_discount: true,
+    reprint_receipt: true,
+    access_caja: true,
+    open_shift: true,
+    close_shift: true,
+    access_all_tables: true,
+    move_tables: true,
+    transfer_table: true,
+    merge_tables: true,
+    release_reserved_table: true,
+  },
+};
+
+// Fallback permissions for common custom roles (keyed by lowercase code)
+// Used when a custom role has empty permissions={} in DB
+const CUSTOM_ROLE_DEFAULTS = {
+  gerente: {
+    open_table: true, add_products: true, send_kitchen: true,
+    create_bill: true, collect_payment: true, split_bill: true,
+    apply_discount: true, reprint_receipt: true, reprint_precuenta: true,
+    access_caja: true, open_shift: true, close_shift: true,
+    access_all_tables: true, move_tables: true, transfer_table: true,
+    merge_tables: true, release_reserved_table: true,
+    void_items: true, modify_price: true, manage_credit_notes: true,
+    manage_users: true, manage_customers: true, manage_reservations: true,
+    manage_inventory: true, manage_suppliers: true,
+    stock_adjustment: true, receive_orders: true,
+    view_reports: true, export_dgii: true,
+    config_users: true, config_productos: true,
+  },
+  propietario: {
+    open_table: true, add_products: true, send_kitchen: true,
+    create_bill: true, collect_payment: true, split_bill: true,
+    apply_discount: true, reprint_receipt: true, reprint_precuenta: true,
+    access_caja: true, open_shift: true, close_shift: true,
+    access_all_tables: true, move_tables: true, transfer_table: true,
+    merge_tables: true, release_reserved_table: true,
+    void_items: true, modify_price: true, manage_credit_notes: true,
+    manage_users: true, manage_customers: true, manage_reservations: true,
+    manage_inventory: true, manage_suppliers: true,
+    stock_adjustment: true, receive_orders: true,
+    view_reports: true, export_dgii: true,
+    config_users: true, config_productos: true,
+    view_dashboard: true, view_ecf_dashboard: true,
+    view_system_logs: true, view_audit_complete: true,
+    close_day: true,
+    config_mesas: true, config_ventas: true, config_impresion: true,
+    config_reportes: true, config_clientes: true,
+  },
 };
 
 // Role display info  
@@ -161,7 +225,13 @@ function getRoleCode(role) {
 function getRoleDefaults(roleCode, roles) {
   if (ROLE_DEFAULTS[roleCode]) return { ...ROLE_DEFAULTS[roleCode] };
   const customRole = roles.find(r => getRoleCode(r) === roleCode);
-  if (customRole?.permissions) return { ...customRole.permissions };
+  // If custom role has permissions saved in DB, use them
+  if (customRole?.permissions && Object.keys(customRole.permissions).length > 0) {
+    return { ...customRole.permissions };
+  }
+  // Fallback to hardcoded defaults by code (case-insensitive)
+  const codeKey = String(roleCode || '').toLowerCase();
+  if (CUSTOM_ROLE_DEFAULTS[codeKey]) return { ...CUSTOM_ROLE_DEFAULTS[codeKey] };
   return {};
 }
 
@@ -231,7 +301,10 @@ export default function UserConfig() {
   const [createRoleDialog, setCreateRoleDialog] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleLevel, setNewRoleLevel] = useState(20);
-  const [editRoleDialog, setEditRoleDialog] = useState({ open: false, id: null, name: '', level: 20 });
+  const [newRolePermissions, setNewRolePermissions] = useState({});
+  const [newRoleExpandedCats, setNewRoleExpandedCats] = useState({ ventas: true });
+  const [editRoleDialog, setEditRoleDialog] = useState({ open: false, id: null, name: '', level: 20, permissions: {} });
+  const [editRoleExpandedCats, setEditRoleExpandedCats] = useState({ ventas: true });
   const [trainingStats, setTrainingStats] = useState(null);
 
   const [user, setUser] = useState({
@@ -299,9 +372,20 @@ export default function UserConfig() {
 
   const handleSelectRole = (role) => {
     const code = getRoleCode(role);
-    const defaults = role.builtin ? (ROLE_DEFAULTS[code] || {}) : (role.permissions || {});
+    let defaults;
+    if (role.builtin) {
+      defaults = ROLE_DEFAULTS[code] || {};
+    } else if (role.permissions && Object.keys(role.permissions).length > 0) {
+      // Custom role with saved permissions
+      defaults = role.permissions;
+    } else {
+      // Custom role with empty permissions → fallback by code
+      const codeKey = String(code || '').toLowerCase();
+      defaults = CUSTOM_ROLE_DEFAULTS[codeKey] || {};
+    }
     setUser(p => ({ ...p, role: code, permissions: { ...defaults } }));
-    notify.success(`Puesto: ${role.name}`, { duration: 1500 });
+    const count = Object.values(defaults).filter(Boolean).length;
+    notify.success(`Puesto: ${role.name} (${count} permisos)`, { duration: 1500 });
   };
 
   const handleSave = async () => {
@@ -345,10 +429,21 @@ export default function UserConfig() {
     if (!newRoleName.trim()) { notify.error('Nombre del puesto requerido'); return; }
     try {
       const code = newRoleName.trim().toLowerCase().replace(/\s+/g, '_');
-      await axios.post(`${API}/roles`, { name: newRoleName.trim(), code, permissions: {}, level: newRoleLevel }, { headers: hdrs() });
-      notify.success(`Puesto "${newRoleName}" creado (nivel ${newRoleLevel})`);
+      // If no permissions were customized, seed with CUSTOM_ROLE_DEFAULTS by code (if any)
+      let permsToSave = newRolePermissions;
+      if (!permsToSave || Object.keys(permsToSave).length === 0) {
+        if (CUSTOM_ROLE_DEFAULTS[code]) {
+          permsToSave = { ...CUSTOM_ROLE_DEFAULTS[code] };
+        } else {
+          permsToSave = {};
+        }
+      }
+      await axios.post(`${API}/roles`, { name: newRoleName.trim(), code, permissions: permsToSave, level: newRoleLevel }, { headers: hdrs() });
+      const count = Object.values(permsToSave).filter(Boolean).length;
+      notify.success(`Puesto "${newRoleName}" creado (nivel ${newRoleLevel}, ${count} permisos)`);
       setNewRoleName('');
       setNewRoleLevel(20);
+      setNewRolePermissions({});
       setCreateRoleDialog(false);
       const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
       setRoles(rolesRes.data);
@@ -622,9 +717,12 @@ export default function UserConfig() {
                   .map(role => {
                   const code = getRoleCode(role);
                   const isSelected = user.role === code;
-                  const permCount = role.builtin
-                    ? Object.values(ROLE_DEFAULTS[code] || {}).filter(Boolean).length
-                    : Object.values(role.permissions || {}).filter(Boolean).length;
+                  const permSource = role.builtin
+                    ? (ROLE_DEFAULTS[code] || {})
+                    : (role.permissions && Object.keys(role.permissions).length > 0
+                        ? role.permissions
+                        : (CUSTOM_ROLE_DEFAULTS[String(code || '').toLowerCase()] || {}));
+                  const permCount = Object.values(permSource).filter(Boolean).length;
 
                   return (
                     <button
@@ -648,7 +746,13 @@ export default function UserConfig() {
                           Deleting a role could affect users who have that role assigned. */}
                       {!role.builtin && isSystemAdmin && (
                         <span className="flex gap-0.5 ml-1" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => setEditRoleDialog({ open: true, id: role.id, name: role.name, level: role.level || 20 })}
+                          <button onClick={() => {
+                              const effectivePerms = role.permissions && Object.keys(role.permissions).length > 0
+                                ? role.permissions
+                                : (CUSTOM_ROLE_DEFAULTS[String(getRoleCode(role) || '').toLowerCase()] || {});
+                              setEditRoleDialog({ open: true, id: role.id, name: role.name, level: role.level || 20, permissions: { ...effectivePerms } });
+                              setEditRoleExpandedCats({ ventas: true });
+                            }}
                             className="w-7 h-7 rounded flex items-center justify-center hover:bg-white/20 transition-all" title="Editar" data-testid={`edit-role-${role.id}`}>
                             <Pencil size={12} />
                           </button>
@@ -774,8 +878,8 @@ export default function UserConfig() {
       </div>
 
       {/* ═══ Create Role Dialog ═══ */}
-      <Dialog open={createRoleDialog} onOpenChange={setCreateRoleDialog}>
-        <DialogContent className="max-w-sm bg-card border-border">
+      <Dialog open={createRoleDialog} onOpenChange={(o) => { setCreateRoleDialog(o); if (!o) { setNewRolePermissions({}); setNewRoleName(''); setNewRoleLevel(20); } }}>
+        <DialogContent className="max-w-lg bg-card border-border max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-oswald flex items-center gap-2">
               <Plus size={18} className="text-primary" /> Crear Puesto Nuevo
@@ -783,7 +887,7 @@ export default function UserConfig() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Crea un puesto personalizado con un nivel jerarquico. Luego podras asignarle permisos al seleccionarlo.
+              Crea un puesto personalizado con un nivel jerarquico y asigna sus permisos.
             </p>
             <Input label="Nombre del Puesto" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="Ej: Propietario, Bartender, Host..." required />
             <div>
@@ -805,6 +909,73 @@ export default function UserConfig() {
                 Solo podra ver y gestionar usuarios con nivel inferior al suyo.
               </p>
             </div>
+
+            {/* Permisos del Puesto */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1">
+                  <Shield size={12} /> Permisos
+                  <Badge variant="secondary" className="text-[10px] ml-1">{Object.values(newRolePermissions).filter(Boolean).length}</Badge>
+                </label>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] px-2"
+                    onClick={() => {
+                      const autoCode = newRoleName.trim().toLowerCase().replace(/\s+/g, '_');
+                      if (CUSTOM_ROLE_DEFAULTS[autoCode]) {
+                        setNewRolePermissions({ ...CUSTOM_ROLE_DEFAULTS[autoCode] });
+                        notify.success(`Plantilla ${autoCode} aplicada`);
+                      } else {
+                        notify.info('Sin plantilla para este nombre');
+                      }
+                    }}
+                    data-testid="apply-template-btn">
+                    Plantilla
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] px-2"
+                    onClick={() => setNewRolePermissions({})}
+                    data-testid="clear-permissions-btn">
+                    Limpiar
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1 max-h-[40vh] overflow-y-auto border border-border rounded-lg p-2" data-testid="new-role-permissions-grid">
+                {Object.entries(PERMISSION_CATEGORIES).map(([catKey, cat]) => {
+                  const isExpanded = newRoleExpandedCats[catKey];
+                  const catPerms = Object.keys(cat.permissions);
+                  const activeCount = catPerms.filter(p => newRolePermissions[p]).length;
+                  return (
+                    <div key={catKey} className="border border-border rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setNewRoleExpandedCats(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
+                        className="w-full flex items-center justify-between px-3 py-1.5 bg-background hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-oswald text-xs font-bold">{cat.label}</span>
+                          <Badge variant="secondary" className="text-[10px]">{activeCount}/{catPerms.length}</Badge>
+                        </div>
+                        {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      </button>
+                      {isExpanded && (
+                        <div className="px-2 py-2 bg-card/50 border-t border-border grid grid-cols-1 gap-1">
+                          {Object.entries(cat.permissions).map(([permKey, permLabel]) => (
+                            <label key={permKey} className="flex items-center justify-between gap-2 text-xs cursor-pointer hover:bg-muted/20 px-2 py-1 rounded">
+                              <span>{permLabel}</span>
+                              <Switch
+                                checked={!!newRolePermissions[permKey]}
+                                onCheckedChange={v => setNewRolePermissions(p => ({ ...p, [permKey]: v }))}
+                                data-testid={`new-role-perm-${permKey}`}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <Button onClick={handleCreateRole} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold active:scale-95" data-testid="confirm-create-role-btn">
               CREAR PUESTO
             </Button>
@@ -813,14 +984,14 @@ export default function UserConfig() {
       </Dialog>
 
       {/* Edit Role Dialog */}
-      <Dialog open={editRoleDialog.open} onOpenChange={(o) => !o && setEditRoleDialog({ ...editRoleDialog, open: false })}>
-        <DialogContent className="max-w-sm mx-auto">
-          <DialogHeader><DialogTitle className="font-oswald">Editar Puesto</DialogTitle></DialogHeader>
+      <Dialog open={editRoleDialog.open} onOpenChange={(o) => !o && setEditRoleDialog({ open: false, id: null, name: '', level: 20, permissions: {} })}>
+        <DialogContent className="max-w-lg mx-auto max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2"><Pencil size={16} className="text-primary" /> Editar Puesto</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Nombre del Puesto</label>
               <input type="text" value={editRoleDialog.name} onChange={e => setEditRoleDialog(p => ({ ...p, name: e.target.value }))}
-                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" />
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm" data-testid="edit-role-name-input" />
             </div>
             <div>
               <label className="text-sm font-medium">Nivel</label>
@@ -834,14 +1005,72 @@ export default function UserConfig() {
                 <option value={10}>10 - Cocina/Apoyo</option>
               </select>
             </div>
+
+            {/* Permisos del Puesto */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1">
+                  <Shield size={12} /> Permisos
+                  <Badge variant="secondary" className="text-[10px] ml-1">{Object.values(editRoleDialog.permissions || {}).filter(Boolean).length}</Badge>
+                </label>
+                <Button size="sm" variant="outline" className="h-6 text-[10px] px-2"
+                  onClick={() => setEditRoleDialog(p => ({ ...p, permissions: {} }))}
+                  data-testid="edit-clear-permissions-btn">
+                  Limpiar
+                </Button>
+              </div>
+              <div className="space-y-1 max-h-[40vh] overflow-y-auto border border-border rounded-lg p-2" data-testid="edit-role-permissions-grid">
+                {Object.entries(PERMISSION_CATEGORIES).map(([catKey, cat]) => {
+                  const isExpanded = editRoleExpandedCats[catKey];
+                  const catPerms = Object.keys(cat.permissions);
+                  const perms = editRoleDialog.permissions || {};
+                  const activeCount = catPerms.filter(p => perms[p]).length;
+                  return (
+                    <div key={catKey} className="border border-border rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setEditRoleExpandedCats(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
+                        className="w-full flex items-center justify-between px-3 py-1.5 bg-background hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-oswald text-xs font-bold">{cat.label}</span>
+                          <Badge variant="secondary" className="text-[10px]">{activeCount}/{catPerms.length}</Badge>
+                        </div>
+                        {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      </button>
+                      {isExpanded && (
+                        <div className="px-2 py-2 bg-card/50 border-t border-border grid grid-cols-1 gap-1">
+                          {Object.entries(cat.permissions).map(([permKey, permLabel]) => (
+                            <label key={permKey} className="flex items-center justify-between gap-2 text-xs cursor-pointer hover:bg-muted/20 px-2 py-1 rounded">
+                              <span>{permLabel}</span>
+                              <Switch
+                                checked={!!(editRoleDialog.permissions || {})[permKey]}
+                                onCheckedChange={v => setEditRoleDialog(p => ({ ...p, permissions: { ...(p.permissions || {}), [permKey]: v } }))}
+                                data-testid={`edit-role-perm-${permKey}`}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <Button onClick={async () => {
               try {
-                await axios.put(`${API}/roles/${editRoleDialog.id}`, { name: editRoleDialog.name, level: editRoleDialog.level }, { headers: hdrs() });
-                notify.success('Puesto actualizado');
-                setEditRoleDialog({ open: false, id: null, name: '', level: 20 });
+                await axios.put(`${API}/roles/${editRoleDialog.id}`, {
+                  name: editRoleDialog.name,
+                  level: editRoleDialog.level,
+                  permissions: editRoleDialog.permissions || {},
+                }, { headers: hdrs() });
+                const count = Object.values(editRoleDialog.permissions || {}).filter(Boolean).length;
+                notify.success(`Puesto actualizado (${count} permisos)`);
+                setEditRoleDialog({ open: false, id: null, name: '', level: 20, permissions: {} });
                 fetchRoles();
               } catch (e) { notify.error(e.response?.data?.detail || 'Error'); }
-            }} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold">
+            }} className="w-full h-11 bg-primary text-primary-foreground font-oswald font-bold" data-testid="save-edit-role-btn">
               GUARDAR CAMBIOS
             </Button>
           </div>

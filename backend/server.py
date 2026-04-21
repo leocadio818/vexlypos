@@ -4387,6 +4387,14 @@ async def startup_event():
     if not existing_tz:
         await db.system_config.insert_one({"id": "timezone", "timezone": "America/Santo_Domingo"})
         logger.info("Timezone config seeded: America/Santo_Domingo")
+
+    # Seed custom role permissions (gerente/propietario) if empty
+    try:
+        from routers.auth import seed_custom_role_permissions
+        await seed_custom_role_permissions()
+        logger.info("Custom role permissions seeded (gerente/propietario)")
+    except Exception as e:
+        logger.warning(f"Custom role permissions seed warning (non-fatal): {e}")
     
     # AUTO-MIGRATE: Create receipt channel mappings for all areas that don't have one
     # This ensures pre-cuenta auto-routing works without manual configuration

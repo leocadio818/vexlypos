@@ -37,8 +37,9 @@ def hash_pin(pin: str) -> str:
 DEFAULT_PERMISSIONS = {
     "admin": {
         "view_dashboard": True, "move_tables": True, "resize_tables": True,
-        "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
-        "create_bill": True, "collect_payment": True, "split_bill": True,
+        "open_table": True, "add_products": True, "void_items": True,
+        "send_kitchen": True, "create_bill": True, "collect_payment": True,
+        "split_bill": True, "apply_discount": True, "modify_price": True,
         "manage_users": True, "manage_areas": True, "manage_tables": True,
         "manage_payment_methods": True, "manage_cancellation_reasons": True,
         "manage_products": True, "manage_sale_types": True,
@@ -47,56 +48,127 @@ DEFAULT_PERMISSIONS = {
         "manage_customers": True, "manage_reservations": True,
         "view_reports": True, "export_dgii": True,
         "open_shift": True, "close_shift": True, "close_day": True,
-        "release_reserved_table": True,
-        "access_all_tables": True,
-        "reprint_receipt": True,
-        "can_manage_tax_override": True,
-        "transfer_tables": True,
-        "create_b04": True,
-        "view_system_logs": True,
-        "view_audit_complete": True,
+        "release_reserved_table": True, "access_all_tables": True,
+        "reprint_receipt": True, "reprint_precuenta": True,
+        "can_manage_tax_override": True, "transfer_table": True,
+        "transfer_tables": True, "merge_tables": True,
+        "create_b04": True, "manage_credit_notes": True,
+        "view_system_logs": True, "view_audit_complete": True,
+        "view_ecf_dashboard": True, "edit_ecf_type": True, "retry_ecf": True,
+        "edit_exchange_rate": True, "manage_sale_config": True,
+        "manager_on_duty": True, "stock_adjustment": True,
+        "receive_orders": True, "view_customer_history": True,
+        "cash_movement_income": True, "cash_movement_withdrawal": True,
+        "access_caja": True,
         "config_users": True, "config_mesas": True, "config_ventas": True,
-        "config_productos": True, "config_inventario": True, "config_impresion": True,
-        "config_estacion": True, "config_reportes": True, "config_clientes": True,
-        "config_impuestos": True, "config_ncf": True, "config_apariencia": True,
-        "config_sistema": True, "config_descuentos": True, "config_tipos_venta": True,
+        "config_productos": True, "config_inventario": True,
+        "config_impresion": True, "config_estacion": True,
+        "config_reportes": True, "config_clientes": True,
+        "config_impuestos": True, "config_ncf": True,
+        "config_apariencia": True, "config_sistema": True,
+        "config_descuentos": True, "config_tipos_venta": True,
         "config_formas_pago": True,
-        "access_caja": True,
-        "manage_credit_notes": True,
     },
+
+    "kitchen": {
+        "send_kitchen": True,
+        "view_dashboard": True,
+    },
+
     "waiter": {
-        "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
-        "split_bill": True, "manage_reservations": False, "manage_customers": True,
-        "access_all_tables": False,
-        "reprint_receipt": False,
-        "can_manage_tax_override": False,
+        "open_table": True,
+        "add_products": True,
+        "send_kitchen": True,
     },
+
     "cashier": {
-        "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
-        "create_bill": True, "collect_payment": True, "split_bill": True,
-        "open_shift": True, "close_shift": True, "manage_customers": True,
-        "access_all_tables": True,
+        "open_table": True,
+        "add_products": True,
+        "send_kitchen": True,
+        "create_bill": True,
+        "collect_payment": True,
+        "split_bill": True,
+        "apply_discount": True,
         "reprint_receipt": True,
         "access_caja": True,
+        "open_shift": True,
+        "close_shift": True,
+        "access_all_tables": True,
     },
+
     "supervisor": {
-        "view_dashboard": True, "move_tables": True,
-        "open_table": True, "add_products": True, "void_items": True, "send_kitchen": True,
-        "create_bill": True, "collect_payment": True, "split_bill": True,
-        "manage_reservations": True, "manage_customers": True,
-        "view_reports": True,
-        "open_shift": True, "close_shift": True,
-        "access_all_tables": True,
+        "open_table": True,
+        "add_products": True,
+        "send_kitchen": True,
+        "create_bill": True,
+        "collect_payment": True,
+        "split_bill": True,
+        "apply_discount": True,
         "reprint_receipt": True,
-        "transfer_tables": True,
-        "create_b04": True,
-        "view_audit_complete": True,
-        "config_mesas": True, "config_ventas": True, "config_productos": True,
-        "config_clientes": True, "config_apariencia": True,
         "access_caja": True,
+        "open_shift": True,
+        "close_shift": True,
+        "access_all_tables": True,
+        "move_tables": True,
+        "transfer_table": True,
+        "merge_tables": True,
+        "release_reserved_table": True,
     },
-    "kitchen": {},
 }
+
+# ─── CUSTOM ROLE DEFAULTS (fallback for custom_roles with empty permissions) ───
+CUSTOM_ROLE_DEFAULTS = {
+    "gerente": {
+        "open_table": True, "add_products": True, "send_kitchen": True,
+        "create_bill": True, "collect_payment": True, "split_bill": True,
+        "apply_discount": True, "reprint_receipt": True, "reprint_precuenta": True,
+        "access_caja": True, "open_shift": True, "close_shift": True,
+        "access_all_tables": True, "move_tables": True, "transfer_table": True,
+        "merge_tables": True, "release_reserved_table": True,
+        "void_items": True, "modify_price": True, "manage_credit_notes": True,
+        "manage_users": True, "manage_customers": True, "manage_reservations": True,
+        "manage_inventory": True, "manage_suppliers": True,
+        "stock_adjustment": True, "receive_orders": True,
+        "view_reports": True, "export_dgii": True,
+        "config_users": True, "config_productos": True,
+    },
+
+    "propietario": {
+        "open_table": True, "add_products": True, "send_kitchen": True,
+        "create_bill": True, "collect_payment": True, "split_bill": True,
+        "apply_discount": True, "reprint_receipt": True, "reprint_precuenta": True,
+        "access_caja": True, "open_shift": True, "close_shift": True,
+        "access_all_tables": True, "move_tables": True, "transfer_table": True,
+        "merge_tables": True, "release_reserved_table": True,
+        "void_items": True, "modify_price": True, "manage_credit_notes": True,
+        "manage_users": True, "manage_customers": True, "manage_reservations": True,
+        "manage_inventory": True, "manage_suppliers": True,
+        "stock_adjustment": True, "receive_orders": True,
+        "view_reports": True, "export_dgii": True,
+        "config_users": True, "config_productos": True,
+        "view_dashboard": True, "view_ecf_dashboard": True,
+        "view_system_logs": True, "view_audit_complete": True,
+        "close_day": True,
+        "config_mesas": True, "config_ventas": True, "config_impresion": True,
+        "config_reportes": True, "config_clientes": True,
+    },
+}
+
+
+async def seed_custom_role_permissions():
+    """Populate permissions for existing custom_roles (gerente, propietario)
+    that have empty/missing permissions field. Idempotent."""
+    if db is None:
+        return
+    for code, perms in CUSTOM_ROLE_DEFAULTS.items():
+        role = await db.custom_roles.find_one(
+            {"code": {"$regex": f"^{code}$", "$options": "i"}}
+        )
+        if role and (not role.get("permissions") or role.get("permissions") == {}):
+            await db.custom_roles.update_one(
+                {"_id": role["_id"]},
+                {"$set": {"permissions": perms}}
+            )
 
 ALL_PERMISSIONS = {
     "view_dashboard": "Ver Dashboard",
@@ -105,6 +177,8 @@ ALL_PERMISSIONS = {
     "void_items": "Anular Items", "send_kitchen": "Enviar a Cocina",
     "create_bill": "Crear Factura", "collect_payment": "Cobrar",
     "split_bill": "Dividir Cuenta",
+    "apply_discount": "Aplicar Descuentos",
+    "modify_price": "Modificar Precios",
     "access_all_tables": "Acceder a Todas las Mesas",
     "reprint_receipt": "Reimprimir Pre-cuenta/Recibos",
     "manage_users": "Config: Usuarios", "manage_areas": "Config: Areas",
@@ -122,9 +196,15 @@ ALL_PERMISSIONS = {
     "edit_exchange_rate": "Editar Tasa de Cambio",
     "manage_sale_config": "Gestionar Ventas y Formas de Pago",
     "release_reserved_table": "Desbloquear Mesa Reservada",
+    "transfer_table": "Transferir Mesa",
     "transfer_tables": "Transferir Mesas entre Usuarios",
+    "merge_tables": "Unir Mesas",
     "create_b04": "Crear Nota de Credito (B04)",
     "view_audit_complete": "Ver Auditoría Completa del Sistema",
+    "manager_on_duty": "Gerente en Turno",
+    "stock_adjustment": "Ajustes de Stock",
+    "receive_orders": "Recibir Pedidos",
+    "view_customer_history": "Ver Historial de Cliente",
     "config_users": "Config: Pestaña Usuarios",
     "config_mesas": "Config: Pestaña Mesas",
     "config_ventas": "Config: Pestaña Ventas",
@@ -145,6 +225,8 @@ ALL_PERMISSIONS = {
     "retry_ecf": "Reenviar e-CF en Contingencia",
     "access_caja": "Acceso a Caja",
     "manage_credit_notes": "Generar Notas de Crédito E34",
+    "can_manage_tax_override": "Exencion de Impuestos",
+    "view_system_logs": "Ver Logs del Sistema",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───
@@ -179,8 +261,15 @@ def get_permissions(role, custom=None):
     base = {}
     for k in ALL_PERMISSIONS:
         base[k] = False
-    defaults = DEFAULT_PERMISSIONS.get(role, {})
-    base.update(defaults)
+    # 1. Builtin role defaults
+    if role in DEFAULT_PERMISSIONS:
+        base.update(DEFAULT_PERMISSIONS[role])
+    # 2. Custom role defaults (fallback by code, case-insensitive)
+    elif role:
+        role_key = str(role).lower()
+        if role_key in CUSTOM_ROLE_DEFAULTS:
+            base.update(CUSTOM_ROLE_DEFAULTS[role_key])
+    # 3. Per-user overrides
     if custom:
         base.update(custom)
     return base
@@ -943,6 +1032,12 @@ async def get_training_stats(user_id: str, user=Depends(get_current_user)):
 @router.get("/roles")
 async def list_roles(caller=Depends(get_current_user)):
     roles = await db.custom_roles.find({}, {"_id": 0}).to_list(100)
+    # Enrich custom roles with CUSTOM_ROLE_DEFAULTS if permissions empty/missing
+    for r in roles:
+        if not r.get("permissions") or r.get("permissions") == {}:
+            code_key = str(r.get("code") or r.get("name") or "").lower()
+            if code_key in CUSTOM_ROLE_DEFAULTS:
+                r["permissions"] = CUSTOM_ROLE_DEFAULTS[code_key]
     caller_level = await get_role_level_async(caller.get("role", "waiter"))
     builtin = [
         {"id": "admin", "code": "admin", "name": "Administrador", "builtin": True, "level": 100, "permissions": DEFAULT_PERMISSIONS.get("admin", {})},
