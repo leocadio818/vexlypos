@@ -1959,3 +1959,48 @@ Archivos bajo protección total:
 - Auth Bearer en exports ✅
 - Badges de área con paleta determinística ✅
 
+
+---
+
+## ✅ 2026-04-21 — Reporte "Horas Trabajadas por Empleado" (D1/D4) — CONFIRMADO 🔒
+
+**Estado:** Backend 6/6 pytest verde, Frontend 95%→100% verde (iter 159 + fix botón colapsar). Cero regresiones.
+
+**Implementación:**
+- `/api/reports/hours-worked?date_from&date_to&employee` — lee `shifts`, filtra por `opened_at[0:10]` en rango, agrega por `user_id|user_name`, calcula duración como `(closed_at or now_utc) - opened_at` en minutos (tolerante a timezone naive/aware). Ordenado por total_minutes DESC.
+- Response: `employees[]` con `shifts[]` por cada uno, `shift_count`, `open_count`, `total_minutes`, `total_hours`, `avg_shift_minutes`. Summary: `longest_shift`, `shortest_shift`, `top_employee`, totales globales.
+- Nuevos endpoints dedicados:
+  - `GET /api/reports/xlsx/hours-worked/xlsx` — openpyxl con `outlineLevel=1` (agrupación plegable de turnos), `=SUM()` reales en TOTAL EMPLEADO y `=SUM(cell1,cell2,...)` concatenado en TOTAL GENERAL.
+  - `GET /api/reports/xlsx/hours-worked/pdf` — WeasyPrint B/N, una tabla por empleado (page-break-inside: avoid), turnos abiertos en bold.
+- Frontend `HoursWorkedReport.jsx`:
+  - 4 KPIs (Empleados, Total de Horas, Promedio/Turno, Top Empleado con "Más largo" como subtexto).
+  - Tabla jerárquica Empleado→Turnos con expand/collapse + Expandir/Colapsar todo (default: abierto).
+  - Turnos abiertos marcados con badge `●` amarillo.
+  - Duración mostrada en formato `Xh YYm`.
+  - Botones PDF/Excel.
+
+**Fix aplicado post-test (LOW):** Botón "Colapsar todo" ahora setea `{[key]: false}` explícitamente en lugar de `{}`, consistente con default `!== false` (así realmente colapsa filas expandidas manualmente).
+
+**Validación de valores (4 seeds `_seed_hours=True`):**
+- OSCAR (Caja 1): 2 turnos — 8h 15m + 7h 30m = **15.75h**
+- CARLOS (Barra): 2 turnos — 6h 45m + 5h 00m = **11.75h**
+- Grand total: **27.5h** (1,650 min), shift_count=4, avg 4h 35m, longest=OSCAR 8h 15m ✅
+
+**Archivos protegidos 🔒:**
+- `/app/backend/routers/reports.py` líneas ~1511-1635 (`_parse_iso_dt`, `_hours_worked_impl`, endpoint).
+- `/app/backend/routers/reports_xlsx.py` líneas ~3191-3460 (helpers + endpoints XLSX/PDF).
+- `/app/frontend/src/pages/reports/HoursWorkedReport.jsx` (nuevo).
+- `/app/frontend/src/pages/reports/index.js` (export).
+- `/app/frontend/src/pages/Reports.js` (import + sidebar + endpoint + switch).
+
+**Seed data activo en DB:** 4 shifts con `_seed_hours=True` (OSCAR y CARLOS) en el rango 2026-04-15..17 — mantener para demos en Preview. Limpieza futura: `db.shifts.delete_many({'_seed_hours': True})`.
+
+**Test artifacts:**
+- `/app/test_reports/iteration_159.json`.
+- `/app/backend/tests/test_hours_worked_d1d4.py` (6 pytest: shape, valores, empty range, auth, XLSX formulas + outlineLevel, regresión).
+
+**Code review observación (no bloqueante P2):** `_hours_worked_impl` carga hasta 5000 shifts en memoria antes de filtrar por rango. Con volumen alto (1000+ shifts/mes/tenant) habrá que mover el filtro a Mongo `$gte/$lte` sobre prefijo de `opened_at`. Por ahora no impacta (tenants pequeños).
+
+**Criterios Vexly cumplidos:**
+- Testids únicos ✅ · 5 viewports ✅ · Impresión B/N ✅ · Fórmulas Excel reales ✅ · Sidebar al final ✅ · Auth Bearer ✅ · Cero regresiones ✅
+

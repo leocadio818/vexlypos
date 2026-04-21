@@ -119,7 +119,7 @@ export default function HoursWorkedReport({ data, dateRange }) {
             data-testid="hw-expand-all"
           >Expandir todo</button>
           <button
-            onClick={() => setExpanded({})}
+            onClick={() => setExpanded(Object.fromEntries(employees.map((e) => [`emp-${e.id}`, false])))}
             className="text-xs px-2 py-1 rounded border border-border hover:bg-muted/30"
             data-testid="hw-collapse-all"
           >Colapsar todo</button>
