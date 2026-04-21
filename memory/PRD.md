@@ -1823,3 +1823,47 @@ Archivos bajo protección total:
 - Auth Bearer en exports ✅
 - Testids únicos ✅
 
+
+---
+
+## ✅ 2026-04-20 — Reporte "Ventas Comparativas — Período A vs B" (A8) — CONFIRMADO 🔒
+
+**Estado:** Backend 9/9 pytest verde, Frontend 100% verde (iter 156). Cero regresiones.
+
+**Implementación:**
+- Nuevo endpoint `GET /api/reports/sales-comparative?period_a_from&period_a_to&period_b_from&period_b_to` que calcula 9 métricas para cada período y devuelve diff + % cambio. Cuando Período A = 0 en una métrica, `pct = null` (evita división por cero).
+- Métricas: `total_sales`, `bills_count`, `avg_ticket`, `subtotal`, `total_itbis`, `total_tips`, `total_discount`, `cash_sales`, `card_sales`.
+- Reutiliza `_daily_sales_impl` extraído (endpoint `/daily-sales` envuelve al impl — API pública intacta).
+- Nuevos endpoints de export:
+  - `GET /api/reports/xlsx/sales-comparative/xlsx` — openpyxl con fórmulas reales `=C{row}-B{row}` en Diferencia y `=IF(B{row}=0,"N/A",(C{row}-B{row})/B{row})` en % Cambio. Formato `#,##0.00` y `0.00%`. Diff celda en bold verde/rojo según signo.
+  - `GET /api/reports/xlsx/sales-comparative/pdf` — WeasyPrint B/N con 2 cajas de período + tabla.
+- Frontend `SalesComparativeReport.jsx` **self-fetching** con sus propios date pickers:
+  - Defaults inteligentes: Período A = mes anterior, Período B = mes actual (o `dateRange` global si existe).
+  - Headlines cards side-by-side con flecha `ArrowRight` entre ambos.
+  - Tabla 9 métricas con iconos `TrendingUp/Down/Minus` y color emerald/red.
+  - Botones Actualizar / PDF / Excel.
+- Registrado en sidebar "Ventas y Caja" **al final** (después de Cuentas Abiertas).
+
+**Patrón nuevo:** Reportes self-fetching. En `loadReport()` de `Reports.js`, cuando `reportId === 'sales-comparative'` se setea `reportData = {}` y se omite el fetch genérico para que el componente gestione sus propias llamadas con parámetros complejos.
+
+**Archivos protegidos 🔒:**
+- `/app/backend/routers/reports.py` líneas ~357-395 (`_daily_sales_impl` + wrapper).
+- `/app/backend/routers/reports.py` líneas ~1100-1178 (`_sales_snapshot`, `_delta`, `_sales_comparative_impl`, endpoint).
+- `/app/backend/routers/reports_xlsx.py` líneas ~2202-2430 (helpers + endpoints `/sales-comparative/{xlsx,pdf}`).
+- `/app/frontend/src/pages/reports/SalesComparativeReport.jsx` (nuevo).
+- `/app/frontend/src/pages/reports/index.js`.
+- `/app/frontend/src/pages/Reports.js` (import, sidebar, self-fetching bypass, switch case).
+
+**Test artifacts:**
+- `/app/test_reports/iteration_156.json`.
+- `/app/backend/tests/test_sales_comparative.py` (9 pytest: shape, valores esperados 18304/13840, diff -4464/-24.39%, N/A edge case, XLSX fórmulas reales, auth Bearer, regresión daily-sales + open-checks).
+
+**Criterios Vexly cumplidos:**
+- Fórmulas Excel reales (NO hardcoded) ✅
+- 5 viewports ✅
+- Impresión B/N ✅
+- Theme-aware ✅
+- Testids únicos ✅
+- Auth Bearer en exports ✅
+- Edge case división por cero manejado ✅
+
