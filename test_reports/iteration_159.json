@@ -1,0 +1,30 @@
+{
+  "summary": "D1/D4 Hours Worked by Employee tested end-to-end. Backend 6/6 pytest pass (GET /api/reports/hours-worked with 2026-04-15..20 range returns exact expected: employees=2, shift_count=4, total_hours=27.5, avg_shift_minutes=412.5, top_employee=OSCAR, longest=495min by OSCAR, OSCAR 2 turnos 15.75h Caja 1, CARLOS 2 turnos 11.75h Barra, shift durations [495,450,405,300]; empty range returns 200 with employees=[]; /xlsx/hours-worked/pdf and /xlsx/hours-worked/xlsx enforce Bearer auth; PDF %PDF valid; XLSX has TOTAL EMPLEADO rows with =SUM formulas, TOTAL GENERAL with =SUM(...,...) concat, and outlineLevel=1 for shift rows). Frontend UI tested in Desktop 1920x1080 + Mobile 390x844: sidebar entry 'Horas Trabajadas' is LAST in 'Ventas y Caja' after 'Ranking por Mesa / Área' (data-testid=report-hours-worked), clicking loads hours-worked-report component (rendered exactly 1x), all 4 KPI testids present and correct (EMPLEADOS, TOTAL DE HORAS 27.50h, PROMEDIO/TURNO 4h 35m, TOP OSCAR con longest 8h 15m), tabla jerárquica con hw-emp-row-* + hw-shift-row-*-* expandible, TOTAL GENERAL muestra 27h 30m, botones Expandir/Colapsar/PDF/Excel funcionan, PDF y XLSX se descargan con 200 y content-types correctos (application/pdf y application/vnd.openxmlformats-officedocument.spreadsheetml.sheet), toasts 'PDF descargado' y 'XLSX descargado' aparecen. Mobile: columnas Estación/Inicio/Cierre display:none (hidden md:table-cell) y Ventas del Turno display:none (hidden sm:table-cell) correctamente, KPIs en 2-col grid.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "HoursWorkedReport", "issue": "Botón 'Colapsar todo' (hw-collapse-all) hace setExpanded({}) pero el default es isOpen=true (expanded[key] !== false), por lo que si el usuario colapsó manualmente algunas filas y luego clickea 'Colapsar todo', éstas se RE-expanden en vez de colapsarse. Fix sugerido: setExpanded(Object.fromEntries(employees.map((e) => [`emp-${e.id}`, false])))", "selector": "[data-testid='hw-collapse-all']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_hours_worked_d1d4.py",
+    "/app/test_reports/pytest/hours_worked_d1d4.xml"
+  ],
+  "action_items": [
+    "(Opcional LOW) Corregir hw-collapse-all para establecer todos los emp keys en false en lugar de limpiar el objeto (la semántica 'default abierto' hace que setExpanded({}) no colapse filas previamente colapsadas manualmente)."
+  ],
+  "critical_code_review_comments": [
+    "_hours_worked_impl hace in-memory filter tras cargar 5000 shifts — escalará mal; sugerido filtrar por rango directamente en la query Mongo con $gte/$lte sobre opened_at substrings.",
+    "Frontend: botón Colapsar todo inconsistente con default state (ver bug arriba).",
+    "Backend endpoint devuelve correctamente 200 con employees=[] cuando no hay shifts (sin 500). ✓"
+  ],
+  "updated_files": ["/app/backend/tests/test_hours_worked_d1d4.py"],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "95%"},
+  "test_credentials": "Admin PIN 11338585 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "No — seeds ya existentes (4 shifts con _seed_hours=True para OSCAR y CARLOS en 2026-04-15..17) fueron verificados por las pruebas. Limpieza futura: db.shifts.delete_many({'_seed_hours': True}).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "El rango 'Este Mes' incluye 2 turnos extra de Admin (2026-04-08, duración 0h 00m) que NO son seeds del test; para validación exacta usar rango custom 2026-04-15..20 como hace el pytest. UI no expone fácilmente input[type=date] — usar los botones de rango preconfigurados ('Este Mes', 'Esta Semana', 'Jornada', 'Ayer') o manipular vía URL. El componente muestra 'hw-empty' en lugar de 'hours-worked-report' cuando employees=[]."
+}

@@ -1509,6 +1509,132 @@ async def sales_by_table(
 
 
 
+# ─── HOURS WORKED BY EMPLOYEE — D1/D4 ───
+def _parse_iso_dt(s: str):
+    if not s:
+        return None
+    try:
+        base = s.split(".")[0].replace("Z", "+00:00") if "." in s else s.replace("Z", "+00:00")
+        return datetime.fromisoformat(base)
+    except Exception:
+        try:
+            return datetime.fromisoformat(s[:19])
+        except Exception:
+            return None
+
+
+async def _hours_worked_impl(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    employee: Optional[str] = None,
+):
+    d_from = date_from or await get_active_business_date()
+    d_to = date_to or d_from
+
+    shifts = await db.shifts.find({}, {"_id": 0}).to_list(5000)
+
+    def _in_range(s):
+        ra = (s.get("opened_at") or "")[:10]
+        return ra and (d_from <= ra <= d_to)
+
+    shifts = [s for s in shifts if _in_range(s)]
+    if employee and employee.strip():
+        shifts = [s for s in shifts if (s.get("user_name") or "").lower() == employee.lower()]
+
+    # Aggregate: employee -> shifts[]
+    by_emp = {}   # user_id|name -> {name, shifts: [...], total_minutes, count}
+    total_minutes = 0.0
+    longest = None
+    shortest = None
+    now_utc = datetime.now(timezone.utc)
+
+    for s in shifts:
+        op_raw = s.get("opened_at")
+        cl_raw = s.get("closed_at")
+        op = _parse_iso_dt(op_raw)
+        cl = _parse_iso_dt(cl_raw)
+        if not op:
+            continue
+        end = cl or now_utc
+        # Ensure tz-aware comparison
+        if op.tzinfo is None:
+            op = op.replace(tzinfo=timezone.utc)
+        if end.tzinfo is None:
+            end = end.replace(tzinfo=timezone.utc)
+        delta_min = max(0.0, (end - op).total_seconds() / 60.0)
+
+        name = s.get("user_name") or "Sin Nombre"
+        uid = s.get("user_id") or name
+        bucket = by_emp.setdefault(uid, {
+            "id": uid, "name": name, "shifts": [], "total_minutes": 0.0, "count": 0, "open_count": 0,
+        })
+        bucket["count"] += 1
+        bucket["total_minutes"] += delta_min
+        total_minutes += delta_min
+        if not cl_raw:
+            bucket["open_count"] += 1
+        shift_entry = {
+            "id": s.get("id"),
+            "station": s.get("station") or "—",
+            "opened_at": op_raw,
+            "closed_at": cl_raw,
+            "duration_minutes": round(delta_min, 1),
+            "status": s.get("status") or ("open" if not cl_raw else "closed"),
+            "total_sales": round(float(s.get("total_sales") or 0), 2),
+        }
+        bucket["shifts"].append(shift_entry)
+        if longest is None or delta_min > longest["duration_minutes"]:
+            longest = {"employee": name, "duration_minutes": round(delta_min, 1), "opened_at": op_raw}
+        if (shortest is None or delta_min < shortest["duration_minutes"]) and delta_min > 0:
+            shortest = {"employee": name, "duration_minutes": round(delta_min, 1), "opened_at": op_raw}
+
+    employees_out = []
+    for emp in by_emp.values():
+        emp["shifts"].sort(key=lambda x: (x.get("opened_at") or ""))
+        avg_minutes = (emp["total_minutes"] / emp["count"]) if emp["count"] else 0
+        employees_out.append({
+            "id": emp["id"],
+            "name": emp["name"],
+            "shifts": emp["shifts"],
+            "shift_count": emp["count"],
+            "open_count": emp["open_count"],
+            "total_minutes": round(emp["total_minutes"], 1),
+            "total_hours": round(emp["total_minutes"] / 60.0, 2),
+            "avg_shift_minutes": round(avg_minutes, 1),
+        })
+    employees_out.sort(key=lambda e: -e["total_minutes"])
+
+    avg_shift = (total_minutes / len(shifts)) if shifts else 0
+    top_employee = employees_out[0]["name"] if employees_out else "—"
+
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "employees": employees_out,
+        "summary": {
+            "employee_count": len(employees_out),
+            "shift_count": len(shifts),
+            "total_minutes": round(total_minutes, 1),
+            "total_hours": round(total_minutes / 60.0, 2),
+            "avg_shift_minutes": round(avg_shift, 1),
+            "longest_shift": longest or {"employee": "—", "duration_minutes": 0, "opened_at": None},
+            "shortest_shift": shortest or {"employee": "—", "duration_minutes": 0, "opened_at": None},
+            "top_employee": top_employee,
+        },
+    }
+
+
+@router.get("/hours-worked")
+async def hours_worked(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    employee: Optional[str] = Query(None),
+):
+    """Hours worked per employee with shift-level breakdown (clock-in/out)."""
+    return await _hours_worked_impl(date_from, date_to, employee)
+
+
+
 
 # ─── TOP PRODUCTS WITH SELECTOR ───
 @router.get("/top-products-extended")

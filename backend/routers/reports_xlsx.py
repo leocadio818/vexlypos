@@ -3188,3 +3188,269 @@ async def sales_by_table_pdf(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
 
+
+
+# ═══════════════════════════════════════════════════════════════
+# HOURS WORKED — PDF + XLSX (D1/D4)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_hours_worked(date_from: str, date_to: str) -> dict:
+    from routers.reports import _hours_worked_impl
+    return await _hours_worked_impl(date_from=date_from, date_to=date_to)
+
+
+def _fmt_dt_iso(iso: str) -> str:
+    if not iso:
+        return "-"
+    try:
+        base = iso.split(".")[0].replace("Z", "")
+        dt = datetime.fromisoformat(base)
+        return dt.strftime("%d/%m/%Y %I:%M %p")
+    except Exception:
+        return iso
+
+
+def _fmt_hm(minutes: float) -> str:
+    if minutes is None:
+        return "-"
+    m = int(round(float(minutes)))
+    h, mm = divmod(m, 60)
+    return f"{h}h {mm:02d}m"
+
+
+def _build_hours_xlsx(data: dict, period_label: str, business: dict) -> BytesIO:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Horas Trabajadas"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    BOLD = Font(bold=True, size=11)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    summary = data.get("summary", {}) or {}
+    employees = data.get("employees", []) or []
+
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value="Horas Trabajadas por Empleado").font = Font(bold=True, size=12)
+    ws.cell(row=4, column=1, value=period_label).font = Font(size=10, color="555555")
+    longest = summary.get("longest_shift", {}) or {}
+    shortest = summary.get("shortest_shift", {}) or {}
+    ws.cell(
+        row=5, column=1,
+        value=(
+            f"Empleados: {summary.get('employee_count', 0)}  ·  "
+            f"Turnos: {summary.get('shift_count', 0)}  ·  "
+            f"Total: {_fmt_hm(summary.get('total_minutes', 0))}  ·  "
+            f"Promedio/turno: {_fmt_hm(summary.get('avg_shift_minutes', 0))}  ·  "
+            f"Más largo: {_fmt_hm(longest.get('duration_minutes', 0))} ({longest.get('employee','—')})"
+        )
+    ).font = Font(size=10, italic=True, color="333333")
+
+    headers = ["Descripción", "Estación", "Inicio", "Cierre", "Duración (min)", "Ventas del Turno"]
+    hdr_row = 7
+    for i, h in enumerate(headers, start=1):
+        c = ws.cell(row=hdr_row, column=i, value=h)
+        c.font = WHITE_FONT; c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 2 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    row_n = hdr_row + 1
+    emp_total_rows = []
+    for emp in employees:
+        ws.cell(row=row_n, column=1, value=emp["name"]).font = Font(bold=True, size=11)
+        row_n += 1
+        shift_rows = []
+        for sh in emp.get("shifts", []):
+            ws.cell(row=row_n, column=1, value=f"   Turno").alignment = LEFT
+            ws.cell(row=row_n, column=2, value=sh.get("station", "")).alignment = LEFT
+            ws.cell(row=row_n, column=3, value=_fmt_dt_iso(sh.get("opened_at"))).font = Font(name="Courier New", size=10)
+            ws.cell(row=row_n, column=4, value=_fmt_dt_iso(sh.get("closed_at"))).font = Font(name="Courier New", size=10)
+            dm = ws.cell(row=row_n, column=5, value=float(sh.get("duration_minutes") or 0))
+            dm.number_format = '#,##0.0'; dm.alignment = RIGHT
+            ts = ws.cell(row=row_n, column=6, value=float(sh.get("total_sales") or 0))
+            ts.number_format = '#,##0.00'; ts.alignment = RIGHT
+            ws.row_dimensions[row_n].outlineLevel = 1
+            shift_rows.append(row_n)
+            row_n += 1
+        lbl = ws.cell(row=row_n, column=1, value=f"TOTAL EMPLEADO [{emp['shift_count']} turnos]")
+        lbl.font = BOLD
+        if shift_rows:
+            ws.cell(row=row_n, column=5, value=f"=SUM(E{shift_rows[0]}:E{shift_rows[-1]})")
+            ws.cell(row=row_n, column=6, value=f"=SUM(F{shift_rows[0]}:F{shift_rows[-1]})")
+        else:
+            ws.cell(row=row_n, column=5, value=0)
+            ws.cell(row=row_n, column=6, value=0)
+        for col, fmt in ((5, '#,##0.0'), (6, '#,##0.00')):
+            cc = ws.cell(row=row_n, column=col)
+            cc.font = BOLD; cc.number_format = fmt; cc.alignment = RIGHT
+            cc.border = Border(top=Side(style="medium", color="000000"))
+        emp_total_rows.append(row_n)
+        row_n += 2
+
+    # Grand total
+    grand_row = row_n
+    ws.cell(row=grand_row, column=1, value="TOTAL GENERAL").font = Font(bold=True, size=12)
+    if emp_total_rows:
+        cells_e = ",".join([f"E{r}" for r in emp_total_rows])
+        cells_f = ",".join([f"F{r}" for r in emp_total_rows])
+        ws.cell(row=grand_row, column=5, value=f"=SUM({cells_e})")
+        ws.cell(row=grand_row, column=6, value=f"=SUM({cells_f})")
+    else:
+        ws.cell(row=grand_row, column=5, value=0)
+        ws.cell(row=grand_row, column=6, value=0)
+    for col, fmt in ((5, '#,##0.0'), (6, '#,##0.00')):
+        cc = ws.cell(row=grand_row, column=col)
+        cc.font = Font(bold=True, size=12); cc.number_format = fmt; cc.alignment = RIGHT
+        cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+    # Also print total hours in a human-readable cell below
+    ws.cell(row=grand_row + 1, column=1, value=f"Total en horas: {_fmt_hm(summary.get('total_minutes', 0))}").font = Font(italic=True, size=10, color="555555")
+
+    row_n = grand_row + 3
+    ws.merge_cells(start_row=row_n, start_column=1, end_row=row_n, end_column=6)
+    footer = ws.cell(
+        row=row_n, column=1,
+        value=f"Documento generado por {business.get('name','')} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno"
+    )
+    footer.font = Font(italic=True, size=9, color="555555"); footer.alignment = CENTER
+
+    ws.column_dimensions["A"].width = 26
+    ws.column_dimensions["B"].width = 18
+    ws.column_dimensions["C"].width = 22
+    ws.column_dimensions["D"].width = 22
+    ws.column_dimensions["E"].width = 16
+    ws.column_dimensions["F"].width = 18
+    ws.freeze_panes = "A8"
+    ws.sheet_properties.outlinePr.summaryBelow = True
+
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return buf
+
+
+def _build_hours_html(data: dict, period_label: str, business: dict) -> str:
+    summary = data.get("summary", {}) or {}
+    employees = data.get("employees", []) or []
+    longest = summary.get("longest_shift", {}) or {}
+
+    sections = []
+    for emp in employees:
+        trs = []
+        for sh in emp.get("shifts", []):
+            cls = "row-open" if sh.get("status") == "open" or not sh.get("closed_at") else ""
+            trs.append(
+                f'<tr class="{cls}">'
+                f'<td class="ind1">Turno</td>'
+                f'<td>{sh.get("station","—")}</td>'
+                f'<td class="mono">{_fmt_dt_iso(sh.get("opened_at"))}</td>'
+                f'<td class="mono">{_fmt_dt_iso(sh.get("closed_at"))}</td>'
+                f'<td class="num">{_fmt_hm(sh.get("duration_minutes", 0))}</td>'
+                f'<td class="money">{float(sh.get("total_sales") or 0):,.2f}</td>'
+                f'</tr>'
+            )
+        trs.append(
+            f'<tr class="emp-total">'
+            f'<td><strong>TOTAL EMPLEADO [{emp["shift_count"]} turnos]</strong></td>'
+            f'<td></td><td></td><td></td>'
+            f'<td class="num"><strong>{_fmt_hm(emp["total_minutes"])}</strong></td>'
+            f'<td></td></tr>'
+        )
+        sections.append(
+            f'<h3 class="emp-name">{emp["name"]} — {emp["shift_count"]} turnos · {_fmt_hm(emp["total_minutes"])} '
+            f'· Promedio/turno: {_fmt_hm(emp["avg_shift_minutes"])}'
+            + (f' · <em>{emp["open_count"]} abierto(s)</em>' if emp.get("open_count") else "")
+            + "</h3>"
+            + f'<table><thead><tr>'
+            f'<th>Descripción</th><th>Estación</th><th>Inicio</th><th>Cierre</th>'
+            f'<th class="num">Duración</th><th class="money">Ventas del Turno</th>'
+            f'</tr></thead><tbody>{"".join(trs)}</tbody></table>'
+        )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Horas Trabajadas por Empleado</title>
+      <style>
+        @page {{ size: Letter; margin: 16mm 14mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 10pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }}
+        .header h1 {{ margin: 0; font-size: 15pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 9pt; margin-top: 2px; }}
+        .header .title {{ font-size: 12pt; font-weight: bold; margin-top: 4px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        .kpis {{ text-align: center; font-size: 10pt; margin: 6px 0 10px 0; }}
+        h3.emp-name {{ font-size: 11pt; margin: 14px 0 4px 0; border-bottom: 1px solid #000; padding-bottom: 3px; page-break-after: avoid; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 2px; page-break-inside: avoid; }}
+        thead th {{ background: #111; color: #fff; padding: 5px 6px; font-size: 9pt; text-align: left; }}
+        thead th.money, thead th.num {{ text-align: right; }}
+        td {{ padding: 3px 6px; font-size: 9pt; border-bottom: 1px solid #ddd; }}
+        td.money, td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.mono {{ font-family: 'Courier New', monospace; font-size: 9pt; }}
+        td.ind1 {{ padding-left: 14px; color: #333; font-style: italic; }}
+        tr.emp-total td {{ border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 6px; }}
+        tr.row-open td {{ font-weight: bold; }}
+        .footer {{ margin-top: 16px; text-align: center; color: #666; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Horas Trabajadas por Empleado</div>
+        <div class="date">{period_label} · Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+      <div class="kpis">
+        Empleados: <strong>{summary.get('employee_count', 0)}</strong> ·
+        Turnos: <strong>{summary.get('shift_count', 0)}</strong> ·
+        Total: <strong>{_fmt_hm(summary.get('total_minutes', 0))}</strong> ·
+        Promedio/turno: <strong>{_fmt_hm(summary.get('avg_shift_minutes', 0))}</strong> ·
+        Más largo: <strong>{_fmt_hm(longest.get('duration_minutes', 0))}</strong> ({longest.get('employee','—')})
+      </div>
+      {''.join(sections) or '<p style="text-align:center;color:#777">Sin turnos en este período</p>'}
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/hours-worked/xlsx")
+async def hours_worked_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_hours_worked(date_from, date_to)
+    business = await _get_business_info()
+    buf = _build_hours_xlsx(data, _period_label(date_from, date_to), business)
+    fname = f"HorasTrabajadas_{date_from}_al_{date_to}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/hours-worked/pdf")
+async def hours_worked_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    data = await _fetch_hours_worked(date_from, date_to)
+    business = await _get_business_info()
+    html = _build_hours_html(data, _period_label(date_from, date_to), business)
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"HorasTrabajadas_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
