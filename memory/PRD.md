@@ -1705,3 +1705,36 @@ Archivos bajo protección total:
 **Optional polish (no bloqueante):**
 - En viewport < 420px, la columna "Descripción" de la tabla jerárquica envuelve algunos labels (`[13]`, `Shift Totals`) en 2 líneas. Legible pero apretado. Reducir padding horizontal en <md o bajar tipografía 1px para resolverlo cuando haya tiempo.
 
+
+---
+
+## ✅ 2026-04-20 — Reporte "Ventas por Hora" (Prompt 3) — CONFIRMADO 🔒
+
+**Estado:** Backend 100% verde (5/5 pytest), Frontend 100% verde (iter 153). Cero regresiones.
+
+**Implementación (quick win: endpoint ya existía):**
+- Frontend nuevo: `HourlySalesReport.jsx` con KPIs (Hora Pico / Valle / Promedio), tabla 24 horas en formato HH:00-HH:00 con # Facturas, Total, Ticket Prom, %, fila TOTAL GENERAL, y gráfico de barras (BarChart de recharts).
+- Registrado en sidebar "Ventas y Caja" **al final** (sin reordenar): Cierre del Día → … → Descuentos Aplicados → **Ventas por Hora**.
+- Endpoint backend `/api/reports/hourly-sales` **NO modificado** (solo consumido).
+- Nuevos endpoints dedicados:
+  - `GET /api/reports/xlsx/hourly-sales/xlsx` — openpyxl con fórmulas `=SUM()` en TOTAL y `=IF(Ctotal>0,Cn/Ctotal,0)` en columna %, `=IF(B>0,C/B,0)` en ticket promedio. Sin valores hardcoded.
+  - `GET /api/reports/xlsx/hourly-sales/pdf` — WeasyPrint B/N, header negro, hora pico resaltada con borders, fila vacía en gris.
+
+**Archivos protegidos 🔒:**
+- `/app/frontend/src/pages/reports/HourlySalesReport.jsx` (nuevo, ~185 líneas)
+- `/app/frontend/src/pages/reports/index.js` (export agregado)
+- `/app/frontend/src/pages/Reports.js` (import, entry sidebar, endpoint dict, switch case)
+- `/app/backend/routers/reports_xlsx.py` — `_fetch_hourly_data`, `_build_hourly_xlsx`, `_build_hourly_html`, endpoints `/hourly-sales/xlsx` y `/hourly-sales/pdf` (líneas ~1310-1555)
+
+**Test artifacts:**
+- `/app/test_reports/iteration_153.json`
+- `/app/backend/tests/test_hourly_sales_report.py` (pytest, valida fórmulas XLSX y texto PDF)
+
+**Criterios Vexly cumplidos:**
+- 5 viewports (iOS 390, Android 412, Desktop 1920, Dark, Light) ✅
+- B/N impresión (header negro sólido, sin zebra, sin naranja en documento) ✅
+- Theme-aware dark/light ✅
+- Jornada date (protegida) ✅
+- Endpoint backend preservado intacto ✅
+- Token en `localStorage['pos_token']` consistente ✅
+
