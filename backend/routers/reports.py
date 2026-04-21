@@ -1181,6 +1181,197 @@ async def sales_comparative(
 
 
 
+# ─── PRODUCT MIX BY EMPLOYEE — A7 ───
+async def _product_mix_by_employee_impl(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    employee: Optional[str] = None,
+):
+    d_from = date_from or await get_active_business_date()
+    d_to = date_to or d_from
+
+    bills = await db.bills.find(
+        {"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}
+    ).to_list(20000)
+    bills = [
+        b for b in bills
+        if d_from <= (b.get("business_date") or (b.get("paid_at") or "")[:10]) <= d_to
+    ]
+
+    # Aggregate: employee -> product -> {qty, total}
+    tree = {}
+    product_totals = {}  # product_name -> {qty, total}
+    grand_qty = 0.0
+    grand_total = 0.0
+
+    for b in bills:
+        waiter = b.get("waiter_name") or b.get("cashier_name") or "Sin Mesero"
+        if employee and employee.strip() and employee.lower() != waiter.lower():
+            continue
+        emp = tree.setdefault(waiter, {"name": waiter, "products": {}, "qty": 0.0, "total": 0.0})
+        for it in (b.get("items") or []):
+            pname = it.get("product_name") or "Sin Nombre"
+            qty = float(it.get("quantity") or 0)
+            total = float(it.get("total") or 0)
+            pb = emp["products"].setdefault(pname, {"name": pname, "qty": 0.0, "total": 0.0})
+            pb["qty"] += qty
+            pb["total"] += total
+            emp["qty"] += qty
+            emp["total"] += total
+            pt = product_totals.setdefault(pname, {"name": pname, "qty": 0.0, "total": 0.0})
+            pt["qty"] += qty
+            pt["total"] += total
+            grand_qty += qty
+            grand_total += total
+
+    # Flatten with subtotals + per-employee top product
+    employees_out = []
+    for name, emp in tree.items():
+        products = sorted(emp["products"].values(), key=lambda p: -p["total"])
+        top = products[0]["name"] if products else "—"
+        products_out = [
+            {
+                "name": p["name"],
+                "qty": round(p["qty"], 2),
+                "total": round(p["total"], 2),
+                "pct_of_employee": round((p["total"] / emp["total"] * 100) if emp["total"] > 0 else 0, 2),
+            }
+            for p in products
+        ]
+        employees_out.append({
+            "name": emp["name"],
+            "products": products_out,
+            "product_count": len(products_out),
+            "qty": round(emp["qty"], 2),
+            "total": round(emp["total"], 2),
+            "top_product": top,
+            "pct_of_grand": round((emp["total"] / grand_total * 100) if grand_total > 0 else 0, 2),
+        })
+    employees_out.sort(key=lambda e: -e["total"])
+
+    # Top products across all employees
+    top_products = sorted(product_totals.values(), key=lambda p: -p["total"])[:10]
+    top_products = [
+        {"name": p["name"], "qty": round(p["qty"], 2), "total": round(p["total"], 2)}
+        for p in top_products
+    ]
+
+    # Employee with the highest revenue
+    top_employee = employees_out[0]["name"] if employees_out else "—"
+
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "employees": employees_out,
+        "top_products": top_products,
+        "summary": {
+            "employee_count": len(employees_out),
+            "product_count": len(product_totals),
+            "grand_qty": round(grand_qty, 2),
+            "grand_total": round(grand_total, 2),
+            "top_employee": top_employee,
+        },
+    }
+
+
+@router.get("/product-mix-by-employee")
+async def product_mix_by_employee(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    employee: Optional[str] = Query(None),
+):
+    """Cross product × employee: returns tree Empleado → productos vendidos (qty, total, % del empleado)."""
+    return await _product_mix_by_employee_impl(date_from, date_to, employee)
+
+
+# ─── SALES BY WEEKDAY — A4 ───
+async def _sales_by_weekday_impl(date_from: Optional[str] = None, date_to: Optional[str] = None):
+    d_from = date_from or await get_active_business_date()
+    d_to = date_to or d_from
+
+    bills = await db.bills.find(
+        {"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}
+    ).to_list(20000)
+    bills = [
+        b for b in bills
+        if d_from <= (b.get("business_date") or (b.get("paid_at") or "")[:10]) <= d_to
+    ]
+
+    # weekday 0 = Monday, 6 = Sunday (Python datetime.weekday())
+    WEEKDAYS_ES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    WEEKDAYS_SHORT = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+    buckets = {
+        i: {"weekday_index": i, "weekday": WEEKDAYS_ES[i], "short": WEEKDAYS_SHORT[i],
+            "bills": 0, "total": 0.0, "days_observed": set()}
+        for i in range(7)
+    }
+
+    for b in bills:
+        bd = b.get("business_date") or (b.get("paid_at") or "")[:10]
+        if not bd:
+            continue
+        try:
+            dt = datetime.strptime(bd, "%Y-%m-%d")
+        except Exception:
+            continue
+        idx = dt.weekday()  # 0=Mon
+        buckets[idx]["bills"] += 1
+        buckets[idx]["total"] += float(b.get("total") or 0)
+        buckets[idx]["days_observed"].add(bd)
+
+    grand_total = sum(x["total"] for x in buckets.values())
+    grand_bills = sum(x["bills"] for x in buckets.values())
+    rows = []
+    for i in range(7):
+        x = buckets[i]
+        days_count = len(x["days_observed"])
+        avg_per_day = (x["total"] / days_count) if days_count else 0.0
+        avg_ticket = (x["total"] / x["bills"]) if x["bills"] else 0.0
+        rows.append({
+            "weekday_index": i,
+            "weekday": x["weekday"],
+            "short": x["short"],
+            "bills": x["bills"],
+            "total": round(x["total"], 2),
+            "avg_ticket": round(avg_ticket, 2),
+            "days_observed": days_count,
+            "avg_per_day": round(avg_per_day, 2),
+            "pct": round((x["total"] / grand_total * 100) if grand_total > 0 else 0, 2),
+        })
+
+    # KPIs
+    active = [r for r in rows if r["bills"] > 0]
+    peak = max(active, key=lambda r: r["total"]) if active else None
+    valley = min(active, key=lambda r: r["total"]) if active else None
+    best_avg = max(active, key=lambda r: r["avg_per_day"]) if active else None
+
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "rows": rows,
+        "summary": {
+            "grand_total": round(grand_total, 2),
+            "grand_bills": grand_bills,
+            "peak_weekday": peak["weekday"] if peak else "—",
+            "peak_total": round(peak["total"], 2) if peak else 0,
+            "valley_weekday": valley["weekday"] if valley else "—",
+            "valley_total": round(valley["total"], 2) if valley else 0,
+            "best_avg_weekday": best_avg["weekday"] if best_avg else "—",
+            "best_avg_per_day": round(best_avg["avg_per_day"], 2) if best_avg else 0,
+        },
+    }
+
+
+@router.get("/sales-by-weekday")
+async def sales_by_weekday(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+):
+    """Sales aggregated by day of week (Lun-Dom) with avg per day, avg ticket, and %."""
+    return await _sales_by_weekday_impl(date_from, date_to)
+
+
+
 # ─── TOP PRODUCTS WITH SELECTOR ───
 @router.get("/top-products-extended")
 async def top_products_extended(

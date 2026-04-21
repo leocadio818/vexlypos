@@ -19,7 +19,8 @@ import {
   TransfersReport, DifferencesReport, WasteReport, PurchaseOrdersReport,
   BySupplierReport, TaxesReport, ProfitLossReport, TableMovementsReport,
   ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport,
-  DiscountsReport, HourlySalesReport, OpenChecksReport, SalesComparativeReport
+  DiscountsReport, HourlySalesReport, OpenChecksReport, SalesComparativeReport,
+  ProductMixByEmployeeReport, SalesByWeekdayReport
 } from './reports';
 import ReservationsReport from './reports/ReservationsReport';
 import EcfDashboard from './reports/EcfDashboard';
@@ -49,6 +50,8 @@ const REPORT_CATEGORIES = [
       { id: 'hourly-sales', name: 'Ventas por Hora', description: 'Distribución horaria con pico/valle y gráfico' },
       { id: 'open-checks', name: 'Cuentas Abiertas', description: 'Bills sin cobrar con KPIs de antigüedad y monto en riesgo' },
       { id: 'sales-comparative', name: 'Ventas Comparativas', description: 'Período A vs B side-by-side con deltas y % de cambio' },
+      { id: 'product-mix-by-employee', name: 'Product Mix por Empleado', description: 'Qué producto vendió cada mesero/cajero' },
+      { id: 'sales-by-weekday', name: 'Ventas por Día de la Semana', description: 'Agregación Lun-Dom con pico/valle y gráfico' },
     ]
   },
   {
@@ -660,6 +663,8 @@ export default function Reports() {
       'by-category': '/reports/sales-by-category',
       'hourly-sales': '/reports/hourly-sales',
       'open-checks': '/reports/open-checks',
+      'product-mix-by-employee': '/reports/product-mix-by-employee',
+      'sales-by-weekday': '/reports/sales-by-weekday',
       'top-products': '/reports/top-products-extended',
       'by-type': '/reports/sales-by-type',
       'payment-methods': '/reports/payment-methods-breakdown',
@@ -799,6 +804,10 @@ export default function Reports() {
         return <OpenChecksReport data={reportData} dateRange={dateRange} />;
       case 'sales-comparative':
         return <SalesComparativeReport dateRange={dateRange} />;
+      case 'product-mix-by-employee':
+        return <ProductMixByEmployeeReport data={reportData} dateRange={dateRange} />;
+      case 'sales-by-weekday':
+        return <SalesByWeekdayReport data={reportData} dateRange={dateRange} />;
       case 'top-products':
         return <TopProductsReport data={reportData} topLimit={topLimit} onChangeLimit={(n) => { setTopLimit(n); loadReport('top-products'); }} />;
       case 'by-type':

@@ -22,3 +22,5 @@ export { default as DiscountsReport } from './DiscountsReport';
 export { default as HourlySalesReport } from './HourlySalesReport';
 export { default as OpenChecksReport } from './OpenChecksReport';
 export { default as SalesComparativeReport } from './SalesComparativeReport';
+export { default as ProductMixByEmployeeReport } from './ProductMixByEmployeeReport';
+export { default as SalesByWeekdayReport } from './SalesByWeekdayReport';

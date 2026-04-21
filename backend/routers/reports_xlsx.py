@@ -2424,3 +2424,465 @@ async def sales_comparative_pdf(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
 
+
+
+# ═══════════════════════════════════════════════════════════════
+# PRODUCT MIX BY EMPLOYEE — PDF + XLSX (A7)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_product_mix(date_from: str, date_to: str) -> dict:
+    from routers.reports import _product_mix_by_employee_impl
+    return await _product_mix_by_employee_impl(date_from=date_from, date_to=date_to)
+
+
+def _build_product_mix_xlsx(data: dict, period_label: str, business: dict) -> BytesIO:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Mix por Empleado"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    BOLD = Font(bold=True, size=11)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    summary = data.get("summary", {}) or {}
+    employees = data.get("employees", []) or []
+
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value="Product Mix por Empleado").font = Font(bold=True, size=12)
+    ws.cell(row=4, column=1, value=period_label).font = Font(size=10, color="555555")
+    ws.cell(
+        row=5, column=1,
+        value=(
+            f"Empleados: {summary.get('employee_count', 0)}  ·  "
+            f"Productos distintos: {summary.get('product_count', 0)}  ·  "
+            f"Top empleado: {summary.get('top_employee', '—')}"
+        )
+    ).font = Font(size=10, italic=True, color="333333")
+
+    headers = ["Descripción", "Cantidad", "Total", "% del Empleado"]
+    hdr_row = 7
+    for i, h in enumerate(headers, start=1):
+        c = ws.cell(row=hdr_row, column=i, value=h)
+        c.font = WHITE_FONT
+        c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 2 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    row_n = hdr_row + 1
+    emp_total_rows = []
+    for emp in employees:
+        ws.cell(row=row_n, column=1, value=emp["name"]).font = Font(bold=True, size=11)
+        row_n += 1
+        prod_rows = []
+        for p in emp.get("products", []):
+            ws.cell(row=row_n, column=1, value=f"   {p['name']}").alignment = LEFT
+            q = ws.cell(row=row_n, column=2, value=float(p.get("qty") or 0))
+            q.number_format = '#,##0.00'; q.alignment = RIGHT
+            t = ws.cell(row=row_n, column=3, value=float(p.get("total") or 0))
+            t.number_format = '#,##0.00'; t.alignment = RIGHT
+            pct = ws.cell(row=row_n, column=4, value=float(p.get("pct_of_employee") or 0) / 100.0)
+            pct.number_format = '0.00%'; pct.alignment = RIGHT
+            ws.row_dimensions[row_n].outlineLevel = 1
+            prod_rows.append(row_n)
+            row_n += 1
+        # Employee total
+        lbl = ws.cell(row=row_n, column=1, value=f"TOTAL EMPLEADO [{emp['product_count']}]")
+        lbl.font = BOLD
+        if prod_rows:
+            ws.cell(row=row_n, column=2, value=f"=SUM(B{prod_rows[0]}:B{prod_rows[-1]})")
+            ws.cell(row=row_n, column=3, value=f"=SUM(C{prod_rows[0]}:C{prod_rows[-1]})")
+        else:
+            ws.cell(row=row_n, column=2, value=0)
+            ws.cell(row=row_n, column=3, value=0)
+        for col, fmt in ((2, '#,##0.00'), (3, '#,##0.00')):
+            cc = ws.cell(row=row_n, column=col)
+            cc.font = BOLD; cc.number_format = fmt; cc.alignment = RIGHT
+            cc.border = Border(top=Side(style="medium", color="000000"))
+        emp_total_rows.append(row_n)
+        row_n += 2
+
+    # Grand total
+    grand_row = row_n
+    ws.cell(row=grand_row, column=1, value="TOTAL GENERAL").font = Font(bold=True, size=12)
+    if emp_total_rows:
+        cells_b = ",".join([f"B{r}" for r in emp_total_rows])
+        cells_c = ",".join([f"C{r}" for r in emp_total_rows])
+        ws.cell(row=grand_row, column=2, value=f"=SUM({cells_b})")
+        ws.cell(row=grand_row, column=3, value=f"=SUM({cells_c})")
+    else:
+        ws.cell(row=grand_row, column=2, value=0)
+        ws.cell(row=grand_row, column=3, value=0)
+    for col, fmt in ((2, '#,##0.00'), (3, '#,##0.00')):
+        cc = ws.cell(row=grand_row, column=col)
+        cc.font = Font(bold=True, size=12); cc.number_format = fmt; cc.alignment = RIGHT
+        cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+
+    row_n += 2
+    ws.merge_cells(start_row=row_n, start_column=1, end_row=row_n, end_column=4)
+    footer = ws.cell(
+        row=row_n, column=1,
+        value=f"Documento generado por {business.get('name','')} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno"
+    )
+    footer.font = Font(italic=True, size=9, color="555555")
+    footer.alignment = CENTER
+
+    ws.column_dimensions["A"].width = 38
+    ws.column_dimensions["B"].width = 14
+    ws.column_dimensions["C"].width = 16
+    ws.column_dimensions["D"].width = 16
+    ws.freeze_panes = "A8"
+    ws.sheet_properties.outlinePr.summaryBelow = True
+
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return buf
+
+
+def _build_product_mix_html(data: dict, period_label: str, business: dict) -> str:
+    employees = data.get("employees", []) or []
+    summary = data.get("summary", {}) or {}
+
+    sections = []
+    for emp in employees:
+        rows = []
+        for p in emp.get("products", []):
+            rows.append(
+                f'<tr>'
+                f'<td class="ind1">{p["name"]}</td>'
+                f'<td class="num">{float(p.get("qty") or 0):,.2f}</td>'
+                f'<td class="money">{float(p.get("total") or 0):,.2f}</td>'
+                f'<td class="num">{float(p.get("pct_of_employee") or 0):.2f}%</td>'
+                f'</tr>'
+            )
+        rows.append(
+            f'<tr class="emp-total">'
+            f'<td><strong>TOTAL EMPLEADO [{emp["product_count"]}]</strong></td>'
+            f'<td class="num"><strong>{float(emp["qty"]):,.2f}</strong></td>'
+            f'<td class="money"><strong>{float(emp["total"]):,.2f}</strong></td>'
+            f'<td></td></tr>'
+        )
+        sections.append(
+            f'<h3 class="emp-name">{emp["name"]} — Top: {emp.get("top_product","—")}</h3>'
+            f'<table><thead><tr>'
+            f'<th>Producto</th><th class="num">Cantidad</th><th class="money">Total</th><th class="num">% Empleado</th>'
+            f'</tr></thead><tbody>{"".join(rows)}</tbody></table>'
+        )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Product Mix por Empleado</title>
+      <style>
+        @page {{ size: Letter; margin: 16mm 14mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 10pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }}
+        .header h1 {{ margin: 0; font-size: 15pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 9pt; margin-top: 2px; }}
+        .header .title {{ font-size: 12pt; font-weight: bold; margin-top: 4px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        .kpis {{ text-align: center; font-size: 10pt; margin: 6px 0 10px 0; }}
+        h3.emp-name {{ font-size: 11pt; margin: 14px 0 4px 0; border-bottom: 1px solid #000; padding-bottom: 3px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 2px; page-break-inside: avoid; }}
+        thead th {{ background: #111; color: #fff; padding: 5px 6px; font-size: 9pt; text-align: left; }}
+        thead th.money, thead th.num {{ text-align: right; }}
+        td {{ padding: 3px 6px; font-size: 9pt; border-bottom: 1px solid #ddd; }}
+        td.money, td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.ind1 {{ padding-left: 14px; }}
+        tr.emp-total td {{ border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 5px 6px; }}
+        .footer {{ margin-top: 16px; text-align: center; color: #666; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Product Mix por Empleado</div>
+        <div class="date">{period_label} · Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+      <div class="kpis">
+        Empleados: <strong>{summary.get('employee_count', 0)}</strong> ·
+        Productos distintos: <strong>{summary.get('product_count', 0)}</strong> ·
+        Top empleado: <strong>{summary.get('top_employee','—')}</strong>
+      </div>
+      {''.join(sections) or '<p style="text-align:center;color:#777">Sin datos para este período</p>'}
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/product-mix-by-employee/xlsx")
+async def product_mix_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_product_mix(date_from, date_to)
+    business = await _get_business_info()
+    buf = _build_product_mix_xlsx(data, _period_label(date_from, date_to), business)
+    fname = f"ProductMixEmpleado_{date_from}_al_{date_to}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/product-mix-by-employee/pdf")
+async def product_mix_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    data = await _fetch_product_mix(date_from, date_to)
+    business = await _get_business_info()
+    html = _build_product_mix_html(data, _period_label(date_from, date_to), business)
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"ProductMixEmpleado_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
+# SALES BY WEEKDAY — PDF + XLSX (A4)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_weekday(date_from: str, date_to: str) -> dict:
+    from routers.reports import _sales_by_weekday_impl
+    return await _sales_by_weekday_impl(date_from, date_to)
+
+
+def _build_weekday_xlsx(data: dict, period_label: str, business: dict) -> BytesIO:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Ventas por Día"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    BOLD = Font(bold=True, size=11)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    rows = data.get("rows", []) or []
+    summary = data.get("summary", {}) or {}
+
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value="Ventas por Día de la Semana").font = Font(bold=True, size=12)
+    ws.cell(row=4, column=1, value=period_label).font = Font(size=10, color="555555")
+    ws.cell(
+        row=5, column=1,
+        value=(
+            f"Pico: {summary.get('peak_weekday','—')} ({float(summary.get('peak_total') or 0):,.2f})  ·  "
+            f"Valle: {summary.get('valley_weekday','—')} ({float(summary.get('valley_total') or 0):,.2f})  ·  "
+            f"Mejor promedio/día: {summary.get('best_avg_weekday','—')} ({float(summary.get('best_avg_per_day') or 0):,.2f})"
+        )
+    ).font = Font(size=10, italic=True, color="333333")
+
+    headers = ["Día", "# Facturas", "Total", "Ticket Promedio", "Días Observados", "Promedio por Día", "% del Total"]
+    hdr_row = 7
+    for i, h in enumerate(headers, start=1):
+        c = ws.cell(row=hdr_row, column=i, value=h)
+        c.font = WHITE_FONT; c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 2 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    row_n = hdr_row + 1
+    data_start = row_n
+    for r in rows:
+        ws.cell(row=row_n, column=1, value=r["weekday"]).alignment = LEFT
+        ws.cell(row=row_n, column=2, value=int(r.get("bills") or 0)).alignment = RIGHT
+        t = ws.cell(row=row_n, column=3, value=float(r.get("total") or 0))
+        t.number_format = '#,##0.00'; t.alignment = RIGHT
+        # Ticket avg via formula: =IF(B>0,C/B,0)
+        avg = ws.cell(row=row_n, column=4, value=f"=IF(B{row_n}>0,C{row_n}/B{row_n},0)")
+        avg.number_format = '#,##0.00'; avg.alignment = RIGHT
+        ws.cell(row=row_n, column=5, value=int(r.get("days_observed") or 0)).alignment = RIGHT
+        # Promedio por día via formula: =IF(E>0,C/E,0)
+        apd = ws.cell(row=row_n, column=6, value=f"=IF(E{row_n}>0,C{row_n}/E{row_n},0)")
+        apd.number_format = '#,##0.00'; apd.alignment = RIGHT
+        pct = ws.cell(row=row_n, column=7, value=None)  # filled after total
+        pct.number_format = '0.00%'; pct.alignment = RIGHT
+        row_n += 1
+    data_end = row_n - 1
+
+    # TOTAL row with SUM formulas
+    total_row = row_n
+    ws.cell(row=total_row, column=1, value="TOTAL").font = BOLD
+    if rows:
+        ws.cell(row=total_row, column=2, value=f"=SUM(B{data_start}:B{data_end})")
+        ws.cell(row=total_row, column=3, value=f"=SUM(C{data_start}:C{data_end})")
+        ws.cell(row=total_row, column=4, value=f"=IF(B{total_row}>0,C{total_row}/B{total_row},0)")
+        ws.cell(row=total_row, column=5, value=f"=SUM(E{data_start}:E{data_end})")
+        ws.cell(row=total_row, column=6, value=f"=IF(E{total_row}>0,C{total_row}/E{total_row},0)")
+        ws.cell(row=total_row, column=7, value=1.0)
+    else:
+        for col, val in ((2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0)):
+            ws.cell(row=total_row, column=col, value=val)
+    for col, fmt in ((2, '#,##0'), (3, '#,##0.00'), (4, '#,##0.00'), (5, '#,##0'), (6, '#,##0.00'), (7, '0.00%')):
+        cc = ws.cell(row=total_row, column=col)
+        cc.font = BOLD; cc.number_format = fmt; cc.alignment = RIGHT
+        cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+
+    # Back-fill % Cambio per row using total_row as ref
+    for rn in range(data_start, data_end + 1):
+        ws.cell(row=rn, column=7, value=f"=IF(C{total_row}>0,C{rn}/C{total_row},0)")
+
+    row_n = total_row + 2
+    ws.merge_cells(start_row=row_n, start_column=1, end_row=row_n, end_column=7)
+    footer = ws.cell(
+        row=row_n, column=1,
+        value=f"Documento generado por {business.get('name','')} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno"
+    )
+    footer.font = Font(italic=True, size=9, color="555555"); footer.alignment = CENTER
+
+    widths = {"A": 14, "B": 12, "C": 16, "D": 16, "E": 16, "F": 18, "G": 14}
+    for col, w in widths.items():
+        ws.column_dimensions[col].width = w
+    ws.freeze_panes = "A8"
+
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return buf
+
+
+def _build_weekday_html(data: dict, period_label: str, business: dict) -> str:
+    rows = data.get("rows", []) or []
+    summary = data.get("summary", {}) or {}
+
+    grand_total = float(summary.get("grand_total") or 0)
+    grand_bills = int(summary.get("grand_bills") or 0)
+
+    trs = []
+    peak_day = summary.get("peak_weekday")
+    for r in rows:
+        is_peak = r["weekday"] == peak_day
+        cls = "row-peak" if is_peak else ""
+        avg_t = (r["total"] / r["bills"]) if r["bills"] else 0
+        avg_d = r.get("avg_per_day", 0)
+        trs.append(
+            f'<tr class="{cls}">'
+            f'<td>{r["weekday"]}</td>'
+            f'<td class="num">{int(r["bills"])}</td>'
+            f'<td class="money">{float(r["total"]):,.2f}</td>'
+            f'<td class="money">{avg_t:,.2f}</td>'
+            f'<td class="num">{int(r["days_observed"])}</td>'
+            f'<td class="money">{avg_d:,.2f}</td>'
+            f'<td class="num">{float(r.get("pct", 0)):.2f}%</td>'
+            f'</tr>'
+        )
+    trs.append(
+        f'<tr class="grand-total">'
+        f'<td><strong>TOTAL</strong></td>'
+        f'<td class="num"><strong>{grand_bills}</strong></td>'
+        f'<td class="money"><strong>{grand_total:,.2f}</strong></td>'
+        f'<td class="money"><strong>{(grand_total/grand_bills) if grand_bills else 0:,.2f}</strong></td>'
+        f'<td class="num"></td><td class="money"></td>'
+        f'<td class="num"><strong>100.00%</strong></td></tr>'
+    )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Ventas por Día de la Semana</title>
+      <style>
+        @page {{ size: Letter; margin: 18mm 14mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 10.5pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }}
+        .header h1 {{ margin: 0; font-size: 15pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 10pt; margin-top: 2px; }}
+        .header .title {{ font-size: 12pt; font-weight: bold; margin-top: 4px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        .kpis {{ text-align: center; font-size: 10pt; margin: 6px 0 10px 0; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 4px; }}
+        thead th {{ background: #111; color: #fff; padding: 6px 8px; font-size: 10pt; text-align: left; }}
+        thead th.money, thead th.num {{ text-align: right; }}
+        td {{ padding: 4px 8px; font-size: 10pt; border-bottom: 1px solid #ddd; }}
+        td.money, td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        tr.row-peak td {{ border-top: 1px solid #000; border-bottom: 1px solid #000; font-weight: bold; }}
+        tr.grand-total td {{ border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 8px; background: #f5f5f5; font-size: 11pt; }}
+        .footer {{ margin-top: 22px; text-align: center; color: #666; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} tr.grand-total td {{ background: #fff; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Ventas por Día de la Semana</div>
+        <div class="date">{period_label} · Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+      <div class="kpis">
+        Pico: <strong>{summary.get('peak_weekday','—')}</strong> ({float(summary.get('peak_total') or 0):,.2f}) ·
+        Valle: <strong>{summary.get('valley_weekday','—')}</strong> ({float(summary.get('valley_total') or 0):,.2f}) ·
+        Mejor promedio/día: <strong>{summary.get('best_avg_weekday','—')}</strong> ({float(summary.get('best_avg_per_day') or 0):,.2f})
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Día</th>
+            <th class="num"># Facturas</th>
+            <th class="money">Total</th>
+            <th class="money">Ticket Promedio</th>
+            <th class="num">Días Obs.</th>
+            <th class="money">Promedio por Día</th>
+            <th class="num">% del Total</th>
+          </tr>
+        </thead>
+        <tbody>{''.join(trs)}</tbody>
+      </table>
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/sales-by-weekday/xlsx")
+async def weekday_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_weekday(date_from, date_to)
+    business = await _get_business_info()
+    buf = _build_weekday_xlsx(data, _period_label(date_from, date_to), business)
+    fname = f"VentasPorDiaSemana_{date_from}_al_{date_to}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/sales-by-weekday/pdf")
+async def weekday_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    data = await _fetch_weekday(date_from, date_to)
+    business = await _get_business_info()
+    html = _build_weekday_html(data, _period_label(date_from, date_to), business)
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"VentasPorDiaSemana_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
