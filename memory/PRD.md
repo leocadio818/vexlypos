@@ -1783,3 +1783,43 @@ Archivos bajo protección total:
 **Backlog actualizado:**
 - `/app/memory/ROADMAP.md` P2: "Ventas por Hora — Filtro Día de la semana" registrado como enhancement futuro del Prompt 3.
 
+
+---
+
+## ✅ 2026-04-20 — Reporte "Cuentas Abiertas / Open Checks" (B5 quick-win) — CONFIRMADO 🔒
+
+**Estado:** Backend 13/13 pytest verde, Frontend 100% verde (iter 155). Cero regresiones.
+
+**Implementación:**
+- `/api/reports/open-checks?date_from&date_to&waiter&table` — lista bills con `status ∈ {active, sent, open, printed, pending}` excluyendo `training_mode`. Ordenado por antigüedad DESC.
+- Response: `summary {count, total_value, oldest_minutes, avg_minutes_open, by_status}` + `bills[]` + `by_waiter[]` + `by_table[]`.
+- Nuevos endpoints dedicados:
+  - `GET /api/reports/xlsx/open-checks/xlsx` — openpyxl con `=SUM()` en TOTAL (E,F,G,H) y en RESUMEN POR MESERO (B,C).
+  - `GET /api/reports/xlsx/open-checks/pdf` — WeasyPrint Letter LANDSCAPE, header negro, KPIs en cajas.
+- Frontend `OpenChecksReport.jsx`:
+  - 4 KPIs (Cuentas, Monto en Riesgo, Más Antigua, Promedio).
+  - Tabla con badge de minutos color-coded (verde <60, amarillo 60-119, rojo ≥120).
+  - Resumen por Mesero.
+  - Botones Descargar PDF/Excel.
+- Registrado en sidebar "Ventas y Caja" **al final** (después de "Ventas por Hora"), sin reordenar.
+
+**Archivos protegidos 🔒:**
+- `/app/backend/routers/reports.py` líneas ~948-1090 (`_open_checks_impl` + endpoint `/open-checks`).
+- `/app/backend/routers/reports_xlsx.py` líneas ~1903-2200 (helpers + endpoints `/open-checks/{xlsx,pdf}`).
+- `/app/frontend/src/pages/reports/OpenChecksReport.jsx` (nuevo).
+- `/app/frontend/src/pages/reports/index.js`.
+- `/app/frontend/src/pages/Reports.js` (import, sidebar entry, endpoint dict, switch case).
+
+**Test artifacts:**
+- `/app/test_reports/iteration_155.json`.
+- `/app/backend/tests/test_open_checks_report.py` (13 pytest: filter por status, KPIs, sorting, XLSX SUM, PDF magic, auth, regresión Prompts 1-4).
+
+**Criterios Vexly cumplidos:**
+- Endpoint compatible con filtros futuros (waiter, table) ✅
+- Estado vacío OK: XLSX/PDF válidos sin 500 ✅
+- 5 viewports ✅
+- Impresión B/N ✅
+- Theme-aware ✅
+- Auth Bearer en exports ✅
+- Testids únicos ✅
+
