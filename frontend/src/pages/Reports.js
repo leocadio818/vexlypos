@@ -806,7 +806,7 @@ export default function Reports() {
       case 'by-supplier':
         return <BySupplierReport data={reportData} />;
       case 'taxes':
-        return <TaxesReport data={reportData} dateRange={dateRange} />;;
+        return <TaxesReport data={reportData} dateRange={dateRange} />;
       case 'profit-loss':
         return <ProfitLossReport data={reportData} />;
       case 'table-movements':

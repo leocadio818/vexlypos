@@ -1738,3 +1738,48 @@ Archivos bajo protección total:
 - Endpoint backend preservado intacto ✅
 - Token en `localStorage['pos_token']` consistente ✅
 
+
+---
+
+## ✅ 2026-04-20 — Reporte "Impuestos — Desglose ITBIS por Tasa" (Prompt 4) — CONFIRMADO 🔒
+
+**Estado:** Backend 12/12 pytest verde, Frontend 100% verde (iter 154). Cero regresiones. Integridad matemática validada (diff 0.0).
+
+**Implementación (extensión compatible hacia atrás):**
+- `/api/reports/taxes` extendido aditivamente:
+  - NUEVO campo `breakdown_by_rate: [{rate_label, rate_value, base, itbis, invoice_count}]` por tasa (ITBIS 18% / 0% / Exento).
+  - NUEVO campo `breakdown_integrity: {ok, sum_by_rate, total_itbis, diff}` con validación automática (tolerancia ±0.02).
+  - Todos los campos legacy (`summary.*`, `daily[]`) PRESERVADOS.
+  - Lógica: agregación desde `bill.tax_breakdown[]` (non-tip entries con `rate`, `taxable_base`, `amount`); fallback a `itbis_rate` del bill cuando falta breakdown.
+- Nuevos endpoints dedicados:
+  - `GET /api/reports/xlsx/taxes/xlsx` — openpyxl con fórmulas `=SUM()` reales en TOTAL GENERAL (cols B, C, D), fórmula `=B{row}*0.10` para Propina 10% (NO hardcoded), `=SUM()` en fila TOTAL del Desglose Diario.
+  - `GET /api/reports/xlsx/taxes/pdf` — WeasyPrint B/N, 3 secciones (Resumen por Tasa, Propina Legal 10%, Desglose Diario), banner rojo si `integrity.ok=false`.
+- Frontend `TaxesReport.jsx` reescrito con:
+  - Nueva sección "Resumen por Tasa de ITBIS" encima.
+  - KPIs originales PRESERVADOS.
+  - Bloque Propina Legal 10% con 3 cards (Base gravable / Propina calculada / Propina registrada).
+  - Banner de integridad (data-testid `taxes-integrity-warning`) solo cuando hay mismatch.
+  - Botones Descargar PDF/Excel.
+
+**Archivos protegidos 🔒:**
+- `/app/backend/routers/reports.py` líneas 1546-1690 (taxes_report con breakdown_by_rate + breakdown_integrity).
+- `/app/backend/routers/reports_xlsx.py` líneas ~1558-1875 (_fetch_taxes_data, _build_taxes_xlsx, _build_taxes_html, endpoints /taxes/xlsx y /taxes/pdf).
+- `/app/frontend/src/pages/reports/TaxesReport.jsx` (reescrito).
+- `/app/frontend/src/pages/Reports.js` (pasa dateRange a TaxesReport).
+
+**Test artifacts:**
+- `/app/test_reports/iteration_154.json`.
+- `/app/backend/tests/test_taxes_report_breakdown.py` (12 pytest: shape legacy+new, integrity, XLSX SUM + *0.10 tip, PDF content, auth, regresión en los 3 prompts previos).
+
+**Criterios Vexly cumplidos:**
+- Validación de integridad ✅ (diff 0.00 en dataset real).
+- 5 viewports ✅.
+- Impresión B/N ✅.
+- Theme-aware ✅.
+- Endpoint existente extendido SIN romper contratos ✅.
+- Sidebar no modificado ✅ (Impuestos sigue en Fiscal).
+- Token `pos_token` ✅.
+
+**Backlog actualizado:**
+- `/app/memory/ROADMAP.md` P2: "Ventas por Hora — Filtro Día de la semana" registrado como enhancement futuro del Prompt 3.
+
