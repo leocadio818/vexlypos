@@ -1,0 +1,31 @@
+{
+  "summary": "Full-stack testing of Prompt B5 'Cuentas Abiertas / Open Checks'. Backend pytest 13/13 green. Frontend UI verified on desktop (1920x1080) + mobile (390x844): all new testids present exactly once, sidebar item appears as LAST in 'Ventas y Caja' (after 'Ventas por Hora'), KPIs + table render, XLSX and PDF downloads trigger valid files (PK + %PDF signatures). Regression on prompts 1-4 (sales-by-category, cash-close-hierarchical, hourly-sales, taxes) PASS.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_open_checks_report.py",
+    "/app/test_reports/pytest/open_checks_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "_minutes_since uses datetime.utcnow() vs parsed naive date — acceptable since opened_at is stored as UTC ISO. Works correctly for relative age display.",
+    "_open_checks_impl filters training_mode!=True and status in OPEN_STATUSES [active,sent,open,printed,pending] exactly matching spec. Seeded bills (T-901 active, T-902 sent, T-903 printed) are all returned correctly.",
+    "XLSX =SUM formulas verified programmatically for E,F,G,H (detail TOTAL) and B,C (RESUMEN POR MESERO TOTAL). No hardcoded sums.",
+    "PDF uses WeasyPrint with Letter LANDSCAPE and includes restaurant header, KPIs, detail table and resumen por mesero when data present.",
+    "XLSX/PDF endpoints properly require Bearer JWT (returns 401/403 without token) — auth guard present on both.",
+    "OpenChecksReport.jsx: all required testids present exactly once (open-checks-report, oc-kpi-count/value/oldest/avg, open-checks-table, oc-grand-total, oc-by-waiter, oc-download-pdf-btn, oc-download-xlsx-btn).",
+    "Reports.js sidebar: 'open-checks' is the last item in Ventas y Caja group (after 'hourly-sales'), order preserved as required.",
+    "Responsive: desktop shows full 8-column table, mobile shows condensed 4-column view (# Trans, Mesa, Minutos, Total) + KPIs 2-cols. Correctly implemented.",
+    "Empty state handled: shows 'No hay cuentas abiertas en este período ✅' with KPIs=0 and XLSX/PDF still downloadable (no 500)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_open_checks_report.py (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin PIN 11338585 (from /app/memory/test_credentials.md). Login via POST /api/auth/login with {pin}.",
+  "seed_data_creation": "Used the existing 3 seed bills marked with _seed_open_checks=True: T-901 (active, OSCAR, business_date=2026-04-21, total=1152), T-902 (sent, CARLOS, total=1280), T-903 (printed, OSCAR, total=1280). Total 3712. Cleanup note for future: db.bills.delete_many({'_seed_open_checks': True}).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Pytest file /app/backend/tests/test_open_checks_report.py covers: (1) JSON endpoint with seeds (count>=3, total>=3712, waiters OSCAR+CARLOS, ordered oldest first), (2) empty range returns 200 count=0, (3) status filter excludes paid/cancelled/void/voided/anulled, (4) XLSX auth 401, (5) XLSX valid PK + =SUM(E..H) in TOTAL row + =SUM(B..C) in RESUMEN POR MESERO, (6) XLSX empty data OK (no 500), (7) PDF auth 401, (8) PDF valid %PDF, (9) PDF empty OK, (10-13) regression sales-by-category + cash-close-hierarchical + hourly-sales + taxes (with breakdown_by_rate preserved). UI verified via Playwright: desktop + mobile viewports, open-checks-report exactly 1 instance, all testids visible, XLSX download → PK header (5643 bytes), PDF download → %PDF header (15492 bytes). Default UI date range was 2026-04-19 (today) so UI initial render was empty state; seeds live at 2026-04-21. To see seeds in UI change date pickers to 2026-04-21 and click Actualizar.",
+  "rca of the issue": "No issues. Backend spec fully met (5 open statuses, training_mode filter, KPIs count/total/oldest/avg, sorted oldest first, by_waiter, by_table, by_status groupings). Frontend spec fully met (sidebar placement, testids, responsive layout, downloads). Auth enforced on export endpoints. XLSX formulas are real =SUM() (not hardcoded)."
+}

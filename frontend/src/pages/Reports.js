@@ -19,7 +19,7 @@ import {
   TransfersReport, DifferencesReport, WasteReport, PurchaseOrdersReport,
   BySupplierReport, TaxesReport, ProfitLossReport, TableMovementsReport,
   ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport,
-  DiscountsReport, HourlySalesReport
+  DiscountsReport, HourlySalesReport, OpenChecksReport
 } from './reports';
 import ReservationsReport from './reports/ReservationsReport';
 import EcfDashboard from './reports/EcfDashboard';
@@ -47,6 +47,7 @@ const REPORT_CATEGORIES = [
       { id: 'void-audit', name: 'Auditoría de Anulaciones', description: 'Anulaciones con nombre del autorizador' },
       { id: 'discounts', name: 'Descuentos Aplicados', description: 'Detalle de descuentos aplicados a facturas' },
       { id: 'hourly-sales', name: 'Ventas por Hora', description: 'Distribución horaria con pico/valle y gráfico' },
+      { id: 'open-checks', name: 'Cuentas Abiertas', description: 'Bills sin cobrar con KPIs de antigüedad y monto en riesgo' },
     ]
   },
   {
@@ -650,6 +651,7 @@ export default function Reports() {
       'cash-close': '/reports/cash-close',
       'by-category': '/reports/sales-by-category',
       'hourly-sales': '/reports/hourly-sales',
+      'open-checks': '/reports/open-checks',
       'top-products': '/reports/top-products-extended',
       'by-type': '/reports/sales-by-type',
       'payment-methods': '/reports/payment-methods-breakdown',
@@ -785,6 +787,8 @@ export default function Reports() {
         return <ByCategoryReport data={reportData} dateRange={dateRange} />;
       case 'hourly-sales':
         return <HourlySalesReport data={reportData} dateRange={dateRange} />;
+      case 'open-checks':
+        return <OpenChecksReport data={reportData} dateRange={dateRange} />;
       case 'top-products':
         return <TopProductsReport data={reportData} topLimit={topLimit} onChangeLimit={(n) => { setTopLimit(n); loadReport('top-products'); }} />;
       case 'by-type':

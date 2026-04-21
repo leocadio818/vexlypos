@@ -1900,3 +1900,302 @@ async def taxes_pdf(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
 
+
+
+# ═══════════════════════════════════════════════════════════════
+# CUENTAS ABIERTAS — PDF + XLSX (bills not yet paid)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_open_checks(date_from: str, date_to: str) -> dict:
+    from routers.reports import _open_checks_impl
+    return await _open_checks_impl(date_from=date_from, date_to=date_to)
+
+
+def _fmt_short_dt(iso: str) -> str:
+    if not iso:
+        return "-"
+    try:
+        base = iso.split(".")[0].replace("Z", "")
+        dt = datetime.fromisoformat(base)
+        return dt.strftime("%d/%m/%Y %I:%M %p")
+    except Exception:
+        return iso
+
+
+def _build_open_checks_xlsx(data: dict, period_label: str, business: dict) -> BytesIO:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Cuentas Abiertas"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    BOLD = Font(bold=True, size=11)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    # Title block
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value="Cuentas Abiertas").font = Font(bold=True, size=12)
+    ws.cell(row=4, column=1, value=period_label).font = Font(size=10, color="555555")
+
+    # KPIs row (row 5)
+    summary = data.get("summary", {}) or {}
+    kpi_text = (
+        f"Cuentas: {summary.get('count', 0)}  ·  "
+        f"Monto en riesgo: {float(summary.get('total_value') or 0):,.2f}  ·  "
+        f"Más antigua: {summary.get('oldest_minutes', 0)} min  ·  "
+        f"Promedio: {summary.get('avg_minutes_open', 0)} min"
+    )
+    ws.cell(row=5, column=1, value=kpi_text).font = Font(size=10, italic=True, color="333333")
+
+    # Header row 7
+    headers = [
+        "# Trans", "Mesa", "Mesero", "Abierta desde", "Min. abierta",
+        "# Items", "Subtotal", "Total", "Estado",
+    ]
+    hdr_row = 7
+    for i, h in enumerate(headers, start=1):
+        c = ws.cell(row=hdr_row, column=i, value=h)
+        c.font = WHITE_FONT
+        c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 5 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    bills = data.get("bills", []) or []
+    row_n = hdr_row + 1
+    data_start = row_n
+    for b in bills:
+        ws.cell(row=row_n, column=1, value=str(b.get("transaction_number") or "")).alignment = LEFT
+        ws.cell(row=row_n, column=2, value=b.get("table", "")).alignment = LEFT
+        ws.cell(row=row_n, column=3, value=b.get("waiter", "")).alignment = LEFT
+        ws.cell(row=row_n, column=4, value=_fmt_short_dt(b.get("opened_at", ""))).alignment = LEFT
+        ws.cell(row=row_n, column=5, value=int(b.get("minutes_open") or 0)).alignment = RIGHT
+        ws.cell(row=row_n, column=6, value=int(b.get("items_count") or 0)).alignment = RIGHT
+        c_sub = ws.cell(row=row_n, column=7, value=float(b.get("subtotal") or 0))
+        c_sub.number_format = '#,##0.00'; c_sub.alignment = RIGHT
+        c_tot = ws.cell(row=row_n, column=8, value=float(b.get("total") or 0))
+        c_tot.number_format = '#,##0.00'; c_tot.alignment = RIGHT
+        ws.cell(row=row_n, column=9, value=b.get("status", "")).alignment = CENTER
+        row_n += 1
+    data_end = row_n - 1
+
+    # Totals row with SUM formulas
+    total_row = row_n
+    ws.cell(row=total_row, column=1, value=f"TOTAL [{len(bills)}]").font = BOLD
+    if bills:
+        ws.cell(row=total_row, column=5, value=f"=SUM(E{data_start}:E{data_end})")
+        ws.cell(row=total_row, column=6, value=f"=SUM(F{data_start}:F{data_end})")
+        ws.cell(row=total_row, column=7, value=f"=SUM(G{data_start}:G{data_end})")
+        ws.cell(row=total_row, column=8, value=f"=SUM(H{data_start}:H{data_end})")
+    else:
+        for col in (5, 6, 7, 8):
+            ws.cell(row=total_row, column=col, value=0)
+    for col, fmt in ((5, '#,##0'), (6, '#,##0'), (7, '#,##0.00'), (8, '#,##0.00')):
+        cc = ws.cell(row=total_row, column=col)
+        cc.font = BOLD
+        cc.number_format = fmt
+        cc.alignment = RIGHT
+        cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+    row_n += 2
+
+    # ── By Waiter summary
+    ws.cell(row=row_n, column=1, value="RESUMEN POR MESERO").font = Font(bold=True, size=11)
+    row_n += 1
+    for h_idx, h in enumerate(["Mesero", "# Cuentas", "Total"], start=1):
+        c = ws.cell(row=row_n, column=h_idx, value=h)
+        c.font = WHITE_FONT; c.fill = BLACK_FILL
+        c.alignment = LEFT if h_idx == 1 else CENTER
+    row_n += 1
+    by_w = data.get("by_waiter", []) or []
+    w_start = row_n
+    for w in by_w:
+        ws.cell(row=row_n, column=1, value=w.get("waiter", ""))
+        ws.cell(row=row_n, column=2, value=int(w.get("count") or 0)).alignment = RIGHT
+        ct = ws.cell(row=row_n, column=3, value=float(w.get("total") or 0))
+        ct.number_format = '#,##0.00'; ct.alignment = RIGHT
+        row_n += 1
+    w_end = row_n - 1
+    if by_w:
+        ws.cell(row=row_n, column=1, value="TOTAL").font = BOLD
+        ws.cell(row=row_n, column=2, value=f"=SUM(B{w_start}:B{w_end})")
+        ws.cell(row=row_n, column=3, value=f"=SUM(C{w_start}:C{w_end})")
+        for col, fmt in ((2, '#,##0'), (3, '#,##0.00')):
+            cc = ws.cell(row=row_n, column=col)
+            cc.font = BOLD; cc.number_format = fmt; cc.alignment = RIGHT
+            cc.border = Border(top=Side(style="medium", color="000000"))
+
+    # Footer
+    row_n += 3
+    ws.merge_cells(start_row=row_n, start_column=1, end_row=row_n, end_column=9)
+    footer = ws.cell(
+        row=row_n, column=1,
+        value=f"Documento generado por {business.get('name','')} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno"
+    )
+    footer.font = Font(italic=True, size=9, color="555555")
+    footer.alignment = CENTER
+
+    # Widths
+    widths = {"A": 14, "B": 18, "C": 22, "D": 22, "E": 12, "F": 10, "G": 14, "H": 14, "I": 12}
+    for col, w in widths.items():
+        ws.column_dimensions[col].width = w
+    ws.freeze_panes = "A8"
+
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return buf
+
+
+def _build_open_checks_html(data: dict, period_label: str, business: dict) -> str:
+    summary = data.get("summary", {}) or {}
+    bills = data.get("bills", []) or []
+    by_waiter = data.get("by_waiter", []) or []
+
+    trs = []
+    total_minutes = total_items = 0
+    total_subtotal = total_total = 0.0
+    for b in bills:
+        total_minutes += int(b.get("minutes_open") or 0)
+        total_items += int(b.get("items_count") or 0)
+        total_subtotal += float(b.get("subtotal") or 0)
+        total_total += float(b.get("total") or 0)
+        trs.append(
+            f'<tr>'
+            f'<td class="mono">{b.get("transaction_number","")}</td>'
+            f'<td>{b.get("table","")}</td>'
+            f'<td>{b.get("waiter","")}</td>'
+            f'<td class="mono">{_fmt_short_dt(b.get("opened_at",""))}</td>'
+            f'<td class="num">{int(b.get("minutes_open") or 0)}</td>'
+            f'<td class="num">{int(b.get("items_count") or 0)}</td>'
+            f'<td class="money">{float(b.get("subtotal") or 0):,.2f}</td>'
+            f'<td class="money">{float(b.get("total") or 0):,.2f}</td>'
+            f'<td class="center">{b.get("status","")}</td>'
+            f'</tr>'
+        )
+    if bills:
+        trs.append(
+            f'<tr class="grand-total">'
+            f'<td colspan="4"><strong>TOTAL [{len(bills)}]</strong></td>'
+            f'<td class="num"><strong>{total_minutes}</strong></td>'
+            f'<td class="num"><strong>{total_items}</strong></td>'
+            f'<td class="money"><strong>{total_subtotal:,.2f}</strong></td>'
+            f'<td class="money"><strong>{total_total:,.2f}</strong></td>'
+            f'<td></td></tr>'
+        )
+
+    rows_waiter = []
+    for w in by_waiter:
+        rows_waiter.append(
+            f'<tr>'
+            f'<td>{w.get("waiter","")}</td>'
+            f'<td class="num">{int(w.get("count") or 0)}</td>'
+            f'<td class="money">{float(w.get("total") or 0):,.2f}</td>'
+            f'</tr>'
+        )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Cuentas Abiertas</title>
+      <style>
+        @page {{ size: Letter landscape; margin: 14mm 12mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 10pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }}
+        .header h1 {{ margin: 0; font-size: 15pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 9pt; margin-top: 2px; }}
+        .header .title {{ font-size: 12pt; font-weight: bold; margin-top: 4px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        .kpis {{ display: flex; gap: 20px; justify-content: center; margin: 8px 0 12px 0; font-size: 10pt; }}
+        .kpis span {{ border: 1px solid #000; padding: 4px 10px; }}
+        h2 {{ font-size: 11pt; margin: 12px 0 4px 0; border-bottom: 1px solid #000; padding-bottom: 3px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 4px; }}
+        thead th {{ background: #111; color: #fff; padding: 5px 6px; font-size: 9pt; text-align: left; }}
+        thead th.money, thead th.num {{ text-align: right; }}
+        td {{ padding: 3px 6px; font-size: 9pt; border-bottom: 1px solid #ddd; }}
+        td.money, td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.mono {{ font-family: 'Courier New', monospace; font-size: 9pt; }}
+        td.center {{ text-align: center; }}
+        tr.grand-total td {{ border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 6px; background: #f5f5f5; font-size: 10pt; }}
+        .footer {{ margin-top: 16px; text-align: center; color: #666; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} tr.grand-total td {{ background: #fff; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Cuentas Abiertas</div>
+        <div class="date">{period_label} · Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+
+      <div class="kpis">
+        <span><strong>Cuentas abiertas:</strong> {summary.get('count', 0)}</span>
+        <span><strong>Monto en riesgo:</strong> {float(summary.get('total_value') or 0):,.2f}</span>
+        <span><strong>Más antigua:</strong> {summary.get('oldest_minutes', 0)} min</span>
+        <span><strong>Promedio:</strong> {summary.get('avg_minutes_open', 0)} min</span>
+      </div>
+
+      <h2>Detalle de Cuentas Abiertas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th># Trans</th>
+            <th>Mesa</th>
+            <th>Mesero</th>
+            <th>Abierta desde</th>
+            <th class="num">Min.</th>
+            <th class="num"># Items</th>
+            <th class="money">Subtotal</th>
+            <th class="money">Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>{''.join(trs) or '<tr><td colspan="9" style="text-align:center;color:#777">Sin cuentas abiertas en este período</td></tr>'}</tbody>
+      </table>
+
+      {('<h2>Resumen por Mesero</h2><table><thead><tr><th>Mesero</th><th class="num"># Cuentas</th><th class="money">Total</th></tr></thead><tbody>' + ''.join(rows_waiter) + '</tbody></table>') if rows_waiter else ''}
+
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/open-checks/xlsx")
+async def open_checks_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_open_checks(date_from, date_to)
+    business = await _get_business_info()
+    buf = _build_open_checks_xlsx(data, _period_label(date_from, date_to), business)
+    fname = f"CuentasAbiertas_{date_from}_al_{date_to}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/open-checks/pdf")
+async def open_checks_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    data = await _fetch_open_checks(date_from, date_to)
+    business = await _get_business_info()
+    html = _build_open_checks_html(data, _period_label(date_from, date_to), business)
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"CuentasAbiertas_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+

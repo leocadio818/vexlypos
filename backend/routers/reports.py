@@ -946,6 +946,150 @@ async def cash_close_hierarchical(
     return await _cash_close_hierarchical_impl(date_from, date_to, employee, payment_method)
 
 
+# ─── OPEN CHECKS — Cuentas Abiertas (bills not yet paid) ───
+OPEN_STATUSES = ["active", "sent", "open", "printed", "pending"]
+
+
+def _fmt_datetime_iso(s):
+    return s or ""
+
+
+def _minutes_since(iso_str):
+    if not iso_str:
+        return 0
+    try:
+        base = iso_str.split(".")[0].replace("Z", "")
+        dt = datetime.fromisoformat(base)
+        # Naive UTC comparison; sufficient for relative age display
+        delta = datetime.utcnow() - dt
+        return max(0, int(delta.total_seconds() // 60))
+    except Exception:
+        return 0
+
+
+@router.get("/open-checks")
+async def open_checks_report(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    waiter: Optional[str] = Query(None),
+    table: Optional[str] = Query(None),
+):
+    """
+    Returns all bills whose status is in the 'open' set (active, sent, open, printed, pending)
+    within the date range. Also returns KPIs and groupings by waiter and table.
+    """
+    return await _open_checks_impl(date_from, date_to, waiter, table)
+
+
+async def _open_checks_impl(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    waiter: Optional[str] = None,
+    table: Optional[str] = None,
+):
+    """Pure helper usable from other modules without FastAPI dependency injection."""
+    d_from = date_from or await get_active_business_date()
+    d_to = date_to or d_from
+
+    query = {
+        "status": {"$in": OPEN_STATUSES},
+        "training_mode": {"$ne": True},
+    }
+    all_bills = await db.bills.find(query, {"_id": 0}).to_list(5000)
+
+    def _in_range(b):
+        # Match by business_date if present; else by opened_at/created_at date-prefix
+        bd = b.get("business_date")
+        if not bd:
+            raw = b.get("opened_at") or b.get("created_at") or b.get("updated_at") or ""
+            bd = raw[:10] if raw else ""
+        return (not bd) or (d_from <= bd <= d_to)
+
+    bills = [b for b in all_bills if _in_range(b)]
+    if waiter and waiter.strip():
+        bills = [b for b in bills if (b.get("waiter_name") or "").lower() == waiter.lower()]
+    if table and table.strip():
+        bills = [
+            b for b in bills
+            if (str(b.get("table_number") or "").lower() == table.lower()
+                or (b.get("table_name") or "").lower() == table.lower())
+        ]
+
+    rows = []
+    total_value = 0.0
+    oldest_minutes = 0
+    sum_minutes = 0
+    by_waiter = {}
+    by_table = {}
+    by_status = {}
+
+    for b in bills:
+        opened_at = b.get("opened_at") or b.get("created_at") or b.get("updated_at") or ""
+        mins = _minutes_since(opened_at)
+        total = float(b.get("total") or 0)
+        subtotal = float(b.get("subtotal") or 0)
+        status = b.get("status") or "open"
+        waiter_name = b.get("waiter_name") or b.get("cashier_name") or "—"
+        table_name = b.get("table_name") or (
+            f"Mesa {b.get('table_number')}" if b.get("table_number") else "—"
+        )
+        items = b.get("items") or []
+
+        rows.append({
+            "id": b.get("id"),
+            "transaction_number": b.get("transaction_number") or b.get("bill_number") or b.get("id"),
+            "table": table_name,
+            "waiter": waiter_name,
+            "opened_at": opened_at,
+            "minutes_open": mins,
+            "items_count": len(items),
+            "subtotal": round(subtotal, 2),
+            "total": round(total, 2),
+            "status": status,
+        })
+
+        total_value += total
+        sum_minutes += mins
+        if mins > oldest_minutes:
+            oldest_minutes = mins
+
+        by_waiter.setdefault(waiter_name, {"waiter": waiter_name, "count": 0, "total": 0.0})
+        by_waiter[waiter_name]["count"] += 1
+        by_waiter[waiter_name]["total"] += total
+
+        by_table.setdefault(table_name, {"table": table_name, "count": 0, "total": 0.0})
+        by_table[table_name]["count"] += 1
+        by_table[table_name]["total"] += total
+
+        by_status[status] = by_status.get(status, 0) + 1
+
+    # Sort by oldest first (highest minutes)
+    rows.sort(key=lambda r: -(r["minutes_open"] or 0))
+
+    avg_minutes = int(sum_minutes / len(rows)) if rows else 0
+
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "summary": {
+            "count": len(rows),
+            "total_value": round(total_value, 2),
+            "oldest_minutes": oldest_minutes,
+            "avg_minutes_open": avg_minutes,
+            "by_status": by_status,
+        },
+        "bills": rows,
+        "by_waiter": sorted(
+            ({"waiter": k, "count": v["count"], "total": round(v["total"], 2)} for k, v in by_waiter.items()),
+            key=lambda x: -x["total"],
+        ),
+        "by_table": sorted(
+            ({"table": k, "count": v["count"], "total": round(v["total"], 2)} for k, v in by_table.items()),
+            key=lambda x: -x["total"],
+        ),
+    }
+
+
 
 
 # ─── TOP PRODUCTS WITH SELECTOR ───
