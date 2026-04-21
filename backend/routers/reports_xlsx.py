@@ -1303,3 +1303,255 @@ async def cierre_caja_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
+
+
+# ═══════════════════════════════════════════════════════════════
+# VENTAS POR HORA — PDF + XLSX (consume /reports/hourly-sales)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_hourly_data(date_from: str, date_to: str) -> list:
+    """Aggregate paid bills by hour (0..23) over [date_from, date_to]. Returns list of 24 rows."""
+    bills = await db.bills.find(
+        {"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}
+    ).to_list(20000)
+    filtered = [
+        b for b in bills
+        if date_from <= (b.get("business_date") or (b.get("paid_at") or "")[:10]) <= date_to
+    ]
+    hourly = {f"{h:02d}": {"hour": f"{h:02d}:00", "total": 0.0, "bills": 0} for h in range(24)}
+    for b in filtered:
+        paid_at = b.get("paid_at") or ""
+        if "T" in paid_at:
+            hh = paid_at.split("T")[1][:2]
+            if hh in hourly:
+                hourly[hh]["total"] += float(b.get("total") or 0)
+                hourly[hh]["bills"] += 1
+    return list(hourly.values())
+
+
+def _build_hourly_xlsx(rows: list, period_label: str, business: dict) -> BytesIO:
+    """XLSX with Hour range | Bills | Total | Ticket Avg | % | with real SUM formulas on totals row."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Ventas por Hora"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    # Title block
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value="Ventas por Hora").font = Font(bold=True, size=12)
+    ws.cell(row=4, column=1, value=period_label).font = Font(size=10, color="555555")
+
+    # Header row 6
+    headers = ["Hora", "# Facturas", "Total Ventas", "Ticket Promedio", "% del Total"]
+    for i, h in enumerate(headers, start=1):
+        c = ws.cell(row=6, column=i, value=h)
+        c.font = WHITE_FONT
+        c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 2 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    row_num = 7
+    data_start = row_num
+    for r in rows:
+        h = int((r.get("hour") or "00:00")[:2])
+        nxt = (h + 1) % 24
+        hour_range = f"{h:02d}:00-{nxt:02d}:00"
+        bills = int(r.get("bills") or 0)
+        total = float(r.get("total") or 0)
+
+        ws.cell(row=row_num, column=1, value=hour_range).font = Font(name="Courier New", size=10)
+        ws.cell(row=row_num, column=2, value=bills).alignment = RIGHT
+        c3 = ws.cell(row=row_num, column=3, value=total)
+        c3.number_format = '#,##0.00'
+        c3.alignment = RIGHT
+        # Ticket avg formula
+        c4 = ws.cell(row=row_num, column=4, value=f"=IF(B{row_num}>0,C{row_num}/B{row_num},0)")
+        c4.number_format = '#,##0.00'
+        c4.alignment = RIGHT
+        ws.cell(row=row_num, column=5)
+        c5 = ws.cell(row=row_num, column=5)
+        c5.number_format = '0.0%'
+        c5.alignment = RIGHT
+        row_num += 1
+    data_end = row_num - 1
+
+    # Remove the accidentally-duplicated empty cell creation on column 5 (the value is back-filled below)
+    # (no-op: openpyxl cell() retrieval is idempotent)
+
+    # Total row (with SUM formulas)
+    total_row = row_num
+    c1 = ws.cell(row=total_row, column=1, value="TOTAL GENERAL")
+    c1.font = Font(bold=True, size=11)
+    c1.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+    ws.cell(row=total_row, column=2, value=f"=SUM(B{data_start}:B{data_end})")
+    ws.cell(row=total_row, column=3, value=f"=SUM(C{data_start}:C{data_end})")
+    ws.cell(row=total_row, column=4, value=f"=IF(B{total_row}>0,C{total_row}/B{total_row},0)")
+    ws.cell(row=total_row, column=5, value=1.0)
+    for col, fmt in ((2, '#,##0'), (3, '#,##0.00'), (4, '#,##0.00'), (5, '0.0%')):
+        cc = ws.cell(row=total_row, column=col)
+        cc.font = Font(bold=True, size=11)
+        cc.number_format = fmt
+        cc.alignment = RIGHT
+        cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+
+    # Back-fill % formulas for data rows (referencing total row)
+    for rn in range(data_start, data_end + 1):
+        ws.cell(row=rn, column=5, value=f"=IF(C{total_row}>0,C{rn}/C{total_row},0)")
+
+    # Footer
+    row_num = total_row + 2
+    ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=5)
+    footer = ws.cell(
+        row=row_num, column=1,
+        value=f"Documento generado por {business.get('name','')} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno"
+    )
+    footer.font = Font(italic=True, size=9, color="555555")
+    footer.alignment = CENTER
+
+    ws.column_dimensions["A"].width = 18
+    ws.column_dimensions["B"].width = 14
+    ws.column_dimensions["C"].width = 16
+    ws.column_dimensions["D"].width = 16
+    ws.column_dimensions["E"].width = 14
+    ws.freeze_panes = "A7"
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def _build_hourly_html(rows: list, period_label: str, business: dict) -> str:
+    """Print-friendly B/W HTML for PDF generation."""
+    grand_total = sum(float(r.get("total") or 0) for r in rows)
+    grand_bills = sum(int(r.get("bills") or 0) for r in rows)
+    peak = None
+    for r in rows:
+        if (r.get("bills") or 0) > 0 and (peak is None or r["total"] > peak["total"]):
+            peak = r
+
+    trs = []
+    for r in rows:
+        h = int((r.get("hour") or "00:00")[:2])
+        nxt = (h + 1) % 24
+        hour_range = f"{h:02d}:00-{nxt:02d}:00"
+        bills = int(r.get("bills") or 0)
+        total = float(r.get("total") or 0)
+        avg = (total / bills) if bills else 0
+        pct = (total / grand_total * 100) if grand_total > 0 else 0
+        is_peak = peak is not None and r.get("hour") == peak.get("hour")
+        cls = "row-peak" if is_peak else ("row-empty" if bills == 0 else "")
+        trs.append(
+            f'<tr class="{cls}">'
+            f'<td class="mono">{hour_range}</td>'
+            f'<td class="num">{bills}</td>'
+            f'<td class="money">{total:,.2f}</td>'
+            f'<td class="money">{avg:,.2f}</td>'
+            f'<td class="num">{pct:.1f}%</td></tr>'
+        )
+    avg_total = (grand_total / grand_bills) if grand_bills else 0
+    trs.append(
+        f'<tr class="grand-total">'
+        f'<td><strong>TOTAL GENERAL</strong></td>'
+        f'<td class="num"><strong>{grand_bills}</strong></td>'
+        f'<td class="money"><strong>{grand_total:,.2f}</strong></td>'
+        f'<td class="money"><strong>{avg_total:,.2f}</strong></td>'
+        f'<td class="num"><strong>100.0%</strong></td></tr>'
+    )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Ventas por Hora</title>
+      <style>
+        @page {{ size: Letter; margin: 18mm 14mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 10.5pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }}
+        .header h1 {{ margin: 0; font-size: 15pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 10pt; margin-top: 2px; }}
+        .header .title {{ font-size: 12pt; font-weight: bold; margin-top: 4px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 6px; }}
+        thead th {{ background: #111; color: #fff; padding: 6px 8px; font-size: 10pt; text-align: left; }}
+        thead th.money, thead th.num {{ text-align: right; }}
+        td {{ padding: 4px 8px; font-size: 10pt; border-bottom: 1px solid #ddd; }}
+        td.money {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.mono {{ font-family: 'Courier New', monospace; }}
+        tr.row-peak td {{ border-top: 1px solid #000; border-bottom: 1px solid #000; font-weight: bold; }}
+        tr.row-empty td {{ color: #777; }}
+        tr.grand-total td {{ border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 8px; background: #f5f5f5; font-size: 11pt; }}
+        .footer {{ margin-top: 24px; text-align: center; color: #666; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} tr.grand-total td {{ background: #fff; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Ventas por Hora</div>
+        <div class="date">{period_label} · Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th class="num"># Facturas</th>
+            <th class="money">Total Ventas</th>
+            <th class="money">Ticket Promedio</th>
+            <th class="num">% del Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {''.join(trs)}
+        </tbody>
+      </table>
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/hourly-sales/xlsx")
+async def hourly_sales_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    rows = await _fetch_hourly_data(date_from, date_to)
+    business = await _get_business_info()
+    buf = _build_hourly_xlsx(rows, _period_label(date_from, date_to), business)
+    fname = f"VentasPorHora_{date_from}_al_{date_to}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/hourly-sales/pdf")
+async def hourly_sales_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    rows = await _fetch_hourly_data(date_from, date_to)
+    business = await _get_business_info()
+    html = _build_hourly_html(rows, _period_label(date_from, date_to), business)
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"VentasPorHora_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+

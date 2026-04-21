@@ -19,3 +19,4 @@ export { default as RecipesReport } from './RecipesReport';
 export { default as StockAdjustmentsReport } from './StockAdjustmentsReport';
 export { default as SystemAuditReport } from './SystemAuditReport';
 export { default as DiscountsReport } from './DiscountsReport';
+export { default as HourlySalesReport } from './HourlySalesReport';
