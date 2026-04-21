@@ -116,6 +116,19 @@ const PERMISSION_CATEGORIES = {
       config_formas_pago: 'Agregar/Eliminar Formas de Pago',
     }
   },
+  sistema_auditoria: {
+    label: 'Sistema & Auditoría',
+    icon: 'Shield',
+    permissions: {
+      view_system_logs: 'Ver Logs del Sistema',
+      view_audit_complete: 'Ver Auditoría Completa',
+      create_b04: 'Crear Nota de Crédito (B04)',
+      transfer_tables: 'Transferir Mesas entre Usuarios',
+      edit_ecf_type: 'Editar Tipo e-CF en Contingencia',
+      retry_ecf: 'Reenviar e-CF en Contingencia',
+      view_customer_history: 'Ver Historial de Cliente',
+    }
+  },
 };
 
 // Default permissions by builtin role
@@ -746,16 +759,31 @@ export default function UserConfig() {
                           Deleting a role could affect users who have that role assigned. */}
                       {!role.builtin && isSystemAdmin && (
                         <span className="flex gap-0.5 ml-1" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => {
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const effectivePerms = role.permissions && Object.keys(role.permissions).length > 0
                                 ? role.permissions
                                 : (CUSTOM_ROLE_DEFAULTS[String(getRoleCode(role) || '').toLowerCase()] || {});
                               setEditRoleDialog({ open: true, id: role.id, name: role.name, level: role.level || 20, permissions: { ...effectivePerms } });
                               setEditRoleExpandedCats({ ventas: true });
                             }}
-                            className="w-7 h-7 rounded flex items-center justify-center hover:bg-white/20 transition-all" title="Editar" data-testid={`edit-role-${role.id}`}>
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const effectivePerms = role.permissions && Object.keys(role.permissions).length > 0
+                                  ? role.permissions
+                                  : (CUSTOM_ROLE_DEFAULTS[String(getRoleCode(role) || '').toLowerCase()] || {});
+                                setEditRoleDialog({ open: true, id: role.id, name: role.name, level: role.level || 20, permissions: { ...effectivePerms } });
+                                setEditRoleExpandedCats({ ventas: true });
+                              }
+                            }}
+                            className="w-7 h-7 rounded flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer" title="Editar" data-testid={`edit-role-${role.id}`}>
                             <Pencil size={12} />
-                          </button>
+                          </span>
                         </span>
                       )}
                     </button>
@@ -884,6 +912,9 @@ export default function UserConfig() {
             <DialogTitle className="font-oswald flex items-center gap-2">
               <Plus size={18} className="text-primary" /> Crear Puesto Nuevo
             </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Define nombre, nivel y permisos del nuevo puesto.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
@@ -986,7 +1017,11 @@ export default function UserConfig() {
       {/* Edit Role Dialog */}
       <Dialog open={editRoleDialog.open} onOpenChange={(o) => !o && setEditRoleDialog({ open: false, id: null, name: '', level: 20, permissions: {} })}>
         <DialogContent className="max-w-lg mx-auto max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2"><Pencil size={16} className="text-primary" /> Editar Puesto</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2"><Pencil size={16} className="text-primary" /> Editar Puesto</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Modifica nombre, nivel y permisos del puesto existente.
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Nombre del Puesto</label>
