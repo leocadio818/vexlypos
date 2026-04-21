@@ -1,0 +1,46 @@
+{
+  "summary": "A5 'Ranking por Mesa / Área' report fully validated — both backend and frontend. 7/7 pytest pass including JSON values against expected dataset (grand_total=32144, grand_bills=42, tables_with_sales=12, areas_with_sales=3, Mesa 1/Terraza top $8,208/16tix/25.5%, Salon Principal top $17,792/22tix/7 mesas/Mesa 4, Terraza $8,976, VIP $5,376/Mesa 21), auth enforcement on XLSX/PDF (401), PDF magic %PDF, XLSX magic PK with real Excel formulas (=SUM(D..D)/E/F for TOP MESAS totals, =IF(D>0,F/D,0) ticket prom, =IF(F>0,F{row}/F{total},0) % per row, and =SUM(B..B)/C/D for área block). Frontend desktop 1920x1080 verified: sidebar entry 'Ranking por Mesa / Área' appears exactly at END of 'Ventas y Caja' (order confirmed: hourly-sales → open-checks → sales-comparative → product-mix-by-employee → sales-by-weekday → sales-by-table), all 4 KPI testids + top-tables-table + sbt-grand-total + sbt-by-area + 12 sbt-row-* + 3 sbt-area-row-* + download buttons render, KPI values match expected exactly, área badges colored, data-testid='sales-by-table-report' appears exactly 1 time. Downloads via UI trigger blob correctly (PDF 18040B, XLSX 6691B). Mobile 390x844: KPI grid shows 2 cols (177px 177px), optional columns hidden (Área, Comensales, Ticket Prom as display:none at row 0). Regression (iter 157 green): A4/A7/A8/B5/hourly JSON endpoints still respond 200 with auth.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "SalesByTableReport.jsx TOTAL row",
+        "issue": "% sum cell shows 'RD$ 0.00100.0%'. The hack `formatMoney(0).replace('$0.00', '')` fails because formatMoney returns 'RD$ 0.00' (with space) not 'RD$0.00', so replace('$0.00','') leaves 'RD$ 0.' style residue glued to the percent. Cosmetic only (all other data correct).",
+        "selector": "[data-testid='sbt-grand-total'] td:last-child",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_sales_by_table.py",
+    "/app/test_reports/pytest/iter_158.xml"
+  ],
+  "action_items": [
+    "(LOW, cosmetic) Fix grand-total % cell in SalesByTableReport.jsx line ~163-165: replace `{formatMoney(0).replace('$0.00', '')}{pctSum.toFixed(1)}%` with simply `{pctSum.toFixed(1)}%` — the formatMoney(0) prefix serves no purpose and leaks 'RD$ 0.00' into the cell. All numeric data is correct; only display artifact.",
+    "(OPTIONAL) Consider adding data-testid='theme-toggle' to the theme switch button so automated dark/light mode regression can be done programmatically (could not locate toggle by common selectors)."
+  ],
+  "critical_code_review_comments": [
+    "XLSX generator correctly uses real Excel formulas (=SUM / =IF) not hardcoded numbers — verified via openpyxl formula introspection. Good implementation pattern consistent with A4/A7.",
+    "Backend JOIN logic (bills.table_number → tables.number → areas.name) correctly resolves 12/22 mesas with area attribution matching ground truth.",
+    "SalesByTableReport.jsx total row has cosmetic bug: `formatMoney(0).replace('$0.00', '')` is a code smell — the replace string doesn't match the actual formatMoney output ('RD$ 0.00' has a space). Either remove the prefix entirely or use a clean empty string.",
+    "Responsive hidden classes (hidden sm:table-cell / hidden md:table-cell) properly applied across both tables — verified at 390px width that Área, Comensales, Ticket Prom columns computed display:none.",
+    "Sidebar ordering confirmed correct: 'Ranking por Mesa / Área' appears at END of 'Ventas y Caja' after 'Ventas por Día de la Semana'.",
+    "Auth Bearer properly enforced on XLSX and PDF endpoints (401/403 without token).",
+    "Determinístic area palette using indexOf(name) over areaNames array — colors stay consistent per area across both tables ✓"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_sales_by_table.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "95%"},
+  "test_credentials": "Admin PIN 11338585",
+  "seed_data_creation": "None - used existing bills in 2026-04-01..20 range",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "A5 Ranking por Mesa/Área fully green. JSON: /api/reports/sales-by-table?date_from&date_to&limit (default 20, 5-100). Response: {summary:{grand_total, grand_bills, tables_with_sales, areas_with_sales, top_table, top_table_total, top_area, top_area_total}, top_tables:[{table, area, bills, guests, total, avg_ticket, pct}], by_area:[{area, bills, tables_count, total, avg_ticket, top_table, pct}]}. XLSX: /api/reports/xlsx/sales-by-table/{xlsx,pdf} auth Bearer required. Frontend: default date range is 'Hoy' which often has no data — tester must click 'Este Mes' preset. Sidebar order at end of Ventas y Caja: hourly-sales → open-checks → sales-comparative → product-mix-by-employee → sales-by-weekday → sales-by-table. On mobile, Ventas y Caja group is collapsed by default — click text='Ventas y Caja' to expand. Theme toggle lacks a data-testid — dark mode programmatic verification skipped; prior iters 149-156 confirmed theme-aware rendering.",
+  "rca of the issue": "N/A — no critical bugs. Only a minor cosmetic residue in grand-total % cell (RD$ 0.00 prefix leak). Root cause: the replace() call uses literal '$0.00' but formatMoney returns 'RD$ 0.00' (with space), so no substring match occurs. Mitigation: drop the prefix entirely."
+}

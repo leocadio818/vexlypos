@@ -1372,6 +1372,144 @@ async def sales_by_weekday(
 
 
 
+# ─── SALES BY TABLE / AREA — A5 ───
+async def _sales_by_table_impl(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    limit: int = 20,
+):
+    d_from = date_from or await get_active_business_date()
+    d_to = date_to or d_from
+
+    bills = await db.bills.find(
+        {"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}
+    ).to_list(20000)
+    bills = [
+        b for b in bills
+        if d_from <= (b.get("business_date") or (b.get("paid_at") or "")[:10]) <= d_to
+    ]
+
+    # Load tables & areas to resolve area name per table number
+    tables = await db.tables.find({}, {"_id": 0}).to_list(500)
+    areas = await db.areas.find({}, {"_id": 0}).to_list(100)
+    area_name_by_id = {a.get("id"): a.get("name", "Sin Área") for a in areas}
+    table_to_area = {}
+    for t in tables:
+        num = t.get("number")
+        if num is not None:
+            key = str(num)
+            table_to_area[key] = area_name_by_id.get(t.get("area_id"), "Sin Área")
+
+    # Aggregate per-table + per-area
+    by_table = {}   # key = str(number) -> {table, area, bills, total, guests, ...}
+    by_area = {}    # area_name -> {area, bills, total, tables_set, top_table, top_total}
+    grand_bills = 0
+    grand_total = 0.0
+
+    for b in bills:
+        num = b.get("table_number")
+        table_key = str(num) if num is not None else (b.get("table_name") or "—")
+        table_label = f"Mesa {num}" if num is not None else (b.get("table_name") or "—")
+        area = table_to_area.get(str(num) if num is not None else "", "Sin Área")
+        total = float(b.get("total") or 0)
+        guests = int(b.get("guests") or b.get("covers") or 0)
+
+        t = by_table.setdefault(table_key, {
+            "table": table_label,
+            "table_number": num,
+            "area": area,
+            "bills": 0,
+            "total": 0.0,
+            "guests": 0,
+        })
+        t["bills"] += 1
+        t["total"] += total
+        t["guests"] += guests
+
+        a = by_area.setdefault(area, {
+            "area": area,
+            "bills": 0,
+            "total": 0.0,
+            "tables_set": set(),
+            "top_table": None,
+            "top_total": 0.0,
+        })
+        a["bills"] += 1
+        a["total"] += total
+        a["tables_set"].add(table_label)
+        if t["total"] > a["top_total"]:
+            a["top_total"] = t["total"]
+            a["top_table"] = t["table"]
+
+        grand_bills += 1
+        grand_total += total
+
+    # Compute avg_ticket and pct
+    tables_out = []
+    for t in by_table.values():
+        avg_ticket = (t["total"] / t["bills"]) if t["bills"] else 0
+        pct = (t["total"] / grand_total * 100) if grand_total > 0 else 0
+        tables_out.append({
+            "table": t["table"],
+            "table_number": t["table_number"],
+            "area": t["area"],
+            "bills": t["bills"],
+            "total": round(t["total"], 2),
+            "guests": t["guests"],
+            "avg_ticket": round(avg_ticket, 2),
+            "pct": round(pct, 2),
+        })
+    tables_out.sort(key=lambda x: -x["total"])
+
+    top_tables = tables_out[: max(1, limit)]
+
+    areas_out = []
+    for a in by_area.values():
+        avg_ticket = (a["total"] / a["bills"]) if a["bills"] else 0
+        pct = (a["total"] / grand_total * 100) if grand_total > 0 else 0
+        areas_out.append({
+            "area": a["area"],
+            "bills": a["bills"],
+            "total": round(a["total"], 2),
+            "tables_count": len(a["tables_set"]),
+            "avg_ticket": round(avg_ticket, 2),
+            "top_table": a["top_table"] or "—",
+            "pct": round(pct, 2),
+        })
+    areas_out.sort(key=lambda x: -x["total"])
+
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "limit": limit,
+        "summary": {
+            "grand_bills": grand_bills,
+            "grand_total": round(grand_total, 2),
+            "tables_with_sales": len(tables_out),
+            "areas_with_sales": len(areas_out),
+            "top_table": tables_out[0]["table"] if tables_out else "—",
+            "top_table_total": tables_out[0]["total"] if tables_out else 0,
+            "top_area": areas_out[0]["area"] if areas_out else "—",
+            "top_area_total": areas_out[0]["total"] if areas_out else 0,
+        },
+        "top_tables": top_tables,
+        "all_tables": tables_out,
+        "by_area": areas_out,
+    }
+
+
+@router.get("/sales-by-table")
+async def sales_by_table(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    limit: int = Query(20, ge=5, le=100),
+):
+    """Ranking of tables by revenue + breakdown by area (joins bills × tables × areas)."""
+    return await _sales_by_table_impl(date_from, date_to, limit)
+
+
+
+
 # ─── TOP PRODUCTS WITH SELECTOR ───
 @router.get("/top-products-extended")
 async def top_products_extended(

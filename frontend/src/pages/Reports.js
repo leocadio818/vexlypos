@@ -20,7 +20,7 @@ import {
   BySupplierReport, TaxesReport, ProfitLossReport, TableMovementsReport,
   ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport,
   DiscountsReport, HourlySalesReport, OpenChecksReport, SalesComparativeReport,
-  ProductMixByEmployeeReport, SalesByWeekdayReport
+  ProductMixByEmployeeReport, SalesByWeekdayReport, SalesByTableReport
 } from './reports';
 import ReservationsReport from './reports/ReservationsReport';
 import EcfDashboard from './reports/EcfDashboard';
@@ -52,6 +52,7 @@ const REPORT_CATEGORIES = [
       { id: 'sales-comparative', name: 'Ventas Comparativas', description: 'Período A vs B side-by-side con deltas y % de cambio' },
       { id: 'product-mix-by-employee', name: 'Product Mix por Empleado', description: 'Qué producto vendió cada mesero/cajero' },
       { id: 'sales-by-weekday', name: 'Ventas por Día de la Semana', description: 'Agregación Lun-Dom con pico/valle y gráfico' },
+      { id: 'sales-by-table', name: 'Ranking por Mesa / Área', description: 'Top mesas por ingreso + breakdown por área' },
     ]
   },
   {
@@ -665,6 +666,7 @@ export default function Reports() {
       'open-checks': '/reports/open-checks',
       'product-mix-by-employee': '/reports/product-mix-by-employee',
       'sales-by-weekday': '/reports/sales-by-weekday',
+      'sales-by-table': '/reports/sales-by-table',
       'top-products': '/reports/top-products-extended',
       'by-type': '/reports/sales-by-type',
       'payment-methods': '/reports/payment-methods-breakdown',
@@ -808,6 +810,8 @@ export default function Reports() {
         return <ProductMixByEmployeeReport data={reportData} dateRange={dateRange} />;
       case 'sales-by-weekday':
         return <SalesByWeekdayReport data={reportData} dateRange={dateRange} />;
+      case 'sales-by-table':
+        return <SalesByTableReport data={reportData} dateRange={dateRange} />;
       case 'top-products':
         return <TopProductsReport data={reportData} topLimit={topLimit} onChangeLimit={(n) => { setTopLimit(n); loadReport('top-products'); }} />;
       case 'by-type':

@@ -24,3 +24,4 @@ export { default as OpenChecksReport } from './OpenChecksReport';
 export { default as SalesComparativeReport } from './SalesComparativeReport';
 export { default as ProductMixByEmployeeReport } from './ProductMixByEmployeeReport';
 export { default as SalesByWeekdayReport } from './SalesByWeekdayReport';
+export { default as SalesByTableReport } from './SalesByTableReport';

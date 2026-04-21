@@ -2886,3 +2886,305 @@ async def weekday_pdf(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
 
+
+
+# ═══════════════════════════════════════════════════════════════
+# SALES BY TABLE / AREA — PDF + XLSX (A5)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_sales_by_table(date_from: str, date_to: str, limit: int = 20) -> dict:
+    from routers.reports import _sales_by_table_impl
+    return await _sales_by_table_impl(date_from, date_to, limit)
+
+
+def _build_sales_by_table_xlsx(data: dict, period_label: str, business: dict) -> BytesIO:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Ranking por Mesa"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    BOLD = Font(bold=True, size=11)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    summary = data.get("summary", {}) or {}
+    top_tables = data.get("top_tables", []) or []
+    by_area = data.get("by_area", []) or []
+
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value="Ranking por Mesa / Área").font = Font(bold=True, size=12)
+    ws.cell(row=4, column=1, value=period_label).font = Font(size=10, color="555555")
+    ws.cell(
+        row=5, column=1,
+        value=(
+            f"Top mesa: {summary.get('top_table','—')} ({float(summary.get('top_table_total') or 0):,.2f})  ·  "
+            f"Top área: {summary.get('top_area','—')} ({float(summary.get('top_area_total') or 0):,.2f})  ·  "
+            f"Mesas con ventas: {summary.get('tables_with_sales', 0)}  ·  "
+            f"Áreas: {summary.get('areas_with_sales', 0)}"
+        )
+    ).font = Font(size=10, italic=True, color="333333")
+
+    # ── Bloque 1: Top Mesas
+    ws.cell(row=7, column=1, value="TOP MESAS (por ingreso)").font = Font(bold=True, size=11)
+    headers_t = ["#", "Mesa", "Área", "# Tickets", "Comensales", "Total", "Ticket Prom.", "% del Total"]
+    hdr_row = 8
+    for i, h in enumerate(headers_t, start=1):
+        c = ws.cell(row=hdr_row, column=i, value=h)
+        c.font = WHITE_FONT; c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 4 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    row_n = hdr_row + 1
+    data_start = row_n
+    for idx, t in enumerate(top_tables, start=1):
+        ws.cell(row=row_n, column=1, value=idx).alignment = CENTER
+        ws.cell(row=row_n, column=2, value=t.get("table", ""))
+        ws.cell(row=row_n, column=3, value=t.get("area", ""))
+        ws.cell(row=row_n, column=4, value=int(t.get("bills") or 0)).alignment = RIGHT
+        ws.cell(row=row_n, column=5, value=int(t.get("guests") or 0)).alignment = RIGHT
+        tc = ws.cell(row=row_n, column=6, value=float(t.get("total") or 0))
+        tc.number_format = '#,##0.00'; tc.alignment = RIGHT
+        # Ticket promedio as formula
+        avg = ws.cell(row=row_n, column=7, value=f"=IF(D{row_n}>0,F{row_n}/D{row_n},0)")
+        avg.number_format = '#,##0.00'; avg.alignment = RIGHT
+        pct = ws.cell(row=row_n, column=8)
+        pct.number_format = '0.00%'; pct.alignment = RIGHT
+        row_n += 1
+    data_end = row_n - 1
+
+    # TOTAL row with SUM formulas
+    total_row = row_n
+    ws.cell(row=total_row, column=1, value="").font = BOLD
+    ws.cell(row=total_row, column=2, value="TOTAL TOP").font = BOLD
+    if top_tables:
+        ws.cell(row=total_row, column=4, value=f"=SUM(D{data_start}:D{data_end})")
+        ws.cell(row=total_row, column=5, value=f"=SUM(E{data_start}:E{data_end})")
+        ws.cell(row=total_row, column=6, value=f"=SUM(F{data_start}:F{data_end})")
+        ws.cell(row=total_row, column=7, value=f"=IF(D{total_row}>0,F{total_row}/D{total_row},0)")
+        ws.cell(row=total_row, column=8, value=1.0)
+    else:
+        for col in (4, 5, 6, 7, 8):
+            ws.cell(row=total_row, column=col, value=0)
+    for col, fmt in ((4, '#,##0'), (5, '#,##0'), (6, '#,##0.00'), (7, '#,##0.00'), (8, '0.00%')):
+        cc = ws.cell(row=total_row, column=col)
+        cc.font = BOLD; cc.number_format = fmt; cc.alignment = RIGHT
+        cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+    # Back-fill % per row (referencing grand_total in summary by using SUM in the table body)
+    for rn in range(data_start, data_end + 1):
+        ws.cell(row=rn, column=8, value=f"=IF(F{total_row}>0,F{rn}/F{total_row},0)")
+    row_n = total_row + 2
+
+    # ── Bloque 2: Ranking por Área
+    ws.cell(row=row_n, column=1, value="RANKING POR ÁREA").font = Font(bold=True, size=11)
+    row_n += 1
+    headers_a = ["Área", "# Tickets", "# Mesas", "Total", "Ticket Prom.", "Mesa Top", "% del Total"]
+    for i, h in enumerate(headers_a, start=1):
+        c = ws.cell(row=row_n, column=i, value=h)
+        c.font = WHITE_FONT; c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 2 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+    row_n += 1
+    a_start = row_n
+    for a in by_area:
+        ws.cell(row=row_n, column=1, value=a.get("area", ""))
+        ws.cell(row=row_n, column=2, value=int(a.get("bills") or 0)).alignment = RIGHT
+        ws.cell(row=row_n, column=3, value=int(a.get("tables_count") or 0)).alignment = RIGHT
+        tc = ws.cell(row=row_n, column=4, value=float(a.get("total") or 0))
+        tc.number_format = '#,##0.00'; tc.alignment = RIGHT
+        avg = ws.cell(row=row_n, column=5, value=f"=IF(B{row_n}>0,D{row_n}/B{row_n},0)")
+        avg.number_format = '#,##0.00'; avg.alignment = RIGHT
+        ws.cell(row=row_n, column=6, value=a.get("top_table", "")).alignment = LEFT
+        pct = ws.cell(row=row_n, column=7)
+        pct.number_format = '0.00%'; pct.alignment = RIGHT
+        row_n += 1
+    a_end = row_n - 1
+
+    a_total_row = row_n
+    ws.cell(row=a_total_row, column=1, value="TOTAL").font = BOLD
+    if by_area:
+        ws.cell(row=a_total_row, column=2, value=f"=SUM(B{a_start}:B{a_end})")
+        ws.cell(row=a_total_row, column=3, value=f"=SUM(C{a_start}:C{a_end})")
+        ws.cell(row=a_total_row, column=4, value=f"=SUM(D{a_start}:D{a_end})")
+        ws.cell(row=a_total_row, column=5, value=f"=IF(B{a_total_row}>0,D{a_total_row}/B{a_total_row},0)")
+        ws.cell(row=a_total_row, column=7, value=1.0)
+    for col, fmt in ((2, '#,##0'), (3, '#,##0'), (4, '#,##0.00'), (5, '#,##0.00'), (7, '0.00%')):
+        cc = ws.cell(row=a_total_row, column=col)
+        cc.font = BOLD; cc.number_format = fmt; cc.alignment = RIGHT
+        cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+    for rn in range(a_start, a_end + 1):
+        ws.cell(row=rn, column=7, value=f"=IF(D{a_total_row}>0,D{rn}/D{a_total_row},0)")
+
+    row_n = a_total_row + 2
+    ws.merge_cells(start_row=row_n, start_column=1, end_row=row_n, end_column=8)
+    footer = ws.cell(
+        row=row_n, column=1,
+        value=f"Documento generado por {business.get('name','')} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno"
+    )
+    footer.font = Font(italic=True, size=9, color="555555"); footer.alignment = CENTER
+
+    widths = {"A": 6, "B": 18, "C": 20, "D": 12, "E": 12, "F": 16, "G": 16, "H": 12}
+    for col, w in widths.items():
+        ws.column_dimensions[col].width = w
+    ws.freeze_panes = "A9"
+
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return buf
+
+
+def _build_sales_by_table_html(data: dict, period_label: str, business: dict) -> str:
+    summary = data.get("summary", {}) or {}
+    top_tables = data.get("top_tables", []) or []
+    by_area = data.get("by_area", []) or []
+
+    trs_t = []
+    grand_total = float(summary.get("grand_total") or 0)
+    for idx, t in enumerate(top_tables, start=1):
+        total = float(t.get("total") or 0)
+        bills_ = int(t.get("bills") or 0)
+        avg_t = (total / bills_) if bills_ else 0
+        pct = (total / grand_total * 100) if grand_total > 0 else 0
+        trs_t.append(
+            f'<tr>'
+            f'<td class="center">{idx}</td>'
+            f'<td>{t.get("table","")}</td>'
+            f'<td>{t.get("area","")}</td>'
+            f'<td class="num">{bills_}</td>'
+            f'<td class="num">{int(t.get("guests") or 0)}</td>'
+            f'<td class="money">{total:,.2f}</td>'
+            f'<td class="money">{avg_t:,.2f}</td>'
+            f'<td class="num">{pct:.2f}%</td></tr>'
+        )
+
+    trs_a = []
+    for a in by_area:
+        total = float(a.get("total") or 0)
+        bills_ = int(a.get("bills") or 0)
+        avg_t = (total / bills_) if bills_ else 0
+        pct = (total / grand_total * 100) if grand_total > 0 else 0
+        trs_a.append(
+            f'<tr>'
+            f'<td>{a.get("area","")}</td>'
+            f'<td class="num">{bills_}</td>'
+            f'<td class="num">{int(a.get("tables_count") or 0)}</td>'
+            f'<td class="money">{total:,.2f}</td>'
+            f'<td class="money">{avg_t:,.2f}</td>'
+            f'<td>{a.get("top_table","—")}</td>'
+            f'<td class="num">{pct:.2f}%</td></tr>'
+        )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Ranking por Mesa / Área</title>
+      <style>
+        @page {{ size: Letter; margin: 16mm 14mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 10pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }}
+        .header h1 {{ margin: 0; font-size: 15pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 9pt; margin-top: 2px; }}
+        .header .title {{ font-size: 12pt; font-weight: bold; margin-top: 4px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        .kpis {{ text-align: center; font-size: 10pt; margin: 6px 0 10px 0; }}
+        h2 {{ font-size: 11pt; margin: 14px 0 4px 0; border-bottom: 1px solid #000; padding-bottom: 3px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 4px; }}
+        thead th {{ background: #111; color: #fff; padding: 5px 6px; font-size: 9pt; text-align: left; }}
+        thead th.money, thead th.num {{ text-align: right; }}
+        thead th.center {{ text-align: center; }}
+        td {{ padding: 3px 6px; font-size: 9pt; border-bottom: 1px solid #ddd; }}
+        td.money, td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.center {{ text-align: center; }}
+        .footer {{ margin-top: 16px; text-align: center; color: #666; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Ranking por Mesa / Área</div>
+        <div class="date">{period_label} · Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+      <div class="kpis">
+        Top mesa: <strong>{summary.get('top_table','—')}</strong> ({float(summary.get('top_table_total') or 0):,.2f}) ·
+        Top área: <strong>{summary.get('top_area','—')}</strong> ({float(summary.get('top_area_total') or 0):,.2f})
+      </div>
+      <h2>Top Mesas por Ingreso</h2>
+      <table>
+        <thead>
+          <tr>
+            <th class="center">#</th>
+            <th>Mesa</th>
+            <th>Área</th>
+            <th class="num"># Tickets</th>
+            <th class="num">Comensales</th>
+            <th class="money">Total</th>
+            <th class="money">Ticket Prom.</th>
+            <th class="num">% del Total</th>
+          </tr>
+        </thead>
+        <tbody>{''.join(trs_t) or '<tr><td colspan="8" style="text-align:center;color:#777">Sin datos</td></tr>'}</tbody>
+      </table>
+      <h2>Ranking por Área</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Área</th>
+            <th class="num"># Tickets</th>
+            <th class="num"># Mesas</th>
+            <th class="money">Total</th>
+            <th class="money">Ticket Prom.</th>
+            <th>Mesa Top</th>
+            <th class="num">% del Total</th>
+          </tr>
+        </thead>
+        <tbody>{''.join(trs_a) or '<tr><td colspan="7" style="text-align:center;color:#777">Sin datos</td></tr>'}</tbody>
+      </table>
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso interno
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/sales-by-table/xlsx")
+async def sales_by_table_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    limit: int = Query(20, ge=5, le=100),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_sales_by_table(date_from, date_to, limit)
+    business = await _get_business_info()
+    buf = _build_sales_by_table_xlsx(data, _period_label(date_from, date_to), business)
+    fname = f"RankingMesas_{date_from}_al_{date_to}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/sales-by-table/pdf")
+async def sales_by_table_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    limit: int = Query(20, ge=5, le=100),
+    user=Depends(get_current_user),
+):
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    data = await _fetch_sales_by_table(date_from, date_to, limit)
+    business = await _get_business_info()
+    html = _build_sales_by_table_html(data, _period_label(date_from, date_to), business)
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"RankingMesas_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
