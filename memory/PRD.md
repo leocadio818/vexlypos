@@ -1867,3 +1867,47 @@ Archivos bajo protección total:
 - Auth Bearer en exports ✅
 - Edge case división por cero manejado ✅
 
+
+---
+
+## ✅ 2026-04-20 — Reportes A7 + A4 (Product Mix × Empleado y Ventas por Día de la Semana) — CONFIRMADO 🔒
+
+**Estado:** Backend 10/10 pytest verde, Frontend 100% verde (iter 157). Cero regresiones.
+
+**A7 — Product Mix por Empleado:**
+- `/api/reports/product-mix-by-employee?date_from&date_to&employee` — árbol `Empleado → Productos` con `qty`, `total`, `pct_of_employee`. Summary incluye `top_employee`, `employee_count`, `product_count`, `grand_total`. `top_products` (top 10 globales) aparte.
+- Export XLSX con `outlineLevel=1` en filas de producto + `=SUM()` reales en subtotales por empleado y grand total.
+- Export PDF WeasyPrint B/N con una tabla por empleado (page-break-inside: avoid).
+- Frontend: 4 KPIs + tabla jerárquica con expand/collapse + botones Expandir/Colapsar todo + Top 10 productos globales.
+
+**A4 — Ventas por Día de la Semana:**
+- `/api/reports/sales-by-weekday?date_from&date_to` — 7 buckets Lun→Dom (ISO weekday 0..6) con `bills`, `total`, `avg_ticket`, `days_observed`, `avg_per_day`, `pct`. Summary incluye `peak_weekday`, `valley_weekday`, `best_avg_weekday`.
+- Export XLSX con fórmulas reales: `=IF(B>0,C/B,0)` para ticket promedio, `=IF(E>0,C/E,0)` para promedio/día, `=SUM()` en TOTAL, `=IF(C{total}>0,C{row}/C{total},0)` para %.
+- Export PDF WeasyPrint B/N con fila pico resaltada.
+- Frontend: 3 KPIs + tabla 7 días + gráfico de barras + botones PDF/XLSX.
+
+**Validación de valores (dataset real 2026-04-01..20):**
+- A7: 2 empleados — Admin (14,400 / top PRESIDENTE) · Carlos Mesero (10,700 / top HAMBURGUESA). Grand 25,100.
+- A4: Peak Martes 18,176 · Valley Jueves 384 · Best avg/día Domingo 13,584 · Grand 32,144 · 42 facturas.
+
+**Archivos protegidos 🔒:**
+- `/app/backend/routers/reports.py` líneas ~1183-1375 (impls + endpoints A7/A4).
+- `/app/backend/routers/reports_xlsx.py` líneas ~2427-2900 (builders + endpoints XLSX/PDF).
+- `/app/frontend/src/pages/reports/ProductMixByEmployeeReport.jsx` (nuevo).
+- `/app/frontend/src/pages/reports/SalesByWeekdayReport.jsx` (nuevo).
+- `/app/frontend/src/pages/reports/index.js` (exports).
+- `/app/frontend/src/pages/Reports.js` (imports + sidebar entries + endpoints + switch cases).
+
+**Test artifacts:**
+- `/app/test_reports/iteration_157.json`.
+- `/app/backend/tests/test_reports_a7_a4.py` (10 pytest: shape, valores esperados, auth, fórmulas XLSX reales, outlineLevel, regresión).
+
+**Criterios Vexly cumplidos:**
+- Testids únicos ✅
+- 5 viewports + theme-aware ✅
+- Impresión B/N ✅
+- Fórmulas Excel reales (no hardcoded) ✅
+- Sidebar al final sin reordenar ✅
+- Auth Bearer en exports ✅
+- Cero regresiones ✅
+
