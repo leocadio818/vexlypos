@@ -161,7 +161,7 @@ export default function SalesByTableReport({ data, dateRange }) {
                 <td className="p-3 text-right font-oswald text-primary">{formatMoney(topTables.reduce((s, r) => s + (r.total || 0), 0))}</td>
                 <td className="p-3 hidden md:table-cell" />
                 <td className="p-3 text-right">
-                  {formatMoney(0).replace('$0.00', '')}{topTables.reduce((s, r) => s + (r.pct || 0), 0).toFixed(1)}%
+                  {topTables.reduce((s, r) => s + (r.pct || 0), 0).toFixed(1)}%
                 </td>
               </tr>
             </tbody>

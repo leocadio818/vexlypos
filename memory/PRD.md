@@ -1911,3 +1911,51 @@ Archivos bajo protección total:
 - Auth Bearer en exports ✅
 - Cero regresiones ✅
 
+
+---
+
+## ✅ 2026-04-21 — Reporte "Ranking por Mesa / Área" (A5) — CONFIRMADO 🔒
+
+**Estado:** Backend 7/7 pytest verde, Frontend 100% verde (iter 158 + fix cosmético). Cero regresiones.
+
+**Implementación:**
+- `/api/reports/sales-by-table?date_from&date_to&limit` — join bills.table_number → tables.number → tables.area_id → areas.name. Devuelve:
+  - `summary`: grand_bills, grand_total, tables_with_sales, areas_with_sales, top_table, top_area.
+  - `top_tables[]`: hasta `limit` (default 20) ordenadas por ingreso descendente con pct, avg_ticket, guests.
+  - `by_area[]`: ranking de áreas con tables_count, top_table, avg_ticket, pct.
+- Nuevos endpoints de export:
+  - `GET /api/reports/xlsx/sales-by-table/xlsx` — openpyxl con fórmulas reales `=SUM()`, `=IF(D>0,F/D,0)` (ticket prom), `=IF(F{total}>0,F{row}/F{total},0)` (%).
+  - `GET /api/reports/xlsx/sales-by-table/pdf` — WeasyPrint B/N con 2 secciones (Top Mesas + Ranking por Área).
+- Frontend `SalesByTableReport.jsx`:
+  - 4 KPIs (Mesas con Ventas, Áreas Activas, Mesa Top, Área Top).
+  - Tabla Top Mesas con badges de área color-coded (paleta determinística).
+  - Tabla Ranking por Área con Mesa Top por área.
+  - Botones Descargar PDF / Excel.
+
+**Fix cosmético aplicado post-test:** celda `%` del TOTAL row mostraba `'RD$ 0.00100.0%'` por un `formatMoney(0).replace()` que no hacía match. Cambiado a `{pctSum.toFixed(1)}%` limpio. Verificado con screenshot.
+
+**Validación de valores (dataset real 2026-04-01..20):**
+- Grand total 32,144 · 42 facturas · 12 mesas activas · 3 áreas
+- Top mesa: **Mesa 1 (Terraza)** $8,208 · 16 tickets · 25.54%
+- Top área: **Salon Principal** $17,792 · 22 tickets · 7 mesas · top_table Mesa 4
+
+**Archivos protegidos 🔒:**
+- `/app/backend/routers/reports.py` líneas ~1373-1510 (`_sales_by_table_impl` + endpoint).
+- `/app/backend/routers/reports_xlsx.py` líneas ~2889-3180 (helpers + endpoints XLSX/PDF).
+- `/app/frontend/src/pages/reports/SalesByTableReport.jsx` (nuevo).
+- `/app/frontend/src/pages/reports/index.js` (export).
+- `/app/frontend/src/pages/Reports.js` (import + sidebar + endpoint + switch).
+
+**Test artifacts:**
+- `/app/test_reports/iteration_158.json`.
+- `/app/backend/tests/test_sales_by_table.py` (7 pytest).
+
+**Criterios Vexly cumplidos:**
+- Testids únicos ✅
+- 5 viewports + theme-aware ✅
+- Impresión B/N ✅
+- Fórmulas Excel reales (no hardcoded) ✅
+- Sidebar al final sin reordenar ✅
+- Auth Bearer en exports ✅
+- Badges de área con paleta determinística ✅
+
