@@ -1555,3 +1555,348 @@ async def hourly_sales_pdf(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
 
+
+
+# ═══════════════════════════════════════════════════════════════
+# IMPUESTOS — PDF + XLSX (breakdown ITBIS por tasa + Propina Legal 10%)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_taxes_data(date_from: str, date_to: str) -> dict:
+    """Reuse the extended taxes_report function directly."""
+    from routers.reports import taxes_report
+    return await taxes_report(date_from=date_from, date_to=date_to)
+
+
+def _build_taxes_xlsx(data: dict, period_label: str, business: dict) -> BytesIO:
+    """XLSX with: Resumen por Tasa (SUM formulas), Propina Legal 10%, Desglose Diario (SUM)."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Impuestos"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    BOLD = Font(bold=True, size=11)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    # Title block
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value="Reporte de Impuestos").font = Font(bold=True, size=12)
+    ws.cell(row=4, column=1, value=period_label).font = Font(size=10, color="555555")
+
+    # ── Bloque 1: Resumen por Tasa (ITBIS 18%, 0%, Exento)
+    ws.cell(row=6, column=1, value="RESUMEN POR TASA DE ITBIS").font = Font(bold=True, size=11)
+
+    hdr_row = 7
+    headers_tax = ["Tasa", "Base Imponible", "ITBIS Recaudado", "# Facturas"]
+    for i, h in enumerate(headers_tax, start=1):
+        c = ws.cell(row=hdr_row, column=i, value=h)
+        c.font = WHITE_FONT
+        c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 2 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    br_start = hdr_row + 1
+    breakdown = data.get("breakdown_by_rate", [])
+    row_n = br_start
+    for r in breakdown:
+        ws.cell(row=row_n, column=1, value=r["rate_label"]).alignment = LEFT
+        b = ws.cell(row=row_n, column=2, value=float(r["base"] or 0))
+        b.number_format = '#,##0.00'; b.alignment = RIGHT
+        i_c = ws.cell(row=row_n, column=3, value=float(r["itbis"] or 0))
+        i_c.number_format = '#,##0.00'; i_c.alignment = RIGHT
+        f_c = ws.cell(row=row_n, column=4, value=int(r["invoice_count"] or 0))
+        f_c.alignment = RIGHT
+        row_n += 1
+    br_end = row_n - 1
+
+    # TOTAL GENERAL row with SUM formulas
+    total_tax_row = row_n
+    t1 = ws.cell(row=total_tax_row, column=1, value="TOTAL GENERAL")
+    t1.font = Font(bold=True, size=11)
+    if breakdown:
+        ws.cell(row=total_tax_row, column=2, value=f"=SUM(B{br_start}:B{br_end})")
+        ws.cell(row=total_tax_row, column=3, value=f"=SUM(C{br_start}:C{br_end})")
+        ws.cell(row=total_tax_row, column=4, value=f"=SUM(D{br_start}:D{br_end})")
+    else:
+        ws.cell(row=total_tax_row, column=2, value=0)
+        ws.cell(row=total_tax_row, column=3, value=0)
+        ws.cell(row=total_tax_row, column=4, value=0)
+    for col, fmt in ((2, '#,##0.00'), (3, '#,##0.00'), (4, '#,##0')):
+        cc = ws.cell(row=total_tax_row, column=col)
+        cc.font = BOLD
+        cc.number_format = fmt
+        cc.alignment = RIGHT
+        cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+    row_n += 2
+
+    # ── Bloque 2: Propina Legal 10%
+    ws.cell(row=row_n, column=1, value="PROPINA LEGAL 10%").font = Font(bold=True, size=11)
+    row_n += 1
+    summary = data.get("summary", {})
+    total_subtotal = float(summary.get("total_subtotal") or 0)
+    total_tips = float(summary.get("total_tips") or 0)
+
+    ws.cell(row=row_n, column=1, value="Base gravable").alignment = LEFT
+    bg = ws.cell(row=row_n, column=2, value=total_subtotal)
+    bg.number_format = '#,##0.00'; bg.alignment = RIGHT
+    row_n += 1
+
+    ws.cell(row=row_n, column=1, value="Propina 10%").alignment = LEFT
+    # Formula: =B{base_row}*0.10  (dynamic reference to base gravable row)
+    pp = ws.cell(row=row_n, column=2, value=f"=B{row_n - 1}*0.10")
+    pp.number_format = '#,##0.00'; pp.alignment = RIGHT; pp.font = BOLD
+    # Also record actual value in a note (for audit) via comment-less cell C
+    ws.cell(row=row_n, column=3, value=f"Valor calculado: {total_tips:,.2f}").font = Font(size=9, italic=True, color="555555")
+    row_n += 2
+
+    # ── Bloque 3: Desglose Diario
+    ws.cell(row=row_n, column=1, value="DESGLOSE DIARIO").font = Font(bold=True, size=11)
+    row_n += 1
+    headers_daily = ["Fecha", "Subtotal", "ITBIS", "Propinas", "Total"]
+    for i, h in enumerate(headers_daily, start=1):
+        c = ws.cell(row=row_n, column=i, value=h)
+        c.font = WHITE_FONT
+        c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 2 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+    row_n += 1
+
+    daily = data.get("daily", []) or []
+    daily_start = row_n
+    for d in daily:
+        ws.cell(row=row_n, column=1, value=d.get("date", "")).font = Font(name="Courier New", size=10)
+        for col, key in ((2, "subtotal"), (3, "itbis"), (4, "tips"), (5, "total")):
+            c = ws.cell(row=row_n, column=col, value=float(d.get(key) or 0))
+            c.number_format = '#,##0.00'; c.alignment = RIGHT
+        row_n += 1
+    daily_end = row_n - 1
+
+    # Daily total row with SUM
+    if daily:
+        dt1 = ws.cell(row=row_n, column=1, value="TOTAL")
+        dt1.font = Font(bold=True, size=11)
+        for col, letter in ((2, "B"), (3, "C"), (4, "D"), (5, "E")):
+            cc = ws.cell(row=row_n, column=col, value=f"=SUM({letter}{daily_start}:{letter}{daily_end})")
+            cc.font = BOLD
+            cc.number_format = '#,##0.00'
+            cc.alignment = RIGHT
+            cc.border = Border(top=Side(style="medium", color="000000"), bottom=Side(style="medium", color="000000"))
+        row_n += 1
+
+    # Integrity warning (if not ok)
+    integrity = data.get("breakdown_integrity", {})
+    if integrity and not integrity.get("ok"):
+        row_n += 1
+        ws.merge_cells(start_row=row_n, start_column=1, end_row=row_n, end_column=5)
+        w = ws.cell(
+            row=row_n, column=1,
+            value=(
+                f"⚠ Inconsistencia detectada: suma por tasa ({integrity.get('sum_by_rate')}) "
+                f"≠ total ITBIS ({integrity.get('total_itbis')}). Diferencia: {integrity.get('diff')}."
+            )
+        )
+        w.font = Font(bold=True, color="9C0006")
+        w.fill = PatternFill("solid", fgColor="FFE0E0")
+
+    # Footer
+    row_n += 2
+    ws.merge_cells(start_row=row_n, start_column=1, end_row=row_n, end_column=5)
+    footer = ws.cell(
+        row=row_n, column=1,
+        value=f"Documento generado por {business.get('name','')} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso fiscal interno"
+    )
+    footer.font = Font(italic=True, size=9, color="555555")
+    footer.alignment = CENTER
+
+    ws.column_dimensions["A"].width = 32
+    ws.column_dimensions["B"].width = 18
+    ws.column_dimensions["C"].width = 18
+    ws.column_dimensions["D"].width = 14
+    ws.column_dimensions["E"].width = 16
+    ws.freeze_panes = "A8"
+
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return buf
+
+
+def _build_taxes_html(data: dict, period_label: str, business: dict) -> str:
+    """Print-friendly B/W HTML for PDF generation."""
+    breakdown = data.get("breakdown_by_rate", []) or []
+    summary = data.get("summary", {}) or {}
+    integrity = data.get("breakdown_integrity", {}) or {}
+
+    total_base = sum(float(r.get("base") or 0) for r in breakdown)
+    total_itbis_br = sum(float(r.get("itbis") or 0) for r in breakdown)
+    total_invoices = sum(int(r.get("invoice_count") or 0) for r in breakdown)
+
+    rows_tax = []
+    for r in breakdown:
+        rows_tax.append(
+            f'<tr>'
+            f'<td>{r["rate_label"]}</td>'
+            f'<td class="money">{float(r["base"] or 0):,.2f}</td>'
+            f'<td class="money">{float(r["itbis"] or 0):,.2f}</td>'
+            f'<td class="num">{int(r["invoice_count"] or 0)}</td></tr>'
+        )
+    rows_tax.append(
+        f'<tr class="grand-total">'
+        f'<td><strong>TOTAL GENERAL</strong></td>'
+        f'<td class="money"><strong>{total_base:,.2f}</strong></td>'
+        f'<td class="money"><strong>{total_itbis_br:,.2f}</strong></td>'
+        f'<td class="num"><strong>{total_invoices}</strong></td></tr>'
+    )
+
+    daily = data.get("daily", []) or []
+    rows_daily = []
+    td_sub = td_itb = td_tip = td_tot = 0.0
+    for d in daily:
+        td_sub += float(d.get("subtotal") or 0)
+        td_itb += float(d.get("itbis") or 0)
+        td_tip += float(d.get("tips") or 0)
+        td_tot += float(d.get("total") or 0)
+        rows_daily.append(
+            f'<tr>'
+            f'<td class="mono">{d.get("date","")}</td>'
+            f'<td class="money">{float(d.get("subtotal") or 0):,.2f}</td>'
+            f'<td class="money">{float(d.get("itbis") or 0):,.2f}</td>'
+            f'<td class="money">{float(d.get("tips") or 0):,.2f}</td>'
+            f'<td class="money">{float(d.get("total") or 0):,.2f}</td></tr>'
+        )
+    if daily:
+        rows_daily.append(
+            f'<tr class="grand-total">'
+            f'<td><strong>TOTAL</strong></td>'
+            f'<td class="money"><strong>{td_sub:,.2f}</strong></td>'
+            f'<td class="money"><strong>{td_itb:,.2f}</strong></td>'
+            f'<td class="money"><strong>{td_tip:,.2f}</strong></td>'
+            f'<td class="money"><strong>{td_tot:,.2f}</strong></td></tr>'
+        )
+
+    base_gravable = float(summary.get("total_subtotal") or 0)
+    propina_10 = round(base_gravable * 0.10, 2)
+
+    integrity_banner = ""
+    if integrity and not integrity.get("ok"):
+        integrity_banner = (
+            f'<div class="warning">⚠ Inconsistencia detectada: suma por tasa ({integrity.get("sum_by_rate")}) '
+            f'≠ total ITBIS ({integrity.get("total_itbis")}). Diferencia: {integrity.get("diff")}.</div>'
+        )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Reporte de Impuestos</title>
+      <style>
+        @page {{ size: Letter; margin: 18mm 14mm; }}
+        * {{ box-sizing: border-box; }}
+        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #000; font-size: 10.5pt; margin: 0; padding: 0; }}
+        .header {{ text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }}
+        .header h1 {{ margin: 0; font-size: 15pt; color: #000; }}
+        .header .rnc {{ color: #444; font-size: 10pt; margin-top: 2px; }}
+        .header .title {{ font-size: 12pt; font-weight: bold; margin-top: 4px; }}
+        .header .date {{ color: #666; font-size: 9pt; margin-top: 2px; }}
+        h2 {{ font-size: 11pt; margin: 14px 0 6px 0; border-bottom: 1px solid #000; padding-bottom: 3px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 4px; }}
+        thead th {{ background: #111; color: #fff; padding: 6px 8px; font-size: 10pt; text-align: left; }}
+        thead th.money, thead th.num {{ text-align: right; }}
+        td {{ padding: 4px 8px; font-size: 10pt; border-bottom: 1px solid #ddd; }}
+        td.money, td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+        td.mono {{ font-family: 'Courier New', monospace; }}
+        tr.grand-total td {{ border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 7px 8px; background: #f5f5f5; font-size: 11pt; }}
+        .tips-box {{ margin-top: 6px; border: 1px solid #000; padding: 8px 12px; display: inline-block; }}
+        .tips-box p {{ margin: 3px 0; }}
+        .tips-box strong {{ display: inline-block; min-width: 140px; }}
+        .warning {{ background: #fff1f1; border: 1.5px solid #9C0006; color: #9C0006; padding: 8px 12px; margin-top: 10px; font-weight: bold; }}
+        .footer {{ margin-top: 22px; text-align: center; color: #666; font-size: 8pt; font-style: italic; }}
+        @media print {{ body {{ background: white; }} tr.grand-total td {{ background: #fff; }} }}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>{business['name']}</h1>
+        <div class="rnc">RNC: {business['rnc']}</div>
+        <div class="title">Reporte de Impuestos</div>
+        <div class="date">{period_label} · Generado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</div>
+      </div>
+
+      {integrity_banner}
+
+      <h2>Resumen por Tasa de ITBIS</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Tasa</th>
+            <th class="money">Base Imponible</th>
+            <th class="money">ITBIS Recaudado</th>
+            <th class="num"># Facturas</th>
+          </tr>
+        </thead>
+        <tbody>{''.join(rows_tax)}</tbody>
+      </table>
+
+      <h2>Propina Legal 10%</h2>
+      <div class="tips-box">
+        <p><strong>Base gravable:</strong> {base_gravable:,.2f}</p>
+        <p><strong>Propina 10%:</strong> {propina_10:,.2f}</p>
+      </div>
+
+      <h2>Desglose Diario</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th class="money">Subtotal</th>
+            <th class="money">ITBIS</th>
+            <th class="money">Propinas</th>
+            <th class="money">Total</th>
+          </tr>
+        </thead>
+        <tbody>{''.join(rows_daily) or '<tr><td colspan="5" style="text-align:center;color:#777">Sin datos</td></tr>'}</tbody>
+      </table>
+
+      <div class="footer">
+        Documento generado automáticamente por {business['name']} | {datetime.now().strftime('%d/%m/%Y %H:%M')} | Uso fiscal interno
+      </div>
+    </body>
+    </html>
+    """
+
+
+@router.get("/taxes/xlsx")
+async def taxes_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_taxes_data(date_from, date_to)
+    business = await _get_business_info()
+    buf = _build_taxes_xlsx(data, _period_label(date_from, date_to), business)
+    fname = f"ReporteImpuestos_{date_from}_al_{date_to}.xlsx"
+    return _xlsx_response(buf, fname)
+
+
+@router.get("/taxes/pdf")
+async def taxes_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    data = await _fetch_taxes_data(date_from, date_to)
+    business = await _get_business_info()
+    html = _build_taxes_html(data, _period_label(date_from, date_to), business)
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"ReporteImpuestos_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+

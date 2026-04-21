@@ -1548,7 +1548,7 @@ async def taxes_report(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None)
 ):
-    """Tax collection report (ITBIS and Legal Tip)"""
+    """Tax collection report (ITBIS and Legal Tip) with per-rate breakdown (18%, 0%, Exento)."""
     if not date_from:
         date_from = await get_active_business_date()
     if not date_to:
@@ -1565,6 +1565,29 @@ async def taxes_report(
     total_tips = 0
     total_sales = 0
     
+    # Per-rate ITBIS breakdown aggregation
+    # Buckets keyed by rate label. Uses bill.tax_breakdown (non-tip entries) when available;
+    # falls back to bill-level itbis/itbis_rate/subtotal when the breakdown is missing.
+    rate_buckets = {}  # label -> {"rate_label", "rate_value", "base", "itbis", "invoice_ids"}
+
+    def _bucket_for(rate_value: float, is_exempt: bool):
+        if is_exempt:
+            label = "Exento"
+            rv = None
+        elif rate_value == 0:
+            label = "ITBIS 0%"
+            rv = 0.0
+        else:
+            label = f"ITBIS {int(rate_value) if float(rate_value).is_integer() else rate_value}%"
+            rv = float(rate_value)
+        return rate_buckets.setdefault(label, {
+            "rate_label": label,
+            "rate_value": rv,
+            "base": 0.0,
+            "itbis": 0.0,
+            "invoice_ids": set(),
+        })
+
     # Daily breakdown
     daily = {}
     for bill in filtered:
@@ -1586,7 +1609,61 @@ async def taxes_report(
         total_itbis += itbis
         total_tips += tips
         total_sales += total
-    
+
+        # Per-rate aggregation
+        bill_id = bill.get("id") or bill.get("transaction_number")
+        tb = bill.get("tax_breakdown") or []
+        non_tip_entries = [t for t in tb if not t.get("is_tip")]
+        if non_tip_entries:
+            for t in non_tip_entries:
+                rate_v = float(t.get("rate") or 0)
+                amt = float(t.get("amount") or 0)
+                base = float(t.get("taxable_base") or 0)
+                # Determine if exempt: rate 0 AND explicit exempt flag, OR base>0 with amount=0 and no rate
+                is_exempt = bool(t.get("is_exempt"))
+                bucket = _bucket_for(rate_v, is_exempt)
+                bucket["base"] += base
+                bucket["itbis"] += amt
+                bucket["invoice_ids"].add(bill_id)
+        else:
+            # Fallback path: infer from bill-level fields
+            rate_v = float(bill.get("itbis_rate") or 0)
+            if itbis > 0 and rate_v > 0:
+                bucket = _bucket_for(rate_v, False)
+                bucket["base"] += subtotal
+                bucket["itbis"] += itbis
+                bucket["invoice_ids"].add(bill_id)
+            elif subtotal > 0:
+                # Exempt (no ITBIS collected but there is a taxable base)
+                bucket = _bucket_for(0, True)
+                bucket["base"] += subtotal
+                bucket["itbis"] += 0
+                bucket["invoice_ids"].add(bill_id)
+
+    # Finalize breakdown
+    breakdown_by_rate = []
+    for label in sorted(rate_buckets.keys(), key=lambda s: (s == "Exento", s == "ITBIS 0%", s)):
+        b = rate_buckets[label]
+        breakdown_by_rate.append({
+            "rate_label": b["rate_label"],
+            "rate_value": b["rate_value"],
+            "base": round(b["base"], 2),
+            "itbis": round(b["itbis"], 2),
+            "invoice_count": len(b["invoice_ids"]),
+        })
+
+    # Integrity check: sum of ITBIS by rate must match total_itbis (tolerance 0.02 for rounding)
+    breakdown_itbis_total = round(sum(r["itbis"] for r in breakdown_by_rate), 2)
+    total_itbis_rounded = round(total_itbis, 2)
+    integrity_ok = abs(breakdown_itbis_total - total_itbis_rounded) <= 0.02
+    if not integrity_ok:
+        import logging
+        logging.getLogger(__name__).warning(
+            "Tax breakdown integrity mismatch: sum(by_rate)=%.2f vs total_itbis=%.2f (diff=%.2f) for %s..%s",
+            breakdown_itbis_total, total_itbis_rounded, breakdown_itbis_total - total_itbis_rounded,
+            date_from, date_to,
+        )
+
     return {
         "date_from": date_from,
         "date_to": date_to,
@@ -1597,6 +1674,13 @@ async def taxes_report(
             "total_sales": round(total_sales, 2),
             "itbis_rate": 18.0,
             "tip_rate": 10.0
+        },
+        "breakdown_by_rate": breakdown_by_rate,
+        "breakdown_integrity": {
+            "ok": integrity_ok,
+            "sum_by_rate": breakdown_itbis_total,
+            "total_itbis": total_itbis_rounded,
+            "diff": round(breakdown_itbis_total - total_itbis_rounded, 2),
         },
         "daily": sorted(daily.values(), key=lambda x: x["date"], reverse=True)
     }

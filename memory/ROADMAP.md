@@ -45,6 +45,11 @@ Prioridades:
   - Cálculo de neto después de comisiones (comisión configurable por plataforma).
   - Cotejo contra depósitos semanales reales para detectar discrepancias.
   - Útil para identificar pagos faltantes y negociar mejores términos comerciales.
+- [ ] **Ventas por Hora — Filtro "Día de la semana"** *(enhancement del Prompt 3)* — Added 2026-04-20
+  - Multi-select Lun-Dom para detectar patrones (ej: sábado 21:00 vs martes 21:00).
+  - Requiere extender endpoint `/api/reports/hourly-sales` con parámetro `weekday` (el actual no lo acepta).
+  - Útil para decisiones de staffing más finas.
+  - Estimado ~2-3h.
 
 ---
 
