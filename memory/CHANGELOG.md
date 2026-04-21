@@ -1,5 +1,16 @@
 # VexlyPOS — Changelog
 
+## 2026-02 — Feature: Clonar Permisos al Crear Puesto ✨
+- **Nueva funcionalidad**: Al crear un puesto custom, admin puede seleccionar "Clonar Permisos desde" un puesto existente (builtin o custom) como punto de partida.
+- **Comportamiento**:
+  - Dropdown muestra todos los puestos visibles con su count: `Gerente (31p · N60)`, `Cajero (12p · N30)`, etc.
+  - Al seleccionar, los permisos se copian automáticamente al estado `newRolePermissions`.
+  - Admin puede luego ajustar con los switches (agregar/quitar permisos específicos).
+  - Toast confirma: "Clonados X permisos de [Rol]".
+- **Uso típico**: crear "Bartender" clonando desde "Mesero" (3p base) + agregar split_bill, collect_payment manualmente. Ahorra ~20 clicks por nuevo rol.
+- **Files**: `/app/frontend/src/pages/UserConfig.js` — Create Role Dialog extendido con `<select data-testid="clone-role-select">`.
+
+
 ## 2026-02 — Fix: Sistema de Puestos (Roles) y Permisos 🔧
 - **Problema**: Al seleccionar un puesto, los permisos predefinidos NO se cargaban automáticamente. Custom roles (gerente/propietario) tenían `permissions={}` vacío. `ROLE_DEFAULTS` frontend y `DEFAULT_PERMISSIONS` backend desincronizados.
 - **Fix aplicado**:

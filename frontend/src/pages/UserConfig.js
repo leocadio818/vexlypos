@@ -941,6 +941,63 @@ export default function UserConfig() {
               </p>
             </div>
 
+            {/* Clonar desde puesto existente */}
+            <div>
+              <label className="text-[11px] text-muted-foreground mb-1 block uppercase tracking-wider font-bold flex items-center gap-1">
+                <Briefcase size={12} /> Clonar Permisos desde (opcional)
+              </label>
+              <select
+                onChange={(e) => {
+                  const srcCode = e.target.value;
+                  if (!srcCode) return;
+                  let srcPerms = {};
+                  if (ROLE_DEFAULTS[srcCode]) {
+                    srcPerms = { ...ROLE_DEFAULTS[srcCode] };
+                  } else {
+                    const found = roles.find(r => getRoleCode(r) === srcCode);
+                    if (found?.permissions && Object.keys(found.permissions).length > 0) {
+                      srcPerms = { ...found.permissions };
+                    } else if (CUSTOM_ROLE_DEFAULTS[String(srcCode || '').toLowerCase()]) {
+                      srcPerms = { ...CUSTOM_ROLE_DEFAULTS[String(srcCode || '').toLowerCase()] };
+                    }
+                  }
+                  setNewRolePermissions(srcPerms);
+                  const srcLabel = getRoleLabel(srcCode, roles);
+                  const count = Object.values(srcPerms).filter(Boolean).length;
+                  notify.success(`Clonados ${count} permisos de ${srcLabel}`);
+                  e.target.value = '';
+                }}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:border-primary/50 focus:outline-none"
+                data-testid="clone-role-select"
+                defaultValue=""
+              >
+                <option value="">— Sin clonar (permisos vacíos) —</option>
+                {roles
+                  .filter((role, idx, arr) => {
+                    if (role.builtin) return true;
+                    const c = getRoleCode(role);
+                    const builtinCodes = ['admin', 'waiter', 'cashier', 'supervisor', 'kitchen'];
+                    if (builtinCodes.includes(c)) return false;
+                    return arr.findIndex(r => getRoleCode(r) === c) === idx;
+                  })
+                  .map(role => {
+                    const c = getRoleCode(role);
+                    const permSource = role.builtin
+                      ? (ROLE_DEFAULTS[c] || {})
+                      : (role.permissions && Object.keys(role.permissions).length > 0
+                          ? role.permissions
+                          : (CUSTOM_ROLE_DEFAULTS[String(c || '').toLowerCase()] || {}));
+                    const cnt = Object.values(permSource).filter(Boolean).length;
+                    return (
+                      <option key={role.id} value={c}>{role.name} ({cnt}p · N{role.level ?? '?'})</option>
+                    );
+                  })}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Copia los permisos del puesto seleccionado como punto de partida. Luego puedes ajustar abajo.
+              </p>
+            </div>
+
             {/* Permisos del Puesto */}
             <div>
               <div className="flex items-center justify-between mb-2">
