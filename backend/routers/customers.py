@@ -248,7 +248,6 @@ async def public_loyalty_card(cid: str, token: str = Query(...)):
     return {
         "customer_id": cid,
         "name": customer.get("name", ""),
-        "phone": customer.get("phone", ""),
         "points": points,
         "rd_equivalent": round(points * point_value, 2),
         "point_value_rd": point_value,

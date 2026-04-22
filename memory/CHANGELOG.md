@@ -171,3 +171,18 @@
   - Manejo de errores del backend propaga `err.response.data.detail`.
 - Testing: Backend curl end-to-end (293→375 pts con redención 100 + ganancia 182); edge cases 400 (min, insuficiente, sin cliente); testing agent frontend 95% funcional + fix layout; pago final E2E validado (200→209 pts).
 - data-testids: `loyalty-redemption-section`, `redeem-preset-50/100/200`, `redeem-all-btn`, `redeem-points-input`, `loyalty-discount-amount`, `bill-total-display`.
+
+## 2026-04-22 - Top Clientes Fieles + Tarjeta Digital con QR
+- **Backend `/app/backend/routers/customers.py`**:
+  - `GET /api/loyalty/top-customers?days=30&limit=10` — ranking por actividad (pts ganados + canjeados) últimos N días con tabs 30/90/3650.
+  - `GET /api/loyalty/card/{customer_id}` (auth) — devuelve token HMAC-SHA256 (16 hex) derivado de `JWT_SECRET`.
+  - `GET /api/loyalty/public-card/{customer_id}?token={}` **PÚBLICO (sin auth)** — valida HMAC con `compare_digest`, devuelve nombre, saldo, equivalente RD$, últimas 3 visitas, business info. PII del cliente (teléfono) no se expone.
+  - `POST /api/loyalty/send-card-email/{customer_id}` — envía tarjeta HTML profesional vía Resend con QR embebido.
+- **Frontend**:
+  - Nuevo `/app/frontend/src/pages/LoyaltyCard.js` — página pública con tarjeta QR, últimas 3 visitas, botones Imprimir (CSS @media print) y Copiar URL.
+  - Nuevo `/app/frontend/src/components/TopLoyaltyCustomers.js` — widget Dashboard con tabs 30d/90d/Siempre, summary (Ganados/Canjeados/Gastado), top 10 filas con badges dorado/plata/bronce.
+  - `Dashboard.js` integrado con el widget.
+  - `Customers.js` nuevo botón IdCard (card-{id}) y diálogo con QR preview + Copiar URL + Abrir + Enviar Email.
+  - `App.js` ruta `/loyalty-card/:customerId` FUERA de ProtectedRoute para acceso público.
+- **Seguridad**: Token HMAC-SHA256 truncado a 16 hex previene enumeración. `hmac.compare_digest` previene timing attacks.
+- **Testing**: iteration_164.json — 100% backend (9/9 pytest) + 100% frontend (todos los data-testids + ruta pública sin auth + token inválido muestra error sin redirigir).
