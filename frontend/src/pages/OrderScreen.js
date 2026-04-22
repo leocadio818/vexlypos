@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ordersAPI, categoriesAPI, productsAPI, modifiersAPI, reasonsAPI, tablesAPI, areasAPI, billsAPI, inventorySettingsAPI, posSessionsAPI, simpleInventoryAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search, Pencil, Settings } from 'lucide-react';
+import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search, Pencil, Settings, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -86,6 +86,10 @@ export default function OrderScreen() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [activePromotions, setActivePromotions] = useState([]);
+  const [activeCombos, setActiveCombos] = useState([]);
+  const [comboSelectorOpen, setComboSelectorOpen] = useState(false);
+  const [selectedCombo, setSelectedCombo] = useState(null);
+  const [comboSelections, setComboSelections] = useState({});
   const [modifierGroups, setModifierGroups] = useState([]);
   const [activeCat, setActiveCat] = useState(null); // null = show categories grid
   const [cancelReasons, setCancelReasons] = useState([]);
@@ -353,6 +357,17 @@ export default function OrderScreen() {
         if (resp.ok) {
           const data = await resp.json();
           setActivePromotions(Array.isArray(data) ? data : []);
+        }
+      } catch {}
+
+      // Active combos
+      try {
+        const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+        const token = localStorage.getItem('pos_token');
+        const resp = await fetch(`${API}/combos/active`, { headers: { Authorization: `Bearer ${token}` } });
+        if (resp.ok) {
+          const data = await resp.json();
+          setActiveCombos(Array.isArray(data) ? data : []);
         }
       } catch {}
 
@@ -803,6 +818,92 @@ export default function OrderScreen() {
         console.warn('Error agregando item');
       }
     }
+  };
+
+  const addComboToOrder = async (combo, selections = {}) => {
+    if (!navigator.onLine) { notify.error('Sin conexión.'); return; }
+    try {
+      const token = localStorage.getItem('pos_token');
+      const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+      // Ensure order exists
+      let currentOrder = order;
+      if (!currentOrder) {
+        const res = await ordersAPI.create({ table_id: tableId, items: [] });
+        currentOrder = res.data;
+        setOrder(currentOrder);
+      }
+      const resp = await fetch(`${API}/orders/${currentOrder.id}/combos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ combo_id: combo.id, selections }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        notify.error(data.detail || 'Error agregando combo');
+        return;
+      }
+      setOrder(data);
+      notify.success(`Combo "${combo.name}" agregado`);
+    } catch (err) {
+      notify.error('Error agregando combo');
+    }
+  };
+
+  const removeComboFromOrder = async (comboGroupId) => {
+    if (!order) return;
+    try {
+      const token = localStorage.getItem('pos_token');
+      const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+      const resp = await fetch(`${API}/orders/${order.id}/combos/${comboGroupId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        notify.error(data.detail || 'Error eliminando combo');
+        return;
+      }
+      setOrder(data);
+      notify.success('Combo eliminado');
+    } catch {
+      notify.error('Error eliminando combo');
+    }
+  };
+
+  const handleComboClick = (combo) => {
+    if (combo.combo_type === 'fixed') {
+      addComboToOrder(combo, {});
+    } else {
+      // Configurable: open selector modal
+      const initialSel = {};
+      (combo.groups || []).forEach(g => {
+        const defaults = (g.items || []).filter(it => it.is_default).map(it => it.product_id);
+        initialSel[g.id] = defaults.slice(0, g.max_selections || 1);
+      });
+      setSelectedCombo(combo);
+      setComboSelections(initialSel);
+      setComboSelectorOpen(true);
+    }
+  };
+
+  const handleConfirmComboSelection = () => {
+    if (!selectedCombo) return;
+    // Validate min selections per group
+    for (const g of (selectedCombo.groups || [])) {
+      const sel = comboSelections[g.id] || [];
+      if (sel.length < (g.min_selections || 1)) {
+        notify.error(`Grupo "${g.name}": elige al menos ${g.min_selections || 1}`);
+        return;
+      }
+      if (sel.length > (g.max_selections || 1)) {
+        notify.error(`Grupo "${g.name}": máximo ${g.max_selections || 1}`);
+        return;
+      }
+    }
+    addComboToOrder(selectedCombo, comboSelections);
+    setComboSelectorOpen(false);
+    setSelectedCombo(null);
+    setComboSelections({});
   };
 
   const handleConfirmModifiers = () => {
@@ -2015,10 +2116,15 @@ export default function OrderScreen() {
                     const modTotal = (item.modifiers || []).reduce((s, m) => s + (m.price || 0), 0);
                     const itemTotal = (item.unit_price + modTotal) * item.quantity;
                     const isSelected = selectedItems.includes(item.id);
+                    const isComboParent = item.is_combo;
+                    const isComboChild = item.is_combo_item;
                     return (
                     <div key={item.id} data-testid={`order-item-${item.id}`}
                       onClick={() => {
-                        // Toggle selection for void with haptic feedback
+                        if (isComboChild) {
+                          notify.info('Usa el combo principal para eliminar todos los items');
+                          return;
+                        }
                         triggerHaptic('light');
                         if (isSelected) {
                           setSelectedItems(prev => prev.filter(id => id !== item.id));
@@ -2026,21 +2132,36 @@ export default function OrderScreen() {
                           setSelectedItems(prev => [...prev, item.id]);
                         }
                       }}
-                      className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                        isSelected 
-                          ? 'bg-red-500/10 border-red-500/50 ring-1 ring-red-500/30' 
-                          : 'bg-background/50 border-border/50 hover:border-primary/30'
+                      className={`flex items-start gap-2.5 p-3 rounded-xl border transition-all ${
+                        isComboChild
+                          ? 'bg-purple-500/5 border-purple-400/20 ml-6 cursor-not-allowed'
+                          : isComboParent
+                            ? (isSelected
+                                ? 'bg-red-500/10 border-red-500/50 ring-1 ring-red-500/30 cursor-pointer'
+                                : 'bg-purple-500/10 border-purple-400/50 cursor-pointer')
+                            : isSelected
+                              ? 'bg-red-500/10 border-red-500/50 ring-1 ring-red-500/30 cursor-pointer'
+                              : 'bg-background/50 border-border/50 hover:border-primary/30 cursor-pointer'
                       }`}>
-                      {/* Selection indicator */}
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                        isSelected ? 'bg-red-500 border-red-500' : 'border-muted-foreground/40'
-                      }`}>
-                        {isSelected && <Check size={12} className="text-white" />}
-                      </div>
+                      {/* Selection indicator (hidden for combo children) */}
+                      {!isComboChild && (
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                          isSelected ? 'bg-red-500 border-red-500' : 'border-muted-foreground/40'
+                        }`}>
+                          {isSelected && <Check size={12} className="text-white" />}
+                        </div>
+                      )}
+                      {isComboChild && <div className="w-4 flex-shrink-0 border-l-2 border-purple-400/30 self-stretch" />}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-oswald text-sm font-bold text-primary">{item.quantity}x</span>
-                          <span className="text-sm font-bold truncate">{item.product_name}</span>
+                          {isComboParent && <Package size={14} className="text-purple-400 flex-shrink-0" />}
+                          {!isComboChild && <span className="font-oswald text-sm font-bold text-primary">{item.quantity}x</span>}
+                          <span className={`${isComboChild ? 'text-xs text-muted-foreground' : 'text-sm font-bold'} truncate`}>{item.product_name}</span>
+                          {isComboParent && (
+                            <Badge className="bg-purple-500/20 text-purple-400 border-purple-400/30 text-[9px] h-4 ml-1">
+                              COMBO · {item.combo_items_count || 0} items
+                            </Badge>
+                          )}
                         </div>
                         {item.modifiers?.length > 0 && (
                           <div className="mt-1 space-y-0.5">
@@ -2052,7 +2173,13 @@ export default function OrderScreen() {
                             ))}
                           </div>
                         )}
-                        {item.notes && <p className="text-xs text-yellow-500 mt-1 italic">📝 {item.notes}</p>}
+                        {isComboChild && item.combo_group && (
+                          <p className="text-[10px] text-purple-400/70 mt-0.5">{item.combo_group}</p>
+                        )}
+                        {isComboChild && item.combo_extra_charge > 0 && (
+                          <p className="text-[10px] text-orange-400 mt-0.5">+RD$ {Number(item.combo_extra_charge).toFixed(2)}</p>
+                        )}
+                        {item.notes && !isComboChild && <p className="text-xs text-yellow-500 mt-1 italic">📝 {item.notes}</p>}
                         {item.promotion_name && (
                           <p className="text-xs text-orange-400 mt-1 flex items-center gap-1" data-testid={`item-promo-${item.id}`}>
                             <span>🔥</span>
@@ -2062,6 +2189,14 @@ export default function OrderScreen() {
                               <span className="line-through opacity-60 ml-1">{formatMoney(item.original_price)}</span>
                             )}
                           </p>
+                        )}
+                        {isComboParent && item.status === 'pending' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeComboFromOrder(item.combo_group_id); }}
+                            className="mt-1.5 text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1"
+                            data-testid={`remove-combo-${item.combo_group_id}`}>
+                            <Trash2 size={10} /> Eliminar combo completo
+                          </button>
                         )}
                         <div className="mt-1">
                           {item.status === 'pending' && <Badge variant="outline" className="text-[8px] h-4 border-yellow-600 text-yellow-500">Pendiente</Badge>}
@@ -2521,6 +2656,27 @@ export default function OrderScreen() {
           )}
 
           {/* Category Grid (when no category selected and not searching) */}
+          {!activeCat && !(showProductSearch && productSearchQuery.trim()) && activeCombos.length > 0 && (
+            <div className="px-3 pt-3 pb-1" data-testid="combos-strip">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="text-xs font-bold uppercase text-purple-400">COMBOS</span>
+                <Badge variant="secondary" className="text-[9px]">{activeCombos.length}</Badge>
+              </div>
+              <div className={`grid gap-2 ${largeMode ? 'gap-3' : 'gap-2'}`}
+                style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}>
+                {activeCombos.map(combo => (
+                  <button key={combo.id}
+                    onClick={() => handleComboClick(combo)}
+                    data-testid={`combo-btn-${combo.id}`}
+                    className={`relative rounded-xl p-2 transition-all active:scale-95 bg-gradient-to-br from-purple-500/20 to-fuchsia-600/20 border border-purple-400/40 hover:border-purple-400/80 text-left flex flex-col justify-between min-h-[72px] ${largeMode ? 'min-h-[88px]' : ''}`}>
+                    <div className="absolute top-1 right-1 bg-purple-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md">COMBO</div>
+                    <span className={`font-semibold leading-tight line-clamp-2 pr-10 ${largeMode ? 'text-sm' : 'text-xs'}`}>{combo.name}</span>
+                    <span className={`font-oswald font-bold block ${largeMode ? 'text-base' : 'text-sm'} text-purple-400 mt-1`}>RD$ {Number(combo.price || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {!activeCat && !(showProductSearch && productSearchQuery.trim()) && (
             <div 
               className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
@@ -3779,6 +3935,87 @@ export default function OrderScreen() {
               Guardar
             </Button>
           </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Combo Configurable Selector Modal */}
+    <Dialog open={comboSelectorOpen} onOpenChange={(o) => !o && setComboSelectorOpen(false)}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="font-oswald flex items-center gap-2">
+            <Package size={18} className="text-purple-400" /> {selectedCombo?.name}
+          </DialogTitle>
+          {selectedCombo?.description && (
+            <p className="text-xs text-muted-foreground">{selectedCombo.description}</p>
+          )}
+        </DialogHeader>
+        <div className="space-y-4">
+          {(selectedCombo?.groups || []).map((g) => {
+            const sel = comboSelections[g.id] || [];
+            const isRadio = (g.max_selections || 1) === 1;
+            return (
+              <div key={g.id} className="border border-border rounded-lg p-3 bg-background/30" data-testid={`combo-group-${g.id}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-bold">{g.name}</h4>
+                  <span className="text-[10px] text-muted-foreground">
+                    {(g.min_selections || 1) === (g.max_selections || 1)
+                      ? `Elige ${g.max_selections}`
+                      : `Elige ${g.min_selections}-${g.max_selections}`}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {(g.items || []).map((it) => {
+                    const checked = sel.includes(it.product_id);
+                    const toggle = () => {
+                      setComboSelections(prev => {
+                        const cur = prev[g.id] || [];
+                        if (checked) {
+                          return { ...prev, [g.id]: cur.filter(x => x !== it.product_id) };
+                        }
+                        if (isRadio) return { ...prev, [g.id]: [it.product_id] };
+                        if (cur.length >= (g.max_selections || 1)) {
+                          notify.info(`Máximo ${g.max_selections} opciones en ${g.name}`);
+                          return prev;
+                        }
+                        return { ...prev, [g.id]: [...cur, it.product_id] };
+                      });
+                    };
+                    return (
+                      <label key={it.product_id}
+                        onClick={toggle}
+                        className={`flex items-center justify-between gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
+                          checked
+                            ? 'bg-purple-500/20 border-purple-400'
+                            : 'bg-background border-border hover:border-purple-400/50'
+                        }`}
+                        data-testid={`combo-option-${g.id}-${it.product_id}`}>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className={`${isRadio ? 'rounded-full' : 'rounded'} w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 ${checked ? 'border-purple-400 bg-purple-400' : 'border-muted-foreground'}`}>
+                            {checked && <div className={`${isRadio ? 'rounded-full' : 'rounded-sm'} w-2 h-2 bg-white`} />}
+                          </div>
+                          <span className="text-sm truncate">{it.product_name}</span>
+                        </div>
+                        {it.price_override > 0 && (
+                          <span className="text-xs text-orange-400 font-semibold flex-shrink-0">+RD$ {Number(it.price_override).toFixed(2)}</span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <span className="text-xs text-muted-foreground">Precio base del combo</span>
+            <span className="font-oswald text-xl font-bold text-purple-400">RD$ {Number(selectedCombo?.price || 0).toFixed(2)}</span>
+          </div>
+          <Button
+            onClick={handleConfirmComboSelection}
+            className="w-full h-12 bg-primary text-primary-foreground font-oswald font-bold"
+            data-testid="confirm-combo-btn">
+            AGREGAR COMBO
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

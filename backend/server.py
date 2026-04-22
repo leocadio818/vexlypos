@@ -53,6 +53,7 @@ from routers.alanube import router as alanube_router, set_db as alanube_set_db
 from routers.ecf_dispatcher import router as ecf_dispatcher_router, set_db as ecf_dispatcher_set_db
 from routers.manuales import router as manuales_router
 from routers.promotions import router as promotions_router, set_db as promotions_set_db
+from routers.combos import router as combos_router, set_db as combos_set_db
 from routers.simple_inventory import router as simple_inventory_router, set_db as simple_inventory_set_db
 from routers.ecf_provider import router as ecf_provider_router, set_db as ecf_provider_set_db, cleanup_expired_reservations, init_supabase as ecf_provider_init_supabase
 from routers.system_logs import set_db as system_logs_set_db
@@ -75,6 +76,7 @@ tables_set_db(db)
 attendance_set_db(db)
 billing_set_db(db)
 promotions_set_db(db)
+combos_set_db(db)
 billing_init_supabase()  # Initialize Supabase for pos_sessions integration
 ncf_set_db(db)  # Set MongoDB for NCF additional config
 ncf_init_supabase()  # Initialize Supabase for NCF management
@@ -160,6 +162,7 @@ api.include_router(email_router, prefix="/email")
 api.include_router(ecf_dispatcher_router, prefix="/ecf")
 api.include_router(manuales_router)
 api.include_router(promotions_router)
+api.include_router(combos_router)
 
 # Scheduler for automated tasks
 scheduler = AsyncIOScheduler()

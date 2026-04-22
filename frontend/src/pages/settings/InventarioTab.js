@@ -14,6 +14,7 @@ import axios from 'axios';
 import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 import ImportProductsModal from '@/components/ImportProductsModal';
 import PromotionsTab from './PromotionsTab';
+import CombosTab from './CombosTab';
 import { useAuth } from '@/context/AuthContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -283,11 +284,19 @@ export default function InventarioTab() {
         {canManagePromotions && (
           <SubTabButton active={inventarioSubTab === 'promociones'} onClick={() => setInventarioSubTab('promociones')} icon={Sparkles} label="Promociones" />
         )}
+        {canManagePromotions && (
+          <SubTabButton active={inventarioSubTab === 'combos'} onClick={() => setInventarioSubTab('combos')} icon={Package} label="Combos" />
+        )}
       </div>
 
       {/* PROMOCIONES */}
       {inventarioSubTab === 'promociones' && canManagePromotions && (
         <PromotionsTab categories={categories} products={products} areas={areas} />
+      )}
+
+      {/* COMBOS */}
+      {inventarioSubTab === 'combos' && canManagePromotions && (
+        <CombosTab products={products} categories={categories} />
       )}
 
       {/* CATEGORIAS */}

@@ -524,6 +524,127 @@ async def update_order_item(order_id: str, item_id: str, input: dict):
     )
     return await db.orders.find_one({"id": order_id}, {"_id": 0})
 
+
+# ─── COMBOS INTEGRATION ─────────────────────────────────────
+@router.post("/orders/{order_id}/combos")
+async def add_combo_to_order(order_id: str, input: dict, user: dict = Depends(get_current_user)):
+    """Add a combo to an order. Expands into individual items + a parent line with the combo total price."""
+    from routers.combos import expand_combo_to_items
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+
+    combo_id = input.get("combo_id")
+    if not combo_id:
+        raise HTTPException(status_code=400, detail="combo_id requerido")
+    selections = input.get("selections") or {}
+
+    expanded = await expand_combo_to_items(combo_id, selections)
+
+    # Decrement simple inventory for each child item
+    for product_id, _name, _extra, _group in expanded["child_items"]:
+        prod = await db.products.find_one(
+            {"id": product_id},
+            {"_id": 0, "simple_inventory_enabled": 1, "simple_inventory_qty": 1, "name": 1}
+        )
+        if prod and prod.get("simple_inventory_enabled"):
+            cur = prod.get("simple_inventory_qty", 0) or 0
+            if cur < 1:
+                raise HTTPException(status_code=400, detail=f"Producto agotado: {prod.get('name', '')}")
+            await db.products.update_one(
+                {"id": product_id, "simple_inventory_qty": {"$gte": 1}},
+                {"$inc": {"simple_inventory_qty": -1}}
+            )
+
+    combo_group_id = gen_id()  # Unique ID to link parent + children for this combo instance
+    new_items = []
+
+    # Parent line (holds the total price)
+    new_items.append({
+        "id": gen_id(),
+        "product_id": None,
+        "product_name": expanded["combo_name"],
+        "quantity": 1,
+        "unit_price": expanded["total_price"],
+        "modifiers": [],
+        "notes": "",
+        "status": "pending",
+        "sent_to_kitchen": False,
+        "cancelled_reason_id": None,
+        "return_to_inventory": False,
+        "is_combo": True,
+        "combo_id": combo_id,
+        "combo_group_id": combo_group_id,
+        "combo_items_count": len(expanded["child_items"]),
+    })
+
+    # Child lines (price=0, only for kitchen/inventory tracking)
+    for product_id, product_name, extra, group_name in expanded["child_items"]:
+        new_items.append({
+            "id": gen_id(),
+            "product_id": product_id,
+            "product_name": product_name,
+            "quantity": 1,
+            "unit_price": 0.0,  # Price carried by parent
+            "modifiers": [],
+            "notes": f"[{group_name}]" if group_name else "",
+            "status": "pending",
+            "sent_to_kitchen": False,
+            "cancelled_reason_id": None,
+            "return_to_inventory": True,
+            "is_combo_item": True,
+            "combo_id": combo_id,
+            "combo_group_id": combo_group_id,
+            "combo_name": expanded["combo_name"],
+            "combo_group": group_name,
+            "combo_extra_charge": float(extra or 0),
+        })
+
+    await db.orders.update_one(
+        {"id": order_id},
+        {
+            "$push": {"items": {"$each": new_items}},
+            "$set": {"updated_at": now_iso()},
+        },
+    )
+    return await db.orders.find_one({"id": order_id}, {"_id": 0})
+
+
+@router.delete("/orders/{order_id}/combos/{combo_group_id}")
+async def remove_combo_from_order(order_id: str, combo_group_id: str, user: dict = Depends(get_current_user)):
+    """Remove a combo instance (parent + all children) from an order by combo_group_id."""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+
+    # Filter out all items belonging to this combo instance
+    items_to_remove = [i for i in order.get("items", []) if i.get("combo_group_id") == combo_group_id]
+    if not items_to_remove:
+        raise HTTPException(status_code=404, detail="Combo no encontrado en la orden")
+
+    # Any item already sent-to-kitchen? Block removal (use cancel-items flow)
+    if any(i.get("sent_to_kitchen") for i in items_to_remove):
+        raise HTTPException(
+            status_code=400,
+            detail="El combo ya fue enviado a cocina. Usa cancelar items."
+        )
+
+    # Return inventory for children
+    for i in items_to_remove:
+        if i.get("is_combo_item") and i.get("product_id"):
+            await db.products.update_one(
+                {"id": i["product_id"], "simple_inventory_enabled": True},
+                {"$inc": {"simple_inventory_qty": 1}}
+            )
+
+    keep_items = [i for i in order.get("items", []) if i.get("combo_group_id") != combo_group_id]
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"items": keep_items, "updated_at": now_iso()}},
+    )
+    return await db.orders.find_one({"id": order_id}, {"_id": 0})
+
+
 # ─── CANCEL ITEMS ───
 @router.post("/orders/{order_id}/cancel-item/{item_id}")
 async def cancel_order_item(order_id: str, item_id: str, input: CancelItemInput, user: dict = Depends(get_current_user)):

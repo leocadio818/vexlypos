@@ -1,0 +1,24 @@
+{
+  "summary": "Combos system (FIJO + CONFIGURABLE) tested end-to-end. Backend: 20/20 pytest passed (CRUD validations, GET /combos/active filter, manage_promotions permission gate, expand-into-order parent+children with combo_group_id, configurable selections + min/max validation, DELETE combo from order, inventory decrement). Frontend: Config.Productos -> Combos sub-tab visible, 'Combo Test' card shows Activo + Fijo + RD$ 300 + Ahorro RD$ 400 (57%). OrderScreen on Mesa 1 shows COMBOS strip with purple COMBO badge above categorias, cart renders parent '1x Combo Test [COMBO . 2 items] RD$ 300 + Eliminar combo completo' and indented children HAMBURGUESA/STELLA with 'Items Incluidos' notes at RD$ 0.00, subtotal correctly counts only parent prices. Configurable combo TEST_combo_config also rendered with 'Plato principal' and 'Bebida' group labels.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_combos_system.py",
+    "/app/test_reports/pytest/combos_system_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "combos.py expand_combo_to_items: when combo_type='configurable' and a group has min_selections=0 but no defaults and no selection passed, the code falls through to the min/max check with sel_ids=[] which correctly errors only if mn>0. Good. However the error 'Selecciona al menos N opcion en X' is raised when defaults < min_selections; consider also raising when sel_ids is provided but is missing the group entirely (KeyError-safe via .get). Currently safe.",
+    "orders.py add_combo_to_order: simple_inventory check uses cur < 1 then $inc -1. Race-safe via the {'simple_inventory_qty': {'$gte': 1}} filter. Good. But if the second product in a fixed combo is out of stock AFTER the first was decremented, the first decrement is NOT rolled back. Consider transactional approach or pre-validate all stock before decrementing.",
+    "remove_combo_from_order returns inventory unconditionally, but does NOT handle case where the combo was already partially refunded. Low-risk because removal is blocked if any item was sent_to_kitchen.",
+    "Frontend cart correctly groups parent+children visually; child notes use the group_name in brackets (e.g. '[Items Incluidos]'). Display label shown is 'Items Incluidos' (stripped brackets) - good UX."
+  ],
+  "updated_files": ["/app/backend/tests/test_combos_system.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin PIN 11338585, Cajero PIN 1111",
+  "seed_data_creation": "Created 2 combos via test (TEST_combo_fixed_renamed, TEST_combo_config). Both deleted in test teardown via cleanup fixture. Pre-existing 'Combo Test' (id 8aa49c9c) preserved. Order on Mesa 1 (T-1192) now contains the original Combo Test parent+2 children + a TEST_combo_config parent+2 children added during testing (cart side-effect, can be cleared by main agent if desired).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Use /app/backend/tests/test_combos_system.py for regression. It auto-creates a fresh order on the first available table for each module run. Note: Mesa 1 currently has TEST_combo_config items left over from testing (cleanup not implemented for order side-effect). Removing them does not break anything as they share unique combo_group_id and can be removed via DELETE /api/orders/{id}/combos/{combo_group_id}.",
+  "rca of the issue": "No issues found. All endpoints + UI flows for combos work as specified. Permission gate (manage_promotions) correctly returns 403 for cajero on POST/PATCH/DELETE /api/combos. Validation rejects empty groups, invalid combo_type, invalid pricing_type, missing name. Configurable combo correctly errors when no defaults and no selections provided."
+}
