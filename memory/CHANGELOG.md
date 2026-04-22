@@ -1,5 +1,17 @@
 # VexlyPOS — Changelog
 
+## 2026-04 — Feature: Comparativo Happy Hour vs Fuera del Horario 📈
+- **Nueva sección "Comparativo: Durante vs Fuera"** en el reporte A9 Analytics de Promociones. Responde la pregunta clave: "¿Happy Hour realmente incrementa mis ventas?".
+- **Ventana analizada**: schedule de la promo ganadora (ej: L-V 4:00 PM - 7:00 PM). Se compara:
+  - **Durante**: bills pagadas dentro de la ventana (día+hora del schedule)
+  - **Fuera**: bills pagadas fuera de la ventana en el mismo período
+- **4 métricas con delta %**: # Facturas, Ingreso, Ticket Promedio, Items / Factura. Indicador visual verde (↗ +X%) o rojo (↘ -X%).
+- **Backend**: nueva función `_compute_promotion_comparative(bills, winner_promo)` en `reports.py`. Fetch del schedule de la promo ganadora, clasifica cada bill por su `paid_at` timestamp (weekday + hour range), calcula métricas y deltas porcentuales. Evita Infinity (no JSON-serializable) retornando None cuando denominador es 0. Skip para promos 24/7 (no hay ventana comparativa).
+- **Frontend**: sección nueva con gradient naranja arriba de la tabla de desglose en `PromotionsAnalyticsReport.jsx`. Iconos TrendingUp/TrendingDown según signo del delta.
+- **E2E verified**: test con 3 bills durante HH (L-M 4-7pm) + 1 bill fuera (mismos días pero 2pm): backend retornó deltas bills=+200%, revenue=+750%, ticket=+183%. Screenshot confirma UI completa con 4 KPI-cards comparativos.
+- **Archivos modificados**: `/app/backend/routers/reports.py` (+120 líneas función `_compute_promotion_comparative` + integración en summary), `/app/frontend/src/pages/reports/PromotionsAnalyticsReport.jsx` (+60 líneas sección comparativo + imports ArrowRight/TrendingDown).
+
+
 ## 2026-04 — Feature: A9 Analytics de Promociones 📊
 - **Nuevo reporte "Analytics de Promociones"** en la categoría "Ventas y Caja" del módulo Reportes.
 - **KPIs**: Ventas con Promo (neto + count + %), Ahorro Entregado (total + prom/factura), Promo Ganadora (nombre + monto), Items Vendidos (+ count promos activas).

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { formatMoney, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CustomTooltip } from './reportUtils';
-import { FileDown, FileSpreadsheet, Sparkles, TrendingUp, Flame, PiggyBank, Award, BarChart3 } from 'lucide-react';
+import { FileDown, FileSpreadsheet, Sparkles, TrendingUp, TrendingDown, Flame, PiggyBank, Award, BarChart3, ArrowRight } from 'lucide-react';
 import { notify } from '@/lib/notify';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -18,6 +18,7 @@ export default function PromotionsAnalyticsReport({ data, dateRange }) {
   const summary = data.summary || {};
   const promotions = Array.isArray(data.promotions) ? data.promotions : [];
   const topProducts = Array.isArray(data.top_products) ? data.top_products : [];
+  const comp = data.comparative || {};
   const chartData = promotions.slice(0, 8).map(p => ({
     name: (p.promotion_name || '—').slice(0, 14),
     net: p.net_sold,
@@ -86,6 +87,63 @@ export default function PromotionsAnalyticsReport({ data, dateRange }) {
           <p className="text-xs text-muted-foreground mt-1">{summary.active_promotions_count || 0} promo(s) activa(s)</p>
         </div>
       </div>
+
+      {/* Comparative: Durante Happy Hour vs Fuera del horario */}
+      {comp.available && (
+        <div className="bg-gradient-to-br from-orange-500/5 to-transparent border border-orange-500/20 rounded-xl p-4" data-testid="pa-comparative">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div>
+              <h4 className="font-oswald text-sm font-bold flex items-center gap-1.5">
+                <ArrowRight size={14} className="text-orange-400" />
+                Comparativo: Durante {comp.promotion_name} vs Fuera
+              </h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Ventana de la promoción: {comp.period_description}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            {[
+              { key: 'bills_pct', label: '# Facturas', durVal: comp.during?.bills, outVal: comp.outside?.bills, isMoney: false },
+              { key: 'revenue_pct', label: 'Ingreso', durVal: comp.during?.revenue, outVal: comp.outside?.revenue, isMoney: true },
+              { key: 'avg_ticket_pct', label: 'Ticket Promedio', durVal: comp.during?.avg_ticket, outVal: comp.outside?.avg_ticket, isMoney: true },
+              { key: 'avg_items_per_bill_pct', label: 'Items / Factura', durVal: comp.during?.avg_items_per_bill, outVal: comp.outside?.avg_items_per_bill, isMoney: false },
+            ].map(m => {
+              const delta = comp.deltas?.[m.key];
+              const isUp = delta !== null && delta !== undefined && delta > 0;
+              const isFlat = delta === 0;
+              const deltaDisplay = delta === null || delta === undefined
+                ? '—'
+                : delta === Infinity
+                  ? '+∞'
+                  : `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`;
+              return (
+                <div key={m.key} className="bg-card border border-border rounded-lg p-3" data-testid={`comp-${m.key}`}>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{m.label}</p>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="font-oswald text-xl font-bold text-orange-400">
+                      {m.isMoney ? formatMoney(m.durVal) : (m.durVal ?? 0)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">durante</span>
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="font-oswald text-sm font-semibold text-muted-foreground">
+                      vs {m.isMoney ? formatMoney(m.outVal) : (m.outVal ?? 0)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">fuera</span>
+                  </div>
+                  <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${isFlat ? 'text-muted-foreground' : isUp ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {!isFlat && delta !== null && delta !== undefined && delta !== Infinity && (
+                      isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />
+                    )}
+                    <span>{deltaDisplay}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2">

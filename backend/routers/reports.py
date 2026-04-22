@@ -3472,6 +3472,119 @@ async def _promotions_analytics_impl(
         },
         "promotions": promo_rows,
         "top_products": top_products,
+        "comparative": await _compute_promotion_comparative(bills, winner),
+    }
+
+
+# ─── COMPARATIVO: ventas DURANTE Happy Hour vs FUERA del horario ───
+async def _compute_promotion_comparative(bills: list, winner_promo: Optional[dict]) -> dict:
+    """For the winner promotion: compute metrics DURING its schedule vs OUTSIDE (same days)."""
+    if not winner_promo or not winner_promo.get("promotion_id"):
+        return {"available": False}
+
+    # Fetch full promotion doc to get schedule
+    promo_doc = await db.promotions.find_one({"id": winner_promo["promotion_id"]}, {"_id": 0})
+    if not promo_doc:
+        return {"available": False}
+
+    sched = promo_doc.get("schedule") or {}
+    days_of_week = sched.get("days", list(range(7)))  # 0=Sun, 1=Mon, ..., 6=Sat
+    start_time = sched.get("start_time", "00:00")
+    end_time = sched.get("end_time", "23:59")
+    try:
+        start_h, start_m = [int(x) for x in start_time.split(":")]
+        end_h, end_m = [int(x) for x in end_time.split(":")]
+    except Exception:
+        return {"available": False}
+    start_minutes = start_h * 60 + start_m
+    end_minutes = end_h * 60 + end_m
+
+    # If promo is 24/7 (00:00 to 23:59 on all days), there's no "outside" to compare
+    is_all_day_every_day = (
+        start_minutes <= 1 and end_minutes >= 23 * 60 + 58 and len(days_of_week) >= 7
+    )
+    if is_all_day_every_day:
+        return {"available": False, "reason": "Promoción activa 24/7, sin ventana comparativa"}
+
+    def _in_window(paid_at_iso: str) -> Optional[bool]:
+        """Returns True if paid_at is INSIDE schedule (day+hour), False if outside, None if invalid."""
+        if not paid_at_iso:
+            return None
+        try:
+            dt = datetime.fromisoformat(paid_at_iso.replace("Z", "+00:00"))
+        except Exception:
+            return None
+        # Convert weekday: Python Mon=0..Sun=6 → our 0=Sun..6=Sat
+        our_wd = (dt.weekday() + 1) % 7
+        if our_wd not in days_of_week:
+            return False
+        mins = dt.hour * 60 + dt.minute
+        if start_minutes <= end_minutes:
+            in_hour = start_minutes <= mins <= end_minutes
+        else:  # Overnight
+            in_hour = mins >= start_minutes or mins <= end_minutes
+        return in_hour
+
+    during = {"bills": 0, "items": 0.0, "revenue": 0.0}
+    outside = {"bills": 0, "items": 0.0, "revenue": 0.0}
+    for b in bills:
+        pa = b.get("paid_at") or ""
+        verdict = _in_window(pa)
+        if verdict is None:
+            continue
+        bucket = during if verdict else outside
+        bucket["bills"] += 1
+        bucket["revenue"] += float(b.get("total") or 0)
+        bucket["items"] += sum(float(i.get("quantity") or 0) for i in b.get("items", []))
+
+    def _enrich(d):
+        d["avg_ticket"] = round(d["revenue"] / d["bills"], 2) if d["bills"] else 0.0
+        d["avg_items_per_bill"] = round(d["items"] / d["bills"], 2) if d["bills"] else 0.0
+        d["revenue"] = round(d["revenue"], 2)
+        d["items"] = round(d["items"], 2)
+        return d
+
+    _enrich(during)
+    _enrich(outside)
+
+    def _delta_pct(a, b):
+        if not b:
+            return None  # Avoid Infinity: not JSON-serializable; frontend shows '—' or '+∞'
+        return round(((a - b) / b) * 100, 2)
+
+    deltas = {
+        "bills_pct": _delta_pct(during["bills"], outside["bills"]),
+        "revenue_pct": _delta_pct(during["revenue"], outside["revenue"]),
+        "avg_ticket_pct": _delta_pct(during["avg_ticket"], outside["avg_ticket"]),
+        "avg_items_per_bill_pct": _delta_pct(during["avg_items_per_bill"], outside["avg_items_per_bill"]),
+    }
+
+    WEEKDAY_SHORT_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+    if len(days_of_week) == 7:
+        days_label = "Todos los días"
+    elif sorted(days_of_week) == [1, 2, 3, 4, 5]:
+        days_label = "L-V"
+    elif sorted(days_of_week) == [0, 6]:
+        days_label = "Fines de Semana"
+    else:
+        days_label = ", ".join(WEEKDAY_SHORT_ES[d] for d in sorted(days_of_week))
+
+    def _fmt12h(hhmm):
+        try:
+            h, m = [int(x) for x in hhmm.split(":")]
+            period = "PM" if h >= 12 else "AM"
+            h12 = 12 if h == 0 else (h - 12 if h > 12 else h)
+            return f"{h12}:{m:02d} {period}"
+        except Exception:
+            return hhmm
+
+    return {
+        "available": True,
+        "promotion_name": winner_promo.get("promotion_name", "—"),
+        "period_description": f"{days_label} · {_fmt12h(start_time)} - {_fmt12h(end_time)}",
+        "during": during,
+        "outside": outside,
+        "deltas": deltas,
     }
 
 
