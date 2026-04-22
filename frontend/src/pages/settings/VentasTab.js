@@ -185,7 +185,9 @@ export default function VentasTab() {
         {canConfigTiposVenta && (
           <SubTabButton active={ventasSubTab === 'tipos'} onClick={() => setVentasSubTab('tipos')} icon={ShoppingBag} label="Tipos de Venta" />
         )}
-        <SubTabButton active={ventasSubTab === 'quick_orders'} onClick={() => setVentasSubTab('quick_orders')} icon={Zap} label="Orden Rápida" />
+        {canManageSaleConfig && (
+          <SubTabButton active={ventasSubTab === 'quick_orders'} onClick={() => setVentasSubTab('quick_orders')} icon={Zap} label="Orden Rápida" />
+        )}
       </div>
 
       {ventasSubTab === 'pagos' && (
@@ -477,7 +479,7 @@ export default function VentasTab() {
         </>
       )}
 
-      {ventasSubTab === 'quick_orders' && (
+      {ventasSubTab === 'quick_orders' && canManageSaleConfig && (
         <>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-oswald text-base font-bold flex items-center gap-2">

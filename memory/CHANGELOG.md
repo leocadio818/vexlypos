@@ -1,6 +1,24 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Hardening: Permisos Granulares en Orden Rápida 🔐
+- **Problema detectado**: PATCH de estado y PUT de config no validaban permisos (cualquier user autenticado podía). Además las verificaciones anteriores leían `user.get("permissions", {})` pero el JWT no contiene permisos.
+- **Fix** (`routers/orders.py`, `routers/config.py`):
+  - Los 3 endpoints ahora usan `from routers.auth import get_permissions` para cargar permisos reales del rol + overrides del usuario desde DB.
+  - `POST /api/orders/quick`: `open_table` o admin.
+  - `PATCH /api/orders/quick/{id}/status`: `collect_payment` o admin (mismo gate que completar el flujo).
+  - `PUT /api/quick-orders/config`: `manage_sale_config` o admin (mismo gate que otras configs de Ventas).
+- **Frontend** (`VentasTab.js`):
+  - Subtab "Orden Rápida" solo visible si `canManageSaleConfig`.
+  - Render del panel también gated.
+- **Verificado E2E**:
+  - Admin: todos los endpoints OK.
+  - Cashier (`collect_payment=true`, sin `manage_sale_config`): crea orden + PATCH status OK, PUT config → 403.
+  - Waiter (sin `collect_payment` en este tenant): PATCH status → 403; PUT config → 403.
+- **Beneficio**: ahora la Orden Rápida respeta fielmente los roles personalizados del admin, sin introducir permisos nuevos.
+
+
+
 ## 2026-04-22 — Enhancement: Config UI para Auto-entregar Órdenes Rápidas 🎚️
 - **Backend** (`routers/config.py`):
   - `GET /api/quick-orders/config` retorna `{auto_deliver_minutes}` (default 7).

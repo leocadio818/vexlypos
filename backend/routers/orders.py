@@ -413,8 +413,9 @@ async def _next_quick_order_number() -> int:
 @router.post("/orders/quick")
 async def create_quick_order(input: QuickOrderInput, user=Depends(get_current_user)):
     # Reuse existing permissions: if user can open a table they can open a quick order
-    perms = user.get("permissions", {}) or {}
-    if not (perms.get("open_table") or (user.get("role_level", 0) >= 20)):
+    from routers.auth import get_permissions
+    perms = get_permissions(user.get("role", ""), user.get("permissions"))
+    if not (perms.get("open_table") or (user.get("role_level", 0) >= 100)):
         raise HTTPException(status_code=403, detail="Sin permiso para abrir una orden")
 
     bdate = await _get_active_business_date()
@@ -486,6 +487,11 @@ async def list_active_quick_orders(user=Depends(get_current_user)):
 
 @router.patch("/orders/quick/{order_id}/status")
 async def update_quick_order_status(order_id: str, input: QuickOrderStatusInput, user=Depends(get_current_user)):
+    # Require collect_payment (same permission that can complete the order flow)
+    from routers.auth import get_permissions
+    perms = get_permissions(user.get("role", ""), user.get("permissions"))
+    if not (perms.get("collect_payment") or (user.get("role_level", 0) >= 100)):
+        raise HTTPException(status_code=403, detail="Sin permiso para cambiar el estado de la orden")
     if input.status not in ("preparing", "paid", "delivered"):
         raise HTTPException(status_code=400, detail="Estado inválido")
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})

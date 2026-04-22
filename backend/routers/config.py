@@ -1029,6 +1029,11 @@ async def get_quick_orders_config():
 
 @router.put("/quick-orders/config")
 async def update_quick_orders_config(input: dict, user=Depends(get_current_user)):
+    # Admin or manage_sale_config (same gate used by other Ventas configs)
+    from routers.auth import get_permissions
+    perms = get_permissions(user.get("role", ""), user.get("permissions"))
+    if not (perms.get("manage_sale_config") or (user.get("role_level", 0) >= 100)):
+        raise HTTPException(status_code=403, detail="Sin permiso para cambiar la configuración de Orden Rápida")
     minutes = int(input.get("auto_deliver_minutes", 7))
     if minutes < 1 or minutes > 120:
         raise HTTPException(status_code=400, detail="auto_deliver_minutes debe estar entre 1 y 120")
