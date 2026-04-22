@@ -1,6 +1,28 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Refactor: Sistema Genérico de Feature Tours 🎓🔄
+- **Objetivo**: escalar el onboarding de Orden Rápida a un sistema reutilizable que cubra features existentes y futuros.
+- **Arquitectura**:
+  - `src/lib/tours.js` (registro central, ~180 líneas): objeto `TOURS` donde cada tour declara `name`, `permissions` (al menos uno), `extraPermissions` (AND strict), y `steps` (route + CSS selector + placement + title + body).
+  - `src/components/FeatureTour.jsx` (engine reusable, ~180 líneas): overlay con pulse ring + tooltip posicionado smart, lee progreso desde `localStorage.vexly_tour_<key>`, avanza automáticamente y cierra con flag "done".
+  - Migración automática del key legacy `vexly_quick_order_tour_step` → `vexly_tour_quick_order` (usuarios que ya lo vieron no lo reviven).
+  - Hardened con try/catch en `querySelector` por si el selector es inválido (prevención de runtime errors).
+- **7 tours registrados**:
+  1. **quick_order** (3 pasos): FAB → order screen → queue badge.
+  2. **combos** (2 pasos): cat-card-combos → settings tabs.
+  3. **modifiers** (2 pasos): settings → category-grid.
+  4. **open_items** (2 pasos): cat-card-open-items → reports.
+  5. **loyalty** (2 pasos): customers list → categoría en /tables.
+  6. **table_map** (1 paso): botón Editar en /tables.
+  7. **business_day** (1 paso): card de jornada en /dashboard.
+- **Admin UI**: botón **"Reiniciar tours"** en Config → Usuarios (footer), con copy explicando el uso para capacitar personal nuevo. Usa `resetAllTours()` exportado desde `lib/tours.js`.
+- **Verificado E2E**: limpiar flags → visita /tables muestra tour quick_order; marcar done manualmente → siguiente tour disponible aparece en su route correspondiente; botón "Reiniciar tours" visible para admin; ningún runtime error detectado.
+- **Para agregar un tour nuevo** (cuando construyamos Módulo Contable): agregar objeto al registro `TOURS`. Zero código de overlay.
+- **Archivos**: `/app/frontend/src/lib/tours.js` (nuevo), `/app/frontend/src/components/FeatureTour.jsx` (nuevo, reemplaza `QuickOrderTour.jsx` eliminado), `/app/frontend/src/components/Layout.js` (-5 +3 líneas), `/app/frontend/src/pages/settings/UsersTab.js` (+22 líneas).
+
+
+
 ## 2026-04-22 — UX: Quick Tour Interactivo para Orden Rápida 🎓
 - **Objetivo**: onboarding cero-fricción para usuarios nuevos — la primera vez que aterrizan en /tables con permiso de Orden Rápida ven un tour guiado de 3 pasos que explica el feature completo.
 - **Implementación** (`components/QuickOrderTour.jsx`, ~160 líneas):

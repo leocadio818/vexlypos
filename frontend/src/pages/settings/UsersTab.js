@@ -221,6 +221,26 @@ export default function UsersTab() {
           ))}
         </div>
       )}
+
+      {/* Admin utility: reset onboarding tours */}
+      <div className="mt-8 pt-4 border-t border-border/50 flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tours de Onboarding</h4>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Reinicia los tutoriales interactivos para que los próximos usuarios los vean otra vez (útil para capacitar personal nuevo).</p>
+        </div>
+        <button
+          onClick={() => {
+            import('@/lib/tours').then(({ resetAllTours }) => { resetAllTours(); });
+            if (typeof window !== 'undefined' && window.sonner) { window.sonner.success('Tours reiniciados para este dispositivo'); }
+            try { require('@/lib/notify').notify?.success?.('Tours reiniciados'); } catch {}
+            alert('Tours reiniciados. Al visitar cada pantalla volverán a aparecer.');
+          }}
+          className="px-3 py-1.5 rounded-md border border-border hover:bg-muted text-xs font-bold inline-flex items-center gap-1"
+          data-testid="reset-tours-btn"
+        >
+          Reiniciar tours
+        </button>
+      </div>
     </div>
   );
 }

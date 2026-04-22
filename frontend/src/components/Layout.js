@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { PinPad } from '@/components/PinPad';
-import QuickOrderTour from '@/components/QuickOrderTour';
+import FeatureTour from '@/components/FeatureTour';
 import { useState, useEffect, useCallback } from 'react';
 import api, { businessDaysAPI, ordersAPI } from '@/lib/api';
 import { notify } from '@/lib/notify';
@@ -832,10 +832,8 @@ export default function Layout() {
         </AnimatePresence>
       </main>
 
-      {/* Quick Order Onboarding Tour — only for users who can create quick orders */}
-      {(hasPermission?.('open_table') && hasPermission?.('collect_payment')) && (
-        <QuickOrderTour location={location.pathname} />
-      )}
+      {/* Feature Tours — onboarding overlays gated by permission */}
+      <FeatureTour location={location.pathname} hasPermission={hasPermission} />
       
       {/* ═══════════════════════════════════════════════════════════════════════════════
           DIALOGO BLOQUEANTE - CAJERO SIN TURNO DE CAJA
