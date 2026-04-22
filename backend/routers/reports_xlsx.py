@@ -3454,3 +3454,240 @@ async def hours_worked_pdf(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
 
+
+
+# ═══════════════════════════════════════════════════════════════
+# PROMOTIONS ANALYTICS — PDF + XLSX (A9)
+# ═══════════════════════════════════════════════════════════════
+
+async def _fetch_promotions_analytics(date_from: str, date_to: str) -> dict:
+    from routers.reports import _promotions_analytics_impl
+    return await _promotions_analytics_impl(date_from, date_to)
+
+
+def _build_promotions_analytics_xlsx(data: dict, period_label: str, business: dict) -> BytesIO:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Promociones"
+
+    BLACK_FILL = PatternFill("solid", fgColor="111111")
+    WHITE_FONT = Font(bold=True, color="FFFFFF", size=11)
+    BOLD = Font(bold=True, size=11)
+    THIN_BLACK = Side(style="thin", color="000000")
+
+    promos = data.get("promotions", []) or []
+    top_products = data.get("top_products", []) or []
+    summary = data.get("summary", {}) or {}
+
+    ws.cell(row=1, column=1, value=business.get("name", "VexlyPOS")).font = Font(bold=True, size=14)
+    ws.cell(row=2, column=1, value=f"RNC: {business.get('rnc','')}").font = Font(size=10, color="555555")
+    ws.cell(row=3, column=1, value="Analytics de Promociones / Happy Hour").font = Font(bold=True, size=12)
+    ws.cell(row=4, column=1, value=period_label).font = Font(size=10, color="555555")
+    ws.cell(
+        row=5, column=1,
+        value=(
+            f"Facturas con promo: {summary.get('total_bills_with_promo', 0)} "
+            f"({float(summary.get('pct_bills_with_promo', 0)):.1f}%)  ·  "
+            f"Ahorro entregado: {float(summary.get('total_discount_given', 0)):,.2f}  ·  "
+            f"Promo ganadora: {summary.get('winner_name', '—')}"
+        )
+    ).font = Font(size=10, italic=True, color="333333")
+
+    # Promotions table
+    ws.cell(row=7, column=1, value="Desglose por Promoción").font = BOLD
+    hdrs = ["Promoción", "Facturas", "Items", "Bruto", "Descuento", "Neto", "Ticket Prom.", "Desc. %"]
+    for i, h in enumerate(hdrs, start=1):
+        c = ws.cell(row=8, column=i, value=h)
+        c.font = WHITE_FONT
+        c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 2 else LEFT
+        c.border = Border(top=THIN_BLACK, bottom=THIN_BLACK, left=THIN_BLACK, right=THIN_BLACK)
+
+    row_n = 9
+    for p in promos:
+        ws.cell(row=row_n, column=1, value=p.get("promotion_name", "—")).alignment = LEFT
+        ws.cell(row=row_n, column=2, value=int(p.get("bills_count") or 0)).alignment = RIGHT
+        ws.cell(row=row_n, column=3, value=int(p.get("items_count") or 0)).alignment = RIGHT
+        for col, key in [(4, "gross_sold"), (5, "discount_given"), (6, "net_sold"), (7, "avg_ticket")]:
+            c = ws.cell(row=row_n, column=col, value=float(p.get(key) or 0))
+            c.number_format = '#,##0.00'
+            c.alignment = RIGHT
+        pct_c = ws.cell(row=row_n, column=8, value=float(p.get("avg_discount_pct") or 0) / 100)
+        pct_c.number_format = '0.00%'
+        pct_c.alignment = RIGHT
+        row_n += 1
+
+    # Totals
+    total_row = row_n
+    ws.cell(row=total_row, column=1, value="TOTAL").font = BOLD
+    ws.cell(row=total_row, column=2, value=int(summary.get("total_bills_with_promo") or 0)).alignment = RIGHT
+    ws.cell(row=total_row, column=3, value=int(summary.get("total_items_with_promo") or 0)).alignment = RIGHT
+    for col, key in [(4, "total_gross_sold"), (5, "total_discount_given"), (6, "total_net_sold")]:
+        c = ws.cell(row=total_row, column=col, value=float(summary.get(key) or 0))
+        c.number_format = '#,##0.00'
+        c.font = BOLD
+        c.alignment = RIGHT
+
+    # Top products section
+    row_n += 3
+    ws.cell(row=row_n, column=1, value="Top 20 Productos con Promoción").font = BOLD
+    row_n += 1
+    tp_hdrs = ["#", "Producto", "Cant.", "Bruto", "Descuento", "Neto"]
+    for i, h in enumerate(tp_hdrs, start=1):
+        c = ws.cell(row=row_n, column=i, value=h)
+        c.font = WHITE_FONT
+        c.fill = BLACK_FILL
+        c.alignment = CENTER if i >= 3 else LEFT
+    row_n += 1
+    for idx, tp in enumerate(top_products, start=1):
+        ws.cell(row=row_n, column=1, value=idx).alignment = RIGHT
+        ws.cell(row=row_n, column=2, value=tp.get("product_name", "—")).alignment = LEFT
+        ws.cell(row=row_n, column=3, value=int(tp.get("qty_sold") or 0)).alignment = RIGHT
+        for col, key in [(4, "gross_sold"), (5, "discount_given"), (6, "net_sold")]:
+            c = ws.cell(row=row_n, column=col, value=float(tp.get(key) or 0))
+            c.number_format = '#,##0.00'
+            c.alignment = RIGHT
+        row_n += 1
+
+    # Column widths
+    for col_idx, width in [(1, 32), (2, 12), (3, 10), (4, 14), (5, 14), (6, 14), (7, 14), (8, 10)]:
+        ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+    out = BytesIO()
+    wb.save(out)
+    out.seek(0)
+    return out
+
+
+def _build_promotions_analytics_pdf_html(data: dict, period_label: str, business: dict) -> str:
+    summary = data.get("summary", {}) or {}
+    promos = data.get("promotions", []) or []
+    top_products = data.get("top_products", []) or []
+
+    def m(v):
+        return f"RD$ {float(v or 0):,.2f}"
+
+    promo_rows_html = "".join([
+        f"<tr><td>🔥 {p.get('promotion_name', '—')}</td>"
+        f"<td class='r'>{int(p.get('bills_count') or 0)}</td>"
+        f"<td class='r'>{int(p.get('items_count') or 0)}</td>"
+        f"<td class='r gray'>{m(p.get('gross_sold'))}</td>"
+        f"<td class='r orange'>-{m(p.get('discount_given'))}</td>"
+        f"<td class='r bold green'>{m(p.get('net_sold'))}</td>"
+        f"<td class='r'>{m(p.get('avg_ticket'))}</td>"
+        f"<td class='r'>{float(p.get('avg_discount_pct') or 0):.1f}%</td></tr>"
+        for p in promos
+    ]) or "<tr><td colspan='8' class='c muted'>Sin ventas con promociones en el periodo</td></tr>"
+
+    top_rows_html = "".join([
+        f"<tr><td class='r muted'>{i + 1}</td>"
+        f"<td>{tp.get('product_name', '—')}</td>"
+        f"<td class='r'>{int(tp.get('qty_sold') or 0)}</td>"
+        f"<td class='r gray'>{m(tp.get('gross_sold'))}</td>"
+        f"<td class='r orange'>-{m(tp.get('discount_given'))}</td>"
+        f"<td class='r bold green'>{m(tp.get('net_sold'))}</td></tr>"
+        for i, tp in enumerate(top_products)
+    ])
+
+    return f"""
+<!DOCTYPE html>
+<html><head><meta charset='utf-8'><style>
+  body {{ font-family: Arial, sans-serif; font-size: 10px; color: #1f2937; }}
+  h1 {{ font-size: 16px; margin: 0 0 4px 0; }}
+  h2 {{ font-size: 12px; margin: 16px 0 4px 0; color: #374151; }}
+  .muted {{ color: #6b7280; font-size: 9px; }}
+  .header {{ border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 10px; }}
+  table {{ width: 100%; border-collapse: collapse; margin-top: 4px; }}
+  th, td {{ padding: 4px 6px; border-bottom: 1px solid #e5e7eb; }}
+  th {{ background: #111; color: #fff; text-align: left; font-size: 10px; }}
+  .r {{ text-align: right; }}
+  .c {{ text-align: center; }}
+  .bold {{ font-weight: bold; }}
+  .orange {{ color: #ea580c; }}
+  .green {{ color: #059669; }}
+  .gray {{ color: #6b7280; }}
+  .kpi-grid {{ display: flex; gap: 8px; margin: 8px 0; }}
+  .kpi {{ flex: 1; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; }}
+  .kpi .lbl {{ font-size: 9px; color: #6b7280; text-transform: uppercase; }}
+  .kpi .val {{ font-size: 14px; font-weight: bold; margin-top: 2px; }}
+</style></head><body>
+  <div class='header'>
+    <h1>{business.get('name', 'VexlyPOS')}</h1>
+    <div class='muted'>RNC: {business.get('rnc', '')} · {period_label}</div>
+    <h2 style='margin-top:6px'>Analytics de Promociones / Happy Hour</h2>
+  </div>
+
+  <div class='kpi-grid'>
+    <div class='kpi'>
+      <div class='lbl'>Ventas con Promo</div>
+      <div class='val green'>{m(summary.get('total_net_sold'))}</div>
+      <div class='muted'>{summary.get('total_bills_with_promo', 0)} facturas · {float(summary.get('pct_bills_with_promo', 0)):.1f}%</div>
+    </div>
+    <div class='kpi'>
+      <div class='lbl'>Ahorro Entregado</div>
+      <div class='val orange'>{m(summary.get('total_discount_given'))}</div>
+      <div class='muted'>{m(summary.get('avg_savings_per_bill'))} / factura</div>
+    </div>
+    <div class='kpi'>
+      <div class='lbl'>Promo Ganadora</div>
+      <div class='val'>🏆 {summary.get('winner_name', '—')}</div>
+      <div class='muted'>{m(summary.get('winner_net'))}</div>
+    </div>
+    <div class='kpi'>
+      <div class='lbl'>Items Vendidos</div>
+      <div class='val'>{int(summary.get('total_items_with_promo') or 0)}</div>
+      <div class='muted'>{summary.get('active_promotions_count', 0)} promo(s)</div>
+    </div>
+  </div>
+
+  <h2>Desglose por Promoción</h2>
+  <table><thead><tr>
+    <th>Promoción</th><th class='r'>Facturas</th><th class='r'>Items</th>
+    <th class='r'>Bruto</th><th class='r'>Descuento</th><th class='r'>Neto</th>
+    <th class='r'>Ticket Prom.</th><th class='r'>Desc. %</th>
+  </tr></thead><tbody>{promo_rows_html}</tbody></table>
+
+  {"<h2>Top 20 Productos con Promoción</h2><table><thead><tr><th class='r'>#</th><th>Producto</th><th class='r'>Cant.</th><th class='r'>Bruto</th><th class='r'>Descuento</th><th class='r'>Neto</th></tr></thead><tbody>" + top_rows_html + "</tbody></table>" if top_products else ""}
+</body></html>
+"""
+
+
+@router.get("/promotions-analytics/xlsx")
+async def promotions_analytics_xlsx(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_promotions_analytics(date_from, date_to)
+    business = await _get_business_info()
+    period_label = f"Período: {date_from} al {date_to}"
+    bio = _build_promotions_analytics_xlsx(data, period_label, business)
+    fname = f"AnalyticsPromociones_{date_from}_al_{date_to}.xlsx"
+    return StreamingResponse(
+        bio,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
+
+
+@router.get("/promotions-analytics/pdf")
+async def promotions_analytics_pdf(
+    date_from: str = Query(...),
+    date_to: str = Query(...),
+    user=Depends(get_current_user),
+):
+    data = await _fetch_promotions_analytics(date_from, date_to)
+    business = await _get_business_info()
+    period_label = f"Período: {date_from} al {date_to}"
+    html = _build_promotions_analytics_pdf_html(data, period_label, business)
+    try:
+        from weasyprint import HTML
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"WeasyPrint no disponible: {e}")
+    pdf_bytes = HTML(string=html).write_pdf()
+    fname = f"AnalyticsPromociones_{date_from}_al_{date_to}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )

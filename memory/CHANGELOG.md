@@ -1,5 +1,18 @@
 # VexlyPOS — Changelog
 
+## 2026-04 — Feature: A9 Analytics de Promociones 📊
+- **Nuevo reporte "Analytics de Promociones"** en la categoría "Ventas y Caja" del módulo Reportes.
+- **KPIs**: Ventas con Promo (neto + count + %), Ahorro Entregado (total + prom/factura), Promo Ganadora (nombre + monto), Items Vendidos (+ count promos activas).
+- **Desglose por promoción**: tabla con Facturas, Items, Bruto, Descuento, Neto, Ticket Prom., Desc. %. Ordenado por Neto descendente.
+- **Top 20 productos** vendidos durante promociones con cantidad + bruto + descuento + neto.
+- **Gráfico barras** de ventas netas vs descuentos por promoción.
+- **Exports** PDF (WeasyPrint) y Excel (openpyxl) funcionando (200 OK validado por curl).
+- **Backend**: endpoint `/api/reports/promotions-analytics` en `reports.py` + exports en `reports_xlsx.py` (`/xlsx/promotions-analytics/pdf|xlsx`). Cross bills × items.promotion_id, agrega por promotion_id + product_id, calcula winner/weakest, ahorro total y ticket prom.
+- **Frontend**: `/app/frontend/src/pages/reports/PromotionsAnalyticsReport.jsx` + registrado en `reports/index.js` + cableado en `Reports.js` (import, endpoint map, switch case, entrada en sidebar categoría 'Ventas y Caja').
+- **Validación E2E**: test bill con 2 items (PRESIDENTE 2u@240 + MICHELOB 3u@200) insertado directo en Mongo → endpoint retornó total_bills_with_promo=1, pct=100%, gross=$1,350, discount=$270, net=$1,080, winner='Happy Hour' ✅. Screenshot confirma UI completa con sidebar, 4 KPIs, tabla y empty state funcionando.
+- **Archivos**: nuevos `PromotionsAnalyticsReport.jsx`; modificados `reports.py` (+150 líneas), `reports_xlsx.py` (+200 líneas PDF+Xlsx), `Reports.js`, `reports/index.js`.
+
+
 ## 2026-04 — Feature: Happy Hour / Promociones Automáticas ✨
 - **Sistema completo de promociones programadas** por días de la semana + horario + fecha inicio/fin. Precios cambian automáticamente sin intervención manual.
 - **Tipos de descuento**: Porcentaje (%), Monto Fijo (RD$), Precio Fijo, 2x1.

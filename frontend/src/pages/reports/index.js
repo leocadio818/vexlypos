@@ -26,3 +26,4 @@ export { default as ProductMixByEmployeeReport } from './ProductMixByEmployeeRep
 export { default as SalesByWeekdayReport } from './SalesByWeekdayReport';
 export { default as SalesByTableReport } from './SalesByTableReport';
 export { default as HoursWorkedReport } from './HoursWorkedReport';
+export { default as PromotionsAnalyticsReport } from './PromotionsAnalyticsReport';

@@ -3330,3 +3330,155 @@ async def reservations_report(
         "top_customers": top_customers,
         "details": details,
     }
+
+
+
+# ─── PROMOTIONS ANALYTICS — A9 ───
+async def _promotions_analytics_impl(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+):
+    """Cross bills × items with promotion_id: métricas por promoción, top products, ahorro total."""
+    d_from = date_from or await get_active_business_date()
+    d_to = date_to or d_from
+
+    bills = await db.bills.find(
+        {"status": "paid", "training_mode": {"$ne": True}}, {"_id": 0}
+    ).to_list(20000)
+    bills = [
+        b for b in bills
+        if d_from <= (b.get("business_date") or (b.get("paid_at") or "")[:10]) <= d_to
+    ]
+
+    # Aggregate per promotion
+    promo_stats = {}   # {promotion_id: {...}}
+    product_stats = {}  # {product_id: {...}} — all products sold during any promotion
+    total_bills_with_promo = 0
+    total_items_with_promo = 0
+    total_gross_sold = 0.0
+    total_discount_given = 0.0
+
+    for b in bills:
+        bill_has_promo = False
+        for item in b.get("items", []):
+            pid = item.get("promotion_id")
+            if not pid:
+                continue
+            bill_has_promo = True
+            qty = float(item.get("quantity") or 0)
+            unit_price = float(item.get("unit_price") or 0)
+            original_price = float(item.get("original_price") or unit_price)
+            discount_per_unit = max(0.0, original_price - unit_price)
+            line_net = unit_price * qty
+            line_gross = original_price * qty
+            line_discount = discount_per_unit * qty
+
+            total_items_with_promo += qty
+            total_gross_sold += line_gross
+            total_discount_given += line_discount
+
+            # Promo rollup
+            if pid not in promo_stats:
+                promo_stats[pid] = {
+                    "promotion_id": pid,
+                    "promotion_name": item.get("promotion_name", "Promoción"),
+                    "bills_count": 0,
+                    "items_count": 0.0,
+                    "gross_sold": 0.0,
+                    "discount_given": 0.0,
+                    "net_sold": 0.0,
+                    "_bill_ids": set(),
+                }
+            promo_stats[pid]["items_count"] += qty
+            promo_stats[pid]["gross_sold"] += line_gross
+            promo_stats[pid]["discount_given"] += line_discount
+            promo_stats[pid]["net_sold"] += line_net
+            promo_stats[pid]["_bill_ids"].add(b.get("id"))
+
+            # Product rollup
+            prod_id = item.get("product_id", "")
+            if prod_id not in product_stats:
+                product_stats[prod_id] = {
+                    "product_id": prod_id,
+                    "product_name": item.get("product_name", "—"),
+                    "qty_sold": 0.0,
+                    "gross_sold": 0.0,
+                    "discount_given": 0.0,
+                    "net_sold": 0.0,
+                }
+            product_stats[prod_id]["qty_sold"] += qty
+            product_stats[prod_id]["gross_sold"] += line_gross
+            product_stats[prod_id]["discount_given"] += line_discount
+            product_stats[prod_id]["net_sold"] += line_net
+
+        if bill_has_promo:
+            total_bills_with_promo += 1
+
+    # Finalize promo rows
+    promo_rows = []
+    for pid, s in promo_stats.items():
+        s["bills_count"] = len(s.pop("_bill_ids"))
+        avg_ticket = (s["net_sold"] / s["bills_count"]) if s["bills_count"] else 0.0
+        avg_discount_pct = ((s["discount_given"] / s["gross_sold"]) * 100) if s["gross_sold"] else 0.0
+        promo_rows.append({
+            **s,
+            "items_count": round(s["items_count"], 2),
+            "gross_sold": round(s["gross_sold"], 2),
+            "discount_given": round(s["discount_given"], 2),
+            "net_sold": round(s["net_sold"], 2),
+            "avg_ticket": round(avg_ticket, 2),
+            "avg_discount_pct": round(avg_discount_pct, 2),
+        })
+    promo_rows.sort(key=lambda r: r["net_sold"], reverse=True)
+
+    # Top products
+    top_products = []
+    for pid, s in product_stats.items():
+        top_products.append({
+            **s,
+            "qty_sold": round(s["qty_sold"], 2),
+            "gross_sold": round(s["gross_sold"], 2),
+            "discount_given": round(s["discount_given"], 2),
+            "net_sold": round(s["net_sold"], 2),
+        })
+    top_products.sort(key=lambda r: r["qty_sold"], reverse=True)
+    top_products = top_products[:20]
+
+    total_bills = len(bills)
+    pct_bills_with_promo = (total_bills_with_promo / total_bills * 100) if total_bills else 0.0
+    avg_savings_per_bill = (total_discount_given / total_bills_with_promo) if total_bills_with_promo else 0.0
+
+    # Winner / weakest promotions
+    winner = promo_rows[0] if promo_rows else None
+    weakest = promo_rows[-1] if len(promo_rows) > 1 else None
+
+    return {
+        "date_from": d_from,
+        "date_to": d_to,
+        "summary": {
+            "total_bills": total_bills,
+            "total_bills_with_promo": total_bills_with_promo,
+            "pct_bills_with_promo": round(pct_bills_with_promo, 2),
+            "total_items_with_promo": round(total_items_with_promo, 2),
+            "total_gross_sold": round(total_gross_sold, 2),
+            "total_discount_given": round(total_discount_given, 2),
+            "total_net_sold": round(total_gross_sold - total_discount_given, 2),
+            "avg_savings_per_bill": round(avg_savings_per_bill, 2),
+            "winner_name": winner["promotion_name"] if winner else "—",
+            "winner_net": winner["net_sold"] if winner else 0,
+            "weakest_name": weakest["promotion_name"] if weakest else "—",
+            "weakest_net": weakest["net_sold"] if weakest else 0,
+            "active_promotions_count": len(promo_rows),
+        },
+        "promotions": promo_rows,
+        "top_products": top_products,
+    }
+
+
+@router.get("/promotions-analytics")
+async def promotions_analytics(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+):
+    """A9 — Analytics de promociones: ventas generadas, ahorro entregado, top productos."""
+    return await _promotions_analytics_impl(date_from, date_to)

@@ -21,7 +21,7 @@ import {
   ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport,
   DiscountsReport, HourlySalesReport, OpenChecksReport, SalesComparativeReport,
   ProductMixByEmployeeReport, SalesByWeekdayReport, SalesByTableReport,
-  HoursWorkedReport
+  HoursWorkedReport, PromotionsAnalyticsReport
 } from './reports';
 import ReservationsReport from './reports/ReservationsReport';
 import EcfDashboard from './reports/EcfDashboard';
@@ -55,6 +55,7 @@ const REPORT_CATEGORIES = [
       { id: 'sales-by-weekday', name: 'Ventas por Día de la Semana', description: 'Agregación Lun-Dom con pico/valle y gráfico' },
       { id: 'sales-by-table', name: 'Ranking por Mesa / Área', description: 'Top mesas por ingreso + breakdown por área' },
       { id: 'hours-worked', name: 'Horas Trabajadas', description: 'Turnos por empleado con clock-in/out y duración total' },
+      { id: 'promotions-analytics', name: 'Analytics de Promociones', description: 'Ventas Happy Hour, ahorro entregado y top productos con descuento' },
     ]
   },
   {
@@ -670,6 +671,7 @@ export default function Reports() {
       'sales-by-weekday': '/reports/sales-by-weekday',
       'sales-by-table': '/reports/sales-by-table',
       'hours-worked': '/reports/hours-worked',
+      'promotions-analytics': '/reports/promotions-analytics',
       'top-products': '/reports/top-products-extended',
       'by-type': '/reports/sales-by-type',
       'payment-methods': '/reports/payment-methods-breakdown',
@@ -817,6 +819,8 @@ export default function Reports() {
         return <SalesByTableReport data={reportData} dateRange={dateRange} />;
       case 'hours-worked':
         return <HoursWorkedReport data={reportData} dateRange={dateRange} />;
+      case 'promotions-analytics':
+        return <PromotionsAnalyticsReport data={reportData} dateRange={dateRange} />;
       case 'top-products':
         return <TopProductsReport data={reportData} topLimit={topLimit} onChangeLimit={(n) => { setTopLimit(n); loadReport('top-products'); }} />;
       case 'by-type':
