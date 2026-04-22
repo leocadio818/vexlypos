@@ -133,6 +133,39 @@ const PERMISSION_CATEGORIES = {
   },
 };
 
+// Features affected by each permission — shown as discreet pills on the role/user permission UI
+// so admins understand the impact without reading docs.
+const PERMISSION_FEATURE_TAGS = {
+  open_table: [{ label: 'Orden Rápida', color: 'orange' }],
+  collect_payment: [{ label: 'Orden Rápida', color: 'orange' }],
+  manage_sale_config: [{ label: 'Orden Rápida', color: 'orange' }],
+  create_open_items: [{ label: 'Artículos Libres', color: 'amber' }],
+};
+
+const PillColorClass = {
+  orange: 'bg-orange-500/15 border-orange-500/40 text-orange-600 dark:text-orange-400',
+  amber: 'bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-400',
+};
+
+function FeaturePills({ permKey }) {
+  const tags = PERMISSION_FEATURE_TAGS[permKey];
+  if (!tags || !tags.length) return null;
+  return (
+    <span className="inline-flex items-center gap-1 flex-wrap">
+      {tags.map((t, i) => (
+        <span
+          key={i}
+          className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border ${PillColorClass[t.color] || PillColorClass.orange}`}
+          data-testid={`perm-tag-${permKey}-${t.label.toLowerCase().replace(/\s+/g, '-')}`}
+          title={`Este permiso afecta: ${t.label}`}
+        >
+          {t.label}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 // Default permissions by builtin role
 const ROLE_DEFAULTS = {
   admin: Object.values(PERMISSION_CATEGORIES).reduce((acc, cat) => {
@@ -873,6 +906,7 @@ export default function UserConfig() {
                               >
                                 <div className="flex items-center gap-2 min-w-0">
                                   <span className="text-sm truncate">{permLabel}</span>
+                                  <FeaturePills permKey={permKey} />
                                   {isSpecial && <span className="text-[11px] text-orange-400 flex-shrink-0">especial</span>}
                                 </div>
                                 <Switch
@@ -1065,7 +1099,10 @@ export default function UserConfig() {
                         <div className="px-2 py-2 bg-card/50 border-t border-border grid grid-cols-1 gap-1">
                           {Object.entries(cat.permissions).map(([permKey, permLabel]) => (
                             <label key={permKey} className="flex items-center justify-between gap-2 text-xs cursor-pointer hover:bg-muted/20 px-2 py-1 rounded">
-                              <span>{permLabel}</span>
+                              <span className="flex items-center gap-1.5 min-w-0">
+                                <span className="truncate">{permLabel}</span>
+                                <FeaturePills permKey={permKey} />
+                              </span>
                               <Switch
                                 checked={!!newRolePermissions[permKey]}
                                 onCheckedChange={v => setNewRolePermissions(p => ({ ...p, [permKey]: v }))}
@@ -1151,7 +1188,10 @@ export default function UserConfig() {
                         <div className="px-2 py-2 bg-card/50 border-t border-border grid grid-cols-1 gap-1">
                           {Object.entries(cat.permissions).map(([permKey, permLabel]) => (
                             <label key={permKey} className="flex items-center justify-between gap-2 text-xs cursor-pointer hover:bg-muted/20 px-2 py-1 rounded">
-                              <span>{permLabel}</span>
+                              <span className="flex items-center gap-1.5 min-w-0">
+                                <span className="truncate">{permLabel}</span>
+                                <FeaturePills permKey={permKey} />
+                              </span>
                               <Switch
                                 checked={!!(editRoleDialog.permissions || {})[permKey]}
                                 onCheckedChange={v => setEditRoleDialog(p => ({ ...p, permissions: { ...(p.permissions || {}), [permKey]: v } }))}

@@ -1,6 +1,22 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — UX: Pills de "Feature Afectada" en Roles/Permisos 🏷️
+- **Problema**: el admin podía mover un switch (ej: `collect_payment`) sin saber que también afecta Orden Rápida.
+- **Fix** (`pages/UserConfig.js`):
+  - Nuevo mapa `PERMISSION_FEATURE_TAGS` que declara qué features depende de cada permiso:
+    - `open_table` → ORDEN RÁPIDA
+    - `collect_payment` → ORDEN RÁPIDA
+    - `manage_sale_config` → ORDEN RÁPIDA
+    - `create_open_items` → ARTÍCULOS LIBRES
+  - Nuevo componente `<FeaturePills permKey={...} />` que renderiza pills discretos (uppercase 9px, bordered) al lado del label del permiso.
+  - Soporta multi-tag por permiso + dark mode (paleta `orange`/`amber`).
+  - Aplicado en los 3 lugares donde se editan permisos: User detail page, New Role dialog, Edit Role dialog.
+- **Verificado visualmente**: en `/user/{id}` → Permisos de Cajero → Ventas se ven los pills naranjas `ORDEN RÁPIDA` junto a Abrir Mesa, Cobrar y Gestionar Ventas; pill amber `ARTÍCULOS LIBRES` junto a Crear Artículos Libres.
+- **Extensibilidad**: para agregar un pill en el futuro, solo se modifica el objeto `PERMISSION_FEATURE_TAGS`.
+
+
+
 ## 2026-04-22 — Hardening: Permisos Granulares en Orden Rápida 🔐
 - **Problema detectado**: PATCH de estado y PUT de config no validaban permisos (cualquier user autenticado podía). Además las verificaciones anteriores leían `user.get("permissions", {})` pero el JWT no contiene permisos.
 - **Fix** (`routers/orders.py`, `routers/config.py`):
