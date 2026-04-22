@@ -2742,11 +2742,12 @@ export default function OrderScreen() {
             ];
             // Build ordered list mixing real categories with virtual tiles.
             const savedOrder = (menuTileConfig.order && menuTileConfig.order.length) ? menuTileConfig.order : null;
+            const areaHidden = new Set(((menuTileConfig.area_overrides || {})[table?.area_id] || {}).hidden_tiles || []);
             const catById = Object.fromEntries(categories.map(c => [c.id, c]));
             const seen = new Set();
             const tiles = [];
-            const pushCat = (c, idx) => { if (c && !seen.has(c.id)) { seen.add(c.id); tiles.push({ kind: 'cat', cat: c, idx }); } };
-            const pushVirtual = (id) => { if (!seen.has(id)) { seen.add(id); tiles.push({ kind: id }); } };
+            const pushCat = (c, idx) => { if (c && !seen.has(c.id) && !areaHidden.has(c.id)) { seen.add(c.id); tiles.push({ kind: 'cat', cat: c, idx }); } };
+            const pushVirtual = (id) => { if (!seen.has(id) && !areaHidden.has(id)) { seen.add(id); tiles.push({ kind: id }); } };
             if (savedOrder) {
               savedOrder.forEach(tid => {
                 if (tid === '__combos__' || tid === '__open_items__') pushVirtual(tid);

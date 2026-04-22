@@ -16,8 +16,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import axios from 'axios';
-import { GripVertical, Tag, Package, Pencil, Trash2, Sparkles, RotateCcw } from 'lucide-react';
+import { GripVertical, Tag, Package, Pencil, Trash2, Sparkles, RotateCcw, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { notify } from '@/lib/notify';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -60,9 +61,12 @@ function SortableTile({ id, children }) {
 export default function MenuTilesSorter({ categories, products, onEditCategory, onDeleteCategory }) {
   const [order, setOrder] = useState([]);
   const [virtualColors, setVirtualColors] = useState({ __combos__: '#7C3AED', __open_items__: '#EA580C' });
+  const [areaOverrides, setAreaOverrides] = useState({}); // {area_id: {hidden_tiles: [tile_id]}}
+  const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [colorPicker, setColorPicker] = useState(null); // __combos__ | __open_items__ | null
+  const [colorPicker, setColorPicker] = useState(null); // tile id | null
+  const [visibilityPicker, setVisibilityPicker] = useState(null); // tile id | null
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -72,11 +76,15 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
   useEffect(() => {
     (async () => {
       try {
-        const r = await axios.get(`${API}/menu-tiles`, { headers: hdrs() });
-        setOrder(r.data.order || []);
-        setVirtualColors({ __combos__: '#7C3AED', __open_items__: '#EA580C', ...(r.data.virtual_colors || {}) });
+        const [tileRes, areaRes] = await Promise.all([
+          axios.get(`${API}/menu-tiles`, { headers: hdrs() }),
+          axios.get(`${API}/areas`, { headers: hdrs() }),
+        ]);
+        setOrder(tileRes.data.order || []);
+        setVirtualColors({ __combos__: '#7C3AED', __open_items__: '#EA580C', ...(tileRes.data.virtual_colors || {}) });
+        setAreaOverrides(tileRes.data.area_overrides || {});
+        setAreas(Array.isArray(areaRes.data) ? areaRes.data : (areaRes.data?.items || []));
       } catch {
-        // default: categories in their order + virtuals at end
         setOrder([...(categories || []).map(c => c.id), ...VIRTUAL_IDS]);
       } finally {
         setLoading(false);
@@ -97,16 +105,16 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
     });
   }, [categories]);
 
-  const persist = async (newOrder, newColors) => {
+  const persist = async (newOrder, newColors, newAreaOverrides) => {
     setSaving(true);
     try {
       await axios.put(`${API}/menu-tiles`,
-        { order: newOrder, virtual_colors: newColors },
+        { order: newOrder, virtual_colors: newColors, area_overrides: newAreaOverrides },
         { headers: hdrs() }
       );
-      notify.success('Orden guardado');
+      notify.success('Guardado');
     } catch (e) {
-      notify.error('Error guardando el orden');
+      notify.error('Error guardando');
     } finally {
       setSaving(false);
     }
@@ -119,14 +127,39 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
     const newIndex = order.indexOf(over.id);
     const next = arrayMove(order, oldIndex, newIndex);
     setOrder(next);
-    persist(next, virtualColors);
+    persist(next, virtualColors, areaOverrides);
   };
 
   const changeVirtualColor = (id, color) => {
     const next = { ...virtualColors, [id]: color };
     setVirtualColors(next);
-    persist(order, next);
+    persist(order, next, areaOverrides);
     setColorPicker(null);
+  };
+
+  const toggleAreaVisibility = (tileId, areaId) => {
+    setAreaOverrides(prev => {
+      const copy = JSON.parse(JSON.stringify(prev || {}));
+      const entry = copy[areaId] || { hidden_tiles: [] };
+      const hidden = new Set(entry.hidden_tiles || []);
+      if (hidden.has(tileId)) hidden.delete(tileId); else hidden.add(tileId);
+      const arr = Array.from(hidden);
+      if (arr.length === 0) delete copy[areaId];
+      else copy[areaId] = { hidden_tiles: arr };
+      persist(order, virtualColors, copy);
+      return copy;
+    });
+  };
+
+  const isHiddenInArea = (tileId, areaId) => {
+    const entry = (areaOverrides || {})[areaId];
+    return !!(entry && (entry.hidden_tiles || []).includes(tileId));
+  };
+
+  const hiddenCount = (tileId) => {
+    let n = 0;
+    for (const a of areas) if (isHiddenInArea(tileId, a.id)) n++;
+    return n;
   };
 
   const resetDefault = () => {
@@ -134,13 +167,55 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
     const defColors = { __combos__: '#7C3AED', __open_items__: '#EA580C' };
     setOrder(def);
     setVirtualColors(defColors);
-    persist(def, defColors);
+    setAreaOverrides({});
+    persist(def, defColors, {});
   };
 
   if (loading) return <div className="py-8 text-center text-muted-foreground text-sm">Cargando…</div>;
 
   const catById = Object.fromEntries((categories || []).map(c => [c.id, c]));
   const countProducts = (catId) => (products || []).filter(p => p.category_id === catId).length;
+
+  const VisibilityControl = ({ tileId }) => {
+    const count = hiddenCount(tileId);
+    const hasHidden = count > 0;
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setVisibilityPicker(visibilityPicker === tileId ? null : tileId)}
+          className={`px-2 py-1 rounded-md border text-[11px] font-bold inline-flex items-center gap-1 hover:bg-muted ${hasHidden ? 'border-amber-500/60 text-amber-600' : 'border-border text-muted-foreground'}`}
+          data-testid={`tile-visibility-btn-${tileId}`}
+          title={hasHidden ? `Oculto en ${count} área(s)` : 'Visible en todas las áreas'}
+        >
+          {hasHidden ? <EyeOff size={12} /> : <Eye size={12} />}
+          {hasHidden ? `${count}` : ''}
+        </button>
+        {visibilityPicker === tileId && (
+          <div className="absolute right-0 top-full mt-1 z-30 bg-card border border-border rounded-lg p-3 shadow-xl min-w-[200px]" data-testid={`tile-visibility-panel-${tileId}`}>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Visible en áreas</div>
+            {(areas || []).length === 0 && (
+              <div className="text-xs text-muted-foreground py-1">No hay áreas configuradas.</div>
+            )}
+            <div className="space-y-1.5">
+              {(areas || []).map(a => {
+                const visible = !isHiddenInArea(tileId, a.id);
+                return (
+                  <label key={a.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/40 rounded px-1 py-0.5">
+                    <Checkbox
+                      checked={visible}
+                      onCheckedChange={() => toggleAreaVisibility(tileId, a.id)}
+                      data-testid={`tile-visibility-chk-${tileId}-${a.id}`}
+                    />
+                    <span className="truncate">{a.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-2" data-testid="menu-tiles-sorter">
@@ -170,6 +245,7 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
                       <div className="font-oswald font-bold truncate">{meta.label}</div>
                       <div className="text-[11px] text-muted-foreground">{meta.subtitle}</div>
                     </div>
+                    <VisibilityControl tileId={id} />
                     <div className="relative">
                       <button
                         onClick={() => setColorPicker(colorPicker === id ? null : id)}
@@ -211,6 +287,7 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
                       <Package size={10} /> {countProducts(cat.id)} productos
                     </div>
                   </div>
+                  <VisibilityControl tileId={id} />
                   {onEditCategory && (
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditCategory(cat)} data-testid={`tile-edit-${id}`}>
                       <Pencil size={14} />

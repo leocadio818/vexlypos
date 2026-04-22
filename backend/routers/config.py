@@ -416,15 +416,15 @@ DEFAULT_VIRTUAL_COLORS = {
 
 @router.get("/menu-tiles")
 async def get_menu_tiles():
-    """Return the saved tile order (categories + virtual tiles) and virtual tile colors.
-    If no config exists, generate a default: all categories by `order`, then virtuals at end."""
+    """Return the saved tile order (categories + virtual tiles), virtual tile colors and per-area hidden tiles.
+    If no config exists, generate a default: all categories by `order`, then virtuals at end, nothing hidden."""
     cats = await db.categories.find({}, {"_id": 0}).sort("order", 1).to_list(200)
     cat_ids = [c["id"] for c in cats]
     default_order = cat_ids + ["__combos__", "__open_items__"]
 
     doc = await db.settings.find_one({"_id": "menu_tile_config"}, {"_id": 0})
     if not doc:
-        return {"order": default_order, "virtual_colors": dict(DEFAULT_VIRTUAL_COLORS)}
+        return {"order": default_order, "virtual_colors": dict(DEFAULT_VIRTUAL_COLORS), "area_overrides": {}}
 
     saved_order = doc.get("order") or []
     # Keep saved positions, append any new category ids / ensure virtuals present
@@ -438,20 +438,23 @@ async def get_menu_tiles():
             final.append(v)
 
     colors = {**DEFAULT_VIRTUAL_COLORS, **(doc.get("virtual_colors") or {})}
-    return {"order": final, "virtual_colors": colors}
+    area_overrides = doc.get("area_overrides") or {}
+    return {"order": final, "virtual_colors": colors, "area_overrides": area_overrides}
 
 
 class MenuTilesInput(BaseModel):
     order: List[str]
     virtual_colors: Optional[dict] = None
+    area_overrides: Optional[dict] = None  # {area_id: {"hidden_tiles": [tile_id, ...]}}
 
 
 @router.put("/menu-tiles")
 async def update_menu_tiles(input: MenuTilesInput, user=Depends(get_current_user)):
-    """Persist the tile order and virtual tile colors."""
+    """Persist the tile order, virtual tile colors and area overrides."""
     payload = {
         "order": input.order,
         "virtual_colors": {**DEFAULT_VIRTUAL_COLORS, **(input.virtual_colors or {})},
+        "area_overrides": input.area_overrides or {},
         "updated_at": now_iso(),
     }
     await db.settings.update_one(

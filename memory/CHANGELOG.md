@@ -1,6 +1,23 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Enhancement: Visibilidad de Tiles por Área (Overrides) 👁🏷️
+- **Objetivo**: permitir que cada tile (categoría real o virtual) se oculte en áreas específicas. Ej: Terraza solo muestra Bebidas; Salon Principal esconde Combos.
+- **Backend** (`routers/config.py`):
+  - `MenuTilesInput` + doc `settings.menu_tile_config` extendidos con `area_overrides: {area_id: {hidden_tiles: [tile_id, ...]}}`.
+  - `GET /api/menu-tiles` ahora retorna `area_overrides`; `PUT` lo persiste idempotente.
+- **Frontend**:
+  - `MenuTilesSorter.jsx`: carga `/api/areas` en paralelo con tile-config. Cada tile tiene un botón 👁 (Eye/EyeOff) con popover "VISIBLE EN ÁREAS" y un checkbox por área. Desmarcar oculta ese tile en esa área. Badge numérico en el botón cuenta áreas ocultas (ej: "1", "2"). Botón "Restablecer" limpia también los overrides.
+  - `OrderScreen.js`: al renderizar tiles filtra por `area_overrides[table.area_id].hidden_tiles`. Aplica tanto a categorías reales como a tiles virtuales.
+- **Verificación E2E**:
+  - 4 áreas reales (Salon Principal, Terraza, Bar, VIP). Panel listó 4 checkboxes.
+  - Ocultar Combos en "Salon Principal" → botón 👁 pasó a mostrar "1" → toast "Guardado" (PUT OK).
+  - En Mesa 1 (Salon Principal) el tile Combos DESAPARECIÓ mientras Artículos Libres, Hamburguesa y Cervezas siguen visibles. `cat-card-combos`=0 ✅.
+  - Reset restauró todos los tiles.
+- **Archivos**: `/app/backend/routers/config.py` (+3 líneas `area_overrides`), `/app/frontend/src/components/MenuTilesSorter.jsx` (+60 líneas VisibilityControl + toggle), `/app/frontend/src/pages/OrderScreen.js` (+2 líneas `areaHidden` Set).
+
+
+
 ## 2026-04-22 — Enhancement: Drag-and-Drop para Orden de Tiles + Color Custom en Virtuales 🎨🪄
 - **Objetivo**: dar al admin control total sobre el orden en que aparecen las categorías del menú en el POS y permitir personalizar el color de los tiles virtuales (Combos, Artículos Libres).
 - **Backend**:
