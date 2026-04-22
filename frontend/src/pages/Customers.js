@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Heart, Plus, Search, Gift, Star, Phone, Mail, ArrowLeft, Pencil, Send, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Heart, Plus, Search, Gift, Star, Phone, Mail, ArrowLeft, Pencil, Send, Trash2, Eye, Loader2, IdCard } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import axios from 'axios';
 import { NumericInput } from '@/components/NumericKeypad';
@@ -33,6 +33,7 @@ export default function Customers() {
   const [redeemDialog, setRedeemDialog] = useState({ open: false, customer: null, points: '' });
   const [editDialog, setEditDialog] = useState({ open: false, customer: null, name: '', phone: '', email: '', rnc: '' });
   const [configDialog, setConfigDialog] = useState(false);
+  const [cardDialog, setCardDialog] = useState({ open: false, customer: null, sending: false });
   
   // Marketing email state
   const [marketingDialog, setMarketingDialog] = useState({ 
@@ -108,6 +109,31 @@ export default function Customers() {
       notify.success('Configuracion actualizada');
       setConfigDialog(false);
     } catch { notify.error('Error'); }
+  };
+
+  const buildLoyaltyUrl = (customerId, token) =>
+    `${window.location.origin}/loyalty-card/${customerId}?token=${token}`;
+
+  const openCardDialog = async (customer) => {
+    try {
+      const { data } = await axios.get(`${API}/loyalty/card/${customer.id}`, { headers: headers() });
+      setCardDialog({ open: true, customer: { ...customer, token: data.token, public_url: buildLoyaltyUrl(customer.id, data.token) }, sending: false });
+    } catch (e) { notify.error(e.response?.data?.detail || 'Error cargando tarjeta'); }
+  };
+
+  const handleSendCardEmail = async () => {
+    if (!cardDialog.customer?.email) { notify.error('El cliente no tiene email registrado'); return; }
+    setCardDialog(p => ({ ...p, sending: true }));
+    try {
+      await axios.post(`${API}/loyalty/send-card-email/${cardDialog.customer.id}`,
+        { email: cardDialog.customer.email, public_url: cardDialog.customer.public_url },
+        { headers: headers() });
+      notify.success(`Tarjeta enviada a ${cardDialog.customer.email}`);
+      setCardDialog({ open: false, customer: null, sending: false });
+    } catch (e) {
+      notify.error(e.response?.data?.detail || 'Error enviando email');
+      setCardDialog(p => ({ ...p, sending: false }));
+    }
   };
 
   // Marketing email functions
@@ -265,6 +291,10 @@ export default function Customers() {
                       <Button variant="ghost" size="sm" onClick={() => setEditDialog({ open: true, customer: c, name: c.name, phone: c.phone || '', email: c.email || '', rnc: c.rnc || '' })}
                         className="h-8 w-8 p-0 text-muted-foreground hover:text-primary" data-testid={`edit-${c.id}`}>
                         <Pencil size={14} />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => openCardDialog(c)}
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-purple-400" data-testid={`card-${c.id}`} title="Tarjeta Digital">
+                        <IdCard size={14} />
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => setRedeemDialog({ open: true, customer: c, points: '' })}
                         disabled={c.points < config.min_redemption}
@@ -580,6 +610,63 @@ export default function Customers() {
               </div>
             )}
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Loyalty Card Dialog */}
+      <Dialog open={cardDialog.open} onOpenChange={(o) => !o && setCardDialog({ open: false, customer: null, sending: false })}>
+        <DialogContent className="max-w-md bg-card border-border" data-testid="loyalty-card-dialog">
+          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2"><IdCard size={20} /> Tarjeta Digital de Fidelidad</DialogTitle></DialogHeader>
+          {cardDialog.customer && (
+            <div className="space-y-4">
+              <div className="rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 p-5 text-white text-center">
+                <p className="text-[10px] tracking-[2px] opacity-80">TITULAR</p>
+                <p className="text-lg font-bold truncate">{cardDialog.customer.name}</p>
+                <p className="text-[10px] tracking-[2px] opacity-80 mt-2">SALDO</p>
+                <p className="text-4xl font-extrabold">{cardDialog.customer.points || 0} <span className="text-sm font-normal opacity-80">pts</span></p>
+              </div>
+              <div className="flex justify-center">
+                <div className="bg-white rounded-lg p-2">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(cardDialog.customer.public_url || '')}`}
+                    alt="QR tarjeta"
+                    width={180}
+                    height={180}
+                    data-testid="card-dialog-qr"
+                  />
+                </div>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-2 text-xs font-mono break-all select-all" data-testid="card-dialog-url">
+                {cardDialog.customer.public_url}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={() => {
+                    navigator.clipboard?.writeText(cardDialog.customer.public_url || '');
+                    notify.success('URL copiada');
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                  data-testid="card-dialog-copy-btn"
+                >Copiar URL</Button>
+                <Button
+                  onClick={() => window.open(cardDialog.customer.public_url, '_blank')}
+                  variant="outline"
+                  className="flex-1"
+                  data-testid="card-dialog-open-btn"
+                ><Eye size={14} className="mr-1" /> Abrir</Button>
+                <Button
+                  onClick={handleSendCardEmail}
+                  disabled={!cardDialog.customer.email || cardDialog.sending}
+                  className="flex-1 bg-primary text-primary-foreground"
+                  data-testid="card-dialog-send-email-btn"
+                >
+                  {cardDialog.sending ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Send size={14} className="mr-1" />}
+                  {cardDialog.customer.email ? 'Enviar Email' : 'Sin email'}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

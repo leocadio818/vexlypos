@@ -7,6 +7,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import axios from 'axios';
 import { useSectionLayout, useScreenEditMode, useLongPress } from '@/hooks/useEditableGrid';
 import { EditableCardGrid, EditModeBar } from '@/components/EditableCardGrid';
+import TopLoyaltyCustomers from '@/components/TopLoyaltyCustomers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -421,6 +422,9 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* Top Clientes Fieles */}
+          <TopLoyaltyCustomers />
         </div>
       </div>
     </div>

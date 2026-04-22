@@ -30,6 +30,7 @@ const AnulacionesReport = React.lazy(() => import("@/pages/AnulacionesReport"));
 const TicketDemo = React.lazy(() => import("@/pages/TicketDemo"));
 const Help = React.lazy(() => import("@/pages/Help"));
 const BillHistory = React.lazy(() => import("@/pages/BillHistory"));
+const LoyaltyCard = React.lazy(() => import("@/pages/LoyaltyCard"));
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/kitchen-tv" element={<Suspense fallback={<PageSkeleton />}><KitchenTV /></Suspense>} />
+      <Route path="/loyalty-card/:customerId" element={<Suspense fallback={<PageSkeleton />}><LoyaltyCard /></Suspense>} />
       {/* Root redirect: if loading show spinner, if no user go to login, else go to dashboard */}
       <Route path="/" element={
         loading ? (

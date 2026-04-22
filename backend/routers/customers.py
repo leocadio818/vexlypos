@@ -1,8 +1,11 @@
 # Customers & Loyalty Router
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+import hmac
+import hashlib
+import os
 import uuid
 
 router = APIRouter(tags=["customers"])
@@ -19,6 +22,12 @@ def gen_id() -> str:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+def _loyalty_token(customer_id: str) -> str:
+    """Short HMAC-SHA256 (8 bytes hex = 16 chars) derived from JWT_SECRET to prevent enumeration."""
+    secret = os.environ.get("JWT_SECRET", "fallback_secret").encode()
+    mac = hmac.new(secret, f"loyalty-card:{customer_id}".encode(), hashlib.sha256).hexdigest()
+    return mac[:16]
 
 # ─── PYDANTIC MODELS ───
 class CustomerInput(BaseModel):
@@ -133,3 +142,197 @@ async def update_loyalty_config(input: dict):
         del input["_id"]
     await db.loyalty_config.update_one({}, {"$set": input}, upsert=True)
     return {"ok": True}
+
+
+# ─── LOYALTY — TOP CUSTOMERS (Dashboard widget) ───
+@router.get("/loyalty/top-customers")
+async def loyalty_top_customers(
+    days: int = Query(30, ge=1, le=3650),
+    limit: int = Query(10, ge=1, le=50),
+):
+    """Top clientes por actividad (pts ganados + canjeados) en los últimos N días.
+    Si days>=3650 se considera 'siempre' (histórico completo)."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff_iso = cutoff.isoformat()
+
+    pipeline = [
+        {"$match": {
+            "status": "paid",
+            "customer_id": {"$ne": ""},
+            "paid_at": {"$gte": cutoff_iso},
+        }},
+        {"$group": {
+            "_id": "$customer_id",
+            "points_earned": {"$sum": {"$ifNull": ["$points_earned", 0]}},
+            "points_redeemed": {"$sum": {"$ifNull": ["$loyalty_points_redeemed", 0]}},
+            "total_spent": {"$sum": {"$ifNull": ["$total", 0]}},
+            "visits": {"$sum": 1},
+            "last_bill_at": {"$max": "$paid_at"},
+        }},
+        {"$addFields": {
+            "activity": {"$add": ["$points_earned", "$points_redeemed"]},
+        }},
+        {"$sort": {"activity": -1, "total_spent": -1}},
+        {"$limit": limit},
+    ]
+
+    agg = await db.bills.aggregate(pipeline).to_list(limit)
+    if not agg:
+        return {"days": days, "items": []}
+
+    # Join with customers to get name + current points balance
+    cust_ids = [row["_id"] for row in agg]
+    custs = await db.customers.find({"id": {"$in": cust_ids}}, {"_id": 0, "id": 1, "name": 1, "points": 1, "phone": 1}).to_list(len(cust_ids))
+    cust_map = {c["id"]: c for c in custs}
+
+    items = []
+    for i, row in enumerate(agg, start=1):
+        c = cust_map.get(row["_id"], {})
+        items.append({
+            "rank": i,
+            "customer_id": row["_id"],
+            "name": c.get("name", "Cliente eliminado"),
+            "phone": c.get("phone", ""),
+            "current_points": c.get("points", 0),
+            "points_earned": int(row.get("points_earned", 0)),
+            "points_redeemed": int(row.get("points_redeemed", 0)),
+            "activity": int(row.get("activity", 0)),
+            "visits": int(row.get("visits", 0)),
+            "total_spent": round(float(row.get("total_spent", 0)), 2),
+            "last_bill_at": row.get("last_bill_at", ""),
+        })
+    return {"days": days, "items": items}
+
+
+# ─── LOYALTY CARD (Digital + QR) ───
+@router.get("/loyalty/card/{cid}")
+async def get_loyalty_card_info(cid: str, request: Request):
+    """Datos para generar la tarjeta digital (auth'd). Devuelve el token; el frontend arma la URL pública con su origin."""
+    customer = await db.customers.find_one({"id": cid}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    token = _loyalty_token(cid)
+    path = f"/loyalty-card/{cid}?token={token}"
+    return {
+        "customer_id": cid,
+        "name": customer.get("name", ""),
+        "points": customer.get("points", 0),
+        "token": token,
+        "path": path,
+    }
+
+
+@router.get("/loyalty/public-card/{cid}")
+async def public_loyalty_card(cid: str, token: str = Query(...)):
+    """Endpoint PÚBLICO (sin auth). Valida token HMAC y devuelve datos mostrables de la tarjeta."""
+    expected = _loyalty_token(cid)
+    if not hmac.compare_digest(expected, token):
+        raise HTTPException(status_code=403, detail="Token inválido")
+
+    customer = await db.customers.find_one({"id": cid}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"points_per_hundred": 10, "point_value_rd": 1, "min_redemption": 50}
+    biz_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+
+    # Last 3 visits
+    last_bills = await db.bills.find(
+        {"customer_id": cid, "status": "paid"},
+        {"_id": 0, "id": 1, "transaction_number": 1, "total": 1, "paid_at": 1, "points_earned": 1, "loyalty_points_redeemed": 1, "table_label": 1}
+    ).sort("paid_at", -1).to_list(3)
+
+    points = int(customer.get("points", 0) or 0)
+    point_value = float(config.get("point_value_rd", 1) or 1)
+    return {
+        "customer_id": cid,
+        "name": customer.get("name", ""),
+        "phone": customer.get("phone", ""),
+        "points": points,
+        "rd_equivalent": round(points * point_value, 2),
+        "point_value_rd": point_value,
+        "min_redemption": int(config.get("min_redemption", 50)),
+        "business": {
+            "name": biz_config.get("restaurant_name", "VexlyPOS"),
+            "phone": biz_config.get("phone", ""),
+            "address": biz_config.get("address", ""),
+            "logo_url": biz_config.get("logo_url", ""),
+        },
+        "last_visits": [{
+            "transaction_number": b.get("transaction_number", ""),
+            "total": b.get("total", 0),
+            "paid_at": b.get("paid_at", ""),
+            "points_earned": b.get("points_earned", 0),
+            "points_redeemed": b.get("loyalty_points_redeemed", 0),
+            "label": b.get("table_label", ""),
+        } for b in last_bills],
+    }
+
+
+@router.post("/loyalty/send-card-email/{cid}")
+async def send_loyalty_card_email(cid: str, request: Request, body: dict = None):
+    """Envía la tarjeta digital por email al cliente vía Resend.
+    Body opcional: { email?: str, public_url?: str }  (public_url desde el frontend)"""
+    import resend
+    resend_key = os.environ.get("RESEND_API_KEY", "")
+    if not resend_key:
+        raise HTTPException(status_code=500, detail="Resend no está configurado")
+    resend.api_key = resend_key
+
+    customer = await db.customers.find_one({"id": cid}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    email = (body or {}).get("email") or customer.get("email", "")
+    if not email:
+        raise HTTPException(status_code=400, detail="El cliente no tiene email registrado")
+
+    token = _loyalty_token(cid)
+    # Use public_url from frontend if provided, else fallback to request origin
+    public_url = (body or {}).get("public_url") or f"{str(request.base_url).rstrip('/')}/loyalty-card/{cid}?token={token}"
+
+    config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"point_value_rd": 1, "min_redemption": 50}
+    biz_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    biz_name = biz_config.get("restaurant_name", "VexlyPOS")
+
+    points = int(customer.get("points", 0) or 0)
+    rd_eq = round(points * float(config.get("point_value_rd", 1) or 1), 2)
+    qr_src = f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={public_url}"
+
+    html = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:20px auto;background:#0f172a;border-radius:24px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.15);">
+      <div style="background:linear-gradient(135deg,#7c3aed 0%,#ec4899 100%);padding:28px 24px;text-align:center;color:#fff;">
+        <p style="margin:0;font-size:12px;letter-spacing:3px;opacity:.85;">TARJETA DE FIDELIDAD</p>
+        <h1 style="margin:8px 0 0;font-size:26px;">{biz_name}</h1>
+      </div>
+      <div style="padding:28px 24px;text-align:center;color:#e2e8f0;">
+        <p style="margin:0;font-size:13px;opacity:.7;">Titular</p>
+        <p style="margin:4px 0 20px;font-size:22px;font-weight:700;color:#fff;">{customer.get('name','')}</p>
+        <div style="background:#1e293b;border-radius:16px;padding:20px;margin-bottom:20px;">
+          <p style="margin:0;font-size:11px;letter-spacing:2px;color:#a78bfa;">SALDO DE PUNTOS</p>
+          <p style="margin:6px 0 0;font-size:44px;font-weight:800;color:#fff;">{points}</p>
+          <p style="margin:4px 0 0;font-size:13px;color:#94a3b8;">≈ RD$ {rd_eq:,.2f}</p>
+        </div>
+        <img src="{qr_src}" alt="QR" width="220" height="220" style="display:block;margin:0 auto;border-radius:12px;background:#fff;padding:10px;" />
+        <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">Presenta este QR en caja para acumular o canjear tus puntos</p>
+        <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">Mínimo de canje: {int(config.get('min_redemption',50))} pts</p>
+        <a href="{public_url}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:12px;font-weight:700;font-size:14px;">Ver tarjeta en línea</a>
+      </div>
+      <div style="padding:16px;text-align:center;background:#020617;color:#64748b;font-size:11px;">
+        {biz_config.get('address','')} · {biz_config.get('phone','')}
+      </div>
+    </div>
+    """
+
+    try:
+        sender = f"{biz_name} <facturas@vexlyapp.com>"
+        resend.Emails.send({
+            "from": sender,
+            "to": [email],
+            "subject": f"Tu tarjeta de fidelidad {biz_name} — {points} pts",
+            "html": html,
+        })
+        return {"ok": True, "sent_to": email, "public_url": public_url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error enviando email: {str(e)}")
