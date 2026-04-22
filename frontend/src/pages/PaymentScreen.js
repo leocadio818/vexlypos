@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { billsAPI, businessDaysAPI, posSessionsAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, X, Check, Wallet, Coins, CircleDollarSign, BadgeDollarSign, ChevronUp, ChevronDown, Receipt, Sparkles, Heart, FileText, Truck, Store, UtensilsCrossed, Printer, Globe, Briefcase, Shield, Lock, AlertTriangle, Bell, Plus, Phone, Mail, Moon, Sun, Tag } from 'lucide-react';
+import { ArrowLeft, User, Search, CreditCard, Banknote, Building2, DollarSign, Euro, Smartphone, X, Check, Wallet, Coins, CircleDollarSign, BadgeDollarSign, ChevronUp, ChevronDown, Receipt, Sparkles, Heart, FileText, Truck, Store, UtensilsCrossed, Printer, Globe, Briefcase, Shield, Lock, AlertTriangle, Bell, Plus, Phone, Mail, Moon, Sun, Tag, Gift } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -125,6 +125,8 @@ export default function PaymentScreen() {
   const [payAmounts, setPayAmounts] = useState({});
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [loyaltyConfig, setLoyaltyConfig] = useState({ points_per_hundred: 10, point_value_rd: 1, min_redemption: 50 });
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [customerDialog, setCustomerDialog] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
   const [newCustomerDialog, setNewCustomerDialog] = useState({ open: false, name: '', phone: '', email: '' });
@@ -267,12 +269,13 @@ export default function PaymentScreen() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [billRes, pmRes, custRes, stRes, taxRes] = await Promise.all([
+      const [billRes, pmRes, custRes, stRes, taxRes, loyaltyRes] = await Promise.all([
         billsAPI.get(billId),
         fetch(`${API_BASE}/api/payment-methods`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
         fetch(`${API_BASE}/api/customers`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
         fetch(`${API_BASE}/api/sale-types`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
-        fetch(`${API_BASE}/api/tax-config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json())
+        fetch(`${API_BASE}/api/tax-config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()),
+        fetch(`${API_BASE}/api/loyalty/config`, { headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` } }).then(r => r.json()).catch(() => null),
       ]);
       const billData = billRes.data;
       setBill(billData);
@@ -280,6 +283,9 @@ export default function PaymentScreen() {
       const sortedMethods = pmRes.filter(m => m.active).sort((a, b) => (a.order || 0) - (b.order || 0));
       setPaymentMethods(sortedMethods);
       setCustomers(custRes);
+      if (loyaltyRes && loyaltyRes.points_per_hundred) {
+        setLoyaltyConfig(loyaltyRes);
+      }
       setSaleTypes(stRes.filter(st => st.active));
       setTaxConfig(taxRes.filter(t => t.active || t.is_active));
       
@@ -830,6 +836,7 @@ export default function PaymentScreen() {
         tip_percentage: 0, 
         additional_tip: cardTip,
         customer_id: selectedCustomer?.id || fiscalData?.customer?.id || '',
+        loyalty_points_to_redeem: pointsToRedeem || 0,
         ncf: generatedNcf?.ncf || null,
         sale_type_id: selectedServiceType?.id || null,
         sale_type_name: selectedServiceType?.name || null,
@@ -1294,14 +1301,63 @@ export default function PaymentScreen() {
                 <div 
                   role="button"
                   tabIndex={0}
-                  onClick={(e) => { e.stopPropagation(); setSelectedCustomer(null); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setSelectedCustomer(null); } }}
+                  onClick={(e) => { e.stopPropagation(); setSelectedCustomer(null); setPointsToRedeem(0); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setSelectedCustomer(null); setPointsToRedeem(0); } }}
                   className="p-2 rounded-full hover:bg-red-500/30 text-red-400 transition-colors ml-auto cursor-pointer"
                 >
                   <X size={16} />
                 </div>
               )}
             </button>
+
+            {/* Loyalty Redemption — visible only if customer selected with enough points */}
+            {selectedCustomer && (selectedCustomer.points || 0) >= (loyaltyConfig.min_redemption || 50) && (
+              <div
+                className={`rounded-2xl border-2 ${pointsToRedeem > 0 ? 'border-emerald-400/70 bg-emerald-500/10' : 'border-purple-400/40 bg-purple-500/5'} p-3 transition-all`}
+                data-testid="loyalty-redemption-section"
+              >
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Gift size={isMobile ? 18 : 20} className="text-purple-300 flex-shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-purple-300 uppercase">Canjear Puntos</span>
+                      <span className="text-[10px] text-white/60">
+                        Disponibles: {selectedCustomer.points || 0} pts · 1 pt = RD${Number(loyaltyConfig.point_value_rd || 1).toFixed(0)} · mín {loyaltyConfig.min_redemption} pts
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {[50, 100, 200].filter(v => v <= (selectedCustomer.points || 0)).map(preset => (
+                      <button key={preset} type="button" onClick={() => setPointsToRedeem(preset)}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${pointsToRedeem === preset ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+                        data-testid={`redeem-preset-${preset}`}>{preset}</button>
+                    ))}
+                    <button type="button"
+                      onClick={() => setPointsToRedeem(selectedCustomer.points || 0)}
+                      className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${pointsToRedeem === (selectedCustomer.points || 0) ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+                      data-testid="redeem-all-btn">Todos</button>
+                    <input type="number" min="0" max={selectedCustomer.points || 0}
+                      step={loyaltyConfig.min_redemption || 50}
+                      value={pointsToRedeem || ''}
+                      onChange={e => {
+                        const v = Math.max(0, Math.min(selectedCustomer.points || 0, parseInt(e.target.value) || 0));
+                        setPointsToRedeem(v);
+                      }}
+                      placeholder="pts"
+                      className="w-20 px-2 py-1 rounded-lg bg-black/30 border border-white/20 text-white text-sm text-right"
+                      data-testid="redeem-points-input" />
+                  </div>
+                </div>
+                {pointsToRedeem > 0 && (
+                  <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/10">
+                    <span className="text-xs text-white/70">Descuento aplicado:</span>
+                    <span className="font-oswald text-lg font-bold text-emerald-300" data-testid="loyalty-discount-amount">
+                      -RD$ {(pointsToRedeem * (loyaltyConfig.point_value_rd || 1)).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Botón Venta/NCF - Enlarged */}
             <button

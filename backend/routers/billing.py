@@ -87,6 +87,7 @@ class PayBillInput(BaseModel):
     propina_legal: Optional[float] = None
     total: Optional[float] = None
     amount_received: Optional[float] = None
+    loyalty_points_to_redeem: int = 0
     # Nuevo: Lista de pagos múltiples
     payments: Optional[List[PaymentEntry]] = None
     # Nuevo: Información de cambio en moneda extranjera
@@ -478,6 +479,29 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
         total = round(input.total + input.additional_tip, 2)
     else:
         total = round(bill["subtotal"] + itbis + propina, 2)
+
+    # ─── LOYALTY REDEMPTION ────────────────────────────────────────────
+    loyalty_redeemed_points = 0
+    loyalty_discount_rd = 0.0
+    cust_id_for_redeem = input.customer_id or bill.get("customer_id", "")
+    if input.loyalty_points_to_redeem and input.loyalty_points_to_redeem > 0:
+        if not cust_id_for_redeem:
+            raise HTTPException(status_code=400, detail="Selecciona un cliente para canjear puntos")
+        cust = await db.customers.find_one({"id": cust_id_for_redeem}, {"_id": 0})
+        if not cust:
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+        cfg = await db.loyalty_config.find_one({}, {"_id": 0}) or {"point_value_rd": 1, "min_redemption": 50}
+        pts = int(input.loyalty_points_to_redeem)
+        min_r = int(cfg.get("min_redemption", 50))
+        if pts < min_r:
+            raise HTTPException(status_code=400, detail=f"Mínimo {min_r} puntos para canjear")
+        if (cust.get("points", 0) or 0) < pts:
+            raise HTTPException(status_code=400, detail="Puntos insuficientes")
+        loyalty_discount_rd = round(pts * float(cfg.get("point_value_rd", 1) or 1), 2)
+        if loyalty_discount_rd >= total:
+            raise HTTPException(status_code=400, detail="El canje no puede cubrir el total completo (dejar al menos RD$0.01)")
+        loyalty_redeemed_points = pts
+        total = round(max(0.01, total - loyalty_discount_rd), 2)
     
     # DGII Fiscal Security: Block zero-value invoices
     if total <= 0:
@@ -774,12 +798,24 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
     points_earned = 0
     if cust_id:
         config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"points_per_hundred": 10}
+        # Earn based on POST-redemption total (prevents double-dipping)
         points_earned = int((total / 100) * config.get("points_per_hundred", 10))
         await db.customers.update_one({"id": cust_id}, {
             "$inc": {"points": points_earned, "total_spent": total, "visits": 1},
             "$set": {"last_visit": now_iso()}
         })
         await db.bills.update_one({"id": bill_id}, {"$set": {"customer_id": cust_id, "points_earned": points_earned}})
+
+    # Deduct redeemed points from customer + store loyalty info in bill
+    if loyalty_redeemed_points > 0 and cust_id_for_redeem:
+        await db.customers.update_one(
+            {"id": cust_id_for_redeem},
+            {"$inc": {"points": -loyalty_redeemed_points}}
+        )
+        await db.bills.update_one({"id": bill_id}, {"$set": {
+            "loyalty_points_redeemed": loyalty_redeemed_points,
+            "loyalty_discount_rd": loyalty_discount_rd,
+        }})
 
     # ─── AUDIT: LOG BILL PAYMENT ───
     from utils.audit import log_bill_paid, log_discount_applied
