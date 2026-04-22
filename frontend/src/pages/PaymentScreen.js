@@ -729,7 +729,10 @@ export default function PaymentScreen() {
     const amt = parseFloat(payAmounts[m.name]) || 0;
     return sum + amt * (m.exchange_rate || 1);
   }, 0);
-  const billTotal = adjustedBill?.total || bill?.total || 0;
+  const loyaltyDiscountRd = (pointsToRedeem || 0) * (loyaltyConfig.point_value_rd || 1);
+  const grossTotal = adjustedBill?.total || bill?.total || 0;
+  // Ensure bill keeps at least RD$0.01 to preserve NCF (matches backend guard)
+  const billTotal = Math.max(0.01, grossTotal - loyaltyDiscountRd);
   const overpaid = totalPaidDOP - billTotal;
   const isEnough = totalPaidDOP >= billTotal;
 
@@ -1505,8 +1508,8 @@ export default function PaymentScreen() {
                   {/* TOTAL GENERAL - Elemento más grande y visible */}
                   <div className={`flex justify-between items-center text-white font-bold pt-3 mt-2 border-t-2 border-cyan-400/30 notranslate ${isMobile ? 'text-base' : ''}`}>
                     <span className={`font-oswald tracking-wide ${isMobile ? '' : 'text-2xl'}`}>TOTAL</span>
-                    <span className={`font-oswald bg-gradient-to-r from-cyan-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent drop-shadow-lg ${isMobile ? 'text-xl' : 'text-4xl'}`}>
-                      {formatMoney(adjustedBill?.total ?? bill.total)}
+                    <span className={`font-oswald bg-gradient-to-r from-cyan-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent drop-shadow-lg ${isMobile ? 'text-xl' : 'text-4xl'}`} data-testid="bill-total-display">
+                      {formatMoney(billTotal)}
                     </span>
                   </div>
                 </div>
