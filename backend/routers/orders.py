@@ -5,6 +5,7 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from pymongo import ReturnDocument
 import uuid
+import os
 
 router = APIRouter(tags=["orders"])
 
@@ -451,8 +452,27 @@ async def create_quick_order(input: QuickOrderInput, user=Depends(get_current_us
 
 @router.get("/orders/quick/active")
 async def list_active_quick_orders(user=Depends(get_current_user)):
-    """Quick orders not yet delivered (preparing | paid). Scoped to active jornada."""
+    """Quick orders not yet delivered (preparing | paid). Scoped to active jornada.
+    Auto-sweep: any `paid` order older than QUICK_ORDER_AUTO_DELIVER_MINUTES (default 7)
+    gets marked `delivered` so the queue stays clean without manual intervention."""
     bdate = await _get_active_business_date()
+
+    # Lazy auto-sweep: paid orders older than threshold -> delivered
+    try:
+        threshold_min = int(os.environ.get("QUICK_ORDER_AUTO_DELIVER_MINUTES", "7"))
+    except (ValueError, TypeError):
+        threshold_min = 7
+    cutoff = (datetime.now(timezone.utc) - timedelta(minutes=threshold_min)).isoformat()
+    sweep_q = {
+        "is_quick_order": True,
+        "quick_order_status": "paid",
+        "quick_paid_at": {"$lt": cutoff, "$ne": None},
+    }
+    await db.orders.update_many(
+        sweep_q,
+        {"$set": {"quick_order_status": "delivered", "updated_at": now_iso()}},
+    )
+
     query = {"is_quick_order": True, "quick_order_status": {"$in": ["preparing", "paid"]}}
     if bdate:
         query["quick_order_business_date"] = bdate

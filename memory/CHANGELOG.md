@@ -1,6 +1,19 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Enhancement: Auto-entregado en Órdenes Rápidas ⏳➜✅
+- **Objetivo**: eliminar la fricción manual de tocar "Entregar" en el 95% de los casos donde el cobro es inmediato (Patrón A — counter service).
+- **Backend**:
+  - `routers/billing.py` `pay_bill`: al marcar la orden como `paid`, también guarda timestamp `quick_paid_at`.
+  - `routers/orders.py` `GET /api/orders/quick/active`: lazy-sweep antes de responder — cualquier orden con `quick_order_status="paid"` y `quick_paid_at` más viejo que `QUICK_ORDER_AUTO_DELIVER_MINUTES` (default 7 min, configurable por env) se pasa automáticamente a `delivered`.
+  - Cero infraestructura nueva: aprovecha el polling del frontend (cada 10s) para hacer el sweep. Si nadie está mirando, nadie se preocupa.
+- **Frontend**:
+  - `QuickOrderFab.jsx`: leyenda sutil en el panel de cola: "Las órdenes cobradas se marcan como entregadas automáticamente tras 7 min."
+- **Verificación**: seed de 2 quick orders con estado `paid` — una con `quick_paid_at` fresco y otra de hace 10 min — llamada a `/quick/active` → la fresca sigue `paid`, la stale pasó a `delivered`. ✅
+- **Configurable**: setear env var `QUICK_ORDER_AUTO_DELIVER_MINUTES=15` para cafeterías que quieran ventana más larga.
+
+
+
 ## 2026-04-22 — Feature: Orden Rápida (Quick Order) ⚡🎯
 - **Objetivo**: flujo walk-in sin mesa — el cliente llega, ordena, paga y se va. No ocupa mesa ni requiere mesero.
 - **Backend** (`routers/orders.py`, `routers/billing.py`, `print_agent_pro.py`):

@@ -791,7 +791,10 @@ async def pay_bill(bill_id: str, input: PayBillInput, request: Request, user=Dep
             if _o and _o.get("is_quick_order"):
                 await db.orders.update_one(
                     {"id": order_id},
-                    {"$set": {"quick_order_status": "paid"}}
+                    {"$set": {
+                        "quick_order_status": "paid",
+                        "quick_paid_at": now_iso(),
+                    }}
                 )
             
             # For divided tables: check if OTHER orders still exist for this table

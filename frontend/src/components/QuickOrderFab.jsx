@@ -181,6 +181,9 @@ export default function QuickOrderFab() {
               Órdenes Rápidas Activas ({queue.length})
             </DialogTitle>
           </DialogHeader>
+          <p className="text-[10px] text-muted-foreground -mt-2 mb-1">
+            Las órdenes cobradas se marcan como entregadas automáticamente tras 7 min.
+          </p>
           <div className="space-y-2 overflow-y-auto pr-1 -mr-1">
             {queue.length === 0 && (
               <div className="py-8 text-center text-muted-foreground text-sm">
