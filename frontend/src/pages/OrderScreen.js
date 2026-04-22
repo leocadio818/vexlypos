@@ -2676,7 +2676,13 @@ export default function OrderScreen() {
                       </div>
                     ) : null}
                     {/* Nombre arriba, precio al fondo */}
-                    <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
+                    {(() => {
+                      const hasPromoHere = activePromotions.length > 0 &&
+                        computeEffectivePrice(product.price, product.id, product.category_id, table?.area_id, activePromotions).promo;
+                      return (
+                        <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''} ${hasPromoHere ? 'pl-6' : ''}`}>{product.name}</span>
+                      );
+                    })()}
                     {(() => {
                       const priceInfo = activePromotions.length > 0
                         ? computeEffectivePrice(product.price, product.id, product.category_id, table?.area_id, activePromotions)

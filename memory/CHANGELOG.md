@@ -1,5 +1,24 @@
 # VexlyPOS — Changelog
 
+## 2026-04 — Feature: Happy Hour / Promociones Automáticas ✨
+- **Sistema completo de promociones programadas** por días de la semana + horario + fecha inicio/fin. Precios cambian automáticamente sin intervención manual.
+- **Tipos de descuento**: Porcentaje (%), Monto Fijo (RD$), Precio Fijo, 2x1.
+- **Alcance**: Todos los productos / Categoría(s) / Productos específicos. Con productos excluidos y filtro por áreas.
+- **Permiso nuevo**: `manage_promotions`. Activo por default en admin, gerente, propietario. Inactivo en supervisor/cajero/mesero/cocina.
+- **Backend**:
+  - `/app/backend/services/promotion_engine.py` — Engine con caché en memoria 60s, timezone `America/Santo_Domingo`. Función `get_effective_price()` selecciona MEJOR descuento para el cliente si múltiples aplican.
+  - `/app/backend/routers/promotions.py` — CRUD: GET /api/promotions (lista), GET /api/promotions/active (activas ahora), POST/PATCH/DELETE con validación de bounds (percentage 0-100, fixed_amount ≥ 0).
+  - `/app/backend/routers/orders.py` — Integración en POST /orders/{id}/items: aplica precio efectivo + guarda `original_price`, `promotion_id`, `promotion_name`, `promotion_discount`, `promotion_discount_type` en el item. **Precio se congela al momento de agregar** — si Happy Hour termina después, cobra al precio descontado.
+  - `/app/backend/routers/auth.py` — `manage_promotions` añadido a `ALL_PERMISSIONS`, `DEFAULT_PERMISSIONS.admin`, `CUSTOM_ROLE_DEFAULTS.gerente/propietario`.
+- **Frontend**:
+  - `/app/frontend/src/pages/settings/PromotionsTab.js` — UI completa con list (cards con día-pills, horario 12h, descuento, toggle/edit/delete) + form (pills días, time pickers, date pickers opcionales, multi-select categorías/productos/áreas, productos excluidos).
+  - `/app/frontend/src/pages/settings/InventarioTab.js` — Nueva sub-pestaña "Promociones" (solo visible si permiso `manage_promotions`).
+  - `/app/frontend/src/pages/UserConfig.js` — `manage_promotions` en `PERMISSION_CATEGORIES.configuracion` para edición desde UI.
+  - `/app/frontend/src/pages/OrderScreen.js` — Banner gradient naranja "🔥 Happy Hour activo hasta las X:XX PM" cuando hay promos activas. Productos bajo promoción muestran precio tachado + precio descontado naranja + badge 🔥 top-left. Items en cart muestran "🔥 Happy Hour" en naranja + precio original tachado.
+- **QA verificado** (testing_agent_v3_fork iteration_161): Backend 15/15 pytest ✅. Frontend 95% ✅ (fix aplicado: pl-6 al nombre de producto para evitar overlap del badge). Admin puede gestionar, cajero no (403). Order integration verificada: PRESIDENTE $300 → $240 con promotion_name='Happy Hour' correctamente guardado. Tip legal 10% se calcula sobre subtotal con descuento (automático, unit_price ya descontado).
+- **Archivos creados**: `/app/backend/services/promotion_engine.py`, `/app/backend/routers/promotions.py`, `/app/frontend/src/pages/settings/PromotionsTab.js`, `/app/backend/tests/test_promotions.py`.
+
+
 ## 2026-02 — Bug Fix: Runtime Error "DialogDescription is not defined" 🐛
 - **Síntoma**: Al navegar a `/user/new` o editar usuario existente, Uncaught runtime error `ReferenceError: DialogDescription is not defined`.
 - **Root cause**: `DialogDescription` se usaba en JSX pero faltaba en el import statement de `UserConfig.js`.
