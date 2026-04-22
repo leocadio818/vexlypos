@@ -1,5 +1,5 @@
 # Billing Router - Bills, Payments, Payment Methods
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -445,7 +445,7 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
     return {k: v for k, v in bill.items() if k != "_id"}
 
 @router.post("/bills/{bill_id}/pay")
-async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_user)):
+async def pay_bill(bill_id: str, input: PayBillInput, request: Request, user=Depends(get_current_user)):
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
@@ -796,10 +796,16 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
 
     cust_id = input.customer_id or bill.get("customer_id", "")
     points_earned = 0
+    loyalty_prev_visits = 0
+    loyalty_prev_points = 0
     if cust_id:
         config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"points_per_hundred": 10}
         # Earn based on POST-redemption total (prevents double-dipping)
         points_earned = int((total / 100) * config.get("points_per_hundred", 10))
+        # Capture pre-update state for auto-email triggers
+        _prev = await db.customers.find_one({"id": cust_id}, {"_id": 0, "visits": 1, "points": 1}) or {}
+        loyalty_prev_visits = int(_prev.get("visits", 0) or 0)
+        loyalty_prev_points = int(_prev.get("points", 0) or 0)
         await db.customers.update_one({"id": cust_id}, {
             "$inc": {"points": points_earned, "total_spent": total, "visits": 1},
             "$set": {"last_visit": now_iso()}
@@ -816,6 +822,28 @@ async def pay_bill(bill_id: str, input: PayBillInput, user=Depends(get_current_u
             "loyalty_points_redeemed": loyalty_redeemed_points,
             "loyalty_discount_rd": loyalty_discount_rd,
         }})
+
+    # ─── LOYALTY AUTO-EMAIL TRIGGERS (welcome + threshold) ───
+    if cust_id:
+        try:
+            from routers.customers import trigger_loyalty_auto_emails
+            import os as _os
+            # Points AFTER both accumulation and redemption deduction
+            new_points = loyalty_prev_points + points_earned
+            if cust_id_for_redeem == cust_id and loyalty_redeemed_points > 0:
+                new_points -= loyalty_redeemed_points
+            # Prefer FRONTEND_PUBLIC_URL env var; fall back to request origin
+            public_base = _os.environ.get("FRONTEND_PUBLIC_URL", "") or str(request.base_url).rstrip("/")
+            if public_base:
+                await trigger_loyalty_auto_emails(
+                    cid=cust_id,
+                    prev_visits=loyalty_prev_visits,
+                    prev_points=loyalty_prev_points,
+                    new_points=new_points,
+                    public_base_url=public_base,
+                )
+        except Exception:
+            pass
 
     # ─── AUDIT: LOG BILL PAYMENT ───
     from utils.audit import log_bill_paid, log_discount_applied

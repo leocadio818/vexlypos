@@ -186,3 +186,20 @@
   - `App.js` ruta `/loyalty-card/:customerId` FUERA de ProtectedRoute para acceso público.
 - **Seguridad**: Token HMAC-SHA256 truncado a 16 hex previene enumeración. `hmac.compare_digest` previene timing attacks.
 - **Testing**: iteration_164.json — 100% backend (9/9 pytest) + 100% frontend (todos los data-testids + ruta pública sin auth + token inválido muestra error sin redirigir).
+
+## 2026-04-22 - Auto-envío de Tarjeta de Fidelidad por Email
+- **Backend `/app/backend/routers/customers.py`**:
+  - Helper `trigger_loyalty_auto_emails(cid, prev_visits, prev_points, new_points, public_base_url)`.
+  - Helper `_auto_send_loyalty_email` (silent failures, usa Resend).
+  - Flags idempotentes en cliente: `welcome_card_sent`, `welcome_card_sent_at`, `last_threshold_notif_at`.
+  - Email de umbral con cooldown de 30 días (evita spam en clientes frecuentes).
+- **Backend `/app/backend/routers/billing.py`**:
+  - `pay_bill` captura estado previo del cliente (`loyalty_prev_visits`, `loyalty_prev_points`) antes de actualizar.
+  - Dispara `trigger_loyalty_auto_emails` tras ganar/canjear puntos (silent try/except para no romper pago).
+  - Añadido parámetro `request: Request`.
+- **Backend `/app/backend/.env`**: nueva var `FRONTEND_PUBLIC_URL` para que los links de la tarjeta usen el dominio público real (no el host interno K8s).
+- **Triggers**:
+  1. Welcome: primera factura pagada del cliente (visits == 0 antes) + email registrado → envía tarjeta bienvenida y marca `welcome_card_sent=True`.
+  2. Threshold: cliente cruza de `points < min_redemption` a `points >= min_redemption` → envía "ya puedes canjear" (cooldown 30 días, no se repite hasta pasado el periodo).
+  3. Regresión: clientes sin email → silent skip, pago se completa normal.
+- **Tests curl**: welcome + threshold + no re-trigger + no-email regression (4/4 ok).

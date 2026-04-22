@@ -335,3 +335,136 @@ async def send_loyalty_card_email(cid: str, request: Request, body: dict = None)
         return {"ok": True, "sent_to": email, "public_url": public_url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error enviando email: {str(e)}")
+
+
+
+# ─── LOYALTY AUTO-EMAIL HELPERS (invoked from billing.pay_bill) ───
+def _build_loyalty_card_html(biz_name: str, customer_name: str, points: int,
+                             rd_eq: float, min_redemption: int, public_url: str,
+                             title: str, subtitle: str,
+                             biz_phone: str = "", biz_address: str = "") -> str:
+    qr_src = f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={public_url}"
+    return f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:20px auto;background:#0f172a;border-radius:24px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.15);">
+      <div style="background:linear-gradient(135deg,#7c3aed 0%,#ec4899 100%);padding:28px 24px;text-align:center;color:#fff;">
+        <p style="margin:0;font-size:12px;letter-spacing:3px;opacity:.85;">{title}</p>
+        <h1 style="margin:8px 0 0;font-size:26px;">{biz_name}</h1>
+      </div>
+      <div style="padding:28px 24px;text-align:center;color:#e2e8f0;">
+        <p style="margin:0;font-size:14px;color:#cbd5e1;">{subtitle}</p>
+        <p style="margin:18px 0 0;font-size:13px;opacity:.7;">Titular</p>
+        <p style="margin:4px 0 20px;font-size:22px;font-weight:700;color:#fff;">{customer_name}</p>
+        <div style="background:#1e293b;border-radius:16px;padding:20px;margin-bottom:20px;">
+          <p style="margin:0;font-size:11px;letter-spacing:2px;color:#a78bfa;">SALDO DE PUNTOS</p>
+          <p style="margin:6px 0 0;font-size:44px;font-weight:800;color:#fff;">{points}</p>
+          <p style="margin:4px 0 0;font-size:13px;color:#94a3b8;">≈ RD$ {rd_eq:,.2f}</p>
+        </div>
+        <img src="{qr_src}" alt="QR" width="220" height="220" style="display:block;margin:0 auto;border-radius:12px;background:#fff;padding:10px;" />
+        <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">Presenta este QR en caja para acumular o canjear tus puntos</p>
+        <p style="margin:6px 0 0;font-size:12px;color:#94a3b8;">Mínimo de canje: {min_redemption} pts</p>
+        <a href="{public_url}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:12px;font-weight:700;font-size:14px;">Ver tarjeta en línea</a>
+      </div>
+      <div style="padding:16px;text-align:center;background:#020617;color:#64748b;font-size:11px;">
+        {biz_address} · {biz_phone}
+      </div>
+    </div>
+    """
+
+
+async def _auto_send_loyalty_email(cid: str, subject_prefix: str, title: str, subtitle: str, public_base_url: str) -> bool:
+    """Envía email de tarjeta automática. Devuelve True si se envió. Silent failures."""
+    try:
+        import resend
+        resend_key = os.environ.get("RESEND_API_KEY", "")
+        if not resend_key:
+            return False
+        resend.api_key = resend_key
+
+        customer = await db.customers.find_one({"id": cid}, {"_id": 0})
+        if not customer or not customer.get("email"):
+            return False
+
+        config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"point_value_rd": 1, "min_redemption": 50}
+        biz_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+        biz_name = biz_config.get("restaurant_name", "VexlyPOS")
+
+        token = _loyalty_token(cid)
+        public_url = f"{public_base_url.rstrip('/')}/loyalty-card/{cid}?token={token}"
+
+        points = int(customer.get("points", 0) or 0)
+        rd_eq = round(points * float(config.get("point_value_rd", 1) or 1), 2)
+        min_r = int(config.get("min_redemption", 50))
+
+        html = _build_loyalty_card_html(
+            biz_name=biz_name,
+            customer_name=customer.get("name", ""),
+            points=points,
+            rd_eq=rd_eq,
+            min_redemption=min_r,
+            public_url=public_url,
+            title=title,
+            subtitle=subtitle,
+            biz_phone=biz_config.get("phone", ""),
+            biz_address=biz_config.get("address", ""),
+        )
+
+        resend.Emails.send({
+            "from": f"{biz_name} <facturas@vexlyapp.com>",
+            "to": [customer["email"]],
+            "subject": f"{subject_prefix} — {biz_name}",
+            "html": html,
+        })
+        return True
+    except Exception:
+        return False
+
+
+async def trigger_loyalty_auto_emails(cid: str, prev_visits: int, prev_points: int,
+                                     new_points: int, public_base_url: str) -> dict:
+    """Trigger welcome (first visit) and threshold emails. Idempotent via flags on customer doc."""
+    config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"min_redemption": 50}
+    min_r = int(config.get("min_redemption", 50))
+    results = {"welcome_sent": False, "threshold_sent": False}
+
+    customer = await db.customers.find_one({"id": cid}, {"_id": 0, "welcome_card_sent": 1, "last_threshold_notif_at": 1, "email": 1})
+    if not customer or not customer.get("email"):
+        return results
+
+    # Trigger 1: Welcome email (first visit ever, not sent before)
+    if prev_visits == 0 and not customer.get("welcome_card_sent"):
+        ok = await _auto_send_loyalty_email(
+            cid=cid,
+            subject_prefix="¡Bienvenido a nuestro programa de fidelidad!",
+            title="PROGRAMA DE FIDELIDAD",
+            subtitle="¡Gracias por tu primera visita! Te damos la bienvenida a nuestro programa. Acumula puntos en cada visita y canjéalos por descuentos.",
+            public_base_url=public_base_url,
+        )
+        if ok:
+            await db.customers.update_one({"id": cid}, {"$set": {"welcome_card_sent": True, "welcome_card_sent_at": now_iso()}})
+            results["welcome_sent"] = True
+
+    # Trigger 2: Threshold reached (crossed from below to at/above min_redemption).
+    # Skip if welcome was just sent OR threshold already notified in last 30 days.
+    if not results["welcome_sent"] and prev_points < min_r <= new_points:
+        last_notif = customer.get("last_threshold_notif_at")
+        should_send = True
+        if last_notif:
+            try:
+                last_dt = datetime.fromisoformat(last_notif.replace("Z", "+00:00"))
+                if (datetime.now(timezone.utc) - last_dt) < timedelta(days=30):
+                    should_send = False
+            except Exception:
+                pass
+        if should_send:
+            ok = await _auto_send_loyalty_email(
+                cid=cid,
+                subject_prefix=f"¡Ya puedes canjear tus {new_points} puntos!",
+                title="PUNTOS LISTOS PARA CANJEAR",
+                subtitle=f"Has alcanzado el mínimo de {min_r} puntos. En tu próxima visita puedes canjearlos por descuentos.",
+                public_base_url=public_base_url,
+            )
+            if ok:
+                await db.customers.update_one({"id": cid}, {"$set": {"last_threshold_notif_at": now_iso()}})
+                results["threshold_sent"] = True
+
+    return results
