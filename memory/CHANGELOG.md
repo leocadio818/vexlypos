@@ -156,3 +156,18 @@
 - **Order screen mobile**: 2 columnas fijas, lupa búsqueda
 - **Auto-send on exit**: handleLogoutWithComandas on both logo (desktop) + Salir button (mobile)
 - **Sidebar Opciones**: Modal with Cocina/Caja/Reservas/Config/Cierre de Día
+
+## 2026-04-22 - Fidelidad automática en PaymentScreen (Opción C)
+- **Backend `/app/backend/routers/billing.py`** — `POST /api/bills/{bill_id}/pay` acepta `loyalty_points_to_redeem`:
+  - Valida cliente, mínimo de canje, saldo de puntos, y que el canje no cubra el total completo (deja ≥ RD$0.01 para NCF).
+  - Descuenta el discount_rd del total ANTES de ejecutar el pago.
+  - Acumula puntos automáticamente sobre el total post-redención (evita double-dipping).
+  - Deduce los puntos canjeados del cliente y guarda `loyalty_points_redeemed` y `loyalty_discount_rd` en el bill.
+- **Frontend `/app/frontend/src/pages/PaymentScreen.js`**:
+  - Nueva sección `CANJEAR PUNTOS` (Gift 🎁) en su propia fila debajo del pill de cliente/NCF.
+  - Presets 50/100/200 + botón "Todos" + input numérico con validación.
+  - `billTotal` descuenta `loyaltyDiscountRd` en tiempo real; el `TOTAL` grande y el header total se actualizan.
+  - Validaciones proactivas (min_redemption, puntos insuficientes, supera total) con toasts.
+  - Manejo de errores del backend propaga `err.response.data.detail`.
+- Testing: Backend curl end-to-end (293→375 pts con redención 100 + ganancia 182); edge cases 400 (min, insuficiente, sin cliente); testing agent frontend 95% funcional + fix layout; pago final E2E validado (200→209 pts).
+- data-testids: `loyalty-redemption-section`, `redeem-preset-50/100/200`, `redeem-all-btn`, `redeem-points-input`, `loyalty-discount-amount`, `bill-total-display`.

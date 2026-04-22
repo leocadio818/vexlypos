@@ -758,6 +758,27 @@ export default function PaymentScreen() {
       notify.error('No se puede procesar un pago con valor $0.00. La DGII no permite asignar NCF a facturas sin valor.');
       return;
     }
+
+    // Loyalty validations (proactive, match backend rules)
+    if (pointsToRedeem > 0) {
+      if (!selectedCustomer) {
+        notify.error('Selecciona un cliente para canjear puntos');
+        return;
+      }
+      const minR = loyaltyConfig.min_redemption || 50;
+      if (pointsToRedeem < minR) {
+        notify.error(`Mínimo ${minR} puntos para canjear`);
+        return;
+      }
+      if (pointsToRedeem > (selectedCustomer.points || 0)) {
+        notify.error('Puntos insuficientes');
+        return;
+      }
+      if (loyaltyDiscountRd >= grossTotal) {
+        notify.error('El canje no puede cubrir el total completo. Debe quedar al menos RD$0.01.');
+        return;
+      }
+    }
     
     // Validar que el usuario tenga turno abierto para cobrar
     try {
@@ -1278,7 +1299,8 @@ export default function PaymentScreen() {
         <div className={`${isMobile ? 'w-full shrink-0' : isTablet && !isLandscape ? 'w-full' : 'w-80 lg:w-96'} ${!isMobile && (isTablet && isLandscape || !isTablet) ? 'border-r border-white/10' : 'border-b border-white/10'} flex flex-col`}>
           
           {/* Header Actions - Two Large Pill Buttons (Redesigned for better readability) */}
-          <div className="p-3 flex gap-3">
+          <div className="p-3 flex flex-col gap-3">
+            <div className="flex gap-3">
             {/* Botón Cliente - Enlarged */}
             <button
               onClick={() => setCustomerDialog(true)}
@@ -1313,55 +1335,6 @@ export default function PaymentScreen() {
               )}
             </button>
 
-            {/* Loyalty Redemption — visible only if customer selected with enough points */}
-            {selectedCustomer && (selectedCustomer.points || 0) >= (loyaltyConfig.min_redemption || 50) && (
-              <div
-                className={`rounded-2xl border-2 ${pointsToRedeem > 0 ? 'border-emerald-400/70 bg-emerald-500/10' : 'border-purple-400/40 bg-purple-500/5'} p-3 transition-all`}
-                data-testid="loyalty-redemption-section"
-              >
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <Gift size={isMobile ? 18 : 20} className="text-purple-300 flex-shrink-0" />
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-purple-300 uppercase">Canjear Puntos</span>
-                      <span className="text-[10px] text-white/60">
-                        Disponibles: {selectedCustomer.points || 0} pts · 1 pt = RD${Number(loyaltyConfig.point_value_rd || 1).toFixed(0)} · mín {loyaltyConfig.min_redemption} pts
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {[50, 100, 200].filter(v => v <= (selectedCustomer.points || 0)).map(preset => (
-                      <button key={preset} type="button" onClick={() => setPointsToRedeem(preset)}
-                        className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${pointsToRedeem === preset ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
-                        data-testid={`redeem-preset-${preset}`}>{preset}</button>
-                    ))}
-                    <button type="button"
-                      onClick={() => setPointsToRedeem(selectedCustomer.points || 0)}
-                      className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${pointsToRedeem === (selectedCustomer.points || 0) ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
-                      data-testid="redeem-all-btn">Todos</button>
-                    <input type="number" min="0" max={selectedCustomer.points || 0}
-                      step={loyaltyConfig.min_redemption || 50}
-                      value={pointsToRedeem || ''}
-                      onChange={e => {
-                        const v = Math.max(0, Math.min(selectedCustomer.points || 0, parseInt(e.target.value) || 0));
-                        setPointsToRedeem(v);
-                      }}
-                      placeholder="pts"
-                      className="w-20 px-2 py-1 rounded-lg bg-black/30 border border-white/20 text-white text-sm text-right"
-                      data-testid="redeem-points-input" />
-                  </div>
-                </div>
-                {pointsToRedeem > 0 && (
-                  <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/10">
-                    <span className="text-xs text-white/70">Descuento aplicado:</span>
-                    <span className="font-oswald text-lg font-bold text-emerald-300" data-testid="loyalty-discount-amount">
-                      -RD$ {(pointsToRedeem * (loyaltyConfig.point_value_rd || 1)).toFixed(2)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Botón Venta/NCF - Enlarged */}
             <button
               onClick={() => setNcfDialogOpen(true)}
@@ -1381,6 +1354,54 @@ export default function PaymentScreen() {
               </div>
               <ChevronDown size={isMobile ? 16 : 20} className="text-cyan-400/70 ml-auto" />
             </button>
+            </div>
+
+            {/* Loyalty Redemption — own row for better readability */}
+            {selectedCustomer && (selectedCustomer.points || 0) >= (loyaltyConfig.min_redemption || 50) && (
+              <div
+                className={`rounded-2xl border-2 ${pointsToRedeem > 0 ? 'border-emerald-400/70 bg-emerald-500/10' : 'border-purple-400/40 bg-purple-500/5'} p-3 transition-all`}
+                data-testid="loyalty-redemption-section"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Gift size={isMobile ? 18 : 20} className="text-purple-300 flex-shrink-0" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-bold text-purple-300 uppercase">Canjear Puntos</span>
+                    <span className="text-[10px] text-white/60 truncate">
+                      {selectedCustomer.points || 0} pts · 1 pt = RD${Number(loyaltyConfig.point_value_rd || 1).toFixed(0)} · mín {loyaltyConfig.min_redemption}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[50, 100, 200].filter(v => v <= (selectedCustomer.points || 0)).map(preset => (
+                    <button key={preset} type="button" onClick={() => setPointsToRedeem(preset)}
+                      className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${pointsToRedeem === preset ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+                      data-testid={`redeem-preset-${preset}`}>{preset}</button>
+                  ))}
+                  <button type="button"
+                    onClick={() => setPointsToRedeem(selectedCustomer.points || 0)}
+                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${pointsToRedeem === (selectedCustomer.points || 0) ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+                    data-testid="redeem-all-btn">Todos</button>
+                  <input type="number" min="0" max={selectedCustomer.points || 0}
+                    step={loyaltyConfig.min_redemption || 50}
+                    value={pointsToRedeem || ''}
+                    onChange={e => {
+                      const v = Math.max(0, Math.min(selectedCustomer.points || 0, parseInt(e.target.value) || 0));
+                      setPointsToRedeem(v);
+                    }}
+                    placeholder="pts"
+                    className="flex-1 min-w-[70px] px-2 py-1 rounded-lg bg-black/30 border border-white/20 text-white text-sm text-right"
+                    data-testid="redeem-points-input" />
+                </div>
+                {pointsToRedeem > 0 && (
+                  <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/10">
+                    <span className="text-xs text-white/70">Descuento aplicado:</span>
+                    <span className="font-oswald text-lg font-bold text-emerald-300" data-testid="loyalty-discount-amount">
+                      -RD$ {(pointsToRedeem * (loyaltyConfig.point_value_rd || 1)).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Bill Details - Collapsible on mobile */}
