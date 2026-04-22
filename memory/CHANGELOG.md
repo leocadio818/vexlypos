@@ -1,5 +1,19 @@
 # VexlyPOS — Changelog
 
+
+## 2026-04-22 — Feature: Candidatos a Producto Permanente (Artículos Libres → Catálogo) 🔄⭐
+- **Objetivo**: convertir ventas off-menu recurrentes en productos permanentes con 1 clic, capturando oportunidades de menú descubiertas por los meseros.
+- **Backend** (`reports.py` GET `/api/reports/open-items`):
+  - Nuevo campo `summary[]` agregado por `description` (lowercased key) con `occurrences`, `total_qty`, `total_revenue`, `avg_price`, `channel`, `last_seen`, `is_conversion_candidate` (flag cuando `occurrences >= 3`).
+  - Ordenado por `occurrences` DESC, luego `total_revenue` DESC.
+- **Frontend** (`OpenItemsReport.jsx`):
+  - Nueva sección "Candidatos a producto permanente" (gradient amber/orange, Star icon) visible solo cuando hay candidatos. Cada card muestra ventas, uds, precio promedio y total generado.
+  - Botón "Convertir en Producto" abre modal pre-llenado con: `name` (descripción), `price` (avg_price histórico), selector de categoría, toggle Activo. `POST /api/products` al confirmar. Toast Sonner success + cierre de dialog.
+  - Validación: botón deshabilitado si falta nombre, categoría, o precio <= 0.
+- **Testing**: frontend E2E 100% passed (iteration_167) — login PIN, navegación a Reports, date range expandido, candidatos renderizados (2 detectados), modal pre-fill correcto, validación, creación persistida (`GET /api/products` confirmó registro).
+- **Archivos**: `/app/backend/routers/reports.py` (+35 líneas summary/candidate logic), `/app/frontend/src/pages/reports/OpenItemsReport.jsx` (+80 líneas candidates section + convert dialog).
+
+
 ## 2026-04 — Feature: Combos con Descuento Happy Hour Automático 🔥🎁
 - **Extensión de promociones para combos**: las promociones ahora pueden apuntar a combos específicos además de productos/categorías.
 - **Backend**:
