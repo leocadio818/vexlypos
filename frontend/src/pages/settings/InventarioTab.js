@@ -15,6 +15,7 @@ import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 import ImportProductsModal from '@/components/ImportProductsModal';
 import PromotionsTab from './PromotionsTab';
 import CombosTab from './CombosTab';
+import MenuTilesSorter from '@/components/MenuTilesSorter';
 import { useAuth } from '@/context/AuthContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -345,37 +346,18 @@ export default function InventarioTab() {
       {inventarioSubTab === 'categorias' && (
         <>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-oswald text-base font-bold">Categorías de Productos</h2>
+            <h2 className="font-oswald text-base font-bold">Categorías del Menú</h2>
             <Button onClick={() => openCategoryDialog()} size="sm"
               className="bg-primary text-primary-foreground font-bold" data-testid="add-category-btn">
               <Plus size={14} className="mr-1" /> Nueva Categoría
             </Button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {categories.map(cat => (
-              <div key={cat.id} className="flex items-center justify-between p-4 rounded-xl border-2"
-                style={{ borderColor: cat.color + 'CC', backgroundColor: cat.color + '90' }} data-testid={`category-${cat.id}`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: cat.color }}>
-                    <Tag size={18} className="text-white" />
-                  </div>
-                  <div>
-                    <span className="font-oswald font-bold">{cat.name}</span>
-                    <p className="text-xs text-muted-foreground">{products.filter(p => p.category_id === cat.id).length} productos</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8"
-                    onClick={() => openCategoryDialog(cat)}>
-                    <Pencil size={14} />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteCategory(cat.id)}>
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <MenuTilesSorter
+            categories={categories}
+            products={products}
+            onEditCategory={openCategoryDialog}
+            onDeleteCategory={handleDeleteCategory}
+          />
         </>
       )}
 

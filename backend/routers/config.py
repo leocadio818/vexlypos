@@ -397,7 +397,67 @@ async def update_category(cat_id: str, input: dict):
 @router.delete("/categories/{cat_id}")
 async def delete_category(cat_id: str):
     await db.categories.delete_one({"id": cat_id})
+    # Also remove from menu_tile_order if present
+    doc = await db.settings.find_one({"_id": "menu_tile_config"}, {"_id": 0})
+    if doc and cat_id in (doc.get("order") or []):
+        new_order = [t for t in doc["order"] if t != cat_id]
+        await db.settings.update_one(
+            {"_id": "menu_tile_config"}, {"$set": {"order": new_order}}
+        )
     return {"ok": True}
+
+
+# ─── MENU TILE ORDER & VIRTUAL TILE COLORS ───
+DEFAULT_VIRTUAL_COLORS = {
+    "__combos__": "#7C3AED",       # violet
+    "__open_items__": "#EA580C",   # burnt orange
+}
+
+
+@router.get("/menu-tiles")
+async def get_menu_tiles():
+    """Return the saved tile order (categories + virtual tiles) and virtual tile colors.
+    If no config exists, generate a default: all categories by `order`, then virtuals at end."""
+    cats = await db.categories.find({}, {"_id": 0}).sort("order", 1).to_list(200)
+    cat_ids = [c["id"] for c in cats]
+    default_order = cat_ids + ["__combos__", "__open_items__"]
+
+    doc = await db.settings.find_one({"_id": "menu_tile_config"}, {"_id": 0})
+    if not doc:
+        return {"order": default_order, "virtual_colors": dict(DEFAULT_VIRTUAL_COLORS)}
+
+    saved_order = doc.get("order") or []
+    # Keep saved positions, append any new category ids / ensure virtuals present
+    known = set(saved_order)
+    final = [t for t in saved_order if t in cat_ids or t in ("__combos__", "__open_items__")]
+    for cid in cat_ids:
+        if cid not in known:
+            final.append(cid)
+    for v in ("__combos__", "__open_items__"):
+        if v not in final:
+            final.append(v)
+
+    colors = {**DEFAULT_VIRTUAL_COLORS, **(doc.get("virtual_colors") or {})}
+    return {"order": final, "virtual_colors": colors}
+
+
+class MenuTilesInput(BaseModel):
+    order: List[str]
+    virtual_colors: Optional[dict] = None
+
+
+@router.put("/menu-tiles")
+async def update_menu_tiles(input: MenuTilesInput, user=Depends(get_current_user)):
+    """Persist the tile order and virtual tile colors."""
+    payload = {
+        "order": input.order,
+        "virtual_colors": {**DEFAULT_VIRTUAL_COLORS, **(input.virtual_colors or {})},
+        "updated_at": now_iso(),
+    }
+    await db.settings.update_one(
+        {"_id": "menu_tile_config"}, {"$set": payload}, upsert=True
+    )
+    return {"ok": True, **payload}
 
 # ─── PRODUCTS ───
 @router.get("/products")

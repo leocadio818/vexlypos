@@ -98,6 +98,7 @@ export default function OrderScreen() {
   const [modDialog, setModDialog] = useState({ open: false, product: null, selectedMods: {}, qty: '0', notes: '' });
   const [openItemDialog, setOpenItemDialog] = useState({ open: false, channel: 'kitchen' });
   const [openItemsConfig, setOpenItemsConfig] = useState({ enabled: true, require_supervisor: false, price_limit_rd: 0, channels_available: ['kitchen', 'bar'] });
+  const [menuTileConfig, setMenuTileConfig] = useState({ order: [], virtual_colors: { __combos__: '#7C3AED', __open_items__: '#EA580C' } });
   const [cancelDialog, setCancelDialog] = useState({ 
     open: false, 
     itemId: null, 
@@ -381,6 +382,14 @@ export default function OrderScreen() {
           const data = await resp.json();
           setActiveCombos(Array.isArray(data) ? data : []);
         }
+      } catch {}
+
+      // Menu tile order + virtual colors
+      try {
+        const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+        const token = localStorage.getItem('pos_token');
+        const resp = await fetch(`${API}/menu-tiles`, { headers: { Authorization: `Bearer ${token}` } });
+        if (resp.ok) setMenuTileConfig(await resp.json());
       } catch {}
 
       // Modifiers
@@ -2726,93 +2735,107 @@ export default function OrderScreen() {
           )}
 
           {/* Category Grid (when no category selected and not searching) */}
-          {!activeCat && !(showProductSearch && productSearchQuery.trim()) && (
-            <>
-            <div 
-              className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
-              style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}
-              data-testid="category-grid"
-            >
-              {categories.map((cat, idx) => {
-                const catProductCount = products.filter(p => p.category_id === cat.id).length;
-                
-                // Smart color palette — beautiful, solid, distinguishable
-                const AUTO_PALETTE = [
-                  '#2563EB', // Royal Blue
-                  '#DC2626', // Cherry Red
-                  '#059669', // Emerald
-                  '#D97706', // Amber
-                  '#7C3AED', // Violet
-                  '#DB2777', // Rose
-                  '#0891B2', // Cyan
-                  '#CA8A04', // Gold
-                  '#4F46E5', // Indigo
-                  '#E11D48', // Crimson
-                  '#0D9488', // Teal
-                  '#EA580C', // Burnt Orange
-                ];
-                const color = cat.color || AUTO_PALETTE[idx % AUTO_PALETTE.length];
-                const textColor = getContrastText(color);
-                
-                let catTouchStartY = 0;
-                let catTouchMoved = false;
+          {!activeCat && !(showProductSearch && productSearchQuery.trim()) && (() => {
+            const AUTO_PALETTE = [
+              '#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED', '#DB2777',
+              '#0891B2', '#CA8A04', '#4F46E5', '#E11D48', '#0D9488', '#EA580C',
+            ];
+            // Build ordered list mixing real categories with virtual tiles.
+            const savedOrder = (menuTileConfig.order && menuTileConfig.order.length) ? menuTileConfig.order : null;
+            const catById = Object.fromEntries(categories.map(c => [c.id, c]));
+            const seen = new Set();
+            const tiles = [];
+            const pushCat = (c, idx) => { if (c && !seen.has(c.id)) { seen.add(c.id); tiles.push({ kind: 'cat', cat: c, idx }); } };
+            const pushVirtual = (id) => { if (!seen.has(id)) { seen.add(id); tiles.push({ kind: id }); } };
+            if (savedOrder) {
+              savedOrder.forEach(tid => {
+                if (tid === '__combos__' || tid === '__open_items__') pushVirtual(tid);
+                else if (catById[tid]) pushCat(catById[tid], categories.findIndex(x => x.id === tid));
+              });
+            }
+            // Fallback / ensure every category & virtual tile is present
+            categories.forEach((c, i) => pushCat(c, i));
+            pushVirtual('__combos__');
+            pushVirtual('__open_items__');
 
-                return (
-                  <button key={cat.id}
-                    onClick={(e) => { if (catTouchMoved) { e.preventDefault(); return; } setActiveCat(cat.id); }}
-                    onTouchStart={(e) => { catTouchStartY = e.touches?.[0]?.clientY || 0; catTouchMoved = false; }}
-                    onTouchMove={(e) => { if (Math.abs((e.touches?.[0]?.clientY || 0) - catTouchStartY) > 10) catTouchMoved = true; }}
-                    data-testid={`cat-card-${cat.id}`}
-                    data-contrast={textColor === '#FFFFFF' ? 'light' : 'dark'}
-                    className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
-                    style={{ backgroundColor: color }}>
-                    <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>{cat.name}</span>
-                    <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.7 }}>{catProductCount} productos</span>
-                    <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`}>
-                      <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{catProductCount}</span>
-                    </div>
-                  </button>
-                );
-              })}
+            const virtColor = (id) => (menuTileConfig.virtual_colors && menuTileConfig.virtual_colors[id]) || (id === '__combos__' ? '#7C3AED' : '#EA580C');
 
-              {/* Virtual Category: Combos (only if there are active combos) */}
-              {activeCombos.length > 0 && (
-                <button
-                  key="__combos__"
-                  onClick={() => setActiveCat('__combos__')}
-                  data-testid="cat-card-combos"
-                  data-contrast="light"
-                  className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between text-white`}
-                  style={{ backgroundImage: 'linear-gradient(135deg, #7C3AED 0%, #C026D3 100%)' }}
-                >
-                  <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>Combos</span>
-                  <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.8 }}>{activeCombos.length} combos</span>
-                  <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20`}>
-                    <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{activeCombos.length}</span>
-                  </div>
-                </button>
-              )}
-
-              {/* Virtual Category: Artículos Libres (only with permission + enabled) */}
-              {hasPermission('create_open_items') && openItemsConfig.enabled && (
-                <button
-                  key="__open_items__"
-                  onClick={() => setActiveCat('__open_items__')}
-                  data-testid="cat-card-open-items"
-                  data-contrast="light"
-                  className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between text-white`}
-                  style={{ backgroundImage: 'linear-gradient(135deg, #EA580C 0%, #DB2777 100%)' }}
-                >
-                  <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>Artículos Libres</span>
-                  <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.8 }}>Fuera de menú</span>
-                  <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20`}>
-                    <Pencil size={largeMode ? 12 : 10} />
-                  </div>
-                </button>
-              )}
-            </div>
-            </>
-          )}
+            return (
+              <>
+              <div
+                className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
+                style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}
+                data-testid="category-grid"
+              >
+                {tiles.map(tile => {
+                  if (tile.kind === 'cat') {
+                    const cat = tile.cat;
+                    const catProductCount = products.filter(p => p.category_id === cat.id).length;
+                    const color = cat.color || AUTO_PALETTE[(tile.idx >= 0 ? tile.idx : 0) % AUTO_PALETTE.length];
+                    const textColor = getContrastText(color);
+                    let catTouchStartY = 0;
+                    let catTouchMoved = false;
+                    return (
+                      <button key={cat.id}
+                        onClick={(e) => { if (catTouchMoved) { e.preventDefault(); return; } setActiveCat(cat.id); }}
+                        onTouchStart={(e) => { catTouchStartY = e.touches?.[0]?.clientY || 0; catTouchMoved = false; }}
+                        onTouchMove={(e) => { if (Math.abs((e.touches?.[0]?.clientY || 0) - catTouchStartY) > 10) catTouchMoved = true; }}
+                        data-testid={`cat-card-${cat.id}`}
+                        data-contrast={textColor === '#FFFFFF' ? 'light' : 'dark'}
+                        className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
+                        style={{ backgroundColor: color }}>
+                        <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>{cat.name}</span>
+                        <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.7 }}>{catProductCount} productos</span>
+                        <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`}>
+                          <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{catProductCount}</span>
+                        </div>
+                      </button>
+                    );
+                  }
+                  if (tile.kind === '__combos__' && activeCombos.length > 0) {
+                    const c = virtColor('__combos__');
+                    return (
+                      <button
+                        key="__combos__"
+                        onClick={() => setActiveCat('__combos__')}
+                        data-testid="cat-card-combos"
+                        data-contrast="light"
+                        className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between text-white`}
+                        style={{ backgroundColor: c }}
+                      >
+                        <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>Combos</span>
+                        <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.8 }}>{activeCombos.length} combos</span>
+                        <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20`}>
+                          <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{activeCombos.length}</span>
+                        </div>
+                      </button>
+                    );
+                  }
+                  if (tile.kind === '__open_items__' && hasPermission('create_open_items') && openItemsConfig.enabled) {
+                    const c = virtColor('__open_items__');
+                    return (
+                      <button
+                        key="__open_items__"
+                        onClick={() => setActiveCat('__open_items__')}
+                        data-testid="cat-card-open-items"
+                        data-contrast="light"
+                        className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between text-white`}
+                        style={{ backgroundColor: c }}
+                      >
+                        <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>Artículos Libres</span>
+                        <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.8 }}>Fuera de menú</span>
+                        <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20`}>
+                          <Pencil size={largeMode ? 12 : 10} />
+                        </div>
+                      </button>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+              </>
+            );
+          })()}
 
           {/* Virtual Category: Combos content */}
           {activeCat === '__combos__' && (

@@ -1,6 +1,22 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Enhancement: Drag-and-Drop para Orden de Tiles + Color Custom en Virtuales 🎨🪄
+- **Objetivo**: dar al admin control total sobre el orden en que aparecen las categorías del menú en el POS y permitir personalizar el color de los tiles virtuales (Combos, Artículos Libres).
+- **Backend**:
+  - Nueva colección `settings._id=menu_tile_config` con `{order: [tile_id, ...], virtual_colors: {__combos__: hex, __open_items__: hex}}`.
+  - `GET /api/menu-tiles` retorna orden + colores; autorellena categorías nuevas al final y valida que ambas virtuales estén incluidas. Si no hay config guardada retorna default (`categories by order → __combos__ → __open_items__`).
+  - `PUT /api/menu-tiles` persiste cambios (idempotente, con auth).
+  - `DELETE /api/categories/{id}` ahora también remueve el ID del `menu_tile_order` guardado si existía.
+- **Frontend**:
+  - Nuevo componente `/components/MenuTilesSorter.jsx` usando `@dnd-kit/core` + `@dnd-kit/sortable` (ya instalados). Renderiza la lista completa de tiles (reales + virtuales) con drag handle, auto-persist al soltar, botón "Restablecer" y color picker inline con 12 presets para cada virtual.
+  - `OrderScreen.js` consume `GET /api/menu-tiles` y renderiza los tiles en el orden guardado, aplicando `virtual_colors` como `backgroundColor` a los tiles `__combos__` / `__open_items__`. Fallback robusto si no hay orden guardado.
+  - `InventarioTab.js` (Config. Productos → Categorías): reemplazada la grilla estática por `MenuTilesSorter` con callbacks a edit/delete existentes.
+- **Verificado E2E**: login → Config. Productos → Categorías muestra 4 tiles sortables → cambiar color de Combos a `#DB2777` → `PUT` persistido → OrderScreen ya renderiza tile "Combos" con color rosa (`rgb(219,39,119)`) sin recargar. Reset restaura default.
+- **Archivos**: `/app/backend/routers/config.py` (+55 líneas endpoints menu-tiles), `/app/frontend/src/components/MenuTilesSorter.jsx` (nuevo, ~200 líneas), `/app/frontend/src/pages/OrderScreen.js` (+25 líneas orden dinámico + color custom), `/app/frontend/src/pages/settings/InventarioTab.js` (-30 líneas grid estática / +10 líneas wrapper).
+
+
+
 ## 2026-04-22 — UX Fix: Combos y Artículos Libres dentro de Categoría 📂
 - **Problema**: los combos y los botones de Artículo Libre se renderizaban como bloques separados ARRIBA de la grilla de categorías, empujando las categorías normales hacia abajo y complicando navegación cuando había muchos combos.
 - **Fix en `OrderScreen.js`**:
