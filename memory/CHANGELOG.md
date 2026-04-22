@@ -1,5 +1,21 @@
 # VexlyPOS — Changelog
 
+## 2026-04 — Feature: Sistema de Combos / Paquetes 🎁
+- **Sistema completo** de bundles con 2 tipos: **Fijo** (items obligatorios) y **Configurable** (cliente elige dentro de grupos con min/max selecciones).
+- **Pricing**: Precio Fijo / Descuento % sobre suma de items / Descuento Monto. Cálculo automático del ahorro en la card de configuración.
+- **Grupos con opciones**: cada grupo tiene nombre, min_selections, max_selections, items (producto del catálogo + is_default + price_override para cargos extras). Ejemplo: "Plato Principal (elegir 1): Pollo/Res/Cerdo", "Bebida (+RD$50 cambiar a cerveza)".
+- **Permiso reutilizado**: `manage_promotions` (no se creó uno nuevo). Admin/gerente/propietario pueden gestionar; cajero/mesero NO (403 verificado).
+- **Backend**:
+  - `/app/backend/routers/combos.py` — CRUD: GET /api/combos, GET /api/combos/active, POST/PATCH/DELETE con validación completa. Helper `expand_combo_to_items()` convierte combo + selecciones en (parent_item, child_items, total_price).
+  - `/app/backend/routers/orders.py` — 2 endpoints nuevos: `POST /api/orders/{id}/combos` (agrega combo expandido: 1 parent con precio + N children a $0 con `combo_group_id` único, decrementa inventario de children) y `DELETE /api/orders/{id}/combos/{combo_group_id}` (elimina parent+children, devuelve inventario, bloquea si ya enviado a cocina).
+- **Frontend**:
+  - `/app/frontend/src/pages/settings/CombosTab.js` — UI completa: lista con cards (toggle active, edit, delete, ahorro auto), form con todos los tipos, grupos expandibles, buscador inline de productos con autocomplete, inputs de price_override y toggle is_default por item.
+  - `/app/frontend/src/pages/settings/InventarioTab.js` — Sub-pestaña "Combos" junto a "Promociones" (solo visible con permiso).
+  - `/app/frontend/src/pages/OrderScreen.js` — Fetch `/combos/active` al cargar. Sección "COMBOS" en gradient púrpura arriba del grid con botones (badge COMBO púrpura + precio). Modal configurable con radio (max=1) o checkbox (max>1) por grupo, validación min/max, cargo extra visible. Cart: parent con icono Package + badge "COMBO · N items" + botón rojo "Eliminar combo completo"; children indentados ml-6 con borde izquierdo púrpura, muestran group_name y price_override si aplica; click a children bloqueado con mensaje informativo.
+- **Tests**: 20/20 pytest ✅ + frontend 100% verificado por testing agent.
+- **Archivos**: nuevos `/app/backend/routers/combos.py`, `/app/frontend/src/pages/settings/CombosTab.js`, `/app/backend/tests/test_combos_system.py`. Modificados: `orders.py`, `server.py`, `InventarioTab.js`, `OrderScreen.js`.
+
+
 ## 2026-04 — Feature: Comparativo Happy Hour vs Fuera del Horario 📈
 - **Nueva sección "Comparativo: Durante vs Fuera"** en el reporte A9 Analytics de Promociones. Responde la pregunta clave: "¿Happy Hour realmente incrementa mis ventas?".
 - **Ventana analizada**: schedule de la promo ganadora (ej: L-V 4:00 PM - 7:00 PM). Se compara:
