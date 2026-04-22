@@ -2537,7 +2537,11 @@ export default function OrderScreen() {
             )}
             {activeCat && (
               <>
-                <span className={`font-semibold ${largeMode ? 'text-base' : 'text-sm'}`}>{categories.find(c => c.id === activeCat)?.name}</span>
+                <span className={`font-semibold ${largeMode ? 'text-base' : 'text-sm'}`}>{
+                  activeCat === '__combos__' ? 'Combos' :
+                  activeCat === '__open_items__' ? 'Artículos Libres' :
+                  (categories.find(c => c.id === activeCat)?.name)
+                }</span>
               </>
             )}
           </div>
@@ -2722,97 +2726,8 @@ export default function OrderScreen() {
           )}
 
           {/* Category Grid (when no category selected and not searching) */}
-          {!activeCat && !(showProductSearch && productSearchQuery.trim()) && activeCombos.length > 0 && (
-            <div className="px-3 pt-3 pb-1" data-testid="combos-strip">
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-xs font-bold uppercase text-purple-400">COMBOS</span>
-                <Badge variant="secondary" className="text-[9px]">{activeCombos.length}</Badge>
-              </div>
-              <div className={`grid gap-2 ${largeMode ? 'gap-3' : 'gap-2'}`}
-                style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}>
-                {activeCombos.map(combo => {
-                  // Check if any active promotion applies to this combo
-                  let promoDiscount = 0;
-                  let promoMatch = null;
-                  for (const p of activePromotions) {
-                    const applies =
-                      (p.apply_to === 'combos' && (p.combo_ids || []).includes(combo.id)) ||
-                      (p.apply_to === 'all' && !((p.excluded_combo_ids || []).includes(combo.id)));
-                    if (!applies) continue;
-                    let d = 0;
-                    const v = Number(p.discount_value || 0);
-                    if (p.discount_type === 'percentage') d = (combo.price || 0) * v / 100;
-                    else if (p.discount_type === 'fixed_amount') d = Math.min(v, combo.price || 0);
-                    else if (p.discount_type === 'fixed_price') d = Math.max(0, (combo.price || 0) - v);
-                    else if (p.discount_type === '2x1') d = (combo.price || 0) * 0.5;
-                    if (d > promoDiscount) { promoDiscount = d; promoMatch = p; }
-                  }
-                  const hasPromo = promoMatch !== null;
-                  const effective = hasPromo ? Math.max(0, (combo.price || 0) - promoDiscount) : (combo.price || 0);
-                  return (
-                    <button key={combo.id}
-                      onClick={() => handleComboClick(combo)}
-                      data-testid={`combo-btn-${combo.id}`}
-                      className={`relative rounded-xl p-2 transition-all active:scale-95 bg-gradient-to-br from-purple-500/20 to-fuchsia-600/20 border ${hasPromo ? 'border-orange-400/70' : 'border-purple-400/40'} hover:border-purple-400/80 text-left flex flex-col justify-between min-h-[72px] ${largeMode ? 'min-h-[88px]' : ''}`}>
-                      <div className="absolute top-1 right-1 bg-purple-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md">COMBO</div>
-                      {hasPromo && (
-                        <div className="absolute top-1 left-1 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md" title={promoMatch?.name}>🔥</div>
-                      )}
-                      <span className={`font-semibold leading-tight line-clamp-2 pr-10 ${hasPromo ? 'pl-6' : ''} ${largeMode ? 'text-sm' : 'text-xs'}`}>{combo.name}</span>
-                      {hasPromo ? (
-                        <div className="flex flex-col">
-                          <span className="text-[9px] line-through opacity-60">RD$ {Number(combo.price || 0).toFixed(2)}</span>
-                          <span className={`font-oswald font-bold block ${largeMode ? 'text-base' : 'text-sm'} text-orange-400`}>RD$ {Number(effective).toFixed(2)}</span>
-                        </div>
-                      ) : (
-                        <span className={`font-oswald font-bold block ${largeMode ? 'text-base' : 'text-sm'} text-purple-400 mt-1`}>RD$ {Number(combo.price || 0).toFixed(2)}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
           {!activeCat && !(showProductSearch && productSearchQuery.trim()) && (
             <>
-              {hasPermission('create_open_items') && openItemsConfig.enabled && (
-                <div className="p-3 pb-0 grid grid-cols-2 gap-2.5" data-testid="open-items-buttons">
-                  {(openItemsConfig.channels_available || ['kitchen','bar']).includes('kitchen') && (
-                    <button
-                      type="button"
-                      onClick={() => openOpenItemDialog('kitchen')}
-                      className="relative rounded-xl p-3 transition-all active:scale-95 bg-gradient-to-br from-orange-500/20 to-amber-600/25 border-2 border-dashed border-orange-400/60 hover:border-orange-400 text-left flex flex-col justify-between min-h-[72px]"
-                      data-testid="open-item-kitchen-btn"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Pencil size={14} className="text-orange-400" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400">Artículo Libre</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Utensils size={16} className="text-orange-500" />
-                        <span className={`font-bold ${largeMode ? 'text-sm' : 'text-xs'}`}>Cocina</span>
-                      </div>
-                    </button>
-                  )}
-                  {(openItemsConfig.channels_available || ['kitchen','bar']).includes('bar') && (
-                    <button
-                      type="button"
-                      onClick={() => openOpenItemDialog('bar')}
-                      className="relative rounded-xl p-3 transition-all active:scale-95 bg-gradient-to-br from-purple-500/20 to-pink-600/25 border-2 border-dashed border-purple-400/60 hover:border-purple-400 text-left flex flex-col justify-between min-h-[72px]"
-                      data-testid="open-item-bar-btn"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Pencil size={14} className="text-purple-400" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">Artículo Libre</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Wine size={16} className="text-purple-500" />
-                        <span className={`font-bold ${largeMode ? 'text-sm' : 'text-xs'}`}>Bar</span>
-                      </div>
-                    </button>
-                  )}
-                </div>
-              )}
             <div 
               className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
               style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}
@@ -2859,13 +2774,142 @@ export default function OrderScreen() {
                   </button>
                 );
               })}
+
+              {/* Virtual Category: Combos (only if there are active combos) */}
+              {activeCombos.length > 0 && (
+                <button
+                  key="__combos__"
+                  onClick={() => setActiveCat('__combos__')}
+                  data-testid="cat-card-combos"
+                  data-contrast="light"
+                  className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between text-white`}
+                  style={{ backgroundImage: 'linear-gradient(135deg, #7C3AED 0%, #C026D3 100%)' }}
+                >
+                  <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>Combos</span>
+                  <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.8 }}>{activeCombos.length} combos</span>
+                  <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20`}>
+                    <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{activeCombos.length}</span>
+                  </div>
+                </button>
+              )}
+
+              {/* Virtual Category: Artículos Libres (only with permission + enabled) */}
+              {hasPermission('create_open_items') && openItemsConfig.enabled && (
+                <button
+                  key="__open_items__"
+                  onClick={() => setActiveCat('__open_items__')}
+                  data-testid="cat-card-open-items"
+                  data-contrast="light"
+                  className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between text-white`}
+                  style={{ backgroundImage: 'linear-gradient(135deg, #EA580C 0%, #DB2777 100%)' }}
+                >
+                  <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>Artículos Libres</span>
+                  <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.8 }}>Fuera de menú</span>
+                  <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20`}>
+                    <Pencil size={largeMode ? 12 : 10} />
+                  </div>
+                </button>
+              )}
             </div>
             </>
           )}
 
+          {/* Virtual Category: Combos content */}
+          {activeCat === '__combos__' && (
+            <div
+              className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
+              style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.productColumns, 3)}, minmax(0, 1fr))` }}
+              data-testid="combos-grid"
+            >
+              {activeCombos.map(combo => {
+                let promoDiscount = 0;
+                let promoMatch = null;
+                for (const p of activePromotions) {
+                  const applies =
+                    (p.apply_to === 'combos' && (p.combo_ids || []).includes(combo.id)) ||
+                    (p.apply_to === 'all' && !((p.excluded_combo_ids || []).includes(combo.id)));
+                  if (!applies) continue;
+                  let d = 0;
+                  const v = Number(p.discount_value || 0);
+                  if (p.discount_type === 'percentage') d = (combo.price || 0) * v / 100;
+                  else if (p.discount_type === 'fixed_amount') d = Math.min(v, combo.price || 0);
+                  else if (p.discount_type === 'fixed_price') d = Math.max(0, (combo.price || 0) - v);
+                  else if (p.discount_type === '2x1') d = (combo.price || 0) * 0.5;
+                  if (d > promoDiscount) { promoDiscount = d; promoMatch = p; }
+                }
+                const hasPromo = promoMatch !== null;
+                const effective = hasPromo ? Math.max(0, (combo.price || 0) - promoDiscount) : (combo.price || 0);
+                return (
+                  <button key={combo.id}
+                    onClick={() => handleComboClick(combo)}
+                    data-testid={`combo-btn-${combo.id}`}
+                    className={`relative rounded-xl p-2 transition-all active:scale-95 bg-gradient-to-br from-purple-500/20 to-fuchsia-600/20 border ${hasPromo ? 'border-orange-400/70' : 'border-purple-400/40'} hover:border-purple-400/80 text-left flex flex-col justify-between min-h-[72px] ${largeMode ? 'min-h-[88px]' : ''}`}>
+                    <div className="absolute top-1 right-1 bg-purple-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md">COMBO</div>
+                    {hasPromo && (
+                      <div className="absolute top-1 left-1 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md" title={promoMatch?.name}>🔥</div>
+                    )}
+                    <span className={`font-semibold leading-tight line-clamp-2 pr-10 ${hasPromo ? 'pl-6' : ''} ${largeMode ? 'text-sm' : 'text-xs'}`}>{combo.name}</span>
+                    {hasPromo ? (
+                      <div className="flex flex-col">
+                        <span className="text-[9px] line-through opacity-60">RD$ {Number(combo.price || 0).toFixed(2)}</span>
+                        <span className={`font-oswald font-bold block ${largeMode ? 'text-base' : 'text-sm'} text-orange-400`}>RD$ {Number(effective).toFixed(2)}</span>
+                      </div>
+                    ) : (
+                      <span className={`font-oswald font-bold block ${largeMode ? 'text-base' : 'text-sm'} text-purple-400 mt-1`}>RD$ {Number(combo.price || 0).toFixed(2)}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Virtual Category: Artículos Libres content */}
+          {activeCat === '__open_items__' && (
+            <div
+              className={`p-3 grid gap-2.5 ${largeMode ? 'gap-3' : ''}`}
+              style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.productColumns, 3)}, minmax(0, 1fr))` }}
+              data-testid="open-items-grid"
+            >
+              {(openItemsConfig.channels_available || ['kitchen','bar']).includes('kitchen') && (
+                <button
+                  type="button"
+                  onClick={() => openOpenItemDialog('kitchen')}
+                  className="relative rounded-xl p-3 transition-all active:scale-95 bg-gradient-to-br from-orange-500/20 to-amber-600/25 border-2 border-dashed border-orange-400/60 hover:border-orange-400 text-left flex flex-col justify-between min-h-[72px]"
+                  data-testid="open-item-kitchen-btn"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Pencil size={14} className="text-orange-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400">Artículo Libre</span>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Utensils size={16} className="text-orange-500" />
+                    <span className={`font-bold ${largeMode ? 'text-sm' : 'text-xs'}`}>Cocina</span>
+                  </div>
+                </button>
+              )}
+              {(openItemsConfig.channels_available || ['kitchen','bar']).includes('bar') && (
+                <button
+                  type="button"
+                  onClick={() => openOpenItemDialog('bar')}
+                  className="relative rounded-xl p-3 transition-all active:scale-95 bg-gradient-to-br from-purple-500/20 to-pink-600/25 border-2 border-dashed border-purple-400/60 hover:border-purple-400 text-left flex flex-col justify-between min-h-[72px]"
+                  data-testid="open-item-bar-btn"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Pencil size={14} className="text-purple-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">Artículo Libre</span>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Wine size={16} className="text-purple-500" />
+                    <span className={`font-bold ${largeMode ? 'text-sm' : 'text-xs'}`}>Bar</span>
+                  </div>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Product Grid (when category selected) */}
           {/* Dynamic columns: max 3 on wider panel to avoid cramping */}
-          {activeCat && (
+          {activeCat && activeCat !== '__combos__' && activeCat !== '__open_items__' && (
             <div 
               className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
               style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.productColumns, 3)}, minmax(0, 1fr))` }}

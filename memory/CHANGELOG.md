@@ -1,6 +1,20 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — UX Fix: Combos y Artículos Libres dentro de Categoría 📂
+- **Problema**: los combos y los botones de Artículo Libre se renderizaban como bloques separados ARRIBA de la grilla de categorías, empujando las categorías normales hacia abajo y complicando navegación cuando había muchos combos.
+- **Fix en `OrderScreen.js`**:
+  - Eliminados los bloques `combos-strip` y `open-items-buttons` que estaban sobre la grilla.
+  - Añadidas DOS categorías virtuales al final de la grilla de categorías: **"Combos"** (gradient púrpura→fucsia, solo visible si `activeCombos.length > 0`) y **"Artículos Libres"** (gradient naranja→rosa, solo visible con permiso `create_open_items` Y `openItemsConfig.enabled`).
+  - `activeCat === '__combos__'`: renderiza una grilla con todos los combos activos (mismo look + Happy Hour preservado).
+  - `activeCat === '__open_items__'`: renderiza los 2 botones (Cocina/Bar) respetando `channels_available`.
+  - Breadcrumb del header muestra "Combos" o "Artículos Libres" correctamente.
+- **Orden final**: Categorías normales del negocio → Combos → Artículos Libres.
+- **Verificado** visualmente: cat-grid único con 4 tiles alineados; `combos-strip` y `open-items-buttons` ya no existen (count=0); navegación in/out de cada virtual category funciona.
+- **Archivos**: `/app/frontend/src/pages/OrderScreen.js` (~130 líneas movidas/reorganizadas, cero cambios en lógica de combos o artículos libres).
+
+
+
 ## 2026-04-22 — Feature: Candidatos a Producto Permanente (Artículos Libres → Catálogo) 🔄⭐
 - **Objetivo**: convertir ventas off-menu recurrentes en productos permanentes con 1 clic, capturando oportunidades de menú descubiertas por los meseros.
 - **Backend** (`reports.py` GET `/api/reports/open-items`):
