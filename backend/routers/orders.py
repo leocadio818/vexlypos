@@ -378,6 +378,104 @@ async def create_order(input: CreateOrderInput, user=Depends(get_current_user)):
     )
     return {k: v for k, v in order.items() if k != "_id"}
 
+
+# ═══════════════════════════════════════════════════
+# QUICK ORDERS (Orden Rápida) — walk-in / takeout flow without table
+# ═══════════════════════════════════════════════════
+
+class QuickOrderInput(BaseModel):
+    customer_name: Optional[str] = None
+
+
+class QuickOrderStatusInput(BaseModel):
+    status: str  # "preparing" | "paid" | "delivered"
+
+
+async def _get_active_business_date() -> str:
+    bd = await db.business_days.find_one({"status": "open"}, {"_id": 0, "business_date": 1})
+    return (bd or {}).get("business_date", "") or ""
+
+
+async def _next_quick_order_number() -> int:
+    """Sequential per business day. Resets with new jornada."""
+    bdate = await _get_active_business_date()
+    if not bdate:
+        # No active jornada — still allow creation but use ISO date
+        from datetime import date
+        bdate = date.today().isoformat()
+    last = await db.orders.find_one(
+        {"is_quick_order": True, "quick_order_business_date": bdate},
+        {"_id": 0, "quick_order_number": 1},
+        sort=[("quick_order_number", -1)],
+    )
+    return int((last or {}).get("quick_order_number", 0) or 0) + 1
+
+
+@router.post("/orders/quick")
+async def create_quick_order(input: QuickOrderInput, user=Depends(get_current_user)):
+    # Reuse existing permissions: if user can open a table they can open a quick order
+    perms = user.get("permissions", {}) or {}
+    if not (perms.get("open_table") or (user.get("role_level", 0) >= 20)):
+        raise HTTPException(status_code=403, detail="Sin permiso para abrir una orden")
+
+    bdate = await _get_active_business_date()
+    number = await _next_quick_order_number()
+    transaction_number = await get_next_transaction_number()
+
+    user_doc = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "training_mode": 1})
+    is_training = user.get("training_mode", False) or (user_doc.get("training_mode", False) if user_doc else False)
+
+    name = (input.customer_name or "").strip() or None
+    order_id = gen_id()
+    order = {
+        "id": order_id,
+        "table_id": None,
+        "table_number": None,
+        "waiter_id": user["user_id"],
+        "waiter_name": user["name"],
+        "transaction_number": transaction_number,
+        "status": "active",
+        "items": [],
+        "training_mode": is_training,
+        "is_quick_order": True,
+        "quick_order_number": number,
+        "quick_order_name": name,
+        "quick_order_status": "preparing",
+        "quick_order_business_date": bdate,
+        "order_type": "quick_order",
+        "sale_type": "takeout",  # Para llevar por defecto (E32)
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.orders.insert_one(order)
+    return {k: v for k, v in order.items() if k != "_id"}
+
+
+@router.get("/orders/quick/active")
+async def list_active_quick_orders(user=Depends(get_current_user)):
+    """Quick orders not yet delivered (preparing | paid). Scoped to active jornada."""
+    bdate = await _get_active_business_date()
+    query = {"is_quick_order": True, "quick_order_status": {"$in": ["preparing", "paid"]}}
+    if bdate:
+        query["quick_order_business_date"] = bdate
+    orders = await db.orders.find(query, {"_id": 0}).sort("quick_order_number", 1).to_list(200)
+    return orders
+
+
+@router.patch("/orders/quick/{order_id}/status")
+async def update_quick_order_status(order_id: str, input: QuickOrderStatusInput, user=Depends(get_current_user)):
+    if input.status not in ("preparing", "paid", "delivered"):
+        raise HTTPException(status_code=400, detail="Estado inválido")
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order or not order.get("is_quick_order"):
+        raise HTTPException(status_code=404, detail="Orden rápida no encontrada")
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"quick_order_status": input.status, "updated_at": now_iso()}},
+    )
+    return {"ok": True, "status": input.status}
+
+
 @router.post("/orders/{order_id}/items")
 async def add_items_to_order(order_id: str, input: AddItemsInput):
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
@@ -1571,6 +1669,11 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
         account_display = f"Cuenta #{account_number} — {account_label}"
     else:
         account_display = f"Cuenta #{account_number}"
+
+    # QUICK ORDER override — display is different (no table/account)
+    is_quick = bool(order.get("is_quick_order"))
+    quick_number = order.get("quick_order_number")
+    quick_name = order.get("quick_order_name") or ""
     
     # Get channels and category mappings
     channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
@@ -1650,6 +1753,10 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
             "waiter_name": order.get("waiter_name", ""),
             "order_number": f"T-{transaction_number}" if transaction_number else order.get("id", "")[:8],
             "training_mode": order.get("training_mode", False),
+            # ═══ QUICK ORDER ═══
+            "is_quick_order": is_quick,
+            "quick_order_number": quick_number,
+            "quick_order_name": quick_name,
             "date": await now_local_print_formatted(),
             "items_count": len(items),
             "items": [

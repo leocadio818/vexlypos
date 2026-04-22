@@ -63,6 +63,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<Suspense fallback={<PageSkeleton />}><Dashboard /></Suspense>} />
         <Route path="tables" element={<Suspense fallback={<PageSkeleton />}><TableMap /></Suspense>} />
         <Route path="order/:tableId" element={<Suspense fallback={<PageSkeleton />}><OrderScreen /></Suspense>} />
+        <Route path="order/quick/:orderId" element={<Suspense fallback={<PageSkeleton />}><OrderScreen /></Suspense>} />
         <Route path="kitchen" element={<Suspense fallback={<PageSkeleton />}><Kitchen /></Suspense>} />
         <Route path="billing/:orderId" element={<Suspense fallback={<PageSkeleton />}><Billing /></Suspense>} />
         <Route path="payment/:billId" element={<Suspense fallback={<PageSkeleton />}><PaymentScreen /></Suspense>} />

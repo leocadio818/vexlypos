@@ -162,9 +162,21 @@ def data_to_commands(data, job_type):
     if job_type in ("comanda", "cancel_comanda"):
         header = "*** CANCELACION ***" if job_type == "cancel_comanda" else f"*** {data.get('channel_name', 'COCINA')} ***"
         commands.append({"type": "center", "bold": True, "size": "large", "text": header})
-        commands.append({"type": "center", "bold": True, "size": "large", "text": f"MESA {data.get('table_number', '?')}"})
+        if data.get("is_quick_order"):
+            num = data.get("quick_order_number") or 0
+            try:
+                num_str = str(int(num)).zfill(2)
+            except Exception:
+                num_str = str(num)
+            commands.append({"type": "center", "bold": True, "size": "large", "text": f">> ORDEN RAPIDA #{num_str} <<"})
+            qname = (data.get("quick_order_name") or "").strip()
+            if qname:
+                commands.append({"type": "center", "bold": True, "text": f"Cliente: {qname.upper()}"})
+            commands.append({"type": "center", "bold": True, "text": "(PARA LLEVAR - SIN MESA)"})
+        else:
+            commands.append({"type": "center", "bold": True, "size": "large", "text": f"MESA {data.get('table_number', '?')}"})
         commands.append({"type": "divider"})
-        commands.append({"type": "left", "text": f"Mesero: {data.get('waiter_name', '')}"})
+        commands.append({"type": "left", "text": f"{'Cajero' if data.get('is_quick_order') else 'Mesero'}: {data.get('waiter_name', '')}"})
         trans = data.get('transaction_number', '')
         if trans:
             commands.append({"type": "left", "text": f"Trans: #{trans}"})

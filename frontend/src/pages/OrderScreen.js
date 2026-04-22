@@ -78,7 +78,8 @@ function computeEffectivePrice(originalPrice, productId, categoryId, areaId, act
 
 
 export default function OrderScreen() {
-  const { tableId } = useParams();
+  const { tableId, orderId: routeOrderId } = useParams();
+  const isQuickOrder = !!routeOrderId;
   const navigate = useNavigate();
   const { user, largeMode, hasPermission, device } = useAuth();
   const { isMinimalist } = useTheme();
@@ -268,6 +269,23 @@ export default function OrderScreen() {
   }, [tableId, applyOrders]);
 
   const fetchOrder = useCallback(async () => {
+    // ─── QUICK ORDER MODE: load by orderId only ───
+    if (isQuickOrder) {
+      try {
+        const r = await ordersAPI.get(routeOrderId);
+        const o = r.data;
+        setOrder(o);
+        setActiveOrderId(o.id);
+        setTableOrders([o]);
+        orderRef.current = o;
+        // Synthetic table so downstream code with table?.area_id doesn't crash
+        setTable({ id: null, number: null, area_id: null, active_order_id: o.id });
+      } catch {
+        loadFromCache();
+      }
+      return;
+    }
+
     try {
       const tableRes = await tablesAPI.list();
       const t = tableRes.data.find(tb => tb.id === tableId);
@@ -301,7 +319,7 @@ export default function OrderScreen() {
       // Network error — fall back to cache
       loadFromCache();
     }
-  }, [tableId, activeOrderId, applyOrders, loadFromCache]);
+  }, [tableId, activeOrderId, applyOrders, loadFromCache, isQuickOrder, routeOrderId]);
 
   // Keep tableOrdersRef in sync with local order state changes (e.g. after adding items)
   // CRITICAL: This must also handle new orders that aren't yet in the ref
@@ -1887,7 +1905,7 @@ export default function OrderScreen() {
       
       const res = await billsAPI.create({
         order_id: order.id,
-        table_id: tableId,
+        table_id: tableId || null,
         item_ids: itemIds,
         sale_type: serviceType,  // Pass service type to bill creation
         sale_type_id: currentSaleType?.id,  // Pass sale type ID
@@ -2041,11 +2059,26 @@ export default function OrderScreen() {
             >
               {splitMode ? <X size={18} /> : <ArrowLeft size={18} />}
             </button>
-            <h2 className="font-oswald text-lg lg:text-base font-bold text-white">
-              {accessDenied ? `Mesa ${table?.number || '?'}` : splitMode ? 'EDITAR CUENTA' : `Mesa ${table?.number || '?'}${order?.transaction_number ? ` | T-${order.transaction_number}` : ''}`}
+            <h2 className="font-oswald text-lg lg:text-base font-bold text-white flex items-center gap-1.5">
+              {isQuickOrder ? (
+                <>
+                  <span className="text-amber-300">⚡</span>
+                  <span>
+                    Orden Rápida #{String(order?.quick_order_number || '?').padStart(2, '0')}
+                    {order?.quick_order_name ? ` — ${order.quick_order_name}` : ''}
+                    {order?.transaction_number ? ` | T-${order.transaction_number}` : ''}
+                  </span>
+                </>
+              ) : (
+                accessDenied
+                  ? `Mesa ${table?.number || '?'}`
+                  : splitMode
+                    ? 'EDITAR CUENTA'
+                    : `Mesa ${table?.number || '?'}${order?.transaction_number ? ` | T-${order.transaction_number}` : ''}`
+              )}
             </h2>
             {order?.waiter_name && !splitMode && !accessDenied && (
-              <p className="text-xs text-white/60 ml-1">Mesero: {order.waiter_name}</p>
+              <p className="text-xs text-white/60 ml-1">{isQuickOrder ? 'Cajero' : 'Mesero'}: {order.waiter_name}</p>
             )}
           </div>
         </div>

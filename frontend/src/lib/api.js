@@ -171,6 +171,10 @@ export const ordersAPI = {
       }
       throw err;
     }),
+  // Quick Orders (Orden Rápida)
+  createQuick: (customer_name = null) => api.post('/orders/quick', { customer_name }),
+  listQuickActive: () => api.get('/orders/quick/active'),
+  setQuickStatus: (id, status) => api.patch(`/orders/quick/${id}/status`, { status }),
   createNewAccount: (tableId, label = '') => api.post(`/tables/${tableId}/new-account`, { label }),
   deleteEmpty: (orderId) => api.delete(`/orders/${orderId}/empty`),
   mergeOrders: (sourceOrderId, targetOrderId) => api.post(`/orders/${sourceOrderId}/merge/${targetOrderId}`),

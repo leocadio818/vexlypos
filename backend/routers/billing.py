@@ -58,7 +58,7 @@ from routers.auth import get_current_user
 # ─── PYDANTIC MODELS ───
 class CreateBillInput(BaseModel):
     order_id: str
-    table_id: str
+    table_id: Optional[str] = None
     label: str = ""
     item_ids: List[str] = []
     tip_percentage: float = 10
@@ -425,13 +425,23 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
         transaction_number = await get_next_transaction_number()
         await db.orders.update_one({"id": input.order_id}, {"$set": {"transaction_number": transaction_number}})
 
+    # Derive label: prioritize input label > Orden Rápida > Mesa
+    if input.label:
+        _label = input.label
+    elif order.get("is_quick_order"):
+        _num = order.get("quick_order_number")
+        _nm = order.get("quick_order_name")
+        _label = f"Orden Rápida #{str(_num).zfill(2) if _num else '?'}" + (f" — {_nm}" if _nm else "")
+    else:
+        _label = f"Mesa {table['number'] if table else '?'}"
+
     bill = {
         "id": gen_id(), "order_id": input.order_id, "table_id": input.table_id,
         "table_number": table["number"] if table else 0,
         "account_number": order.get("account_number", 1),
         "account_label": order.get("account_label", ""),
         "transaction_number": transaction_number,
-        "label": input.label or f"Mesa {table['number'] if table else '?'}",
+        "label": _label,
         "items": items_data, "subtotal": round(subtotal, 2),
         "itbis": itbis_amount, "itbis_rate": 18,
         "propina_legal": propina_amount, "propina_percentage": 10,
@@ -445,6 +455,10 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
         "waiter_name": order.get("waiter_name", ""),
         "training_mode": is_training,
         "ecf_type": input.ecf_type,
+        # QUICK ORDER metadata
+        "is_quick_order": bool(order.get("is_quick_order")),
+        "quick_order_number": order.get("quick_order_number"),
+        "quick_order_name": order.get("quick_order_name"),
         "status": "open", "created_at": now_iso(), "paid_at": None
     }
     await db.bills.insert_one(bill)
@@ -771,6 +785,14 @@ async def pay_bill(bill_id: str, input: PayBillInput, request: Request, user=Dep
         all_paid = await db.bills.count_documents({"order_id": order_id, "status": "paid"})
         if all_paid > 0:
             await db.orders.update_one({"id": order_id}, {"$set": {"status": "closed"}})
+
+            # QUICK ORDER: flip status to "paid" automatically when the bill is paid
+            _o = await db.orders.find_one({"id": order_id}, {"_id": 0, "is_quick_order": 1})
+            if _o and _o.get("is_quick_order"):
+                await db.orders.update_one(
+                    {"id": order_id},
+                    {"$set": {"quick_order_status": "paid"}}
+                )
             
             # For divided tables: check if OTHER orders still exist for this table
             table_id = bill.get("table_id")
@@ -798,7 +820,8 @@ async def pay_bill(bill_id: str, input: PayBillInput, request: Request, user=Dep
                         {"$set": {"status": "free", "active_order_id": None}}
                     )
     else:
-        await db.tables.update_one({"id": bill["table_id"]}, {"$set": {"status": "billed"}})
+        if bill.get("table_id"):
+            await db.tables.update_one({"id": bill["table_id"]}, {"$set": {"status": "billed"}})
 
     cust_id = input.customer_id or bill.get("customer_id", "")
     points_earned = 0

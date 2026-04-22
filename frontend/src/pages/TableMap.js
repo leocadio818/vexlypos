@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import QuickOrderFab from '@/components/QuickOrderFab';
 
 const statusColors = {
   free: { border: '#1E88E5', bg: 'rgba(30,136,229,0.15)', glow: 'rgba(30,136,229,0.4)' }, // Azul para libre
@@ -1403,6 +1404,9 @@ export default function TableMap() {
           onClose={() => setSelectedDecoratorId(null)}
         />
       )}
+
+      {/* Orden Rápida — floating button + queue */}
+      {!editMode && <QuickOrderFab />}
     </div>
   );
 }
