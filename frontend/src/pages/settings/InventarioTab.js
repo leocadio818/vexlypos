@@ -57,7 +57,7 @@ export default function InventarioTab() {
   const [modGroups, setModGroups] = useState([]);
   const [modifiers, setModifiers] = useState([]);
   const [modDialog, setModDialog] = useState({ open: false, editId: null, name: '', prefix: '', selection_type: 'optional', min_selection: 0, max_selection: 0, options: [] });
-  const [modProductSearch, setModProductSearch] = useState('');
+  const [modProductSearchByIdx, setModProductSearchByIdx] = useState({});
 
   const loadModifiers = async () => {
     try {
@@ -577,7 +577,7 @@ export default function InventarioTab() {
                   <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
                     {modDialog.options.map((opt, idx) => {
                       const linkedProduct = opt.product_id ? (products || []).find(pr => pr.id === opt.product_id) : null;
-                      const searchQ = (modProductSearch || '').toLowerCase();
+                      const searchQ = ((modProductSearchByIdx[idx] || '')).toLowerCase();
                       const productMatches = searchQ.length >= 2 && opt.mode === 'product' && !opt.product_id
                         ? (products || []).filter(pr => (pr.name || '').toLowerCase().includes(searchQ) && pr.active !== false).slice(0, 8)
                         : [];
@@ -623,7 +623,7 @@ export default function InventarioTab() {
                                 </div>
                               ) : (
                                 <div>
-                                  <input value={modProductSearch} onChange={e => setModProductSearch(e.target.value)}
+                                  <input value={modProductSearchByIdx[idx] || ''} onChange={e => setModProductSearchByIdx(p => ({ ...p, [idx]: e.target.value }))}
                                     className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-sm"
                                     placeholder="Buscar producto del menú…"
                                     data-testid={`mod-option-search-${idx}`} />
@@ -635,7 +635,7 @@ export default function InventarioTab() {
                                           onClick={() => {
                                             updateModOption(idx, 'product_id', pr.id);
                                             if (!opt.name) updateModOption(idx, 'name', pr.name);
-                                            setModProductSearch('');
+                                            setModProductSearchByIdx(p => ({ ...p, [idx]: '' }));
                                           }}
                                           data-testid={`mod-option-pick-${idx}-${pr.id}`}>
                                           <span>{pr.name}</span>

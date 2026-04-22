@@ -203,3 +203,17 @@
   2. Threshold: cliente cruza de `points < min_redemption` a `points >= min_redemption` → envía "ya puedes canjear" (cooldown 30 días, no se repite hasta pasado el periodo).
   3. Regresión: clientes sin email → silent skip, pago se completa normal.
 - **Tests curl**: welcome + threshold + no re-trigger + no-email regression (4/4 ok).
+
+## 2026-04-22 - Sistema de Modificadores — Productos Reales Vinculados
+- **Backend `/app/backend/routers/config.py`**:
+  - Extendido `ModifierGroupInput`: prefix, selection_type (required|optional|unlimited), sort_order, is_active, applies_to_product_ids, applies_to_category_ids.
+  - Extendido `ModifierInput`: mode (text|product), product_id, price_source (price_a|price_b|price_c|included|custom), custom_price, is_default, is_active, sort_order, max_qty.
+  - Nuevo endpoint `GET /api/modifier-groups/for-product/{product_id}` — devuelve grupos aplicables (vía modifier_group_ids, applies_to_product_ids, applies_to_category_ids) enriquecidos con resolved_price, linked_product{id,name,stock_qty,simple_inventory_enabled}, available.
+  - Todas las rutas CRUD ahora requieren auth (get_current_user).
+- **Backend `/app/backend/server.py`**: `/api/modifier-groups-with-options` enriquece opciones con resolved_price/linked_product/available (para OrderScreen).
+- **Backend `/app/backend/routers/orders.py`**: `add_items_to_order` descuenta simple_inventory para modificadores con mode="product" (qty_modifier × qty_item), con rollback transaccional ante stock=0.
+- **Frontend `/app/frontend/src/pages/settings/InventarioTab.js`**: Dialog rediseñado — input Prefix, 3 tabs Obligatorio/Opcional/Múltiple, por opción: toggle Texto/Producto, buscador autocomplete, selector de precio (Precio A/B/C/Incluido/Custom con valores mostrados), indicador de Stock; estado de búsqueda independiente por fila.
+- **Frontend `/app/frontend/src/pages/OrderScreen.js`**: Dialog de modificadores ahora muestra prefijo del grupo, badge "Incluido" verde para productos sin cargo, "Agotado" con línea tachada y bloqueo de click, stock visible. addItemToOrder siempre usa empty-order + addItems para garantizar deducción de inventario.
+- **Frontend `/app/frontend/src/pages/Kitchen.js`**: Modificadores en comanda ahora muestran `GROUP_NAME: opción` con prefijo en mayúsculas.
+- **Compatibilidad**: mode ausente = "text" por defecto (migración transparente). Grupos legacy sin prefijo funcionan idéntico.
+- **Tests**: 13/13 pytest `/app/backend/tests/test_modifiers_system.py` + 6/6 QA e2e `/tmp/test_modifiers_qa.py` (precios contextuales, inventario 2 uds, agotado, regresión, auth enforcement).

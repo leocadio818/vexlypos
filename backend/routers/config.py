@@ -671,7 +671,7 @@ async def modifier_groups_for_product(product_id: str):
             if p:
                 ps = mod.get("price_source") or "custom"
                 if ps == "price_a":
-                    resolved = float(p.get("price", 0) or 0)
+                    resolved = float(p.get("price_a", p.get("price", 0)) or 0)
                 elif ps == "price_b":
                     resolved = float(p.get("price_b", 0) or 0)
                 elif ps == "price_c":
