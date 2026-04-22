@@ -1,6 +1,20 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Enhancement: Config UI para Auto-entregar Órdenes Rápidas 🎚️
+- **Backend** (`routers/config.py`):
+  - `GET /api/quick-orders/config` retorna `{auto_deliver_minutes}` (default 7).
+  - `PUT /api/quick-orders/config` valida rango 1–120 min (400 fuera de rango) y persiste en `system_config`.
+  - `routers/orders.py` sweep ahora lee de DB primero, con fallback a env `QUICK_ORDER_AUTO_DELIVER_MINUTES`, luego 7.
+- **Frontend** (`pages/settings/VentasTab.js`):
+  - Nueva subtab **"Orden Rápida"** con icono ⚡ en Configuración → Ventas.
+  - Slider rango 1–30 min con etiquetas laterales y badge grande mostrando valor actual.
+  - Auto-save al soltar (mouseUp/touchEnd) con toast "Guardado".
+- **Verificado E2E**: GET default 7, PUT 15 persiste, PUT 200 rechazado 400, seed con 12 min + 18 min → con threshold 15 solo el de 18 min pasó a delivered. Slider UI renderiza y guarda correctamente.
+- **Beneficio**: gerentes/dueños adaptan el tiempo al ritmo del local (food truck = 5 min, cafetería = 15 min, bar = 30 min) sin tocar servidor ni llamar soporte.
+
+
+
 ## 2026-04-22 — Enhancement: Auto-entregado en Órdenes Rápidas ⏳➜✅
 - **Objetivo**: eliminar la fricción manual de tocar "Entregar" en el 95% de los casos donde el cobro es inmediato (Patrón A — counter service).
 - **Backend**:

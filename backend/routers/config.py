@@ -1016,3 +1016,26 @@ async def update_open_items_config(input: dict, user=Depends(get_current_user)):
     input["updated_at"] = now_iso()
     await db.system_config.update_one({"id": "open_items_settings"}, {"$set": input}, upsert=True)
     return {"ok": True}
+
+
+# ─── QUICK ORDER CONFIG (Orden Rápida) ───
+@router.get("/quick-orders/config")
+async def get_quick_orders_config():
+    cfg = await db.system_config.find_one({"id": "quick_orders_settings"}, {"_id": 0}) or {}
+    return {
+        "auto_deliver_minutes": int(cfg.get("auto_deliver_minutes", 7)),
+    }
+
+
+@router.put("/quick-orders/config")
+async def update_quick_orders_config(input: dict, user=Depends(get_current_user)):
+    minutes = int(input.get("auto_deliver_minutes", 7))
+    if minutes < 1 or minutes > 120:
+        raise HTTPException(status_code=400, detail="auto_deliver_minutes debe estar entre 1 y 120")
+    payload = {
+        "id": "quick_orders_settings",
+        "auto_deliver_minutes": minutes,
+        "updated_at": now_iso(),
+    }
+    await db.system_config.update_one({"id": "quick_orders_settings"}, {"$set": payload}, upsert=True)
+    return {"ok": True, "auto_deliver_minutes": minutes}

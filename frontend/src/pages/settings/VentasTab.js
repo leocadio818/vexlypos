@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSettings } from './SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import { reasonsAPI } from '@/lib/api';
-import { CreditCard, AlertTriangle, ShoppingBag, Plus, Trash2, Pencil, Banknote, X, Check, Smartphone, Building2, DollarSign, FileText } from 'lucide-react';
+import { CreditCard, AlertTriangle, ShoppingBag, Plus, Trash2, Pencil, Banknote, X, Check, Smartphone, Building2, DollarSign, FileText, Zap } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -48,6 +48,30 @@ export default function VentasTab() {
   const [showInactiveReasons, setShowInactiveReasons] = useState(false);
   const [confirmAction, setConfirmAction] = useState({ open: false, title: '', description: '', onConfirm: null, variant: 'default' });
   const [saleDialog, setSaleDialog] = useState({ open: false, name: '', code: '', tax_exemptions: [], default_ncf_type_id: 'E32', editId: null });
+
+  // Quick Orders config (auto-deliver minutes)
+  const [qoMinutes, setQoMinutes] = useState(7);
+  const [qoLoading, setQoLoading] = useState(false);
+  const [qoSaving, setQoSaving] = useState(false);
+  useEffect(() => {
+    (async () => {
+      setQoLoading(true);
+      try {
+        const r = await axios.get(`${API}/quick-orders/config`, { headers: hdrs() });
+        setQoMinutes(Number(r.data?.auto_deliver_minutes || 7));
+      } catch { /* silent */ }
+      finally { setQoLoading(false); }
+    })();
+  }, []);
+  const saveQoConfig = async (newMinutes) => {
+    setQoSaving(true);
+    try {
+      await axios.put(`${API}/quick-orders/config`, { auto_deliver_minutes: newMinutes }, { headers: hdrs() });
+      notify.success('Guardado');
+    } catch (e) {
+      notify.error(e.response?.data?.detail || 'Error guardando');
+    } finally { setQoSaving(false); }
+  };
 
   // Payment method handlers
   const handleSavePayMethod = async () => {
@@ -161,6 +185,7 @@ export default function VentasTab() {
         {canConfigTiposVenta && (
           <SubTabButton active={ventasSubTab === 'tipos'} onClick={() => setVentasSubTab('tipos')} icon={ShoppingBag} label="Tipos de Venta" />
         )}
+        <SubTabButton active={ventasSubTab === 'quick_orders'} onClick={() => setVentasSubTab('quick_orders')} icon={Zap} label="Orden Rápida" />
       </div>
 
       {ventasSubTab === 'pagos' && (
@@ -452,7 +477,50 @@ export default function VentasTab() {
         </>
       )}
 
-      {/* Payment Method Dialog */}
+      {ventasSubTab === 'quick_orders' && (
+        <>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-oswald text-base font-bold flex items-center gap-2">
+              <Zap size={18} className="text-orange-500 fill-orange-400" /> Orden Rápida
+            </h2>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-4 space-y-4 max-w-xl" data-testid="quick-orders-config-card">
+            <div>
+              <h3 className="font-semibold mb-1 text-sm">Auto-entregar órdenes cobradas</h3>
+              <p className="text-xs text-muted-foreground">
+                Cuando una Orden Rápida queda en estado "Cobrado", se marcará automáticamente como "Entregada" después del tiempo configurado. Esto mantiene la cola limpia sin intervención manual.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <label className="text-xs text-muted-foreground min-w-[60px]">1 min</label>
+              <input
+                type="range"
+                min="1" max="30" step="1"
+                value={qoMinutes}
+                onChange={e => setQoMinutes(parseInt(e.target.value))}
+                onMouseUp={e => saveQoConfig(parseInt(e.target.value))}
+                onTouchEnd={e => saveQoConfig(parseInt(e.target.value))}
+                disabled={qoLoading}
+                className="flex-1 accent-orange-500"
+                data-testid="qo-auto-deliver-slider"
+                aria-label="Minutos para auto-entregar"
+              />
+              <label className="text-xs text-muted-foreground min-w-[52px] text-right">30 min</label>
+              <div className="min-w-[80px] text-right">
+                <span className="inline-flex items-center justify-center px-3 py-1 rounded-md bg-orange-500/15 border border-orange-500/40 text-orange-600 font-oswald font-bold text-base" data-testid="qo-auto-deliver-value">
+                  {qoMinutes} min
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-muted-foreground pt-1">
+              {qoSaving ? 'Guardando…' : 'El cambio se guarda automáticamente al soltar el control.'}
+            </p>
+          </div>
+        </>
+      )}
       <Dialog open={payDialog.open} onOpenChange={(o) => !o && setPayDialog({ ...payDialog, open: false })}>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>

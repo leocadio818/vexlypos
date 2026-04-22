@@ -458,8 +458,12 @@ async def list_active_quick_orders(user=Depends(get_current_user)):
     bdate = await _get_active_business_date()
 
     # Lazy auto-sweep: paid orders older than threshold -> delivered
+    cfg = await db.system_config.find_one({"id": "quick_orders_settings"}, {"_id": 0, "auto_deliver_minutes": 1})
     try:
-        threshold_min = int(os.environ.get("QUICK_ORDER_AUTO_DELIVER_MINUTES", "7"))
+        if cfg and cfg.get("auto_deliver_minutes") is not None:
+            threshold_min = int(cfg["auto_deliver_minutes"])
+        else:
+            threshold_min = int(os.environ.get("QUICK_ORDER_AUTO_DELIVER_MINUTES", "7"))
     except (ValueError, TypeError):
         threshold_min = 7
     cutoff = (datetime.now(timezone.utc) - timedelta(minutes=threshold_min)).isoformat()
