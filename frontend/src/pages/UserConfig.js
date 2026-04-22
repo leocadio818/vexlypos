@@ -92,6 +92,7 @@ const PERMISSION_CATEGORIES = {
       manage_sale_types: 'Tipos de Venta',
       manage_print_channels: 'Gestion Impresion',
       manage_station_config: 'Config Estacion',
+      manage_promotions: 'Promociones / Happy Hour',
     }
   },
   pestanas_config: {
@@ -200,6 +201,7 @@ const CUSTOM_ROLE_DEFAULTS = {
     stock_adjustment: true, receive_orders: true,
     view_reports: true, export_dgii: true,
     config_users: true, config_productos: true,
+    manage_promotions: true,
   },
   propietario: {
     open_table: true, add_products: true, send_kitchen: true,
@@ -219,6 +221,7 @@ const CUSTOM_ROLE_DEFAULTS = {
     close_day: true,
     config_mesas: true, config_ventas: true, config_impresion: true,
     config_reportes: true, config_clientes: true,
+    manage_promotions: true,
   },
 };
 

@@ -13,6 +13,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import axios from 'axios';
 import { ConfirmDialog, useConfirmDialog } from '@/components/ConfirmDialog';
 import ImportProductsModal from '@/components/ImportProductsModal';
+import PromotionsTab from './PromotionsTab';
+import { useAuth } from '@/context/AuthContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const hdrs = () => ({ Authorization: `Bearer ${localStorage.getItem('pos_token')}` });
@@ -32,7 +34,9 @@ const SubTabButton = ({ active, onClick, icon: Icon, label }) => (
 );
 
 export default function InventarioTab() {
-  const { categories, products, printChannels, categoryChannels, inventorySettings, setInventorySettings, warehouses, fetchAll } = useSettings();
+  const { categories, products, printChannels, categoryChannels, inventorySettings, setInventorySettings, warehouses, areas, fetchAll } = useSettings();
+  const { user: currentUser } = useAuth();
+  const canManagePromotions = currentUser?.permissions?.manage_promotions || (currentUser?.role_level || 0) >= 100;
   const [confirmProps, showConfirm] = useConfirmDialog();
   const [inventarioSubTab, setInventarioSubTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -276,7 +280,15 @@ export default function InventarioTab() {
         <SubTabButton active={inventarioSubTab === 'categorias'} onClick={() => setInventarioSubTab('categorias')} icon={Tag} label="Categorías" />
         <SubTabButton active={inventarioSubTab === 'productos'} onClick={() => setInventarioSubTab('productos')} icon={Package} label="Productos" />
         <SubTabButton active={inventarioSubTab === 'modificadores'} onClick={() => setInventarioSubTab('modificadores')} icon={ListChecks} label="Modificadores" />
+        {canManagePromotions && (
+          <SubTabButton active={inventarioSubTab === 'promociones'} onClick={() => setInventarioSubTab('promociones')} icon={Sparkles} label="Promociones" />
+        )}
       </div>
+
+      {/* PROMOCIONES */}
+      {inventarioSubTab === 'promociones' && canManagePromotions && (
+        <PromotionsTab categories={categories} products={products} areas={areas} />
+      )}
 
       {/* CATEGORIAS */}
       {inventarioSubTab === 'categorias' && (

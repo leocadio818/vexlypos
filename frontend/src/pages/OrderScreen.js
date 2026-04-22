@@ -44,6 +44,38 @@ function getContrastText(hex) {
   return luminance > 0.55 ? '#1E293B' : '#FFFFFF';
 }
 
+// ─── Promotion helpers (frontend-side estimate, backend is source of truth) ───
+function computeEffectivePrice(originalPrice, productId, categoryId, areaId, activePromotions) {
+  let best = null;
+  let bestDiscount = 0;
+  for (const promo of activePromotions || []) {
+    if (promo.area_ids && areaId && !promo.area_ids.includes(areaId)) continue;
+    let applies = false;
+    if (promo.apply_to === 'all') {
+      applies = !(promo.excluded_product_ids || []).includes(productId);
+    } else if (promo.apply_to === 'products') {
+      applies = (promo.product_ids || []).includes(productId);
+    } else if (promo.apply_to === 'category') {
+      applies = (promo.category_ids || []).includes(categoryId) &&
+        !(promo.excluded_product_ids || []).includes(productId);
+    }
+    if (!applies) continue;
+    const v = Number(promo.discount_value || 0);
+    let d = 0;
+    if (promo.discount_type === 'percentage') d = originalPrice * v / 100;
+    else if (promo.discount_type === 'fixed_amount') d = Math.min(v, originalPrice);
+    else if (promo.discount_type === 'fixed_price') d = Math.max(0, originalPrice - v);
+    else if (promo.discount_type === '2x1') d = originalPrice * 0.5;
+    if (d > bestDiscount) {
+      bestDiscount = d;
+      best = promo;
+    }
+  }
+  if (!best) return { effective: originalPrice, promo: null, discount: 0 };
+  return { effective: Math.max(0, originalPrice - bestDiscount), promo: best, discount: bestDiscount };
+}
+
+
 export default function OrderScreen() {
   const { tableId } = useParams();
   const navigate = useNavigate();
@@ -53,6 +85,7 @@ export default function OrderScreen() {
   const [order, setOrder] = useState(null);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [activePromotions, setActivePromotions] = useState([]);
   const [modifierGroups, setModifierGroups] = useState([]);
   const [activeCat, setActiveCat] = useState(null); // null = show categories grid
   const [cancelReasons, setCancelReasons] = useState([]);
@@ -311,6 +344,17 @@ export default function OrderScreen() {
         if (c) prodData = JSON.parse(c);
       }
       setProducts(prodData);
+
+      // Active promotions
+      try {
+        const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+        const token = localStorage.getItem('pos_token');
+        const resp = await fetch(`${API}/promotions/active`, { headers: { Authorization: `Bearer ${token}` } });
+        if (resp.ok) {
+          const data = await resp.json();
+          setActivePromotions(Array.isArray(data) ? data : []);
+        }
+      } catch {}
 
       // Modifiers
       let oldGroups = [];
@@ -2009,6 +2053,16 @@ export default function OrderScreen() {
                           </div>
                         )}
                         {item.notes && <p className="text-xs text-yellow-500 mt-1 italic">📝 {item.notes}</p>}
+                        {item.promotion_name && (
+                          <p className="text-xs text-orange-400 mt-1 flex items-center gap-1" data-testid={`item-promo-${item.id}`}>
+                            <span>🔥</span>
+                            <span className="truncate">{item.promotion_name}</span>
+                            {item.promotion_discount_type === '2x1' && <span className="font-bold">(2x1)</span>}
+                            {item.original_price && item.original_price > item.unit_price && (
+                              <span className="line-through opacity-60 ml-1">{formatMoney(item.original_price)}</span>
+                            )}
+                          </p>
+                        )}
                         <div className="mt-1">
                           {item.status === 'pending' && <Badge variant="outline" className="text-[8px] h-4 border-yellow-600 text-yellow-500">Pendiente</Badge>}
                           {item.status === 'sent' && <Badge variant="outline" className="text-[8px] h-4 border-blue-500 text-blue-400">Enviado</Badge>}
@@ -2228,6 +2282,29 @@ export default function OrderScreen() {
       {/* Hide on mobile when account is expanded */}
       {!splitMode && !accessDenied && !mobileAccountExpanded && (
         <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Happy Hour / Promotion Banner */}
+        {activePromotions.length > 0 && (
+          <div className="px-3 py-2 bg-gradient-to-r from-orange-500/15 via-orange-400/20 to-orange-500/15 border-b border-orange-500/30" data-testid="promo-banner">
+            <div className="flex items-center gap-2 text-xs font-medium">
+              <span className="text-lg animate-pulse">🔥</span>
+              <span className="text-orange-400 font-bold">
+                {activePromotions.length === 1
+                  ? `${activePromotions[0].name} activo`
+                  : `${activePromotions.length} promociones activas`}
+              </span>
+              <span className="text-orange-300/80 hidden sm:inline">
+                hasta las {(() => {
+                  const endTime = activePromotions[0]?.schedule?.end_time || '';
+                  if (!endTime) return '';
+                  const [h, m] = endTime.split(':').map(Number);
+                  const period = h >= 12 ? 'PM' : 'AM';
+                  const h12 = h === 0 ? 12 : (h > 12 ? h - 12 : h);
+                  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+                })()}
+              </span>
+            </div>
+          </div>
+        )}
         {/* Grid Settings Bar - Glassmorphism - With PWA safe area top */}
         <div className={`flex items-center justify-between px-3 ${largeMode ? 'py-2.5' : 'py-2'} border-b border-white/10 backdrop-blur-xl bg-white/5`}>
           <div className="flex items-center gap-2">
@@ -2600,7 +2677,34 @@ export default function OrderScreen() {
                     ) : null}
                     {/* Nombre arriba, precio al fondo */}
                     <span className={`font-semibold leading-tight line-clamp-3 block ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'} ${isOutOfStock ? 'text-muted-foreground' : ''}`}>{product.name}</span>
-                    <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : product.button_bg_color ? '' : 'text-primary'}`}>{formatMoney(product.price)}</span>
+                    {(() => {
+                      const priceInfo = activePromotions.length > 0
+                        ? computeEffectivePrice(product.price, product.id, product.category_id, table?.area_id, activePromotions)
+                        : { effective: product.price, promo: null };
+                      if (priceInfo.promo) {
+                        return (
+                          <div className="flex flex-col mt-auto">
+                            <span className="text-[9px] line-through opacity-60">{formatMoney(product.price)}</span>
+                            <span className={`font-oswald font-bold block ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} text-orange-400`}>{formatMoney(priceInfo.effective)}</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <span className={`font-oswald font-bold block mt-auto ${largeMode ? 'text-base md:text-sm' : 'text-sm md:text-xs'} ${isOutOfStock ? 'text-muted-foreground' : product.button_bg_color ? '' : 'text-primary'}`}>{formatMoney(product.price)}</span>
+                      );
+                    })()}
+                    {/* Promo badge */}
+                    {(() => {
+                      const pi = activePromotions.length > 0
+                        ? computeEffectivePrice(product.price, product.id, product.category_id, table?.area_id, activePromotions)
+                        : { promo: null };
+                      if (!pi.promo) return null;
+                      return (
+                        <div className="absolute top-1 left-1 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md" title={pi.promo.name}>
+                          🔥
+                        </div>
+                      );
+                    })()}
                     {hasModifiers && !isOutOfStock && !hasSimpleInv && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
                     
                     {/* Simple Inventory Badge */}

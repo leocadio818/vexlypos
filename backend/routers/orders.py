@@ -446,12 +446,46 @@ async def add_items_to_order(order_id: str, input: AddItemsInput):
                 "new_quantity": existing_item["quantity"] + item.quantity
             })
         else:
+            # ─── PROMOTION ENGINE: apply effective price if active promo matches ───
+            effective_price = item.unit_price
+            promo_info = {}
+            try:
+                from services import promotion_engine
+                prod_full = await db.products.find_one({"id": item.product_id}, {"_id": 0, "category_id": 1})
+                cat_id = (prod_full or {}).get("category_id", "")
+                # Get area_id from table if available
+                table_area_id = None
+                try:
+                    tbl = await db.tables.find_one({"id": order.get("table_id")}, {"_id": 0, "area_id": 1})
+                    table_area_id = (tbl or {}).get("area_id")
+                except Exception:
+                    pass
+                price_info = await promotion_engine.get_effective_price(
+                    product_id=item.product_id,
+                    category_id=cat_id,
+                    original_price=float(item.unit_price),
+                    area_id=table_area_id,
+                )
+                if price_info.get("has_promotion"):
+                    effective_price = price_info["effective_price"]
+                    promo_info = {
+                        "original_price": price_info["original_price"],
+                        "promotion_id": price_info["promotion_id"],
+                        "promotion_name": price_info["promotion_name"],
+                        "promotion_discount": price_info["discount_amount"],
+                        "promotion_discount_type": price_info["discount_type"],
+                    }
+            except Exception as _e:
+                # Fail-safe: if engine errors, keep original price
+                pass
+
             items_to_add.append({
                 "id": gen_id(), "product_id": item.product_id, "product_name": item.product_name,
-                "quantity": item.quantity, "unit_price": item.unit_price,
+                "quantity": item.quantity, "unit_price": effective_price,
                 "modifiers": item.modifiers or [], "notes": item.notes or "",
                 "status": "pending", "sent_to_kitchen": False,
-                "cancelled_reason_id": None, "return_to_inventory": False
+                "cancelled_reason_id": None, "return_to_inventory": False,
+                **promo_info,
             })
     
     for update in items_to_update:

@@ -68,6 +68,7 @@ DEFAULT_PERMISSIONS = {
         "config_apariencia": True, "config_sistema": True,
         "config_descuentos": True, "config_tipos_venta": True,
         "config_formas_pago": True,
+        "manage_promotions": True,
     },
 
     "kitchen": {
@@ -131,6 +132,7 @@ CUSTOM_ROLE_DEFAULTS = {
         "stock_adjustment": True, "receive_orders": True,
         "view_reports": True, "export_dgii": True,
         "config_users": True, "config_productos": True,
+        "manage_promotions": True,
     },
 
     "propietario": {
@@ -151,6 +153,7 @@ CUSTOM_ROLE_DEFAULTS = {
         "close_day": True,
         "config_mesas": True, "config_ventas": True, "config_impresion": True,
         "config_reportes": True, "config_clientes": True,
+        "manage_promotions": True,
     },
 }
 
@@ -227,6 +230,7 @@ ALL_PERMISSIONS = {
     "manage_credit_notes": "Generar Notas de Crédito E34",
     "can_manage_tax_override": "Exencion de Impuestos",
     "view_system_logs": "Ver Logs del Sistema",
+    "manage_promotions": "Gestionar Promociones y Happy Hour",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───

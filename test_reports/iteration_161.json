@@ -1,0 +1,34 @@
+{
+  "summary": "Tested Happy Hour / Promotions feature end-to-end. Backend 15/15 pytest cases pass: CRUD, validation, permissions (admin can manage / cashier 403), seed Happy Hour exists, /promotions/active returns list, and order item integration applies discount (PRESIDENTE 300 -> 240 with promotion_name='Happy Hour' + original_price=300). Frontend: Promociones sub-tab visible inside Config. Productos with Happy Hour Activa card (toggle + edit + delete + days pills D-S + 12:00AM-11:59PM + 20% off + 1 categoria). OrderScreen (Mesa 1) shows orange gradient banner '🔥 Happy Hour activo hasta las 11:59 PM' and cart item shows '🔥 Happy Hour' in orange + strikethrough RD$300.00. Product cards in Cervezas show 🔥 badge top-left, strikethrough original price and discounted price in orange. One minor UI issue: 🔥 badge overlaps product name (truncating STELLA -> 'LLA', PRESIDENTE -> 'SIDENTE') in product card.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "OrderScreen product card (Cervezas)", "issue": "🔥 badge in top-left corner visually overlaps product name, hiding the first 2-3 characters (e.g. STELLA shown as 'LLA', PRESIDENTE shown as 'SIDENTE'). Need padding-left on name or move badge to bottom-left/right.", "selector": "absolute top-1 left-1 (badge) over product name", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "OrderScreen banner", "issues": ["Light mode contrast OK with orange-500/15 gradient + orange icon/text. Verified on 1920x1080 desktop only — main agent should spot-check iPad 768x1024 and iPhone 375x667 + dark mode (testing was done in light mode)."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_promotions.py", "/app/test_reports/pytest/promotions_results.xml"],
+  "action_items": [
+    "Fix 🔥 badge overlap on product name in OrderScreen Cervezas card (add pl-6 or pl-7 to product name container, or relocate badge)",
+    "Manual spot-check banner & strikethrough rendering on iPad/iPhone viewports and dark mode (not covered in this run)"
+  ],
+  "critical_code_review_comments": [
+    "promotion_engine.py: in-memory module-level cache is not safe for multi-worker deployments (gunicorn workers will each have their own cache). Acceptable for single-worker uvicorn but flag for production.",
+    "promotions router create endpoint: discount_value not validated for 'fixed_price'/'percentage' bounds (e.g., percentage > 100 accepted, negative values accepted). Add bounds checking.",
+    "promotion_engine._is_promotion_currently_active: end_time '23:59' excludes the last minute 23:59:30+. Fine for HH but consider end_minute<= rather than < for strict cut-offs."
+  ],
+  "updated_files": ["/app/backend/tests/test_promotions.py"],
+  "success_rate": {"backend": "100%", "frontend": "95%"},
+  "test_credentials": "Admin PIN 11338585; Cajero PIN 1111 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Pytest creates and deletes TEST_HappyHourPytest (cleaned up). Existing Happy Hour seed (20% Cervezas, all days 00:00-23:59) is intact and is currently ACTIVE.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest at /app/backend/tests/test_promotions.py. Mesa 1 has open order with 2x PRESIDENTE at discounted RD$240 (total RD$480). Active promo Happy Hour applies to 'Cervezas' category (category_id=85851809-f9ab-44fd-973b-f3a272a14784). To validate dark mode banner / mobile viewports re-run the OrderScreen flow with viewport changes. POST /api/orders/{id}/items expects payload {'items':[{'product_id','quantity','unit_price','product_name'}]}.",
+  "rca of the issue": "Badge overlap RCA: in the Cervezas product card, the 🔥 badge uses absolute positioning at top-1 left-1 while the product name occupies the same space without left padding. Mitigation: add `pl-5` (or more) to the product-name element when promotion is active, or move badge to top-right."
+}
