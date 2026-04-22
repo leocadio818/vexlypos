@@ -219,7 +219,7 @@ const ThermalTicket = forwardRef(({
         {bill.items?.map((item, index) => (
           <div key={index} className="ticket-item">
             <div className="ticket-item-name">
-              {item.product_name}
+              {(item.product_name || '').replace(/^\[LIBRE\]\s*/, '')}
             </div>
             <div className="ticket-item-details">
               <span className="ticket-item-qty">{item.quantity}x</span>

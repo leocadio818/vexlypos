@@ -323,13 +323,19 @@ async def create_bill(input: CreateBillInput, user=Depends(get_current_user)):
         # Get product-level exemptions
         product_id = item.get("product_id", "")
         product_exemptions = product_exemptions_map.get(product_id, [])
+        # Open Items with tax_exempt=True → treated as exempt from ITBIS
+        if item.get("is_open_item") and item.get("tax_exempt"):
+            # Exempt from ITBIS (mark with placeholder tax_id used in calc below)
+            product_exemptions = list(product_exemptions) + ["itbis_default", "itbis"]
         
         items_data.append({
             "item_id": item["id"], "product_name": item["product_name"],
             "product_id": product_id,
             "quantity": item["quantity"], "unit_price": item["unit_price"],
             "modifiers": item.get("modifiers", []), "modifiers_total": mod_total,
-            "total": round(item_total, 2)
+            "total": round(item_total, 2),
+            "is_open_item": bool(item.get("is_open_item")),
+            "tax_exempt": bool(item.get("tax_exempt")),
         })
         
         item_tax_data.append({

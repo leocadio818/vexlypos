@@ -183,8 +183,16 @@ export default function Kitchen() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="font-oswald text-base font-bold text-gray-900">{item.quantity}x</span>
-                              <span className="text-sm font-semibold text-gray-800">{item.product_name}</span>
+                              {item.is_open_item && (
+                                <span className="text-[9px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded" data-testid={`kitchen-libre-badge`}>*** LIBRE ***</span>
+                              )}
+                              <span className={`text-sm font-semibold ${item.is_open_item ? 'text-orange-700' : 'text-gray-800'}`}>
+                                {item.product_name?.replace(/^\[LIBRE\]\s*/, '')}
+                              </span>
                             </div>
+                            {item.is_open_item && item.kitchen_note && (
+                              <p className="text-xs text-orange-700 font-semibold mt-1">★ {item.kitchen_note}</p>
+                            )}
                             {item.modifiers?.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {item.modifiers.map((m, i) => {

@@ -21,7 +21,7 @@ import {
   ByWaiterReport, RecipesReport, StockAdjustmentsReport, SystemAuditReport,
   DiscountsReport, HourlySalesReport, OpenChecksReport, SalesComparativeReport,
   ProductMixByEmployeeReport, SalesByWeekdayReport, SalesByTableReport,
-  HoursWorkedReport, PromotionsAnalyticsReport, TopCombinationsReport
+  HoursWorkedReport, PromotionsAnalyticsReport, TopCombinationsReport, OpenItemsReport
 } from './reports';
 import ReservationsReport from './reports/ReservationsReport';
 import EcfDashboard from './reports/EcfDashboard';
@@ -57,6 +57,7 @@ const REPORT_CATEGORIES = [
       { id: 'hours-worked', name: 'Horas Trabajadas', description: 'Turnos por empleado con clock-in/out y duración total' },
       { id: 'promotions-analytics', name: 'Analytics de Promociones', description: 'Ventas Happy Hour, ahorro entregado y top productos con descuento' },
       { id: 'top-combinations', name: 'Combinaciones Top', description: 'Producto + modificadores que más se venden juntos (para diseñar combos inteligentes)' },
+      { id: 'open-items', name: 'Artículos Libres', description: 'Productos fuera del menú creados por meseros en el momento (auditoría y oportunidades de menú)' },
     ]
   },
   {
@@ -674,6 +675,7 @@ export default function Reports() {
       'hours-worked': '/reports/hours-worked',
       'promotions-analytics': '/reports/promotions-analytics',
       'top-combinations': '/reports/top-combinations',
+      'open-items': '/reports/open-items',
       'top-products': '/reports/top-products-extended',
       'by-type': '/reports/sales-by-type',
       'payment-methods': '/reports/payment-methods-breakdown',
@@ -825,6 +827,8 @@ export default function Reports() {
         return <PromotionsAnalyticsReport data={reportData} dateRange={dateRange} />;
       case 'top-combinations':
         return <TopCombinationsReport data={reportData} />;
+      case 'open-items':
+        return <OpenItemsReport data={reportData} />;
       case 'top-products':
         return <TopProductsReport data={reportData} topLimit={topLimit} onChangeLimit={(n) => { setTopLimit(n); loadReport('top-products'); }} />;
       case 'by-type':

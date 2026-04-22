@@ -1,0 +1,48 @@
+{
+  "summary": "Open Items (Artículos Libres) backend e2e tested via pytest (11/11 pass). Found 1 CRITICAL bug: two open items added consecutively with same empty notes/modifiers get silently MERGED into one line (product_id=None matches, losing 2nd item's product_name/price/channel/kitchen_note/tax_exempt). Also documented endpoint path mismatch: /api/permissions/all works (not /api/auth/permissions/all as stated in review). All other acceptance criteria satisfied: permission 'create_open_items' in ALL_PERMISSIONS with Spanish label 'Crear Artículos Libres', verify-pin validates PIN+permission (Admin OK, Mesero OK:false, invalid PIN OK:false), config GET/PUT persists enabled/require_supervisor/price_limit_rd/channels_available, orders accept is_open_item+open_item_channel+indicator_bien_servicio+tax_exempt+kitchen_note+created_by_name, bill subtotal=550 with ITBIS taxable_base=350 (exempt cocktail excluded), report strips [LIBRE] prefix and returns channel/tax_exempt/kitchen_note/created_by_name/total_sold/total_revenue, inventory not decremented for product_id=null (no 500), send-kitchen accepts open items. Frontend smoke via main agent already confirmed: 2 buttons render, dialog opens, inputs fill, total live, item lands in cart — replicated UI flow via Playwright blocked by salon map interaction (all 22 tables occupied + SVG-only clickable path) so deferred full e2e; backend-level integration data contract validated end-to-end.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/orders/{id}/items", "issue": "Two open items added on separate requests with is_open_item=true are INCORRECTLY MERGED when their notes+modifiers match (because product_id=None on both causes the existing-item duplicate-detection at orders.py:486-493 to consider them same). Second item's product_name, unit_price, open_item_channel, kitchen_note, tax_exempt, indicator_bien_servicio, created_by_name are all dropped — only the quantity is summed onto the first item. This breaks channel routing (bar items merge into kitchen), tax exemption (exempt items stop being exempt), billing (totals wrong), reports (descriptions wrong), and DGII indicator integrity. Fix: when item.is_open_item or existing.is_open_item, skip the duplicate check and always append as new line.", "priority": "CRITICAL"}
+    ],
+    "minor": [
+      {"endpoint": "GET /api/auth/permissions/all", "issue": "Returns 404 — actual path is /api/permissions/all (route in /app/backend/routers/auth.py:337 uses '/permissions/all' with no '/auth' prefix, while /auth/verify-pin does include it). Review request doc expected /api/auth/permissions/all. Frontend does not consume this endpoint currently so user impact is nil, but the inconsistency should be addressed (either add /auth prefix to the route or update docs)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_open_items_feature.py",
+    "/app/test_reports/pytest/open_items.xml"
+  ],
+  "action_items": [
+    "URGENT FIX in /app/backend/routers/orders.py around line 486: skip duplicate-merge detection when item.is_open_item or existing.get('is_open_item') is true. Always append open items as new lines — they are unique by construction (different description/price/channel/tax/note per creation). Add a regression test after fix.",
+    "Decide path for permissions/all: either move route to '/auth/permissions/all' in auth.py:337 for consistency with other /auth/* routes, or update docs. Low priority."
+  ],
+  "critical_code_review_comments": [
+    "BUG (CRITICAL): orders.py:486-493 treats open items with product_id=None + same empty notes + same empty modifiers as duplicates and merges them, silently destroying per-item metadata (channel, tax_exempt, kitchen_note, indicator_bien_servicio, product_name, unit_price). Guard with `if not item.is_open_item and not existing.get('is_open_item')` before the merge check.",
+    "OK: ALL_PERMISSIONS includes 'create_open_items': 'Crear Artículos Libres' (Spanish) at auth.py:180-310.",
+    "OK: /auth/verify-pin correctly returns {ok:true,user_id,user_name} for valid PIN+permission; {ok:false} for wrong PIN AND for users without that permission (Carlos mesero PIN=100 correctly rejected).",
+    "OK: /open-items/config GET/PUT persist all 4 fields; configurable price_limit_rd respected.",
+    "OK: Bill engine correctly excludes tax_exempt=true items from ITBIS taxable_base (verified: subtotal=550, taxable_base=350, itbis=63) while keeping them in subtotal.",
+    "OK: /reports/open-items strips '[LIBRE] ' prefix in description, returns channel+tax_exempt+kitchen_note+created_by_name+total_sold+total_revenue+count, only pulls items with is_open_item=true from paid bills.",
+    "OK: Inventory decrement safely skipped for product_id=None (no 500 error on POST items).",
+    "MINOR: /permissions/all registered without /auth prefix while /auth/verify-pin is prefixed — route naming inconsistency.",
+    "NOTE (not tested): e-CF XML inclusion of open items with IndicadorBienoServicio/IndicadorFacturacion=4 when exempt — requires full e-CF emission flow against The Factory sandbox; recommend separate targeted test once payment flow fix above is in place."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_open_items_feature.py (new, 11 tests, all green)"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 pytest pass against preview URL)",
+    "frontend": "Smoke via main agent confirmed; automated e2e deferred (all 22 tables already occupied in preview + SVG-only table interaction blocked selector)."
+  },
+  "test_credentials": "Admin PIN: 11338585 (has create_open_items); Carlos Mesero PIN: 100 (no create_open_items — verified via verify-pin)",
+  "seed_data_creation": "Test created TEST_Pasta especial / TEST_Cocktail chef open items on open orders; one bill paid via cash to exercise report. No cleanup needed (TEST_ prefix identifiable).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Test file: /app/backend/tests/test_open_items_feature.py — 11 tests covering permissions, verify-pin positive/negative/no-perm, config CRUD, order+bill+ITBIS exemption, report endpoint, inventory skip, send-kitchen. Known issue: add-items merges open items with same notes — tests use unique 'kitchen_unique' / 'bar_unique' notes as workaround. After main agent fixes the merge logic in orders.py:486, remove the workaround and verify open items stay separate even with identical notes. Real route is /api/permissions/all (not /auth/permissions/all). /api/auth/verify-pin is correct. Payment endpoint requires payment_method_id in each payment (not just 'method').",
+  "rca of the issue": "RCA for CRITICAL merge bug: In /app/backend/routers/orders.py function add_items_to_order (~line 486), the duplicate-item detection loops existing_items and considers two items identical if product_id matches AND status=='pending' AND notes match AND modifiers match. For open items product_id is always None, so `None == None` is True; if the cashier/waiter adds two open items quickly with empty notes (typical), they merge into one line with summed quantity — losing all per-item metadata. Reproduction: POST /api/orders/{id}/items twice with {product_id:null, product_name:'A', unit_price:100, notes:'', is_open_item:true, open_item_channel:'kitchen'} then {...product_name:'B', unit_price:200, open_item_channel:'bar', tax_exempt:true, notes:''} → GET /orders/{id} shows 1 item named 'A' qty=2 unit_price=100 channel=kitchen (bar item silently lost). Mitigation: add `if item.is_open_item or existing.get('is_open_item'): continue` inside the duplicate-detection loop BEFORE the equality checks, so open items always become new lines."
+}

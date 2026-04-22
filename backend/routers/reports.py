@@ -1637,6 +1637,60 @@ async def hours_worked(
 
 
 # ─── TOP PRODUCTS WITH SELECTOR ───
+# ─── OPEN ITEMS REPORT (Artículos Libres) ───
+@router.get("/open-items")
+async def open_items_report(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+):
+    """Report of all open items (Artículos Libres) sold in the period for owner visibility."""
+    if not date_from:
+        date_from = await get_active_business_date()
+    if not date_to:
+        date_to = date_from
+
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(20000)
+    filtered = [
+        b for b in bills
+        if date_from <= b.get("business_date", b.get("paid_at", "")[:10]) <= date_to
+    ]
+
+    rows = []
+    total_sold = 0
+    total_revenue = 0.0
+    for bill in filtered:
+        for item in bill.get("items", []):
+            if not item.get("is_open_item"):
+                continue
+            qty = int(item.get("quantity", 1) or 1)
+            total_item = float(item.get("total", 0) or 0)
+            rows.append({
+                "paid_at": bill.get("paid_at", ""),
+                "transaction_number": bill.get("transaction_number", ""),
+                "table_label": bill.get("table_label") or bill.get("account_label") or "",
+                "description": (item.get("product_name", "") or "").replace("[LIBRE] ", ""),
+                "quantity": qty,
+                "unit_price": float(item.get("unit_price", 0) or 0),
+                "total": total_item,
+                "channel": item.get("open_item_channel", "kitchen"),
+                "tax_exempt": bool(item.get("tax_exempt")),
+                "kitchen_note": item.get("kitchen_note", ""),
+                "created_by_name": item.get("created_by_name", ""),
+            })
+            total_sold += qty
+            total_revenue += total_item
+
+    rows.sort(key=lambda x: x["paid_at"], reverse=True)
+    return {
+        "date_from": date_from,
+        "date_to": date_to,
+        "total_sold": total_sold,
+        "total_revenue": round(total_revenue, 2),
+        "count": len(rows),
+        "rows": rows,
+    }
+
+
 # ─── TOP COMBINATIONS (Product + Modifiers most sold together) ───
 @router.get("/top-combinations")
 async def top_combinations_report(

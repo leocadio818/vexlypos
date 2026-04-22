@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { notify } from '@/lib/notify';
 import { useTheme } from '@/context/ThemeContext';
 import TransferTableModal from '@/components/TransferTableModal';
+import OpenItemDialog from '@/components/OpenItemDialog';
 import AccountSelectorLobby from '@/components/AccountSelectorLobby';
 import SplitCheckView from '@/components/SplitCheckView';
 import MoveItemsFlow from '@/components/MoveItemsFlow';
@@ -95,6 +96,8 @@ export default function OrderScreen() {
   const [activeCat, setActiveCat] = useState(null); // null = show categories grid
   const [cancelReasons, setCancelReasons] = useState([]);
   const [modDialog, setModDialog] = useState({ open: false, product: null, selectedMods: {}, qty: '0', notes: '' });
+  const [openItemDialog, setOpenItemDialog] = useState({ open: false, channel: 'kitchen' });
+  const [openItemsConfig, setOpenItemsConfig] = useState({ enabled: true, require_supervisor: false, price_limit_rd: 0, channels_available: ['kitchen', 'bar'] });
   const [cancelDialog, setCancelDialog] = useState({ 
     open: false, 
     itemId: null, 
@@ -359,6 +362,14 @@ export default function OrderScreen() {
           const data = await resp.json();
           setActivePromotions(Array.isArray(data) ? data : []);
         }
+      } catch {}
+
+      // Open Items config
+      try {
+        const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+        const token = localStorage.getItem('pos_token');
+        const resp = await fetch(`${API}/open-items/config`, { headers: { Authorization: `Bearer ${token}` } });
+        if (resp.ok) setOpenItemsConfig(await resp.json());
       } catch {}
 
       // Active combos
@@ -801,12 +812,53 @@ export default function OrderScreen() {
     setModDialog({ open: true, product, selectedMods: {}, qty: '0', notes: '' });
   };
 
-  const addItemToOrder = async (product, qty, mods, notes) => {
+  const openOpenItemDialog = (channel) => {
+    if (!hasPermission('create_open_items')) {
+      notify.error('No tienes permiso para crear artículos libres');
+      return;
+    }
+    setOpenItemDialog({ open: true, channel });
+  };
+
+  const handleSupervisorCheck = async (pin) => {
+    try {
+      const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+      const resp = await fetch(`${API}/auth/verify-pin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin, required_permission: 'create_open_items' }),
+      });
+      if (!resp.ok) return false;
+      const data = await resp.json();
+      return !!data.ok;
+    } catch { return false; }
+  };
+
+  const handleOpenItemConfirm = async (payload) => {
+    const fakeProduct = {
+      id: null,
+      name: `[LIBRE] ${payload.description}`,
+      price: payload.price,
+    };
+    await addItemToOrder(fakeProduct, payload.quantity, [], payload.kitchen_note || '', {
+      is_open_item: true,
+      open_item_channel: payload.channel,
+      indicator_bien_servicio: payload.indicator_bien_servicio,
+      tax_exempt: payload.tax_exempt,
+      kitchen_note: payload.kitchen_note,
+      created_by: user?.id || '',
+      created_by_name: user?.name || user?.username || '',
+    });
+    setOpenItemDialog({ open: false, channel: 'kitchen' });
+    notify.success(`Artículo libre agregado (${payload.channel === 'bar' ? 'Bar' : 'Cocina'})`);
+  };
+
+  const addItemToOrder = async (product, qty, mods, notes, extraFields = {}) => {
     if (!navigator.onLine) {
       notify.error('Sin conexión. Para agregar artículos necesitas internet.');
       return;
     }
-    const item = { product_id: product.id, product_name: product.name, quantity: qty, unit_price: product.price, modifiers: mods, notes };
+    const item = { product_id: product.id, product_name: product.name, quantity: qty, unit_price: product.price, modifiers: mods, notes, ...extraFields };
     try {
       let targetOrder = order;
       if (!targetOrder) {
@@ -2722,6 +2774,45 @@ export default function OrderScreen() {
             </div>
           )}
           {!activeCat && !(showProductSearch && productSearchQuery.trim()) && (
+            <>
+              {hasPermission('create_open_items') && openItemsConfig.enabled && (
+                <div className="p-3 pb-0 grid grid-cols-2 gap-2.5" data-testid="open-items-buttons">
+                  {(openItemsConfig.channels_available || ['kitchen','bar']).includes('kitchen') && (
+                    <button
+                      type="button"
+                      onClick={() => openOpenItemDialog('kitchen')}
+                      className="relative rounded-xl p-3 transition-all active:scale-95 bg-gradient-to-br from-orange-500/20 to-amber-600/25 border-2 border-dashed border-orange-400/60 hover:border-orange-400 text-left flex flex-col justify-between min-h-[72px]"
+                      data-testid="open-item-kitchen-btn"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Pencil size={14} className="text-orange-400" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400">Artículo Libre</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Utensils size={16} className="text-orange-500" />
+                        <span className={`font-bold ${largeMode ? 'text-sm' : 'text-xs'}`}>Cocina</span>
+                      </div>
+                    </button>
+                  )}
+                  {(openItemsConfig.channels_available || ['kitchen','bar']).includes('bar') && (
+                    <button
+                      type="button"
+                      onClick={() => openOpenItemDialog('bar')}
+                      className="relative rounded-xl p-3 transition-all active:scale-95 bg-gradient-to-br from-purple-500/20 to-pink-600/25 border-2 border-dashed border-purple-400/60 hover:border-purple-400 text-left flex flex-col justify-between min-h-[72px]"
+                      data-testid="open-item-bar-btn"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Pencil size={14} className="text-purple-400" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">Artículo Libre</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Wine size={16} className="text-purple-500" />
+                        <span className={`font-bold ${largeMode ? 'text-sm' : 'text-xs'}`}>Bar</span>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              )}
             <div 
               className={`p-3 grid ${largeMode ? 'gap-3' : 'gap-2.5'} auto-fill-grid`}
               style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}
@@ -2769,6 +2860,7 @@ export default function OrderScreen() {
                 );
               })}
             </div>
+            </>
           )}
 
           {/* Product Grid (when category selected) */}
@@ -3072,6 +3164,16 @@ export default function OrderScreen() {
           </div>
         </div>
       )}
+
+      {/* Open Item Dialog (Artículos Libres) */}
+      <OpenItemDialog
+        open={openItemDialog.open}
+        channel={openItemDialog.channel}
+        config={openItemsConfig}
+        onConfirm={handleOpenItemConfirm}
+        onCancel={() => setOpenItemDialog({ open: false, channel: 'kitchen' })}
+        onSupervisorCheck={handleSupervisorCheck}
+      />
 
       {/* Product Dialog with Numpad - TOUCH FRIENDLY */}
       <Dialog open={modDialog.open} onOpenChange={(open) => !open && setModDialog(p => ({ ...p, open: false }))}>

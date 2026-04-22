@@ -70,12 +70,20 @@ async def get_next_transaction_number() -> int:
 
 # ─── PYDANTIC MODELS ───
 class OrderItemInput(BaseModel):
-    product_id: str
+    product_id: Optional[str] = None
     product_name: str
     quantity: float = 1
     unit_price: float
     modifiers: List[dict] = []
     notes: str = ""
+    # Open Items (Artículos Libres) support
+    is_open_item: Optional[bool] = False
+    open_item_channel: Optional[str] = None  # "kitchen" | "bar"
+    indicator_bien_servicio: Optional[int] = 1  # 1=Bien, 2=Servicio
+    tax_exempt: Optional[bool] = False
+    kitchen_note: Optional[str] = ""
+    created_by: Optional[str] = ""
+    created_by_name: Optional[str] = ""
 
 class CreateOrderInput(BaseModel):
     table_id: str
@@ -335,7 +343,14 @@ async def create_order(input: CreateOrderInput, user=Depends(get_current_user)):
             "quantity": item.quantity, "unit_price": item.unit_price,
             "modifiers": item.modifiers, "notes": item.notes,
             "status": "pending", "sent_to_kitchen": False,
-            "cancelled_reason_id": None, "return_to_inventory": False
+            "cancelled_reason_id": None, "return_to_inventory": False,
+            "is_open_item": bool(item.is_open_item),
+            "open_item_channel": item.open_item_channel or None,
+            "indicator_bien_servicio": item.indicator_bien_servicio or 1,
+            "tax_exempt": bool(item.tax_exempt),
+            "kitchen_note": item.kitchen_note or "",
+            "created_by": item.created_by or "",
+            "created_by_name": item.created_by_name or "",
         })
 
     # Generar número de transacción único al abrir la mesa/cuenta
@@ -401,32 +416,37 @@ async def add_items_to_order(order_id: str, input: AddItemsInput):
     simple_inv_decremented = []
     try:
         for item in input.items:
-            product = await db.products.find_one(
-                {"id": item.product_id},
-                {"_id": 0, "simple_inventory_enabled": 1}
-            )
-            if product and product.get("simple_inventory_enabled"):
-                qty_to_decrement = int(item.quantity)
-                success, name, new_qty = await decrement_simple_inventory(
-                    product_id=item.product_id,
-                    qty=qty_to_decrement,
-                    user_id=order.get("waiter_id", "system"),
-                    user_name=order.get("waiter_name", "Sistema"),
+            # Skip inventory deduction for Open Items (they have no product_id)
+            if item.is_open_item or not item.product_id:
+                # Still check modifiers (unlikely but possible)
+                pass
+            else:
+                product = await db.products.find_one(
+                    {"id": item.product_id},
+                    {"_id": 0, "simple_inventory_enabled": 1}
                 )
-                if not success:
-                    # Rollback previously decremented items
-                    for prev in simple_inv_decremented:
-                        await increment_simple_inventory(
-                            prev["product_id"], prev["qty"],
-                            order.get("waiter_id", "system"),
-                            order.get("waiter_name", "Sistema"),
-                            action_type="cancel"
-                        )
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Producto agotado: {name}. Stock disponible: {new_qty}"
+                if product and product.get("simple_inventory_enabled"):
+                    qty_to_decrement = int(item.quantity)
+                    success, name, new_qty = await decrement_simple_inventory(
+                        product_id=item.product_id,
+                        qty=qty_to_decrement,
+                        user_id=order.get("waiter_id", "system"),
+                        user_name=order.get("waiter_name", "Sistema"),
                     )
-                simple_inv_decremented.append({"product_id": item.product_id, "qty": qty_to_decrement})
+                    if not success:
+                        # Rollback previously decremented items
+                        for prev in simple_inv_decremented:
+                            await increment_simple_inventory(
+                                prev["product_id"], prev["qty"],
+                                order.get("waiter_id", "system"),
+                                order.get("waiter_name", "Sistema"),
+                                action_type="cancel"
+                            )
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Producto agotado: {name}. Stock disponible: {new_qty}"
+                        )
+                    simple_inv_decremented.append({"product_id": item.product_id, "qty": qty_to_decrement})
 
             # ─── Deduct inventory for product-linked MODIFIERS ───
             for mod in (item.modifiers or []):
@@ -517,6 +537,14 @@ async def add_items_to_order(order_id: str, input: AddItemsInput):
                 "modifiers": item.modifiers or [], "notes": item.notes or "",
                 "status": "pending", "sent_to_kitchen": False,
                 "cancelled_reason_id": None, "return_to_inventory": False,
+                # Open Item fields (preserved for kitchen routing, reports, audit)
+                "is_open_item": bool(item.is_open_item),
+                "open_item_channel": item.open_item_channel or None,
+                "indicator_bien_servicio": item.indicator_bien_servicio or 1,
+                "tax_exempt": bool(item.tax_exempt),
+                "kitchen_note": item.kitchen_note or "",
+                "created_by": item.created_by or order.get("waiter_id", ""),
+                "created_by_name": item.created_by_name or order.get("waiter_name", ""),
                 **promo_info,
             })
     
@@ -1566,20 +1594,24 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
     for item in items_to_print:
         prod_id = item.get("product_id", "")
         product = prod_map.get(prod_id, {})
-        
-        product_channels = product.get("print_channels", [])
-        if product_channels and len(product_channels) > 0:
-            # Priority 1: Product-specific channels
-            target_channels = product_channels
+
+        # Priority 0: Open Items route by their explicit channel (kitchen|bar)
+        if item.get("is_open_item") and item.get("open_item_channel"):
+            target_channels = [item["open_item_channel"]]
         else:
-            cat_id = product.get("category_id", "")
-            # Priority 2: Area-specific channel for this category
-            if cat_id in area_cat_to_channel:
-                channel_code = area_cat_to_channel[cat_id]
+            product_channels = product.get("print_channels", [])
+            if product_channels and len(product_channels) > 0:
+                # Priority 1: Product-specific channels
+                target_channels = product_channels
             else:
-                # Priority 3: Global category channel (fallback)
-                channel_code = cat_to_channel.get(cat_id, "kitchen")
-            target_channels = [channel_code]
+                cat_id = product.get("category_id", "")
+                # Priority 2: Area-specific channel for this category
+                if cat_id in area_cat_to_channel:
+                    channel_code = area_cat_to_channel[cat_id]
+                else:
+                    # Priority 3: Global category channel (fallback)
+                    channel_code = cat_to_channel.get(cat_id, "kitchen")
+                target_channels = [channel_code]
         
         for channel_code in target_channels:
             if channel_code == "receipt":
@@ -1621,7 +1653,9 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
                     "name": item.get("product_name", ""),
                     "quantity": item.get("quantity", 1),
                     "modifiers": [m.get("name", "") for m in item.get("modifiers", [])],
-                    "notes": item.get("notes", "")
+                    "notes": item.get("notes", ""),
+                    "is_open_item": bool(item.get("is_open_item")),
+                    "kitchen_note": item.get("kitchen_note", ""),
                 }
                 for item in items
             ]

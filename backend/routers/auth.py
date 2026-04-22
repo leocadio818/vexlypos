@@ -69,6 +69,7 @@ DEFAULT_PERMISSIONS = {
         "config_descuentos": True, "config_tipos_venta": True,
         "config_formas_pago": True,
         "manage_promotions": True,
+        "create_open_items": True,
     },
 
     "kitchen": {
@@ -114,6 +115,7 @@ DEFAULT_PERMISSIONS = {
         "transfer_table": True,
         "merge_tables": True,
         "release_reserved_table": True,
+        "create_open_items": True,
     },
 }
 
@@ -133,6 +135,7 @@ CUSTOM_ROLE_DEFAULTS = {
         "view_reports": True, "export_dgii": True,
         "config_users": True, "config_productos": True,
         "manage_promotions": True,
+        "create_open_items": True,
     },
 
     "propietario": {
@@ -154,6 +157,7 @@ CUSTOM_ROLE_DEFAULTS = {
         "config_mesas": True, "config_ventas": True, "config_impresion": True,
         "config_reportes": True, "config_clientes": True,
         "manage_promotions": True,
+        "create_open_items": True,
     },
 }
 
@@ -231,6 +235,7 @@ ALL_PERMISSIONS = {
     "can_manage_tax_override": "Exencion de Impuestos",
     "view_system_logs": "Ver Logs del Sistema",
     "manage_promotions": "Gestionar Promociones y Happy Hour",
+    "create_open_items": "Crear Artículos Libres",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───
@@ -362,6 +367,27 @@ async def check_pin_duplicate(input: dict):
     
     existing = await db.users.find_one(query, {"_id": 0, "id": 1})
     return {"exists": existing is not None}
+
+
+@router.post("/auth/verify-pin")
+async def verify_pin_for_permission(input: dict):
+    """Verify a PIN belongs to a user who holds a specific permission (for supervisor override flows)."""
+    pin = (input.get("pin") or "").strip()
+    required = input.get("required_permission") or ""
+    if not pin or not required:
+        return {"ok": False}
+    hashed = hash_pin(pin)
+    user = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
+    if not user:
+        return {"ok": False}
+    perms = user.get("permissions") or {}
+    role_defaults = DEFAULT_PERMISSIONS.get(user.get("role", ""), {})
+    # Check user-specific perm first, then role default (fallback for users created before new perms were added)
+    has_perm = perms.get(required) if required in perms else role_defaults.get(required, False)
+    if has_perm:
+        return {"ok": True, "user_id": user.get("id"), "user_name": user.get("name", "")}
+    return {"ok": False}
+
 
 
 @router.post("/auth/login")

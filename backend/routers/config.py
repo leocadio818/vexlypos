@@ -932,3 +932,24 @@ async def update_theme_config(input: dict):
     if "_id" in input: del input["_id"]
     await db.theme_config.update_one({}, {"$set": input}, upsert=True)
     return {"ok": True}
+
+
+# ─── OPEN ITEMS CONFIG (Artículos Libres) ───
+@router.get("/open-items/config")
+async def get_open_items_config():
+    cfg = await db.system_config.find_one({"id": "open_items_settings"}, {"_id": 0}) or {}
+    return {
+        "enabled": cfg.get("enabled", True),
+        "require_supervisor": cfg.get("require_supervisor", False),
+        "price_limit_rd": cfg.get("price_limit_rd", 0),
+        "channels_available": cfg.get("channels_available", ["kitchen", "bar"]),
+    }
+
+@router.put("/open-items/config")
+async def update_open_items_config(input: dict, user=Depends(get_current_user)):
+    if "_id" in input:
+        del input["_id"]
+    input["id"] = "open_items_settings"
+    input["updated_at"] = now_iso()
+    await db.system_config.update_one({"id": "open_items_settings"}, {"$set": input}, upsert=True)
+    return {"ok": True}

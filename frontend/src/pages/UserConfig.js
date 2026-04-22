@@ -35,6 +35,7 @@ const PERMISSION_CATEGORIES = {
       view_ecf_dashboard: 'Ver Dashboard e-CF',
       edit_exchange_rate: 'Editar Tasa de Cambio',
       manage_sale_config: 'Gestionar Ventas y Formas de Pago',
+      create_open_items: 'Crear Artículos Libres',
     }
   },
   mesas: {
@@ -182,6 +183,7 @@ const ROLE_DEFAULTS = {
     transfer_table: true,
     merge_tables: true,
     release_reserved_table: true,
+    create_open_items: true,
   },
 };
 
@@ -202,6 +204,7 @@ const CUSTOM_ROLE_DEFAULTS = {
     view_reports: true, export_dgii: true,
     config_users: true, config_productos: true,
     manage_promotions: true,
+    create_open_items: true,
   },
   propietario: {
     open_table: true, add_products: true, send_kitchen: true,
@@ -222,6 +225,7 @@ const CUSTOM_ROLE_DEFAULTS = {
     config_mesas: true, config_ventas: true, config_impresion: true,
     config_reportes: true, config_clientes: true,
     manage_promotions: true,
+    create_open_items: true,
   },
 };
 
