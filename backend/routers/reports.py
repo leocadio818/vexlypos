@@ -1637,6 +1637,81 @@ async def hours_worked(
 
 
 # ─── TOP PRODUCTS WITH SELECTOR ───
+# ─── TOP COMBINATIONS (Product + Modifiers most sold together) ───
+@router.get("/top-combinations")
+async def top_combinations_report(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    limit: int = Query(20, ge=5, le=100),
+    min_count: int = Query(2, ge=1, le=50),
+):
+    """Product + modifier combinations most sold in the period.
+    Groups items by (product_name, sorted modifier names) and counts occurrences."""
+    if not date_from:
+        date_from = await get_active_business_date()
+    if not date_to:
+        date_to = date_from
+
+    bills = await db.bills.find({"status": "paid"}, {"_id": 0}).to_list(20000)
+    filtered = [
+        b for b in bills
+        if date_from <= b.get("business_date", b.get("paid_at", "")[:10]) <= date_to
+    ]
+
+    combos = {}
+    for bill in filtered:
+        for item in bill.get("items", []):
+            mods = item.get("modifiers", []) or []
+            if not mods:
+                # Skip items without modifiers — focus on combinations
+                continue
+            mod_list = sorted([(m.get("name") or "?") for m in mods if isinstance(m, dict)])
+            key = (item.get("product_name", "?"), tuple(mod_list))
+            if key not in combos:
+                combos[key] = {
+                    "product_name": key[0],
+                    "modifiers": list(mod_list),
+                    "count": 0,
+                    "total_revenue": 0.0,
+                    "total_qty": 0,
+                    "last_sold_at": "",
+                }
+            qty = int(item.get("quantity", 1) or 1)
+            combos[key]["count"] += 1
+            combos[key]["total_qty"] += qty
+            combos[key]["total_revenue"] += float(item.get("total", 0) or 0)
+            paid_at = bill.get("paid_at", "")
+            if paid_at > combos[key]["last_sold_at"]:
+                combos[key]["last_sold_at"] = paid_at
+
+    # Filter by min_count and sort
+    rows = [c for c in combos.values() if c["count"] >= min_count]
+    rows.sort(key=lambda x: (-x["count"], -x["total_revenue"]))
+    rows = rows[:limit]
+    for i, r in enumerate(rows, start=1):
+        r["rank"] = i
+        r["total_revenue"] = round(r["total_revenue"], 2)
+        r["avg_ticket"] = round(r["total_revenue"] / r["count"], 2) if r["count"] else 0
+
+    # Summary
+    total_combos_found = len(combos)
+    total_sold = sum(r["count"] for r in rows)
+    total_revenue = sum(r["total_revenue"] for r in rows)
+
+    return {
+        "date_from": date_from,
+        "date_to": date_to,
+        "limit": limit,
+        "min_count": min_count,
+        "total_combinations_found": total_combos_found,
+        "top_count": len(rows),
+        "total_sold": total_sold,
+        "total_revenue": round(total_revenue, 2),
+        "rows": rows,
+    }
+
+
+# ─── TOP PRODUCTS EXTENDED ───
 @router.get("/top-products-extended")
 async def top_products_extended(
     date_from: Optional[str] = Query(None),

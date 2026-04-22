@@ -228,3 +228,9 @@
   - Render: badge ⭐ POPULAR ámbar (absolute top-right) sobre opciones populares, con data-testid=`mod-opt-popular-{id}`.
   - Sin impacto si el producto no tiene historial (badge no aparece).
 - **Tests**: `/tmp/test_popularity.py` 2/2 pass (backend agg + endpoints enriquecen). Verificado visualmente: 5 ventas Queso Extra + 3 Tocineta → ambos con badge POPULAR; 1 venta Aguacate → sin badge.
+
+## 2026-04-22 - Reporte "Combinaciones Top"
+- **Backend `/app/backend/routers/reports.py`**: Nuevo `GET /api/reports/top-combinations?date_from&date_to&limit&min_count` — agrupa items de bills pagadas por (producto + modificadores ordenados alfabéticamente), cuenta ventas, suma ingresos, retorna top N con ticket promedio, ranking, última venta. `min_count=2` default evita ruido de combinaciones únicas.
+- **Frontend `/app/frontend/src/pages/reports/TopCombinationsReport.jsx`**: Tabla con KPIs (Combinaciones únicas / Items vendidos / Ingresos top), ranking badges dorado/plata/bronce, modificadores como chips naranjas, ticket promedio por combo. Empty state elegante con mensaje explicativo.
+- **Frontend `/app/frontend/src/pages/Reports.js`**: Registrado en categoría VENTAS como "Combinaciones Top". Endpoint mapped en switch de loader.
+- **Verificación visual**: Con 3 combinaciones históricas (Sin sal x3 + otras x1), muestra correctamente la top (Sin sal=3) y oculta las de count=1 por `min_count=2`.
