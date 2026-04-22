@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { ArrowLeft, Save, User, Phone, Mail, Calendar, Shield, Clock, Plus, Camera, ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Eye, EyeOff, Lock, GraduationCap, Briefcase, Check, Pencil, Sliders } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PinPad } from '@/components/PinPad';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -366,6 +366,16 @@ export default function UserConfig() {
   }, [userId, isNew]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // On NEW user: auto-populate default permissions for initial role once roles are loaded
+  useEffect(() => {
+    if (isNew && roles.length > 0 && Object.keys(user.permissions).length === 0) {
+      const defaults = ROLE_DEFAULTS[user.role] || {};
+      if (Object.keys(defaults).length > 0) {
+        setUser(p => ({ ...p, permissions: { ...defaults } }));
+      }
+    }
+  }, [isNew, roles.length, user.role, user.permissions]);
 
   // Derived: current role defaults & special permissions count
   const roleDefaults = getRoleDefaults(user.role, roles);
