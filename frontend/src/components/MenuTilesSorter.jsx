@@ -63,10 +63,13 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
   const [virtualColors, setVirtualColors] = useState({ __combos__: '#7C3AED', __open_items__: '#EA580C' });
   const [areaOverrides, setAreaOverrides] = useState({}); // {area_id: {hidden_tiles: [tile_id]}}
   const [areas, setAreas] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [colorPicker, setColorPicker] = useState(null); // tile id | null
   const [visibilityPicker, setVisibilityPicker] = useState(null); // tile id | null
+  const [previewRole, setPreviewRole] = useState(''); // '' = no preview (admin view)
+  const [previewArea, setPreviewArea] = useState(''); // '' = no area (virtual 'any')
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -76,14 +79,16 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
   useEffect(() => {
     (async () => {
       try {
-        const [tileRes, areaRes] = await Promise.all([
+        const [tileRes, areaRes, rolesRes] = await Promise.all([
           axios.get(`${API}/menu-tiles`, { headers: hdrs() }),
           axios.get(`${API}/areas`, { headers: hdrs() }),
+          axios.get(`${API}/roles`, { headers: hdrs() }),
         ]);
         setOrder(tileRes.data.order || []);
         setVirtualColors({ __combos__: '#7C3AED', __open_items__: '#EA580C', ...(tileRes.data.virtual_colors || {}) });
         setAreaOverrides(tileRes.data.area_overrides || {});
         setAreas(Array.isArray(areaRes.data) ? areaRes.data : (areaRes.data?.items || []));
+        setRoles(Array.isArray(rolesRes.data) ? rolesRes.data : []);
       } catch {
         setOrder([...(categories || []).map(c => c.id), ...VIRTUAL_IDS]);
       } finally {
@@ -176,6 +181,27 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
   const catById = Object.fromEntries((categories || []).map(c => [c.id, c]));
   const countProducts = (catId) => (products || []).filter(p => p.category_id === catId).length;
 
+  // Preview helpers — simulate what a role+area combo would see in OrderScreen
+  const activeRole = roles.find(r => r.id === previewRole || r.code === previewRole);
+  const rolePerms = (activeRole?.permissions) || {};
+  const previewAreaHidden = new Set(((areaOverrides || {})[previewArea] || {}).hidden_tiles || []);
+
+  const getPreviewStatus = (tileId) => {
+    // Returns {hidden: bool, reason: string} — only evaluated when previewRole is set
+    if (!previewRole) return { hidden: false, reason: '' };
+    // Area override first
+    if (previewArea && previewAreaHidden.has(tileId)) {
+      const aName = areas.find(a => a.id === previewArea)?.name || 'área';
+      return { hidden: true, reason: `Oculto en ${aName}` };
+    }
+    // Role-based permission for virtual tiles
+    if (tileId === '__open_items__') {
+      if (!rolePerms.create_open_items) return { hidden: true, reason: 'Falta permiso: create_open_items' };
+    }
+    // Categories: no per-role filter currently — always visible
+    return { hidden: false, reason: '' };
+  };
+
   const VisibilityControl = ({ tileId }) => {
     const count = hiddenCount(tileId);
     const hasHidden = count > 0;
@@ -219,6 +245,53 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
 
   return (
     <div className="space-y-2" data-testid="menu-tiles-sorter">
+      {/* Preview bar */}
+      <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2 flex items-center gap-3 flex-wrap" data-testid="preview-bar">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-primary inline-flex items-center gap-1">
+          <Eye size={12} /> Vista previa
+        </span>
+        <select
+          value={previewRole}
+          onChange={e => setPreviewRole(e.target.value)}
+          className="bg-background border border-border rounded-md text-xs px-2 py-1"
+          data-testid="preview-role-select"
+        >
+          <option value="">Admin (vista actual)</option>
+          {roles.filter(r => (r.level || 0) < 100).map(r => (
+            <option key={r.id || r.code} value={r.id || r.code}>{r.name}</option>
+          ))}
+        </select>
+        <select
+          value={previewArea}
+          onChange={e => setPreviewArea(e.target.value)}
+          className="bg-background border border-border rounded-md text-xs px-2 py-1"
+          data-testid="preview-area-select"
+          disabled={!previewRole}
+        >
+          <option value="">(cualquier área)</option>
+          {areas.map(a => (
+            <option key={a.id} value={a.id}>{a.name}</option>
+          ))}
+        </select>
+        {previewRole && (
+          <button
+            onClick={() => { setPreviewRole(''); setPreviewArea(''); }}
+            className="text-[11px] text-muted-foreground hover:text-primary underline"
+            data-testid="preview-clear"
+          >
+            limpiar
+          </button>
+        )}
+        {previewRole && (() => {
+          const visibleCount = order.filter(id => !getPreviewStatus(id).hidden).length;
+          return (
+            <span className="ml-auto text-[11px] text-muted-foreground" data-testid="preview-summary">
+              {visibleCount} de {order.length} tiles visibles para este rol
+            </span>
+          );
+        })()}
+      </div>
+
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs text-muted-foreground">
           Arrastra para reordenar. Aplica al orden del menú en el POS.
@@ -233,72 +306,90 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {order.map(id => {
+              const pv = getPreviewStatus(id);
+              const wrapperClass = previewRole && pv.hidden ? 'opacity-40' : '';
+              const previewBadge = previewRole && pv.hidden ? (
+                <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 text-[10px] font-bold" data-testid={`preview-hidden-badge-${id}`}>
+                  <EyeOff size={10} /> {pv.reason}
+                </span>
+              ) : null;
+
               if (VIRTUAL_IDS.includes(id)) {
                 const meta = VIRTUAL_META[id];
                 const color = virtualColors[id] || meta.default_color;
                 return (
-                  <SortableTile key={id} id={id}>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: color }}>
-                      <Sparkles size={18} className="text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-oswald font-bold truncate">{meta.label}</div>
-                      <div className="text-[11px] text-muted-foreground">{meta.subtitle}</div>
-                    </div>
-                    <VisibilityControl tileId={id} />
-                    <div className="relative">
-                      <button
-                        onClick={() => setColorPicker(colorPicker === id ? null : id)}
-                        className="px-2 py-1 rounded-md border border-border text-[11px] font-bold hover:bg-muted"
-                        data-testid={`tile-color-btn-${id}`}
-                        style={{ color }}
-                      >
-                        Color
-                      </button>
-                      {colorPicker === id && (
-                        <div className="absolute right-0 top-full mt-1 z-30 bg-card border border-border rounded-lg p-2 shadow-xl grid grid-cols-6 gap-1.5" data-testid={`tile-color-palette-${id}`}>
-                          {COLOR_PRESETS.map(c => (
-                            <button
-                              key={c}
-                              onClick={() => changeVirtualColor(id, c)}
-                              className={`w-7 h-7 rounded-md border-2 transition-transform hover:scale-110 ${c === color ? 'border-white ring-2 ring-primary' : 'border-transparent'}`}
-                              style={{ backgroundColor: c }}
-                              data-testid={`tile-color-opt-${id}-${c}`}
-                              aria-label={c}
-                            />
-                          ))}
+                  <div key={id} className={wrapperClass}>
+                    <SortableTile id={id}>
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: color }}>
+                        <Sparkles size={18} className="text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-oswald font-bold truncate inline-flex items-center">
+                          {meta.label}
+                          {previewBadge}
                         </div>
-                      )}
-                    </div>
-                  </SortableTile>
+                        <div className="text-[11px] text-muted-foreground">{meta.subtitle}</div>
+                      </div>
+                      <VisibilityControl tileId={id} />
+                      <div className="relative">
+                        <button
+                          onClick={() => setColorPicker(colorPicker === id ? null : id)}
+                          className="px-2 py-1 rounded-md border border-border text-[11px] font-bold hover:bg-muted"
+                          data-testid={`tile-color-btn-${id}`}
+                          style={{ color }}
+                        >
+                          Color
+                        </button>
+                        {colorPicker === id && (
+                          <div className="absolute right-0 top-full mt-1 z-30 bg-card border border-border rounded-lg p-2 shadow-xl grid grid-cols-6 gap-1.5" data-testid={`tile-color-palette-${id}`}>
+                            {COLOR_PRESETS.map(c => (
+                              <button
+                                key={c}
+                                onClick={() => changeVirtualColor(id, c)}
+                                className={`w-7 h-7 rounded-md border-2 transition-transform hover:scale-110 ${c === color ? 'border-white ring-2 ring-primary' : 'border-transparent'}`}
+                                style={{ backgroundColor: c }}
+                                data-testid={`tile-color-opt-${id}-${c}`}
+                                aria-label={c}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </SortableTile>
+                  </div>
                 );
               }
 
               const cat = catById[id];
               if (!cat) return null;
               return (
-                <SortableTile key={id} id={id}>
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: cat.color }}>
-                    <Tag size={18} className="text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-oswald font-bold truncate">{cat.name}</div>
-                    <div className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
-                      <Package size={10} /> {countProducts(cat.id)} productos
+                <div key={id} className={wrapperClass}>
+                  <SortableTile id={id}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: cat.color }}>
+                      <Tag size={18} className="text-white" />
                     </div>
-                  </div>
-                  <VisibilityControl tileId={id} />
-                  {onEditCategory && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditCategory(cat)} data-testid={`tile-edit-${id}`}>
-                      <Pencil size={14} />
-                    </Button>
-                  )}
-                  {onDeleteCategory && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDeleteCategory(cat.id)} data-testid={`tile-delete-${id}`}>
-                      <Trash2 size={14} />
-                    </Button>
-                  )}
-                </SortableTile>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-oswald font-bold truncate inline-flex items-center">
+                        {cat.name}
+                        {previewBadge}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+                        <Package size={10} /> {countProducts(cat.id)} productos
+                      </div>
+                    </div>
+                    <VisibilityControl tileId={id} />
+                    {onEditCategory && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditCategory(cat)} data-testid={`tile-edit-${id}`}>
+                        <Pencil size={14} />
+                      </Button>
+                    )}
+                    {onDeleteCategory && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDeleteCategory(cat.id)} data-testid={`tile-delete-${id}`}>
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
+                  </SortableTile>
+                </div>
               );
             })}
           </div>

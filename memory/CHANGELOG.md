@@ -1,6 +1,25 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Enhancement: Vista Previa por Rol en Config de Tiles 👁‍🗨🎭
+- **Objetivo**: permitir al admin simular en vivo cómo se ve la grilla de categorías del POS para cualquier rol + área, antes de asignarle el POS a un mesero nuevo.
+- **Frontend puro** (`MenuTilesSorter.jsx`, sin cambios de backend):
+  - Nueva "preview bar" con 2 selectores: rol (desde `GET /api/roles`, filtra level<100 para no mostrarse a sí mismo) y área.
+  - Función `getPreviewStatus(tileId)` replica la lógica real de `OrderScreen.js`:
+    - Si el rol no tiene `create_open_items` → `__open_items__` se marca oculto.
+    - Si el tile está en `area_overrides[previewArea].hidden_tiles` → se marca oculto con nombre del área.
+  - Los tiles ocultos NO desaparecen — se atenúan (`opacity-40`) y muestran un badge amber con el motivo ("Falta permiso: X" o "Oculto en Salon Principal").
+  - Summary en vivo: "X de N tiles visibles para este rol".
+  - Link "limpiar" + selector deshabilitado cuando no hay rol (visual admin intacto).
+- **Utilidad**: onboarding rápido de personal, debug de soporte ("¿por qué Pedro no ve tal botón?"), detectar configuraciones rotas (0 tiles visibles en un área).
+- **Verificado E2E**:
+  - Mesero → summary="3 de 4" + badge permiso en `__open_items__`.
+  - Mesero + Salon Principal (con Combos oculto ahí) → summary="2 de 4" + 2 badges (permiso + área).
+  - "limpiar" elimina todos los badges → `preview-hidden-badge-*` count=0.
+- **Archivos**: `/app/frontend/src/components/MenuTilesSorter.jsx` (+90 líneas preview bar + `getPreviewStatus` + wrapper con badges).
+
+
+
 ## 2026-04-22 — Enhancement: Visibilidad de Tiles por Área (Overrides) 👁🏷️
 - **Objetivo**: permitir que cada tile (categoría real o virtual) se oculte en áreas específicas. Ej: Terraza solo muestra Bebidas; Salon Principal esconde Combos.
 - **Backend** (`routers/config.py`):
