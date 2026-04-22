@@ -16,7 +16,9 @@ export const TOURS = {
   // ─── ORDEN RÁPIDA ─────────────────────────────────────────────
   quick_order: {
     name: 'Orden Rápida',
-    permissions: ['open_table'], // must also have collect_payment (handled by gating)
+    version: 1,
+    releasedOn: '2026-04-22',
+    permissions: ['open_table'],
     extraPermissions: ['collect_payment'],
     steps: [
       {
@@ -49,6 +51,8 @@ export const TOURS = {
   // ─── COMBOS + HAPPY HOUR ──────────────────────────────────────
   combos: {
     name: 'Combos y Happy Hour',
+    version: 1,
+    releasedOn: '2026-04-22',
     permissions: ['manage_products', 'config_productos'],
     steps: [
       {
@@ -71,6 +75,8 @@ export const TOURS = {
   // ─── MODIFICADORES VINCULADOS A PRODUCTOS ─────────────────────
   modifiers: {
     name: 'Modificadores Avanzados',
+    version: 1,
+    releasedOn: '2026-04-22',
     permissions: ['manage_products', 'config_productos'],
     steps: [
       {
@@ -93,6 +99,8 @@ export const TOURS = {
   // ─── ARTÍCULOS LIBRES ─────────────────────────────────────────
   open_items: {
     name: 'Artículos Libres (Off-menu)',
+    version: 1,
+    releasedOn: '2026-04-22',
     permissions: ['create_open_items'],
     steps: [
       {
@@ -115,6 +123,8 @@ export const TOURS = {
   // ─── CRM LOYALTY + TARJETA QR ─────────────────────────────────
   loyalty: {
     name: 'Fidelidad y Tarjeta QR',
+    version: 1,
+    releasedOn: '2026-04-22',
     permissions: ['collect_payment', 'manage_customers'],
     steps: [
       {
@@ -137,6 +147,8 @@ export const TOURS = {
   // ─── MAPA DE MESAS (EDIT MODE) ────────────────────────────────
   table_map: {
     name: 'Mapa de Mesas Editable',
+    version: 1,
+    releasedOn: '2026-04-22',
     permissions: ['manage_tables', 'config_tables'],
     steps: [
       {
@@ -152,6 +164,8 @@ export const TOURS = {
   // ─── CIERRE DE JORNADA ────────────────────────────────────────
   business_day: {
     name: 'Cierre de Jornada',
+    version: 1,
+    releasedOn: '2026-04-22',
     permissions: ['close_day'],
     steps: [
       {
@@ -182,7 +196,11 @@ export function getEligibleTours(hasPermission) {
 }
 
 // localStorage: `vexly_tour_<key>` = 'done' | step number (1-based)
+// localStorage: `vexly_tour_<key>_v` = last completed version (int)
+// localStorage: `vexly_tours_first_seen_at` = ISO timestamp of first run (for NUEVO detection)
 const storageKey = (tourKey) => `vexly_tour_${tourKey}`;
+const versionKey = (tourKey) => `vexly_tour_${tourKey}_v`;
+const FIRST_SEEN_KEY = 'vexly_tours_first_seen_at';
 
 // One-time migration: old quick-order tour key -> new namespaced key
 try {
@@ -192,25 +210,67 @@ try {
       localStorage.setItem('vexly_tour_quick_order', legacy);
       localStorage.removeItem('vexly_quick_order_tour_step');
     }
+    // Remember when this device first booted the tours system.
+    if (!localStorage.getItem(FIRST_SEEN_KEY)) {
+      localStorage.setItem(FIRST_SEEN_KEY, new Date().toISOString());
+    }
   }
 } catch {}
+
+export function getFirstSeenAt() {
+  try { return localStorage.getItem(FIRST_SEEN_KEY); } catch { return null; }
+}
 
 export function getTourProgress(tourKey) {
   try { return localStorage.getItem(storageKey(tourKey)); } catch { return null; }
 }
 
 export function setTourProgress(tourKey, value) {
-  try { localStorage.setItem(storageKey(tourKey), String(value)); } catch {}
+  try {
+    localStorage.setItem(storageKey(tourKey), String(value));
+    if (value === 'done') {
+      const v = (TOURS[tourKey] || {}).version || 1;
+      localStorage.setItem(versionKey(tourKey), String(v));
+    }
+  } catch {}
+}
+
+export function getCompletedVersion(tourKey) {
+  try {
+    const v = localStorage.getItem(versionKey(tourKey));
+    return v ? parseInt(v, 10) : 0;
+  } catch { return 0; }
+}
+
+/**
+ * Returns true if this tour was either never seen OR was released AFTER the user
+ * first booted the tours system AND they haven't completed the current version.
+ */
+export function isTourNew(tourKey) {
+  const tour = TOURS[tourKey];
+  if (!tour) return false;
+  const seenVersion = getCompletedVersion(tourKey);
+  const currentVersion = tour.version || 1;
+  if (seenVersion >= currentVersion) return false;
+  const firstSeen = getFirstSeenAt();
+  if (!firstSeen || !tour.releasedOn) return seenVersion === 0 && getTourProgress(tourKey) !== 'done' ? true : seenVersion < currentVersion;
+  try {
+    return new Date(tour.releasedOn) >= new Date(firstSeen.slice(0, 10));
+  } catch { return seenVersion < currentVersion; }
 }
 
 export function resetTour(tourKey) {
-  try { localStorage.removeItem(storageKey(tourKey)); } catch {}
+  try {
+    localStorage.removeItem(storageKey(tourKey));
+    localStorage.removeItem(versionKey(tourKey));
+  } catch {}
 }
 
 export function resetAllTours() {
   try {
     for (const key of Object.keys(TOURS)) {
       localStorage.removeItem(storageKey(key));
+      localStorage.removeItem(versionKey(key));
     }
   } catch {}
 }

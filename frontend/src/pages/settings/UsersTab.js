@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettings, PERM_LABELS } from './SettingsContext';
 import { Users, Search, X, Plus, Pencil } from 'lucide-react';
@@ -222,24 +222,85 @@ export default function UsersTab() {
         </div>
       )}
 
-      {/* Admin utility: reset onboarding tours */}
-      <div className="mt-8 pt-4 border-t border-border/50 flex items-center justify-between flex-wrap gap-2">
+      {/* Admin utility: onboarding tours panel with per-tour status, NEW badges & reset */}
+      <ToursAdminPanel />
+    </div>
+  );
+}
+
+function ToursAdminPanel() {
+  const [tick, setTick] = useState(0);
+  const [mod, setMod] = useState(null);
+  useEffect(() => {
+    import('@/lib/tours').then(m => setMod(m));
+  }, []);
+  if (!mod) return null;
+  const { TOURS, getTourProgress, getCompletedVersion, isTourNew, resetTour, resetAllTours } = mod;
+
+  const entries = Object.entries(TOURS);
+  const newCount = entries.filter(([k]) => isTourNew(k)).length;
+
+  return (
+    <div className="mt-8 pt-4 border-t border-border/50" data-testid="tours-admin-panel">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tours de Onboarding</h4>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Reinicia los tutoriales interactivos para que los próximos usuarios los vean otra vez (útil para capacitar personal nuevo).</p>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground inline-flex items-center gap-2">
+            Tours de Onboarding
+            {newCount > 0 && (
+              <span className="bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full" data-testid="tours-new-count">
+                {newCount} NUEVO{newCount > 1 ? 'S' : ''}
+              </span>
+            )}
+          </h4>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Cada tour se muestra una sola vez al usuario. Resetéalos al asignar el POS a un empleado nuevo.
+          </p>
         </div>
         <button
-          onClick={() => {
-            import('@/lib/tours').then(({ resetAllTours }) => { resetAllTours(); });
-            if (typeof window !== 'undefined' && window.sonner) { window.sonner.success('Tours reiniciados para este dispositivo'); }
-            try { require('@/lib/notify').notify?.success?.('Tours reiniciados'); } catch {}
-            alert('Tours reiniciados. Al visitar cada pantalla volverán a aparecer.');
-          }}
-          className="px-3 py-1.5 rounded-md border border-border hover:bg-muted text-xs font-bold inline-flex items-center gap-1"
-          data-testid="reset-tours-btn"
+          onClick={() => { resetAllTours(); setTick(t => t + 1); alert('Todos los tours reiniciados para este dispositivo.'); }}
+          className="px-3 py-1.5 rounded-md border border-border hover:bg-muted text-xs font-bold"
+          data-testid="reset-all-tours-btn"
         >
-          Reiniciar tours
+          Reiniciar todos
         </button>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-2">
+        {entries.map(([key, tour]) => {
+          const progress = getTourProgress(key);
+          const completedV = getCompletedVersion(key);
+          const done = progress === 'done';
+          const inProgress = !done && !!progress;
+          const isNew = isTourNew(key);
+          const status = done ? 'Completado' : inProgress ? `En progreso (paso ${progress})` : 'Pendiente';
+          const statusColor = done ? 'text-green-600 dark:text-green-400' : inProgress ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground';
+          return (
+            <div key={key} className="border border-border rounded-lg p-3 bg-card" data-testid={`tour-row-${key}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-bold text-sm truncate flex-1">{tour.name}</span>
+                {isNew && (
+                  <span className="bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded" data-testid={`tour-new-badge-${key}`}>
+                    NUEVO
+                  </span>
+                )}
+                <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded font-mono">v{tour.version || 1}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className={statusColor}>
+                  {status}{completedV > 0 ? ` · v${completedV} vista` : ''}
+                </span>
+                <button
+                  onClick={() => { resetTour(key); setTick(t => t + 1); }}
+                  className="text-primary hover:underline font-semibold"
+                  data-testid={`reset-tour-${key}`}
+                >
+                  Reiniciar
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">Lanzado: {tour.releasedOn || '—'} · {tour.steps.length} paso{tour.steps.length > 1 ? 's' : ''}</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

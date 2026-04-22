@@ -1,6 +1,24 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Admin Panel de Tours + Badges "NUEVO" 🏷️✨
+- **Objetivo**: que el dueño/gerente vea en Config → Usuarios cuáles tours están disponibles, su estado (pendiente/en progreso/completado), y cuáles son NUEVOS desde que el dispositivo se activó.
+- **Versionado** (`lib/tours.js`):
+  - Cada tour ahora declara `version: N` y `releasedOn: 'YYYY-MM-DD'`.
+  - Nuevo storage `vexly_tour_<key>_v` guarda la versión completada.
+  - `vexly_tours_first_seen_at` marca cuándo el dispositivo usó el sistema por primera vez (auto-set en el mount).
+  - Helper `isTourNew(key)`: retorna `true` si `releasedOn >= firstSeenAt` Y el usuario no lo ha completado en la versión actual.
+  - Helper `getCompletedVersion(key)` para mostrar "v1 vista" en el estado.
+  - `resetTour` y `resetAllTours` ahora limpian también la versión.
+- **Admin UI** (`pages/settings/UsersTab.js` → nuevo `<ToursAdminPanel />`):
+  - Grid de 2 columnas con 1 card por tour.
+  - Cada card: nombre, badge `NUEVO` (si aplica), pill `vN`, estado color-coded (Pendiente/En progreso/Completado), fecha de lanzamiento + nº pasos, botón "Reiniciar" individual.
+  - Header con contador `{N} NUEVOS` + botón global "Reiniciar todos".
+- **Verificado E2E**: fresh device muestra `7 NUEVOS` y 7 badges individuales. Completar 1 tour → contador baja a `6 NUEVOS`, el card completado pierde badge y muestra "Completado · v1 vista" en verde.
+- **Uso futuro**: cuando agreguemos un tour nuevo (ej: Módulo Contable), solo hay que declararlo con `releasedOn` del día de lanzamiento y aparecerá automáticamente como `NUEVO` para todos los admins que ya tienen el sistema instalado.
+
+
+
 ## 2026-04-22 — Refactor: Sistema Genérico de Feature Tours 🎓🔄
 - **Objetivo**: escalar el onboarding de Orden Rápida a un sistema reutilizable que cubra features existentes y futuros.
 - **Arquitectura**:
