@@ -1658,17 +1658,20 @@ async def open_items_report(
     rows = []
     total_sold = 0
     total_revenue = 0.0
+    # Also build a per-description summary for "convert to product" feature
+    by_desc = {}
     for bill in filtered:
         for item in bill.get("items", []):
             if not item.get("is_open_item"):
                 continue
             qty = int(item.get("quantity", 1) or 1)
             total_item = float(item.get("total", 0) or 0)
+            desc = (item.get("product_name", "") or "").replace("[LIBRE] ", "")
             rows.append({
                 "paid_at": bill.get("paid_at", ""),
                 "transaction_number": bill.get("transaction_number", ""),
                 "table_label": bill.get("table_label") or bill.get("account_label") or "",
-                "description": (item.get("product_name", "") or "").replace("[LIBRE] ", ""),
+                "description": desc,
                 "quantity": qty,
                 "unit_price": float(item.get("unit_price", 0) or 0),
                 "total": total_item,
@@ -1679,6 +1682,33 @@ async def open_items_report(
             })
             total_sold += qty
             total_revenue += total_item
+            # Aggregate by description for conversion suggestions
+            key = desc.lower().strip()
+            if key not in by_desc:
+                by_desc[key] = {
+                    "description": desc,
+                    "occurrences": 0,
+                    "total_qty": 0,
+                    "total_revenue": 0.0,
+                    "avg_price": 0.0,
+                    "channel": item.get("open_item_channel", "kitchen"),
+                    "last_seen": bill.get("paid_at", ""),
+                }
+            by_desc[key]["occurrences"] += 1
+            by_desc[key]["total_qty"] += qty
+            by_desc[key]["total_revenue"] += total_item
+            paid_at = bill.get("paid_at", "")
+            if paid_at > by_desc[key]["last_seen"]:
+                by_desc[key]["last_seen"] = paid_at
+
+    # Finalize summary with avg_price + conversion candidate flag (occurrences >= 3)
+    summary = []
+    for d in by_desc.values():
+        d["avg_price"] = round(d["total_revenue"] / d["total_qty"], 2) if d["total_qty"] else 0
+        d["total_revenue"] = round(d["total_revenue"], 2)
+        d["is_conversion_candidate"] = d["occurrences"] >= 3
+        summary.append(d)
+    summary.sort(key=lambda x: (-x["occurrences"], -x["total_revenue"]))
 
     rows.sort(key=lambda x: x["paid_at"], reverse=True)
     return {
@@ -1688,6 +1718,7 @@ async def open_items_report(
         "total_revenue": round(total_revenue, 2),
         "count": len(rows),
         "rows": rows,
+        "summary": summary,
     }
 
 
