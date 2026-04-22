@@ -400,9 +400,7 @@ async def _next_quick_order_number() -> int:
     """Sequential per business day. Resets with new jornada."""
     bdate = await _get_active_business_date()
     if not bdate:
-        # No active jornada — still allow creation but use ISO date
-        from datetime import date
-        bdate = date.today().isoformat()
+        raise HTTPException(status_code=400, detail="No hay jornada activa. Debes abrir una jornada antes de crear una Orden Rápida.")
     last = await db.orders.find_one(
         {"is_quick_order": True, "quick_order_business_date": bdate},
         {"_id": 0, "quick_order_number": 1},

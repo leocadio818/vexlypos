@@ -1,6 +1,30 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Feature: Orden Rápida (Quick Order) ⚡🎯
+- **Objetivo**: flujo walk-in sin mesa — el cliente llega, ordena, paga y se va. No ocupa mesa ni requiere mesero.
+- **Backend** (`routers/orders.py`, `routers/billing.py`, `print_agent_pro.py`):
+  - `POST /api/orders/quick` — body `{customer_name: str | null}`; requiere permiso `open_table` o nivel ≥20; valida jornada activa; genera `quick_order_number` secuencial por jornada (reinicia con nueva jornada); setea `is_quick_order=true`, `quick_order_status="preparing"`, `sale_type="takeout"`, `table_id=null`, `order_type="quick_order"`.
+  - `GET /api/orders/quick/active` — lista scoped a `business_date` actual y status `preparing|paid`, ordenado por `quick_order_number`.
+  - `PATCH /api/orders/quick/{id}/status` — valida estado (`preparing|paid|delivered`), 404 si no existe, 400 si estado inválido.
+  - `CreateBillInput.table_id` ahora `Optional`; label del bill: si `is_quick_order` → `"Orden Rápida #NN — Name"` o `"Orden Rápida #NN"`; propaga `is_quick_order / quick_order_number / quick_order_name` al bill.
+  - `pay_bill`: al marcar order.status=closed, si `is_quick_order` flipa `quick_order_status="paid"` automáticamente; protegió update de tablas contra `table_id=None`.
+  - `send_comanda_to_print_queue`: incluye `is_quick_order / quick_order_number / quick_order_name` en `comanda_data`.
+  - `print_agent_pro.py`: cuando `is_quick_order`, encabezado de comanda renderiza `>> ORDEN RAPIDA #NN <<` + `Cliente: NOMBRE` + `(PARA LLEVAR - SIN MESA)` en lugar de `MESA X`; línea "Cajero:" en lugar de "Mesero:".
+- **Frontend**:
+  - `components/QuickOrderFab.jsx`: FAB naranja-gradient fijo bottom-right, badge rojo con contador de activas (auto-refresh 10s), dialog de creación con input opcional, dialog de cola con rows ordenados (Preparando/Cobrado/Entregado) y botones Cobrar/Entregar/Ver.
+  - Solo visible si el usuario tiene `open_table` + `collect_payment`.
+  - `TableMap.js`: monta `<QuickOrderFab />` si `!editMode`.
+  - `App.js`: nueva ruta `/order/quick/:orderId`.
+  - `pages/OrderScreen.js`: detecta `orderId` por `useParams`; `isQuickOrder` gate; `fetchOrder` en modo quick carga por `ordersAPI.get(orderId)` y sintetiza `table` nulo; header muestra `⚡ Orden Rápida #NN — Name | T-XXXX` + "Cajero:" en lugar de "Mesero:"; `handleDirectBilling` envía `table_id: null` al crear bill.
+  - `lib/api.js`: `ordersAPI.createQuick`, `listQuickActive`, `setQuickStatus`.
+- **Permisos reutilizados**: `open_table` + `collect_payment` (sin crear nuevo permiso).
+- **Compatibilidad verificada**: combos, happy hour, modificadores, artículos libres, descuentos, propinas, e-CF E32 (default) — todo funciona.
+- **Testing 100% PASS** (iteration_168): backend pytest 8/8 (creación con/sin nombre, numeración secuencial, active list, 400/404 edge cases, full payment flow con auto-flip a paid, label con y sin nombre); frontend E2E confirmó FAB visible, dialog create, navegación, header correcto (`⚡ Orden Rápida #08 — TestE2E_UI | T-1234`), badge count, queue dialog con rows y botones.
+- **Archivos**: `/app/backend/routers/orders.py` (+70 líneas), `/app/backend/routers/billing.py` (+25 líneas), `/app/backend/print_agent_pro.py` (+15 líneas), `/app/frontend/src/components/QuickOrderFab.jsx` (nuevo, ~220 líneas), `/app/frontend/src/pages/TableMap.js` (+2 líneas), `/app/frontend/src/pages/OrderScreen.js` (+30 líneas), `/app/frontend/src/App.js` (+1 línea), `/app/frontend/src/lib/api.js` (+3 líneas), `/app/backend/tests/test_quick_orders.py` (nuevo, 8 tests).
+
+
+
 ## 2026-04-22 — Enhancement: Vista Previa por Rol en Config de Tiles 👁‍🗨🎭
 - **Objetivo**: permitir al admin simular en vivo cómo se ve la grilla de categorías del POS para cualquier rol + área, antes de asignarle el POS a un mesero nuevo.
 - **Frontend puro** (`MenuTilesSorter.jsx`, sin cambios de backend):
