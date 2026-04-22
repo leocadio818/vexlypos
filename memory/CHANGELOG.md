@@ -234,3 +234,26 @@
 - **Frontend `/app/frontend/src/pages/reports/TopCombinationsReport.jsx`**: Tabla con KPIs (Combinaciones únicas / Items vendidos / Ingresos top), ranking badges dorado/plata/bronce, modificadores como chips naranjas, ticket promedio por combo. Empty state elegante con mensaje explicativo.
 - **Frontend `/app/frontend/src/pages/Reports.js`**: Registrado en categoría VENTAS como "Combinaciones Top". Endpoint mapped en switch de loader.
 - **Verificación visual**: Con 3 combinaciones históricas (Sin sal x3 + otras x1), muestra correctamente la top (Sin sal=3) y oculta las de count=1 por `min_count=2`.
+
+## 2026-04-22 - Artículos Libres (Open Items)
+- **Permiso nuevo** `create_open_items`: descripción "Crear Artículos Libres", activo por default para admin/supervisor/propietario/gerente; inactivo para cajero/mesero/cocina. Agregado a `DEFAULT_PERMISSIONS`, `CUSTOM_ROLE_DEFAULTS`, `ALL_PERMISSIONS` (backend) y matriz UI (UserConfig.js).
+- **Backend endpoints**:
+  - `POST /api/auth/verify-pin` — valida PIN + permiso (para flujos de aprobación supervisor).
+  - `GET/PUT /api/open-items/config` — enabled, require_supervisor, price_limit_rd, channels_available.
+  - `GET /api/reports/open-items` — reporte con descripción, canal, mesa, precio, creado por, KPIs totales.
+- **Backend orders.py**:
+  - `ItemInput` extendido con is_open_item, open_item_channel, indicator_bien_servicio, tax_exempt, kitchen_note, created_by, created_by_name.
+  - `product_id` ahora Optional (para open items que no tienen producto vinculado).
+  - Skip inventario simple para open items.
+  - Kitchen routing prioriza `open_item_channel` sobre canal del producto.
+  - **Bug crítico fix**: open items NUNCA se mergean con otros items (cada uno queda como línea separada, preservando metadata única).
+- **Backend billing.py**: items con `tax_exempt=True` se tratan como exentos (no contribuyen al taxable_base de ITBIS).
+- **Frontend**:
+  - Nuevo `OpenItemDialog.js` con inputs (descripción 80ch, precio, cantidad ±, tipo DGII bien/servicio, toggle ITBIS, nota cocina 150ch, PIN supervisor cuando aplica), total en vivo.
+  - `OrderScreen.js`: 2 botones fixed antes del grid de categorías cuando !activeCat y hasPermission('create_open_items') y config.enabled. Colores naranja (cocina) y púrpura (bar), dashed border. Permission gated.
+  - `Kitchen.js`: badge naranja "*** LIBRE ***" destacado + nota cocina con ★.
+  - `ThermalTicket.js`: oculta el prefijo [LIBRE] al cliente (auditoría interna solo).
+  - Nuevo `OpenItemsReport.jsx` en reportes con auditoría completa.
+- **Tests**: /tmp/test_open_items.py + /tmp/test_open_merge_fix.py — 6/6 tests E2E pass (config, verify-pin, create order con 2 open items separados, tax calculation, kitchen routing, no merge bug).
+- **Testing agent iteration_166**: 100% backend + frontend validado; bug crítico de merge detectado y corregido.
+- **Seguridad**: aprobación supervisor automática cuando precio > price_limit_rd O require_supervisor=true. Audit trail completo (created_by, created_by_name) persiste en la orden.

@@ -334,6 +334,7 @@ async def get_current_user(request: Request):
 
 # ─── ROUTES ───
 
+@router.get("/auth/permissions/all")
 @router.get("/permissions/all")
 async def list_all_permissions():
     return ALL_PERMISSIONS

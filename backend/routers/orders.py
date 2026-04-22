@@ -484,13 +484,17 @@ async def add_items_to_order(order_id: str, input: AddItemsInput):
 
     for item in input.items:
         existing_item = None
-        for existing in existing_items:
-            if (existing.get("product_id") == item.product_id and 
-                existing.get("status") == "pending" and
-                existing.get("notes", "") == (item.notes or "") and
-                existing.get("modifiers", []) == (item.modifiers or [])):
-                existing_item = existing
-                break
+        # Open items are always new lines (never merged) — they have unique per-instance metadata
+        if not item.is_open_item:
+            for existing in existing_items:
+                if existing.get("is_open_item"):
+                    continue
+                if (existing.get("product_id") == item.product_id and 
+                    existing.get("status") == "pending" and
+                    existing.get("notes", "") == (item.notes or "") and
+                    existing.get("modifiers", []) == (item.modifiers or [])):
+                    existing_item = existing
+                    break
         
         if existing_item:
             items_to_update.append({
