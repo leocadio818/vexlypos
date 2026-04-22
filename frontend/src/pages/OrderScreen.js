@@ -91,6 +91,7 @@ export default function OrderScreen() {
   const [selectedCombo, setSelectedCombo] = useState(null);
   const [comboSelections, setComboSelections] = useState({});
   const [modifierGroups, setModifierGroups] = useState([]);
+  const [popularityMap, setPopularityMap] = useState({});
   const [activeCat, setActiveCat] = useState(null); // null = show categories grid
   const [cancelReasons, setCancelReasons] = useState([]);
   const [modDialog, setModDialog] = useState({ open: false, product: null, selectedMods: {}, qty: '0', notes: '' });
@@ -775,6 +776,17 @@ export default function OrderScreen() {
     if (hasModifiers) {
       setModDialog({ open: true, product, selectedMods: {}, qty: presetQty > 0 ? String(presetQty) : '1', notes: '' });
       if (presetQty > 0) setPresetQty(0); // Reset preset after use
+      // Lazy-fetch popularity map for this product
+      fetch(`${API_BASE}/api/modifier-groups-with-options?product_id=${encodeURIComponent(product.id)}`)
+        .then(r => r.json())
+        .then(groups => {
+          const map = {};
+          (groups || []).forEach(g => (g.options || []).forEach(o => {
+            if (o.id) map[o.id] = { is_popular: !!o.is_popular, count: o.popularity_count || 0 };
+          }));
+          setPopularityMap(map);
+        })
+        .catch(() => setPopularityMap({}));
       return;
     }
     
@@ -3110,6 +3122,8 @@ export default function OrderScreen() {
                     const isProductMode = opt.mode === 'product' && !!opt.product_id;
                     const isIncluded = isProductMode && resolvedPrice === 0 && (opt.price_source === 'included' || opt.price_source === 'price_b' || opt.price_source === 'price_c' || opt.price_source === 'price_a');
                     const unavailable = opt.available === false;
+                    const popInfo = popularityMap[opt.id];
+                    const isPopular = !!(opt.is_popular || popInfo?.is_popular);
                     return (
                       <button key={opt.id} onClick={() => {
                         if (unavailable) return;
@@ -3131,10 +3145,16 @@ export default function OrderScreen() {
                         });
                       }} disabled={unavailable}
                       data-testid={`mod-opt-${opt.id}`}
-                      className={`p-3 rounded-xl text-left transition-all border-2 active:scale-95 min-h-[60px] ${
+                      className={`relative p-3 rounded-xl text-left transition-all border-2 active:scale-95 min-h-[60px] ${
                         unavailable ? 'border-border bg-muted/30 opacity-50 cursor-not-allowed' :
                         isSelected ? 'border-primary bg-primary/15 text-primary shadow-md' : 'border-border bg-background hover:border-primary/50'
                       }`}>
+                        {isPopular && !unavailable && (
+                          <span className="absolute -top-2 -right-2 bg-amber-400 text-[9px] font-bold text-amber-950 px-1.5 py-0.5 rounded-full shadow flex items-center gap-0.5" data-testid={`mod-opt-popular-${opt.id}`}>
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            POPULAR
+                          </span>
+                        )}
                         <span className={`block font-semibold text-sm ${unavailable ? 'line-through' : ''}`}>{opt.name}</span>
                         {unavailable ? (
                           <span className="text-xs text-red-400 font-bold mt-1 block">Agotado</span>

@@ -132,8 +132,9 @@ async def health_check():
 # ─── MODIFIER GROUPS WITH OPTIONS (para ProductConfig dropdown) ───
 # Retorna grupos combinados (old-style + new-style) con opciones enriquecidas
 @api.get("/modifier-groups-with-options")
-async def list_modifier_groups_with_options():
-    """Return all modifier GROUPS with enriched options for ProductConfig dropdown."""
+async def list_modifier_groups_with_options(product_id: Optional[str] = None):
+    """Return all modifier GROUPS with enriched options. If product_id provided, adds popularity."""
+    from datetime import timedelta
     # Fetch all modifiers once
     all_modifiers = await db.modifiers.find({}, {"_id": 0}).to_list(500)
     
@@ -151,7 +152,27 @@ async def list_modifier_groups_with_options():
         docs = await db.products.find({"id": {"$in": list(ref_pids)}}, {"_id": 0}).to_list(len(ref_pids))
         ref_products = {d["id"]: d for d in docs}
 
-    def _enrich(mod: dict) -> dict:
+    # Popularity: count modifier usage for this product in last 30 days of PAID bills
+    popularity = {}
+    if product_id:
+        try:
+            cutoff_iso = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+            pop_pipeline = [
+                {"$match": {"status": "paid", "paid_at": {"$gte": cutoff_iso}}},
+                {"$unwind": "$items"},
+                {"$match": {"items.product_id": product_id}},
+                {"$unwind": "$items.modifiers"},
+                {"$group": {
+                    "_id": {"name": "$items.modifiers.name", "group_id": "$items.modifiers.group_id"},
+                    "count": {"$sum": {"$ifNull": ["$items.quantity", 1]}},
+                }},
+            ]
+            for row in await db.bills.aggregate(pop_pipeline).to_list(500):
+                popularity[(row["_id"].get("name") or "", row["_id"].get("group_id") or "")] = int(row.get("count", 0) or 0)
+        except Exception:
+            popularity = {}
+
+    def _enrich(mod: dict, group_id: str) -> dict:
         base = dict(mod)
         mode = mod.get("mode") or "text"
         if mode == "product" and mod.get("product_id"):
@@ -185,10 +206,17 @@ async def list_modifier_groups_with_options():
             base["resolved_price"] = float(mod.get("price", 0) or 0)
             base["linked_product"] = None
             base["available"] = True
+        base["popularity_count"] = popularity.get((mod.get("name") or "", group_id or ""), 0)
         return base
 
     for g in new_groups:
-        g["options"] = [_enrich(o) for o in all_options if o.get("group_id") == g["id"]]
+        enriched = [_enrich(o, g["id"]) for o in all_options if o.get("group_id") == g["id"]]
+        # Mark popular: count >= 3 AND top 2 in group
+        pop_sorted = sorted([e for e in enriched if e.get("popularity_count", 0) >= 3], key=lambda x: -x["popularity_count"])[:2]
+        pop_ids = {id(e) for e in pop_sorted}
+        for eo in enriched:
+            eo["is_popular"] = id(eo) in pop_ids
+        g["options"] = enriched
     
     # Deduplicate: new-style groups take priority over old-style with same name
     new_names = {g["name"].lower().strip() for g in new_groups}

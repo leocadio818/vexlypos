@@ -217,3 +217,14 @@
 - **Frontend `/app/frontend/src/pages/Kitchen.js`**: Modificadores en comanda ahora muestran `GROUP_NAME: opción` con prefijo en mayúsculas.
 - **Compatibilidad**: mode ausente = "text" por defecto (migración transparente). Grupos legacy sin prefijo funcionan idéntico.
 - **Tests**: 13/13 pytest `/app/backend/tests/test_modifiers_system.py` + 6/6 QA e2e `/tmp/test_modifiers_qa.py` (precios contextuales, inventario 2 uds, agotado, regresión, auth enforcement).
+
+## 2026-04-22 - Badge "Popular" en Modificadores
+- **Backend `/app/backend/routers/config.py`** y **`/app/backend/server.py`**:
+  - Agregación de popularidad: cuenta usos de cada modificador en bills pagadas últimos 30 días para el producto.
+  - `GET /api/modifier-groups/for-product/{pid}` y `GET /api/modifier-groups-with-options?product_id={pid}` devuelven `popularity_count` y `is_popular` por opción.
+  - Regla: `is_popular=True` si count ≥ 3 Y está en top 2 del grupo (umbral evita falsos positivos con pocos datos).
+- **Frontend `/app/frontend/src/pages/OrderScreen.js`**:
+  - Al abrir modal de modificadores, lazy-fetch `/modifier-groups-with-options?product_id={id}` y guarda map `popularityMap`.
+  - Render: badge ⭐ POPULAR ámbar (absolute top-right) sobre opciones populares, con data-testid=`mod-opt-popular-{id}`.
+  - Sin impacto si el producto no tiene historial (badge no aparece).
+- **Tests**: `/tmp/test_popularity.py` 2/2 pass (backend agg + endpoints enriquecen). Verificado visualmente: 5 ventas Queso Extra + 3 Tocineta → ambos con badge POPULAR; 1 venta Aguacate → sin badge.
