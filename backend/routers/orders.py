@@ -541,6 +541,33 @@ async def add_combo_to_order(order_id: str, input: dict, user: dict = Depends(ge
 
     expanded = await expand_combo_to_items(combo_id, selections)
 
+    # Apply active promotion to combo (if any)
+    promo_info = {}
+    try:
+        from services import promotion_engine
+        table_area_id = None
+        try:
+            tbl = await db.tables.find_one({"id": order.get("table_id")}, {"_id": 0, "area_id": 1})
+            table_area_id = (tbl or {}).get("area_id")
+        except Exception:
+            pass
+        price_info = await promotion_engine.get_effective_combo_price(
+            combo_id=combo_id,
+            original_price=float(expanded["total_price"]),
+            area_id=table_area_id,
+        )
+        if price_info.get("has_promotion"):
+            promo_info = {
+                "original_price": price_info["original_price"],
+                "promotion_id": price_info["promotion_id"],
+                "promotion_name": price_info["promotion_name"],
+                "promotion_discount": price_info["discount_amount"],
+                "promotion_discount_type": price_info["discount_type"],
+            }
+            expanded["total_price"] = price_info["effective_price"]
+    except Exception:
+        pass
+
     # Decrement simple inventory for each child item
     for product_id, _name, _extra, _group in expanded["child_items"]:
         prod = await db.products.find_one(
@@ -576,6 +603,7 @@ async def add_combo_to_order(order_id: str, input: dict, user: dict = Depends(ge
         "combo_id": combo_id,
         "combo_group_id": combo_group_id,
         "combo_items_count": len(expanded["child_items"]),
+        **promo_info,
     })
 
     # Child lines (price=0, only for kitchen/inventory tracking)

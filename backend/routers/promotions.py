@@ -53,7 +53,7 @@ async def create_promotion(input: dict, user=Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Nombre requerido")
     if input.get("discount_type") not in ("percentage", "fixed_amount", "fixed_price", "2x1"):
         raise HTTPException(status_code=400, detail="Tipo de descuento inválido")
-    if (input.get("apply_to") not in ("products", "category", "all")):
+    if input.get("apply_to") not in ("products", "category", "all", "combos"):
         raise HTTPException(status_code=400, detail="apply_to inválido")
     # Validate discount_value bounds
     dtype = input.get("discount_type")
@@ -82,6 +82,8 @@ async def create_promotion(input: dict, user=Depends(get_current_user)):
         "product_ids": input.get("product_ids", []) or [],
         "category_ids": input.get("category_ids", []) or [],
         "excluded_product_ids": input.get("excluded_product_ids", []) or [],
+        "combo_ids": input.get("combo_ids", []) or [],
+        "excluded_combo_ids": input.get("excluded_combo_ids", []) or [],
         "area_ids": input.get("area_ids") or None,
         "created_by": user.get("user_id"),
         "created_at": now,

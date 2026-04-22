@@ -44,6 +44,7 @@ const emptyForm = {
   product_ids: [],
   category_ids: [],
   excluded_product_ids: [],
+  combo_ids: [],
   area_ids: [],
 };
 
@@ -121,7 +122,7 @@ function PromotionCard({ p, onEdit, onDelete, onToggle, categories, products }) 
   );
 }
 
-function PromotionForm({ open, onClose, initial, categories, products, areas, onSaved }) {
+function PromotionForm({ open, onClose, initial, categories, products, areas, combos, onSaved }) {
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
 
@@ -134,6 +135,7 @@ function PromotionForm({ open, onClose, initial, categories, products, areas, on
     if (!form.name.trim()) { notify.error('Nombre requerido'); return; }
     if (form.apply_to === 'category' && form.category_ids.length === 0) { notify.error('Selecciona al menos una categoría'); return; }
     if (form.apply_to === 'products' && form.product_ids.length === 0) { notify.error('Selecciona al menos un producto'); return; }
+    if (form.apply_to === 'combos' && form.combo_ids.length === 0) { notify.error('Selecciona al menos un combo'); return; }
     if (form.discount_type !== '2x1' && (!form.discount_value || form.discount_value < 0)) { notify.error('Valor de descuento inválido'); return; }
 
     setSaving(true);
@@ -155,6 +157,7 @@ function PromotionForm({ open, onClose, initial, categories, products, areas, on
         product_ids: form.apply_to === 'products' ? form.product_ids : [],
         category_ids: form.apply_to === 'category' ? form.category_ids : [],
         excluded_product_ids: form.apply_to === 'category' ? form.excluded_product_ids : [],
+        combo_ids: form.apply_to === 'combos' ? form.combo_ids : [],
         area_ids: form.area_ids.length > 0 ? form.area_ids : null,
       };
       if (form.id) {
@@ -283,6 +286,7 @@ function PromotionForm({ open, onClose, initial, categories, products, areas, on
                 { v: 'all', label: 'Todos los Productos' },
                 { v: 'category', label: 'Categoría(s)' },
                 { v: 'products', label: 'Productos Específicos' },
+                { v: 'combos', label: 'Combos' },
               ].map(opt => (
                 <button key={opt.v} type="button" onClick={() => setForm(f => ({ ...f, apply_to: opt.v }))}
                   className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
@@ -323,6 +327,26 @@ function PromotionForm({ open, onClose, initial, categories, products, areas, on
                   </label>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Selector de combos */}
+          {form.apply_to === 'combos' && (
+            <div>
+              <label className="text-[11px] text-muted-foreground mb-1 block uppercase font-bold">Combos</label>
+              {(combos || []).length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">No hay combos creados. Ve a Config. Productos → Combos para crear uno.</p>
+              ) : (
+                <div className="max-h-40 overflow-y-auto border border-border rounded-lg p-2 grid grid-cols-1 sm:grid-cols-2 gap-1">
+                  {(combos || []).map(c => (
+                    <label key={c.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/20 px-2 py-1 rounded">
+                      <input type="checkbox" checked={form.combo_ids.includes(c.id)} onChange={() => toggleMulti('combo_ids', c.id)}
+                        data-testid={`promo-combo-${c.id}`} />
+                      <span className="truncate">🎁 {c.name} — RD$ {Number(c.price || 0).toFixed(2)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -371,6 +395,7 @@ function PromotionForm({ open, onClose, initial, categories, products, areas, on
 
 export default function PromotionsTab({ categories = [], products = [], areas = [] }) {
   const [promos, setPromos] = useState([]);
+  const [combos, setCombos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(emptyForm);
@@ -379,8 +404,12 @@ export default function PromotionsTab({ categories = [], products = [], areas = 
   const fetchPromos = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/promotions`, { headers: hdrs() });
+      const [res, cRes] = await Promise.all([
+        axios.get(`${API}/promotions`, { headers: hdrs() }),
+        axios.get(`${API}/combos`, { headers: hdrs() }).catch(() => ({ data: [] })),
+      ]);
       setPromos(res.data || []);
+      setCombos(cRes.data || []);
     } catch {
       notify.error('Error cargando promociones');
     } finally { setLoading(false); }
@@ -410,6 +439,7 @@ export default function PromotionsTab({ categories = [], products = [], areas = 
       product_ids: p.product_ids || [],
       category_ids: p.category_ids || [],
       excluded_product_ids: p.excluded_product_ids || [],
+      combo_ids: p.combo_ids || [],
       area_ids: p.area_ids || [],
     });
     setDialogOpen(true);
@@ -476,7 +506,7 @@ export default function PromotionsTab({ categories = [], products = [], areas = 
       )}
 
       <PromotionForm open={dialogOpen} onClose={() => setDialogOpen(false)}
-        initial={editing} categories={categories} products={products} areas={areas}
+        initial={editing} categories={categories} products={products} areas={areas} combos={combos}
         onSaved={fetchPromos} />
 
       <ConfirmDialog {...confirmProps} />

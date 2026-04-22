@@ -2664,16 +2664,46 @@ export default function OrderScreen() {
               </div>
               <div className={`grid gap-2 ${largeMode ? 'gap-3' : 'gap-2'}`}
                 style={{ gridTemplateColumns: `repeat(${device?.isMobile ? 2 : Math.min(gridSettings.categoryColumns, 3)}, minmax(0, 1fr))` }}>
-                {activeCombos.map(combo => (
-                  <button key={combo.id}
-                    onClick={() => handleComboClick(combo)}
-                    data-testid={`combo-btn-${combo.id}`}
-                    className={`relative rounded-xl p-2 transition-all active:scale-95 bg-gradient-to-br from-purple-500/20 to-fuchsia-600/20 border border-purple-400/40 hover:border-purple-400/80 text-left flex flex-col justify-between min-h-[72px] ${largeMode ? 'min-h-[88px]' : ''}`}>
-                    <div className="absolute top-1 right-1 bg-purple-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md">COMBO</div>
-                    <span className={`font-semibold leading-tight line-clamp-2 pr-10 ${largeMode ? 'text-sm' : 'text-xs'}`}>{combo.name}</span>
-                    <span className={`font-oswald font-bold block ${largeMode ? 'text-base' : 'text-sm'} text-purple-400 mt-1`}>RD$ {Number(combo.price || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </button>
-                ))}
+                {activeCombos.map(combo => {
+                  // Check if any active promotion applies to this combo
+                  let promoDiscount = 0;
+                  let promoMatch = null;
+                  for (const p of activePromotions) {
+                    const applies =
+                      (p.apply_to === 'combos' && (p.combo_ids || []).includes(combo.id)) ||
+                      (p.apply_to === 'all' && !((p.excluded_combo_ids || []).includes(combo.id)));
+                    if (!applies) continue;
+                    let d = 0;
+                    const v = Number(p.discount_value || 0);
+                    if (p.discount_type === 'percentage') d = (combo.price || 0) * v / 100;
+                    else if (p.discount_type === 'fixed_amount') d = Math.min(v, combo.price || 0);
+                    else if (p.discount_type === 'fixed_price') d = Math.max(0, (combo.price || 0) - v);
+                    else if (p.discount_type === '2x1') d = (combo.price || 0) * 0.5;
+                    if (d > promoDiscount) { promoDiscount = d; promoMatch = p; }
+                  }
+                  const hasPromo = promoMatch !== null;
+                  const effective = hasPromo ? Math.max(0, (combo.price || 0) - promoDiscount) : (combo.price || 0);
+                  return (
+                    <button key={combo.id}
+                      onClick={() => handleComboClick(combo)}
+                      data-testid={`combo-btn-${combo.id}`}
+                      className={`relative rounded-xl p-2 transition-all active:scale-95 bg-gradient-to-br from-purple-500/20 to-fuchsia-600/20 border ${hasPromo ? 'border-orange-400/70' : 'border-purple-400/40'} hover:border-purple-400/80 text-left flex flex-col justify-between min-h-[72px] ${largeMode ? 'min-h-[88px]' : ''}`}>
+                      <div className="absolute top-1 right-1 bg-purple-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md">COMBO</div>
+                      {hasPromo && (
+                        <div className="absolute top-1 left-1 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md" title={promoMatch?.name}>🔥</div>
+                      )}
+                      <span className={`font-semibold leading-tight line-clamp-2 pr-10 ${hasPromo ? 'pl-6' : ''} ${largeMode ? 'text-sm' : 'text-xs'}`}>{combo.name}</span>
+                      {hasPromo ? (
+                        <div className="flex flex-col">
+                          <span className="text-[9px] line-through opacity-60">RD$ {Number(combo.price || 0).toFixed(2)}</span>
+                          <span className={`font-oswald font-bold block ${largeMode ? 'text-base' : 'text-sm'} text-orange-400`}>RD$ {Number(effective).toFixed(2)}</span>
+                        </div>
+                      ) : (
+                        <span className={`font-oswald font-bold block ${largeMode ? 'text-base' : 'text-sm'} text-purple-400 mt-1`}>RD$ {Number(combo.price || 0).toFixed(2)}</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

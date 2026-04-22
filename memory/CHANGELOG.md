@@ -1,5 +1,18 @@
 # VexlyPOS — Changelog
 
+## 2026-04 — Feature: Combos con Descuento Happy Hour Automático 🔥🎁
+- **Extensión de promociones para combos**: las promociones ahora pueden apuntar a combos específicos además de productos/categorías.
+- **Backend**:
+  - `promotion_engine.py` — agregada función `get_effective_combo_price(combo_id, original_price, area_id)` y helper `_promotion_applies_to_combo()`. Regla: promociones con `apply_to="combos"` aplican si `combo_id` está en `combo_ids`; promociones con `apply_to="all"` aplican a combos excepto los listados en `excluded_combo_ids`.
+  - `promotions.py` — `apply_to` ahora acepta `"combos"`. Nuevos campos persistidos: `combo_ids`, `excluded_combo_ids`.
+  - `orders.py add_combo_to_order` — después de expandir el combo, consulta el engine y si hay promo activa aplicable: ajusta `total_price` del parent item y guarda `original_price`, `promotion_id`, `promotion_name`, `promotion_discount`, `promotion_discount_type` (mismo patrón que items normales).
+- **Frontend**:
+  - `PromotionsTab.js` — 4ta opción "Combos" en `apply_to`. Nuevo selector multi-check con nombre + precio del combo. Fetch paralelo de `/api/combos` en mount. `combo_ids` persistido al editar.
+  - `OrderScreen.js` — botones de combo muestran precio tachado + precio descontado naranja + badge 🔥 cuando una promoción activa aplica (lógica local replicada). Cart: parent item automáticamente muestra `promotion_name` naranja + `original_price` tachado via código existente de items.
+- **E2E validado por curl**: promo "Happy Hour Combos" 15% on combo_id=Combo Test → add a orden respondió parent.unit_price=$255 (de $300), promotion_name='Happy Hour Combos', promotion_discount=$45 ✅. Screenshot confirma UI con selector "Combos" marcado y "🎁 Combo Test — RD$ 300.00" checkable.
+- **Archivos modificados**: `promotion_engine.py` (+40 líneas), `promotions.py` (+4 líneas), `orders.py` (+30 líneas en add_combo_to_order), `PromotionsTab.js` (+35 líneas), `OrderScreen.js` (+35 líneas lógica precio combo).
+
+
 ## 2026-04 — Feature: Sistema de Combos / Paquetes 🎁
 - **Sistema completo** de bundles con 2 tipos: **Fijo** (items obligatorios) y **Configurable** (cliente elige dentro de grupos con min/max selecciones).
 - **Pricing**: Precio Fijo / Descuento % sobre suma de items / Descuento Monto. Cálculo automático del ahorro en la card de configuración.

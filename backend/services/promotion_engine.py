@@ -128,6 +128,23 @@ def _promotion_applies_to_product(promo: dict, product_id: str, category_id: str
             return False
         excluded = promo.get("excluded_product_ids", []) or []
         return product_id not in excluded
+    if apply_to == "combos":
+        return False  # Combo promos don't apply to individual products
+    return False
+
+
+def _promotion_applies_to_combo(promo: dict, combo_id: str, area_id: Optional[str]) -> bool:
+    """Check if a promotion applies to a specific combo."""
+    area_ids = promo.get("area_ids")
+    if area_ids and area_id and area_id not in area_ids:
+        return False
+    apply_to = promo.get("apply_to", "all")
+    if apply_to == "combos":
+        return combo_id in (promo.get("combo_ids", []) or [])
+    if apply_to == "all":
+        # "all" applies to everything including combos unless combo is excluded
+        excluded = promo.get("excluded_combo_ids", []) or []
+        return combo_id not in excluded
     return False
 
 
@@ -178,6 +195,47 @@ async def get_effective_price(
             "discount_amount": 0.0,
         }
 
+    return {
+        "original_price": round(original_price, 2),
+        "effective_price": round(max(0.0, original_price - best_discount), 2),
+        "has_promotion": True,
+        "promotion_name": best_promo.get("name", ""),
+        "promotion_id": best_promo.get("id", ""),
+        "discount_type": best_promo.get("discount_type"),
+        "discount_value": best_promo.get("discount_value"),
+        "discount_amount": round(best_discount, 2),
+    }
+
+
+
+async def get_effective_combo_price(
+    combo_id: str,
+    original_price: float,
+    area_id: Optional[str] = None,
+) -> Dict:
+    """Return effective price for a combo considering active promotions. Picks best discount."""
+    active = await get_active_promotions()
+    best_promo = None
+    best_discount = 0.0
+    for promo in active:
+        if not _promotion_applies_to_combo(promo, combo_id, area_id):
+            continue
+        d = _compute_discount_amount(original_price, promo)
+        if d > best_discount:
+            best_discount = d
+            best_promo = promo
+
+    if best_promo is None:
+        return {
+            "original_price": round(original_price, 2),
+            "effective_price": round(original_price, 2),
+            "has_promotion": False,
+            "promotion_name": None,
+            "promotion_id": None,
+            "discount_type": None,
+            "discount_value": None,
+            "discount_amount": 0.0,
+        }
     return {
         "original_price": round(original_price, 2),
         "effective_price": round(max(0.0, original_price - best_discount), 2),
