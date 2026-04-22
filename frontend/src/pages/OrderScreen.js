@@ -796,13 +796,15 @@ export default function OrderScreen() {
     }
     const item = { product_id: product.id, product_name: product.name, quantity: qty, unit_price: product.price, modifiers: mods, notes };
     try {
-      if (!order) {
-        const res = await ordersAPI.create({ table_id: tableId, items: [item] });
-        setOrder(res.data);
-      } else {
-        const res = await ordersAPI.addItems(order.id, [item]);
-        setOrder(res.data);
+      let targetOrder = order;
+      if (!targetOrder) {
+        // Create empty order first, then add items — ensures inventory (including modifier-linked products) is deducted via add-items path
+        const createRes = await ordersAPI.create({ table_id: tableId, items: [] });
+        targetOrder = createRes.data;
+        setOrder(targetOrder);
       }
+      const res = await ordersAPI.addItems(targetOrder.id, [item]);
+      setOrder(res.data);
       // Refresh simple inventory after adding items
       try {
         const siRes = await simpleInventoryAPI.productsWithSimple();
@@ -3085,30 +3087,65 @@ export default function OrderScreen() {
               return modifierGroups.filter(mg => allModifierIds.includes(mg.id)).map(group => {
                 // Check if required from assignment or from group itself
                 const assignment = (modDialog.product?.modifier_assignments || []).find(a => a.group_id === group.id);
-                const isRequired = assignment ? assignment.min_selections > 0 : group.required;
+                const isRequired = assignment ? assignment.min_selections > 0 : (group.selection_type === 'required' || group.required);
                 const maxSelections = assignment ? assignment.max_selections : group.max_selections;
-                
+                const groupLabel = group.prefix ? `${group.prefix}` : group.name;
+
                 return (
               <div key={group.id}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-bold">{group.name}</span>
+                  <span className="text-sm font-bold" data-testid={`mod-group-${group.id}`}>
+                    {groupLabel}
+                    {group.prefix && group.name !== group.prefix ? <span className="text-xs text-muted-foreground font-normal ml-1">({group.name})</span> : null}
+                  </span>
                   {isRequired && <Badge variant="destructive" className="text-xs h-5 px-2">Requerido</Badge>}
+                  {group.selection_type === 'optional' && maxSelections > 1 && (
+                    <span className="text-[10px] text-muted-foreground">hasta {maxSelections}</span>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {group.options.map(opt => {
                     const isSelected = (modDialog.selectedMods[group.id] || []).some(m => m.id === opt.id);
+                    const resolvedPrice = (typeof opt.resolved_price === 'number') ? opt.resolved_price : (opt.price || 0);
+                    const isProductMode = opt.mode === 'product' && !!opt.product_id;
+                    const isIncluded = isProductMode && resolvedPrice === 0 && (opt.price_source === 'included' || opt.price_source === 'price_b' || opt.price_source === 'price_c' || opt.price_source === 'price_a');
+                    const unavailable = opt.available === false;
                     return (
                       <button key={opt.id} onClick={() => {
+                        if (unavailable) return;
                         setModDialog(prev => {
                           const current = prev.selectedMods[group.id] || [];
-                          const updated = maxSelections === 1 ? (isSelected ? [] : [opt]) : (isSelected ? current.filter(m => m.id !== opt.id) : [...current, opt]);
+                          // Enrich modifier with product-linked metadata for downstream persistence
+                          const enrichedOpt = {
+                            ...opt,
+                            price: resolvedPrice,
+                            group_name: group.prefix || group.name,
+                            group_id: group.id,
+                            mode: opt.mode || 'text',
+                            product_id: opt.product_id || null,
+                            price_source: opt.price_source || null,
+                            qty: 1,
+                          };
+                          const updated = maxSelections === 1 ? (isSelected ? [] : [enrichedOpt]) : (isSelected ? current.filter(m => m.id !== opt.id) : [...current, enrichedOpt]);
                           return { ...prev, selectedMods: { ...prev.selectedMods, [group.id]: updated } };
                         });
-                      }} className={`p-3 rounded-xl text-left transition-all border-2 active:scale-95 min-h-[60px] ${
+                      }} disabled={unavailable}
+                      data-testid={`mod-opt-${opt.id}`}
+                      className={`p-3 rounded-xl text-left transition-all border-2 active:scale-95 min-h-[60px] ${
+                        unavailable ? 'border-border bg-muted/30 opacity-50 cursor-not-allowed' :
                         isSelected ? 'border-primary bg-primary/15 text-primary shadow-md' : 'border-border bg-background hover:border-primary/50'
                       }`}>
-                        <span className="block font-semibold text-sm">{opt.name}</span>
-                        {opt.price > 0 && <span className="text-primary font-oswald text-sm mt-1 block">+{formatMoney(opt.price)}</span>}
+                        <span className={`block font-semibold text-sm ${unavailable ? 'line-through' : ''}`}>{opt.name}</span>
+                        {unavailable ? (
+                          <span className="text-xs text-red-400 font-bold mt-1 block">Agotado</span>
+                        ) : isIncluded && resolvedPrice === 0 ? (
+                          <span className="text-emerald-500 text-xs font-bold mt-1 block">Incluido</span>
+                        ) : resolvedPrice > 0 ? (
+                          <span className="text-primary font-oswald text-sm mt-1 block">+{formatMoney(resolvedPrice)}</span>
+                        ) : null}
+                        {isProductMode && opt.linked_product?.simple_inventory_enabled && !unavailable && (
+                          <span className="text-[10px] text-muted-foreground block">Stock: {opt.linked_product.stock_qty}</span>
+                        )}
                       </button>
                     );
                   })}

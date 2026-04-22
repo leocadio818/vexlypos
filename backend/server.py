@@ -143,8 +143,52 @@ async def list_modifier_groups_with_options():
     # New-style: modifier_groups collection + enrich with their options
     new_groups = await db.modifier_groups.find({}, {"_id": 0}).to_list(100)
     all_options = [doc for doc in all_modifiers if (doc.get("group_id", "") or "").strip()]
+
+    # Preload referenced products for product-linked modifiers
+    ref_pids = {m.get("product_id") for m in all_options if m.get("mode") == "product" and m.get("product_id")}
+    ref_products = {}
+    if ref_pids:
+        docs = await db.products.find({"id": {"$in": list(ref_pids)}}, {"_id": 0}).to_list(len(ref_pids))
+        ref_products = {d["id"]: d for d in docs}
+
+    def _enrich(mod: dict) -> dict:
+        base = dict(mod)
+        mode = mod.get("mode") or "text"
+        if mode == "product" and mod.get("product_id"):
+            p = ref_products.get(mod["product_id"])
+            if p:
+                ps = mod.get("price_source") or "custom"
+                if ps == "price_a":
+                    resolved = float(p.get("price_a", p.get("price", 0)) or 0)
+                elif ps == "price_b":
+                    resolved = float(p.get("price_b", 0) or 0)
+                elif ps == "price_c":
+                    resolved = float(p.get("price_c", 0) or 0)
+                elif ps == "included":
+                    resolved = 0.0
+                else:
+                    resolved = float(mod.get("custom_price", mod.get("price", 0)) or 0)
+                base["resolved_price"] = round(resolved, 2)
+                base["linked_product"] = {
+                    "id": p["id"],
+                    "name": p.get("name", ""),
+                    "simple_inventory_enabled": p.get("simple_inventory_enabled", False),
+                    "stock_qty": int(p.get("simple_inventory_qty", 0) or 0) if p.get("simple_inventory_enabled") else None,
+                }
+                base["available"] = (not p.get("simple_inventory_enabled")) or (int(p.get("simple_inventory_qty", 0) or 0) > 0)
+            else:
+                base["resolved_price"] = float(mod.get("price", 0) or 0)
+                base["linked_product"] = None
+                base["available"] = False
+        else:
+            base["mode"] = "text"
+            base["resolved_price"] = float(mod.get("price", 0) or 0)
+            base["linked_product"] = None
+            base["available"] = True
+        return base
+
     for g in new_groups:
-        g["options"] = [o for o in all_options if o.get("group_id") == g["id"]]
+        g["options"] = [_enrich(o) for o in all_options if o.get("group_id") == g["id"]]
     
     # Deduplicate: new-style groups take priority over old-style with same name
     new_names = {g["name"].lower().strip() for g in new_groups}

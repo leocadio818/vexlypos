@@ -56,7 +56,8 @@ export default function InventarioTab() {
   // Modifier state - uses modifier-groups API (config.py)
   const [modGroups, setModGroups] = useState([]);
   const [modifiers, setModifiers] = useState([]);
-  const [modDialog, setModDialog] = useState({ open: false, editId: null, name: '', min_selection: 0, max_selection: 0, options: [] });
+  const [modDialog, setModDialog] = useState({ open: false, editId: null, name: '', prefix: '', selection_type: 'optional', min_selection: 0, max_selection: 0, options: [] });
+  const [modProductSearch, setModProductSearch] = useState('');
 
   const loadModifiers = async () => {
     try {
@@ -86,37 +87,78 @@ export default function InventarioTab() {
   }, []);
 
   // Modifier handlers - uses modifier-groups + modifiers (config.py)
-  const openNewModifier = () => setModDialog({ open: true, editId: null, name: '', min_selection: 0, max_selection: 0, options: [{ name: '', price: 0 }] });
+  const emptyOption = () => ({ name: '', mode: 'text', price: 0, product_id: null, price_source: 'custom', custom_price: null });
+  const openNewModifier = () => setModDialog({ open: true, editId: null, name: '', prefix: '', selection_type: 'optional', min_selection: 0, max_selection: 0, options: [emptyOption()] });
   const openEditModifier = (g) => {
     const groupMods = modifiers.filter(m => m.group_id === g.id);
     setModDialog({
       open: true, editId: g.id, name: g.name,
+      prefix: g.prefix || '',
+      selection_type: g.selection_type || (g.min_selection > 0 ? 'required' : 'optional'),
       min_selection: g.min_selection || 0, max_selection: g.max_selection || 0,
-      options: groupMods.length ? groupMods.map(m => ({ id: m.id, name: m.name, price: m.price || 0 })) : [{ name: '', price: 0 }]
+      options: groupMods.length ? groupMods.map(m => ({
+        id: m.id,
+        name: m.name,
+        mode: m.mode || 'text',
+        price: m.price || 0,
+        product_id: m.product_id || null,
+        price_source: m.price_source || 'custom',
+        custom_price: m.custom_price ?? null,
+      })) : [emptyOption()]
     });
   };
 
   const saveModifier = async () => {
     if (!modDialog.name.trim()) { notify.error('Nombre requerido'); return; }
-    const validOpts = modDialog.options.filter(o => o.name.trim());
+    const validOpts = modDialog.options.filter(o => o.name.trim() || o.product_id);
     if (validOpts.length === 0) { notify.error('Agrega al menos una opcion'); return; }
     try {
       let groupId = modDialog.editId;
+      const groupPayload = {
+        name: modDialog.name,
+        prefix: modDialog.prefix,
+        selection_type: modDialog.selection_type,
+        min_selection: modDialog.min_selection,
+        max_selection: modDialog.max_selection,
+      };
       if (groupId) {
-        // Update group
-        await axios.put(`${API}/modifier-groups/${groupId}`, { name: modDialog.name, min_selection: modDialog.min_selection, max_selection: modDialog.max_selection }, { headers: hdrs() });
-        // Delete old options and recreate
+        await axios.put(`${API}/modifier-groups/${groupId}`, groupPayload, { headers: hdrs() });
         const oldMods = modifiers.filter(m => m.group_id === groupId);
         await Promise.all(oldMods.map(m => axios.delete(`${API}/modifiers/${m.id}`, { headers: hdrs() })));
       } else {
-        // Create group
-        const gRes = await axios.post(`${API}/modifier-groups`, { name: modDialog.name, min_selection: modDialog.min_selection, max_selection: modDialog.max_selection }, { headers: hdrs() });
+        const gRes = await axios.post(`${API}/modifier-groups`, groupPayload, { headers: hdrs() });
         groupId = gRes.data.id;
       }
-      // Create options as individual modifiers
-      await Promise.all(validOpts.map(o =>
-        axios.post(`${API}/modifiers`, { group_id: groupId, name: o.name, price: o.price || 0 }, { headers: hdrs() })
-      ));
+      await Promise.all(validOpts.map(o => {
+        const payload = {
+          group_id: groupId,
+          name: o.name || '',
+          mode: o.mode || 'text',
+          price: parseFloat(o.price) || 0,
+        };
+        if (o.mode === 'product') {
+          payload.product_id = o.product_id;
+          payload.price_source = o.price_source || 'custom';
+          if (payload.price_source === 'custom') {
+            payload.custom_price = parseFloat(o.custom_price) || 0;
+            payload.price = payload.custom_price;
+          } else if (payload.price_source === 'included') {
+            payload.price = 0;
+          } else {
+            // price_a/b/c — resolved by backend; store hint
+            const p = (products || []).find(x => x.id === o.product_id);
+            if (p) {
+              const src = payload.price_source;
+              payload.price = parseFloat(src === 'price_a' ? (p.price_a ?? p.price) : p[src] ?? 0) || 0;
+            }
+          }
+          if (!o.name && o.product_id) {
+            const p = (products || []).find(x => x.id === o.product_id);
+            payload.name = p?.name || 'Producto';
+          }
+        }
+        return axios.post(`${API}/modifiers`, payload, { headers: hdrs() });
+      }));
       notify.success(modDialog.editId ? 'Modificador actualizado' : 'Modificador creado');
       setModDialog(p => ({ ...p, open: false }));
       loadModifiers();
@@ -132,7 +174,7 @@ export default function InventarioTab() {
     } catch { notify.error('Error al eliminar'); }
   };
 
-  const addModOption = () => setModDialog(p => ({ ...p, options: [...p.options, { name: '', price: 0 }] }));
+  const addModOption = () => setModDialog(p => ({ ...p, options: [...p.options, emptyOption()] }));
   const removeModOption = (idx) => setModDialog(p => ({ ...p, options: p.options.filter((_, i) => i !== idx) }));
   const updateModOption = (idx, field, val) => setModDialog(p => ({ ...p, options: p.options.map((o, i) => i === idx ? { ...o, [field]: val } : o) }));
 
@@ -467,20 +509,49 @@ export default function InventarioTab() {
 
           {/* Modifier Dialog */}
           <Dialog open={modDialog.open} onOpenChange={(o) => !o && setModDialog(p => ({ ...p, open: false }))}>
-            <DialogContent className="max-w-lg" data-testid="modifier-modal">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="modifier-modal">
               <DialogHeader>
                 <DialogTitle className="font-oswald">{modDialog.editId ? 'Editar Modificador' : 'Nuevo Modificador'}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre del Grupo *</label>
+                    <input value={modDialog.name} onChange={e => setModDialog(p => ({ ...p, name: e.target.value }))}
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" placeholder="Ej: Acompañantes, Extras, Sin"
+                      data-testid="modifier-name-input" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Prefijo conversacional</label>
+                    <input value={modDialog.prefix} onChange={e => setModDialog(p => ({ ...p, prefix: e.target.value }))}
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" placeholder="Ej: Acompañante, Agregar, Sin"
+                      data-testid="modifier-prefix-input" />
+                  </div>
+                </div>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Nombre del Grupo *</label>
-                  <input value={modDialog.name} onChange={e => setModDialog(p => ({ ...p, name: e.target.value }))}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" placeholder="Ej: Temperatura, Extras, Toppings"
-                    data-testid="modifier-name-input" />
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Tipo de selección</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'required', label: 'Obligatorio', desc: 'elegir exactamente N', min: 1, max: 1 },
+                      { id: 'optional', label: 'Opcional', desc: '0 a N', min: 0, max: 3 },
+                      { id: 'unlimited', label: 'Múltiple', desc: 'sin límite', min: 0, max: 99 },
+                    ].map(t => (
+                      <button key={t.id} type="button"
+                        onClick={() => setModDialog(p => ({
+                          ...p, selection_type: t.id,
+                          min_selection: t.id === 'required' ? (p.min_selection || 1) : 0,
+                          max_selection: t.id === 'unlimited' ? 99 : (t.id === 'required' ? 1 : (p.max_selection || 3))
+                        }))}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${modDialog.selection_type === t.id ? 'bg-primary/20 border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}
+                        data-testid={`mod-selection-type-${t.id}`}>
+                        {t.label} <span className="opacity-60">· {t.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="flex gap-4">
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-muted-foreground">Min selecciones</label>
+                    <label className="text-xs text-muted-foreground">Min</label>
                     <NumericInput value={modDialog.min_selection}
                       onChange={e => setModDialog(p => ({ ...p, min_selection: parseInt(e.target.value) || 0 }))}
                       label="Min Selecciones" allowDecimal={false}
@@ -488,7 +559,7 @@ export default function InventarioTab() {
                       data-testid="modifier-min-input" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-muted-foreground">Max selecciones (0=sin limite)</label>
+                    <label className="text-xs text-muted-foreground">Max (0=sin límite)</label>
                     <NumericInput value={modDialog.max_selection}
                       onChange={e => setModDialog(p => ({ ...p, max_selection: parseInt(e.target.value) || 0 }))}
                       label="Max Selecciones" allowDecimal={false}
@@ -500,24 +571,114 @@ export default function InventarioTab() {
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-medium text-muted-foreground">Opciones</label>
                     <Button variant="outline" size="sm" onClick={addModOption} className="gap-1 h-7 text-xs" data-testid="add-option-btn">
-                      <Plus size={12} /> Opcion
+                      <Plus size={12} /> Opción
                     </Button>
                   </div>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {modDialog.options.map((opt, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <input value={opt.name} onChange={e => updateModOption(idx, 'name', e.target.value)}
-                          className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-sm" placeholder="Nombre opcion"
-                          data-testid={`option-name-${idx}`} />
-                        <NumericInput value={opt.price} onChange={e => updateModOption(idx, 'price', parseFloat(e.target.value) || 0)}
-                          className="w-24 bg-background border border-border rounded-lg px-2 py-1.5 text-sm" placeholder="Precio"
-                          label="Precio Opcion"
-                          data-testid={`option-price-${idx}`} />
-                        {modDialog.options.length > 1 && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400" onClick={() => removeModOption(idx)}><X size={14} /></Button>
-                        )}
-                      </div>
-                    ))}
+                  <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                    {modDialog.options.map((opt, idx) => {
+                      const linkedProduct = opt.product_id ? (products || []).find(pr => pr.id === opt.product_id) : null;
+                      const searchQ = (modProductSearch || '').toLowerCase();
+                      const productMatches = searchQ.length >= 2 && opt.mode === 'product' && !opt.product_id
+                        ? (products || []).filter(pr => (pr.name || '').toLowerCase().includes(searchQ) && pr.active !== false).slice(0, 8)
+                        : [];
+                      return (
+                        <div key={idx} className="border border-border rounded-lg p-3 space-y-2 bg-muted/20" data-testid={`mod-option-${idx}`}>
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1 rounded-lg bg-background p-0.5 border border-border">
+                              <button type="button" onClick={() => updateModOption(idx, 'mode', 'text')}
+                                className={`px-2 py-1 rounded text-[11px] font-bold ${opt.mode !== 'product' ? 'bg-primary/20 text-primary' : 'text-muted-foreground'}`}
+                                data-testid={`mod-option-mode-text-${idx}`}>Texto</button>
+                              <button type="button" onClick={() => updateModOption(idx, 'mode', 'product')}
+                                className={`px-2 py-1 rounded text-[11px] font-bold ${opt.mode === 'product' ? 'bg-primary/20 text-primary' : 'text-muted-foreground'}`}
+                                data-testid={`mod-option-mode-product-${idx}`}>Producto</button>
+                            </div>
+                            <input value={opt.name} onChange={e => updateModOption(idx, 'name', e.target.value)}
+                              className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-sm" placeholder={opt.mode === 'product' ? 'Nombre visible (se toma del producto si está vacío)' : 'Ej: Sin cebolla'}
+                              data-testid={`option-name-${idx}`} />
+                            {opt.mode !== 'product' && (
+                              <NumericInput value={opt.price} onChange={e => updateModOption(idx, 'price', parseFloat(e.target.value) || 0)}
+                                className="w-20 bg-background border border-border rounded-lg px-2 py-1.5 text-sm" placeholder="Precio" label="Precio"
+                                data-testid={`option-price-${idx}`} />
+                            )}
+                            {modDialog.options.length > 1 && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400" onClick={() => removeModOption(idx)} data-testid={`remove-option-${idx}`}><X size={14} /></Button>
+                            )}
+                          </div>
+
+                          {opt.mode === 'product' && (
+                            <div className="space-y-2 pl-1">
+                              {opt.product_id && linkedProduct ? (
+                                <div className="flex items-center gap-2 flex-wrap p-2 rounded bg-primary/5 border border-primary/20" data-testid={`mod-option-linked-${idx}`}>
+                                  <Package size={14} className="text-primary" />
+                                  <span className="text-sm font-bold">{linkedProduct.name}</span>
+                                  <span className="text-[11px] text-muted-foreground">
+                                    A: RD${(linkedProduct.price_a ?? linkedProduct.price ?? 0)}
+                                    {linkedProduct.price_b ? ` · B: RD$${linkedProduct.price_b}` : ''}
+                                    {linkedProduct.price_c ? ` · C: RD$${linkedProduct.price_c}` : ''}
+                                  </span>
+                                  {linkedProduct.simple_inventory_enabled && (
+                                    <Badge variant="outline" className="text-[10px]">Stock: {linkedProduct.simple_inventory_qty ?? 0}</Badge>
+                                  )}
+                                  <Button variant="ghost" size="sm" className="h-6 text-[11px] ml-auto" onClick={() => { updateModOption(idx, 'product_id', null); updateModOption(idx, 'price_source', 'custom'); }} data-testid={`mod-option-unlink-${idx}`}>Cambiar</Button>
+                                </div>
+                              ) : (
+                                <div>
+                                  <input value={modProductSearch} onChange={e => setModProductSearch(e.target.value)}
+                                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-sm"
+                                    placeholder="Buscar producto del menú…"
+                                    data-testid={`mod-option-search-${idx}`} />
+                                  {productMatches.length > 0 && (
+                                    <div className="mt-1 max-h-32 overflow-y-auto border border-border rounded-lg bg-background">
+                                      {productMatches.map(pr => (
+                                        <button key={pr.id} type="button"
+                                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-primary/10 flex items-center justify-between"
+                                          onClick={() => {
+                                            updateModOption(idx, 'product_id', pr.id);
+                                            if (!opt.name) updateModOption(idx, 'name', pr.name);
+                                            setModProductSearch('');
+                                          }}
+                                          data-testid={`mod-option-pick-${idx}-${pr.id}`}>
+                                          <span>{pr.name}</span>
+                                          <span className="text-[11px] text-muted-foreground">RD${pr.price_a ?? pr.price ?? 0}</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {opt.product_id && (
+                                <div>
+                                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Fuente de precio</label>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {[
+                                      { id: 'price_a', label: `Precio A (RD$${linkedProduct?.price_a ?? linkedProduct?.price ?? 0})` },
+                                      { id: 'price_b', label: `Precio B (RD$${linkedProduct?.price_b ?? 0})` },
+                                      { id: 'price_c', label: `Precio C (RD$${linkedProduct?.price_c ?? 0})` },
+                                      { id: 'included', label: 'Incluido (RD$0)' },
+                                      { id: 'custom', label: 'Custom' },
+                                    ].map(s => (
+                                      <button key={s.id} type="button"
+                                        onClick={() => updateModOption(idx, 'price_source', s.id)}
+                                        className={`px-2 py-1 rounded text-[11px] font-bold border ${opt.price_source === s.id ? 'bg-primary/20 border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}
+                                        data-testid={`mod-option-price-src-${idx}-${s.id}`}>
+                                        {s.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  {opt.price_source === 'custom' && (
+                                    <NumericInput value={opt.custom_price ?? ''}
+                                      onChange={e => updateModOption(idx, 'custom_price', parseFloat(e.target.value) || 0)}
+                                      className="w-28 mt-2 bg-background border border-border rounded-lg px-2 py-1.5 text-sm" placeholder="Precio custom" label="Precio custom"
+                                      data-testid={`mod-option-custom-price-${idx}`} />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

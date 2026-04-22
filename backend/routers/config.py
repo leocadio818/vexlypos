@@ -41,10 +41,25 @@ class ModifierGroupInput(BaseModel):
     name: str
     min_selection: int = 0
     max_selection: int = 1
+    prefix: Optional[str] = ""
+    selection_type: Optional[str] = "optional"  # "required" | "optional" | "unlimited"
+    sort_order: Optional[int] = 0
+    is_active: Optional[bool] = True
+    applies_to_product_ids: Optional[List[str]] = None
+    applies_to_category_ids: Optional[List[str]] = None
 
 class ModifierInput(BaseModel):
     name: str
     price: float = 0
+    group_id: Optional[str] = ""
+    mode: Optional[str] = "text"  # "text" | "product"
+    product_id: Optional[str] = None
+    price_source: Optional[str] = "custom"  # "price_a" | "price_b" | "price_c" | "included" | "custom"
+    custom_price: Optional[float] = None
+    is_default: Optional[bool] = False
+    is_active: Optional[bool] = True
+    sort_order: Optional[int] = 0
+    max_qty: Optional[int] = 1
 
 class CancellationReasonInput(BaseModel):
     name: str
@@ -572,46 +587,160 @@ async def delete_product(product_id: str):
 # ─── MODIFIER GROUPS ───
 @router.get("/modifier-groups")
 async def list_modifier_groups():
-    return await db.modifier_groups.find({}, {"_id": 0}).to_list(100)
+    return await db.modifier_groups.find({}, {"_id": 0}).to_list(200)
 
 @router.post("/modifier-groups")
-async def create_modifier_group(input: ModifierGroupInput):
-    doc = {"id": gen_id(), "name": input.name, "min_selection": input.min_selection, "max_selection": input.max_selection}
+async def create_modifier_group(input: ModifierGroupInput, user=Depends(get_current_user)):
+    doc = {
+        "id": gen_id(),
+        "name": input.name,
+        "min_selection": input.min_selection,
+        "max_selection": input.max_selection,
+        "prefix": input.prefix or "",
+        "selection_type": input.selection_type or "optional",
+        "sort_order": input.sort_order or 0,
+        "is_active": True if input.is_active is None else input.is_active,
+        "applies_to_product_ids": input.applies_to_product_ids,
+        "applies_to_category_ids": input.applies_to_category_ids,
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
     await db.modifier_groups.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @router.put("/modifier-groups/{gid}")
-async def update_modifier_group(gid: str, input: dict):
-    if "_id" in input: del input["_id"]
+async def update_modifier_group(gid: str, input: dict, user=Depends(get_current_user)):
+    if "_id" in input:
+        del input["_id"]
+    input["updated_at"] = now_iso()
     await db.modifier_groups.update_one({"id": gid}, {"$set": input})
     return {"ok": True}
 
 @router.delete("/modifier-groups/{gid}")
-async def delete_modifier_group(gid: str):
+async def delete_modifier_group(gid: str, user=Depends(get_current_user)):
     await db.modifier_groups.delete_one({"id": gid})
     await db.modifiers.delete_many({"group_id": gid})
     return {"ok": True}
+
+@router.get("/modifier-groups/for-product/{product_id}")
+async def modifier_groups_for_product(product_id: str):
+    """Returns active modifier groups that apply to this product (via explicit assignment,
+    applies_to_product_ids, or applies_to_category_ids), enriched with resolved option prices + stock."""
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    # 1) Explicit assignments on product (legacy: modifier_group_ids / modifier_assignments)
+    explicit_ids = set(product.get("modifier_group_ids", []) or [])
+    for a in (product.get("modifier_assignments", []) or []):
+        if a.get("group_id"):
+            explicit_ids.add(a["group_id"])
+
+    cat_id = product.get("category_id", "")
+    all_groups = await db.modifier_groups.find({}, {"_id": 0}).to_list(200)
+    matching = []
+    for g in all_groups:
+        if not g.get("is_active", True):
+            continue
+        if g["id"] in explicit_ids:
+            matching.append(g)
+            continue
+        applies_p = g.get("applies_to_product_ids")
+        applies_c = g.get("applies_to_category_ids")
+        if applies_p and product_id in applies_p:
+            matching.append(g)
+            continue
+        if applies_c and cat_id and cat_id in applies_c:
+            matching.append(g)
+            continue
+
+    # 2) Enrich each group with its options + resolved metadata
+    all_modifiers = await db.modifiers.find({"group_id": {"$in": [g["id"] for g in matching]}}, {"_id": 0}).to_list(500)
+    # Collect referenced product_ids to enrich once
+    ref_pids = {m.get("product_id") for m in all_modifiers if m.get("mode") == "product" and m.get("product_id")}
+    ref_products = {}
+    if ref_pids:
+        docs = await db.products.find({"id": {"$in": list(ref_pids)}}, {"_id": 0}).to_list(len(ref_pids))
+        ref_products = {d["id"]: d for d in docs}
+
+    def _resolve(mod: dict) -> dict:
+        mode = mod.get("mode") or "text"
+        base = dict(mod)
+        if mode == "product" and mod.get("product_id"):
+            p = ref_products.get(mod["product_id"])
+            if p:
+                ps = mod.get("price_source") or "custom"
+                if ps == "price_a":
+                    resolved = float(p.get("price", 0) or 0)
+                elif ps == "price_b":
+                    resolved = float(p.get("price_b", 0) or 0)
+                elif ps == "price_c":
+                    resolved = float(p.get("price_c", 0) or 0)
+                elif ps == "included":
+                    resolved = 0.0
+                else:  # custom
+                    resolved = float(mod.get("custom_price", mod.get("price", 0)) or 0)
+                base["resolved_price"] = round(resolved, 2)
+                base["linked_product"] = {
+                    "id": p["id"],
+                    "name": p.get("name", ""),
+                    "simple_inventory_enabled": p.get("simple_inventory_enabled", False),
+                    "stock_qty": int(p.get("simple_inventory_qty", 0) or 0) if p.get("simple_inventory_enabled") else None,
+                }
+                base["available"] = (not p.get("simple_inventory_enabled")) or (int(p.get("simple_inventory_qty", 0) or 0) > 0)
+            else:
+                base["resolved_price"] = float(mod.get("price", 0) or 0)
+                base["linked_product"] = None
+                base["available"] = False
+        else:
+            base["mode"] = "text"
+            base["resolved_price"] = float(mod.get("price", 0) or 0)
+            base["linked_product"] = None
+            base["available"] = True
+        return base
+
+    out = []
+    for g in sorted(matching, key=lambda x: (x.get("sort_order", 0), x.get("name", ""))):
+        options = [m for m in all_modifiers if m.get("group_id") == g["id"] and m.get("is_active", True) is not False]
+        options = sorted(options, key=lambda x: (x.get("sort_order", 0), x.get("name", "")))
+        g["options"] = [_resolve(o) for o in options]
+        out.append(g)
+    return out
 
 # ─── MODIFIERS ───
 @router.get("/modifiers")
 async def list_modifiers(group_id: Optional[str] = Query(None)):
     query = {"group_id": group_id} if group_id else {}
-    return await db.modifiers.find(query, {"_id": 0}).to_list(200)
+    return await db.modifiers.find(query, {"_id": 0}).to_list(500)
 
 @router.post("/modifiers")
-async def create_modifier(input: dict):
-    doc = {"id": gen_id(), "group_id": input.get("group_id", ""), "name": input.get("name", ""), "price": input.get("price", 0)}
+async def create_modifier(input: dict, user=Depends(get_current_user)):
+    doc = {
+        "id": gen_id(),
+        "group_id": input.get("group_id", ""),
+        "name": input.get("name", ""),
+        "price": float(input.get("price", 0) or 0),
+        "mode": input.get("mode", "text"),
+        "product_id": input.get("product_id") or None,
+        "price_source": input.get("price_source", "custom"),
+        "custom_price": input.get("custom_price"),
+        "is_default": bool(input.get("is_default", False)),
+        "is_active": input.get("is_active", True) is not False,
+        "sort_order": int(input.get("sort_order", 0) or 0),
+        "max_qty": int(input.get("max_qty", 1) or 1),
+    }
     await db.modifiers.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @router.put("/modifiers/{mid}")
-async def update_modifier(mid: str, input: dict):
-    if "_id" in input: del input["_id"]
+async def update_modifier(mid: str, input: dict, user=Depends(get_current_user)):
+    if "_id" in input:
+        del input["_id"]
     await db.modifiers.update_one({"id": mid}, {"$set": input})
     return {"ok": True}
 
 @router.delete("/modifiers/{mid}")
-async def delete_modifier(mid: str):
+async def delete_modifier(mid: str, user=Depends(get_current_user)):
     await db.modifiers.delete_one({"id": mid})
     return {"ok": True}
 

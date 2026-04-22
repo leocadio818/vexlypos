@@ -427,6 +427,38 @@ async def add_items_to_order(order_id: str, input: AddItemsInput):
                         detail=f"Producto agotado: {name}. Stock disponible: {new_qty}"
                     )
                 simple_inv_decremented.append({"product_id": item.product_id, "qty": qty_to_decrement})
+
+            # ─── Deduct inventory for product-linked MODIFIERS ───
+            for mod in (item.modifiers or []):
+                mod_mode = (mod.get("mode") or "text") if isinstance(mod, dict) else "text"
+                mod_pid = mod.get("product_id") if isinstance(mod, dict) else None
+                if mod_mode == "product" and mod_pid:
+                    mod_product = await db.products.find_one(
+                        {"id": mod_pid},
+                        {"_id": 0, "simple_inventory_enabled": 1, "name": 1}
+                    )
+                    if mod_product and mod_product.get("simple_inventory_enabled"):
+                        mod_qty_raw = mod.get("qty", 1) if isinstance(mod, dict) else 1
+                        mod_qty = int(mod_qty_raw or 1) * int(item.quantity)
+                        ok_mod, mod_name, mod_new_qty = await decrement_simple_inventory(
+                            product_id=mod_pid,
+                            qty=mod_qty,
+                            user_id=order.get("waiter_id", "system"),
+                            user_name=order.get("waiter_name", "Sistema"),
+                        )
+                        if not ok_mod:
+                            for prev in simple_inv_decremented:
+                                await increment_simple_inventory(
+                                    prev["product_id"], prev["qty"],
+                                    order.get("waiter_id", "system"),
+                                    order.get("waiter_name", "Sistema"),
+                                    action_type="cancel"
+                                )
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"Modificador agotado: {mod_name}. Stock disponible: {mod_new_qty}"
+                            )
+                        simple_inv_decremented.append({"product_id": mod_pid, "qty": mod_qty})
     except HTTPException:
         raise
 

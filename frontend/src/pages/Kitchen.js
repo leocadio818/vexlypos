@@ -187,11 +187,14 @@ export default function Kitchen() {
                             </div>
                             {item.modifiers?.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
-                                {item.modifiers.map((m, i) => (
-                                  <span key={i} className="text-xs bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-medium">
-                                    {m.name}
-                                  </span>
-                                ))}
+                                {item.modifiers.map((m, i) => {
+                                  const prefix = m.group_name ? `${m.group_name.toUpperCase()}: ` : '';
+                                  return (
+                                    <span key={i} className="text-xs bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-medium" data-testid={`kitchen-mod-${i}`}>
+                                      {prefix}{m.name}
+                                    </span>
+                                  );
+                                })}
                               </div>
                             )}
                             {item.notes && <p className="text-xs text-gray-500 mt-1 italic">{item.notes}</p>}
