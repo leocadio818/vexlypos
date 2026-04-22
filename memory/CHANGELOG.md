@@ -1,6 +1,23 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — UX: Quick Tour Interactivo para Orden Rápida 🎓
+- **Objetivo**: onboarding cero-fricción para usuarios nuevos — la primera vez que aterrizan en /tables con permiso de Orden Rápida ven un tour guiado de 3 pasos que explica el feature completo.
+- **Implementación** (`components/QuickOrderTour.jsx`, ~160 líneas):
+  - Overlay con `createPortal` en `document.body`.
+  - Pulse ring animado naranja alrededor del target + tooltip con título/body/botón "Entendido".
+  - Posicionamiento inteligente (auto/below/left/right) con viewport-clamp para nunca salirse de pantalla.
+  - Estado persistido en `localStorage.vexly_quick_order_tour_step` (1/2/3/done) — no molesta a usuarios que ya vieron el tour.
+- **3 pasos**:
+  1. `/tables` → highlight FAB ⚡ + "Úsalo para clientes que ordenan al paso…"
+  2. `/order/quick/:id` → highlight header + "Agrega productos como en cualquier mesa (combos/modificadores/artículos libres), al final FACTURAR…"
+  3. Vuelta a `/tables` con badge rojo visible → highlight badge + "Aquí ves tu cola. Las pagadas se auto-entregan tras 7 min…"
+- **Gating**: montado en `Layout.js` solo si `hasPermission('open_table') && hasPermission('collect_payment')` — meseros sin permisos no ven nada.
+- **Verificado E2E**: reset localStorage → step1 aparece con pulse + tooltip → click Entendido → flag='2' → crear orden → step2 en OrderScreen → click Entendido → flag='3' → volver a /tables → step3 en badge → click Entendido → flag='done' → reload → overlay=0 (no vuelve a aparecer). ✅
+- **Reiniciar el tour** (para demos o usuarios que lo despidieron por accidente): el usuario o admin puede ejecutar `localStorage.removeItem('vexly_quick_order_tour_step')` en la consola del navegador.
+
+
+
 ## 2026-04-22 — UX: Pills de "Feature Afectada" en Roles/Permisos 🏷️
 - **Problema**: el admin podía mover un switch (ej: `collect_payment`) sin saber que también afecta Orden Rápida.
 - **Fix** (`pages/UserConfig.js`):
