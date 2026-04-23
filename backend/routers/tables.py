@@ -249,6 +249,79 @@ async def delete_table(table_id: str):
     await db.tables.delete_one({"id": table_id})
     return {"ok": True}
 
+# ─── BULK TABLE CREATION ───
+class BulkTableInput(BaseModel):
+    area_id: str
+    count: int
+    shape: str = "round"
+    capacity: int = 4
+
+@router.post("/tables/bulk")
+async def create_tables_bulk(input: BulkTableInput, user: dict = Depends(get_current_user)):
+    """Create multiple tables in an area at once with auto-assigned sequential numbers.
+
+    Numbering strategy: finds the max table number in the ENTIRE restaurant and
+    continues from there, so numbers remain globally unique.
+    Positions: auto-arranged in a 4-column grid at 15% spacing.
+    """
+    if input.count <= 0 or input.count > 100:
+        raise HTTPException(status_code=400, detail="Cantidad debe ser entre 1 y 100")
+    if input.shape not in ("round", "square", "rectangle"):
+        raise HTTPException(status_code=400, detail="Forma inválida")
+    area = await db.areas.find_one({"id": input.area_id}, {"_id": 0})
+    if not area:
+        raise HTTPException(status_code=404, detail="Área no encontrada")
+
+    # Find highest global table number to continue sequence (avoids collisions across areas)
+    existing = await db.tables.find({}, {"_id": 0, "number": 1}).to_list(1000)
+    max_number = max((t.get("number") or 0 for t in existing), default=0)
+
+    # Grid layout: 4 columns, starting at x=15% y=15%, step 20%
+    cols = 4
+    step_x = 20
+    step_y = 20
+    start_x = 15
+    start_y = 15
+
+    # Count existing in this area to offset grid start
+    in_area = await db.tables.count_documents({"area_id": input.area_id})
+
+    docs = []
+    created_numbers = []
+    for i in range(input.count):
+        seq = in_area + i
+        row = seq // cols
+        col = seq % cols
+        x = start_x + col * step_x
+        y = start_y + row * step_y
+        number = max_number + 1 + i
+        doc = {
+            "id": gen_id(),
+            "number": number,
+            "area_id": input.area_id,
+            "capacity": input.capacity,
+            "shape": input.shape,
+            "x": x,
+            "y": y,
+            "width": 80,
+            "height": 80,
+            "status": "free",
+            "active_order_id": None,
+        }
+        docs.append(doc)
+        created_numbers.append(number)
+
+    if docs:
+        await db.tables.insert_many(docs)
+
+    return {
+        "ok": True,
+        "created": len(docs),
+        "area_id": input.area_id,
+        "area_name": area.get("name"),
+        "numbers": created_numbers,
+    }
+
 # ─── TABLE MOVEMENTS AUDIT ───
 async def log_table_movement(
     user_id: str, user_name: str, user_role: str,

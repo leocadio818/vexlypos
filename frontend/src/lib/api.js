@@ -85,6 +85,7 @@ export const tablesAPI = {
       throw err;
     }),
   create: (data) => api.post('/tables', data),
+  createBulk: (data) => api.post('/tables/bulk', data),
   update: (id, data) => api.put(`/tables/${id}`, data),
   delete: (id) => api.delete(`/tables/${id}`),
 };

@@ -1,6 +1,30 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Config. Mesas: Contador por área + Creación masiva 🏗️📊
+- **Mejora 1 — Contador por área en el dropdown**:
+  - Dropdown ahora muestra: "Todas las áreas (N)" y "Nombre (N)" por cada área.
+  - Misma convención en el selector del modal de creación masiva.
+- **Mejora 2 — Creación masiva de mesas**:
+  - Nuevo botón "Agregar Varias" (outline con icono Layers) al lado de "Agregar".
+  - Modal `bulk-tables-dialog` con: selector de área, cantidad, forma, capacidad por defecto, **preview dinámico** ("Se crearán N mesas (#X a #Y) en Área, forma, capacidad C").
+  - Numeración automática: continúa desde `max(number)+1` global (nunca duplica).
+  - Posición: grid auto 4-col dentro del área (admin reorganiza después manualmente).
+  - Toast de éxito: "N mesas creadas en Área".
+- **Backend nuevo** (`/app/backend/routers/tables.py`):
+  - `POST /api/tables/bulk` con validación (1-100, shape válida, área existe), autenticación, retorna `{created, area_name, numbers[]}`.
+  - Endpoints existentes intactos.
+- **Frontend**: `tablesAPI.createBulk` añadido a `/app/frontend/src/lib/api.js`.
+- **QA E2E independiente**:
+  - Dropdown: "Salon Principal (8), Terraza (7), Bar (4), VIP (3)" ✅
+  - Crear 5 mesas VIP redondas cap 4 → #22-#26, dropdown actualiza a VIP (8) ✅
+  - Crear 3 más VIP → #27-#29 (continúa sin duplicar), dropdown VIP (11) ✅
+  - Preview dinámico correcto ✅
+  - Toast verde "N mesas creadas en VIP" ✅
+  - Cleanup (delete individual): funciona intacto ✅
+
+
+
 ## 2026-04-23 — Buscador inteligente en Config. → Mesas y Áreas 🪑📍
 - **Archivo**: `/app/frontend/src/pages/settings/MesasTab.js`
 - **Pestaña Mesas**:

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSettings } from './SettingsContext';
 import { areasAPI, tablesAPI } from '@/lib/api';
-import { MapPin, Table2, Plus, Trash2, Pencil, Search, X } from 'lucide-react';
+import { MapPin, Table2, Plus, Trash2, Pencil, Search, X, Layers } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { NumericInput } from '@/components/NumericKeypad';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ export default function MesasTab() {
   // Dialogs
   const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
   const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round', editId: null });
+  const [bulkDialog, setBulkDialog] = useState({ open: false, area_id: '', count: 8, shape: 'round', capacity: 4, saving: false });
 
   // Filters
   const filteredTables = useMemo(() => {
@@ -97,6 +98,35 @@ export default function MesasTab() {
     } catch { notify.error('Error'); }
   };
 
+  const handleSaveBulk = async () => {
+    if (!bulkDialog.area_id) { notify.error('Selecciona un área'); return; }
+    const count = parseInt(bulkDialog.count) || 0;
+    if (count < 1 || count > 100) { notify.error('Cantidad debe ser entre 1 y 100'); return; }
+    setBulkDialog(p => ({ ...p, saving: true }));
+    try {
+      const res = await tablesAPI.createBulk({
+        area_id: bulkDialog.area_id,
+        count,
+        shape: bulkDialog.shape,
+        capacity: parseInt(bulkDialog.capacity) || 4,
+      });
+      const areaName = res?.data?.area_name || 'área';
+      notify.success(`${res?.data?.created || count} mesas creadas en ${areaName}`);
+      setBulkDialog({ open: false, area_id: '', count: 8, shape: 'round', capacity: 4, saving: false });
+      fetchAll();
+    } catch (e) {
+      notify.error(e.response?.data?.detail || 'Error creando mesas');
+      setBulkDialog(p => ({ ...p, saving: false }));
+    }
+  };
+
+  // Count tables per area for dropdown display
+  const areaTableCounts = useMemo(() => {
+    const m = {};
+    (tables || []).forEach(t => { m[t.area_id] = (m[t.area_id] || 0) + 1; });
+    return m;
+  }, [tables]);
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
@@ -108,10 +138,21 @@ export default function MesasTab() {
         <>
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h2 className="font-oswald text-base font-bold">Mesas</h2>
-            <Button onClick={() => setTableDialog({ open: true, number: '', area_id: areas[0]?.id || '', capacity: 4, shape: 'round', editId: null })} size="sm"
-              className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-table-btn">
-              <Plus size={14} className="mr-1" /> Agregar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setBulkDialog({ open: true, area_id: areas[0]?.id || '', count: 8, shape: 'round', capacity: 4, saving: false })}
+                size="sm"
+                variant="outline"
+                className="font-bold active:scale-95"
+                data-testid="add-tables-bulk-btn"
+              >
+                <Layers size={14} className="mr-1" /> Agregar Varias
+              </Button>
+              <Button onClick={() => setTableDialog({ open: true, number: '', area_id: areas[0]?.id || '', capacity: 4, shape: 'round', editId: null })} size="sm"
+                className="bg-primary text-primary-foreground font-bold active:scale-95" data-testid="add-table-btn">
+                <Plus size={14} className="mr-1" /> Agregar
+              </Button>
+            </div>
           </div>
 
           {/* Search + Area filter */}
@@ -149,13 +190,13 @@ export default function MesasTab() {
             <select
               value={tableAreaFilter}
               onChange={e => setTableAreaFilter(e.target.value)}
-              className="bg-background border-2 border-border rounded-xl px-3 py-2.5 text-sm outline-none hover:border-primary/50 transition-colors min-w-[160px]"
+              className="bg-background border-2 border-border rounded-xl px-3 py-2.5 text-sm outline-none hover:border-primary/50 transition-colors min-w-[180px]"
               data-testid="mesas-area-filter"
               aria-label="Filtrar por área"
             >
-              <option value="">Todas las áreas</option>
+              <option value="">Todas las áreas ({(tables || []).length})</option>
               {(areas || []).map(a => (
-                <option key={a.id} value={a.id}>{a.name}</option>
+                <option key={a.id} value={a.id}>{a.name} ({areaTableCounts[a.id] || 0})</option>
               ))}
             </select>
           </div>
@@ -341,6 +382,97 @@ export default function MesasTab() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setTableDialog({ ...tableDialog, open: false })}>Cancelar</Button>
             <Button onClick={handleSaveTable} className="bg-primary text-primary-foreground">Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Tables Dialog */}
+      <Dialog open={bulkDialog.open} onOpenChange={(o) => !o && setBulkDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="sm:max-w-md bg-card border-border" data-testid="bulk-tables-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <Layers size={18} className="text-primary" /> Agregar Varias Mesas
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Área *</label>
+              <select
+                value={bulkDialog.area_id}
+                onChange={e => setBulkDialog(p => ({ ...p, area_id: e.target.value }))}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
+                data-testid="bulk-area-select"
+              >
+                <option value="">Selecciona un área</option>
+                {(areas || []).map(a => (
+                  <option key={a.id} value={a.id}>{a.name} ({areaTableCounts[a.id] || 0})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Cantidad de mesas</label>
+              <NumericInput
+                value={bulkDialog.count}
+                onChange={e => setBulkDialog(p => ({ ...p, count: e.target.value }))}
+                label="Cantidad"
+                allowDecimal={false}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
+                data-testid="bulk-count-input"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Forma</label>
+              <select
+                value={bulkDialog.shape}
+                onChange={e => setBulkDialog(p => ({ ...p, shape: e.target.value }))}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
+                data-testid="bulk-shape-select"
+              >
+                <option value="round">Redonda</option>
+                <option value="square">Cuadrada</option>
+                <option value="rectangle">Rectangular</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Capacidad por defecto</label>
+              <NumericInput
+                value={bulkDialog.capacity}
+                onChange={e => setBulkDialog(p => ({ ...p, capacity: e.target.value }))}
+                label="Capacidad"
+                allowDecimal={false}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
+                data-testid="bulk-capacity-input"
+              />
+            </div>
+
+            {/* Preview */}
+            {(() => {
+              const count = parseInt(bulkDialog.count) || 0;
+              const areaName = (areas || []).find(a => a.id === bulkDialog.area_id)?.name;
+              const existingMax = (tables || []).reduce((mx, t) => Math.max(mx, t.number || 0), 0);
+              const shapeLabel = bulkDialog.shape === 'round' ? 'redondas' : bulkDialog.shape === 'square' ? 'cuadradas' : 'rectangulares';
+              if (!areaName || count < 1) {
+                return (
+                  <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground" data-testid="bulk-preview">
+                    Selecciona un área y una cantidad válida para ver la vista previa.
+                  </div>
+                );
+              }
+              const firstN = existingMax + 1;
+              const lastN = existingMax + count;
+              const range = count === 1 ? `#${firstN}` : `#${firstN} a #${lastN}`;
+              return (
+                <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 text-xs text-foreground" data-testid="bulk-preview">
+                  Se crearán <strong>{count}</strong> mesas ({range}) en <strong>{areaName}</strong>, {shapeLabel}, capacidad {bulkDialog.capacity}.
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBulkDialog(p => ({ ...p, open: false }))} disabled={bulkDialog.saving}>Cancelar</Button>
+            <Button onClick={handleSaveBulk} disabled={bulkDialog.saving || !bulkDialog.area_id} className="bg-primary text-primary-foreground" data-testid="bulk-save-btn">
+              {bulkDialog.saving ? 'Creando...' : 'Crear Mesas'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
