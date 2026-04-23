@@ -1707,35 +1707,72 @@ export default function PaymentScreen() {
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate(-1)}
-                className={`flex-1 ${isMobile ? 'h-12' : 'h-16'} rounded-2xl ${glassStyles.card} ${glassStyles.cardHover} font-oswald font-bold text-white/70 transition-all duration-300 active:scale-95`}
-              >
-                CANCELAR
-              </button>
-              <button
-                onClick={handlePayment}
-                disabled={!isEnough || processing}
-                className={`flex-[2] ${isMobile ? 'h-12' : 'h-16'} rounded-2xl font-oswald font-bold transition-all duration-300 active:scale-95 flex items-center justify-center gap-2
-                  ${isEnough 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white shadow-lg shadow-green-500/30' 
-                    : 'bg-white/5 text-white/30 cursor-not-allowed'
-                  }
-                `}
-                data-testid="confirm-payment-btn"
-              >
-                {processing ? (
-                  <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full" />
-                ) : (
-                  <>
-                    <Check size={isMobile ? 18 : 24} />
-                    <span className={isMobile ? 'text-sm' : 'text-lg'}>CONFIRMAR PAGO</span>
-                  </>
-                )}
-              </button>
+            {/* Action Buttons — moved to sticky footer at bottom of screen */}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ STICKY PAY FOOTER — always visible on all breakpoints ═══ */}
+      <div
+        className="relative z-20 shrink-0 border-t border-white/10 backdrop-blur-xl"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          boxShadow: '0 -8px 24px -4px rgba(0,0,0,0.4)',
+          background: isMinimalist ? neoBg : 'linear-gradient(180deg, rgba(15,15,35,0.85) 0%, rgba(15,32,39,0.95) 100%)',
+        }}
+        data-testid="payment-sticky-footer"
+      >
+        <div className="px-4 py-3 max-w-full">
+          {/* Compact summary line */}
+          <div className="flex items-center justify-between gap-3 mb-2 text-xs sm:text-sm">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <span className="text-white/60 shrink-0">Total:</span>
+              <span className="font-oswald font-bold text-white">{formatMoney(billTotal)}</span>
+              <span className="w-px h-4 bg-white/20 shrink-0" />
+              <span className="text-white/60 shrink-0">Recibido:</span>
+              <span className="font-oswald font-bold text-white">{formatMoney(totalPaidDOP)}</span>
             </div>
+            <div className="shrink-0 text-right">
+              {overpaid > 0 ? (
+                <span className="font-oswald font-bold text-green-400">Cambio {formatMoney(overpaid)}</span>
+              ) : overpaid < 0 ? (
+                <span className="font-oswald font-bold text-red-400">Falta {formatMoney(Math.abs(overpaid))}</span>
+              ) : (
+                <span className="font-oswald font-bold text-green-400">Exacto</span>
+              )}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate(-1)}
+              className={`w-24 sm:w-32 h-12 sm:h-14 rounded-xl ${glassStyles.card} ${glassStyles.cardHover} font-oswald font-bold text-white/70 transition-all active:scale-95`}
+              data-testid="cancel-payment-btn"
+            >
+              CANCELAR
+            </button>
+            <button
+              onClick={handlePayment}
+              disabled={!isEnough || processing}
+              className={`flex-1 h-12 sm:h-14 rounded-xl font-oswald font-bold transition-all active:scale-95 flex items-center justify-center gap-2
+                ${isEnough
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white shadow-lg shadow-green-500/40'
+                  : 'bg-white/5 text-white/30 cursor-not-allowed'
+                }`}
+              data-testid="confirm-payment-btn"
+            >
+              {processing ? (
+                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+              ) : isEnough ? (
+                <>
+                  <Check size={20} />
+                  <span className="text-sm sm:text-base">FACTURAR</span>
+                </>
+              ) : (
+                <span className="text-xs sm:text-sm">Falta {formatMoney(Math.max(0, billTotal - totalPaidDOP))}</span>
+              )}
+            </button>
           </div>
         </div>
       </div>
