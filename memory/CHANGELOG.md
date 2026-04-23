@@ -1,6 +1,27 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Buscador inteligente en Config. → Mesas y Áreas 🪑📍
+- **Archivo**: `/app/frontend/src/pages/settings/MesasTab.js`
+- **Pestaña Mesas**:
+  - Input con lupa + placeholder "Buscar mesa..." + kbd `/` + X para limpiar.
+  - **Búsqueda multi-campo**: número de mesa, nombre del área (ej: "terraza"), o forma (ej: "round"/"square"/"rectangle") — todo case-insensitive.
+  - **Dropdown adicional** de filtro por Área: "Todas las áreas" + opción por cada área configurada. Combinable con el buscador de texto (AND).
+  - Contador "N resultado(s)" visible cuando hay filtro activo, empty state con icono cuando no hay matches, data-testid `mesa-row-{number}` en cada fila.
+- **Pestaña Áreas**:
+  - Input "Buscar área..." con kbd `/`, X, contador y empty state.
+  - Filtro por nombre, case-insensitive.
+- **QA E2E independiente**:
+  - "5" → #5 y #15 (match por `includes`, UX intencional)
+  - "terraza" → 7 mesas · dropdown Terraza → 7 mesas · Terraza + "round" → 6 ✅
+  - "square" → 7 mesas (match por shape) ✅
+  - Clear ambos → 22 mesas ✅
+  - "vip" en Áreas → 1 resultado ✅ · "zzz" → empty state ✅
+  - `/` enfoca mesas-search-input ✅
+  - Mobile 390: layout wrap (input top, dropdown abajo) ✅ · Dark mode ✅
+
+
+
 ## 2026-04-23 — Buscador en Promociones y Combos 🎯🎁
 - **Completa la consistencia** en los 5 sub-tabs de Config. Productos: Categorías · Productos · Modificadores · **Promociones** · **Combos** ahora todos con el mismo patrón de buscador.
 - **Archivos**:
