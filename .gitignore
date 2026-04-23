@@ -323,3 +323,12 @@ backend/tests/test_ecf_credentials*.py
 
 # Memory / handoff / credentials (already in use but reinforced)
 memory/test_credentials.md
+-e 
+# Environment and credential files
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
