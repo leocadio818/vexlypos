@@ -220,9 +220,12 @@ export default function BillHistory() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por NCF, # orden, mesa, cajero..."
-          className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm"
+          className="w-full bg-card border border-border rounded-xl pl-10 pr-12 py-2.5 text-sm"
           data-testid="search-input"
         />
+        {!search && (
+          <kbd className="hidden sm:inline-flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 px-1.5 h-5 min-w-[20px] rounded border border-border bg-muted/60 text-[10px] font-mono text-muted-foreground pointer-events-none" title="Presiona / para enfocar">/</kbd>
+        )}
       </div>
 
       {/* Bills List */}

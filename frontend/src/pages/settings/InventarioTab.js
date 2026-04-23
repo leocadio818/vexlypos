@@ -74,27 +74,6 @@ export default function InventarioTab() {
 
   useEffect(() => { if (inventarioSubTab === 'modificadores') loadModifiers(); }, [inventarioSubTab]);
 
-  // Global "/" shortcut: focus the active tab's search input (Categorías or Productos)
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
-      const el = document.activeElement;
-      const tag = (el?.tagName || '').toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || tag === 'select' || el?.isContentEditable) return;
-      const testid = inventarioSubTab === 'categorias' ? 'category-search-input'
-        : inventarioSubTab === 'productos' ? 'product-search-input' : null;
-      if (!testid) return;
-      const target = document.querySelector(`[data-testid="${testid}"]`);
-      if (target) {
-        e.preventDefault();
-        target.focus();
-        target.select?.();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [inventarioSubTab]);
-
   // Load tax configs
   useEffect(() => {
     const loadTaxConfigs = async () => {

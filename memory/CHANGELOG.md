@@ -1,6 +1,21 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Atajo `/` global extendido a toda la app 🌐⌨️
+- **Feature**: listener global único que enfoca el primer buscador visible de la página actual con solo presionar `/`.
+- **Componente nuevo**: `/app/frontend/src/components/GlobalSearchShortcut.jsx` (~35 líneas, retorna `null`).
+- **Convención**: detecta cualquier `input[data-testid*="search"]` visible (no hidden, no disabled, offsetParent definido). Respeta guardrails: ignora si el usuario ya está escribiendo en un input/textarea/select/contentEditable, y si combina Ctrl/Meta/Alt.
+- **Montaje**: `App.js` dentro de `BrowserRouter`, fuera de `Layout` (respeta CÓDIGO PROTEGIDO — no se tocó Layout).
+- **Limpieza**: eliminado listener local duplicado en `InventarioTab.js`.
+- **Inputs normalizados con testid + kbd badge** para descubribilidad:
+  - `customer-search-input` (Customers.js — antes `customer-search`)
+  - `search-input` (BillHistory.js — ya existía, se añadió kbd badge)
+  - `category-search-input`, `product-search-input` (ya tenían badge)
+- **QA E2E**: 5/5 rutas verificadas (Customers, BillHistory, Categorías, Productos, Dashboard como negativo). Literal `/` dentro de input preservado como carácter (no se hijackea). Dashboard sin search → activeElement permanece BODY.
+- **Compatibilidad automática futura**: cualquier nuevo input que incluya `search` en su data-testid será capturado por el atajo sin código extra.
+
+
+
 ## 2026-04-23 — Atajo de teclado `/` para buscador de Categorías y Productos ⌨️🚀
 - **Feature**: presionar `/` en cualquier lugar del tab Config. Productos enfoca automáticamente el campo de búsqueda activo (Categorías o Productos según la subpestaña).
 - **Archivos**:

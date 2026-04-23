@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { queryClient, QueryClientProvider } from "@/lib/queryClient";
 import SmartNotificationSystem from "@/components/SmartNotificationSystem";
+import GlobalSearchShortcut from "@/components/GlobalSearchShortcut";
 import React, { Suspense } from "react";
 import PageSkeleton from "@/components/PageSkeleton";
 import Login from "@/pages/Login";
@@ -95,6 +96,7 @@ export default function App() {
         <AuthProvider>
           <BrowserRouter>
             <AppRoutes />
+            <GlobalSearchShortcut />
             <SmartNotificationSystem />
           </BrowserRouter>
         </AuthProvider>
