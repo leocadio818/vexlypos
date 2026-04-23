@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Pencil, Sparkles, X, Clock, Calendar, Percent, Tag, Package, CheckCircle2, PauseCircle } from 'lucide-react';
+import { Plus, Trash2, Pencil, Sparkles, X, Clock, Calendar, Percent, Tag, Package, CheckCircle2, PauseCircle, Search } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -400,6 +400,8 @@ export default function PromotionsTab({ categories = [], products = [], areas = 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(emptyForm);
   const [confirmProps, showConfirm] = useConfirmDialog();
+  const [search, setSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const fetchPromos = useCallback(async () => {
     setLoading(true);
@@ -495,15 +497,66 @@ export default function PromotionsTab({ categories = [], products = [], areas = 
           <p className="text-sm text-muted-foreground">No hay promociones configuradas</p>
           <p className="text-xs text-muted-foreground/60 mt-1">Crea Happy Hour, 2x1, o descuentos programados</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="promotions-list">
-          {promos.map(p => (
-            <PromotionCard key={p.id} p={p}
-              onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle}
-              categories={categories} products={products} />
-          ))}
-        </div>
-      )}
+      ) : (() => {
+        const q = search.trim().toLowerCase();
+        const filtered = q
+          ? promos.filter(p => (p.name || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
+          : promos;
+        return (
+          <>
+            <div className={`relative mb-4 transition-all ${searchFocused ? 'scale-[1.005]' : ''}`} data-testid="promotion-search-wrapper">
+              <div className={`relative flex items-center bg-background border-2 rounded-xl overflow-hidden transition-all ${searchFocused ? 'border-primary shadow-md' : 'border-border'}`}>
+                <div className={`pl-3 ${searchFocused ? 'text-primary' : 'text-muted-foreground'}`}><Search size={18} /></div>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  placeholder="Buscar promoción..."
+                  className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground"
+                  data-testid="promotion-search-input"
+                  aria-label="Buscar promoción"
+                />
+                {!search && !searchFocused && (
+                  <kbd className="hidden sm:inline-flex items-center justify-center mr-2 px-1.5 h-5 min-w-[20px] rounded border border-border bg-muted/60 text-[10px] font-mono text-muted-foreground pointer-events-none" title="Presiona / para enfocar">/</kbd>
+                )}
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="p-1.5 mr-2 rounded-full hover:bg-muted text-muted-foreground"
+                    data-testid="promotion-search-clear"
+                    aria-label="Limpiar filtro"
+                    type="button"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              {search && (
+                <div className="mt-1.5 px-1 text-[11px] text-muted-foreground" data-testid="promotion-search-results-count">
+                  {filtered.length} {filtered.length === 1 ? 'resultado' : 'resultados'}
+                </div>
+              )}
+            </div>
+
+            {search && filtered.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground rounded-xl border border-dashed border-border bg-muted/20" data-testid="promotion-search-empty">
+                <Search size={24} className="mx-auto mb-2 opacity-40" />
+                No se encontraron promociones
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="promotions-list">
+                {filtered.map(p => (
+                  <PromotionCard key={p.id} p={p}
+                    onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle}
+                    categories={categories} products={products} />
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       <PromotionForm open={dialogOpen} onClose={() => setDialogOpen(false)}
         initial={editing} categories={categories} products={products} areas={areas} combos={combos}

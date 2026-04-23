@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Plus, Trash2, Pencil, Package2, CheckCircle2, PauseCircle, Layers, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Plus, Trash2, Pencil, Package2, CheckCircle2, PauseCircle, Layers, ChevronDown, ChevronUp, X, Search } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -369,6 +369,8 @@ export default function CombosTab({ products = [], categories = [] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(emptyForm);
   const [confirmProps, showConfirm] = useConfirmDialog();
+  const [search, setSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const fetchCombos = useCallback(async () => {
     setLoading(true);
@@ -441,14 +443,65 @@ export default function CombosTab({ products = [], categories = [] }) {
           <p className="text-sm text-muted-foreground">No hay combos configurados</p>
           <p className="text-xs text-muted-foreground/60 mt-1">Crea paquetes y combos con precio especial</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="combos-list">
-          {combos.map(c => (
-            <ComboCard key={c.id} c={c} products={products}
-              onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle} />
-          ))}
-        </div>
-      )}
+      ) : (() => {
+        const q = search.trim().toLowerCase();
+        const filtered = q
+          ? combos.filter(c => (c.name || '').toLowerCase().includes(q) || (c.description || '').toLowerCase().includes(q))
+          : combos;
+        return (
+          <>
+            <div className={`relative mb-4 transition-all ${searchFocused ? 'scale-[1.005]' : ''}`} data-testid="combo-search-wrapper">
+              <div className={`relative flex items-center bg-background border-2 rounded-xl overflow-hidden transition-all ${searchFocused ? 'border-primary shadow-md' : 'border-border'}`}>
+                <div className={`pl-3 ${searchFocused ? 'text-primary' : 'text-muted-foreground'}`}><Search size={18} /></div>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  placeholder="Buscar combo..."
+                  className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground"
+                  data-testid="combo-search-input"
+                  aria-label="Buscar combo"
+                />
+                {!search && !searchFocused && (
+                  <kbd className="hidden sm:inline-flex items-center justify-center mr-2 px-1.5 h-5 min-w-[20px] rounded border border-border bg-muted/60 text-[10px] font-mono text-muted-foreground pointer-events-none" title="Presiona / para enfocar">/</kbd>
+                )}
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="p-1.5 mr-2 rounded-full hover:bg-muted text-muted-foreground"
+                    data-testid="combo-search-clear"
+                    aria-label="Limpiar filtro"
+                    type="button"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              {search && (
+                <div className="mt-1.5 px-1 text-[11px] text-muted-foreground" data-testid="combo-search-results-count">
+                  {filtered.length} {filtered.length === 1 ? 'resultado' : 'resultados'}
+                </div>
+              )}
+            </div>
+
+            {search && filtered.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground rounded-xl border border-dashed border-border bg-muted/20" data-testid="combo-search-empty">
+                <Search size={24} className="mx-auto mb-2 opacity-40" />
+                No se encontraron combos
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="combos-list">
+                {filtered.map(c => (
+                  <ComboCard key={c.id} c={c} products={products}
+                    onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle} />
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       <ComboForm open={dialogOpen} onClose={() => setDialogOpen(false)}
         initial={editing} products={products} categories={categories}

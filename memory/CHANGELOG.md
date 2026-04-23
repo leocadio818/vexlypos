@@ -1,6 +1,18 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Buscador en Promociones y Combos 🎯🎁
+- **Completa la consistencia** en los 5 sub-tabs de Config. Productos: Categorías · Productos · Modificadores · **Promociones** · **Combos** ahora todos con el mismo patrón de buscador.
+- **Archivos**:
+  - `/app/frontend/src/pages/settings/PromotionsTab.js` — `data-testid="promotion-search-input"`, busca por nombre Y descripción.
+  - `/app/frontend/src/pages/settings/CombosTab.js` — `data-testid="combo-search-input"`, busca por nombre Y descripción.
+- **Features idénticas**: lupa, placeholder, kbd `/`, X para limpiar, contador "N resultado(s)", empty state, dark/light. Auto-captura del atajo global `/`.
+- **Verificación E2E** (Desktop + Mobile):
+  - Promociones: "combo" → Happy Hour Combos · "cerveza" → Happy Hour (match por descripción) · "zzzz" → empty · clear → 2 cards · `/` enfoca ✅
+  - Combos: "test" → Combo Test · "zzzz" → empty · `/` enfoca ✅
+
+
+
 ## 2026-04-23 — Buscador inteligente en Config. Productos → Modificadores 🔍🧩
 - **Problema**: la pestaña Modificadores no tenía filtro; con muchos grupos/opciones se perdía tiempo haciendo scroll.
 - **Archivo**: `/app/frontend/src/pages/settings/InventarioTab.js`
