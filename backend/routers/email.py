@@ -365,6 +365,10 @@ def build_marketing_html(config: dict, subject: str, message: str, products: lis
 @router.post("/send-marketing")
 async def send_marketing_email(input: dict):
     """Send marketing email to all customers with email addresses"""
+    # Feature flag gate — must be enabled in system_config.feature_email_marketing
+    from routers.features import require_feature
+    await require_feature("email_marketing")
+
     if not resend.api_key:
         raise HTTPException(status_code=500, detail="API de email no configurada")
     

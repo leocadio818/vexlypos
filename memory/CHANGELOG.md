@@ -1,6 +1,30 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Feature Flags System (Premium Gating) 🚩💎
+- **Archivo nuevo**: `/app/backend/routers/features.py` — módulo extensible con:
+  - Registry `FEATURE_FLAGS` (diccionario `frontend_key → system_config field`) para añadir flags sin tocar código.
+  - Helpers: `is_feature_enabled(key)`, `require_feature(key)` (raise 403 si off).
+  - Endpoint `GET /api/features` — retorna `{email_marketing: bool, ...}`. Cualquier user autenticado puede leer (UI necesita ver estado).
+- **Storage**: documento dedicado en `system_config` con `id: "features"` (no mezcla con config general de restaurante).
+- **Primer flag**: `feature_email_marketing` (default false).
+- **Backend gating**: `POST /api/email/send-marketing` ahora llama `require_feature("email_marketing")` al inicio → HTTP 403 si el flag está off con mensaje: _"Esta función no está habilitada para su plan. Contacte a soporte para activarla."_
+- **Frontend** (`/app/frontend/src/pages/Customers.js`):
+  - Fetch paralelo de `/api/features` en `fetchAll()`.
+  - Botón "Email" ahora condicionado a `features.email_marketing && isAdmin`.
+  - Si el flag está off, el botón ni siquiera se renderiza (cero huecos en el header).
+- **Preparado para futuros flags**: solo agregar entrada en `FEATURE_FLAGS` dict y `features.{key}` en el frontend (inventory, reservations, loyalty, promotions, etc.).
+- **QA E2E independiente 7/7**:
+  - Flag OFF → botón ausente en Desktop/Mobile/Dark/Light ✅
+  - Flag ON → botón presente + envío real funciona (6 emails enviados, 1 rate-limit Resend) ✅
+  - GET /api/features sin autenticación → 401 ✅
+  - GET /api/features con auth (default) → `{"email_marketing": false}` ✅
+  - POST send-marketing OFF → HTTP 403 con mensaje correcto ✅
+  - POST send-marketing ON → HTTP 200 ✅
+  - Sistema sin doc features → fallback a todos false ✅
+
+
+
 ## 2026-04-23 — Duplicar área completa con todas sus mesas 📋🏢
 - **Backend nuevo** (`/app/backend/routers/tables.py`):
   - `POST /api/areas/{area_id}/duplicate` con `{new_name}` → crea nueva área (mismo color), copia todas las mesas conservando `x/y/width/height/shape/capacity`, asigna nuevos números desde `max(number)+1`.

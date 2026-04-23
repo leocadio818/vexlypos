@@ -47,6 +47,9 @@ export default function Customers() {
     sending: false
   });
 
+  // Feature flags (premium / gated features)
+  const [features, setFeatures] = useState({ email_marketing: false });
+
   // Check if current user has admin privileges
   const isAdmin = user && ADMIN_ROLES.includes(user.role?.toLowerCase());
 
@@ -59,12 +62,14 @@ export default function Customers() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [cRes, cfgRes] = await Promise.all([
+      const [cRes, cfgRes, featRes] = await Promise.all([
         axios.get(`${API}/customers`, { headers: headers() }),
         axios.get(`${API}/loyalty/config`, { headers: headers() }),
+        axios.get(`${API}/features`, { headers: headers() }).catch(() => ({ data: {} })),
       ]);
       setAllCustomers(cRes.data);
       setConfig(cfgRes.data);
+      setFeatures({ email_marketing: false, ...(featRes.data || {}) });
     } catch (e) { console.error('Error loading customers:', e); }
   }, []);
 
@@ -222,9 +227,11 @@ export default function Customers() {
         <div className="flex gap-1.5 shrink-0">
           {isAdmin && (
             <>
-              <Button variant="outline" size="sm" onClick={openMarketingDialog} className="text-xs h-8 px-2" data-testid="marketing-email-btn">
-                <Send size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Email</span>
-              </Button>
+              {features.email_marketing && (
+                <Button variant="outline" size="sm" onClick={openMarketingDialog} className="text-xs h-8 px-2" data-testid="marketing-email-btn">
+                  <Send size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Email</span>
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => setConfigDialog(true)} className="text-xs h-8 px-2" data-testid="loyalty-config-btn">
                 <Star size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Config</span>
               </Button>
