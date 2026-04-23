@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { SettingsProvider } from './SettingsContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Table2, CreditCard, Package, Printer, Cog, BarChart3, Heart, Calculator, FileText, Palette, Warehouse, Tag, AlertCircle, Boxes, Shield } from 'lucide-react';
+import { Users, Table2, CreditCard, Package, Printer, Cog, BarChart3, Heart, Calculator, FileText, Palette, Warehouse, Tag, AlertCircle, Boxes, Shield, Crown } from 'lucide-react';
 
 import UsersTab from './UsersTab';
 import MesasTab from './MesasTab';
@@ -21,6 +21,7 @@ import DescuentosTab from './DescuentosTab';
 import SystemLogsTab from './SystemLogsTab';
 import SimpleInventoryTab from './SimpleInventoryTab';
 import SessionsTab from './SessionsTab';
+import PlanTab from './PlanTab';
 
 // Tab definitions with permission mapping (new config_* + old manage_* fallback)
 const ALL_TABS = [
@@ -41,6 +42,7 @@ const ALL_TABS = [
   { value: 'logs', label: 'Logs', icon: AlertCircle, permissions: ['view_system_logs','config_sistema'], component: SystemLogsTab },
   { value: 'descuentos', label: 'Descuentos', icon: Tag, permissions: ['config_descuentos','manage_cancellation_reasons'], component: DescuentosTab },
   { value: 'sesiones', label: 'Sesiones', icon: Shield, adminOnly: true, component: SessionsTab },
+  { value: 'plan', label: 'Plan', icon: Crown, adminOnly: true, component: PlanTab },
 ];
 
 function SettingsContent() {

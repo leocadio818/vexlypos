@@ -90,12 +90,6 @@ Prioridades:
 
 ## 🟡 P2 — Deseable
 
-- [ ] **Admin UI de Feature Flags** *(Added 2026-04-23)*
-  - Pantalla en Configuración → Plan/Licencia con toggles ON/OFF para todos los flags de `FEATURE_FLAGS` (email_marketing, y futuros: inventory, reservations, loyalty, promotions).
-  - Solo visible para super-admin (rol `owner` o `propietario`).
-  - Persiste en `system_config.{id:"features"}`.
-  - Sienta las bases para pricing tiered (Free / Pro / Premium).
-  - ~2-3h (endpoint PUT /api/features + pantalla en Settings).
 - [ ] **Export/Import de configuración de áreas+mesas (JSON)** *(Added 2026-04-23)*
   - Botón "Exportar Layout" en pestaña Áreas → descarga JSON con todas las áreas + mesas (posiciones, formas, capacidades, colores).
   - Botón "Importar" → acepta JSON y recrea áreas+mesas preservando layout.

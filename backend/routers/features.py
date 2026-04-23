@@ -12,6 +12,7 @@ UI visibility. Backend endpoints that gate a feature should import
 `is_feature_enabled(flag_name)` for enforcement.
 """
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from routers.auth import get_current_user
 
 router = APIRouter(tags=["features"])
@@ -73,4 +74,39 @@ async def get_features(user: dict = Depends(get_current_user)):
     buttons). Mutations happen server-side in system_config by admins
     (or Emergent support).
     """
+    return await _load_flags()
+
+
+class UpdateFeaturesInput(BaseModel):
+    """Partial update: only the keys included will be mutated."""
+    email_marketing: bool | None = None
+
+
+ADMIN_ROLES = {"admin", "owner", "propietario"}
+
+
+@router.put("/features")
+async def update_features(input: UpdateFeaturesInput, user: dict = Depends(get_current_user)):
+    """Admin-only endpoint to toggle feature flags.
+
+    Only `admin` / `owner` / `propietario` can mutate. Body is partial:
+    only keys with explicit values update; None keys are ignored.
+    """
+    if (user.get("role") or "").lower() not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden modificar feature flags")
+
+    update_fields = {}
+    data = input.model_dump(exclude_none=True)
+    for frontend_key, field in FEATURE_FLAGS.items():
+        if frontend_key in data:
+            update_fields[field] = bool(data[frontend_key])
+
+    if not update_fields:
+        return await _load_flags()
+
+    await db.system_config.update_one(
+        {"id": "features"},
+        {"$set": {"id": "features", **update_fields}},
+        upsert=True,
+    )
     return await _load_flags()

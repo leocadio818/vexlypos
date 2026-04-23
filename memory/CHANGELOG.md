@@ -1,6 +1,26 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Admin UI para Feature Flags (nueva pestaña "Plan") 👑⚙️
+- **Problema señalado**: sin UI, activar/desactivar flags requería entrar a MongoDB manualmente.
+- **Backend nuevo**: `PUT /api/features` (admin/owner/propietario únicamente) — body parcial (`{email_marketing: true}`), persiste en `system_config.{id:"features"}`, retorna el estado actualizado.
+- **Frontend nuevo**: `/app/frontend/src/pages/settings/PlanTab.js`:
+  - Tab "Plan" con ícono Crown — `adminOnly: true` en `ALL_TABS`.
+  - Header gradiente + título "Plan y Funciones Premium".
+  - Card por flag: ícono coloreado según estado, badges "PREMIUM" + "Activada/Inactiva", descripción, Switch de shadcn.
+  - Optimistic UI con rollback en error, toast "Función activada/desactivada: X".
+  - Registry `FLAG_DEFINITIONS` idéntico al backend — agregar nuevo flag = 1 objeto + 1 línea backend.
+- **QA E2E independiente 7/7**:
+  - Tab "Plan" visible solo para admin ✅
+  - Toggle ON → toast verde + badge "Activada" ✅
+  - Customers → botón Email aparece instantáneamente ✅
+  - Toggle OFF → Customers → botón Email desaparece ✅
+  - PUT con cashier → HTTP 403 ✅
+  - Mobile 390 (cards responsive con wrap) ✅
+  - Dark mode legible ✅
+
+
+
 ## 2026-04-23 — Feature Flags System (Premium Gating) 🚩💎
 - **Archivo nuevo**: `/app/backend/routers/features.py` — módulo extensible con:
   - Registry `FEATURE_FLAGS` (diccionario `frontend_key → system_config field`) para añadir flags sin tocar código.
