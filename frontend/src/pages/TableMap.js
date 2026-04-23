@@ -1250,6 +1250,12 @@ export default function TableMap() {
               {editMode ? <><Unlock size={isMobile ? 14 : largeMode ? 18 : 14} className="inline mr-1" /> Editando</> : <><Lock size={isMobile ? 14 : largeMode ? 18 : 14} className="inline mr-1" /> Editar</>}
             </button>
           )}
+          {/* Inline Quick Order button — visible only on mobile (desktop uses floating FAB) */}
+          {!editMode && (
+            <div className="md:hidden">
+              <QuickOrderFab inline />
+            </div>
+          )}
         </div>
       </div>
 

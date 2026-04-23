@@ -16,7 +16,7 @@ const canUseQuickOrder = (user, hasPermission) => {
   return openOk && collectOk;
 };
 
-export default function QuickOrderFab() {
+export default function QuickOrderFab({ inline = false }) {
   const navigate = useNavigate();
   const { user, hasPermission } = useAuth();
   const [createDialog, setCreateDialog] = useState(false);
@@ -113,30 +113,57 @@ export default function QuickOrderFab() {
 
   return (
     <>
-      {/* Floating Action Button — bottom right */}
-      <div className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40" data-testid="quick-order-fab">
-        <div className="relative">
+      {/* Floating (desktop/tablet) */}
+      {!inline && (
+        <div className="hidden md:block fixed bottom-6 right-6 z-40" data-testid="quick-order-fab">
+          <div className="relative">
+            <button
+              onClick={() => setCreateDialog(true)}
+              data-testid="quick-order-btn"
+              className="bg-gradient-to-br from-amber-400 via-orange-500 to-orange-600 hover:from-amber-500 hover:via-orange-500 hover:to-orange-700 text-white shadow-2xl shadow-orange-500/50 rounded-full h-14 pl-4 pr-5 flex items-center gap-2 transition-all active:scale-95 border-2 border-white/30 backdrop-blur-sm"
+              aria-label="Orden Rápida"
+            >
+              <Zap size={20} className="fill-white" />
+              <span className="font-oswald font-bold text-sm tracking-wider uppercase">Orden Rápida</span>
+            </button>
+            {activeCount > 0 && (
+              <button
+                onClick={() => setQueueOpen(true)}
+                data-testid="quick-order-queue-badge"
+                className="absolute -top-2 -left-2 min-w-[26px] h-[26px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center border-2 border-white shadow-md active:scale-90 transition-all"
+                aria-label={`${activeCount} órdenes rápidas activas`}
+              >
+                {activeCount}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Inline (mobile header) */}
+      {inline && (
+        <div className="relative inline-block" data-testid="quick-order-fab-inline">
           <button
             onClick={() => setCreateDialog(true)}
             data-testid="quick-order-btn"
-            className="bg-gradient-to-br from-amber-400 via-orange-500 to-orange-600 hover:from-amber-500 hover:via-orange-500 hover:to-orange-700 text-white shadow-2xl shadow-orange-500/50 rounded-full h-14 pl-4 pr-5 flex items-center gap-2 transition-all active:scale-95 border-2 border-white/30 backdrop-blur-sm"
+            className="bg-gradient-to-br from-amber-400 via-orange-500 to-orange-600 active:from-amber-500 active:to-orange-700 text-white shadow-md rounded-xl h-9 px-3 flex items-center gap-1.5 transition-all active:scale-95 border border-white/20"
             aria-label="Orden Rápida"
           >
-            <Zap size={20} className="fill-white" />
-            <span className="font-oswald font-bold text-sm tracking-wider uppercase">Orden Rápida</span>
+            <Zap size={14} className="fill-white" />
+            <span className="font-oswald font-bold text-xs tracking-wide">Orden Rápida</span>
           </button>
           {activeCount > 0 && (
             <button
               onClick={() => setQueueOpen(true)}
               data-testid="quick-order-queue-badge"
-              className="absolute -top-2 -left-2 min-w-[26px] h-[26px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center border-2 border-white shadow-md active:scale-90 transition-all"
+              className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white shadow active:scale-90 transition-all"
               aria-label={`${activeCount} órdenes rápidas activas`}
             >
               {activeCount}
             </button>
           )}
         </div>
-      </div>
+      )}
 
       {/* Create Dialog */}
       <Dialog open={createDialog} onOpenChange={(o) => { if (!o) { setCreateDialog(false); setCustomerName(''); } }}>

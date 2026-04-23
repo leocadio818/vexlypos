@@ -1,6 +1,17 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-22 — Fix: Botón Orden Rápida en Mobile 📱
+- **Problema**: en móvil (<768px), el FAB flotante en bottom-right quedaba cortado por la barra inferior del navegador (Safari iOS) y por la tab bar de VexlyPOS. Era inutilizable en iPhone/Android.
+- **Fix** (`QuickOrderFab.jsx`): el componente acepta ahora prop `inline`:
+  - Por defecto renderiza el FAB flotante en `hidden md:block` (solo desktop/tablet).
+  - En modo `inline` renderiza un botón compacto h-9 con mismo gradient naranja pero pensado para barras.
+  - Badge de contador soporta ambas posiciones.
+- **Integración** (`TableMap.js`): inline se monta al lado del botón "Editar" envuelto en `<div className="md:hidden">`, solo visible cuando no está en `editMode`.
+- **Verificado** en viewports 375×812 (iPhone) y 1920×900 (desktop): layout mobile `[🔒 Editar] [⚡ Orden Rápida]` alineados en misma fila; FAB flotante oculto en mobile; desktop mantiene comportamiento original. Dialog de creación funciona desde ambas variantes.
+
+
+
 ## 2026-04-22 — Admin Panel de Tours + Badges "NUEVO" 🏷️✨
 - **Objetivo**: que el dueño/gerente vea en Config → Usuarios cuáles tours están disponibles, su estado (pendiente/en progreso/completado), y cuáles son NUEVOS desde que el dispositivo se activó.
 - **Versionado** (`lib/tours.js`):
