@@ -1,6 +1,23 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Duplicar área completa con todas sus mesas 📋🏢
+- **Backend nuevo** (`/app/backend/routers/tables.py`):
+  - `POST /api/areas/{area_id}/duplicate` con `{new_name}` → crea nueva área (mismo color), copia todas las mesas conservando `x/y/width/height/shape/capacity`, asigna nuevos números desde `max(number)+1`.
+  - Retorna `{ok, new_area, tables_copied}`.
+- **Frontend** (`/app/frontend/src/pages/settings/MesasTab.js`):
+  - Nuevo ícono `Copy` en cada fila de Áreas junto a Editar/Eliminar.
+  - Modal "Duplicar Área" con info del origen (N mesas a copiar) + input de nombre pre-rellenado con "{Nombre} (copia)".
+  - Toast éxito: "Área duplicada: 'X' con N mesas".
+- **API client**: `areasAPI.duplicate(id, newName)` en `/app/frontend/src/lib/api.js`.
+- **QA E2E independiente**:
+  - VIP (3 mesas) → "VIP Nueva" creada con color morado idéntico + 3 mesas con mismas posiciones y capacidades ✅
+  - Números auto-asignados sin colisión con existentes ✅
+  - Cleanup (delete tables + delete area) funciona intacto ✅
+- **Caso de uso**: replicación de layout al abrir sucursal o expansión interna del local.
+
+
+
 ## 2026-04-23 — Config. Mesas: Contador por área + Creación masiva 🏗️📊
 - **Mejora 1 — Contador por área en el dropdown**:
   - Dropdown ahora muestra: "Todas las áreas (N)" y "Nombre (N)" por cada área.

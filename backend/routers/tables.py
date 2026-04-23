@@ -62,6 +62,63 @@ async def delete_area(area_id: str):
     await db.map_decorators.delete_many({"area_id": area_id})
     return {"ok": True}
 
+# ─── DUPLICATE AREA (with all its tables) ───
+class DuplicateAreaInput(BaseModel):
+    new_name: str
+
+@router.post("/areas/{area_id}/duplicate")
+async def duplicate_area(area_id: str, input: DuplicateAreaInput, user: dict = Depends(get_current_user)):
+    """Duplicate an area and copy all its tables with the same layout (x/y/shape/capacity).
+
+    Table numbers are auto-assigned starting from max(number)+1 globally.
+    Returns the new area + count of copied tables.
+    """
+    new_name = (input.new_name or "").strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Nombre requerido")
+    source = await db.areas.find_one({"id": area_id}, {"_id": 0})
+    if not source:
+        raise HTTPException(status_code=404, detail="Área no encontrada")
+
+    # Create new area at end of order
+    area_count = await db.areas.count_documents({})
+    new_area = {
+        "id": gen_id(),
+        "name": new_name,
+        "color": source.get("color", "#4A5568"),
+        "order": area_count,
+    }
+    await db.areas.insert_one(new_area)
+
+    # Duplicate tables
+    source_tables = await db.tables.find({"area_id": area_id}, {"_id": 0}).to_list(500)
+    existing = await db.tables.find({}, {"_id": 0, "number": 1}).to_list(1000)
+    max_number = max((t.get("number") or 0 for t in existing), default=0)
+
+    new_tables = []
+    for i, t in enumerate(source_tables):
+        new_tables.append({
+            "id": gen_id(),
+            "number": max_number + 1 + i,
+            "area_id": new_area["id"],
+            "capacity": t.get("capacity", 4),
+            "shape": t.get("shape", "round"),
+            "x": t.get("x", 20),
+            "y": t.get("y", 20),
+            "width": t.get("width", 80),
+            "height": t.get("height", 80),
+            "status": "free",
+            "active_order_id": None,
+        })
+    if new_tables:
+        await db.tables.insert_many(new_tables)
+
+    return {
+        "ok": True,
+        "new_area": {k: v for k, v in new_area.items() if k != "_id"},
+        "tables_copied": len(new_tables),
+    }
+
 # ─── MAP DECORATORS CRUD ───
 class DecoratorInput(BaseModel):
     area_id: str

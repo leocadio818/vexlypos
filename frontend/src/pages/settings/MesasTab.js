@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSettings } from './SettingsContext';
 import { areasAPI, tablesAPI } from '@/lib/api';
-import { MapPin, Table2, Plus, Trash2, Pencil, Search, X, Layers } from 'lucide-react';
+import { MapPin, Table2, Plus, Trash2, Pencil, Search, X, Layers, Copy } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { NumericInput } from '@/components/NumericKeypad';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,7 @@ export default function MesasTab() {
   const [areaDialog, setAreaDialog] = useState({ open: false, name: '', color: '#FF6600', editId: null });
   const [tableDialog, setTableDialog] = useState({ open: false, number: '', area_id: '', capacity: 4, shape: 'round', editId: null });
   const [bulkDialog, setBulkDialog] = useState({ open: false, area_id: '', count: 8, shape: 'round', capacity: 4, saving: false });
+  const [duplicateDialog, setDuplicateDialog] = useState({ open: false, sourceId: null, sourceName: '', newName: '', saving: false });
 
   // Filters
   const filteredTables = useMemo(() => {
@@ -117,6 +118,26 @@ export default function MesasTab() {
     } catch (e) {
       notify.error(e.response?.data?.detail || 'Error creando mesas');
       setBulkDialog(p => ({ ...p, saving: false }));
+    }
+  };
+
+  const openDuplicateArea = (area) => {
+    setDuplicateDialog({ open: true, sourceId: area.id, sourceName: area.name, newName: `${area.name} (copia)`, saving: false });
+  };
+
+  const handleSaveDuplicateArea = async () => {
+    const newName = (duplicateDialog.newName || '').trim();
+    if (!newName) { notify.error('Nombre requerido'); return; }
+    setDuplicateDialog(p => ({ ...p, saving: true }));
+    try {
+      const res = await areasAPI.duplicate(duplicateDialog.sourceId, newName);
+      const copied = res?.data?.tables_copied || 0;
+      notify.success(`Área duplicada: "${newName}" con ${copied} mesa${copied === 1 ? '' : 's'}`);
+      setDuplicateDialog({ open: false, sourceId: null, sourceName: '', newName: '', saving: false });
+      fetchAll();
+    } catch (e) {
+      notify.error(e.response?.data?.detail || 'Error duplicando área');
+      setDuplicateDialog(p => ({ ...p, saving: false }));
     }
   };
 
@@ -307,6 +328,12 @@ export default function MesasTab() {
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => openDuplicateArea(area)}
+                      data-testid={`duplicate-area-${area.id}`}
+                      title="Duplicar área con todas sus mesas">
+                      <Copy size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"
                       onClick={() => setAreaDialog({ open: true, name: area.name, color: area.color, editId: area.id })}>
                       <Pencil size={14} />
                     </Button>
@@ -472,6 +499,40 @@ export default function MesasTab() {
             <Button variant="ghost" onClick={() => setBulkDialog(p => ({ ...p, open: false }))} disabled={bulkDialog.saving}>Cancelar</Button>
             <Button onClick={handleSaveBulk} disabled={bulkDialog.saving || !bulkDialog.area_id} className="bg-primary text-primary-foreground" data-testid="bulk-save-btn">
               {bulkDialog.saving ? 'Creando...' : 'Crear Mesas'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Area Dialog */}
+      <Dialog open={duplicateDialog.open} onOpenChange={(o) => !o && setDuplicateDialog(p => ({ ...p, open: false }))}>
+        <DialogContent className="sm:max-w-md bg-card border-border" data-testid="duplicate-area-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <Copy size={18} className="text-primary" /> Duplicar Área
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+              Se copiará el área <strong className="text-foreground">{duplicateDialog.sourceName}</strong> con {tables.filter(t => t.area_id === duplicateDialog.sourceId).length} mesa(s) (color, forma, capacidad y posiciones). Los números de mesa se asignan nuevos.
+            </div>
+            <div>
+              <label className="text-sm font-medium">Nombre de la nueva área *</label>
+              <input
+                type="text"
+                value={duplicateDialog.newName}
+                onChange={e => setDuplicateDialog(p => ({ ...p, newName: e.target.value }))}
+                className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
+                placeholder="Ej: Salon Principal 2"
+                data-testid="duplicate-area-name-input"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDuplicateDialog(p => ({ ...p, open: false }))} disabled={duplicateDialog.saving}>Cancelar</Button>
+            <Button onClick={handleSaveDuplicateArea} disabled={duplicateDialog.saving || !(duplicateDialog.newName || '').trim()} className="bg-primary text-primary-foreground" data-testid="duplicate-area-save-btn">
+              {duplicateDialog.saving ? 'Duplicando...' : 'Duplicar'}
             </Button>
           </DialogFooter>
         </DialogContent>

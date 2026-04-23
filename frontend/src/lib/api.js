@@ -68,6 +68,7 @@ export const areasAPI = {
   create: (data) => api.post('/areas', data),
   update: (id, data) => api.put(`/areas/${id}`, data),
   delete: (id) => api.delete(`/areas/${id}`),
+  duplicate: (id, newName) => api.post(`/areas/${id}/duplicate`, { new_name: newName }),
 };
 
 // Tables (with offline localStorage cache)
