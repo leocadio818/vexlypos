@@ -30,7 +30,7 @@ export default function PlanTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(null); // flag key currently being updated
 
-  const isAdmin = ['admin', 'owner', 'propietario'].includes((user?.role || '').toLowerCase());
+  const isAdmin = user?.is_super_admin === true;
 
   useEffect(() => {
     (async () => {
@@ -46,7 +46,7 @@ export default function PlanTab() {
   }, []);
 
   const handleToggle = async (key, next) => {
-    if (!isAdmin) { notify.error('Solo administradores pueden cambiar flags'); return; }
+    if (!isAdmin) { notify.error('Solo super administradores pueden cambiar flags'); return; }
     setSaving(key);
     const prev = flags[key];
     setFlags(f => ({ ...f, [key]: next }));
@@ -72,7 +72,7 @@ export default function PlanTab() {
           <div>
             <h2 className="font-oswald text-lg font-bold">Plan y Funciones Premium</h2>
             <p className="text-xs text-muted-foreground mt-1">
-              Activa o desactiva funciones premium para tu restaurante. {isAdmin ? '' : 'Solo los administradores pueden modificar estos flags.'}
+              Activa o desactiva funciones premium para tu restaurante. {isAdmin ? '' : 'Solo los super administradores (proveedor del software) pueden modificar estos flags.'}
             </p>
           </div>
         </div>

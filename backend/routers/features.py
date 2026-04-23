@@ -85,15 +85,30 @@ class UpdateFeaturesInput(BaseModel):
 ADMIN_ROLES = {"admin", "owner", "propietario"}
 
 
+async def _require_super_admin(user_payload: dict) -> None:
+    """Require the caller to be a super_admin (Emergent/SaaS provider).
+    
+    Super admin is an explicit boolean flag on the user document,
+    set manually by the SaaS provider (not the restaurant admin).
+    Regular restaurant admins CANNOT toggle feature flags.
+    """
+    user_id = user_payload.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="No autenticado")
+    u = await db.users.find_one({"id": user_id}, {"_id": 0, "is_super_admin": 1})
+    if not (u and u.get("is_super_admin") is True):
+        raise HTTPException(status_code=403, detail="Solo super administradores pueden modificar feature flags")
+
+
 @router.put("/features")
 async def update_features(input: UpdateFeaturesInput, user: dict = Depends(get_current_user)):
-    """Admin-only endpoint to toggle feature flags.
+    """SUPER-admin-only endpoint to toggle feature flags.
 
-    Only `admin` / `owner` / `propietario` can mutate. Body is partial:
-    only keys with explicit values update; None keys are ignored.
+    Only users with `is_super_admin: true` in the users collection can mutate.
+    This separates the SaaS provider (Emergent) from restaurant-level admins
+    who cannot self-enable premium features.
     """
-    if (user.get("role") or "").lower() not in ADMIN_ROLES:
-        raise HTTPException(status_code=403, detail="Solo administradores pueden modificar feature flags")
+    await _require_super_admin(user)
 
     update_fields = {}
     data = input.model_dump(exclude_none=True)

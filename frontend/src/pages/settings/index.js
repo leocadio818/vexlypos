@@ -42,7 +42,7 @@ const ALL_TABS = [
   { value: 'logs', label: 'Logs', icon: AlertCircle, permissions: ['view_system_logs','config_sistema'], component: SystemLogsTab },
   { value: 'descuentos', label: 'Descuentos', icon: Tag, permissions: ['config_descuentos','manage_cancellation_reasons'], component: DescuentosTab },
   { value: 'sesiones', label: 'Sesiones', icon: Shield, adminOnly: true, component: SessionsTab },
-  { value: 'plan', label: 'Plan', icon: Crown, adminOnly: true, component: PlanTab },
+  { value: 'plan', label: 'Plan', icon: Crown, superAdminOnly: true, component: PlanTab },
 ];
 
 function SettingsContent() {
@@ -54,6 +54,7 @@ function SettingsContent() {
   const { user } = useAuth();
   const allowedTabs = useMemo(() => {
     return ALL_TABS.filter(tab => {
+      if (tab.superAdminOnly) return user?.is_super_admin === true;
       if (tab.adminOnly) return user?.role === 'admin';
       return tab.permissions?.some(p => hasPermission(p));
     });

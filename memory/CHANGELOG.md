@@ -1,6 +1,26 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Super Admin role real (separado del admin del restaurante) 🔐👑
+- **Problema**: con la opción anterior, cualquier admin del restaurante podía activar/desactivar feature flags. El usuario quería que **solo él como proveedor del software (SaaS)** pudiera.
+- **Solución — Opción A implementada**: campo booleano `is_super_admin` en el documento del usuario.
+- **Backend** (`/app/backend/routers/features.py`):
+  - `_require_super_admin()` helper: fetch al doc del usuario y verifica `is_super_admin === true`.
+  - `PUT /api/features` ahora requiere super admin (ya NO es suficiente con rol `admin`).
+- **Frontend**:
+  - `settings/index.js`: nuevo filtro `superAdminOnly: true` en el tab "Plan" — solo se renderiza si `user.is_super_admin === true`.
+  - `PlanTab.js`: `isAdmin` ahora lee `user.is_super_admin` (no `role`).
+  - Si no es super admin, el tab ni siquiera existe en la nav.
+- **`/auth/me`**: ya devolvía el doc completo, así que `is_super_admin` se propaga automáticamente al frontend.
+- **Migración del usuario actual**: único admin existente fue elevado a `is_super_admin: true`. Futuros admin creados (gerente, admin del local, etc.) NO son super admin por defecto.
+- **QA E2E**:
+  - Admin original (super) → ve tab Plan, toggle funciona ✅
+  - Admin nuevo (role=admin, is_super_admin=false) → PUT retorna 403 ✅
+  - Cashier → 403 ✅
+- **Documentado** en `memory/test_credentials.md` con instrucciones MongoDB para elevar/demover usuarios.
+
+
+
 ## 2026-04-23 — Admin UI para Feature Flags (nueva pestaña "Plan") 👑⚙️
 - **Problema señalado**: sin UI, activar/desactivar flags requería entrar a MongoDB manualmente.
 - **Backend nuevo**: `PUT /api/features` (admin/owner/propietario únicamente) — body parcial (`{email_marketing: true}`), persiste en `system_config.{id:"features"}`, retorna el estado actualizado.
