@@ -90,6 +90,11 @@ Prioridades:
 
 ## 🟡 P2 — Deseable
 
+- [ ] **Dashboard Super Admin (multi-tenant)** *(Added 2026-04-23)*
+  - Ruta dedicada `/superadmin` accesible solo si `is_super_admin === true`.
+  - Gestión cross-tenant: listar todos los restaurantes, activar/desactivar flags por tenant, ver métricas agregadas (ventas totales, clientes activos, churn, uso de storage).
+  - Base para modelo SaaS escalable con pricing tiered y soporte multi-cliente desde un solo panel.
+  - Requiere antes: arquitectura multi-tenant real (hoy single-tenant en Mongo). ~1-2 semanas.
 - [ ] **Export/Import de configuración de áreas+mesas (JSON)** *(Added 2026-04-23)*
   - Botón "Exportar Layout" en pestaña Áreas → descarga JSON con todas las áreas + mesas (posiciones, formas, capacidades, colores).
   - Botón "Importar" → acepta JSON y recrea áreas+mesas preservando layout.
