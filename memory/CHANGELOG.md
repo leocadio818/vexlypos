@@ -1,6 +1,29 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — FIX Propietario puede cambiar PIN de empleados de menor nivel 🔐
+- **Problema**: Propietario (level 80) veía "Solo Admin" / "???????? (Contacte al admin)" y no podía cambiar PIN de meseros/cajeros/gerentes.
+- **Archivo**: `/app/frontend/src/pages/UserConfig.js`
+- **Lógica nueva de `canEditPin`**: 
+  - Caller level STRICTAMENTE MAYOR que target level → PIN editable
+  - Admin (100) → siempre puede
+  - Self → siempre puede editar su propio PIN
+  - Target level calculado buscando en `roles` (loaded) con fallback a `BUILTIN_LEVELS` (admin:100, owner/propietario:80, manager/gerente:60, supervisor:40, cashier/cajero:30, waiter/mesero:20, kitchen/cocina:10).
+- **Badge actualizado**: "Solo Admin" → "Nivel insuficiente"; "(Contacte al admin)" → "(Requiere nivel superior al del empleado)".
+- **Fix secundario**: si el fetch de `/users/{id}` retorna 403 (p.ej. propietario intenta ver admin por URL directa), el frontend ahora redirige a `/settings?tab=users` con toast "No tienes permiso para ver este usuario" (antes quedaba en una pantalla rota con estado inicial vacío).
+- **Backend**: ya tenía la jerarquía correcta en `PUT /users/{id}` (line 804) y `GET /users/{id}` (line 673) — no se tocó.
+- **QA E2E independiente 8/8**:
+  - Propietario→Mesero (20) PIN editable ✅
+  - Propietario→Cajero (30) PIN editable ✅
+  - Propietario→Gerente (60) PIN editable ✅
+  - Propietario lista NO ve admin ni otros propietarios ✅
+  - Propietario→Admin URL directa → redirige a lista ✅
+  - Gerente (60)→Mesero PIN editable ✅ (regresión)
+  - Gerente NO ve propietarios ✅
+  - Admin ve y edita a todos ✅
+
+
+
 ## 2026-04-23 — Super Admin role real (separado del admin del restaurante) 🔐👑
 - **Problema**: con la opción anterior, cualquier admin del restaurante podía activar/desactivar feature flags. El usuario quería que **solo él como proveedor del software (SaaS)** pudiera.
 - **Solución — Opción A implementada**: campo booleano `is_super_admin` en el documento del usuario.

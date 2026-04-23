@@ -343,7 +343,6 @@ export default function UserConfig() {
 
   const isAdmin = currentUser?.role === 'admin';
   const isSystemAdmin = (currentUser?.role_level || 0) >= 100;
-  const canEditPin = isSystemAdmin || isAdmin || (!isNew && currentUser?.id === userId) || isNew;
   const [showPin, setShowPin] = useState(false);
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [tempPin, setTempPin] = useState('');
@@ -374,6 +373,17 @@ export default function UserConfig() {
     revenue_center_id: '',
   });
 
+  // PIN edit permission: caller level must be strictly greater than target's level.
+  // Admin (level 100) always can; self can always edit own PIN; new user creation always allows.
+  const BUILTIN_LEVELS = { admin: 100, owner: 80, propietario: 80, manager: 60, gerente: 60, supervisor: 40, cashier: 30, cajero: 30, waiter: 20, mesero: 20, kitchen: 10, cocina: 10 };
+  const targetRoleLevel = (() => {
+    const r = roles.find(r => r.code === user.role || r.id === user.role);
+    return r?.level ?? BUILTIN_LEVELS[user.role] ?? 20;
+  })();
+  const callerLevel = currentUser?.role_level || 0;
+  const isSelf = !isNew && currentUser?.id === userId;
+  const canEditPin = isSystemAdmin || isAdmin || isSelf || isNew || (callerLevel > targetRoleLevel);
+
   const fetchRoles = useCallback(async () => {
     try {
       const rolesRes = await axios.get(`${API}/roles`, { headers: hdrs() });
@@ -399,6 +409,11 @@ export default function UserConfig() {
       }
     } catch (e) {
       console.error(e);
+      if (e?.response?.status === 403) {
+        notify.error('No tienes permiso para ver este usuario');
+        navigate('/settings?tab=users');
+        return;
+      }
       notify.error('Error cargando datos');
     } finally {
       setLoading(false);
@@ -582,7 +597,7 @@ export default function UserConfig() {
               <div>
                 <label className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
                   <Lock size={10} /> PIN de Acceso {isNew && <span className="text-red-400">*</span>}
-                  {!canEditPin && <Badge variant="outline" className="text-[11px] border-amber-500 text-amber-400 ml-1">Solo Admin</Badge>}
+                  {!canEditPin && <Badge variant="outline" className="text-[11px] border-amber-500 text-amber-400 ml-1">Nivel insuficiente</Badge>}
                 </label>
                 {canEditPin ? (
                   <div className="relative">
@@ -626,7 +641,7 @@ export default function UserConfig() {
                   </div>
                 ) : (
                   <div className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-sm font-mono text-muted-foreground">
-                    ???????? <span className="text-xs ml-2 text-amber-400">(Contacte al admin)</span>
+                    ???????? <span className="text-xs ml-2 text-amber-400">(Requiere nivel superior al del empleado)</span>
                   </div>
                 )}
               </div>
