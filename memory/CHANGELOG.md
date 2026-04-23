@@ -1,6 +1,24 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Buscador inteligente en Config. Productos → Modificadores 🔍🧩
+- **Problema**: la pestaña Modificadores no tenía filtro; con muchos grupos/opciones se perdía tiempo haciendo scroll.
+- **Archivo**: `/app/frontend/src/pages/settings/InventarioTab.js`
+- **Features**:
+  - Input con lupa, placeholder "Buscar modificador..." + kbd badge `/` + botón X.
+  - **Búsqueda dual**: matchea por nombre del grupo **O** por nombre de cualquier opción interna (ej: "cebolla" encuentra el grupo "SIN" que contiene la opción CEBOLLA).
+  - Contador "N resultado(s)", empty state con icono, dark/light support nativo via tokens del tema.
+  - `data-testid="modifier-search-input"` → automáticamente capturado por el atajo global `/`.
+- **Verificación E2E** (Desktop 1366×900 · Mobile 390×844 · Dark · Light):
+  - "sal" → SALSAS (1 resultado)
+  - "cebolla" → SIN (match por opción interna)
+  - "zzzz" → empty state
+  - Clear → 4 cards visibles de nuevo
+  - `/` shortcut enfoca el input correctamente
+- **Scope respetado**: sin tocar backend, Supabase, .env, otras pestañas, PaymentScreen, OrderScreen, ni lógica e-CF.
+
+
+
 ## 2026-04-23 — Atajo `/` global extendido a toda la app 🌐⌨️
 - **Feature**: listener global único que enfoca el primer buscador visible de la página actual con solo presionar `/`.
 - **Componente nuevo**: `/app/frontend/src/components/GlobalSearchShortcut.jsx` (~35 líneas, retorna `null`).

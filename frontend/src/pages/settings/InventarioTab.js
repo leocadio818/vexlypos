@@ -45,6 +45,8 @@ export default function InventarioTab() {
     return params.get('subtab') || 'categorias';
   });
   const [productSearch, setProductSearch] = useState('');
+  const [modifierSearch, setModifierSearch] = useState('');
+  const [modifierSearchFocused, setModifierSearchFocused] = useState(false);
   const [showInactiveProducts, setShowInactiveProducts] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [taxConfigs, setTaxConfigs] = useState([]);
@@ -456,39 +458,97 @@ export default function InventarioTab() {
             </Button>
           </div>
 
-          {modGroups.length === 0 ? (
+          {/* Search */}
+          {modGroups.length > 0 && (() => {
+            const q = modifierSearch.trim().toLowerCase();
+            const filtered = q
+              ? modGroups.filter(g => {
+                  if ((g.name || '').toLowerCase().includes(q)) return true;
+                  const opts = modifiers.filter(m => m.group_id === g.id);
+                  return opts.some(o => (o.name || '').toLowerCase().includes(q));
+                })
+              : modGroups;
+            return (
+              <>
+                <div className={`relative transition-all ${modifierSearchFocused ? 'scale-[1.005]' : ''}`} data-testid="modifier-search-wrapper">
+                  <div className={`relative flex items-center bg-background border-2 rounded-xl overflow-hidden transition-all ${modifierSearchFocused ? 'border-primary shadow-md' : 'border-border'}`}>
+                    <div className={`pl-3 ${modifierSearchFocused ? 'text-primary' : 'text-muted-foreground'}`}><Search size={18} /></div>
+                    <input
+                      type="text"
+                      value={modifierSearch}
+                      onChange={(e) => setModifierSearch(e.target.value)}
+                      onFocus={() => setModifierSearchFocused(true)}
+                      onBlur={() => setModifierSearchFocused(false)}
+                      placeholder="Buscar modificador..."
+                      className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground"
+                      data-testid="modifier-search-input"
+                      aria-label="Buscar modificador"
+                    />
+                    {!modifierSearch && !modifierSearchFocused && (
+                      <kbd className="hidden sm:inline-flex items-center justify-center mr-2 px-1.5 h-5 min-w-[20px] rounded border border-border bg-muted/60 text-[10px] font-mono text-muted-foreground pointer-events-none" title="Presiona / para enfocar">/</kbd>
+                    )}
+                    {modifierSearch && (
+                      <button
+                        onClick={() => setModifierSearch('')}
+                        className="p-1.5 mr-2 rounded-full hover:bg-muted text-muted-foreground"
+                        data-testid="modifier-search-clear"
+                        aria-label="Limpiar filtro"
+                        type="button"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  {modifierSearch && (
+                    <div className="mt-1.5 px-1 text-[11px] text-muted-foreground" data-testid="modifier-search-results-count">
+                      {filtered.length} {filtered.length === 1 ? 'resultado' : 'resultados'}
+                    </div>
+                  )}
+                </div>
+
+                {modifierSearch && filtered.length === 0 && (
+                  <div className="py-10 text-center text-sm text-muted-foreground rounded-xl border border-dashed border-border bg-muted/20" data-testid="modifier-search-empty">
+                    <Search size={24} className="mx-auto mb-2 opacity-40" />
+                    No se encontraron modificadores
+                  </div>
+                )}
+
+                <div className="grid gap-3" data-testid="modifiers-list">
+                  {filtered.map(g => {
+                    const groupMods = modifiers.filter(m => m.group_id === g.id);
+                    return (
+                      <div key={g.id} className="bg-card border border-border rounded-xl p-4" data-testid={`modifier-card-${g.id}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-oswald font-bold text-sm">{g.name}</span>
+                            {g.min_selection > 0 && <Badge variant="destructive" className="text-xs">Min: {g.min_selection}</Badge>}
+                            {g.max_selection > 0 && <Badge variant="outline" className="text-xs">Max: {g.max_selection}</Badge>}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openEditModifier(g)} data-testid={`edit-modifier-${g.id}`}><Pencil size={14} /></Button>
+                            <Button variant="ghost" size="icon" className="text-red-400" onClick={() => deleteModifier(g.id)} data-testid={`delete-modifier-${g.id}`}><Trash2 size={14} /></Button>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {groupMods.map(o => (
+                            <span key={o.id} className="text-xs bg-muted px-2 py-1 rounded-full">
+                              {o.name} {o.price > 0 ? `+RD$ ${o.price}` : ''}
+                            </span>
+                          ))}
+                          {groupMods.length === 0 && <span className="text-xs text-muted-foreground">Sin opciones</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
+
+          {modGroups.length === 0 && (
             <div className="text-center py-12 text-muted-foreground" data-testid="no-modifiers">
               <ListChecks size={40} className="mx-auto mb-3 opacity-50" />
               <p className="text-sm">No hay modificadores configurados</p>
-            </div>
-          ) : (
-            <div className="grid gap-3" data-testid="modifiers-list">
-              {modGroups.map(g => {
-                const groupMods = modifiers.filter(m => m.group_id === g.id);
-                return (
-                  <div key={g.id} className="bg-card border border-border rounded-xl p-4" data-testid={`modifier-card-${g.id}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-oswald font-bold text-sm">{g.name}</span>
-                        {g.min_selection > 0 && <Badge variant="destructive" className="text-xs">Min: {g.min_selection}</Badge>}
-                        {g.max_selection > 0 && <Badge variant="outline" className="text-xs">Max: {g.max_selection}</Badge>}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEditModifier(g)} data-testid={`edit-modifier-${g.id}`}><Pencil size={14} /></Button>
-                        <Button variant="ghost" size="icon" className="text-red-400" onClick={() => deleteModifier(g.id)} data-testid={`delete-modifier-${g.id}`}><Trash2 size={14} /></Button>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {groupMods.map(o => (
-                        <span key={o.id} className="text-xs bg-muted px-2 py-1 rounded-full">
-                          {o.name} {o.price > 0 ? `+RD$ ${o.price}` : ''}
-                        </span>
-                      ))}
-                      {groupMods.length === 0 && <span className="text-xs text-muted-foreground">Sin opciones</span>}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           )}
 
