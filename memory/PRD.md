@@ -1,5 +1,16 @@
 # POS Restaurant System - Dominican Republic
 
+
+## 🔒 Completed Tasks (2026-04-23)
+
+- **🔒 Sticky FACTURAR Footer en PaymentScreen** (DONE - 2026-04-23):
+  - **Problema**: En laptops 1366×768 y tablets pequeñas los botones CANCELAR/FACTURAR requerían scroll.
+  - **Archivo**: `/app/frontend/src/pages/PaymentScreen.js` (líneas ~1710-1778)
+  - **Fix**: Los botones de acción se extrajeron del panel izquierdo y se montaron en un footer sticky a nivel root (`shrink-0`, `border-t`, `backdrop-blur-xl`, `env(safe-area-inset-bottom)`), con resumen compacto (Total · Recibido · Cambio/Falta) encima de los botones. Nuevo `data-testid="payment-sticky-footer"`.
+  - **Verificado visualmente** en 4 viewports (Laptop 1366×768, Desktop 1920×1080, iPad 768×1024, Mobile 390×844): footer anclado al borde inferior exacto y FACTURAR siempre dentro del viewport.
+  - **⚠️ PROTEGIDO**: Este fix está BLOQUEADO - ver sección CÓDIGO PROTEGIDO. No modificar la estructura `flex-col` del root ni mover los botones fuera del footer sticky sin autorización explícita.
+
+
 ## Original Problem Statement
 Full-stack POS application for DR restaurants. React + FastAPI + MongoDB. Multi-tenant, RBAC, printer integration, DGII compliance.
 

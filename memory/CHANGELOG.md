@@ -1,6 +1,21 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — FIX CRÍTICO: Footer Sticky FACTURAR en PaymentScreen 💰📌
+- **Problema**: en laptops (1366×768) y tablets pequeñas, los botones CANCELAR / FACTURAR quedaban "debajo del fold" al final del panel izquierdo. El cajero debía hacer scroll para cobrar, lo cual es inaceptable en hora pico.
+- **Fix** (`pages/PaymentScreen.js`):
+  - Los botones de acción se movieron fuera del panel scrollable izquierdo y se envolvieron en un nuevo footer sticky a nivel del root `<div h-full flex flex-col overflow-hidden>`.
+  - El footer usa `shrink-0`, `border-t`, `backdrop-blur-xl`, `paddingBottom: env(safe-area-inset-bottom)` para respetar notch iOS.
+  - Incluye resumen compacto (Total · Recibido · Cambio/Falta) + botón CANCELAR (w-24 / w-32) y botón FACTURAR (flex-1) con estado verde/gris + spinner.
+  - `data-testid="payment-sticky-footer"` para QA.
+- **Verificación visual** en 4 viewports (Laptop 1366×768, Desktop 1920×1080, iPad 768×1024, Mobile 390×844):
+  - Footer anclado al borde inferior exacto (±2px) en los 4 tamaños.
+  - Botón FACTURAR siempre dentro del viewport, clickeable sin scroll.
+  - Panel izquierdo (items + desglose + redención de puntos) sigue scrolleando independientemente.
+- **Beneficio operativo**: cashiers ya no pierden segundos buscando el botón — mejora directa en throughput en hora pico de restaurantes con laptops 14" (1366×768 es el caso dominante en RD).
+
+
+
 ## 2026-04-22 — Fix: Botón Orden Rápida en Mobile 📱
 - **Problema**: en móvil (<768px), el FAB flotante en bottom-right quedaba cortado por la barra inferior del navegador (Safari iOS) y por la tab bar de VexlyPOS. Era inutilizable en iPhone/Android.
 - **Fix** (`QuickOrderFab.jsx`): el componente acepta ahora prop `inline`:
