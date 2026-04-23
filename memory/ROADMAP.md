@@ -90,6 +90,12 @@ Prioridades:
 
 ## 🟡 P2 — Deseable
 
+- [ ] **Cheat Sheet Modal de atajos de teclado** *(Added 2026-04-23)* — al estilo Linear/Notion.
+  - Disparador: `Ctrl+K` o botón `?` en el header.
+  - Lista todos los atajos: `/` buscar (ya implementado globalmente), y futuros (`Ctrl+N` nuevo, `Esc` cerrar modal, `G+D` ir a dashboard, etc.).
+  - Buscador dentro del modal para filtrar atajos.
+  - Aumenta percepción de producto profesional y fideliza personal administrativo.
+  - ~3h.
 - [ ] **Reportes de Ventas por Hora / Horas Trabajadas — Filtros avanzados** (multi-select empleados, comparativo entre personas).
 - [ ] **Print Agent Installer — actualización .bat** para impresoras locales de red.
 - [ ] **Notificaciones Push para pedidos de Delivery Platforms** (Web Push API).
