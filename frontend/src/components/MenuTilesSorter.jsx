@@ -332,6 +332,9 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
             data-testid="category-search-input"
             aria-label="Buscar categoría"
           />
+          {!search && !searchFocused && (
+            <kbd className="hidden sm:inline-flex items-center justify-center mr-2 px-1.5 h-5 min-w-[20px] rounded border border-border bg-muted/60 text-[10px] font-mono text-muted-foreground pointer-events-none" title="Presiona / para enfocar">/</kbd>
+          )}
           {search && (
             <button
               onClick={() => setSearch('')}

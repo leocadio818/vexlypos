@@ -74,6 +74,27 @@ export default function InventarioTab() {
 
   useEffect(() => { if (inventarioSubTab === 'modificadores') loadModifiers(); }, [inventarioSubTab]);
 
+  // Global "/" shortcut: focus the active tab's search input (Categorías or Productos)
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = document.activeElement;
+      const tag = (el?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || el?.isContentEditable) return;
+      const testid = inventarioSubTab === 'categorias' ? 'category-search-input'
+        : inventarioSubTab === 'productos' ? 'product-search-input' : null;
+      if (!testid) return;
+      const target = document.querySelector(`[data-testid="${testid}"]`);
+      if (target) {
+        e.preventDefault();
+        target.focus();
+        target.select?.();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [inventarioSubTab]);
+
   // Load tax configs
   useEffect(() => {
     const loadTaxConfigs = async () => {
@@ -401,6 +422,9 @@ export default function InventarioTab() {
               <input type="text" value={productSearch} onChange={(e) => setProductSearch(e.target.value)}
                 onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}
                 placeholder="Buscar producto..." className="flex-1 bg-transparent px-3 py-3.5 text-sm outline-none" data-testid="product-search-input" />
+              {!productSearch && !searchFocused && (
+                <kbd className="hidden sm:inline-flex items-center justify-center mr-3 px-1.5 h-5 min-w-[20px] rounded border border-border bg-muted/60 text-[10px] font-mono text-muted-foreground pointer-events-none" title="Presiona / para enfocar">/</kbd>
+              )}
               {productSearch && (
                 <button onClick={() => setProductSearch('')} className="p-2 mr-2 rounded-full hover:bg-muted"><X size={16} /></button>
               )}

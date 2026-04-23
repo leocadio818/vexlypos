@@ -1,6 +1,16 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Atajo de teclado `/` para buscador de Categorías y Productos ⌨️🚀
+- **Feature**: presionar `/` en cualquier lugar del tab Config. Productos enfoca automáticamente el campo de búsqueda activo (Categorías o Productos según la subpestaña).
+- **Archivos**:
+  - `/app/frontend/src/pages/settings/InventarioTab.js`: listener global `window.keydown` con guardrails (ignora si `Ctrl/Meta/Alt` o si ya hay un input/textarea/select/contentEditable activo). Dispatch a `category-search-input` o `product-search-input` según `inventarioSubTab`.
+  - Badge `<kbd>/</kbd>` agregado en ambos inputs (Categorías y Productos) cuando el input no está enfocado y está vacío — `hidden sm:inline-flex` para no saturar móviles.
+  - `/app/frontend/src/components/MenuTilesSorter.jsx`: kbd badge análogo.
+- **Verificado E2E**: typing "/" fuera de input enfoca el input correcto; typing "/" dentro del input inserta el carácter literalmente (no se hijackea); tab-aware (en Categorías enfoca cat, en Productos enfoca prod); funciona igual en dark/light/mobile.
+
+
+
 ## 2026-04-23 — Buscador inteligente en Config. Productos → Categorías 🔍📂
 - **Problema**: con muchas categorías había que hacer scroll manual para encontrarlas. No existía filtro.
 - **Archivo**: `/app/frontend/src/components/MenuTilesSorter.jsx`
