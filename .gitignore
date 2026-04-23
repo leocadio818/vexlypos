@@ -303,3 +303,23 @@ credentials.json
 *.pem
 *.key
 .credentials
+
+# Test artifacts and reports (never push — may contain JWTs / live data)
+/test_reports/
+test_reports/
+*test_results*.json
+backend_test_results.json
+
+# Local on-premise server package (contains seeded dev JWT_SECRET placeholders,
+# not meant for SaaS deployment; ship separately if needed)
+/local-server/
+local-server/
+
+# Vendor-provided DGII PDFs with proprietary content
+backend/xsd/*.pdf
+
+# ECF credential management tests (historical RNCs, not for public repo)
+backend/tests/test_ecf_credentials*.py
+
+# Memory / handoff / credentials (already in use but reinforced)
+memory/test_credentials.md
