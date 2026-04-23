@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import axios from 'axios';
-import { GripVertical, Tag, Package, Pencil, Trash2, Sparkles, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import { GripVertical, Tag, Package, Pencil, Trash2, Sparkles, RotateCcw, Eye, EyeOff, Search, X, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { notify } from '@/lib/notify';
@@ -34,8 +34,8 @@ const COLOR_PRESETS = [
   '#0891B2', '#CA8A04', '#4F46E5', '#E11D48', '#0D9488', '#EA580C',
 ];
 
-function SortableTile({ id, children }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+function SortableTile({ id, children, disabled = false }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -45,13 +45,15 @@ function SortableTile({ id, children }) {
   return (
     <div ref={setNodeRef} style={style} data-testid={`tile-row-${id}`} className="flex items-center gap-2 p-3 rounded-xl border border-border bg-card">
       <button
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1.5 rounded hover:bg-muted text-muted-foreground"
+        {...(disabled ? {} : attributes)}
+        {...(disabled ? {} : listeners)}
+        disabled={disabled}
+        className={`p-1.5 rounded text-muted-foreground ${disabled ? 'cursor-not-allowed opacity-40' : 'cursor-grab active:cursor-grabbing hover:bg-muted'}`}
         data-testid={`tile-drag-${id}`}
-        aria-label="Mover"
+        aria-label={disabled ? 'Arrastrar deshabilitado mientras hay filtro' : 'Mover'}
+        title={disabled ? 'Limpia el filtro para reordenar' : 'Mover'}
       >
-        <GripVertical size={16} />
+        {disabled ? <Lock size={16} /> : <GripVertical size={16} />}
       </button>
       {children}
     </div>
@@ -70,6 +72,8 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
   const [visibilityPicker, setVisibilityPicker] = useState(null); // tile id | null
   const [previewRole, setPreviewRole] = useState(''); // '' = no preview (admin view)
   const [previewArea, setPreviewArea] = useState(''); // '' = no area (virtual 'any')
+  const [search, setSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -180,6 +184,17 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
 
   const catById = Object.fromEntries((categories || []).map(c => [c.id, c]));
   const countProducts = (catId) => (products || []).filter(p => p.category_id === catId).length;
+
+  // Search filter — by tile display name (case-insensitive)
+  const getTileName = (id) => {
+    if (VIRTUAL_IDS.includes(id)) return VIRTUAL_META[id]?.label || '';
+    return catById[id]?.name || '';
+  };
+  const searchActive = search.trim().length > 0;
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredOrder = searchActive
+    ? order.filter(id => getTileName(id).toLowerCase().includes(normalizedSearch))
+    : order;
 
   // Preview helpers — simulate what a role+area combo would see in OrderScreen
   const activeRole = roles.find(r => r.id === previewRole || r.code === previewRole);
@@ -302,10 +317,56 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
         </Button>
       </div>
 
+      {/* Smart Search */}
+      <div className={`relative transition-all ${searchFocused ? 'scale-[1.005]' : ''}`} data-testid="category-search-wrapper">
+        <div className={`relative flex items-center bg-background border-2 rounded-xl overflow-hidden transition-all ${searchFocused ? 'border-primary shadow-md' : 'border-border'}`}>
+          <div className={`pl-3 ${searchFocused ? 'text-primary' : 'text-muted-foreground'}`}><Search size={18} /></div>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            placeholder="Buscar categoría..."
+            className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground"
+            data-testid="category-search-input"
+            aria-label="Buscar categoría"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="p-1.5 mr-2 rounded-full hover:bg-muted text-muted-foreground"
+              data-testid="category-search-clear"
+              aria-label="Limpiar filtro"
+              type="button"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        {searchActive && (
+          <div className="mt-1.5 px-1 flex items-center justify-between flex-wrap gap-2">
+            <span className="text-[11px] text-muted-foreground" data-testid="category-search-results-count">
+              {filteredOrder.length} {filteredOrder.length === 1 ? 'resultado' : 'resultados'}
+            </span>
+            <span className="text-[11px] text-amber-600 inline-flex items-center gap-1" data-testid="category-search-drag-hint">
+              <Lock size={10} /> Limpia el filtro para reordenar
+            </span>
+          </div>
+        )}
+      </div>
+
+      {searchActive && filteredOrder.length === 0 && (
+        <div className="py-10 text-center text-sm text-muted-foreground rounded-xl border border-dashed border-border bg-muted/20" data-testid="category-search-empty">
+          <Search size={24} className="mx-auto mb-2 opacity-40" />
+          No se encontraron categorías
+        </div>
+      )}
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={order} strategy={verticalListSortingStrategy}>
+        <SortableContext items={filteredOrder} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
-            {order.map(id => {
+            {filteredOrder.map(id => {
               const pv = getPreviewStatus(id);
               const wrapperClass = previewRole && pv.hidden ? 'opacity-40' : '';
               const previewBadge = previewRole && pv.hidden ? (
@@ -319,7 +380,7 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
                 const color = virtualColors[id] || meta.default_color;
                 return (
                   <div key={id} className={wrapperClass}>
-                    <SortableTile id={id}>
+                    <SortableTile id={id} disabled={searchActive}>
                       <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: color }}>
                         <Sparkles size={18} className="text-white" />
                       </div>
@@ -364,7 +425,7 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
               if (!cat) return null;
               return (
                 <div key={id} className={wrapperClass}>
-                  <SortableTile id={id}>
+                  <SortableTile id={id} disabled={searchActive}>
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: cat.color }}>
                       <Tag size={18} className="text-white" />
                     </div>

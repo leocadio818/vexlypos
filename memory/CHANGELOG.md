@@ -1,6 +1,26 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-23 — Buscador inteligente en Config. Productos → Categorías 🔍📂
+- **Problema**: con muchas categorías había que hacer scroll manual para encontrarlas. No existía filtro.
+- **Archivo**: `/app/frontend/src/components/MenuTilesSorter.jsx`
+- **Features**:
+  - Input con ícono lupa + placeholder "Buscar categoría..." + botón X para limpiar.
+  - Filtro en tiempo real por nombre (case-insensitive), case-insensitive, cubre también tiles virtuales (Combos, Artículos Libres).
+  - Contador dinámico: "N resultado(s)".
+  - Estado vacío: icono de lupa + texto "No se encontraron categorías".
+  - **Drag-and-drop auto-deshabilitado mientras el filtro está activo**: el handle de arrastre se transforma en ícono `Lock` con cursor `not-allowed` y `useSortable({disabled:true})`. Hint sutil "Limpia el filtro para reordenar" al lado del contador.
+  - Al limpiar con X: reactiva drag-and-drop y muestra todas las tiles.
+- **Pestaña Productos**: el buscador ya existía desde antes con el mismo patrón visual (`product-search-input`), se dejó sin tocar.
+- **Verificado** en 4 escenarios (Desktop 1366×900, Mobile 390×844, Dark mode, Light mode):
+  - "ham" → 1 resultado · HAMBURGUESA
+  - "cer" → 1 resultado · CERVEZAS
+  - "zzzz" → empty state con icono
+  - Limpiar → 4 tiles (incluyendo Combos + Artículos Libres)
+  - Drag deshabilitado con Lock icon mientras filtro activo; reactivado al limpiar
+
+
+
 ## 2026-04-23 — FIX CRÍTICO: Footer Sticky FACTURAR en PaymentScreen 💰📌
 - **Problema**: en laptops (1366×768) y tablets pequeñas, los botones CANCELAR / FACTURAR quedaban "debajo del fold" al final del panel izquierdo. El cajero debía hacer scroll para cobrar, lo cual es inaceptable en hora pico.
 - **Fix** (`pages/PaymentScreen.js`):
