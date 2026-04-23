@@ -90,6 +90,12 @@ Prioridades:
 
 ## 🟡 P2 — Deseable
 
+- [ ] **Export/Import de configuración de áreas+mesas (JSON)** *(Added 2026-04-23)*
+  - Botón "Exportar Layout" en pestaña Áreas → descarga JSON con todas las áreas + mesas (posiciones, formas, capacidades, colores).
+  - Botón "Importar" → acepta JSON y recrea áreas+mesas preservando layout.
+  - Útil para: snapshots antes de experimentar, replicación cross-sucursal, backup pre-cambios masivos.
+  - Complemento natural de la función "Duplicar Área" ya implementada.
+  - ~3-4h (backend endpoint export/import + frontend modal de confirmación con preview).
 - [ ] **Cheat Sheet Modal de atajos de teclado** *(Added 2026-04-23)* — al estilo Linear/Notion.
   - Disparador: `Ctrl+K` o botón `?` en el header.
   - Lista todos los atajos: `/` buscar (ya implementado globalmente), y futuros (`Ctrl+N` nuevo, `Esc` cerrar modal, `G+D` ir a dashboard, etc.).
