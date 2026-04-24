@@ -125,7 +125,11 @@ class MultiprodService:
                     parts = str(fecha_venc).split('-')
                     fecha_venc = f"{parts[2]}-{parts[1]}-{parts[0]}"
             else:
-                fecha_venc = "31-12-2027"
+                raise ValueError(
+                    "FechaVencimientoSecuencia no disponible. "
+                    "Verifique que la secuencia NCF en Supabase tenga "
+                    "'valid_until' configurado."
+                )
             _sub(id_doc, "FechaVencimientoSecuencia", fecha_venc)
 
         # IndicadorMontoGravado — required by DGII for E31, E32, E34, E45
