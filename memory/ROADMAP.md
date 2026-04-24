@@ -90,6 +90,12 @@ Prioridades:
 
 ## 🟡 P2 — Deseable
 
+- [ ] **`customer_phone` en órdenes delivery** *(Added 2026-04-24)*
+  - Input de teléfono en OrderScreen cuando `service_type === 'delivery'`.
+  - Auto-pre-llena el phone al cobrar en PaymentScreen.
+  - Base para integración futura con WhatsApp Business (notificación "tu pedido sale"/"llegó").
+  - Reportería: clientes frecuentes de delivery, retention cohort.
+  - ~2h (field en orders + UI en OrderScreen + pre-fill en PaymentScreen + report query).
 - [ ] **Dashboard Super Admin (multi-tenant)** *(Added 2026-04-23)*
   - Ruta dedicada `/superadmin` accesible solo si `is_super_admin === true`.
   - Gestión cross-tenant: listar todos los restaurantes, activar/desactivar flags por tenant, ver métricas agregadas (ventas totales, clientes activos, churn, uso de storage).
