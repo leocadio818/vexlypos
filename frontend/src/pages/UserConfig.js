@@ -953,20 +953,6 @@ export default function UserConfig() {
               </div>
             </div>
             )}
-
-            {/* Info box for non-system-admin */}
-            {!isSystemAdmin && (
-              <div className="bg-card border border-amber-500/30 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Lock size={14} className="text-amber-400" />
-                  <h3 className="font-oswald text-xs font-bold text-amber-400 uppercase tracking-wider">Permisos Bloqueados</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Los permisos de cada puesto son configurados por el Administrador del Sistema.
-                  Solo puedes asignar puestos predeterminados a los empleados.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>
