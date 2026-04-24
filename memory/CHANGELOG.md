@@ -1,6 +1,41 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-24 — Service Type (Aquí / Llevar / Delivery) en orden + comanda 🍽📦🛵
+
+### Frontend
+- **OrderScreen.js**: nuevo selector de 3 pills (`🍽 Aquí`, `📦 Llevar`, `🛵 Delivery`) en el header del panel de items, justo debajo del nombre del mesero. Min-height 44px para touch, `aria-pressed`, active con `bg-primary text-primary-foreground` + ring. Default `dine_in`.
+- **Persistencia**: cambio de pill dispara `PATCH /api/orders/{id}/service-type` (optimistic UI). Si la orden aún no existe (sin items), el valor se envía al `POST /api/orders` al agregar el primer item.
+- **Sync al editar orden**: `useEffect` sincroniza `serviceType` local con `order.service_type` cuando cambia la orden cargada.
+- **QuickOrderFab.jsx**: mismo selector de 3 pills en el diálogo de "Nueva Orden Rápida" (default `takeout`). Se envía en `POST /api/orders/quick`.
+- **PaymentScreen.js**: la pre-selección del sale_type ahora prioriza `URL param → order.service_type → bill.sale_type → dine_in`. Fetch adicional a `/api/orders/{id}` si la URL no trae hint.
+
+### Backend
+- **POST /api/orders**: nuevo campo opcional `service_type` (dine_in / takeout / delivery).
+- **POST /api/orders/quick**: nuevo campo opcional `service_type`, refleja también `sale_type` correspondiente.
+- **PATCH /api/orders/{id}/service-type**: nuevo endpoint para cambiar el tipo sin crear items (valida valores válidos, 400 si inválido).
+- **send-kitchen**: el job enviado a `print_queue` ahora incluye `data.service_type`.
+
+### Comanda
+- **print_agent_pro.py `data_to_commands`**: banner grande + centrado ANTES del mesero/fecha:
+  - `takeout` → `>> PARA LLEVAR <<`
+  - `delivery` → `>> DELIVERY <<`
+  - `dine_in` → `>> COMER AQUI <<`
+- Size `large`, `bold: True`, envuelto entre dividers para máxima visibilidad desde lejos en cocina.
+
+### QA verificada (E2E)
+- ✅ Selector visible desde entrada a OrderScreen (antes de agregar items)
+- ✅ Click LLEVAR / DELIVERY → `aria-pressed=true` + pill naranja activo
+- ✅ Crear orden POST con `service_type=takeout` → GET retorna `takeout`
+- ✅ PATCH a `delivery` → GET retorna `delivery`
+- ✅ PATCH invalid → HTTP 400
+- ✅ Quick Order con `service_type=delivery` → guarda y refleja en `sale_type`
+- ✅ Comanda renderiza 3 banners correctos (render verificado llamando `data_to_commands` manualmente)
+- ✅ Mobile 390 + selector con wrap, cada pill ≥44px touch target
+- ✅ Dark + light mode
+
+
+
 ## 2026-04-23 — FIX Propietario puede cambiar PIN de empleados de menor nivel 🔐
 - **Problema**: Propietario (level 80) veía "Solo Admin" / "???????? (Contacte al admin)" y no podía cambiar PIN de meseros/cajeros/gerentes.
 - **Archivo**: `/app/frontend/src/pages/UserConfig.js`

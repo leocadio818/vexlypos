@@ -175,6 +175,17 @@ def data_to_commands(data, job_type):
             commands.append({"type": "center", "bold": True, "text": "(PARA LLEVAR - SIN MESA)"})
         else:
             commands.append({"type": "center", "bold": True, "size": "large", "text": f"MESA {data.get('table_number', '?')}"})
+        # ═══ SERVICE TYPE BANNER (Aquí / Llevar / Delivery) ═══
+        # Printed large & centered above waiter/time so kitchen sees it from across the room.
+        st = (data.get("service_type") or "dine_in").lower()
+        if st == "takeout":
+            st_label = ">> PARA LLEVAR <<"
+        elif st == "delivery":
+            st_label = ">> DELIVERY <<"
+        else:
+            st_label = ">> COMER AQUI <<"
+        commands.append({"type": "divider"})
+        commands.append({"type": "center", "bold": True, "size": "large", "text": st_label})
         commands.append({"type": "divider"})
         commands.append({"type": "left", "text": f"{'Cajero' if data.get('is_quick_order') else 'Mesero'}: {data.get('waiter_name', '')}"})
         trans = data.get('transaction_number', '')

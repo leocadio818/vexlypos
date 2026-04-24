@@ -289,14 +289,25 @@ export default function PaymentScreen() {
       setSaleTypes(stRes.filter(st => st.active));
       setTaxConfig(taxRes.filter(t => t.active || t.is_active));
       
-      // Set default service type: use URL param if provided, else prioritize "Dine In"
+      // Set default service type: prefer URL param → order.service_type → existing bill sale_type → dine_in
       if (stRes.length > 0) {
-        // First try to match URL service type
         const fromUrl = stRes.find(st => st.code === urlServiceType);
-        // Look for Dine In as fallback
+        let fromOrder = null;
+        // Try to fetch the order's service_type if URL didn't provide a hint
+        if (!fromUrl && billData?.order_id) {
+          try {
+            const ordRes = await fetch(`${API_BASE}/api/orders/${billData.order_id}`, {
+              headers: { Authorization: `Bearer ${localStorage.getItem('pos_token')}` }
+            });
+            if (ordRes.ok) {
+              const ord = await ordRes.json();
+              if (ord?.service_type) fromOrder = stRes.find(st => st.code === ord.service_type);
+            }
+          } catch {}
+        }
         const dineIn = stRes.find(st => st.code === 'dine_in' || st.name.toLowerCase().includes('dine'));
         const matchingBillST = billData.sale_type ? stRes.find(st => st.code === billData.sale_type) : null;
-        setSelectedServiceType(fromUrl || matchingBillST || dineIn || stRes[0]);
+        setSelectedServiceType(fromUrl || fromOrder || matchingBillST || dineIn || stRes[0]);
       }
       
       // Check tax override permission

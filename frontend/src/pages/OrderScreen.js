@@ -345,6 +345,27 @@ export default function OrderScreen() {
     }
   }, [order]);
 
+  // Sync local serviceType pill with the order's persisted service_type
+  useEffect(() => {
+    if (order && order.service_type && order.service_type !== serviceType) {
+      setServiceType(order.service_type);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.id, order?.service_type]);
+
+  // Persist service_type change to backend when user toggles the pill
+  const handleServiceTypeChange = useCallback(async (next) => {
+    setServiceType(next);
+    const currentOrderId = order?.id || activeOrderId;
+    if (!currentOrderId) return;
+    try {
+      await ordersAPI.setServiceType(currentOrderId, next);
+      setOrder(o => (o ? { ...o, service_type: next } : o));
+    } catch (e) {
+      // Silent fail — pill keeps optimistic value; retry on next fetch.
+    }
+  }, [order?.id, activeOrderId]);
+
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -890,7 +911,7 @@ export default function OrderScreen() {
       let targetOrder = order;
       if (!targetOrder) {
         // Create empty order first, then add items — ensures inventory (including modifier-linked products) is deducted via add-items path
-        const createRes = await ordersAPI.create({ table_id: tableId, items: [] });
+        const createRes = await ordersAPI.create({ table_id: tableId, items: [], service_type: serviceType });
         targetOrder = createRes.data;
         setOrder(targetOrder);
       }
@@ -921,7 +942,7 @@ export default function OrderScreen() {
       // Ensure order exists
       let currentOrder = order;
       if (!currentOrder) {
-        const res = await ordersAPI.create({ table_id: tableId, items: [] });
+        const res = await ordersAPI.create({ table_id: tableId, items: [], service_type: serviceType });
         currentOrder = res.data;
         setOrder(currentOrder);
       }
@@ -2082,6 +2103,36 @@ export default function OrderScreen() {
             )}
           </div>
         </div>
+
+        {/* ═══ SERVICE TYPE SELECTOR (Aquí / Llevar / Delivery) ═══ */}
+        {!splitMode && !accessDenied && (
+          <div className="px-3 py-2 border-b border-white/10 flex items-center gap-1.5" data-testid="service-type-selector">
+            {[
+              { val: 'dine_in',  label: 'Aquí',     icon: '🍽', testid: 'service-type-dine_in' },
+              { val: 'takeout',  label: 'Llevar',   icon: '📦', testid: 'service-type-takeout' },
+              { val: 'delivery', label: 'Delivery', icon: '🛵', testid: 'service-type-delivery' },
+            ].map(opt => {
+              const active = serviceType === opt.val;
+              return (
+                <button
+                  key={opt.val}
+                  onClick={() => handleServiceTypeChange(opt.val)}
+                  data-testid={opt.testid}
+                  className={`flex-1 min-h-[44px] px-2 py-2 rounded-lg text-xs font-oswald font-bold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
+                    active
+                      ? 'bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
+                  }`}
+                  aria-pressed={active}
+                  aria-label={`Tipo de servicio ${opt.label}`}
+                >
+                  <span className="text-sm leading-none">{opt.icon}</span>
+                  <span className="uppercase">{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Access Denied Screen */}
         {accessDenied && (

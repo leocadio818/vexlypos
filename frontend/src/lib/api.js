@@ -151,6 +151,7 @@ export const ordersAPI = {
   cancelItem: (orderId, itemId, data) => api.post(`/orders/${orderId}/cancel-item/${itemId}`, data),
   cancelItems: (orderId, data) => api.post(`/orders/${orderId}/cancel-items`, data),
   sendToKitchen: (id) => api.post(`/orders/${id}/send-kitchen`),
+  setServiceType: (id, service_type) => api.patch(`/orders/${id}/service-type`, { service_type }),
   moveToTable: (orderId, targetTableId, merge = false) => api.post(`/orders/${orderId}/move`, { target_table_id: targetTableId, merge }),
   splitToNewOrder: (orderId, itemIds, label = '') => api.post(`/orders/${orderId}/split`, { item_ids: itemIds, label }),
   getTableOrders: (tableId) => api.get(`/tables/${tableId}/orders`)
@@ -174,7 +175,7 @@ export const ordersAPI = {
       throw err;
     }),
   // Quick Orders (Orden Rápida)
-  createQuick: (customer_name = null) => api.post('/orders/quick', { customer_name }),
+  createQuick: (customer_name = null, service_type = 'dine_in') => api.post('/orders/quick', { customer_name, service_type }),
   listQuickActive: () => api.get('/orders/quick/active'),
   setQuickStatus: (id, status) => api.patch(`/orders/quick/${id}/status`, { status }),
   createNewAccount: (tableId, label = '') => api.post(`/tables/${tableId}/new-account`, { label }),

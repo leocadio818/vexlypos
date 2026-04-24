@@ -89,6 +89,10 @@ class OrderItemInput(BaseModel):
 class CreateOrderInput(BaseModel):
     table_id: str
     items: List[OrderItemInput] = []
+    service_type: Optional[str] = "dine_in"  # "dine_in" | "takeout" | "delivery"
+
+class ServiceTypeInput(BaseModel):
+    service_type: str  # "dine_in" | "takeout" | "delivery"
 
 class AddItemsInput(BaseModel):
     items: List[OrderItemInput]
@@ -369,6 +373,7 @@ async def create_order(input: CreateOrderInput, user=Depends(get_current_user)):
         "waiter_id": user["user_id"], "waiter_name": user["name"],
         "transaction_number": transaction_number,
         "status": "active", "items": items,
+        "service_type": input.service_type if input.service_type in ("dine_in", "takeout", "delivery") else "dine_in",
         "training_mode": is_training,
         "created_at": now_iso(), "updated_at": now_iso()
     }
@@ -386,6 +391,7 @@ async def create_order(input: CreateOrderInput, user=Depends(get_current_user)):
 
 class QuickOrderInput(BaseModel):
     customer_name: Optional[str] = None
+    service_type: Optional[str] = "dine_in"  # "dine_in" | "takeout" | "delivery"
 
 
 class QuickOrderStatusInput(BaseModel):
@@ -426,6 +432,7 @@ async def create_quick_order(input: QuickOrderInput, user=Depends(get_current_us
     is_training = user.get("training_mode", False) or (user_doc.get("training_mode", False) if user_doc else False)
 
     name = (input.customer_name or "").strip() or None
+    st = input.service_type if input.service_type in ("dine_in", "takeout", "delivery") else "dine_in"
     order_id = gen_id()
     order = {
         "id": order_id,
@@ -443,7 +450,8 @@ async def create_quick_order(input: QuickOrderInput, user=Depends(get_current_us
         "quick_order_status": "preparing",
         "quick_order_business_date": bdate,
         "order_type": "quick_order",
-        "sale_type": "takeout",  # Para llevar por defecto (E32)
+        "service_type": st,
+        "sale_type": "takeout" if st == "takeout" else ("delivery" if st == "delivery" else "dine_in"),
         "created_at": now_iso(),
         "updated_at": now_iso(),
     }
@@ -1570,6 +1578,22 @@ async def get_void_report(
         "logs": logs[:100]
     }
 
+# ─── SET SERVICE TYPE (Aquí / Llevar / Delivery) ───
+@router.patch("/orders/{order_id}/service-type")
+async def set_service_type(order_id: str, input: ServiceTypeInput, user: dict = Depends(get_current_user)):
+    st = input.service_type
+    if st not in ("dine_in", "takeout", "delivery"):
+        raise HTTPException(status_code=400, detail="service_type inválido")
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0, "id": 1})
+    if not order:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"service_type": st, "updated_at": now_iso()}}
+    )
+    return {"ok": True, "service_type": st}
+
+
 # ─── SEND TO KITCHEN ───
 @router.post("/orders/{order_id}/send-kitchen")
 async def send_to_kitchen(order_id: str, user: dict = Depends(get_current_user)):
@@ -1781,6 +1805,8 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
             "waiter_name": order.get("waiter_name", ""),
             "order_number": f"T-{transaction_number}" if transaction_number else order.get("id", "")[:8],
             "training_mode": order.get("training_mode", False),
+            # ═══ SERVICE TYPE (Aquí / Llevar / Delivery) ═══
+            "service_type": order.get("service_type", "dine_in"),
             # ═══ QUICK ORDER ═══
             "is_quick_order": is_quick,
             "quick_order_number": quick_number,

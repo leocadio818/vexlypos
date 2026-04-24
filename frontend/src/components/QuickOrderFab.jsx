@@ -21,6 +21,7 @@ export default function QuickOrderFab({ inline = false }) {
   const { user, hasPermission } = useAuth();
   const [createDialog, setCreateDialog] = useState(false);
   const [customerName, setCustomerName] = useState('');
+  const [quickServiceType, setQuickServiceType] = useState('takeout');  // default takeout for quick orders
   const [creating, setCreating] = useState(false);
   const [queueOpen, setQueueOpen] = useState(false);
   const [queue, setQueue] = useState([]);
@@ -49,11 +50,12 @@ export default function QuickOrderFab({ inline = false }) {
   const handleCreate = async () => {
     setCreating(true);
     try {
-      const res = await ordersAPI.createQuick(customerName.trim() || null);
+      const res = await ordersAPI.createQuick(customerName.trim() || null, quickServiceType);
       const orderId = res.data.id;
       notify.success(`Orden Rápida #${String(res.data.quick_order_number).padStart(2, '0')} creada`);
       setCreateDialog(false);
       setCustomerName('');
+      setQuickServiceType('takeout');
       navigate(`/order/quick/${orderId}`);
     } catch (e) {
       notify.error(e.response?.data?.detail || 'Error creando orden rápida');
@@ -187,6 +189,34 @@ export default function QuickOrderFab({ inline = false }) {
                 data-testid="quick-order-name-input"
               />
               <p className="text-[10px] text-muted-foreground mt-1">Si lo dejas vacío se usará "Orden Rápida #XX" secuencial.</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Tipo de servicio</label>
+              <div className="flex items-center gap-1.5" data-testid="quick-service-type-selector">
+                {[
+                  { val: 'dine_in',  label: 'Aquí',     icon: '🍽' },
+                  { val: 'takeout',  label: 'Llevar',   icon: '📦' },
+                  { val: 'delivery', label: 'Delivery', icon: '🛵' },
+                ].map(opt => {
+                  const active = quickServiceType === opt.val;
+                  return (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      onClick={() => setQuickServiceType(opt.val)}
+                      data-testid={`quick-service-type-${opt.val}`}
+                      className={`flex-1 min-h-[44px] px-2 py-2 rounded-lg text-xs font-oswald font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
+                        active
+                          ? 'bg-orange-500 text-white shadow-md ring-2 ring-orange-400/50'
+                          : 'bg-background border border-border text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <span>{opt.icon}</span>
+                      <span className="uppercase">{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
           <DialogFooter>
