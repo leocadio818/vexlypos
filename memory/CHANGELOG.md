@@ -1,6 +1,12 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-25 — FIX UX: eliminado mensaje "Permisos Bloqueados" 🔓
+- **UserConfig.js**: removido el bloque informativo que aparecía a usuarios no-admin al editar permisos de empleados. UI más limpia.
+- **QA**: ✅ Verificado por el usuario en preview.
+- **Health Check Deployment**: ✅ PASS — sin bloqueadores, app lista para desplegar.
+
+
 ## 2026-04-24 — Service Type (Aquí / Llevar / Delivery) en orden + comanda 🍽📦🛵
 
 ### Frontend
