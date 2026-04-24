@@ -160,11 +160,21 @@ class MultiprodService:
         _sub(emisor, "NombreComercial", system_config.get("commercial_name") or system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("razon_social"))
         _sub(emisor, "DireccionEmisor", system_config.get("fiscal_address") or system_config.get("ticket_address") or system_config.get("address") or system_config.get("direccion") or "SIN DIRECCION")
         mun = system_config.get("municipality") or system_config.get("municipio")
-        if mun and len(str(mun)) >= 4:
-            _sub(emisor, "Municipio", str(mun)[:6])
+        if mun:
+            mun_str = str(mun).strip()
+            # Garantizar formato 6 dígitos exigido por XSD (ProvinciaMunicipioType).
+            # Casos legacy: "01" → "010000", "0101" → "010100".
+            if mun_str:
+                mun_str = mun_str.ljust(6, "0")[:6]
+                _sub(emisor, "Municipio", mun_str)
         prov = system_config.get("province") or system_config.get("provincia")
-        if prov and len(str(prov)) >= 2:
-            _sub(emisor, "Provincia", str(prov).zfill(2)[:6])
+        if prov:
+            prov_str = str(prov).strip()
+            # Garantizar formato 6 dígitos. Provincia "pura" termina en "0000".
+            # Casos legacy: "01" → "010000".
+            if prov_str:
+                prov_str = prov_str.ljust(6, "0")[:6]
+                _sub(emisor, "Provincia", prov_str)
         correo = system_config.get("ticket_email") or system_config.get("email") or system_config.get("correo")
         if correo and "@" in str(correo) and correo not in ("test@test.com", "email@example.com", ""):
             _sub(emisor, "CorreoEmisor", correo)

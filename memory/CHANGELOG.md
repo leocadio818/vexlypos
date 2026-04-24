@@ -1,6 +1,18 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-25 — FIX e-CF: Provincia/Municipio formato 6 dígitos (XSD-compliant) 🇩🇴
+- **`/app/frontend/src/data/dgii_territories.js`**: `PROVINCIAS` ahora usa códigos de 6 dígitos (`"010000"`, `"020000"`, ...) y `MUNICIPIOS_BY_PROVINCIA` usa esas mismas keys. Helpers `getProvinciaName/Municipio` aceptan legacy 2-dígitos.
+- **`/app/frontend/src/pages/settings/SystemTab.js`**: ajustada lógica de reset de municipio al cambiar provincia. Compara los primeros 2 dígitos de ambos códigos en lugar de `startsWith` (que se rompía con el nuevo formato).
+- **`/app/backend/services/multiprod_service.py`**: build_xml ahora pad-justifica `Provincia` y `Municipio` a 6 dígitos con `ljust(6, "0")[:6]`. Convierte legacy `"01"` → `"010000"` automáticamente. Cumple `ProvinciaMunicipioType` del XSD.
+- **QA verificada (E2E)**:
+  - ✅ Backend XML 3 casos: nuevo "010000", legacy "01", vacío. Los 3 pasan validación XSD local.
+  - ✅ Frontend dropdown: Distrito Nacional → guarda "010000". La Vega → guarda "130000". Cambio de provincia resetea municipio.
+  - ✅ API persistencia: `province=130000, municipality=130301` se persiste correctamente en `system_config`.
+  - ✅ Mobile viewport: layout grid responsive funciona.
+- **No afecta** datos viejos: backend hace auto-padding si encuentra códigos legacy de 2 dígitos.
+
+
 ## 2026-04-25 — Widget de Salud del Sistema (Super Admin) 🩺
 - **Nuevo tab "Salud"** en Configuración (solo visible para `is_super_admin`).
 - **Backend**: `GET /api/system/health-check` (gated a super_admin) agrega status global + 6 subsistemas:

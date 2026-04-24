@@ -541,11 +541,14 @@ export default function SystemTab() {
                 value={systemConfig.province || ''}
                 onChange={(e) => {
                   const newProv = e.target.value;
+                  // Reset municipio si cambió de provincia. Comparamos por los primeros 2 dígitos
+                  // (el municipio viene como "010101" y la provincia como "010000": comparten los primeros 2).
+                  const provPrefix = (newProv || '').substring(0, 2);
+                  const munPrefix = ((systemConfig.municipality) || '').substring(0, 2);
                   setSystemConfig((p) => ({
                     ...p,
                     province: newProv,
-                    // Reset municipio if the province changed
-                    municipality: newProv && (p.municipality || '').startsWith(newProv) ? p.municipality : '',
+                    municipality: provPrefix && provPrefix === munPrefix ? p.municipality : '',
                   }));
                 }}
                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
