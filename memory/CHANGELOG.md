@@ -1,6 +1,19 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-25 — Widget de Salud del Sistema (Super Admin) 🩺
+- **Nuevo tab "Salud"** en Configuración (solo visible para `is_super_admin`).
+- **Backend**: `GET /api/system/health-check` (gated a super_admin) agrega status global + 6 subsistemas:
+  - MongoDB (ping + latencia)
+  - Print Agent (heartbeat via `print_queue`, umbrales 5/30 min)
+  - e-CF (proveedor configurado + último NCF exitoso)
+  - Órdenes activas / sin facturar
+  - Errores recientes (últimas 24h desde `audit_logs`)
+  - Build info (git commit + fecha)
+- **Frontend**: `HealthTab.js` con polling cada 30s, cards con semáforo (ok/warning/error), botón refrescar manual. Todos los cards con `data-testid`.
+- **QA**: ✅ Verificado con curl y screenshot. Global status calculado como el "peor" estado agregado.
+
+
 ## 2026-04-25 — FIX UX: eliminado mensaje "Permisos Bloqueados" 🔓
 - **UserConfig.js**: removido el bloque informativo que aparecía a usuarios no-admin al editar permisos de empleados. UI más limpia.
 - **QA**: ✅ Verificado por el usuario en preview.

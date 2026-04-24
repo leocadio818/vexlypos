@@ -50,6 +50,7 @@ from routers.dgii import router as dgii_router
 from routers.discounts import router as discounts_router, set_db as discounts_set_db
 from routers.email import router as email_router, set_db as email_set_db
 from routers.features import router as features_router, set_db as features_set_db
+from routers.system_health import router as system_health_router, set_db as system_health_set_db
 from routers.alanube import router as alanube_router, set_db as alanube_set_db
 from routers.ecf_dispatcher import router as ecf_dispatcher_router, set_db as ecf_dispatcher_set_db
 from routers.manuales import router as manuales_router
@@ -93,6 +94,7 @@ business_days_init_supabase()  # Initialize Supabase for business days
 discounts_set_db(db)
 email_set_db(db)
 features_set_db(db)
+system_health_set_db(db)
 alanube_set_db(db)
 ecf_dispatcher_set_db(db)
 system_logs_set_db(db)
@@ -125,6 +127,7 @@ api.include_router(customers_router)
 api.include_router(simple_inventory_router)
 api.include_router(ecf_provider_router)
 api.include_router(features_router)
+api.include_router(system_health_router)
 
 @api.get("/health")
 async def health_check():
