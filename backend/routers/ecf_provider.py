@@ -74,7 +74,7 @@ async def get_ecf_config(user=Depends(get_current_user)):
     config = await db.ecf_provider_config.find_one({}, {"_id": 0})
     if not config:
         # Return default (current provider from system_config)
-        sys_cfg = await db.system_config.find_one({}, {"_id": 0}) or {}
+        sys_cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
         return {
             "provider": sys_cfg.get("ecf_provider", "alanube"),
             "multiprod_endpoint": None,
@@ -114,7 +114,7 @@ async def update_ecf_config(input: EcfConfigInput, user=Depends(get_current_user
             update["multiprod_token_encrypted"] = encrypt_value(input.multiprod_token)
 
     # Also sync to system_config.ecf_provider for backward compat
-    await db.system_config.update_one({}, {"$set": {"ecf_provider": input.provider}}, upsert=True)
+    await db.system_config.update_one({"id": "main"}, {"$set": {"ecf_provider": input.provider}}, upsert=True)
 
     await db.ecf_provider_config.update_one(
         {},
@@ -132,7 +132,7 @@ async def get_active_provider():
     if config and config.get("provider"):
         return config
     # Fallback to system_config
-    sys_cfg = await db.system_config.find_one({}, {"_id": 0}) or {}
+    sys_cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     return {"provider": sys_cfg.get("ecf_provider", "alanube")}
 
 
@@ -315,7 +315,7 @@ async def process_retry(bill_id: str):
         return
 
     # Send to Multiprod — fetch RNC for proper filename
-    sys_cfg = await db.system_config.find_one({}, {"_id": 0}) or {}
+    sys_cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     rnc_emisor = (sys_cfg.get("ticket_rnc") or sys_cfg.get("rnc") or sys_cfg.get("ecf_alanube_rnc") or "").replace("-", "").strip()
     result = await multiprod_service.send_ecf(xml, endpoint, rnc=rnc_emisor, encf=encf)
 
@@ -476,7 +476,7 @@ async def send_ecf_multiprod(bill_id: str, background_tasks: BackgroundTasks, us
         raise HTTPException(status_code=500, detail=f"Error reservando e-NCF: {str(e)}")
 
     # Get system config for XML building
-    system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    system_config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
 
     # Build XML — pass seq_valid_until for FechaVencimientoSecuencia
     try:
@@ -612,7 +612,7 @@ async def test_multiprod_connection(user=Depends(get_current_user)):
     from services.multiprod_service import multiprod_service
 
     endpoint, token = await get_multiprod_credentials()
-    system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    system_config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     rnc = system_config.get("ticket_rnc") or system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or "000000000"
 
     # Step 1: Generate test XML using the real builder — unique e-NCF per test

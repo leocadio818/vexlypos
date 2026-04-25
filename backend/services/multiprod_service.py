@@ -155,14 +155,72 @@ class MultiprodService:
                 tipo_pago = "3"
         _sub(id_doc, "TipoPago", tipo_pago)
 
-        # Emisor — map ticket_* fields from system_config as primary, then generic fallbacks
+        # Emisor — read business data from system_config "main" doc.
+        # The UI's "Datos del Negocio para Ticket" form writes to these keys:
+        #   ticket_rnc, ticket_business_name (Nombre Comercial),
+        #   ticket_legal_name / ticket_razon_social (Razón Social),
+        #   ticket_address_street/_building/_sector/_city,
+        #   fiscal_address (DGII), ticket_email
         emisor = etree.SubElement(encabezado, "Emisor")
-        rnc = system_config.get("ticket_rnc") or system_config.get("rnc") or system_config.get("ecf_alanube_rnc") or ""
-        rnc = rnc.replace("-", "").strip()
-        _sub(emisor, "RNCEmisor", rnc or "000000000")
-        _sub(emisor, "RazonSocialEmisor", system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("razon_social") or "SIN NOMBRE")
-        _sub(emisor, "NombreComercial", system_config.get("commercial_name") or system_config.get("ticket_business_name") or system_config.get("business_name") or system_config.get("razon_social"))
-        _sub(emisor, "DireccionEmisor", system_config.get("fiscal_address") or system_config.get("ticket_address") or system_config.get("address") or system_config.get("direccion") or "SIN DIRECCION")
+
+        # RNC (mandatory)
+        rnc = (system_config.get("ticket_rnc")
+               or system_config.get("rnc")
+               or system_config.get("ecf_alanube_rnc") or "")
+        rnc = rnc.replace("-", "").strip() if rnc else ""
+        if not rnc or rnc == "000000000":
+            raise ValueError(
+                "RNC del emisor no configurado. "
+                "Configure en Sistema → Datos del Negocio → RNC (Ticket)."
+            )
+        _sub(emisor, "RNCEmisor", rnc)
+
+        # Razón Social (legal name) — required by DGII XSD
+        razon = (system_config.get("ticket_razon_social")
+                 or system_config.get("ticket_legal_name")
+                 or system_config.get("razon_social")
+                 or system_config.get("business_name")
+                 or system_config.get("ticket_business_name")
+                 or "")
+        razon = str(razon).strip()
+        if not razon or razon == "SIN NOMBRE":
+            raise ValueError(
+                "Razón Social no configurada. "
+                "Configure en Sistema → Datos del Negocio → Razón Social."
+            )
+        _sub(emisor, "RazonSocialEmisor", razon)
+
+        # Nombre Comercial (DBA) — optional, fallback to legal name
+        comercial = (system_config.get("ticket_business_name")
+                     or system_config.get("commercial_name")
+                     or system_config.get("business_name")
+                     or razon)
+        _sub(emisor, "NombreComercial", str(comercial).strip())
+
+        # Dirección — prefer fiscal address. Otherwise concat ticket address parts.
+        direccion = system_config.get("fiscal_address")
+        if not direccion:
+            parts = [
+                system_config.get("ticket_address_street", ""),
+                system_config.get("ticket_address_building", ""),
+                system_config.get("ticket_address_sector", ""),
+                system_config.get("ticket_address_city", ""),
+            ]
+            direccion = ", ".join(p.strip() for p in parts if p and str(p).strip())
+        if not direccion:
+            direccion = (system_config.get("ticket_address")
+                         or system_config.get("address")
+                         or system_config.get("direccion")
+                         or system_config.get("business_address") or "")
+        direccion = str(direccion).strip()
+        if not direccion or direccion == "SIN DIRECCION":
+            raise ValueError(
+                "Dirección del emisor no configurada. "
+                "Configure en Sistema → Ubicación Fiscal → Dirección Fiscal "
+                "o complete los campos de Dirección en Datos del Negocio."
+            )
+        # XSD AlfNum100Type max length 100
+        _sub(emisor, "DireccionEmisor", direccion[:100])
         mun = system_config.get("municipality") or system_config.get("municipio")
         if mun:
             mun_str = str(mun).strip()

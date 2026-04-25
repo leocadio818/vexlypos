@@ -31,7 +31,7 @@ async def get_config_from_db():
     """Try to get Alanube config from system_config DB"""
     if db is None:
         return None
-    config = await db.system_config.find_one({}, {"_id": 0, "ecf_alanube_token": 1, "ecf_alanube_rnc": 1, "ecf_alanube_env": 1})
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "ecf_alanube_token": 1, "ecf_alanube_rnc": 1, "ecf_alanube_env": 1})
     if config and config.get("ecf_alanube_token"):
         is_sandbox = config.get("ecf_alanube_env", "sandbox") == "sandbox"
         return {
@@ -420,7 +420,7 @@ async def send_ecf(bill_id: str, request: Request):
         raise HTTPException(status_code=400, detail=f"Esta factura ya fue enviada a Alanube (ID: {bill['ecf_alanube_id']})")
     
     # Get system config
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     
     # Generate e-NCF number
     # Generate e-NCF prefix from ecf_type or NCF
@@ -529,7 +529,7 @@ async def retry_ecf(bill_id: str):
     if bill.get("ecf_status") not in ["CONTINGENCIA", "ERROR", None]:
         return {"ok": False, "message": f"Esta factura tiene status '{bill.get('ecf_status')}' — no requiere reintento"}
     
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     
     ecf_type = bill.get("ecf_type", "E32")
     ecf_prefix = ecf_type if ecf_type.startswith("E") else "E32"
@@ -568,7 +568,7 @@ async def retry_all_contingencia():
     bills = await db.bills.find({"ecf_status": "CONTINGENCIA"}, {"_id": 0, "id": 1}).to_list(100)
     
     results = {"total": len(bills), "success": 0, "failed": 0}
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     
     for bill_doc in bills:
         bill = await db.bills.find_one({"id": bill_doc["id"]}, {"_id": 0})

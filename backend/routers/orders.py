@@ -43,7 +43,7 @@ def now_local_print() -> str:
 async def now_local_print_formatted() -> str:
     """Fecha/hora local DR formatted per system config (12h/24h)."""
     from zoneinfo import ZoneInfo
-    config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "time_format": 1}) or {}
     now = datetime.now(ZoneInfo("America/Santo_Domingo"))
     if config.get("time_format") == "24h":
         return now.strftime("%Y-%m-%d %H:%M:%S")

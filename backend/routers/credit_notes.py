@@ -557,7 +557,7 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
     
     # 7. Send to e-CF provider (reads from system_config.ecf_provider)
     try:
-        system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+        system_config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
         credit_note["status"] = "completed"
         await _send_e34_to_provider(credit_note, bill, system_config, e34_encf, seq_due_date)
     except Exception as e:
@@ -799,7 +799,7 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
     
     # 7b. Send E34 to active e-CF provider
     try:
-        system_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+        system_config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
         await _send_e34_to_provider(credit_note, original_bill, system_config, ncf_e34)
         # Update the saved credit note with ecf result
         await db.credit_notes.update_one({"id": credit_note["id"]}, {"$set": {

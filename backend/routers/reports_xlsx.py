@@ -198,7 +198,7 @@ async def _fetch_expenses(date_from: str, date_to: str) -> list:
 
 
 async def _get_business_info() -> dict:
-    cfg = await db.system_config.find_one({}, {"_id": 0}) or {}
+    cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     return {
         "name": cfg.get("ticket_business_name") or cfg.get("restaurant_name") or "VexlyPOS",
         "rnc": cfg.get("ticket_rnc") or cfg.get("rnc") or "",

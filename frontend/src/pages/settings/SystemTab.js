@@ -433,9 +433,28 @@ export default function SystemTab() {
   };
 
   const handleSaveSystemConfig = async () => {
-    try { 
-      await axios.put(`${API}/system/config`, systemConfig, { headers: hdrs() }); 
-      notify.success('Configuración guardada'); 
+    try {
+      await axios.put(`${API}/system/config`, systemConfig, { headers: hdrs() });
+      // Soft-validate e-CF mandatory fields and warn (don't block save)
+      const rnc = (systemConfig.ticket_rnc || systemConfig.rnc || '').replace(/-/g, '').trim();
+      const razon = (systemConfig.ticket_razon_social
+                     || systemConfig.ticket_legal_name
+                     || systemConfig.ticket_business_name || '').trim();
+      const direccion = (systemConfig.fiscal_address
+                         || systemConfig.ticket_address_street
+                         || systemConfig.business_address || '').trim();
+      const missing = [];
+      if (!rnc || rnc === '000000000') missing.push('RNC');
+      if (!razon) missing.push('Razón Social');
+      if (!direccion) missing.push('Dirección Fiscal');
+      if (missing.length > 0) {
+        notify.warning(
+          `⚠️ Configuración guardada, pero faltan campos obligatorios para e-CF: ${missing.join(', ')}. ` +
+          `La facturación electrónica no funcionará hasta que los complete.`
+        );
+      } else {
+        notify.success('Configuración guardada');
+      }
     }
     catch { notify.error('Error'); }
   };
@@ -842,8 +861,12 @@ export default function SystemTab() {
 
             <div className="bg-card border border-border rounded-xl p-4">
               <h3 className="text-sm font-semibold mb-2">Razón Social</h3>
-              <input value={systemConfig.ticket_legal_name || ''} 
-                onChange={e => setSystemConfig(p => ({ ...p, ticket_legal_name: e.target.value }))}
+              <input value={systemConfig.ticket_legal_name || systemConfig.ticket_razon_social || ''}
+                onChange={e => setSystemConfig(p => ({
+                  ...p,
+                  ticket_legal_name: e.target.value,
+                  ticket_razon_social: e.target.value,
+                }))}
                 placeholder="RESTAURANTE DEMO SRL"
                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm" data-testid="ticket-legal-name" />
             </div>

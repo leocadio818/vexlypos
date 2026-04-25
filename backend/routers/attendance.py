@@ -109,7 +109,7 @@ async def clock_in(input: PinInput):
     local_now = now_local()
     
     # Get time format preference
-    config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "time_format": 1}) or {}
     is_12h = config.get("time_format", "12h") == "12h"
     display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
     
@@ -180,7 +180,7 @@ async def clock_out(input: PinInput):
     
     # ── All validations passed — register clock-out ──
     local_now = now_local()
-    config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "time_format": 1}) or {}
     is_12h = config.get("time_format", "12h") == "12h"
     display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
     
@@ -238,7 +238,7 @@ async def auto_clock_out(user=Depends(get_current_user)):
         raise HTTPException(status_code=400, detail=f"Tienes {table_count} mesa(s) abierta(s). Debes cerrarlas o transferirlas antes de marcar salida.")
     
     local_now = now_local()
-    config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "time_format": 1}) or {}
     is_12h = config.get("time_format", "12h") == "12h"
     display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
     
@@ -373,7 +373,7 @@ async def force_clock_out(input: ForceClockOutInput, user=Depends(get_current_us
         raise HTTPException(status_code=400, detail="El usuario no tiene entrada activa")
     
     local_now = now_local()
-    config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "time_format": 1}) or {}
     is_12h = config.get("time_format", "12h") == "12h"
     display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
     

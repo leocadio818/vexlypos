@@ -102,7 +102,7 @@ TIMEZONE_OPTIONS = [
 # ─── SYSTEM CONFIG ───
 @router.get("/system/config")
 async def get_system_config():
-    config = await db.system_config.find_one({}, {"_id": 0})
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0})
     if not config:
         config = {"timezone_offset": -4, "restaurant_name": "Mi Restaurante", "currency": "RD$", "rnc": "000-000000-0"}
     # Mask sensitive e-CF credentials before returning
@@ -115,7 +115,7 @@ async def get_system_config():
 @router.get("/system/branding")
 async def get_system_branding():
     """Public endpoint for login screen - returns only name and logo"""
-    config = await db.system_config.find_one({}, {"_id": 0, "restaurant_name": 1, "logo_url": 1})
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "restaurant_name": 1, "logo_url": 1})
     return config or {"restaurant_name": "Mi Restaurante"}
 
 @router.put("/system/config")
@@ -127,7 +127,7 @@ async def update_system_config(input: dict):
         val = input.get(key, "")
         if isinstance(val, str) and val.startswith("****"):
             del input[key]
-    await db.system_config.update_one({}, {"$set": input}, upsert=True)
+    await db.system_config.update_one({"id": "main"}, {"$set": input}, upsert=True)
     return {"ok": True}
 
 @router.put("/system/ecf-credentials")
@@ -158,7 +158,7 @@ async def update_ecf_credentials(input: dict):
             update["ecf_tf_env"] = input["environment"]
 
     if update:
-        await db.system_config.update_one({}, {"$set": update}, upsert=True)
+        await db.system_config.update_one({"id": "main"}, {"$set": update}, upsert=True)
         # Invalidate The Factory token cache on credential change
         if provider == "thefactory":
             from routers.thefactory import invalidate_token
@@ -172,7 +172,7 @@ async def get_ecf_credentials(provider: str):
     if provider not in ("alanube", "thefactory"):
         raise HTTPException(400, "Proveedor inválido")
 
-    config = await db.system_config.find_one({}, {"_id": 0})
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0})
     if not config:
         config = {}
 

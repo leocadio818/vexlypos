@@ -672,7 +672,7 @@ async def upload_logo(file: UploadFile = File(...)):
     with open(logo_dir / unique_filename, "wb") as f:
         f.write(contents)
     logo_url = f"/api/uploads/logo/{unique_filename}"
-    await db.system_config.update_one({}, {"$set": {"logo_url": logo_url}}, upsert=True)
+    await db.system_config.update_one({"id": "main"}, {"$set": {"logo_url": logo_url}}, upsert=True)
     return {"ok": True, "logo_url": logo_url}
 
 @api.get("/uploads/logo/{filename}")
@@ -1644,7 +1644,7 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
         raise HTTPException(status_code=404)
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     printer_config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or config
     
     biz_name = printer_config.get("business_name", "ALONZO CIGAR")
@@ -1828,7 +1828,7 @@ async def print_receipt_escpos(bill_id: str):
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
         raise HTTPException(status_code=404)
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     biz_name = config.get('business_name', 'ALONZO CIGAR')
     biz_rnc = config.get('rnc', '1-31-75577-1')
     biz_addr = config.get('business_address', 'C/ Las Flores #12, Jarabacoa')
@@ -2428,7 +2428,7 @@ async def update_alert_schedule():
 # ─── e-CF AUTO-RETRY SCHEDULER ───
 async def ecf_auto_retry_job():
     """Automatically retry all CONTINGENCIA e-CF bills via the active provider"""
-    config = await db.system_config.find_one({}, {"_id": 0})
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0})
     if not config or not config.get("ecf_auto_retry"):
         return
     
@@ -2560,7 +2560,7 @@ async def print_shift_report(input: dict, user=Depends(get_current_user)):
     if not report:
         raise HTTPException(status_code=400, detail="Faltan datos del reporte")
     
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     biz_name = config.get("business_name", "")
     
     # Construir comandos ESC/POS
@@ -2867,7 +2867,7 @@ async def send_receipt_to_queue(bill_id: str):
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     biz_name = config.get('business_name', 'ALONZO CIGAR')
     biz_rnc = config.get('rnc', '1-31-75577-1')
     biz_addr = config.get('business_address', 'C/ Las Flores #12, Jarabacoa')
@@ -3193,7 +3193,7 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     biz_name = config.get('business_name', 'ALONZO CIGAR')
     biz_rnc = config.get('rnc', '1-31-75577-1')
     biz_phone = config.get('phone', '809-301-3858')
@@ -4471,6 +4471,69 @@ async def startup_event():
     if not existing_tz:
         await db.system_config.insert_one({"id": "timezone", "timezone": "America/Santo_Domingo"})
         logger.info("Timezone config seeded: America/Santo_Domingo")
+
+    # ── MIGRATION: ensure system_config doc with id="main" exists ──
+    # Historically PUT/GET /system/config used find/update with empty filter {}, which
+    # caused all "main" config fields (ticket_rnc, ticket_business_name, fiscal_address,
+    # province, ecf_provider, etc.) to be written to whatever doc happened to be first
+    # in the collection (frequently `stock_alerts`). This migration consolidates those
+    # fields into a single, properly-keyed doc.
+    try:
+        main_doc = await db.system_config.find_one({"id": "main"})
+        if not main_doc:
+            # Doc ids that have their own dedicated purpose — don't merge their fields,
+            # just leave them alone. Used to filter ownership in the merge.
+            RESERVED_IDS = {
+                "timezone", "stock_alerts", "inventory_settings", "printer_config",
+                "kitchen_config", "auto_logout", "open_items_settings",
+                "quick_orders_settings", "features",
+            }
+            # Fields that live ONLY in their reserved doc — never copy them to "main".
+            RESERVED_FIELDS = {
+                # stock_alerts
+                "emails", "schedule_time", "enabled",
+                # inventory_settings
+                "allow_sale_without_stock", "auto_deduct_on_payment",
+                "default_warehouse_id", "show_stock_alerts",
+                # auto_logout
+                "auto_logout_minutes", "auto_logout_enabled",
+                # open_items / quick_orders
+                "auto_deliver_minutes", "open_items_enabled",
+                # features
+                "feature_email_marketing",
+                # timezone
+                "timezone",
+            }
+            merged = {"id": "main"}
+            cursor = db.system_config.find({}, {"_id": 0})
+            all_docs = await cursor.to_list(50)
+            # Order: prefer reading first the doc that previously held "main" data
+            # (the one without an `id` or with id NOT in RESERVED_IDS), then printer_config
+            # (legacy storage of business data), then stock_alerts (latest mistaken target).
+            def sort_key(d):
+                did = d.get("id", "")
+                if did and did not in RESERVED_IDS:
+                    return 0  # custom doc treated as main
+                if did == "printer_config":
+                    return 1
+                if did == "stock_alerts":
+                    return 2
+                return 3
+            all_docs.sort(key=sort_key)
+            for doc in all_docs:
+                for k, v in doc.items():
+                    if k in ("_id", "id"):
+                        continue
+                    if k in RESERVED_FIELDS:
+                        continue
+                    if k not in merged:
+                        merged[k] = v
+            await db.system_config.insert_one(merged)
+            logger.info(f"system_config: migrated to id='main' with {len(merged)-1} fields")
+        else:
+            logger.info("system_config: id='main' doc already present")
+    except Exception as e:
+        logger.warning(f"system_config migration warning (non-fatal): {e}")
 
     # Seed custom role permissions (gerente/propietario) if empty
     try:

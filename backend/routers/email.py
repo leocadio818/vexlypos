@@ -229,7 +229,7 @@ async def send_invoice_email(bill_id: str, email_override: Optional[str] = Query
         await db.bills.update_one({"id": bill_id}, {"$set": {"customer_email": email_override}})
     
     # Get system config for business name
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     
     # Build HTML
     html = build_invoice_html(bill, config)
@@ -271,7 +271,7 @@ async def preview_invoice_email(bill_id: str):
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     html = build_invoice_html(bill, config)
     
     return {"html": html, "customer_email": bill.get("customer_email", "")}
@@ -382,7 +382,7 @@ async def send_marketing_email(input: dict):
         raise HTTPException(status_code=400, detail="El mensaje es requerido")
     
     # Get system config for branding
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     biz_name = config.get("restaurant_name", "VexlyPOS")
     
     # Build HTML template
@@ -444,7 +444,7 @@ async def preview_marketing_email(input: dict):
     products = input.get("products", [])
     
     # Get system config for branding
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     
     # Build HTML template
     html = build_marketing_html(config, subject, message, products)

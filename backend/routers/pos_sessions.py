@@ -330,7 +330,7 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
         try:
             from zoneinfo import ZoneInfo
             local_now = datetime.now(ZoneInfo("America/Santo_Domingo"))
-            config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+            config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "time_format": 1}) or {}
             is_12h = config.get("time_format", "12h") == "12h"
             display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
             

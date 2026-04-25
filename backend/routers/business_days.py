@@ -442,7 +442,7 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
     try:
         from routers.attendance import now_local
         local_now = now_local()
-        config = await db.system_config.find_one({}, {"_id": 0, "time_format": 1}) or {}
+        config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "time_format": 1}) or {}
         is_12h = config.get("time_format", "12h") == "12h"
         display_time = local_now.strftime("%I:%M %p" if is_12h else "%H:%M")
         

@@ -235,7 +235,7 @@ async def public_loyalty_card(cid: str, token: str = Query(...)):
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
     config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"points_per_hundred": 10, "point_value_rd": 1, "min_redemption": 50}
-    biz_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    biz_config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
 
     # Last 3 visits
     last_bills = await db.bills.find(
@@ -292,7 +292,7 @@ async def send_loyalty_card_email(cid: str, request: Request, body: dict = None)
     public_url = (body or {}).get("public_url") or f"{str(request.base_url).rstrip('/')}/loyalty-card/{cid}?token={token}"
 
     config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"point_value_rd": 1, "min_redemption": 50}
-    biz_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    biz_config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     biz_name = biz_config.get("restaurant_name", "VexlyPOS")
 
     points = int(customer.get("points", 0) or 0)
@@ -385,7 +385,7 @@ async def _auto_send_loyalty_email(cid: str, subject_prefix: str, title: str, su
             return False
 
         config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"point_value_rd": 1, "min_redemption": 50}
-        biz_config = await db.system_config.find_one({}, {"_id": 0}) or {}
+        biz_config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
         biz_name = biz_config.get("restaurant_name", "VexlyPOS")
 
         token = _loyalty_token(cid)

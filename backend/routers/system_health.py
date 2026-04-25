@@ -109,7 +109,7 @@ async def _check_print_agent() -> dict:
 
 async def _check_ecf() -> dict:
     try:
-        cfg = await db.system_config.find_one({}, {"_id": 0, "ecf_enabled": 1, "ecf_provider": 1}) or {}
+        cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0, "ecf_enabled": 1, "ecf_provider": 1}) or {}
         enabled = bool(cfg.get("ecf_enabled"))
         provider = cfg.get("ecf_provider") or "alanube"
         if not enabled:

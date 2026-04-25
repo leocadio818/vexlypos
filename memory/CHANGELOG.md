@@ -1,6 +1,35 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-25 — FIX DEFINITIVO: system_config con id="main" + mapeo correcto UI→XML 🏗️
+**Bug crítico raíz**: 49 lugares del backend usaban `find_one({})` / `update_one({})` sin filtro de id, lo que mezclaba datos de configuración del negocio con `stock_alerts` y otros docs reservados. Resultado: XML e-CF salía con `RNCEmisor="000000000"` y DGII rechazaba.
+
+### Backend
+- **Migración automática al startup** (`server.py`): al arrancar, si no existe doc `id="main"`, se crea consolidando los campos del antiguo "primer doc" + `printer_config` (legacy) + cualquier otro doc no-reservado. RESERVED_IDS y RESERVED_FIELDS protegidos.
+- **49 reemplazos masivos**: todo `system_config.find_one({}, ...)` → `find_one({"id": "main"}, ...)`. Aplicado en 15 archivos: server.py, config.py, ecf_dispatcher.py, ecf_provider.py, alanube.py, thefactory.py, email.py, customers.py, attendance.py, business_days.py, credit_notes.py, orders.py, pos_sessions.py, reports_xlsx.py, system_health.py.
+- **`multiprod_service.py` build_xml — mapeo correcto al XSD DGII**:
+  - `RNCEmisor` ← `ticket_rnc` (con fallback `rnc`, `ecf_alanube_rnc`). **ValueError** si vacío.
+  - `RazonSocialEmisor` ← `ticket_razon_social` → `ticket_legal_name` → `razon_social` → `business_name`. **ValueError** si vacío.
+  - `NombreComercial` ← `ticket_business_name` → `commercial_name` → razon.
+  - `DireccionEmisor` ← `fiscal_address` → concat(`ticket_address_street/_building/_sector/_city`) → `business_address`. **ValueError** si vacío.
+  - `CorreoEmisor` ← `ticket_email` → `email` (opcional, solo si "@").
+
+### Frontend
+- **`SystemTab.js`**: input "Razón Social" ahora hace **doble write** (`ticket_legal_name` Y `ticket_razon_social`) para compatibilidad con el backend.
+- **Validación soft al guardar**: si faltan RNC, Razón Social o Dirección, se guarda igual pero muestra `notify.warning` con los campos faltantes y advierte que e-CF no funcionará. No bloquea.
+
+### QA verificada (E2E)
+- ✅ 49 reemplazos confirmados con grep (0 `find_one({})` / 0 `update_one({})` restantes).
+- ✅ Migración corre al startup. Doc `main` con 19 campos consolidados.
+- ✅ `stock_alerts`, `features`, `printer_config`, `timezone`, `inventory_settings`, `auto_logout`, `open_items_settings`, `quick_orders_settings` siguen INTACTOS con sus propios docs.
+- ✅ XML E32 con datos UI: `RNCEmisor=131123456`, `RazonSocialEmisor=Mi Resto Demo SRL`, `NombreComercial=Mi Resto Demo`, `DireccionEmisor=Av. Demo #123`, `Provincia=010000`, `Municipio=010101`, `CorreoEmisor=info@demo.com`. **XSD PASS**.
+- ✅ XML E31 con `seq_valid_until="2028-12-31"` → `FechaVencimientoSecuencia=31-12-2028`. **XSD PASS**.
+- ✅ ValueError correcto en 3 escenarios: sin RNC / sin Razón Social / sin Dirección.
+- ✅ UI: Razón Social escribe ambas keys. Toast warning visible al guardar sin RNC.
+- ✅ Mobile (390x844) + light mode: layout responsive funciona.
+- ✅ Backend startup limpio sin errores.
+
+
 ## 2026-04-25 — FIX e-CF: Provincia/Municipio formato 6 dígitos (XSD-compliant) 🇩🇴
 - **`/app/frontend/src/data/dgii_territories.js`**: `PROVINCIAS` ahora usa códigos de 6 dígitos (`"010000"`, `"020000"`, ...) y `MUNICIPIOS_BY_PROVINCIA` usa esas mismas keys. Helpers `getProvinciaName/Municipio` aceptan legacy 2-dígitos.
 - **`/app/frontend/src/pages/settings/SystemTab.js`**: ajustada lógica de reset de municipio al cambiar provincia. Compara los primeros 2 dígitos de ambos códigos en lugar de `startsWith` (que se rompía con el nuevo formato).

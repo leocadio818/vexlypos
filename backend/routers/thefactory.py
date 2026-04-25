@@ -231,7 +231,7 @@ async def get_config_from_db():
     """Try to get The Factory config from system_config DB"""
     if db is None:
         return None
-    config = await db.system_config.find_one({}, {
+    config = await db.system_config.find_one({"id": "main"}, {
         "_id": 0, "ecf_tf_user": 1, "ecf_tf_password": 1,
         "ecf_tf_rnc": 1, "ecf_tf_company": 1, "ecf_tf_env": 1,
     })

@@ -33,7 +33,7 @@ def set_db(database):
 
 async def get_provider() -> str:
     """Get active e-CF provider from system_config"""
-    config = await db.system_config.find_one({}, {"_id": 0, "ecf_provider": 1})
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "ecf_provider": 1})
     return (config or {}).get("ecf_provider", "alanube")
 
 
@@ -62,7 +62,7 @@ async def send_ecf(bill_id: str):
         existing = bill.get("ecf_alanube_id") or bill.get("ecf_encf")
         raise HTTPException(status_code=400, detail=f"Esta factura ya fue enviada (Ref: {existing})")
 
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     provider = config.get("ecf_provider", "alanube")
 
     # Generate e-NCF
@@ -248,7 +248,7 @@ async def _send_via_multiprod(bill, config, bill_id):
         return {"ok": False, "error": f"Error reservando e-NCF: {str(e)}"}
 
     # Get system config for XML building
-    system_config = config or await db.system_config.find_one({}, {"_id": 0}) or {}
+    system_config = config or await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
 
     # Build XML — pass seq_valid_until for FechaVencimientoSecuencia
     try:
@@ -347,7 +347,7 @@ async def retry_ecf(bill_id: str):
     if bill.get("ecf_status") not in ["CONTINGENCIA", "ERROR", "REJECTED", None]:
         return {"ok": False, "message": f"Status '{bill.get('ecf_status')}' no requiere reintento"}
 
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     provider = config.get("ecf_provider", "alanube")
 
     ecf_type = bill.get("ecf_type", "E32")
@@ -404,7 +404,7 @@ async def retry_all_contingencia():
         ],
     }
     bills = await db.bills.find(query, {"_id": 0, "id": 1}).to_list(100)
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     provider = config.get("ecf_provider", "alanube")
 
     results = {"total": len(bills), "success": 0, "failed": 0, "provider": provider, "skipped_manual": 0}
@@ -476,7 +476,7 @@ async def refresh_ecf_status(bill_id: str):
     # Fallback to system provider if bill doesn't have one set (ERROR bills often have none)
     bill_provider = bill.get("ecf_provider")
     if not bill_provider:
-        sys_cfg = await db.system_config.find_one({}, {"_id": 0, "ecf_provider": 1}) or {}
+        sys_cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0, "ecf_provider": 1}) or {}
         bill_provider = sys_cfg.get("ecf_provider") or "multiprod"
 
     if bill_provider == "multiprod":
@@ -587,7 +587,7 @@ async def get_ecf_config():
     al_cfg = (await al_db_config()) or alanube_env_config()
     tf_cfg = (await tf_db_config()) or tf_env_config()
 
-    sys_config = await db.system_config.find_one({}, {"_id": 0, "ecf_provider": 1, "ecf_enabled": 1})
+    sys_config = await db.system_config.find_one({"id": "main"}, {"_id": 0, "ecf_provider": 1, "ecf_enabled": 1})
     active_provider = (sys_config or {}).get("ecf_provider", "alanube")
 
     return {
@@ -892,7 +892,7 @@ async def ecf_health_metrics(user=Depends(__import__("routers.auth", fromlist=["
 @router.post("/test-connection")
 async def test_ecf_connection():
     """Test connection to the active e-CF provider"""
-    config = await db.system_config.find_one({}, {"_id": 0}) or {}
+    config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     provider = config.get("ecf_provider", "alanube")
 
     if provider == "thefactory":
