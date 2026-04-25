@@ -36,7 +36,6 @@ dist/
 # Sensitive credentials (NOT .env files - those are needed for deployment)
 *token.json*
 *credentials.json*
-memory/test_credentials.md
 
 # Logs and debug files
 npm-debug.log*
@@ -98,98 +97,68 @@ frontend/node_modules/.cache/default-development/16.pack
 frontend/node_modules/.cache/default-development/17.pack
 frontend/node_modules/.cache/default-development/18.pack
 frontend/node_modules/.cache/default-development/23.pack
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/6.pack
 frontend/node_modules/.cache/default-development/6.pack
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/26.pack
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/27.pack
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/29.pack
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/25.pack
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
 credentials.json
 *.pem
 *.key
@@ -211,11 +180,6 @@ frontend/node_modules/.cache/default-development/47.pack
 frontend/node_modules/.cache/default-development/48.pack
 frontend/node_modules/.cache/default-development/50.pack
 frontend/node_modules/.cache/default-development/51.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
@@ -224,11 +188,6 @@ frontend/node_modules/.cache/default-development/52.pack
 frontend/node_modules/.cache/default-development/54.pack
 frontend/node_modules/.cache/default-development/49.pack
 frontend/node_modules/.cache/default-development/60.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
@@ -246,11 +205,6 @@ frontend/node_modules/.cache/default-development/79.pack
 frontend/node_modules/.cache/default-development/2.pack
 frontend/node_modules/.cache/default-development/82.pack
 frontend/node_modules/.cache/default-development/84.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
@@ -261,31 +215,16 @@ frontend/node_modules/.cache/default-development/90.pack
 frontend/node_modules/.cache/default-development/72.pack
 frontend/node_modules/.cache/default-development/94.pack
 frontend/node_modules/.cache/default-development/95.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/97.pack
 frontend/node_modules/.cache/default-development/99.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
@@ -298,11 +237,6 @@ frontend/node_modules/.cache/default-development/103.pack
 frontend/node_modules/.cache/default-development/102.pack
 frontend/node_modules/.cache/default-development/104.pack
 frontend/node_modules/.cache/default-development/106.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
@@ -326,88 +260,42 @@ backend/xsd/*.pdf
 backend/tests/test_ecf_credentials*.py
 
 # Memory / handoff / credentials (already in use but reinforced)
-memory/test_credentials.md
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/7.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/14.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/15.pack
 frontend/node_modules/.cache/default-development/15.pack
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
 .credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
 credentials.json
 *.pem
 *.key
