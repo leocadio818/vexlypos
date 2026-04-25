@@ -1,6 +1,93 @@
 # POS Restaurant System - Dominican Republic
 
 
+## 🔥 SESSION ACTIVA — Lungomare Bar & Lounge instalación 2026-04-26 (DOMINGO)
+
+### Estado actual (2026-04-25 ~04:30 UTC)
+- Cliente: **Lungomare Bar & Lounge**
+- URL tenant: **https://lungomare.vexlyapp.com** (admin PIN `11338585`, role=admin)
+- Ambiente Multiprod: **SANDBOX** (`portalmultiprod.com/api/testecf/...`). Aún NO tienen URL productiva.
+- DGII: **testbed** (no afecta nada real)
+
+### Datos fiscales aplicados (system_config id="main")
+- RNC: `1-01-52417-2` (clean: `101524172`)
+- Razón Social: `EMPRESA DE ENTRETENIMIENTOS ELIAS SRL`
+- Nombre Comercial: `Lungomare Bar & Lounge`
+- Dirección Fiscal: `Av. George Washington 365, Santo Domingo`
+- Provincia: `010000` (Distrito Nacional)
+- Municipio: `010101` (Santo Domingo de Guzmán)
+- Email: `Ramoabastec@gmail.com`
+- Teléfono: `809-221-7713`
+
+### Endpoint Multiprod sandbox (Lungomare)
+```
+https://portalmultiprod.com/api/testecf/enviar/a0152849fbf760e2de60c6274797c93e
+```
+
+### Secuencias NCF aprobadas DGII (carta oficial)
+| Tipo | Rango | Vencimiento OFICIAL (prod) | Vencimiento SANDBOX (testbed espera) |
+|---|---|---|---|
+| E31 Crédito Fiscal | 1–100 | **2027-12-31** | **2028-12-31** ⚠️ |
+| E32 Consumo | 1–10000 | sin vencer | placeholder 2099-12-31 |
+| E34 Nota Crédito | 1–4000 | sin vencer | placeholder 2099-12-31 |
+| E45 Gubernamental | 1–30 | **2027-12-31** | **2028-12-31** ⚠️ |
+| E44 | desactivada | (no aprobada) | — |
+
+**⚠️ CRITICAL**: sandbox y producción son ambientes DGII separados con fechas distintas registradas. Al pasar a producción real:
+1. Cambiar URL Multiprod a `/api/ecf/...` (sin "test")
+2. Cambiar E31 y E45 `valid_until` a `2027-12-31`
+3. Resetear contadores a 1 (DGII prod no recuerda nada del testbed)
+
+### Estado actual de contadores Lungomare (BD productiva)
+- E31: `current_number=4` (después de algunos tests)
+- E32: `current_number=103` (saltado desde 1 después de quemar 1-2 en sandbox)
+- E34: `current_number=1`
+- E45: `current_number=1`
+
+### Fixes aplicados HOY (push a origin/main hecho por usuario)
+1. **server.py:3417** — ticket QR ahora lee `ecf_qr` (Multiprod) además de `ecf_stamp_url` (Alanube). Extrae CodigoSeguridad del URL.
+2. **multiprod_service.py** — mapeo correcto al XML XSD: RNCEmisor (`ticket_rnc`), RazonSocialEmisor (`ticket_razon_social`/`ticket_legal_name`/...), NombreComercial, DireccionEmisor, CorreoEmisor. Provincia/Municipio ljust 6 dígitos. ValueError con mensaje claro si falta dato obligatorio. Eliminado fallback hardcoded `"31-12-2027"` para FechaVencimientoSecuencia.
+3. **system_config consolidado en `id="main"`** — migración automática al startup + 49 reemplazos masivos `find_one({})` → `find_one({"id": "main"})` en 15 archivos backend.
+4. **dgii_territories.js** — códigos provincia 6 dígitos (`010000`, no `01`).
+5. **SystemTab.js** — Razón Social doble-write (`ticket_legal_name` + `ticket_razon_social`). Soft-validation toast si faltan RNC/Razón Social/Dirección.
+6. **system_health.py** — `GET /api/system/health-check` (Super Admin only) con 6 subsistemas (Mongo, Print Agent, e-CF, Órdenes, Errores, Build).
+7. **HealthTab.js** — pestaña "Salud" en Configuración (solo Super Admin).
+8. **.gitignore** — eliminadas 112 líneas duplicadas que bloqueaban `.env` (Emergent native deploy los necesita). `scripts/clientes/*.env` sigue protegido.
+
+### Bugs latentes conocidos (NO arreglados aún, no urgentes para Lungomare)
+- `ecf_provider.py:98` — gating `if user.get("role") != "admin"` impide a Propietarios configurar credenciales Multiprod desde UI. Para Lungomare no aplica porque el usuario configurador (yo, el dev) tiene role=admin.
+- `ecf_provider.py:110` — gating `if input.provider == "multiprod"` impide actualizar credenciales si cambias provider sin reescribirlas (caso edge).
+
+### Scripts entregados (todos en `/app/scripts/`)
+- `setup_tenant.sh` — universal parametrizable (--config .env o flags)
+- `clientes/_template.env` — plantilla
+- `clientes/lungomare.env` — Lungomare ya lista
+- `load_lungomare_sequences.sh` — carga secuencias NCF (no parametrizable aún)
+- `test_ecf_lungomare.sh` — test E2E sandbox
+- `fix_lungomare_post_test.sh` — limpieza post-pruebas
+- `setup_lungomare.sh` — versión legacy
+- `README.md` — guía completa
+
+### Workflow para Lungomare DOMINGO 2026-04-26 (instalación física)
+1. Pull en agente Lungomare: `git fetch origin && git reset --hard origin/main && sudo supervisorctl restart backend frontend` (esto ya está aplicado por usuario)
+2. Verificar que tiene fixes: hacer un cobro E32 desde UI → ticket DEBE imprimir QR
+3. Si Multiprod entrega URL productiva: editar `clientes/lungomare.env` → reset secuencias → cambiar E31/E45 a `2027-12-31`
+4. Backup credenciales productivas antes del go-live
+
+### Test E2E confirmado (preview hoy)
+- E32 con eNCF E320000099001 → `estado=aceptado código=1` con QR oficial
+- E31 con eNCF E310000099001 + `seq_valid_until="2028-12-31"` → `estado=aceptado código=1` con QR oficial
+- XML pasa XSD local + Megaplus + DGII testbed
+
+### Si algo falla durante instalación
+- Widget Salud (Configuración → Salud) muestra estado tiempo real
+- Logs e-CF: `GET /api/ecf/logs?limit=10`
+- Forzar contingencia manual desde UI POS para no bloquear cobro
+- Revisar `system_config.find_one({"id": "main"})` tenga RNC/RazonSocial/Direccion
+- Revisar `ecf_provider_config` tenga `multiprod_endpoint`
+
+
+
 ## 🔒 Completed Tasks (2026-04-23)
 
 - **🔒 Sticky FACTURAR Footer en PaymentScreen** (DONE - 2026-04-23):
