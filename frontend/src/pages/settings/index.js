@@ -44,7 +44,7 @@ const ALL_TABS = [
   { value: 'descuentos', label: 'Descuentos', icon: Tag, permissions: ['config_descuentos','manage_cancellation_reasons'], component: DescuentosTab },
   { value: 'sesiones', label: 'Sesiones', icon: Shield, adminOnly: true, component: SessionsTab },
   { value: 'plan', label: 'Plan', icon: Crown, superAdminOnly: true, component: PlanTab },
-  { value: 'health', label: 'Salud', icon: Activity, superAdminOnly: true, component: HealthTab },
+  { value: 'health', label: 'Salud', icon: Activity, adminOnly: true, component: HealthTab },
 ];
 
 function SettingsContent() {

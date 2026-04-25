@@ -48,7 +48,7 @@ function HealthCard({ title, icon: Icon, iconColor, status, message, children, t
 
 export default function HealthTab() {
   const { user } = useAuth();
-  const isSuperAdmin = user?.is_super_admin === true;
+  const isPrivileged = user?.is_super_admin === true || (user?.role || '').toLowerCase() === 'admin';
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -69,17 +69,17 @@ export default function HealthTab() {
   }, []);
 
   useEffect(() => {
-    if (!isSuperAdmin) { setLoading(false); return; }
+    if (!isPrivileged) { setLoading(false); return; }
     fetchHealth();
     intervalRef.current = setInterval(fetchHealth, 30000); // 30s polling
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isSuperAdmin, fetchHealth]);
+  }, [isPrivileged, fetchHealth]);
 
-  if (!isSuperAdmin) {
+  if (!isPrivileged) {
     return (
       <div className="bg-card border border-border rounded-xl p-8 text-center">
         <Heart size={32} className="mx-auto text-muted-foreground mb-3" />
-        <p className="text-sm text-muted-foreground">Esta pestaña es exclusiva para Super Administradores.</p>
+        <p className="text-sm text-muted-foreground">Esta pestaña es exclusiva para Administradores.</p>
       </div>
     );
   }

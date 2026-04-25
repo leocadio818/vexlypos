@@ -30,12 +30,18 @@ def set_db(database):
 
 
 async def _require_super_admin(user_payload: dict) -> None:
+    """Allow users with is_super_admin=true OR role=admin (admin maestro).
+    Both are the highest privilege level in the system."""
     user_id = user_payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="No autenticado")
-    u = await db.users.find_one({"id": user_id}, {"_id": 0, "is_super_admin": 1})
-    if not (u and u.get("is_super_admin") is True):
-        raise HTTPException(status_code=403, detail="Solo super administradores pueden ver el estado del sistema")
+    u = await db.users.find_one({"id": user_id}, {"_id": 0, "is_super_admin": 1, "role": 1})
+    if not u:
+        raise HTTPException(status_code=403, detail="Usuario no encontrado")
+    is_super = u.get("is_super_admin") is True
+    is_admin = (u.get("role") or "").lower() == "admin"
+    if not (is_super or is_admin):
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ver el estado del sistema")
 
 
 def _classify(status_bool: bool, warning: bool = False) -> str:
