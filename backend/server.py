@@ -3413,10 +3413,16 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     
     commands.append({"type": "divider"})
     
-    # e-CF info (if sent to Alanube)
-    ecf_stamp = bill.get("ecf_stamp_url", "")
+    # e-CF info (Alanube uses ecf_stamp_url; Multiprod uses ecf_qr — accept either)
+    ecf_stamp = bill.get("ecf_stamp_url") or bill.get("ecf_qr") or ""
     ecf_encf = bill.get("ecf_encf", "")
     ecf_code = bill.get("ecf_security_code", "")
+    # Multiprod's QR URL embeds CodigoSeguridad; extract it for printing if not in dedicated field
+    if not ecf_code and ecf_stamp and "CodigoSeguridad=" in ecf_stamp:
+        try:
+            ecf_code = ecf_stamp.split("CodigoSeguridad=")[1].split("&")[0][:10]
+        except Exception:
+            pass
     if ecf_stamp or ecf_encf:
         commands.append({"type": "text", "text": "FACTURACION ELECTRONICA", "align": "center", "bold": True})
         if ecf_encf:
