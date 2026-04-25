@@ -17,8 +17,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 router = APIRouter(prefix="/pos-sessions", tags=["POS Sessions"])
 
 # MongoDB connection
-MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
-DB_NAME = os.environ.get("DB_NAME", "pos_db")
+MONGO_URL = os.environ['MONGO_URL']
+DB_NAME = os.environ['DB_NAME']
 mongo_client = AsyncIOMotorClient(MONGO_URL)
 db = mongo_client[DB_NAME]
 

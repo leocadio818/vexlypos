@@ -15,9 +15,9 @@ DEFAULT_TIMEZONE = "America/Santo_Domingo"
 _cached_tz_name: str | None = None
 
 # Database connection (shared with the rest of the app)
-_mongo_url = os.environ.get('MONGO_URL')
+_mongo_url = os.environ['MONGO_URL']
 _client = AsyncIOMotorClient(_mongo_url)
-_db = _client[os.environ.get('DB_NAME', 'pos_db')]
+_db = _client[os.environ['DB_NAME']]
 
 
 async def get_system_timezone_name() -> str:

@@ -23,7 +23,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from routers.auth import get_current_user
 
 _client = AsyncIOMotorClient(os.environ['MONGO_URL'])
-db = _client[os.environ.get('DB_NAME', 'pos_db')]
+db = _client[os.environ['DB_NAME']]
 
 router = APIRouter(prefix="/reports/xlsx", tags=["reports-xlsx"])
 

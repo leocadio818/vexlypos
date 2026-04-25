@@ -13,9 +13,9 @@ import uuid
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
 # Database connection
-mongo_url = os.environ.get('MONGO_URL')
+mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ.get('DB_NAME', 'pos_db')]
+db = client[os.environ['DB_NAME']]
 
 def gen_id() -> str:
     return str(uuid.uuid4())

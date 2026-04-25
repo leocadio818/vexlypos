@@ -10,8 +10,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 ROOT_DIR = Path(__file__).parent.parent
 load_dotenv(ROOT_DIR / '.env')
 
-MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
-DB_NAME = os.environ.get("DB_NAME", "mesa_pos")
+MONGO_URL = os.environ['MONGO_URL']
+DB_NAME = os.environ['DB_NAME']
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
