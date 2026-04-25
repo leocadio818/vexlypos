@@ -16,6 +16,10 @@ node_modules/
 !.yarn/releases
 !.yarn/versions
 
+# Tenant credentials (contiene PIN admin + token Multiprod por cliente)
+scripts/clientes/*.env
+!scripts/clientes/_template.env
+
 # Testing
 /coverage
 
