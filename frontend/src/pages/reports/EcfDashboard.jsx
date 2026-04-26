@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, RefreshCw, Printer, AlertTriangle, CheckCircle2, Clock, XCircle, Search, Pencil, Loader2, Ban, Activity, ChevronDown, ChevronUp, Zap, TrendingUp } from 'lucide-react';
+import { FileText, RefreshCw, Printer, AlertTriangle, CheckCircle2, Clock, XCircle, Search, Pencil, Loader2, Ban, Activity, ChevronDown, ChevronUp, Zap, TrendingUp, Repeat } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { useAuth } from '@/context/AuthContext';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
@@ -111,6 +111,30 @@ export default function EcfDashboard({ data }) {
       } else {
         notify.error(d.message);
       }
+    } catch { notify.error('Error de conexión'); }
+    setLoading(false);
+  };
+
+  const handleResendRotate = async (billId) => {
+    if (!window.confirm('¿Reenviar con una NUEVA secuencia? El e-NCF actual quedará marcado como consumido y se asignará el siguiente disponible.')) return;
+    setLoading(true);
+    try {
+      const r = await fetch(`${API}/api/ecf/resend-rotate/${billId}`, { method: 'POST', headers: hdrs() });
+      const d = await r.json();
+      if (d.ok && d.status === 'aceptado') {
+        const fromMsg = d.rotated_from ? ` (rotado desde ${d.rotated_from})` : '';
+        notify.success(`e-CF aceptado con nuevo NCF: ${d.ecf_encf}${fromMsg}`, { duration: 8000 });
+      } else if (d.status === 'rechazado') {
+        notify.error(`Rechazado por DGII: ${d.motivo || 'Sin motivo'}`);
+      } else if (d.status === 'contingencia') {
+        notify.warning(`En contingencia: ${d.motivo || 'Reintentar más tarde'}`);
+      } else {
+        notify.error(d.message || d.motivo || 'Error en re-envío con rotación');
+      }
+      const res = await fetch(`${API}/api/ecf/dashboard`, { headers: hdrs() });
+      const fresh = await res.json();
+      setBills(fresh.bills || []);
+      setSummary(fresh.summary || {});
     } catch { notify.error('Error de conexión'); }
     setLoading(false);
   };
@@ -393,8 +417,21 @@ export default function EcfDashboard({ data }) {
                         <StatusIcon size={10} className={`mr-1 ${status === 'PROCESSING' ? 'animate-spin' : ''}`} />{statusInfo.label}
                       </Badge>
                     </td>
-                    <td className="p-3 text-xs text-muted-foreground max-w-[200px] truncate">
-                      {b.ecf_reject_reason || b.ecf_error || (b.ecf_provider ? `via ${b.ecf_provider}` : '') || (b.ecf_security_code ? `Código: ${b.ecf_security_code}` : '—')}
+                    <td className="p-3 text-xs text-muted-foreground max-w-[220px] truncate">
+                      {(() => {
+                        const reason = b.ecf_reject_reason || b.ecf_error || '';
+                        const isBurned = /ya han sido utilizados|ya utilizada|c[óo]digo.*75|"codigo":\s*"75"/i.test(reason);
+                        const rotations = b.ecf_ncf_rotations || 0;
+                        if (isBurned) {
+                          return (
+                            <span className="text-amber-600 dark:text-amber-400 font-medium" title={reason}>
+                              🔄 NCF ya usada — pendiente reasignación
+                              {rotations > 0 ? ` (rotaciones: ${rotations})` : ''}
+                            </span>
+                          );
+                        }
+                        return reason || (b.ecf_provider ? `via ${b.ecf_provider}` : '') || (b.ecf_security_code ? `Código: ${b.ecf_security_code}` : '—');
+                      })()}
                     </td>
                     <td className="p-3">
                       <div className="flex items-center justify-center gap-1">
@@ -411,7 +448,7 @@ export default function EcfDashboard({ data }) {
                             >
                               <Pencil size={14} className="text-purple-500" />
                             </button>
-                            <button onClick={() => handleRetry(b.id)} title="Reintentar" disabled={loading} className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]" data-testid={`retry-btn-${b.id}`}>
+                            <button onClick={() => handleRetry(b.id)} title="Reintentar (mismo NCF)" disabled={loading} className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]" data-testid={`retry-btn-${b.id}`}>
                               <RefreshCw size={14} className={`text-amber-500 ${loading ? 'animate-spin' : ''}`} />
                             </button>
                           </>
@@ -435,6 +472,17 @@ export default function EcfDashboard({ data }) {
                               <RefreshCw size={14} className={`text-amber-500 ${loading ? 'animate-spin' : ''}`} />
                             </button>
                           </>
+                        )}
+                        {status !== 'FINISHED' && status !== 'REGISTERED' && (
+                          <button
+                            onClick={() => handleResendRotate(b.id)}
+                            title="Reenviar con NUEVA secuencia (rota al siguiente NCF disponible)"
+                            disabled={loading}
+                            className="p-1.5 rounded-lg hover:bg-muted transition-all min-w-[32px] min-h-[32px]"
+                            data-testid={`resend-rotate-btn-${b.id}`}
+                          >
+                            <Repeat size={14} className={`text-teal-500 ${loading ? 'animate-pulse' : ''}`} />
+                          </button>
                         )}
                         <button onClick={() => handleReprint(b.id)} title="Reimprimir" className="p-1.5 rounded-lg hover:bg-muted transition-all">
                           <Printer size={14} className="text-muted-foreground" />
