@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettings } from './SettingsContext';
 import { categoriesAPI, productsAPI, warehousesAPI, inventorySettingsAPI } from '@/lib/api';
-import { Tag, Package, Plus, Trash2, Pencil, Search, X, Sparkles, ListChecks, Receipt, Upload } from 'lucide-react';
+import { Tag, Package, Plus, Trash2, Pencil, Search, X, Sparkles, ListChecks, Receipt, Upload, TrendingUp } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -62,6 +62,50 @@ export default function InventarioTab() {
   const [modDialog, setModDialog] = useState({ open: false, editId: null, name: '', prefix: '', selection_type: 'optional', min_selection: 0, max_selection: 0, options: [] });
   const [modProductSearchByIdx, setModProductSearchByIdx] = useState({});
 
+  // Trending category config (Lo más pedido)
+  const [trendingConfig, setTrendingConfig] = useState({
+    enabled: false,
+    name: 'Lo más pedido hoy',
+    icon: '⭐',
+    period: 'today',
+    max_items: 10,
+    excluded_categories: [],
+  });
+  const [trendingPreview, setTrendingPreview] = useState({ products: [] });
+  const [trendingLoading, setTrendingLoading] = useState(false);
+
+  const loadTrendingConfig = async () => {
+    try {
+      const res = await axios.get(`${API}/system/config`, { headers: hdrs() });
+      const cfg = res.data?.trending_config || {};
+      setTrendingConfig(prev => ({ ...prev, ...cfg }));
+    } catch {}
+  };
+
+  const loadTrendingPreview = async () => {
+    setTrendingLoading(true);
+    try {
+      const res = await axios.get(`${API}/products/trending`, { headers: hdrs() });
+      setTrendingPreview(res.data || { products: [] });
+    } catch {
+      setTrendingPreview({ products: [] });
+    } finally {
+      setTrendingLoading(false);
+    }
+  };
+
+  const saveTrendingConfig = async (next) => {
+    setTrendingConfig(next);
+    try {
+      await axios.put(`${API}/system/config`, { trending_config: next }, { headers: hdrs() });
+      await axios.post(`${API}/products/trending/invalidate`, {}, { headers: hdrs() }).catch(() => {});
+      await loadTrendingPreview();
+      notify.success('Configuración guardada');
+    } catch (e) {
+      notify.error('Error al guardar');
+    }
+  };
+
   const loadModifiers = async () => {
     try {
       const gRes = await axios.get(`${API}/modifier-groups`, { headers: hdrs() });
@@ -75,6 +119,13 @@ export default function InventarioTab() {
   };
 
   useEffect(() => { if (inventarioSubTab === 'modificadores') loadModifiers(); }, [inventarioSubTab]);
+  useEffect(() => {
+    if (inventarioSubTab === 'trending') {
+      loadTrendingConfig();
+      loadTrendingPreview();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inventarioSubTab]);
 
   // Load tax configs
   useEffect(() => {
@@ -327,6 +378,9 @@ export default function InventarioTab() {
         <SubTabButton active={inventarioSubTab === 'productos'} onClick={() => setInventarioSubTab('productos')} icon={Package} label="Productos" />
         <SubTabButton active={inventarioSubTab === 'modificadores'} onClick={() => setInventarioSubTab('modificadores')} icon={ListChecks} label="Modificadores" />
         {canManagePromotions && (
+          <SubTabButton active={inventarioSubTab === 'trending'} onClick={() => setInventarioSubTab('trending')} icon={TrendingUp} label="Lo Más Pedido" />
+        )}
+        {canManagePromotions && (
           <SubTabButton active={inventarioSubTab === 'promociones'} onClick={() => setInventarioSubTab('promociones')} icon={Sparkles} label="Promociones" />
         )}
         {canManagePromotions && (
@@ -342,6 +396,184 @@ export default function InventarioTab() {
       {/* COMBOS */}
       {inventarioSubTab === 'combos' && canManagePromotions && (
         <CombosTab products={products} categories={categories} />
+      )}
+
+      {/* TRENDING — Lo Más Pedido */}
+      {inventarioSubTab === 'trending' && canManagePromotions && (
+        <div className="space-y-4" data-testid="trending-config-panel">
+          <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-5">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="text-3xl" aria-hidden>{trendingConfig.icon || '⭐'}</div>
+                <div>
+                  <h2 className="font-oswald text-lg font-bold">Categoría Automática — Lo Más Pedido</h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Aparece como primera categoría del menú con los productos más vendidos del período seleccionado. Se actualiza cada 5 minutos.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground">{trendingConfig.enabled ? 'Activa' : 'Desactivada'}</span>
+                <Switch
+                  checked={!!trendingConfig.enabled}
+                  onCheckedChange={(v) => saveTrendingConfig({ ...trendingConfig, enabled: v })}
+                  data-testid="trending-toggle"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1 block">Nombre</label>
+                <input
+                  type="text"
+                  value={trendingConfig.name || ''}
+                  onChange={(e) => setTrendingConfig({ ...trendingConfig, name: e.target.value })}
+                  onBlur={() => saveTrendingConfig(trendingConfig)}
+                  maxLength={40}
+                  placeholder="Lo más pedido hoy"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                  data-testid="trending-name-input"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1 block">Ícono</label>
+                <div className="flex gap-1.5 flex-wrap" data-testid="trending-icon-picker">
+                  {['⭐', '🔥', '📈', '💫', '🏆'].map(ic => (
+                    <button
+                      key={ic}
+                      type="button"
+                      onClick={() => saveTrendingConfig({ ...trendingConfig, icon: ic })}
+                      data-testid={`trending-icon-${ic}`}
+                      className={`text-2xl w-11 h-11 rounded-lg border-2 transition-all ${
+                        trendingConfig.icon === ic
+                          ? 'border-amber-500 bg-amber-500/10 scale-110'
+                          : 'border-border hover:border-amber-500/50'
+                      }`}
+                    >
+                      {ic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1 block">Período</label>
+                <select
+                  value={trendingConfig.period || 'today'}
+                  onChange={(e) => saveTrendingConfig({ ...trendingConfig, period: e.target.value })}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                  data-testid="trending-period-select"
+                >
+                  <option value="today">Hoy (jornada actual)</option>
+                  <option value="24h">Últimas 24 horas</option>
+                  <option value="week">Esta semana (7 días)</option>
+                  <option value="month">Este mes (30 días)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1 block">
+                  Cantidad máxima ({trendingConfig.max_items || 10})
+                </label>
+                <input
+                  type="range"
+                  min={3}
+                  max={20}
+                  value={trendingConfig.max_items || 10}
+                  onChange={(e) => setTrendingConfig({ ...trendingConfig, max_items: Number(e.target.value) })}
+                  onMouseUp={() => saveTrendingConfig(trendingConfig)}
+                  onTouchEnd={() => saveTrendingConfig(trendingConfig)}
+                  className="w-full accent-amber-500"
+                  data-testid="trending-max-items"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
+                  <span>3</span><span>10</span><span>20</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1 block">
+                Excluir categorías (opcional)
+              </label>
+              <div className="flex flex-wrap gap-1.5" data-testid="trending-excluded-categories">
+                {categories.length === 0 ? (
+                  <span className="text-xs text-muted-foreground italic">No hay categorías</span>
+                ) : categories.map(c => {
+                  const excluded = (trendingConfig.excluded_categories || []).includes(c.id);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        const list = trendingConfig.excluded_categories || [];
+                        const next = excluded ? list.filter(id => id !== c.id) : [...list, c.id];
+                        saveTrendingConfig({ ...trendingConfig, excluded_categories: next });
+                      }}
+                      data-testid={`trending-exclude-${c.id}`}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                        excluded
+                          ? 'border-red-500 bg-red-500/15 text-red-400 line-through'
+                          : 'border-border hover:border-amber-500/50'
+                      }`}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="rounded-xl border border-border bg-card/50 p-5" data-testid="trending-preview">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-oswald text-sm font-bold flex items-center gap-2">
+                <TrendingUp size={16} className="text-amber-500" />
+                Vista Previa — Productos Trending
+              </h3>
+              <button
+                type="button"
+                onClick={loadTrendingPreview}
+                className="text-xs px-3 py-1 rounded-lg border border-border hover:border-amber-500/50 transition-colors"
+                data-testid="trending-refresh-btn"
+              >
+                Actualizar
+              </button>
+            </div>
+            {trendingLoading ? (
+              <div className="text-center py-6 text-xs text-muted-foreground">Cargando...</div>
+            ) : !trendingConfig.enabled ? (
+              <div className="text-center py-6 text-xs text-muted-foreground italic">
+                Activa la categoría para ver los productos más vendidos.
+              </div>
+            ) : trendingPreview.products.length === 0 ? (
+              <div className="text-center py-6 text-xs text-muted-foreground italic" data-testid="trending-empty-preview">
+                Sin ventas aún en este período. La categoría aparecerá vacía hasta que existan ventas.
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {trendingPreview.products.map((p, i) => (
+                  <div
+                    key={p.id}
+                    data-testid={`trending-preview-row-${i}`}
+                    className="flex items-center justify-between gap-3 p-2 rounded-lg bg-background/60 border border-border"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-oswald font-bold text-amber-500 w-5 text-center">{i + 1}</span>
+                      <span className="text-sm truncate">{p.name}</span>
+                    </div>
+                    <span className="text-xs font-bold bg-amber-500/15 text-amber-500 px-2 py-0.5 rounded-full shrink-0">
+                      ×{Math.round(p.times_sold)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* CATEGORIAS */}

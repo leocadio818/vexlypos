@@ -426,6 +426,13 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
         {"id": business_day["id"]},
         {"$set": update_data}
     )
+
+    # Invalidate trending products cache (period="today" must reset on day close)
+    try:
+        from routers.trending import invalidate_trending_cache
+        invalidate_trending_cache()
+    except Exception:
+        pass
     
     # Forzar cierre de turnos abiertos si force_close
     if input.force_close and supabase_client:

@@ -100,6 +100,7 @@ export default function OrderScreen() {
   const [openItemDialog, setOpenItemDialog] = useState({ open: false, channel: 'kitchen' });
   const [openItemsConfig, setOpenItemsConfig] = useState({ enabled: true, require_supervisor: false, price_limit_rd: 0, channels_available: ['kitchen', 'bar'] });
   const [menuTileConfig, setMenuTileConfig] = useState({ order: [], virtual_colors: { __combos__: '#7C3AED', __open_items__: '#EA580C' } });
+  const [trending, setTrending] = useState({ enabled: false, name: 'Lo más pedido', icon: '⭐', products: [] });
   const [cancelDialog, setCancelDialog] = useState({ 
     open: false, 
     itemId: null, 
@@ -431,6 +432,14 @@ export default function OrderScreen() {
         if (resp.ok) setMenuTileConfig(await resp.json());
       } catch {}
 
+      // Trending products (virtual "Lo más pedido" category)
+      try {
+        const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+        const token = localStorage.getItem('pos_token');
+        const resp = await fetch(`${API}/products/trending`, { headers: { Authorization: `Bearer ${token}` } });
+        if (resp.ok) setTrending(await resp.json());
+      } catch {}
+
       // Modifiers
       let oldGroups = [];
       try {
@@ -506,6 +515,19 @@ export default function OrderScreen() {
       }
     })();
   }, [fetchOrder, API_BASE]);
+
+  // Auto-refresh trending products every 5 minutes
+  useEffect(() => {
+    const refresh = async () => {
+      try {
+        const token = localStorage.getItem('pos_token');
+        const resp = await fetch(`${API_BASE}/api/products/trending`, { headers: { Authorization: `Bearer ${token}` } });
+        if (resp.ok) setTrending(await resp.json());
+      } catch {}
+    };
+    const id = setInterval(refresh, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [API_BASE]);
 
   // Load inventory settings and stock status
   useEffect(() => {
@@ -801,7 +823,14 @@ export default function OrderScreen() {
     navigate('/tables'); 
   };
 
-  const filteredProducts = activeCat ? products.filter(p => {
+  const filteredProducts = activeCat === '__trending__'
+    ? (trending.products || []).filter(p => {
+        if (productSearchQuery.trim()) {
+          return p.name?.toLowerCase().includes(productSearchQuery.toLowerCase().trim());
+        }
+        return true;
+      })
+    : activeCat ? products.filter(p => {
     if (p.category_id !== activeCat) return false;
     if (productSearchQuery.trim()) {
       return p.name?.toLowerCase().includes(productSearchQuery.toLowerCase().trim());
@@ -2633,6 +2662,7 @@ export default function OrderScreen() {
                 <span className={`font-semibold ${largeMode ? 'text-base' : 'text-sm'}`}>{
                   activeCat === '__combos__' ? 'Combos' :
                   activeCat === '__open_items__' ? 'Artículos Libres' :
+                  activeCat === '__trending__' ? `${trending.icon || '⭐'} ${trending.name || 'Lo más pedido'}` :
                   (categories.find(c => c.id === activeCat)?.name)
                 }</span>
               </>
@@ -2832,6 +2862,12 @@ export default function OrderScreen() {
             const tiles = [];
             const pushCat = (c, idx) => { if (c && !seen.has(c.id) && !areaHidden.has(c.id)) { seen.add(c.id); tiles.push({ kind: 'cat', cat: c, idx }); } };
             const pushVirtual = (id) => { if (!seen.has(id) && !areaHidden.has(id)) { seen.add(id); tiles.push({ kind: id }); } };
+            // Trending tile: ALWAYS goes first when enabled and has products
+            const trendingActive = trending?.enabled && (trending.products || []).length > 0;
+            if (trendingActive && !areaHidden.has('__trending__')) {
+              seen.add('__trending__');
+              tiles.push({ kind: '__trending__' });
+            }
             if (savedOrder) {
               savedOrder.forEach(tid => {
                 if (tid === '__combos__' || tid === '__open_items__') pushVirtual(tid);
@@ -2873,6 +2909,27 @@ export default function OrderScreen() {
                         <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.7 }}>{catProductCount} productos</span>
                         <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`}>
                           <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{catProductCount}</span>
+                        </div>
+                      </button>
+                    );
+                  }
+                  if (tile.kind === '__trending__' && trendingActive) {
+                    return (
+                      <button
+                        key="__trending__"
+                        onClick={() => setActiveCat('__trending__')}
+                        data-testid="cat-card-trending"
+                        data-contrast="dark"
+                        className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between text-slate-900`}
+                        style={{ background: 'linear-gradient(135deg, #FCD34D 0%, #F59E0B 60%, #D97706 100%)' }}
+                      >
+                        <span className={`font-bold leading-tight flex items-center gap-1 ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>
+                          <span aria-hidden>{trending.icon || '⭐'}</span>
+                          <span>{trending.name || 'Lo más pedido'}</span>
+                        </span>
+                        <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.85 }}>{trending.products.length} productos</span>
+                        <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-slate-900/20`}>
+                          <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{trending.products.length}</span>
                         </div>
                       </button>
                     );
@@ -3155,6 +3212,17 @@ export default function OrderScreen() {
                         </div>
                       );
                     })()}
+                    {/* Trending: times_sold badge (only when viewing the trending category) */}
+                    {activeCat === '__trending__' && product.times_sold ? (
+                      <div
+                        data-testid={`times-sold-${product.id}`}
+                        className="absolute bottom-1 left-1 bg-amber-500/90 text-slate-900 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-md flex items-center gap-0.5"
+                        title={`Vendido ${product.times_sold} veces`}
+                      >
+                        <span aria-hidden>×</span>
+                        <span>{Math.round(product.times_sold)}</span>
+                      </div>
+                    ) : null}
                     {hasModifiers && !isOutOfStock && !hasSimpleInv && <div className={`absolute top-2 right-2 ${largeMode ? 'w-2.5 h-2.5' : 'w-2 h-2'} rounded-full bg-primary/60`} title="Tiene modificadores" />}
                     
                     {/* Simple Inventory Badge */}
