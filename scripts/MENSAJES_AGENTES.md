@@ -229,4 +229,24 @@ Después de configurar, verifica esto y dime el resultado:
 
 ---
 
+## 🛡️ Pre-Push Safety Check (OBLIGATORIO antes de "Save to GitHub" en producción)
+
+Antes de pushear cambios a `main` en cualquier tenant productivo, correr:
+
+```bash
+cd /app && pytest backend/tests/test_deployment_safety.py -v
+```
+
+Verifica 9 precondiciones críticas para K8s deployment:
+- `backend/.env` y `frontend/.env` están trackeados en git
+- Los archivos NO están bloqueados por `.gitignore` efectivamente
+- No hay fallbacks para `DB_NAME` ni `MONGO_URL` en el backend
+- Variables críticas presentes en los `.env`
+- Routes backend usan prefijo `/api`
+
+**Si alguno falla → NO PUSHEAR.** Resolver el blocker primero.
+Si el deployment health check ya pasó pero este test falla → commitear el fix.
+
+---
+
 **Versión**: 2026-04-25
