@@ -7,8 +7,11 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone, date
+import logging
 import os
 from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ncf", tags=["NCF - Comprobantes Fiscales"])
 
@@ -249,6 +252,11 @@ async def create_ncf_sequence(input: NCFSequenceInput):
         if response.data:
             # Map back to our API format
             result = response.data[0]
+            logger.info(
+                f"📤 SUPABASE INSERT ncf_sequences: type={data['ncf_type_id']} "
+                f"prefix={data['sequence_prefix']} range={data['current_number']}-{data['end_number']} "
+                f"valid_until={data['valid_until']} → id={result.get('id')}"
+            )
             result["ncf_type_code"] = result.get("ncf_type_id")
             result["prefix"] = result.get("sequence_prefix")
             result["range_end"] = result.get("end_number")
@@ -346,6 +354,10 @@ async def update_ncf_sequence(seq_id: str, input: NCFSequenceUpdate):
         if not response.data:
             raise HTTPException(status_code=404, detail="Secuencia no encontrada")
         
+        logger.info(
+            f"📝 SUPABASE UPDATE ncf_sequences id={seq_id}: "
+            f"{', '.join(f'{k}={v}' for k, v in supabase_data.items())}"
+        )
         result = response.data[0]
         
         # Agregar campos de MongoDB al resultado
@@ -372,7 +384,7 @@ async def delete_ncf_sequence(seq_id: str):
         sb_update_filter(supabase_client.table("ncf_sequences").update({
             "is_active": False
         }).eq("id", seq_id)).execute()
-        
+        logger.info(f"🗑️ SUPABASE UPDATE ncf_sequences id={seq_id}: is_active=False (soft delete)")
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
