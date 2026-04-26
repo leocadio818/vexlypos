@@ -438,13 +438,15 @@ async def get_menu_tiles():
             final.append(v)
 
     colors = {**DEFAULT_VIRTUAL_COLORS, **(doc.get("virtual_colors") or {})}
+    text_colors = doc.get("virtual_text_colors") or {}
     area_overrides = doc.get("area_overrides") or {}
-    return {"order": final, "virtual_colors": colors, "area_overrides": area_overrides}
+    return {"order": final, "virtual_colors": colors, "virtual_text_colors": text_colors, "area_overrides": area_overrides}
 
 
 class MenuTilesInput(BaseModel):
     order: List[str]
     virtual_colors: Optional[dict] = None
+    virtual_text_colors: Optional[dict] = None
     area_overrides: Optional[dict] = None  # {area_id: {"hidden_tiles": [tile_id, ...]}}
 
 
@@ -454,6 +456,7 @@ async def update_menu_tiles(input: MenuTilesInput, user=Depends(get_current_user
     payload = {
         "order": input.order,
         "virtual_colors": {**DEFAULT_VIRTUAL_COLORS, **(input.virtual_colors or {})},
+        "virtual_text_colors": input.virtual_text_colors or {},
         "area_overrides": input.area_overrides or {},
         "updated_at": now_iso(),
     }

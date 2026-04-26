@@ -64,6 +64,7 @@ function SortableTile({ id, children, disabled = false }) {
 export default function MenuTilesSorter({ categories, products, onEditCategory, onDeleteCategory }) {
   const [order, setOrder] = useState([]);
   const [virtualColors, setVirtualColors] = useState({ __combos__: '#7C3AED', __open_items__: '#EA580C' });
+  const [virtualTextColors, setVirtualTextColors] = useState({}); // {tile_id: 'auto'|'#FFFFFF'|'#000000'}
   const [areaOverrides, setAreaOverrides] = useState({}); // {area_id: {hidden_tiles: [tile_id]}}
   const [areas, setAreas] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -91,6 +92,7 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
         ]);
         setOrder(tileRes.data.order || []);
         setVirtualColors({ __combos__: '#7C3AED', __open_items__: '#EA580C', ...(tileRes.data.virtual_colors || {}) });
+        setVirtualTextColors(tileRes.data.virtual_text_colors || {});
         setAreaOverrides(tileRes.data.area_overrides || {});
         setAreas(Array.isArray(areaRes.data) ? areaRes.data : (areaRes.data?.items || []));
         setRoles(Array.isArray(rolesRes.data) ? rolesRes.data : []);
@@ -115,11 +117,11 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
     });
   }, [categories]);
 
-  const persist = async (newOrder, newColors, newAreaOverrides) => {
+  const persist = async (newOrder, newColors, newAreaOverrides, newTextColors = virtualTextColors) => {
     setSaving(true);
     try {
       await axios.put(`${API}/menu-tiles`,
-        { order: newOrder, virtual_colors: newColors, area_overrides: newAreaOverrides },
+        { order: newOrder, virtual_colors: newColors, virtual_text_colors: newTextColors, area_overrides: newAreaOverrides },
         { headers: hdrs() }
       );
       notify.success('Guardado');
@@ -145,6 +147,26 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
     setVirtualColors(next);
     persist(order, next, areaOverrides);
     setColorPicker(null);
+  };
+
+  const changeVirtualTextColor = (id, textColor) => {
+    // textColor: 'auto' | '#FFFFFF' | '#000000'
+    const next = { ...virtualTextColors };
+    if (textColor === 'auto') delete next[id];
+    else next[id] = textColor;
+    setVirtualTextColors(next);
+    persist(order, virtualColors, areaOverrides, next);
+  };
+
+  // Auto-contrast: returns black or white based on background luminance
+  const autoTextColor = (bgHex) => {
+    if (!bgHex || !bgHex.startsWith('#')) return '#FFFFFF';
+    const hex = bgHex.replace('#', '');
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.6 ? '#000000' : '#FFFFFF';
   };
 
   const toggleAreaVisibility = (tileId, areaId) => {
@@ -382,6 +404,8 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
               if (VIRTUAL_IDS.includes(id)) {
                 const meta = VIRTUAL_META[id];
                 const color = virtualColors[id] || meta.default_color;
+                const textColorChoice = virtualTextColors[id] || 'auto';
+                const effectiveTextColor = textColorChoice === 'auto' ? autoTextColor(color) : textColorChoice;
                 const popoverOpen = colorPicker === id;
                 return (
                   <div key={id} className={wrapperClass}>
@@ -395,7 +419,7 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
                             className="group relative w-10 h-10 rounded-lg flex items-center justify-center shadow-sm transition-all hover:ring-2 hover:ring-primary/50 focus:outline-none focus:ring-2 focus:ring-primary"
                             style={{ backgroundColor: color }}
                           >
-                            <Sparkles size={18} className="text-white" />
+                            <Sparkles size={18} style={{ color: effectiveTextColor }} />
                             <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-card border border-border flex items-center justify-center shadow-sm">
                               <Pencil size={8} className="text-muted-foreground group-hover:text-primary transition-colors" />
                             </span>
@@ -405,21 +429,51 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
                           align="start"
                           side="right"
                           sideOffset={8}
-                          className="w-auto p-2"
+                          className="w-56 p-3 space-y-3"
                           data-testid={`tile-color-palette-${id}`}
                         >
-                          <div className="grid grid-cols-6 gap-1.5">
-                            {COLOR_PRESETS.map(c => (
-                              <button
-                                key={c}
-                                onClick={() => changeVirtualColor(id, c)}
-                                className={`w-7 h-7 rounded-md transition-transform hover:scale-110 ${c === color ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}`}
-                                style={{ backgroundColor: c }}
-                                data-testid={`tile-color-opt-${id}-${c}`}
-                                aria-label={c}
-                                title={c}
-                              />
-                            ))}
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Fondo</div>
+                            <div className="grid grid-cols-6 gap-1.5">
+                              {COLOR_PRESETS.map(c => (
+                                <button
+                                  key={c}
+                                  onClick={() => changeVirtualColor(id, c)}
+                                  className={`w-7 h-7 rounded-md transition-transform hover:scale-110 ${c === color ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}`}
+                                  style={{ backgroundColor: c }}
+                                  data-testid={`tile-color-opt-${id}-${c}`}
+                                  aria-label={c}
+                                  title={c}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Texto</div>
+                            <div className="flex items-center gap-1.5">
+                              {[
+                                { key: 'auto', label: 'Auto', preview: autoTextColor(color) },
+                                { key: '#FFFFFF', label: 'Blanco', preview: '#FFFFFF' },
+                                { key: '#000000', label: 'Negro', preview: '#000000' },
+                              ].map(opt => {
+                                const selected = textColorChoice === opt.key;
+                                return (
+                                  <button
+                                    key={opt.key}
+                                    onClick={() => changeVirtualTextColor(id, opt.key)}
+                                    className={`flex-1 h-9 rounded-md border text-[11px] font-bold transition-all ${
+                                      selected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'
+                                    }`}
+                                    style={{ backgroundColor: color, color: opt.preview }}
+                                    data-testid={`tile-text-color-${id}-${opt.key.replace('#', '')}`}
+                                    aria-label={`Color de texto: ${opt.label}`}
+                                    title={opt.label}
+                                  >
+                                    Aa
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </PopoverContent>
                       </Popover>

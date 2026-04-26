@@ -2880,6 +2880,13 @@ export default function OrderScreen() {
             pushVirtual('__open_items__');
 
             const virtColor = (id) => (menuTileConfig.virtual_colors && menuTileConfig.virtual_colors[id]) || (id === '__combos__' ? '#7C3AED' : '#EA580C');
+            const virtTextColor = (id) => {
+              const explicit = menuTileConfig.virtual_text_colors && menuTileConfig.virtual_text_colors[id];
+              if (explicit) return explicit;
+              // Auto-contrast from background
+              const bg = virtColor(id);
+              return getContrastText(bg);
+            };
 
             return (
               <>
@@ -2936,18 +2943,19 @@ export default function OrderScreen() {
                   }
                   if (tile.kind === '__combos__' && activeCombos.length > 0) {
                     const c = virtColor('__combos__');
+                    const tc = virtTextColor('__combos__');
                     return (
                       <button
                         key="__combos__"
                         onClick={() => setActiveCat('__combos__')}
                         data-testid="cat-card-combos"
-                        data-contrast="light"
-                        className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between text-white`}
-                        style={{ backgroundColor: c }}
+                        data-contrast={tc === '#FFFFFF' ? 'light' : 'dark'}
+                        className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
+                        style={{ backgroundColor: c, color: tc }}
                       >
                         <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>Combos</span>
                         <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.8 }}>{activeCombos.length} combos</span>
-                        <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20`}>
+                        <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`} style={{ backgroundColor: tc === '#FFFFFF' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)' }}>
                           <span className={`font-oswald font-bold ${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-[11px]'}`}>{activeCombos.length}</span>
                         </div>
                       </button>
@@ -2955,18 +2963,19 @@ export default function OrderScreen() {
                   }
                   if (tile.kind === '__open_items__' && hasPermission('create_open_items') && openItemsConfig.enabled) {
                     const c = virtColor('__open_items__');
+                    const tc = virtTextColor('__open_items__');
                     return (
                       <button
                         key="__open_items__"
                         onClick={() => setActiveCat('__open_items__')}
                         data-testid="cat-card-open-items"
-                        data-contrast="light"
-                        className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between text-white`}
-                        style={{ backgroundColor: c }}
+                        data-contrast={tc === '#FFFFFF' ? 'light' : 'dark'}
+                        className={`relative rounded-xl border-0 transition-all active:scale-[0.97] shadow-lg hover:shadow-xl hover:brightness-110 ${largeMode ? 'p-3 md:p-2' : 'p-2 md:p-1.5'} min-h-[5rem] md:min-h-[5rem] lg:min-h-[6.25rem] text-left flex flex-col justify-between`}
+                        style={{ backgroundColor: c, color: tc }}
                       >
                         <span className={`font-bold leading-tight ${largeMode ? 'text-lg md:text-sm' : 'text-base md:text-xs'}`}>Artículos Libres</span>
                         <span className={`${largeMode ? 'text-sm md:text-xs' : 'text-xs md:text-xs'}`} style={{ opacity: 0.8 }}>Fuera de menú</span>
-                        <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center bg-white/20`}>
+                        <div data-badge className={`absolute top-1.5 right-1.5 md:top-1 md:right-1 ${largeMode ? 'w-8 h-8 md:w-6 md:h-6' : 'w-7 h-7 md:w-5 md:h-5'} rounded-full flex items-center justify-center`} style={{ backgroundColor: tc === '#FFFFFF' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)' }}>
                           <Pencil size={largeMode ? 12 : 10} />
                         </div>
                       </button>
