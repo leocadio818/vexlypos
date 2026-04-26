@@ -8,7 +8,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReturnDocument
 import os
 from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
+import base64
 import logging
+import time
 import uuid
 import hashlib
 import jwt
@@ -17,6 +19,7 @@ import socket
 import resend
 import shutil
 from pathlib import Path
+from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
@@ -656,36 +659,59 @@ async def get_product_image(filename: str):
 # ─── LOGO UPLOAD ───
 @api.post("/system/upload-logo")
 async def upload_logo(file: UploadFile = File(...)):
-    """Upload restaurant logo"""
+    """Upload restaurant logo (stored as base64 in MongoDB for K8s persistence)"""
     contents = await file.read()
-    if len(contents) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Logo debe ser menor a 5MB")
+    if len(contents) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Logo debe ser menor a 2MB")
     file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else "png"
     if file_ext not in ["jpg", "jpeg", "png", "webp", "gif", "svg"]:
         file_ext = "png"
-    logo_dir = Path(__file__).parent / "uploads" / "logo"
-    logo_dir.mkdir(parents=True, exist_ok=True)
-    # Remove old logos
-    for old in logo_dir.iterdir():
-        old.unlink()
-    unique_filename = f"logo.{file_ext}"
-    with open(logo_dir / unique_filename, "wb") as f:
-        f.write(contents)
-    logo_url = f"/api/uploads/logo/{unique_filename}"
-    await db.system_config.update_one({"id": "main"}, {"$set": {"logo_url": logo_url}}, upsert=True)
+    mime_map = {
+        "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+        "webp": "image/webp", "gif": "image/gif", "svg": "image/svg+xml",
+    }
+    mime_type = mime_map.get(file_ext, "image/png")
+    logo_b64 = base64.b64encode(contents).decode("ascii")
+    # Cache-buster (?v=ts) ensures browsers fetch the updated logo immediately
+    logo_url = f"/api/uploads/logo/logo.{file_ext}?v={int(time.time())}"
+    await db.system_config.update_one(
+        {"id": "main"},
+        {"$set": {
+            "logo_url": logo_url,
+            "logo_data": logo_b64,
+            "logo_mime": mime_type,
+        }},
+        upsert=True,
+    )
     return {"ok": True, "logo_url": logo_url}
 
 @api.get("/uploads/logo/{filename}")
 async def get_logo(filename: str):
-    """Serve restaurant logo"""
+    """Serve restaurant logo from MongoDB (with disk fallback for legacy uploads)"""
     if ".." in filename or "/" in filename or "\\" in filename:
         raise HTTPException(status_code=400, detail="Nombre de archivo inválido")
+    # Primary: MongoDB-backed logo (persists across redeploys)
+    config = await db.system_config.find_one(
+        {"id": "main"}, {"_id": 0, "logo_data": 1, "logo_mime": 1}
+    )
+    if config and config.get("logo_data"):
+        try:
+            data = base64.b64decode(config["logo_data"])
+            mime = config.get("logo_mime", "image/png")
+            return Response(
+                content=data,
+                media_type=mime,
+                headers={"Cache-Control": "public, max-age=3600"},
+            )
+        except Exception as e:
+            logger.warning(f"Failed to decode logo_data from Mongo: {e}")
+    # Fallback: legacy disk-stored logo (pre-migration)
     file_path = Path(__file__).parent / "uploads" / "logo" / filename
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Logo no encontrado")
-    ext = filename.split(".")[-1].lower()
-    ct = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif", "svg": "image/svg+xml"}
-    return FileResponse(file_path, media_type=ct.get(ext, "image/png"))
+    if file_path.exists():
+        ext = filename.split(".")[-1].lower()
+        ct = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif", "svg": "image/svg+xml"}
+        return FileResponse(file_path, media_type=ct.get(ext, "image/png"))
+    raise HTTPException(status_code=404, detail="Logo no encontrado")
 
 # ─── REPORT CATEGORIES ───
 @api.get("/report-categories")
@@ -4570,6 +4596,33 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Area receipt mapping migration warning (non-fatal): {e}")
     
+    # AUTO-MIGRATE: Move existing disk-stored logos into MongoDB (base64) for K8s persistence
+    # This is idempotent: if logo_data is already set or no disk logo exists, it's a no-op.
+    try:
+        cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0, "logo_url": 1, "logo_data": 1})
+        if cfg and cfg.get("logo_url") and not cfg.get("logo_data"):
+            logo_dir = Path(__file__).parent / "uploads" / "logo"
+            if logo_dir.exists():
+                for logo_file in logo_dir.iterdir():
+                    if logo_file.is_file():
+                        ext = logo_file.suffix.lstrip(".").lower() or "png"
+                        mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                                    "webp": "image/webp", "gif": "image/gif", "svg": "image/svg+xml"}
+                        with open(logo_file, "rb") as f:
+                            data = f.read()
+                        if len(data) <= 2 * 1024 * 1024:
+                            await db.system_config.update_one(
+                                {"id": "main"},
+                                {"$set": {
+                                    "logo_data": base64.b64encode(data).decode("ascii"),
+                                    "logo_mime": mime_map.get(ext, "image/png"),
+                                }},
+                            )
+                            logger.info(f"Migrated logo from disk to MongoDB ({logo_file.name}, {len(data)} bytes)")
+                        break
+    except Exception as e:
+        logger.warning(f"Logo disk→Mongo migration warning (non-fatal): {e}")
+
     # Create MongoDB indexes for faster queries
     try:
         await db.bills.create_index([("status", 1), ("business_date", 1)])
