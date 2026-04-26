@@ -124,6 +124,7 @@ Prioridades:
 
 ## 🟢 P3 — Futuro / Backlog
 
+- [ ] **Auditoría completa de inputs numéricos → migrar a `NumericInput` flotante** — escanear todos los formularios del POS (descuentos, propinas manuales, ajustes de stock, configuración de productos, recargos, pagos parciales, etc.) y reemplazar `<input type="number">` por `<NumericInput>` para consistencia y agilidad en uso táctil. Ya migrado en: PaymentScreen, OpenItemDialog (Artículo Libre — Precio + Cantidad). Pendiente: revisar el resto de pantallas. Solicitado por usuario 2026-04-26.
 - [ ] **C5 — No-Sale del cajón de efectivo** — requiere log hardware.
 - [ ] **B4 — Conciliación bancaria / batch settlements** — requiere integración bancos/procesadores.
 - [ ] **B6 — Cuentas reabiertas (Re-opened)** — requiere registrar eventos de reapertura.
