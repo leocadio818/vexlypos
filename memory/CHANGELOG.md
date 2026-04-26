@@ -824,3 +824,29 @@
 - **Tests**: /tmp/test_open_items.py + /tmp/test_open_merge_fix.py — 6/6 tests E2E pass (config, verify-pin, create order con 2 open items separados, tax calculation, kitchen routing, no merge bug).
 - **Testing agent iteration_166**: 100% backend + frontend validado; bug crítico de merge detectado y corregido.
 - **Seguridad**: aprobación supervisor automática cuando precio > price_limit_rd O require_supervisor=true. Audit trail completo (created_by, created_by_name) persiste en la orden.
+
+## 2026-04-26 — Categoría Automática "Lo Más Pedido" (Trending) ⭐
+- **Backend** (`/app/backend/routers/trending.py` — nuevo, 200 líneas):
+  - `GET /api/products/trending` — retorna productos top-vendidos del período configurado con `times_sold`. Lectura desde `system_config.trending_config` ({id:"main"}, fail-fast). Cache en memoria 5 min por (period, max_items, excluded_categories). Default `enabled=false`.
+  - `POST /api/products/trending/invalidate` — limpia cache.
+  - Períodos: `today` (jornada activa via `business_days`), `24h`, `week`, `month` (rolling sobre `paid_at`).
+  - Aggregation pipeline en `bills` con status ∈ {paid, final, closed}, $unwind items, $group por product_id, sort DESC, $limit (max_items*3 over-fetch para post-filtrado por excluded_categories).
+  - Validación: max_items clamped 3..20; period validado contra whitelist; excluded_categories debe ser list.
+- **Backend hooks** (`/app/backend/routers/business_days.py` línea ~430): cache invalidation automática en cierre de jornada (period=today resetea correctamente al abrir nueva jornada).
+- **Frontend OrderScreen**:
+  - Estado `trending` + fetch inicial en useEffect existente + auto-refresh cada 5 min.
+  - Tile virtual `__trending__` insertado SIEMPRE como PRIMERO en el grid de categorías cuando `enabled && products.length > 0`.
+  - Diseño dorado distintivo (linear-gradient #FCD34D → #F59E0B → #D97706) con ícono configurable (⭐🔥📈💫🏆) + nombre + contador.
+  - Productos en grid trending muestran badge `×N` ámbar bottom-left (data-testid `times-sold-{id}`).
+  - Reusa toda la lógica de click/long-press/stock/promociones existentes.
+- **Frontend Settings** (`InventarioTab.js`): nuevo SubTab "Lo Más Pedido" (gated `manage_promotions`):
+  - Toggle on/off + nombre (40 ch max) + 5 íconos preset.
+  - Select período (Hoy / 24h / Semana / Mes).
+  - Range slider max_items (3-20, accent ámbar).
+  - Multi-select chips para excluir categorías (toggle individual).
+  - Preview en vivo top 10 con times_sold rounded.
+  - Botón "Actualizar" para refrescar preview manualmente (también dispara invalidate cache backend).
+- **Tests**: `/app/backend/tests/test_trending.py` — 9/9 pytest pass (defaults, persistence id:'main' sin mixing, invalidate, aggregation period=month, exclude filter, max_items sanitization, cache consistency, cleanup).
+- **Testing Agent iteration_1**: 100% backend (9/9), Settings UI 100% (todos data-testids verificados, preview con productos reales). OrderScreen tile no live-validated por overlay del onboarding tour pero code-review confirmó implementación correcta.
+- **Categoría VIRTUAL**: NO se persiste en `categories` collection. Se renderiza on-the-fly desde el endpoint trending. Cero impacto en categorías existentes.
+- **No tocó**: Supabase, .env, e-CF/Multiprod, PaymentScreen, categorías existentes, products schema.
