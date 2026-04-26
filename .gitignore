@@ -191,3 +191,12 @@ credentials.json
 *.pem
 *.key
 .credentials
+# Per-client environment files - DO NOT commit (multi-tenant: each pod has its own values)
+# Use .env.example as template. Real values are managed per-pod or via deployment env vars.
+backend/.env
+frontend/.env
+.env
+.env.*
+*.env
+!*.env.example
+frontend/node_modules/.cache/default-development/12.pack
