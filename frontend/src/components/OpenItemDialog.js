@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ChefHat, Wine, Pencil, Plus, Minus, Shield } from 'lucide-react';
+import { NumericInput } from '@/components/NumericKeypad';
 
 export default function OpenItemDialog({
   open,
@@ -98,29 +99,31 @@ export default function OpenItemDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Precio (RD$) *</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0.01"
+              <NumericInput
                 value={price}
                 onChange={e => setPrice(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald"
+                allowDecimal={true}
+                label="Precio (RD$)"
                 placeholder="0.00"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-oswald text-base h-10 flex items-center"
                 data-testid="open-item-price"
               />
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Cantidad</label>
-              <div className="flex items-center gap-1 border border-border rounded-lg px-1 py-1 bg-background">
+              <div className="flex items-center gap-1 border border-border rounded-lg px-1 py-1 bg-background h-10">
                 <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => setQty(Math.max(1, qty - 1))} data-testid="open-item-qty-minus">
                   <Minus size={14} />
                 </Button>
-                <input
-                  type="number"
-                  min="1"
-                  value={qty}
-                  onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+                <NumericInput
+                  value={String(qty)}
+                  onChange={e => {
+                    const v = parseInt(e.target.value, 10);
+                    setQty(Number.isFinite(v) && v >= 1 ? v : 1);
+                  }}
+                  allowDecimal={false}
+                  label="Cantidad"
+                  placeholder="1"
                   className="flex-1 bg-transparent text-center text-sm font-oswald outline-none"
                   data-testid="open-item-qty"
                 />
