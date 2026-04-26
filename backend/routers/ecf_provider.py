@@ -233,6 +233,31 @@ async def release_reservation(reservation_id: str):
 RETRY_BACKOFFS = [0, 30, 120, 600, 3600]
 
 
+def _is_ncf_burned_error(result: dict) -> bool:
+    """
+    Detect the specific case where the e-NCF was already used previously (DGII code 75).
+    When this happens, we should NOT mark the bill as REJECTED permanently —
+    instead we should rotate to the next available e-NCF and try again.
+
+    Detection:
+      - codigo == 2  (Rechazado) AND
+      - one of mensajes[].codigo == "75"  OR  motivo contains "ya han sido utilizados"
+    """
+    if not isinstance(result, dict):
+        return False
+    if result.get("codigo") != 2:
+        return False
+    motivo = (result.get("motivo") or "").lower()
+    if "ya han sido utilizados" in motivo or "ya utilizado" in motivo:
+        return True
+    # Inspect raw body for the specific message code "75"
+    diagnostics = result.get("diagnostics") or {}
+    body_raw = (diagnostics.get("body_raw") or "") if isinstance(diagnostics, dict) else ""
+    if '"codigo":"75"' in body_raw or '"codigo": "75"' in body_raw:
+        return True
+    return False
+
+
 def _is_permanent_error(result: dict) -> bool:
     """
     Classifier: is this error permanent (requires manual action) or transient (safe to auto-retry)?
@@ -243,8 +268,13 @@ def _is_permanent_error(result: dict) -> bool:
       - estado == "error_formato" / "error_http" / "error_conexion" → Multiprod server issues
       - HTTP 500, 502, 503, 504, 408, 429
       - Timeouts, network failures
+    NOTE: NCF-burned errors (code 75) are handled SEPARATELY via _is_ncf_burned_error
+    so the dispatcher can rotate to a new e-NCF instead of marking REJECTED.
     """
     if not isinstance(result, dict):
+        return False
+    # NCF burned is NOT permanent — it's recoverable via rotation
+    if _is_ncf_burned_error(result):
         return False
     estado = (result.get("estado") or "").lower()
     if estado == "rechazado":
@@ -255,6 +285,101 @@ def _is_permanent_error(result: dict) -> bool:
         if 400 <= http_status < 500 and http_status not in (408, 429):
             return True
     return False
+
+
+# Maximum NCF rotations per bill before giving up (prevents infinite NCF burning)
+MAX_NCF_ROTATIONS = 3
+
+
+async def _rotate_and_resend(bill_id: str, old_reservation_id: str, ecf_type: str,
+                              endpoint: str, full_endpoint: str, attempt_label: str) -> dict:
+    """
+    Release the current NCF reservation, reserve a NEW e-NCF, rebuild XML, and re-send.
+    Returns the result dict from multiprod_service.send_ecf().
+
+    Increments bill.ecf_ncf_rotations counter and tracks rotated NCFs in bill.ecf_rotated_encfs.
+    Caller is responsible for handling the result (success/failure/further rotation).
+    """
+    from services.multiprod_service import multiprod_service
+
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        return {"ok": False, "estado": "error_interno", "motivo": "Factura no encontrada para rotación"}
+
+    # Track the burned NCF before releasing
+    old_res = await db.encf_reservations.find_one({"id": old_reservation_id}, {"_id": 0}) or {}
+    old_encf = old_res.get("encf") or bill.get("ecf_encf")
+
+    # Release old reservation back to the pool — NOTE: in 'ya usado' case the NCF is already
+    # consumed in DGII, so we mark it as 'consumed' (not released) to avoid reusing it.
+    await db.encf_reservations.update_one(
+        {"id": old_reservation_id},
+        {"$set": {"status": "consumed", "consumed_at": now_iso(),
+                  "consumed_reason": "ncf_burned_rotated"}}
+    )
+
+    # Reserve new e-NCF
+    try:
+        new_encf, new_reservation_id, seq_valid_until = await reserve_encf(ecf_type, bill_id)
+    except Exception as e:
+        return {"ok": False, "estado": "error_interno",
+                "motivo": f"Error reservando nuevo e-NCF: {str(e)}"}
+
+    # Get system config & build new XML with the new e-NCF
+    system_config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
+    try:
+        bill_for_xml = {**bill, "seq_valid_until": seq_valid_until}
+        xml_content = multiprod_service.build_xml(bill_for_xml, system_config, ecf_type, new_encf)
+    except Exception as e:
+        await release_reservation(new_reservation_id)
+        return {"ok": False, "estado": "error_interno",
+                "motivo": f"Error construyendo XML para rotación: {str(e)}"}
+
+    # Validate new XML locally
+    valid, validation_msg = multiprod_service.validate_xml_local(xml_content, ecf_type)
+    if not valid:
+        await release_reservation(new_reservation_id)
+        return {"ok": False, "estado": "error_interno",
+                "motivo": f"XML rotado no válido: {validation_msg}"}
+
+    # Send to Multiprod with new NCF
+    rnc_emisor = (system_config.get("ticket_rnc") or system_config.get("rnc")
+                  or system_config.get("ecf_alanube_rnc") or "").replace("-", "").strip()
+    result = await multiprod_service.send_ecf(xml_content, full_endpoint or endpoint,
+                                               rnc=rnc_emisor, encf=new_encf)
+
+    # Persist rotation metadata BEFORE returning
+    rotations = (bill.get("ecf_ncf_rotations") or 0) + 1
+    rotated_list = list(bill.get("ecf_rotated_encfs") or [])
+    if old_encf and old_encf not in rotated_list:
+        rotated_list.append(old_encf)
+    await db.bills.update_one({"id": bill_id}, {"$set": {
+        "ecf_encf": new_encf,
+        "ecf_ncf_rotations": rotations,
+        "ecf_rotated_encfs": rotated_list,
+        "ecf_last_reservation_id": new_reservation_id,
+    }})
+
+    # Log the rotation attempt
+    await db.ecf_logs.insert_one({
+        "id": gen_id(),
+        "bill_id": bill_id,
+        "encf": new_encf,
+        "previous_encf": old_encf,
+        "action": f"multiprod_rotate_ncf_{attempt_label}",
+        "rotation_number": rotations,
+        "result": {k: v for k, v in result.items() if k != "raw"},
+        "created_at": now_iso(),
+    })
+
+    # Attach rotation context for caller
+    result["_rotation_meta"] = {
+        "new_encf": new_encf,
+        "new_reservation_id": new_reservation_id,
+        "rotations_done": rotations,
+        "old_encf": old_encf,
+    }
+    return result
 
 
 async def enqueue_retry(bill_id: str, encf: str, reservation_id: str, attempt: int, endpoint: str, xml: str):
@@ -349,6 +474,59 @@ async def process_retry(bill_id: str):
         return
 
     # Classify the error
+    # Special case: e-NCF was already used (code 75) → rotate to next NCF and re-send
+    if _is_ncf_burned_error(result):
+        rotations_done = ((await db.bills.find_one({"id": bill_id}, {"_id": 0, "ecf_ncf_rotations": 1})) or {}).get("ecf_ncf_rotations", 0)
+        # Derive ecf_type from current encf prefix (e.g. "E32...")
+        ecf_type_for_rotation = (encf or "")[:3] if isinstance(encf, str) else "E32"
+        if rotations_done < MAX_NCF_ROTATIONS:
+            rot_result = await _rotate_and_resend(
+                bill_id, reservation_id, ecf_type_for_rotation,
+                endpoint, endpoint, attempt_label=f"auto_{attempt}"
+            )
+            new_meta = rot_result.get("_rotation_meta") or {}
+            new_encf = new_meta.get("new_encf")
+            new_reservation_id = new_meta.get("new_reservation_id")
+            new_estado = (rot_result.get("estado") or "").lower()
+            if new_estado.startswith("aceptado"):
+                if new_reservation_id:
+                    await consume_reservation(new_reservation_id)
+                await db.bills.update_one({"id": bill_id}, {"$set": {
+                    "ecf_status": "FINISHED",
+                    "ecf_encf": new_encf,
+                    "ecf_qr": rot_result.get("qr"),
+                    "ecf_trackid": rot_result.get("trackId"),
+                    "ecf_provider": "multiprod",
+                    "ecf_attempts": attempt,
+                    "ecf_sent_at": now_iso(),
+                    "ecf_auto_retry_status": "completed",
+                    "ecf_auto_retry_next_at": None,
+                }})
+                await db.ecf_retry_queue.update_one({"bill_id": bill_id}, {"$set": {"status": "completed", "updated_at": now_iso()}})
+                return
+            # Rotation didn't succeed — re-enqueue with NEW encf+reservation for next retry
+            if new_encf and new_reservation_id:
+                await db.ecf_retry_queue.update_one({"bill_id": bill_id}, {"$set": {
+                    "encf": new_encf,
+                    "reservation_id": new_reservation_id,
+                    "updated_at": now_iso(),
+                }})
+            # Fall through to transient handling with the rotation result
+            result = rot_result
+        else:
+            # Exceeded rotation budget — mark contingencia for manual review
+            await db.bills.update_one({"id": bill_id}, {"$set": {
+                "ecf_status": "CONTINGENCIA",
+                "ecf_provider": "multiprod",
+                "ecf_error": f"NCF quemado tras {MAX_NCF_ROTATIONS} rotaciones automáticas. Revisión manual.",
+                "ecf_reject_reason": result.get("motivo", "NCF ya utilizada"),
+                "ecf_attempts": attempt,
+                "ecf_auto_retry_status": "exhausted",
+                "ecf_auto_retry_next_at": None,
+            }})
+            await db.ecf_retry_queue.update_one({"bill_id": bill_id}, {"$set": {"status": "exhausted", "updated_at": now_iso()}})
+            return
+
     if _is_permanent_error(result):
         # Permanent — stop auto-retry, require manual intervention
         await consume_reservation(reservation_id)
@@ -539,6 +717,52 @@ async def send_ecf_multiprod(bill_id: str, background_tasks: BackgroundTasks, us
         return {"ok": True, "status": "aceptado", "ecf_encf": encf, "ecf_qr": result.get("qr"), "trackId": result.get("trackId")}
 
     if estado == "rechazado":
+        # Special case: e-NCF was already used (code 75) → rotate to a fresh NCF
+        if _is_ncf_burned_error(result):
+            rotated_result = result
+            for rot_idx in range(1, MAX_NCF_ROTATIONS + 1):
+                rotated_result = await _rotate_and_resend(
+                    bill_id,
+                    rotated_result.get("_rotation_meta", {}).get("new_reservation_id", reservation_id),
+                    ecf_type, full_endpoint, full_endpoint,
+                    attempt_label=f"sync_{rot_idx}"
+                )
+                meta = rotated_result.get("_rotation_meta") or {}
+                new_encf = meta.get("new_encf")
+                new_res_id = meta.get("new_reservation_id")
+                new_estado = (rotated_result.get("estado") or "").lower()
+                if new_estado.startswith("aceptado"):
+                    if new_res_id:
+                        await consume_reservation(new_res_id)
+                    await db.bills.update_one({"id": bill_id}, {"$set": {
+                        "ecf_status": "FINISHED",
+                        "ecf_encf": new_encf,
+                        "ecf_qr": rotated_result.get("qr"),
+                        "ecf_trackid": rotated_result.get("trackId"),
+                        "ecf_provider": "multiprod",
+                        "ecf_attempts": 1 + rot_idx,
+                        "ecf_sent_at": now_iso(),
+                    }})
+                    return {"ok": True, "status": "aceptado",
+                            "ecf_encf": new_encf, "ecf_qr": rotated_result.get("qr"),
+                            "trackId": rotated_result.get("trackId"),
+                            "rotated_from": meta.get("old_encf")}
+                if not _is_ncf_burned_error(rotated_result):
+                    # New encf got a different error — break and let normal handling continue
+                    break
+            # All rotations exhausted (or different error) — mark contingencia
+            await db.bills.update_one({"id": bill_id}, {"$set": {
+                "ecf_status": "CONTINGENCIA",
+                "ecf_provider": "multiprod",
+                "ecf_error": f"NCF quemado tras {MAX_NCF_ROTATIONS} rotaciones automáticas",
+                "ecf_reject_reason": rotated_result.get("motivo", "NCF ya utilizada"),
+                "ecf_attempts": 1 + MAX_NCF_ROTATIONS,
+                "ecf_sent_at": now_iso(),
+            }})
+            return {"ok": False, "status": "contingencia",
+                    "ecf_encf": (rotated_result.get("_rotation_meta") or {}).get("new_encf", encf),
+                    "motivo": rotated_result.get("motivo", "NCF ya utilizada — agotadas rotaciones automáticas")}
+
         await consume_reservation(reservation_id)
         await db.bills.update_one({"id": bill_id}, {"$set": {
             "ecf_status": "REJECTED",
@@ -691,3 +915,127 @@ async def cleanup_expired_reservations():
             # Release
             await release_reservation(res["id"])
             print(f"Released expired e-NCF reservation: {res['encf']}")
+
+
+
+# ─── MANUAL RESEND WITH ROTATION (rotate to new e-NCF) ───
+
+@router.post("/resend-rotate/{bill_id}")
+async def resend_with_new_ncf(bill_id: str, user=Depends(get_current_user)):
+    """
+    Manually resend an e-CF for a bill, rotating to the next available e-NCF.
+    Valid for any bill not in FINISHED state (REJECTED, CONTINGENCIA, PROCESSING, ERROR, etc.).
+    The previous e-NCF is marked as consumed (already burned at DGII), and a fresh one is reserved.
+    """
+    bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
+    if not bill:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    if bill.get("ecf_status") == "FINISHED":
+        raise HTTPException(status_code=400, detail="Esta factura ya está finalizada (FINISHED). No se puede reenviar.")
+
+    # Get Multiprod creds
+    endpoint, token = await get_multiprod_credentials()
+    if not endpoint:
+        raise HTTPException(status_code=400, detail="Multiprod no configurado")
+    full_endpoint = endpoint
+    if token and token not in endpoint:
+        full_endpoint = f"{endpoint.rstrip('/')}/{token}"
+
+    # Find the most recent reservation tied to this bill (might be already consumed)
+    last_res = await db.encf_reservations.find_one(
+        {"invoice_id": bill_id},
+        {"_id": 0},
+        sort=[("reserved_at", -1)]
+    )
+    last_reservation_id = (last_res or {}).get("id") or bill.get("ecf_last_reservation_id") or "manual_no_prior_reservation"
+
+    # Determine ecf_type
+    current_encf = bill.get("ecf_encf") or ""
+    ecf_type = current_encf[:3] if isinstance(current_encf, str) and current_encf.startswith("E") else (bill.get("ecf_type") or "E32")
+
+    # Mark bill as processing
+    await db.bills.update_one({"id": bill_id}, {"$set": {
+        "ecf_status": "PROCESSING",
+        "ecf_provider": "multiprod",
+        "ecf_error": None,
+        "ecf_reject_reason": None,
+    }})
+
+    # Rotate + send
+    rot_result = await _rotate_and_resend(
+        bill_id, last_reservation_id, ecf_type,
+        endpoint, full_endpoint, attempt_label="manual"
+    )
+    meta = rot_result.get("_rotation_meta") or {}
+    new_encf = meta.get("new_encf")
+    new_res_id = meta.get("new_reservation_id")
+    new_estado = (rot_result.get("estado") or "").lower()
+
+    if new_estado.startswith("aceptado"):
+        if new_res_id:
+            await consume_reservation(new_res_id)
+        await db.bills.update_one({"id": bill_id}, {"$set": {
+            "ecf_status": "FINISHED",
+            "ecf_encf": new_encf,
+            "ecf_qr": rot_result.get("qr"),
+            "ecf_trackid": rot_result.get("trackId"),
+            "ecf_provider": "multiprod",
+            "ecf_sent_at": now_iso(),
+            "ecf_auto_retry_status": "completed",
+            "ecf_auto_retry_next_at": None,
+        }})
+        # Cancel any pending retry queue entry
+        await db.ecf_retry_queue.update_one({"bill_id": bill_id}, {"$set": {"status": "completed", "updated_at": now_iso()}})
+        return {"ok": True, "status": "aceptado", "ecf_encf": new_encf, "rotated_from": meta.get("old_encf"),
+                "ecf_qr": rot_result.get("qr"), "trackId": rot_result.get("trackId")}
+
+    # If burned again, recurse internally up to MAX_NCF_ROTATIONS - 1 more times
+    if _is_ncf_burned_error(rot_result):
+        for i in range(2, MAX_NCF_ROTATIONS + 1):
+            rot_result = await _rotate_and_resend(
+                bill_id, new_res_id or last_reservation_id, ecf_type,
+                endpoint, full_endpoint, attempt_label=f"manual_{i}"
+            )
+            meta = rot_result.get("_rotation_meta") or {}
+            new_encf = meta.get("new_encf")
+            new_res_id = meta.get("new_reservation_id")
+            if (rot_result.get("estado") or "").lower().startswith("aceptado"):
+                if new_res_id:
+                    await consume_reservation(new_res_id)
+                await db.bills.update_one({"id": bill_id}, {"$set": {
+                    "ecf_status": "FINISHED",
+                    "ecf_encf": new_encf,
+                    "ecf_qr": rot_result.get("qr"),
+                    "ecf_trackid": rot_result.get("trackId"),
+                    "ecf_provider": "multiprod",
+                    "ecf_sent_at": now_iso(),
+                    "ecf_auto_retry_status": "completed",
+                    "ecf_auto_retry_next_at": None,
+                }})
+                await db.ecf_retry_queue.update_one({"bill_id": bill_id}, {"$set": {"status": "completed", "updated_at": now_iso()}})
+                return {"ok": True, "status": "aceptado", "ecf_encf": new_encf,
+                        "rotated_from": meta.get("old_encf"),
+                        "ecf_qr": rot_result.get("qr"), "trackId": rot_result.get("trackId")}
+            if not _is_ncf_burned_error(rot_result):
+                break
+
+    # Final state: not finished
+    if (rot_result.get("estado") or "").lower() == "rechazado":
+        await db.bills.update_one({"id": bill_id}, {"$set": {
+            "ecf_status": "REJECTED",
+            "ecf_encf": new_encf,
+            "ecf_provider": "multiprod",
+            "ecf_reject_reason": rot_result.get("motivo", "Rechazado por DGII"),
+            "ecf_sent_at": now_iso(),
+        }})
+        return {"ok": False, "status": "rechazado", "ecf_encf": new_encf, "motivo": rot_result.get("motivo")}
+
+    # Transient/error after rotation — leave in CONTINGENCIA so user can try again later
+    await db.bills.update_one({"id": bill_id}, {"$set": {
+        "ecf_status": "CONTINGENCIA",
+        "ecf_provider": "multiprod",
+        "ecf_error": rot_result.get("motivo", "Error transitorio en reenvío manual"),
+        "ecf_sent_at": now_iso(),
+    }})
+    return {"ok": False, "status": "contingencia", "ecf_encf": new_encf,
+            "motivo": rot_result.get("motivo", "Reintentar más tarde")}
