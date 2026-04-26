@@ -19,6 +19,7 @@ import axios from 'axios';
 import { GripVertical, Tag, Package, Pencil, Trash2, Sparkles, RotateCcw, Eye, EyeOff, Search, X, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { notify } from '@/lib/notify';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -381,12 +382,47 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
               if (VIRTUAL_IDS.includes(id)) {
                 const meta = VIRTUAL_META[id];
                 const color = virtualColors[id] || meta.default_color;
+                const popoverOpen = colorPicker === id;
                 return (
                   <div key={id} className={wrapperClass}>
                     <SortableTile id={id} disabled={searchActive}>
-                      <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: color }}>
-                        <Sparkles size={18} className="text-white" />
-                      </div>
+                      <Popover open={popoverOpen} onOpenChange={(o) => setColorPicker(o ? id : null)}>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            data-testid={`tile-color-btn-${id}`}
+                            aria-label={`Cambiar color de ${meta.label}`}
+                            className="group relative w-10 h-10 rounded-lg flex items-center justify-center shadow-sm transition-all hover:ring-2 hover:ring-primary/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                            style={{ backgroundColor: color }}
+                          >
+                            <Sparkles size={18} className="text-white" />
+                            <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-card border border-border flex items-center justify-center shadow-sm">
+                              <Pencil size={8} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                            </span>
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="start"
+                          side="right"
+                          sideOffset={8}
+                          className="w-auto p-2"
+                          data-testid={`tile-color-palette-${id}`}
+                        >
+                          <div className="grid grid-cols-6 gap-1.5">
+                            {COLOR_PRESETS.map(c => (
+                              <button
+                                key={c}
+                                onClick={() => changeVirtualColor(id, c)}
+                                className={`w-7 h-7 rounded-md transition-transform hover:scale-110 ${c === color ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}`}
+                                style={{ backgroundColor: c }}
+                                data-testid={`tile-color-opt-${id}-${c}`}
+                                aria-label={c}
+                                title={c}
+                              />
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                       <div className="flex-1 min-w-0">
                         <div className="font-oswald font-bold truncate inline-flex items-center">
                           {meta.label}
@@ -395,30 +431,6 @@ export default function MenuTilesSorter({ categories, products, onEditCategory, 
                         <div className="text-[11px] text-muted-foreground">{meta.subtitle}</div>
                       </div>
                       <VisibilityControl tileId={id} />
-                      <div className="relative">
-                        <button
-                          onClick={() => setColorPicker(colorPicker === id ? null : id)}
-                          className="px-2 py-1 rounded-md border border-border text-[11px] font-bold hover:bg-muted"
-                          data-testid={`tile-color-btn-${id}`}
-                          style={{ color }}
-                        >
-                          Color
-                        </button>
-                        {colorPicker === id && (
-                          <div className="absolute right-0 top-full mt-1 z-30 bg-card border border-border rounded-lg p-2 shadow-xl grid grid-cols-6 gap-1.5" data-testid={`tile-color-palette-${id}`}>
-                            {COLOR_PRESETS.map(c => (
-                              <button
-                                key={c}
-                                onClick={() => changeVirtualColor(id, c)}
-                                className={`w-7 h-7 rounded-md border-2 transition-transform hover:scale-110 ${c === color ? 'border-white ring-2 ring-primary' : 'border-transparent'}`}
-                                style={{ backgroundColor: c }}
-                                data-testid={`tile-color-opt-${id}-${c}`}
-                                aria-label={c}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
                     </SortableTile>
                   </div>
                 );
