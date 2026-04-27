@@ -130,36 +130,58 @@ def encode_text(text):
             return text.encode('ascii', errors='replace')
 
 def generate_qr_escpos(data_str, size=6):
-    """Print the QR data as readable text (for printers without QR/raster support).
-    
-    The thermal printer at the customer's location does NOT support either:
-      - GS v 0 (raster bitmap)
-      - GS ( k (native QR code)
-    
-    So we print the URL as a small, centered, multi-line text block.
-    DGII compliance is satisfied as long as the URL is printed and readable.
-    Most modern phone cameras can detect URLs from text.
-    """
+    """Generate QR code as ESC/POS bitmap bytes"""
     try:
-        if not data_str:
-            return None
+        import qrcode
+        from PIL import Image
+        import io
+        
+        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=size, border=2)
+        qr.add_data(data_str)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white").convert('1')
+        
+        # Resize to max 384px width (standard 80mm thermal printer)
+        if img.width > 384:
+            ratio = 384 / img.width
+            img = img.resize((384, int(img.height * ratio)))
+        
+        # Convert to ESC/POS raster bitmap
+        width = img.width
+        height = img.height
+        
+        # Ensure width is multiple of 8
+        if width % 8 != 0:
+            new_width = width + (8 - width % 8)
+            new_img = Image.new('1', (new_width, height), 1)
+            new_img.paste(img, (0, 0))
+            img = new_img
+            width = new_width
+        
+        bytes_per_line = width // 8
         
         buf = bytearray()
         buf += ALIGN_CENTER
-        # Print URL in small font (font B = 0x01) to fit long URLs
-        buf += ESC + b'M' + b'\x01'  # Select Font B (smaller)
         
-        # Word-wrap URL into chunks of 42 chars (Font B fits ~42 chars on 80mm)
-        max_chars = 42
-        for i in range(0, len(data_str), max_chars):
-            chunk = data_str[i:i + max_chars]
-            buf += chunk.encode('ascii', errors='replace') + FEED
+        # GS v 0 — raster bit image
+        buf += GS + b'v0' + b'\x00'
+        buf += bytes([bytes_per_line & 0xFF, (bytes_per_line >> 8) & 0xFF])
+        buf += bytes([height & 0xFF, (height >> 8) & 0xFF])
         
-        buf += ESC + b'M' + b'\x00'  # Back to Font A (normal)
+        pixels = img.load()
+        for y in range(height):
+            for x_byte in range(bytes_per_line):
+                byte_val = 0
+                for bit in range(8):
+                    x = x_byte * 8 + bit
+                    if x < img.width and pixels[x, y] == 0:
+                        byte_val |= (0x80 >> bit)
+                buf += bytes([byte_val])
+        
         buf += ALIGN_LEFT
         return bytes(buf)
     except Exception as e:
-        logger.warning(f"QR text rendering failed: {e}")
+        logger.warning(f"QR generation failed: {e}")
         return None
 
 # ============ NETWORK PRINTER ============
