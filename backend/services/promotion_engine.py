@@ -14,7 +14,7 @@ DR_TZ = ZoneInfo("America/Santo_Domingo")
 
 # In-memory cache: {"data": [...], "expires_at": datetime_utc}
 _cache = {"data": None, "expires_at": None}
-CACHE_TTL_SECONDS = 60
+CACHE_TTL_SECONDS = 30
 
 # Module-level DB reference (set by router)
 _db = None

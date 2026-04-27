@@ -405,6 +405,7 @@ export default function OrderScreen() {
         }
       } catch {}
 
+
       // Open Items config
       try {
         const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -526,6 +527,23 @@ export default function OrderScreen() {
       } catch {}
     };
     const id = setInterval(refresh, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [API_BASE]);
+
+  // Auto-refresh active promotions every 60s — so scheduled Happy Hours kick in
+  // (and turn off) without requiring the cashier to reload the page.
+  useEffect(() => {
+    const refresh = async () => {
+      try {
+        const token = localStorage.getItem('pos_token');
+        const resp = await fetch(`${API_BASE}/api/promotions/active`, { headers: { Authorization: `Bearer ${token}` } });
+        if (resp.ok) {
+          const data = await resp.json();
+          setActivePromotions(Array.isArray(data) ? data : []);
+        }
+      } catch {}
+    };
+    const id = setInterval(refresh, 60 * 1000);
     return () => clearInterval(id);
   }, [API_BASE]);
 
