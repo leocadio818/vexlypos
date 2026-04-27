@@ -141,7 +141,7 @@ export default function Kitchen() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {orders.map(order => {
-              const kitchenItems = order.items.filter(i => i.sent_to_kitchen && !['served', 'cancelled'].includes(i.status));
+              const kitchenItems = order.items.filter(i => i.sent_to_kitchen && !['served', 'cancelled'].includes(i.status) && !i.is_combo);
               if (kitchenItems.length === 0) return null;
 
               const hasPreparing = kitchenItems.some(i => i.status === 'preparing');

@@ -1751,6 +1751,11 @@ async def send_comanda_to_print_queue(order_id: str, items_to_print: list):
     # 3. Global category_channels fallback (lowest priority)
     items_by_channel = {}
     for item in items_to_print:
+        # Skip combo "parents" — they are virtual (price-only) entries that
+        # don't represent a real dish/drink. Only the children (actual products)
+        # must reach the kitchen/bar.
+        if item.get("is_combo"):
+            continue
         prod_id = item.get("product_id", "")
         product = prod_map.get(prod_id, {})
 

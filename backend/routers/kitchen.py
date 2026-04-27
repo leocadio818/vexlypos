@@ -66,6 +66,10 @@ async def filter_items_for_kds(items, kitchen_cat_ids, bar_channels, mapping_dic
             continue
         if item.get("status") in ["served", "cancelled"]:
             continue
+        # Skip combo "parents" — they are virtual price-only entries.
+        # The real food items are the children (is_combo_item=True).
+        if item.get("is_combo"):
+            continue
         
         # Get category_id from item, or lookup from product
         cat_id = item.get("category_id")
