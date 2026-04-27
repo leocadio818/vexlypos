@@ -48,8 +48,14 @@ echo.
 
 :: Instalar dependencias
 echo [3/5] Instalando dependencias...
-python -m pip install requests qrcode Pillow --quiet --disable-pip-version-check
-echo       [OK] requests instalado
+python -m pip install requests qrcode Pillow pywin32 --quiet --disable-pip-version-check
+if %errorLevel% neq 0 (
+    echo       [ERROR] Fallo la instalacion de dependencias
+    echo       Ejecuta manualmente: pip install requests qrcode Pillow pywin32
+    pause
+    exit /b 1
+)
+echo       [OK] requests, qrcode, Pillow, pywin32 instalados
 echo.
 
 :: Crear archivo de configuracion
