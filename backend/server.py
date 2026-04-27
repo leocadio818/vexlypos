@@ -3206,6 +3206,8 @@ async def send_test_print(channel_code: str):
         "type": "test",
         "channel": channel_code,
         "printer_name": channel.get("printer_name", ""),
+        "printer_target": channel.get("target", "usb"),
+        "printer_ip": channel.get("ip", channel.get("ip_address", "")),
         "data": test_data,
         "status": "pending",
         "created_at": now_iso()
