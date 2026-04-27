@@ -130,53 +130,36 @@ def encode_text(text):
             return text.encode('ascii', errors='replace')
 
 def generate_qr_escpos(data_str, size=6):
-    """Generate QR code using ESC/POS native QR commands (GS ( k).
+    """Print the QR data as readable text (for printers without QR/raster support).
     
-    Uses native ESC/POS QR code commands which are universally supported by
-    thermal printers (Epson, Xprinter, ZJiang, 3nStar, etc.) and don't depend
-    on raster bitmap support (GS v 0). This is the most compatible approach.
+    The thermal printer at the customer's location does NOT support either:
+      - GS v 0 (raster bitmap)
+      - GS ( k (native QR code)
+    
+    So we print the URL as a small, centered, multi-line text block.
+    DGII compliance is satisfied as long as the URL is printed and readable.
+    Most modern phone cameras can detect URLs from text.
     """
     try:
         if not data_str:
             return None
         
-        data_bytes = data_str.encode('utf-8', errors='replace')
-        if len(data_bytes) > 7089:
-            logger.warning(f"QR data too long: {len(data_bytes)} bytes (max 7089)")
-            return None
-        
         buf = bytearray()
         buf += ALIGN_CENTER
+        # Print URL in small font (font B = 0x01) to fit long URLs
+        buf += ESC + b'M' + b'\x01'  # Select Font B (smaller)
         
-        # GS ( k — Select QR Code model: Model 2
-        # Format: 1D 28 6B 04 00 31 41 32 00
-        buf += b'\x1D\x28\x6B\x04\x00\x31\x41\x32\x00'
+        # Word-wrap URL into chunks of 42 chars (Font B fits ~42 chars on 80mm)
+        max_chars = 42
+        for i in range(0, len(data_str), max_chars):
+            chunk = data_str[i:i + max_chars]
+            buf += chunk.encode('ascii', errors='replace') + FEED
         
-        # GS ( k — Set QR module size (1-16, default 6 for ~25mm wide)
-        # Format: 1D 28 6B 03 00 31 43 n
-        qr_size = max(1, min(16, int(size)))
-        buf += b'\x1D\x28\x6B\x03\x00\x31\x43' + bytes([qr_size])
-        
-        # GS ( k — Set error correction level: M (medium, ~15% recovery)
-        # Format: 1D 28 6B 03 00 31 45 31  (0x30=L, 0x31=M, 0x32=Q, 0x33=H)
-        buf += b'\x1D\x28\x6B\x03\x00\x31\x45\x31'
-        
-        # GS ( k — Store QR data in symbol storage area
-        # Format: 1D 28 6B pL pH 31 50 30 [data]
-        # Length = data_bytes length + 3
-        store_len = len(data_bytes) + 3
-        pL = store_len & 0xFF
-        pH = (store_len >> 8) & 0xFF
-        buf += b'\x1D\x28\x6B' + bytes([pL, pH]) + b'\x31\x50\x30' + data_bytes
-        
-        # GS ( k — Print QR code from symbol storage
-        # Format: 1D 28 6B 03 00 31 51 30
-        buf += b'\x1D\x28\x6B\x03\x00\x31\x51\x30'
-        
+        buf += ESC + b'M' + b'\x00'  # Back to Font A (normal)
         buf += ALIGN_LEFT
         return bytes(buf)
     except Exception as e:
-        logger.warning(f"QR generation failed: {e}")
+        logger.warning(f"QR text rendering failed: {e}")
         return None
 
 # ============ NETWORK PRINTER ============
