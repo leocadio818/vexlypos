@@ -956,7 +956,7 @@ export default function SystemTab() {
                   <ThermalTicket
                     order={demoOrder}
                     businessConfig={{
-                      business_name: systemConfig.ticket_business_name || systemConfig.restaurant_name || 'ALONZO CIGAR',
+                      business_name: systemConfig.ticket_business_name || systemConfig.restaurant_name || '',
                       legal_name: systemConfig.ticket_legal_name || '',
                       rnc: systemConfig.ticket_rnc || systemConfig.rnc || '000-000000-0',
                       address_street: systemConfig.ticket_address_street || '',

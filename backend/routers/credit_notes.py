@@ -1003,8 +1003,25 @@ async def print_credit_note(note_id: str, user=Depends(get_current_user)):
     if not cn:
         raise HTTPException(status_code=404, detail="Nota de crédito no encontrada")
     
-    # Obtener configuración
-    config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or {}
+    # Obtener configuración (prefer system_config:main + printer_config; multi-tenant safe)
+    main_cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
+    printer_cfg = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or {}
+    def _pick(*keys, default=""):
+        for c in (printer_cfg, main_cfg):
+            for k in keys:
+                v = c.get(k)
+                if v not in (None, ""):
+                    return v
+        return default
+    biz_name = _pick("ticket_business_name", "business_name", "restaurant_name", default="MI NEGOCIO")
+    biz_addr_raw = _pick("ticket_address_full", "business_address", default="")
+    if isinstance(biz_addr_raw, dict):
+        biz_addr = ", ".join(p for p in [biz_addr_raw.get("street", ""), biz_addr_raw.get("building", ""), biz_addr_raw.get("sector", ""), biz_addr_raw.get("city", "")] if p)
+    else:
+        biz_addr = str(biz_addr_raw or "")
+    biz_rnc = _pick("ticket_rnc", "rnc")
+    biz_phone = _pick("ticket_phone", "phone")
+    config = printer_cfg or main_cfg
     receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
     printer_name = receipt_channel.get("printer_name", "") if receipt_channel else ""
     
@@ -1012,12 +1029,13 @@ async def print_credit_note(note_id: str, user=Depends(get_current_user)):
     commands = []
     
     # Encabezado del negocio
-    commands.append({"type": "text", "text": config.get("business_name", "ALONZO CIGAR"), "align": "center", "bold": True, "size": 2})
-    biz_addr = config.get("business_address", "")
+    commands.append({"type": "text", "text": biz_name, "align": "center", "bold": True, "size": 2})
     if biz_addr:
         commands.append({"type": "text", "text": biz_addr[:40], "align": "center"})
-    commands.append({"type": "text", "text": f"RNC: {config.get('rnc', '1-31-75577-1')}", "align": "center"})
-    commands.append({"type": "text", "text": f"Tel: {config.get('phone', '809-301-3858')}", "align": "center"})
+    if biz_rnc:
+        commands.append({"type": "text", "text": f"RNC: {biz_rnc}", "align": "center"})
+    if biz_phone:
+        commands.append({"type": "text", "text": f"Tel: {biz_phone}", "align": "center"})
     commands.append({"type": "divider"})
     
     # NOTA DE CRÉDITO Header (prominente)

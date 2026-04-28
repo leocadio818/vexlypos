@@ -9,20 +9,22 @@
 import { forwardRef, useState, useEffect } from 'react';
 import '../styles/ticket-print.css';
 
-// Configuración por defecto (fallback si no hay config en BD)
+// Configuración por defecto (fallback si no hay config en BD).
+// IMPORTANT: leave these as empty strings so a fresh tenant pod does NOT
+// accidentally inherit another tenant's identity on the printed ticket.
 const DEFAULT_BUSINESS_CONFIG = {
-  name: 'ALONZO CIGAR',
-  legal_name: 'ALONZO CIGAR SRL',
-  rnc: '1-31-75577-1',
-  address_street: 'C/ Las Flores #12',
+  name: '',
+  legal_name: '',
+  rnc: '',
+  address_street: '',
   address_building: '',
-  address_sector: 'Jarabacoa',
-  address_city: 'La Vega, Rep. Dominicana',
-  phone: '809-301-3858',
+  address_sector: '',
+  address_city: '',
+  phone: '',
   email: '',
-  ncf_expiry: '31/12/2026',
+  ncf_expiry: '',
   footer_msg1: 'Gracias por su visita!',
-  footer_msg2: 'Conserve este documento para fines de DGII',
+  footer_msg2: '',
   footer_msg3: '',
   footer_msg4: ''
 };

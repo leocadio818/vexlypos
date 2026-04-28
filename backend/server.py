@@ -275,6 +275,51 @@ def now_local_str(fmt: str = "%I:%M %p") -> str:
     from zoneinfo import ZoneInfo
     return datetime.now(ZoneInfo("America/Santo_Domingo")).strftime(fmt)
 
+
+async def get_business_info() -> dict:
+    """Single source of truth for business identity used on every printed/HTML receipt.
+    
+    Reads from BOTH `system_config` documents (`main` and `printer_config`) and
+    accepts multiple legacy key names to keep tickets in sync with whatever the
+    UI actually saved. NO hardcoded fallback to a specific tenant's name —
+    if a field is missing we return an empty string so the operator notices and
+    fills it in instead of accidentally printing another tenant's identity.
+    """
+    main_cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
+    printer_cfg = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or {}
+    
+    def pick(*keys, default=""):
+        for cfg in (printer_cfg, main_cfg):
+            for k in keys:
+                v = cfg.get(k)
+                if v not in (None, ""):
+                    return v
+        return default
+    
+    addr = main_cfg.get("business_address") or printer_cfg.get("business_address")
+    if isinstance(addr, dict):
+        addr_parts = [
+            addr.get("street", ""),
+            addr.get("building", ""),
+            addr.get("sector", ""),
+            addr.get("city", ""),
+        ]
+        addr_str = ", ".join(p for p in addr_parts if p)
+    else:
+        addr_str = str(addr) if addr else ""
+    
+    return {
+        "name": pick("ticket_business_name", "business_name", "restaurant_name"),
+        "legal_name": pick("ticket_legal_name", "legal_name"),
+        "rnc": pick("ticket_rnc", "rnc"),
+        "phone": pick("ticket_phone", "phone"),
+        "email": pick("ticket_email", "email"),
+        "address": pick("ticket_address_full", default="") or addr_str,
+        "footer": pick("footer_text", default="Gracias por su visita!"),
+        "logo_url": main_cfg.get("logo_url", ""),
+    }
+
+
 async def get_next_transaction_number() -> int:
     """
     Genera el siguiente número de transacción interno secuencial.
@@ -975,10 +1020,10 @@ async def get_printer_config():
             "paper_width": 80,
             "auto_print_comanda": False,
             "auto_print_receipt": False,
-            "business_name": "ALONZO CIGAR",
-            "business_address": "C/ Las Flores #12, Jarabacoa",
-            "rnc": "1-31-75577-1",
-            "phone": "809-301-3858",
+            "business_name": "",
+            "business_address": "",
+            "rnc": "",
+            "phone": "",
             "footer_text": "Gracias por su visita!"
         }
     return config
@@ -1644,11 +1689,13 @@ async def print_pre_check(order_id: str):
     # Build area header line if area exists
     area_line = f"<div style='text-align:center;font-weight:bold;'>ÁREA: {area_name}</div>" if area_name else ""
     
+    biz_name = (await get_business_info())["name"]
+    
     # Pre-cuenta HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
     return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:12px;margin:0 auto;box-sizing:border-box;'>
     {reprint_label}
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
-    <b style='font-size:16px;'>ALONZO CIGAR</b><br><b>PRE-CUENTA</b></div>
+    <b style='font-size:16px;'>{biz_name}</b><br><b>PRE-CUENTA</b></div>
     {area_line}
     <div style='font-size:11px;'>Mesa: {table_number}{account_display}<br>Cuenta #{account_number}<br>Mesero: {order['waiter_name']}<br>Fecha: {utc_to_local_str(order['created_at'])}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;font-size:11px;'>
@@ -1675,11 +1722,12 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
         raise HTTPException(status_code=404)
     config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     printer_config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or config
+    main_biz = await get_business_info()
     
-    biz_name = printer_config.get("business_name", "ALONZO CIGAR")
-    biz_addr = printer_config.get("business_address", "C/ Las Flores #12, Jarabacoa")
-    biz_rnc = printer_config.get("rnc", "1-31-75577-1")
-    biz_phone = printer_config.get("phone", "809-301-3858")
+    biz_name = printer_config.get("business_name") or main_biz["name"]
+    biz_addr = printer_config.get("business_address") or main_biz["address"]
+    biz_rnc = printer_config.get("rnc") or main_biz["rnc"]
+    biz_phone = printer_config.get("phone") or main_biz["phone"]
     footer = printer_config.get("footer_text", "Gracias por su visita!")
     logo_url = config.get("logo_url", "")
     
@@ -1858,11 +1906,12 @@ async def print_receipt_escpos(bill_id: str):
     if not bill:
         raise HTTPException(status_code=404)
     config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
-    biz_name = config.get('business_name', 'ALONZO CIGAR')
-    biz_rnc = config.get('rnc', '1-31-75577-1')
-    biz_addr = config.get('business_address', 'C/ Las Flores #12, Jarabacoa')
-    biz_phone = config.get('phone', '809-301-3858')
-    logo_url = config.get('logo_url', '')
+    biz = await get_business_info()
+    biz_name = biz["name"]
+    biz_rnc = biz["rnc"]
+    biz_addr = biz["address"]
+    biz_phone = biz["phone"]
+    logo_url = biz["logo_url"]
     
     lines = []
     # Add logo as first element if available (thermal printer will render if supported)
@@ -2897,10 +2946,11 @@ async def send_receipt_to_queue(bill_id: str):
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
     config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
-    biz_name = config.get('business_name', 'ALONZO CIGAR')
-    biz_rnc = config.get('rnc', '1-31-75577-1')
-    biz_addr = config.get('business_address', 'C/ Las Flores #12, Jarabacoa')
-    biz_phone = config.get('phone', '809-301-3858')
+    biz = await get_business_info()
+    biz_name = biz["name"]
+    biz_rnc = biz["rnc"]
+    biz_addr = biz["address"]
+    biz_phone = biz["phone"]
     
     receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
     printer_name = receipt_channel.get("printer_name", "") if receipt_channel else ""
@@ -3203,11 +3253,12 @@ async def send_test_print(channel_code: str):
         raise HTTPException(status_code=404, detail="Canal no encontrado")
     
     config = await db.system_config.find_one({"id": "printer_config"}, {"_id": 0}) or {}
+    biz = await get_business_info()
     
     test_data = {
         "type": "test",
         "paper_width": 80,
-        "business_name": config.get("business_name", "ALONZO CIGAR"),
+        "business_name": biz["name"] or "MI NEGOCIO",
         "channel_name": channel.get("name", channel_code.title()),
         "date": now_local_str("%Y-%m-%d %H:%M:%S"),
         "message": "PRUEBA DE IMPRESION",
@@ -3238,17 +3289,11 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
     config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
-    biz_name = config.get('business_name', 'ALONZO CIGAR')
-    biz_rnc = config.get('rnc', '1-31-75577-1')
-    biz_phone = config.get('phone', '809-301-3858')
-    
-    # Obtener dirección estructurada
-    addr = config.get('business_address', {})
-    if isinstance(addr, dict):
-        addr_parts = [addr.get('street', ''), addr.get('building', ''), addr.get('sector', ''), addr.get('city', '')]
-        biz_addr = ', '.join(p for p in addr_parts if p)
-    else:
-        biz_addr = str(addr) if addr else ''
+    biz = await get_business_info()
+    biz_name = biz["name"]
+    biz_rnc = biz["rnc"]
+    biz_phone = biz["phone"]
+    biz_addr = biz["address"]
     
     # Obtener impresora según turno activo del cajero
     receipt_channel_code = "receipt"
@@ -3660,7 +3705,8 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
     if print_count > 0:
         commands.append({"type": "text", "text": f"*** RE-IMPRESION #{print_count} ***", "align": "center", "bold": True})
     
-    commands.append({"type": "text", "text": "ALONZO CIGAR", "align": "center", "bold": True, "size": 2})
+    biz = await get_business_info()
+    commands.append({"type": "text", "text": biz["name"] or "MI NEGOCIO", "align": "center", "bold": True, "size": 2})
     commands.append({"type": "text", "text": "PRE-CUENTA", "align": "center", "bold": True})
     # Mostrar número de transacción (ID de Venta) como referencia
     commands.append({"type": "text", "text": f"ORDEN #{transaction_number}", "align": "center", "bold": True})
