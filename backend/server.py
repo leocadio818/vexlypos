@@ -3182,6 +3182,19 @@ async def send_comanda_to_queue(order_id: str):
 
 
 # ─── TEST PRINT ───
+@api.get("/print-agent/download")
+async def download_print_agent():
+    """Serve the latest VexlyPOS_PrintAgent.py for installation on customer PCs"""
+    from fastapi.responses import FileResponse
+    file_path = Path(__file__).parent.parent / "VexlyPOS_PrintAgent.py"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Print agent file not found")
+    return FileResponse(
+        path=str(file_path),
+        filename="VexlyPOS_PrintAgent.py",
+        media_type="text/x-python"
+    )
+
 @api.post("/print/test/{channel_code}")
 async def send_test_print(channel_code: str):
     """Send a test print to a specific channel"""
