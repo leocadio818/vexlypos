@@ -320,6 +320,30 @@ async def get_business_info() -> dict:
     }
 
 
+async def assert_tenant_ready_for_billing():
+    """Raise HTTP 412 if the tenant hasn't filled the minimum fields needed
+    to print a fiscal receipt. Called from the receipt-print endpoint to
+    block sales when the business identity is missing — prevents tickets
+    that print blank or another tenant's name.
+    """
+    biz = await get_business_info()
+    missing = []
+    if not biz["name"]:
+        missing.append("Nombre del Negocio")
+    if not biz["rnc"]:
+        missing.append("RNC")
+    if missing:
+        raise HTTPException(
+            status_code=412,
+            detail={
+                "code": "TENANT_NOT_READY",
+                "message": "Configuración del negocio incompleta antes de cobrar.",
+                "missing_fields": missing,
+                "fix_url": "/settings/system",
+            },
+        )
+
+
 async def get_next_transaction_number() -> int:
     """
     Genera el siguiente número de transacción interno secuencial.
@@ -930,6 +954,38 @@ async def get_station_config():
     config = await db.station_config.find_one({}, {"_id": 0})
     return config or {"require_shift_to_sell": True, "require_cash_count": False, "auto_send_on_logout": True}
 
+@api.get("/tenant/readiness")
+async def tenant_readiness():
+    """Tenant onboarding health check. UI should call this on dashboard load
+    and show a setup wizard banner until ready=true. Prevents tickets from
+    printing with blank or wrong identity.
+    """
+    biz = await get_business_info()
+    main_cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
+    
+    receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+    
+    checks = {
+        "business_name": bool(biz["name"]),
+        "rnc": bool(biz["rnc"]),
+        "phone": bool(biz["phone"]),
+        "address": bool(biz["address"]),
+        "ecf_provider_configured": bool(main_cfg.get("ecf_provider")),
+        "receipt_channel_exists": bool(receipt_channel),
+        "receipt_channel_has_ip": bool(receipt_channel and (receipt_channel.get("ip") or receipt_channel.get("ip_address"))),
+    }
+    required = ["business_name", "rnc", "receipt_channel_exists"]
+    missing_required = [k for k in required if not checks[k]]
+    return {
+        "ready": len(missing_required) == 0,
+        "missing_required": missing_required,
+        "checks": checks,
+        "business": {
+            "name": biz["name"],
+            "rnc": biz["rnc"],
+        },
+    }
+
 @api.put("/station-config")
 async def update_station_config(input: dict, user: dict = Depends(get_current_user)):
     if "_id" in input: del input["_id"]
@@ -973,6 +1029,7 @@ async def list_print_channels():
 @api.post("/print-channels")
 async def create_print_channel(input: dict):
     name = input.get("name", "Canal")
+    chan_type = (input.get("type") or "").strip().lower()
     # Auto-generate code from name if not provided
     code = input.get("code", "").strip()
     if not code:
@@ -982,6 +1039,12 @@ async def create_print_channel(input: dict):
         if not code:
             code = f"channel_{gen_id()[:8]}"
     
+    # PROTECTION: Force code='receipt' for receipt-type channels so the
+    # billing engine always finds it. Prevents the "cashier vs receipt"
+    # multi-tenant bug where customer named the channel anything but `receipt`.
+    if chan_type == "receipt" or code in ("cashier", "caja", "recibo"):
+        code = "receipt"
+    
     doc = {
         "id": gen_id(), 
         "name": name, 
@@ -989,7 +1052,8 @@ async def create_print_channel(input: dict):
         "printer_name": input.get("printer_name", ""),
         "ip_address": input.get("ip_address", input.get("ip", "")),
         "active": input.get("active", True),
-        "category_ids": input.get("category_ids", [])
+        "category_ids": input.get("category_ids", []),
+        "type": chan_type or None,
     }
     await db.print_channels.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
@@ -1000,6 +1064,14 @@ async def update_print_channel(cid: str, input: dict):
     # Map 'ip' field from frontend to 'ip_address'
     if "ip" in input:
         input["ip_address"] = input.pop("ip")
+    
+    # PROTECTION: Force code='receipt' for receipt-type channels.
+    chan_type = (input.get("type") or "").strip().lower()
+    if chan_type == "receipt":
+        input["code"] = "receipt"
+    elif "code" in input and input["code"] in ("cashier", "caja", "recibo"):
+        input["code"] = "receipt"
+    
     await db.print_channels.update_one({"id": cid}, {"$set": input})
     return {"ok": True}
 
@@ -3288,6 +3360,9 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
+    # PROTECTION: block printing if tenant identity is incomplete.
+    await assert_tenant_ready_for_billing()
+    
     config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     biz = await get_business_info()
     biz_name = biz["name"]
@@ -3831,7 +3906,7 @@ async def download_print_agent(printer_name: str = Query("RECIBO", description="
 """
 MESA POS RD - AGENTE DE IMPRESION v2.1
 ======================================
-Alonzo Cigar - Mesa POS RD
+VexlyPOS - Multi-tenant Print Agent
 
 INSTALACION:
 1. Ejecuta el instalador .bat como Administrador

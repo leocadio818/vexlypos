@@ -52,6 +52,29 @@ export default function Layout() {
   const [creditNoteConfirmOpen, setCreditNoteConfirmOpen] = useState(false);
   const [creditNoteSearchError, setCreditNoteSearchError] = useState(null);
   
+  // ─── Tenant readiness check ───
+  // Polls the backend on mount + every 5 min. Shows a banner if the
+  // business identity (name/RNC/receipt channel) is not fully configured —
+  // prevents printing receipts with blank or wrong data.
+  const [tenantReady, setTenantReady] = useState(true);
+  const [tenantMissing, setTenantMissing] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await api.get('/tenant/readiness');
+        if (cancelled) return;
+        setTenantReady(!!res.data?.ready);
+        setTenantMissing(res.data?.missing_required || []);
+      } catch {
+        // swallow — banner stays hidden if endpoint not deployed yet
+      }
+    };
+    check();
+    const t = setInterval(check, 5 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
+  
   const resetCreditNoteModal = () => {
     setCreditNoteStep(1);
     setCreditNoteSearch('');
@@ -810,6 +833,18 @@ export default function Layout() {
 
       {/* Main content - PWA safe areas applied globally */}
       <main className={`flex-1 relative z-10 safe-area-top ${isMobile && !shouldHideNav ? 'pb-20 safe-area-bottom' : ''}`} style={{ overflow: 'auto', minHeight: 0 }}>
+        {/* ─── Tenant Setup Required Banner ─── */}
+        {!tenantReady && hasPermission?.('admin.access') && (
+          <div
+            className="bg-red-600 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm font-bold font-oswald tracking-wider z-50 cursor-pointer hover:bg-red-700"
+            data-testid="tenant-not-ready-banner"
+            onClick={() => navigate('/settings/system')}
+          >
+            <AlertTriangle size={16} />
+            CONFIGURACIÓN INCOMPLETA — Falta: {tenantMissing.join(', ')}. Toca para configurar.
+            <AlertTriangle size={16} />
+          </div>
+        )}
         {/* ─── Training Mode Banner ─── */}
         {user?.training_mode && (
           <div className="bg-amber-500 text-black px-4 py-1.5 flex items-center justify-center gap-2 text-sm font-bold font-oswald tracking-wider z-50" data-testid="training-mode-banner">

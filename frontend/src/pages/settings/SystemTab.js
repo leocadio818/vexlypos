@@ -887,7 +887,7 @@ export default function SystemTab() {
               </h3>
               <input value={systemConfig.ticket_address_street || ''} 
                 onChange={e => setSystemConfig(p => ({ ...p, ticket_address_street: e.target.value }))}
-                placeholder="Calle y numero (ej: C/ Las Flores #12)"
+                placeholder="Calle y número"
                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm mb-2" data-testid="ticket-address-street" />
               <input value={systemConfig.ticket_address_building || ''} 
                 onChange={e => setSystemConfig(p => ({ ...p, ticket_address_building: e.target.value }))}
