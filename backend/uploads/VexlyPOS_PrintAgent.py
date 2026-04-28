@@ -173,9 +173,9 @@ def generate_qr_escpos(data_str, size=4):
         # GS ( k — Print QR code from symbol storage
         buf += b'\x1D\x28\x6B\x03\x00\x31\x51\x30'
         
-        # Padding after QR — prevents the cutter from slicing through the
-        # bottom of the QR module. ESC d n  →  feed n lines (n=6 ≈ 6 lines).
-        buf += b'\x1B\x64\x06'
+        # Small padding so the cutter doesn't slice through the
+        # last QR module row. ESC d 2 = feed 2 lines.
+        buf += b'\x1B\x64\x02'
         
         buf += ALIGN_LEFT
         return bytes(buf)
@@ -489,9 +489,7 @@ def format_commands(commands):
             if qr_data:
                 qr_bytes = generate_qr_escpos(qr_data)
                 if qr_bytes:
-                    # Extra feed after QR so the cutter does not clip
-                    # the bottom rows of the QR module.
-                    buf += qr_bytes + FEED + FEED + FEED
+                    buf += qr_bytes + FEED
         
         elif ctype == "feed":
             lines = cmd.get("lines", 1)
