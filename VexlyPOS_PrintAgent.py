@@ -130,53 +130,43 @@ def encode_text(text):
             return text.encode('ascii', errors='replace')
 
 def generate_qr_escpos(data_str, size=6):
-    """Generate QR code as ESC/POS bitmap bytes"""
+    """Generate QR code using ESC/POS native QR commands (GS ( k).
+    
+    Uses native ESC/POS QR code commands universally supported by modern thermal
+    printers (Epson, Xprinter, Bixolon, 3nStar). The printer renders the QR
+    internally - much smaller payload than raster bitmap and compatible with
+    printers that don't support GS v 0.
+    """
     try:
-        import qrcode
-        from PIL import Image
-        import io
+        if not data_str:
+            return None
         
-        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=size, border=2)
-        qr.add_data(data_str)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white").convert('1')
-        
-        # Resize to max 384px width (standard 80mm thermal printer)
-        if img.width > 384:
-            ratio = 384 / img.width
-            img = img.resize((384, int(img.height * ratio)))
-        
-        # Convert to ESC/POS raster bitmap
-        width = img.width
-        height = img.height
-        
-        # Ensure width is multiple of 8
-        if width % 8 != 0:
-            new_width = width + (8 - width % 8)
-            new_img = Image.new('1', (new_width, height), 1)
-            new_img.paste(img, (0, 0))
-            img = new_img
-            width = new_width
-        
-        bytes_per_line = width // 8
+        data_bytes = data_str.encode('utf-8', errors='replace')
+        if len(data_bytes) > 7089:
+            logger.warning(f"QR data too long: {len(data_bytes)} bytes (max 7089)")
+            return None
         
         buf = bytearray()
         buf += ALIGN_CENTER
         
-        # GS v 0 — raster bit image
-        buf += GS + b'v0' + b'\x00'
-        buf += bytes([bytes_per_line & 0xFF, (bytes_per_line >> 8) & 0xFF])
-        buf += bytes([height & 0xFF, (height >> 8) & 0xFF])
+        # GS ( k — Select QR Code model: Model 2
+        buf += b'\x1D\x28\x6B\x04\x00\x31\x41\x32\x00'
         
-        pixels = img.load()
-        for y in range(height):
-            for x_byte in range(bytes_per_line):
-                byte_val = 0
-                for bit in range(8):
-                    x = x_byte * 8 + bit
-                    if x < img.width and pixels[x, y] == 0:
-                        byte_val |= (0x80 >> bit)
-                buf += bytes([byte_val])
+        # GS ( k — Set QR module size (1-16). 6 ≈ 25mm wide on 80mm paper.
+        qr_size = max(1, min(16, int(size)))
+        buf += b'\x1D\x28\x6B\x03\x00\x31\x43' + bytes([qr_size])
+        
+        # GS ( k — Set error correction level: M (medium ~15%)
+        buf += b'\x1D\x28\x6B\x03\x00\x31\x45\x31'
+        
+        # GS ( k — Store QR data in symbol storage area
+        store_len = len(data_bytes) + 3
+        pL = store_len & 0xFF
+        pH = (store_len >> 8) & 0xFF
+        buf += b'\x1D\x28\x6B' + bytes([pL, pH]) + b'\x31\x50\x30' + data_bytes
+        
+        # GS ( k — Print QR code from symbol storage
+        buf += b'\x1D\x28\x6B\x03\x00\x31\x51\x30'
         
         buf += ALIGN_LEFT
         return bytes(buf)
