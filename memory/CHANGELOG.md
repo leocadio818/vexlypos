@@ -1,6 +1,48 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-28 — 🛡️ Multi-tenant data leakage hardening + Print Agent QR fix
+
+### Bugs críticos resueltos
+- **Header de recibos mostraba "ALONZO CIGAR"** en pods de otros tenants (La Terraza, etc.). Causa: 11 strings hardcoded en backend/frontend + seed default contaminado en `printer_config`. Eliminados todos.
+- **Pre-cuenta seguía con "ALONZO CIGAR"** post-fix de factura final. Línea adicional eliminada.
+- **QR DGII no imprimía** en térmicas que no soportan raster bitmap. Migrado de `GS v 0` (raster) a `GS ( k` (QR nativo ESC/POS), compatible con todas las térmicas modernas.
+- **Job de receipt iba a impresora de cocina** en La Terraza. Causa: canal con `code: "cashier"` en vez de `"receipt"` + Terminal POS apuntando a `cashier`. Corregido en BD + bloqueado a futuro.
+- **`pywin32` faltante** en `.bat`. Causaba error al arrancar el agente. Agregado al instalador.
+- **Botón Test del canal mandaba `target: usb`** ignorando IP del canal. Fixed.
+
+### Nuevas protecciones (regresión imposible)
+- `assert_tenant_ready_for_billing()` — bloquea cobros si falta nombre/RNC/canal receipt (HTTP 412).
+- `GET /api/tenant/readiness` — endpoint health-check del onboarding.
+- Banner rojo en Layout cuando tenant no está listo (Admin only, click → `/settings/system`).
+- POST/PUT `/print-channels` fuerza `code: receipt` para canales tipo recibo.
+- `tests/test_no_tenant_hardcoded.py` — test de regresión que escanea backend+frontend en busca de strings de identidad de tenants. Ejecutar pre-deploy.
+
+### Nuevas features
+- `GET /api/print-agent/download` — sirve `VexlyPOS_PrintAgent.py` actualizado del pod. Cliente descarga vía PowerShell `Invoke-WebRequest`.
+- Agente: QR nativo `GS ( k` size=4 + `ESC d 2` padding antes del cut.
+- Helper único `get_business_info()` en backend (fuente única de verdad para identidad del negocio).
+
+### Archivos modificados clave
+- `backend/server.py` — helper get_business_info, endpoint readiness, endpoint download, force receipt code, eliminados 11 hardcoded.
+- `backend/routers/credit_notes.py` — datos dinámicos.
+- `frontend/src/components/Layout.js` — banner readiness.
+- `frontend/src/components/ThermalTicket.js` — defaults vacíos.
+- `frontend/src/pages/settings/SystemTab.js` — defaults vacíos.
+- `VexlyPOS_PrintAgent.py` — QR nativo GS ( k size=4 + ESC d 2.
+- `Instalar_VexlyPOS_PrintAgent.bat` — pywin32 agregado.
+
+### Datos corregidos en producción
+- **Lungomare**: canal receipt creado (192.168.0.89), cola limpia (26 jobs).
+- **La Terraza**: business_name/RNC/phone/address en system_config:main + printer_config; canal cashier→receipt; terminal POS print_channel cashier→receipt.
+
+### Rollout pendiente
+- `git pull` (Universal Pull Template) en: Lungomare, BlackBurger, PunchBar, Casa Oliva, Kukaramacara, BikerBurger, Alonzo.
+- Re-descarga del agente en PCs de clientes: `Invoke-WebRequest "{pod}/api/print-agent/download" -OutFile "C:\VexlyPOS\VexlyPOS_PrintAgent.py"`
+
+---
+
+
 ## 2026-04-25 — FIX DEFINITIVO: system_config con id="main" + mapeo correcto UI→XML 🏗️
 **Bug crítico raíz**: 49 lugares del backend usaban `find_one({})` / `update_one({})` sin filtro de id, lo que mezclaba datos de configuración del negocio con `stock_alerts` y otros docs reservados. Resultado: XML e-CF salía con `RNCEmisor="000000000"` y DGII rechazaba.
 
