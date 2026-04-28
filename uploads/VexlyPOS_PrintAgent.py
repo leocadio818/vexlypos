@@ -129,13 +129,17 @@ def encode_text(text):
         except:
             return text.encode('ascii', errors='replace')
 
-def generate_qr_escpos(data_str, size=6):
+def generate_qr_escpos(data_str, size=4):
     """Generate QR code using ESC/POS native QR commands (GS ( k).
     
     Uses native ESC/POS QR code commands universally supported by modern thermal
     printers (Epson, Xprinter, Bixolon, 3nStar). The printer renders the QR
     internally - much smaller payload than raster bitmap and compatible with
     printers that don't support GS v 0.
+    
+    Default size reduced to 4 (~17mm) so the QR doesn't get clipped by the
+    cutter on short tickets. Trailing feed lines are added so the cutter
+    doesn't slice through the bottom of the QR module.
     """
     try:
         if not data_str:
@@ -152,7 +156,8 @@ def generate_qr_escpos(data_str, size=6):
         # GS ( k — Select QR Code model: Model 2
         buf += b'\x1D\x28\x6B\x04\x00\x31\x41\x32\x00'
         
-        # GS ( k — Set QR module size (1-16). 6 ≈ 25mm wide on 80mm paper.
+        # GS ( k — Set QR module size (1-16). 4 ≈ 17mm wide on 80mm paper.
+        # Lower size keeps the QR fully on the printable area before the cutter.
         qr_size = max(1, min(16, int(size)))
         buf += b'\x1D\x28\x6B\x03\x00\x31\x43' + bytes([qr_size])
         
@@ -167,6 +172,10 @@ def generate_qr_escpos(data_str, size=6):
         
         # GS ( k — Print QR code from symbol storage
         buf += b'\x1D\x28\x6B\x03\x00\x31\x51\x30'
+        
+        # Padding after QR — prevents the cutter from slicing through the
+        # bottom of the QR module. ESC d n  →  feed n lines (n=6 ≈ 6 lines).
+        buf += b'\x1B\x64\x06'
         
         buf += ALIGN_LEFT
         return bytes(buf)
@@ -480,7 +489,9 @@ def format_commands(commands):
             if qr_data:
                 qr_bytes = generate_qr_escpos(qr_data)
                 if qr_bytes:
-                    buf += qr_bytes + FEED
+                    # Extra feed after QR so the cutter does not clip
+                    # the bottom rows of the QR module.
+                    buf += qr_bytes + FEED + FEED + FEED
         
         elif ctype == "feed":
             lines = cmd.get("lines", 1)
