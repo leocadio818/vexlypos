@@ -114,6 +114,19 @@ Prioridades:
   - Aumenta percepción de producto profesional y fideliza personal administrativo.
   - ~3h.
 - [ ] **Reportes de Ventas por Hora / Horas Trabajadas — Filtros avanzados** (multi-select empleados, comparativo entre personas).
+- [ ] **Print Agent — Auto-update con notificación + un click** *(Added 2026-04-28)*
+  - Banner en la UI del POS: `🔔 Hay una versión nueva del Print Agent (vX → vY). [Actualizar ahora]`.
+  - Backend: nuevo endpoint `GET /api/print-agent/version` que devuelve `{version, sha256, released_at, changelog}` del archivo servido por `/api/print-agent/download`.
+  - Agente: al iniciar y cada 1h hace `GET /api/print-agent/version` y reporta su versión actual al backend (`POST /api/print-agent/heartbeat`).
+  - Backend almacena heartbeats en `print_agent_status` (PC del cliente, versión, last_seen). Dashboard Super Admin lo muestra.
+  - UI Admin: botón "Actualizar ahora" → registra protocolo `vexlypos://update` en Windows que ejecuta el script PowerShell de descarga + reinicio del agente.
+  - Validación: descargar a `.new` → verificar SHA-256 → `.bat` helper mata proceso, mueve archivo, reinicia.
+  - Preserva `config.txt` local (NO lo sobreescribe).
+  - Rollback automático si la nueva versión no arranca en 30s (vuelve al `.OLD`).
+  - **Por qué NO auto-update silencioso**: protege contra subir un agente roto a todos los clientes a la vez. El admin mantiene control humano del momento de actualización.
+  - Beneficio: nunca más correr PowerShell manualmente en cada PC al actualizar el agente.
+  - Estimación: ~1-2 días (backend endpoints + frontend banner + .bat helper + protocol handler installer).
+
 - [ ] **Print Agent Installer — actualización .bat** para impresoras locales de red.
 - [ ] **Notificaciones Push para pedidos de Delivery Platforms** (Web Push API).
 - [ ] **Exportación PDF del Panel de Diagnóstico Multiprod** — reporte semanal automático.
