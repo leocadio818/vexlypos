@@ -1,6 +1,23 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-29 — 🔴 P0 FIX: Impresión física rota (Lungomare — cliente molesto)
+
+**Problema reportado**: COCINA, BAR GRANDE, BAR PEQUEÑO y CAJA 2 "no imprimían".
+
+**Causa raíz**: 86 productos en la DB de producción tenían `print_channels` con códigos legacy (`['cocina']` y `['bar']`) que ya no existen como canales — sólo existen `kitchen`, `bar1`, `bar2`, `receipt`, `receipt2`, `receipt3`. La función `resolve_channel_for_area` hacía prefix-match para `'bar'` (→ `bar1`, correcto) pero no tenía alias para `'cocina'` → `'kitchen'` (no hay prefix), así que 24 productos de cocina resolvían a channel inexistente → `printer_ip=""` → **el agente saltaba el job silenciosamente**.
+
+**Fix aplicado** (3 partes):
+1. **Migración de datos one-shot** sobre producción (Lungomare) vía `PUT /api/products/{id}` con token admin: 86 productos corregidos (`cocina→kitchen`, `bar→bar1`). 0 errores.
+2. **Hotfix defensivo de código** en `resolve_channel_for_area` (`server.py:961`): nueva fase "Step 3 — Legacy-alias fallback" con dict `{cocina→kitchen, recibo→receipt, caja→receipt, cashier→receipt}`. Protege contra futura reintroducción de datos legacy.
+3. **Pruebas e2e en producción**: enviado `POST /api/print/test/{channel_code}` a los 6 canales (`kitchen, bar1, bar2, receipt, receipt2, receipt3`). Queue procesado por el agente, 0 jobs fallidos.
+
+**Descartado como NO causa**: los banners `PARA LLEVAR · ` / `DELIVERY · ` en `channel_name_for_print` del print_queue. El agente imprime usando `printer_ip` del payload, no el nombre; el nombre sólo se usa cosméticamente en el header ESC/POS.
+
+Archivos: `server.py` (resolve_channel_for_area).
+
+
+
 ## 2026-04-29 — 🛠️ AUDITORÍA FASE 1 — 7 BUG FIXES (3 críticos + 4 altos)
 
 ### 🔴 BUG-1 — `force_contingency` UnboundLocalError (`routers/billing.py`)

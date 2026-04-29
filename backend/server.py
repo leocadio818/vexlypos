@@ -993,7 +993,24 @@ async def resolve_channel_for_area(
     if any(c.get("code") == base_channel_code for c in available_channels):
         return base_channel_code
     
-    # Step 3 — Prefix fallback (e.g. "bar" → "bar1" / "bar2")
+    # Step 3 — Legacy-alias fallback (Spanish codes that predate kitchen/bar1/…).
+    # Some restaurants have historical products with print_channels=["cocina"]
+    # or ["bar"] from before the multi-printer refactor. These codes do NOT
+    # prefix-match "kitchen" so without an explicit alias the comanda would
+    # silently never reach a printer (channel resolves to "cocina", no match,
+    # printer_ip="", agent skips). Aliases mirror /admin/fix-orphan-channel-mappings.
+    ALIASES = {
+        "cocina": "kitchen",
+        "recibo": "receipt",
+        "caja": "receipt",
+        "cashier": "receipt",
+    }
+    if base_channel_code in ALIASES:
+        aliased = ALIASES[base_channel_code]
+        if any(c.get("code") == aliased for c in available_channels):
+            return aliased
+    
+    # Step 4 — Prefix fallback (e.g. "bar" → "bar1" / "bar2")
     candidates = sorted(
         [c for c in available_channels if (c.get("code") or "").startswith(base_channel_code)],
         key=lambda c: c.get("code") or ""
@@ -1001,7 +1018,7 @@ async def resolve_channel_for_area(
     if candidates:
         return candidates[0]["code"]
     
-    # Step 4 — Give up; return original so the issue is observable in jobs
+    # Step 5 — Give up; return original so the issue is observable in jobs
     return base_channel_code
 
 
