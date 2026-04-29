@@ -119,7 +119,8 @@ async def list_payment_methods():
             {"id": gen_id(), "name": "EUR Euro", "icon": "euro", "icon_type": "lucide", "brand_icon": None, "bg_color": "#d97706", "text_color": "#ffffff", "currency": "EUR", "exchange_rate": 63.20, "active": True, "order": 5, "is_cash": True, "dgii_payment_code": 1},
         ]
         await db.payment_methods.insert_many(defaults)
-        return defaults
+        # BUG-6 fix: insert_many mutates dicts adding ObjectId; re-fetch clean docs.
+        return await db.payment_methods.find({}, {"_id": 0}).to_list(50)
     
     default_colors = {
         "Efectivo": "#16a34a", "Efectivo RD$": "#16a34a",
@@ -537,6 +538,7 @@ async def pay_bill(bill_id: str, input: PayBillInput, request: Request, user=Dep
     payments_list = []
     primary_payment_method_name = "Efectivo"
     is_cash_payment = True
+    force_contingency = False  # Default: no contingency unless explicitly set by payment method
     
     if input.payments and len(input.payments) > 0:
         # Pagos múltiples
@@ -933,7 +935,8 @@ async def get_tax_config():
             {"id": gen_id(), "description": "LEY (10%)", "rate": 10, "active": True, "is_tip": True, "apply_to_tip": False, "order": 1}
         ]
         await db.tax_config.insert_many(defaults)
-        return defaults
+        # BUG-6 fix: insert_many mutates dicts adding ObjectId; re-fetch clean docs.
+        return await db.tax_config.find({}, {"_id": 0}).sort("order", 1).to_list(20)
     return taxes
 
 @router.put("/tax-config")

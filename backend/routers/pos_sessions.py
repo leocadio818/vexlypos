@@ -266,7 +266,9 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
         
         # Calcular diferencias
         cash_difference = input.cash_declared - expected_cash
-        card_difference = input.card_declared - session.get("card_sales", 0) if input.card_declared else 0
+        # BUG-5 fix: use `is not None` so a legitimate 0.0 declaration still computes
+        # the real difference (was silently masking faltantes when card_declared=0).
+        card_difference = input.card_declared - session.get("card_sales", 0) if input.card_declared is not None else 0
         total_difference = cash_difference + card_difference
         
         now = now_iso()
@@ -545,7 +547,8 @@ async def get_terminals():
             ]
             # Guardar terminales por defecto en MongoDB
             await db.pos_terminals.insert_many(default_terminals)
-            terminals = default_terminals
+            # BUG-6 fix: insert_many mutates dicts adding ObjectId; re-fetch clean docs.
+            terminals = await db.pos_terminals.find({"is_active": True}, {"_id": 0}).sort("code", 1).to_list(100)
         
         # Obtener turnos abiertos de Supabase para marcar terminales en uso
         open_sessions = sb_select(sb.table("pos_sessions").select("terminal_name, opened_by_name")).eq("status", "open").execute()
@@ -597,7 +600,8 @@ async def get_all_terminals():
                 {"id": "term-5", "code": "VIP", "name": "VIP", "is_active": True},
             ]
             await db.pos_terminals.insert_many(default_terminals)
-            terminals = default_terminals
+            # BUG-6 fix: insert_many mutates dicts adding ObjectId; re-fetch clean docs.
+            terminals = await db.pos_terminals.find({}, {"_id": 0}).sort("code", 1).to_list(100)
         
         return terminals
     except Exception as e:

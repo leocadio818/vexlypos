@@ -675,6 +675,8 @@ async def upload_product_image(file: UploadFile = File(...)):
     
     # Guardar archivo
     upload_path = Path(__file__).parent / "uploads" / "products" / unique_filename
+    # BUG-7 fix: ensure the destination directory exists on fresh deployments.
+    upload_path.parent.mkdir(parents=True, exist_ok=True)
     
     with open(upload_path, "wb") as f:
         f.write(contents)
@@ -2212,7 +2214,8 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     <span style='font-size:9px;'>{biz_addr_line}<br>Tel: {biz_phone}</span>
     </div>
     <div style='border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;font-size:10px;'>
-    <b>NCF: {bill.get('ncf', '')}</b><br>
+    <!-- 🔒 DO NOT MODIFY - e-NCF display rule (Protected 2026-04-09) -->
+    <b>NCF: {bill.get('ecf_encf') or bill.get('ncf', '')}</b><br>
     Valido hasta: {printer_config.get('ncf_expiry', config.get('ticket_ncf_expiry', '31/12/2026'))}</div>
     {customer_fiscal_html}
     <div style='font-size:10px;border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;'>Mesa: {bill['table_number']} | Fecha: {utc_to_local_str(bill.get('paid_at', bill['created_at']))}</div>
@@ -4989,6 +4992,17 @@ async def startup_event():
     if not existing_tz:
         await db.system_config.insert_one({"id": "timezone", "timezone": "America/Santo_Domingo"})
         logger.info("Timezone config seeded: America/Santo_Domingo")
+
+    # ── BUG-2 fix: seed internal_transaction counter to 1000 idempotently ──
+    # The first $inc afterwards yields 1001. This avoids the previous race
+    # condition where two concurrent callers could both observe seq<1001 and
+    # both $set to 1001, producing duplicate transaction numbers.
+    await db.counters.update_one(
+        {"_id": "internal_transaction"},
+        {"$setOnInsert": {"seq": 1000}},
+        upsert=True
+    )
+    logger.info("internal_transaction counter seeded (>=1000)")
 
     # ── MIGRATION: ensure system_config doc with id="main" exists ──
     # Historically PUT/GET /system/config used find/update with empty filter {}, which

@@ -1,6 +1,58 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-29 — 🛠️ AUDITORÍA FASE 1 — 7 BUG FIXES (3 críticos + 4 altos)
+
+### 🔴 BUG-1 — `force_contingency` UnboundLocalError (`routers/billing.py`)
+- En `pay_bill`, si todos los `payment_method_id` enviados eran inválidos, `payments_list` quedaba vacío y `force_contingency` nunca se asignaba → `UnboundLocalError` 500 en línea 609.
+- **Fix**: inicializar `force_contingency = False` ANTES del bloque `if input.payments / else`.
+
+### 🔴 BUG-2 — `transaction_number` race condition (`routers/orders.py` + `server.py`)
+- La lógica `if seq < 1001: $set 1001` permitía a 2 clientes concurrentes obtener el mismo número durante cold-start.
+- **Fix**: en `routers/orders.py::get_next_transaction_number()` se eliminó el doble-paso; ahora usa SOLO `$inc` atómico (idéntico al de `routers/billing.py`).
+- **Fix**: en `server.py::startup_event` se siembra `db.counters` con `{"_id":"internal_transaction"}, {"$setOnInsert":{"seq":1000}}` idempotente. El primer `$inc` siempre devuelve ≥1001.
+- **Validación**: 50 invocaciones concurrentes → 50 números únicos consecutivos (range 1255..1304 en el test).
+
+### 🔴 BUG-3 — Regla de display de NCF violada en HTML del recibo (`server.py`)
+- Línea ~2215 mostraba `bill.ncf` (B-series) en el HTML, contradiciendo la regla "PROTECTED 2026-04-09" que exige `ecf_encf` para todo display visible.
+- **Fix**: cambiado a `bill.get('ecf_encf') or bill.get('ncf', '')` con comentario protector arriba del bloque.
+- **Validación**: bill con `ncf='B0100012345'` y `ecf_encf='E320000099999'` → HTML ahora muestra `E320000099999`.
+
+### 🟠 BUG-4 — `quick_order_number` race condition (`routers/orders.py`)
+- `find+sort+1` no era atómico → dos meseros simultáneos podían obtener el mismo número de Orden Rápida.
+- **Fix**: contador atómico `quick_order_{business_date}` con `find_one_and_update($inc, upsert)`.
+- **Validación**: 30 llamadas concurrentes → 30 números únicos (1..30 secuenciales).
+
+### 🟠 BUG-5 — `card_difference` falsy check (`routers/pos_sessions.py`)
+- `if input.card_declared else 0` evaluaba `0.0` como falsy → faltantes de tarjeta enmascarados.
+- **Fix**: cambiado a `is not None`. Test arithmético: `declared=0.0, sales=1500 → diff=-1500.0` (correcto).
+
+### 🟠 BUG-6 — `insert_many` ObjectId leak (4 sitios)
+- `routers/billing.py` (payment_methods, tax_config) y `routers/pos_sessions.py` (pos_terminals × 2) retornaban listas mutadas con `_id` (ObjectId) → 500 en cold-start.
+- **Fix**: tras cada `insert_many`, re-fetch con `{"_id":0}` proyection antes de retornar.
+- **Validación**: cold-start de `/api/payment-methods`, `/api/tax-config`, `/api/sale-types` → 200 sin ObjectId.
+
+### 🟠 BUG-7 — Directorio `uploads/products` no existía (`server.py`)
+- `open()` fallaba con `FileNotFoundError` en pods recién desplegados.
+- **Fix**: `upload_path.parent.mkdir(parents=True, exist_ok=True)` antes del `open`.
+- **Validación**: directorio borrado a propósito → endpoint subió la imagen correctamente y recreó el dir.
+
+### Resumen QA
+- **10/10 cases passed** (`/tmp/qa_phase1.py`):
+  - BUG-1: HTTP 200 sin UnboundLocalError con payment_method_id inválido.
+  - BUG-2: 50 increments concurrentes → 50 únicos.
+  - BUG-3: regex strict match `<b>NCF: E320000099999</b>`.
+  - BUG-4: 30 concurrentes → 30 únicos secuenciales.
+  - BUG-5: lógica + assertion en código fuente.
+  - BUG-6: 3 endpoints cold-start sin ObjectId.
+  - BUG-7: dir auto-creado.
+- Backend reload limpio, log confirma `internal_transaction counter seeded (>=1000)`.
+
+### Pendiente para Fase 2 (no tocado)
+- BUG-8 (bare except × 11 sitios), BUG-9 (role string check), BUG-10 (filename None).
+
+---
+
 ## 2026-04-29 — 🐛 BUG FIX — Test de Notificaciones por Email
 
 ### Problema (reportado por usuario con screenshots IMG_2016/IMG_2017)

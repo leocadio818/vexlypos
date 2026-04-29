@@ -52,7 +52,8 @@ async def now_local_print_formatted() -> str:
 async def get_next_transaction_number() -> int:
     """
     Genera el siguiente número de transacción interno secuencial.
-    Inicia en 1001. Usa find_one_and_update con upsert para garantizar atomicidad.
+    Solo $inc atómico — el contador se siembra a 1000 al iniciar el backend
+    (ver server.py startup), por lo que el primer valor entregado es 1001.
     """
     result = await db.counters.find_one_and_update(
         {"_id": "internal_transaction"},
@@ -60,13 +61,6 @@ async def get_next_transaction_number() -> int:
         upsert=True,
         return_document=ReturnDocument.AFTER
     )
-    # If freshly created (seq=1), set to 1001
-    if result["seq"] < 1001:
-        result = await db.counters.find_one_and_update(
-            {"_id": "internal_transaction"},
-            {"$set": {"seq": 1001}},
-            return_document=ReturnDocument.AFTER
-        )
     return result["seq"]
 
 # ─── PYDANTIC MODELS ───
@@ -404,16 +398,21 @@ async def _get_active_business_date() -> str:
 
 
 async def _next_quick_order_number() -> int:
-    """Sequential per business day. Resets with new jornada."""
+    """Sequential per business day. Resets with new jornada.
+    BUG-4 fix: uses an atomic $inc counter keyed by business_date so two
+    waiters creating quick orders concurrently can never get the same number.
+    """
     bdate = await _get_active_business_date()
     if not bdate:
         raise HTTPException(status_code=400, detail="No hay jornada activa. Debes abrir una jornada antes de crear una Orden Rápida.")
-    last = await db.orders.find_one(
-        {"is_quick_order": True, "quick_order_business_date": bdate},
-        {"_id": 0, "quick_order_number": 1},
-        sort=[("quick_order_number", -1)],
+    counter_id = f"quick_order_{bdate}"
+    result = await db.counters.find_one_and_update(
+        {"_id": counter_id},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
     )
-    return int((last or {}).get("quick_order_number", 0) or 0) + 1
+    return int(result["seq"])
 
 
 @router.post("/orders/quick")
