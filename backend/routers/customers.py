@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone, timedelta
+from pymongo import ReturnDocument
 import hmac
 import hashlib
 import os
@@ -25,7 +26,8 @@ def now_iso() -> str:
 
 def _loyalty_token(customer_id: str) -> str:
     """Short HMAC-SHA256 (8 bytes hex = 16 chars) derived from JWT_SECRET to prevent enumeration."""
-    secret = os.environ.get("JWT_SECRET", "fallback_secret").encode()
+    # BUG-21 fix: fail fast if JWT_SECRET is missing instead of using a known fallback
+    secret = os.environ['JWT_SECRET'].encode()
     mac = hmac.new(secret, f"loyalty-card:{customer_id}".encode(), hashlib.sha256).hexdigest()
     return mac[:16]
 
@@ -35,6 +37,9 @@ class CustomerInput(BaseModel):
     phone: str = ""
     email: str = ""
     rnc: str = ""
+
+# Auth dependency for customer/loyalty mutations (BUG-28 fix)
+from routers.auth import get_current_user
 
 # ─── CUSTOMERS ───
 @router.get("/customers")
@@ -78,7 +83,7 @@ async def get_customer(cid: str):
     return customer
 
 @router.post("/customers")
-async def create_customer(input: CustomerInput):
+async def create_customer(input: CustomerInput, user=Depends(get_current_user)):
     doc = {
         "id": gen_id(), 
         "name": input.name, 
@@ -95,20 +100,20 @@ async def create_customer(input: CustomerInput):
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @router.put("/customers/{cid}")
-async def update_customer(cid: str, input: dict):
+async def update_customer(cid: str, input: dict, user=Depends(get_current_user)):
     if "_id" in input:
         del input["_id"]
     await db.customers.update_one({"id": cid}, {"$set": input})
     return {"ok": True}
 
 @router.delete("/customers/{cid}")
-async def delete_customer(cid: str):
+async def delete_customer(cid: str, user=Depends(get_current_user)):
     await db.customers.delete_one({"id": cid})
     return {"ok": True}
 
 # ─── LOYALTY POINTS ───
 @router.post("/customers/{cid}/add-points")
-async def add_customer_points(cid: str, input: dict):
+async def add_customer_points(cid: str, input: dict, user=Depends(get_current_user)):
     amount = input.get("amount", 0)
     config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"points_per_hundred": 10, "point_value_rd": 1}
     points = int((amount / 100) * config.get("points_per_hundred", 10))
@@ -120,15 +125,26 @@ async def add_customer_points(cid: str, input: dict):
     return {"points_earned": points, "total_points": customer["points"] if customer else 0}
 
 @router.post("/customers/{cid}/redeem-points")
-async def redeem_customer_points(cid: str, input: dict):
-    points_to_redeem = input.get("points", 0)
-    customer = await db.customers.find_one({"id": cid}, {"_id": 0})
-    if not customer or customer["points"] < points_to_redeem:
-        raise HTTPException(status_code=400, detail="Puntos insuficientes")
+async def redeem_customer_points(cid: str, input: dict, user=Depends(get_current_user)):
+    points_to_redeem = int(input.get("points", 0))
+    if points_to_redeem <= 0:
+        raise HTTPException(status_code=400, detail="La cantidad de puntos debe ser mayor a 0")
     config = await db.loyalty_config.find_one({}, {"_id": 0}) or {"point_value_rd": 1}
+    # BUG-29 fix: atomic conditional decrement to avoid double-redeem race condition
+    updated = await db.customers.find_one_and_update(
+        {"id": cid, "points": {"$gte": points_to_redeem}},
+        {"$inc": {"points": -points_to_redeem}},
+        projection={"_id": 0, "points": 1, "name": 1},
+        return_document=ReturnDocument.AFTER,
+    )
+    if not updated:
+        raise HTTPException(status_code=400, detail="Puntos insuficientes")
     discount = points_to_redeem * config.get("point_value_rd", 1)
-    await db.customers.update_one({"id": cid}, {"$inc": {"points": -points_to_redeem}})
-    return {"points_redeemed": points_to_redeem, "discount_rd": discount}
+    return {
+        "points_redeemed": points_to_redeem,
+        "discount_rd": discount,
+        "remaining_points": updated.get("points", 0),
+    }
 
 # ─── LOYALTY CONFIG ───
 @router.get("/loyalty/config")
@@ -137,7 +153,7 @@ async def get_loyalty_config():
     return config or {"points_per_hundred": 10, "point_value_rd": 1, "min_redemption": 50}
 
 @router.put("/loyalty/config")
-async def update_loyalty_config(input: dict):
+async def update_loyalty_config(input: dict, user=Depends(get_current_user)):
     if "_id" in input:
         del input["_id"]
     await db.loyalty_config.update_one({}, {"$set": input}, upsert=True)

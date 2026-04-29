@@ -149,7 +149,7 @@ async def list_payment_methods():
     return methods
 
 @router.post("/payment-methods")
-async def create_payment_method(input: dict):
+async def create_payment_method(input: dict, user=Depends(get_current_user)):
     count = await db.payment_methods.count_documents({})
     doc = {
         "id": gen_id(), 
@@ -171,14 +171,14 @@ async def create_payment_method(input: dict):
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @router.put("/payment-methods/{mid}")
-async def update_payment_method(mid: str, input: dict):
+async def update_payment_method(mid: str, input: dict, user=Depends(get_current_user)):
     if "_id" in input:
         del input["_id"]
     await db.payment_methods.update_one({"id": mid}, {"$set": input})
     return {"ok": True}
 
 @router.delete("/payment-methods/{mid}")
-async def delete_payment_method(mid: str):
+async def delete_payment_method(mid: str, user=Depends(get_current_user)):
     await db.payment_methods.delete_one({"id": mid})
     return {"ok": True}
 
@@ -941,7 +941,7 @@ async def get_tax_config():
     return taxes
 
 @router.put("/tax-config")
-async def update_tax_config(input: dict):
+async def update_tax_config(input: dict, user=Depends(get_current_user)):
     taxes = input.get("taxes", [])
     await db.tax_config.delete_many({})
     if taxes:
@@ -988,7 +988,7 @@ async def list_sale_types():
     return types
 
 @router.post("/sale-types")
-async def create_sale_type(input: dict):
+async def create_sale_type(input: dict, user=Depends(get_current_user)):
     doc = {
         "id": gen_id(), 
         "code": input.get("code", ""), 
@@ -1001,7 +1001,7 @@ async def create_sale_type(input: dict):
     return {k: v for k, v in doc.items() if k != "_id"}
 
 @router.put("/sale-types/{sid}")
-async def update_sale_type(sid: str, input: dict):
+async def update_sale_type(sid: str, input: dict, user=Depends(get_current_user)):
     # Ensure we can update the default_ncf_type_id field
     update_data = {}
     allowed_fields = ["name", "code", "active", "tax_exemptions", "default_ncf_type_id"]
@@ -1012,6 +1012,6 @@ async def update_sale_type(sid: str, input: dict):
     return {"ok": True}
 
 @router.delete("/sale-types/{sid}")
-async def delete_sale_type(sid: str):
+async def delete_sale_type(sid: str, user=Depends(get_current_user)):
     await db.sale_types.delete_one({"id": sid})
     return {"ok": True}

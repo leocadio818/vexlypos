@@ -397,7 +397,8 @@ async def list_print_channels():
             {"id": str(uuid.uuid4()), "name": "Caja", "code": "cashier", "active": True}
         ]
         await db.print_channels.insert_many(defaults)
-        return defaults
+        # BUG-25 fix: insert_many mutates dicts adding ObjectId; re-fetch clean docs.
+        return await db.print_channels.find({}, {"_id": 0}).to_list(20)
     return channels
 
 @router.post("/print-channels")

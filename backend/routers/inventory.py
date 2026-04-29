@@ -21,7 +21,7 @@ from models.schemas import (
 router = APIRouter(tags=["Inventory"])
 logger = logging.getLogger(__name__)
 
-JWT_SECRET = os.environ.get('JWT_SECRET', 'fallback_secret')
+JWT_SECRET = os.environ['JWT_SECRET']  # BUG-21 fix: fail fast if missing
 
 # ─── UTILITY FUNCTIONS ───
 def gen_id() -> str:
@@ -406,11 +406,14 @@ async def list_unit_definitions():
 @router.post("/unit-definitions")
 async def create_unit_definition(input: UnitDefinitionInput, request: Request):
     """Create a new custom unit"""
-    # Check for duplicate
+    # BUG-27 fix: escape user input before using in $regex to avoid pattern injection / errors.
+    import re
+    name_pat = re.escape(input.name)
+    abbr_pat = re.escape(input.abbreviation)
     existing = await db.unit_definitions.find_one({
         "$or": [
-            {"name": {"$regex": f"^{input.name}$", "$options": "i"}},
-            {"abbreviation": {"$regex": f"^{input.abbreviation}$", "$options": "i"}}
+            {"name": {"$regex": f"^{name_pat}$", "$options": "i"}},
+            {"abbreviation": {"$regex": f"^{abbr_pat}$", "$options": "i"}}
         ]
     })
     if existing:

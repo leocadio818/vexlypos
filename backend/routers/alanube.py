@@ -432,16 +432,22 @@ async def send_ecf(bill_id: str, request: Request):
         prefix = ncf[:3] if isinstance(ncf, str) and len(ncf) >= 3 else "B02"
         ecf_prefix = {"B01": "E31", "B02": "E32", "B14": "E34", "B15": "E31"}.get(prefix, "E32")
     
-    # Generate unique e-NCF number using random to avoid sandbox collisions
+    # Generate unique e-NCF number using random to avoid sandbox collisions.
+    # BUG-23 fix: previous code only retried once on collision and could still
+    # send a duplicate eNCF. Now we retry up to 10 times and fail explicitly
+    # if every attempt collides with an existing local log.
     import random
-    unique_suffix = random.randint(1000000000, 9999999999)
-    encf = f"{ecf_prefix}{unique_suffix}"
-    
-    # Verify it wasn't used before in our DB
-    existing = await db.ecf_logs.find_one({"encf": encf})
-    if existing:
-        unique_suffix = random.randint(1000000000, 9999999999)
-        encf = f"{ecf_prefix}{unique_suffix}"
+    encf = None
+    for _ in range(10):
+        candidate = f"{ecf_prefix}{random.randint(1000000000, 9999999999)}"
+        if not await db.ecf_logs.find_one({"encf": candidate}, {"_id": 0, "encf": 1}):
+            encf = candidate
+            break
+    if encf is None:
+        raise HTTPException(
+            status_code=500,
+            detail="No se pudo generar un eNCF único tras 10 intentos. Reintente la operación.",
+        )
     
     # Build payload
     payload = build_alanube_payload(bill, config, encf)

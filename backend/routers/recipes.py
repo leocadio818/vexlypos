@@ -14,7 +14,7 @@ from models.schemas import RecipeInput
 
 router = APIRouter(tags=["Recipes"])
 logger = logging.getLogger("recipes")
-JWT_SECRET = os.environ.get('JWT_SECRET', 'fallback_secret')
+JWT_SECRET = os.environ['JWT_SECRET']  # BUG-21 fix: fail fast if missing
 
 # ─── UTILITY FUNCTIONS ───
 def gen_id() -> str:

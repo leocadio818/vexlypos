@@ -3,7 +3,7 @@ Promotion Engine — computes effective prices based on active scheduled promoti
 Handles caching (60s), timezone (America/Santo_Domingo), multiple promotions
 (selects best for customer), and discount types (percentage/fixed_amount/fixed_price/2x1).
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict
 try:
     from zoneinfo import ZoneInfo
@@ -83,7 +83,8 @@ def _is_promotion_currently_active(promo: dict, now_dr: Optional[datetime] = Non
 async def get_active_promotions(force_refresh: bool = False) -> List[dict]:
     """Return all promotions currently active (cached 60s)."""
     global _cache
-    now_utc = datetime.utcnow()
+    # BUG-26 fix: datetime.utcnow() is deprecated; use timezone-aware UTC.
+    now_utc = datetime.now(timezone.utc)
     if (
         not force_refresh
         and _cache["data"] is not None

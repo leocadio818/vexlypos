@@ -972,8 +972,8 @@ def _minutes_since(iso_str):
     try:
         base = iso_str.split(".")[0].replace("Z", "")
         dt = datetime.fromisoformat(base)
-        # Naive UTC comparison; sufficient for relative age display
-        delta = datetime.utcnow() - dt
+        # BUG-26 fix: datetime.utcnow() deprecated; use timezone-aware now then drop tz to keep naive math.
+        delta = datetime.now(timezone.utc).replace(tzinfo=None) - dt
         return max(0, int(delta.total_seconds() // 60))
     except Exception:
         return 0

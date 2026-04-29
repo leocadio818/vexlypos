@@ -138,10 +138,35 @@ async def get_current_business_day():
 
 
 async def generate_day_ref() -> str:
-    """Genera referencia única para jornada: JORNADA-2026-00001"""
+    """Genera referencia única para jornada: JORNADA-2026-00001 (atómico).
+
+    BUG-22 fix: usa $inc atómico en `counters` collection en lugar de
+    count_documents()+1 que tenía race condition al abrir jornadas
+    simultáneas (refs duplicados).
+    """
     year = datetime.now().year
-    count = await db.business_days.count_documents({"ref": {"$regex": f"^JORNADA-{year}-"}})
-    return f"JORNADA-{year}-{str(count + 1).zfill(5)}"
+    counter_id = f"business_day_{year}"
+
+    # Seed counter from existing max ref the first time we use it this year.
+    existing = await db.counters.find_one({"id": counter_id}, {"_id": 0, "seq": 1})
+    if not existing:
+        last = await db.business_days.count_documents({"ref": {"$regex": f"^JORNADA-{year}-"}})
+        if last > 0:
+            await db.counters.update_one(
+                {"id": counter_id},
+                {"$setOnInsert": {"seq": last}},
+                upsert=True,
+            )
+
+    counter = await db.counters.find_one_and_update(
+        {"id": counter_id},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+        projection={"_id": 0, "seq": 1},
+    )
+    seq = (counter or {}).get("seq", 1)
+    return f"JORNADA-{year}-{str(seq).zfill(5)}"
 
 
 # ─── ENDPOINTS ───

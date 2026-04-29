@@ -1,6 +1,40 @@
 # POS Restaurant System - Dominican Republic
 
 
+## 🛡️ AUDITORÍA DE BUGS — FASES 2 y 3 CERRADAS (2026-04-25)
+
+### Fase 2 — backend stabilization sweep (DONE)
+QA: `/tmp/qa_phase2.py` 24/24 PASS · sin regresiones
+- BUG-1..BUG-18 (ya documentados)
+- **BUG-19**: 12 bare `except:` reemplazados por `except Exception as e:` con logging dedicado en `attendance.py`, `business_days.py`, `inventory.py`, `kitchen.py`, `recipes.py`, `reports.py`, `tables.py`. Logger por archivo.
+- **BUG-20**: parser de `mensajes` Multiprod ya no filtra `{'valor':'','message':''}` — guardia `if text:` y soporte para campos `mensaje`/`descripcion`. 8/8 casos funcionales pasan.
+
+### Fase 3 — auditoría de seguridad/lógica (DONE)
+QA: `/tmp/qa_phase3.py` 27/27 PASS · sin regresiones
+- **BUG-21 (P0)**: `JWT_SECRET` sin `'fallback_secret'` en `recipes.py`, `inventory.py`, `customers.py` (replicas del fix BUG-11). Falla rápido si la env var falta.
+- **BUG-22 (P1)**: `business_days.generate_day_ref()` ahora usa `find_one_and_update` + `$inc` atómico sobre `counters` (con seed automático del max existente). Elimina race condition en apertura de jornadas concurrentes.
+- **BUG-23 (P2)**: `alanube.py` retry loop de 10 intentos con verificación de colisión (vs solo 1 retry sin re-check) al generar eNCF random. Falla explícita si las 10 colisionan.
+- **BUG-24 (P1)**: `auth.authorize-permission` cambia bypass de `if role == "admin"` por `role_level >= 100`. Permite bypass a Propietarios/Administrador custom (level 80-100).
+- **BUG-25 (P2)**: `kitchen.list_print_channels` re-fetch tras `insert_many` para evitar leak de ObjectId.
+- **BUG-26 (P2)**: `datetime.utcnow()` deprecado eliminado en `orders.py`, `thefactory.py`, `reports.py`, `services/promotion_engine.py` (5 sitios). Cambios respetan semántica naive vs aware.
+- **BUG-27 (P2)**: `inventory.create_unit_definition` usa `re.escape()` en input antes de pasarlo a `$regex` MongoDB.
+- **BUG-28 (P0)**: Auth obligatoria (`Depends(get_current_user)`) en 7 endpoints de `customers.py`/loyalty (`POST/PUT/DELETE /customers`, `add-points`, `redeem-points`, `PUT /loyalty/config`).
+- **BUG-29 (P1)**: `redeem-points` ahora usa `find_one_and_update` con guardia `points: {$gte: points_to_redeem}` (atómico). Imposible redimir 2 veces los mismos puntos.
+- **BUG-30 (P0)**: Auth obligatoria en `discounts.py` CRUD y `/discounts/calculate`.
+- **BUG-31 (P0)**: Auth obligatoria en endpoints fiscales de `billing.py`: `payment-methods` (CRUD), `tax-config`, `sale-types` (CRUD).
+
+### BUG-13 — POSPUESTO hasta cerrar Fase 4
+PIN hashing aún SHA256 sin sal; pendiente migrar a bcrypt/argon2 con per-user salt y plan de migración. Requiere `integration_playbook_expert_v2`.
+
+### Próxima fase: Fase 4 — Auditoría de Frontend (PENDIENTE)
+Hallazgos preliminares del barrido inicial:
+- 94 console.log/error/warn sin guard de DEBUG flag
+- localStorage sin try/catch (Safari iOS Private Mode crash) en `AuthContext.js` y otros
+- 3 sitios con `dangerouslySetInnerHTML` (revisar fuentes de HTML — backend confiable vs user input)
+- Uso directo de `axios` en 20+ archivos en lugar del wrapper `lib/api.js`
+- Bug audit pendiente para: race conditions de UI, validaciones de inputs numéricos, accesibilidad, contraste light/dark mode masivo
+
+
 ## 🔥 SESSION ACTIVA — Lungomare Bar & Lounge instalación 2026-04-26 (DOMINGO)
 
 ### Estado actual (2026-04-25 ~04:30 UTC)

@@ -2,7 +2,7 @@
 Motor de Reglas de Descuento (Discount Engine).
 CRUD para descuentos + motor de aplicacion en carrito.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime, timezone
@@ -14,6 +14,10 @@ db = None
 def set_db(database):
     global db
     db = database
+
+
+# Auth dependency for discount mutations (BUG-30 fix)
+from routers.auth import get_current_user
 
 
 # ─── MODELS ───
@@ -68,7 +72,7 @@ async def list_active_discounts():
 
 
 @router.post("")
-async def create_discount(data: DiscountCreate):
+async def create_discount(data: DiscountCreate, user=Depends(get_current_user)):
     doc = data.dict()
     doc["id"] = str(uuid.uuid4())[:8]
     doc["created_at"] = datetime.now(timezone.utc).isoformat()
@@ -78,7 +82,7 @@ async def create_discount(data: DiscountCreate):
 
 
 @router.put("/{discount_id}")
-async def update_discount(discount_id: str, data: DiscountCreate):
+async def update_discount(discount_id: str, data: DiscountCreate, user=Depends(get_current_user)):
     existing = await db.discounts.find_one({"id": discount_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Descuento no encontrado")
@@ -89,7 +93,7 @@ async def update_discount(discount_id: str, data: DiscountCreate):
 
 
 @router.delete("/{discount_id}")
-async def delete_discount(discount_id: str):
+async def delete_discount(discount_id: str, user=Depends(get_current_user)):
     result = await db.discounts.delete_one({"id": discount_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Descuento no encontrado")
@@ -98,7 +102,7 @@ async def delete_discount(discount_id: str):
 
 # ─── MOTOR DE CALCULO ───
 @router.post("/calculate")
-async def calculate_discount(body: dict):
+async def calculate_discount(body: dict, user=Depends(get_current_user)):
     """
     Calculate discount for a bill.
     Input: { discount_id, bill_id }

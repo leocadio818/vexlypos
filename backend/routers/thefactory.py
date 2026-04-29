@@ -289,7 +289,9 @@ async def authenticate() -> dict:
     if _token_cache["token"] and _token_cache["expires"]:
         try:
             exp = datetime.strptime(_token_cache["expires"], "%Y-%m-%d %H:%M:%S")
-            if datetime.utcnow() < exp:
+            # BUG-26 fix: datetime.utcnow() is deprecated; use naive UTC slice
+            # of the timezone-aware now() to keep parity with naive 'exp' parsing.
+            if datetime.now(timezone.utc).replace(tzinfo=None) < exp:
                 return {"ok": True, "token": _token_cache["token"]}
         except Exception:
             pass

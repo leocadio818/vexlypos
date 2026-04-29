@@ -1307,9 +1307,12 @@ async def verify_manager(input: dict, user=Depends(get_current_user)):
     role = manager.get("role", "")
     custom_permissions = manager.get("permissions", {})
     
-    # SUPERUSER RULE: Admin role has ALL permissions by default (override)
-    if role == "admin":
-        # Admin is superuser - always authorized for any action
+    # SUPERUSER RULE: role_level >= 100 has ALL permissions by default (override)
+    # BUG-24 fix: use role_level instead of literal string compare so that
+    # custom roles (Propietario, Administrador) with level>=100 also bypass.
+    role_level = await get_role_level_async(role)
+    if role_level >= 100:
+        # Admin/superuser - always authorized for any action
         return {
             "authorized": True,
             "user_id": manager["id"],

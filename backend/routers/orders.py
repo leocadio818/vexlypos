@@ -1493,9 +1493,10 @@ async def get_void_report(
             from zoneinfo import ZoneInfo
             start_date = datetime.now(ZoneInfo("America/Santo_Domingo")).replace(hour=0, minute=0, second=0).isoformat()
     elif period == 'week':
-        start_date = (datetime.utcnow() - timedelta(days=7)).isoformat() + "Z"
+        # BUG-26 fix: datetime.utcnow() is deprecated; use timezone-aware variant.
+        start_date = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat().replace("+00:00", "Z")
     elif period == 'month':
-        start_date = (datetime.utcnow() - timedelta(days=30)).isoformat() + "Z"
+        start_date = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat().replace("+00:00", "Z")
     elif from_date:
         # Find the business day for this date and use its opened_at/closed_at
         bday = await db.business_days.find_one({"business_date": from_date}, {"_id": 0, "opened_at": 1, "closed_at": 1})
