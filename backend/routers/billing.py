@@ -741,8 +741,9 @@ async def pay_bill(bill_id: str, input: PayBillInput, request: Request, user=Dep
                         order_doc = await db.orders.find_one({"id": bill.get("order_id")}, {"_id": 0, "transaction_number": 1})
                         if order_doc and order_doc.get("transaction_number"):
                             txn_num = f" | T-{order_doc['transaction_number']}"
-                    except:
-                        pass
+                    except Exception as e:
+                        import logging as _logging
+                        _logging.getLogger(__name__).warning(f"[billing] txn_num lookup failed for bill {bill_id}: {e}")
                     
                     # Prefer ecf_type prefix over B-series for movement description
                     display_ncf = bill.get('ncf', bill_id[:8])

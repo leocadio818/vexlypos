@@ -270,7 +270,7 @@ def utc_to_local_str(utc_iso_str: str, fmt: str = "%d/%m/%Y %I:%M:%S %p") -> str
             dt = dt.replace(tzinfo=timezone.utc)
         local_dt = dt.astimezone(ZoneInfo("America/Santo_Domingo"))
         return local_dt.strftime(fmt)
-    except:
+    except Exception:
         return utc_iso_str[:19]
 
 def now_local_str(fmt: str = "%I:%M %p") -> str:
@@ -667,7 +667,9 @@ async def upload_product_image(file: UploadFile = File(...)):
         )
     
     # Generar nombre único para el archivo
-    file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else "jpg"
+    # BUG-10 fix: filename can be None (UploadFile.filename is Optional[str]).
+    safe_name = (file.filename or "").lower()
+    file_ext = safe_name.rsplit(".", 1)[-1] if "." in safe_name else "jpg"
     if file_ext not in ["jpg", "jpeg", "png", "webp", "gif"]:
         file_ext = "jpg"
     
@@ -740,7 +742,9 @@ async def upload_logo(file: UploadFile = File(...)):
     contents = await file.read()
     if len(contents) > 2 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Logo debe ser menor a 2MB")
-    file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else "png"
+    # BUG-10 fix: filename can be None.
+    safe_name = (file.filename or "").lower()
+    file_ext = safe_name.rsplit(".", 1)[-1] if "." in safe_name else "png"
     if file_ext not in ["jpg", "jpeg", "png", "webp", "gif", "svg"]:
         file_ext = "png"
     mime_map = {
@@ -2699,8 +2703,8 @@ async def selective_cleanup(input: dict, user: dict = Depends(get_current_user))
                 try:
                     result = await db[col_name].delete_many({})
                     total_deleted += result.deleted_count
-                except:
-                    pass
+                except Exception as e:
+                    logger.warning(f"[clear-data] delete_many failed for {col_name}: {e}")
         
         elif key == "pos_sessions":
             # Clear Supabase pos_sessions
@@ -2709,8 +2713,8 @@ async def selective_cleanup(input: dict, user: dict = Depends(get_current_user))
                 sb = sc(os.environ.get("SUPABASE_URL",""), os.environ.get("SUPABASE_ANON_KEY",""))
                 sb_update_filter(sb.table("pos_sessions").delete().neq("id", "00000000-0000-0000-0000-000000000000")).execute()
                 total_deleted += 1
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"[clear-data] pos_sessions clear failed: {e}")
         
         elif key == "ncf_reset":
             # Reset NCF sequences to 0
@@ -2723,8 +2727,8 @@ async def selective_cleanup(input: dict, user: dict = Depends(get_current_user))
                 # Also reset MongoDB ecf_sequences
                 await db.ecf_sequences.delete_many({})
                 total_deleted += len(seqs.data)
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"[clear-data] ncf_reset failed: {e}")
     
     # Reset tables to free if orders were deleted
     if "orders" in collections:
@@ -2814,7 +2818,7 @@ async def update_scheduler_from_config():
     schedule_time = config.get("schedule_time", "08:00")
     try:
         hour, minute = map(int, schedule_time.split(":"))
-    except:
+    except (ValueError, AttributeError):
         hour, minute = 8, 0
     
     if scheduler.get_job("stock_alert"):
@@ -2989,7 +2993,7 @@ async def print_shift_report(input: dict, user=Depends(get_current_user)):
     def fmt(val):
         try:
             return f"RD$ {float(val or 0):,.2f}"
-        except:
+        except (TypeError, ValueError):
             return "RD$ 0.00"
     
     session = report.get("session", {})
@@ -3018,7 +3022,7 @@ async def print_shift_report(input: dict, user=Depends(get_current_user)):
         if not d: return "-"
         try:
             return utc_to_local_str(d, "%d/%m/%Y %I:%M %p")
-        except:
+        except Exception:
             return str(d)[:19]
     
     add_cols("Apertura:", fmt_dt(session.get("opened_at")))

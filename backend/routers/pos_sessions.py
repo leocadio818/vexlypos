@@ -50,7 +50,9 @@ def generate_session_ref() -> str:
         result = sb_select(sb.table("pos_sessions").select("ref", count="exact")).like("ref", f"TURNO-{year}-%").execute()
         count = result.count or 0
         return f"TURNO-{year}-{str(count + 1).zfill(5)}"
-    except:
+    except Exception as e:
+        import logging as _logging
+        _logging.getLogger(__name__).warning(f"[pos_sessions] generate_session_ref Supabase failed, using fallback: {e}")
         return f"TURNO-{year}-{gen_id()[:5].upper()}"
 
 def generate_movement_ref() -> str:
@@ -61,7 +63,9 @@ def generate_movement_ref() -> str:
         result = sb_select(sb.table("cash_movements").select("ref", count="exact")).like("ref", f"MOV-{year}-%").execute()
         count = result.count or 0
         return f"MOV-{year}-{str(count + 1).zfill(5)}"
-    except:
+    except Exception as e:
+        import logging as _logging
+        _logging.getLogger(__name__).warning(f"[pos_sessions] generate_movement_ref Supabase failed, using fallback: {e}")
         return f"MOV-{year}-{gen_id()[:5].upper()}"
 
 
@@ -344,7 +348,9 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
                     clock_in_dt = datetime.fromisoformat(active_attendance["clock_in"])
                     diff = local_now - clock_in_dt.replace(tzinfo=local_now.tzinfo) if clock_in_dt.tzinfo is None else local_now - clock_in_dt
                     hours = round(diff.total_seconds() / 3600, 2)
-                except:
+                except Exception as e:
+                    import logging as _logging
+                    _logging.getLogger(__name__).warning(f"[pos_sessions] hours_worked calculation failed for user {user_id}: {e}")
                     hours = 0
                 hours_display = f"{int(hours)}h {int((hours % 1) * 60)}m"
                 
@@ -498,8 +504,12 @@ async def get_sessions_history(
         if business_day and business_day.get("opened_at"):
             query = query.gte("opened_at", business_day["opened_at"])
         
-        # Cajeros solo ven sus propios turnos
-        if user.get("role") != "admin":
+        # BUG-9 fix: roles privilegiados (Administrador del Sistema, Propietario, Gerente) deben ver todos los turnos.
+        # Antes solo se chequeaba role=="admin" como string, dejando fuera a propietarios/gerentes.
+        from routers.auth import get_role_level_async
+        caller_level = await get_role_level_async(user.get("role", "waiter"))
+        if caller_level < 80:
+            # Cajeros/meseros (level<80) solo ven sus propios turnos
             query = query.eq("opened_by", user["user_id"])
         
         result = query.execute()
@@ -578,7 +588,9 @@ async def get_my_session(user: dict = Depends(get_current_user)):
         if session.data and len(session.data) > 0:
             return session.data[0]
         return {"status": "none"}
-    except:
+    except Exception as e:
+        import logging as _logging
+        _logging.getLogger(__name__).warning(f"[pos_sessions] get_my_session Supabase failed for user {user.get('user_id')}: {e}")
         return {"status": "none"}
 
 
@@ -985,8 +997,9 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
                 elif mov.get("movement_type") == "credit_note":
                     credit_notes_total += mov.get("amount", 0)
                     credit_notes_count += 1
-        except:
-            pass
+        except Exception as e:
+            import logging as _logging
+            _logging.getLogger(__name__).warning(f"[pos_sessions] cash_movements lookup failed for session {session_id}: {e}")
         
         # Get voids/anulaciones from MongoDB — both full bills AND individual items
         voids_total = 0
@@ -1007,8 +1020,9 @@ async def get_sales_breakdown(session_id: str, user=Depends(get_current_user)):
             ).to_list(500)
             voids_total += sum(v.get("total_value", 0) for v in item_voids)
             voids_count += len(item_voids)
-        except:
-            pass
+        except Exception as e:
+            import logging as _logging
+            _logging.getLogger(__name__).warning(f"[pos_sessions] voids lookup failed for session {session_id}: {e}")
         
         # Smart cash balance: opening - withdrawals
         opening = session.get("opening_amount", 0) or 0
