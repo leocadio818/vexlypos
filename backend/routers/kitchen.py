@@ -30,38 +30,81 @@ def notify_kds():
 # Import auth dependency
 from routers.auth import get_current_user
 
+async def get_channel_type_map():
+    """Build a {channel_code: type} map from print_channels.
+
+    BUG FIX (kitchen.py hardcoded bar_channels): the previous logic compared
+    channel codes against a hardcoded set {"bar", "terraza"}. That ignored
+    user-created channels with custom codes ("bar1", "bar2", "terraza1", …)
+    and routed their items to the kitchen KDS by mistake.
+
+    Now we resolve each code's `type` from the print_channels collection
+    (the same field shown in the UI's "Tipo: Bar/Cocina/Caja" dropdown) and
+    only items routed to a channel with type == 'kitchen' are shown on KDS.
+
+    Backwards compatibility: channels created before the `type` field was
+    introduced still have type == None. We infer their type from the code
+    using the legacy convention so existing data does not regress.
+    """
+    docs = await db.print_channels.find({}, {"_id": 0, "code": 1, "type": 1}).to_list(50)
+    legacy_type_by_code = {
+        "kitchen": "kitchen",
+        "bar": "bar",
+        "terraza": "bar",
+        "cashier": "receipt",
+        "receipt": "receipt",
+    }
+    type_by_code = {}
+    for d in docs:
+        code = d.get("code") or ""
+        explicit = d.get("type")
+        if explicit:
+            type_by_code[code] = explicit
+        else:
+            type_by_code[code] = legacy_type_by_code.get(code, "kitchen")
+    return type_by_code
+
+
 async def get_kitchen_category_ids():
-    """Get category IDs that should appear in kitchen KDS (not bar)"""
+    """Get category IDs whose items should appear on the kitchen KDS.
+
+    A category goes to the KDS only when its mapped channel resolves to
+    type == 'kitchen'. Categories without a mapping default to 'kitchen'
+    so newly created categories keep showing on the KDS until the operator
+    routes them explicitly.
+    """
     # Get all category-channel mappings
     mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
     mapping_dict = {m["category_id"]: m["channel_code"] for m in mappings}
-    
+
     # Get all categories
     categories = await db.categories.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
-    
-    # Categories that go to kitchen KDS:
-    # - Those without mapping (default)
-    # - Those mapped to "kitchen" 
-    # - Those mapped to "receipt" (receipt is for printing invoices, not a preparation station)
-    # Exclude from KDS: bar, terraza (these are bar/drink preparation areas)
-    bar_channels = {"bar", "terraza"}
+
+    type_by_code = await get_channel_type_map()
+
     kitchen_cat_ids = []
-    
     for cat in categories:
-        cat_id = cat["id"]
-        channel = mapping_dict.get(cat_id, "kitchen")  # Default to kitchen
-        if channel not in bar_channels:
-            kitchen_cat_ids.append(cat_id)
-    
-    return kitchen_cat_ids, bar_channels, mapping_dict
+        code = mapping_dict.get(cat["id"], "kitchen")
+        ctype = type_by_code.get(code, "kitchen")
+        if ctype == "kitchen":
+            kitchen_cat_ids.append(cat["id"])
+
+    return kitchen_cat_ids, type_by_code, mapping_dict
 
 async def get_product_category_map():
     """Get a map of product_id -> category_id for items without category_id"""
     products = await db.products.find({}, {"_id": 0, "id": 1, "category_id": 1}).to_list(1000)
     return {p["id"]: p.get("category_id") for p in products}
 
-async def filter_items_for_kds(items, kitchen_cat_ids, bar_channels, mapping_dict, product_cat_map):
-    """Filter items to show only kitchen items (not bar)"""
+async def filter_items_for_kds(items, kitchen_cat_ids, type_by_code, mapping_dict, product_cat_map):
+    """Filter items to show only those routed to a kitchen-type channel.
+
+    BUG FIX: previously this method compared the resolved channel code
+    against a hardcoded `bar_channels = {"bar", "terraza"}` set, which
+    let custom-coded bar channels (`bar1`, `bar2`, `terraza_a`, …) leak
+    into the KDS. We now keep the item only when the channel's TYPE is
+    'kitchen' (resolved via print_channels.type with legacy fallback).
+    """
     kitchen_items = []
     for item in items:
         if not item.get("sent_to_kitchen"):
@@ -72,20 +115,19 @@ async def filter_items_for_kds(items, kitchen_cat_ids, bar_channels, mapping_dic
         # The real food items are the children (is_combo_item=True).
         if item.get("is_combo"):
             continue
-        
-        # Get category_id from item, or lookup from product
+
+        # Resolve category for this item
         cat_id = item.get("category_id")
         if not cat_id:
             product_id = item.get("product_id")
             cat_id = product_cat_map.get(product_id)
-        
-        # Determine channel for this category
-        channel = mapping_dict.get(cat_id, "kitchen") if cat_id else "kitchen"
-        
-        # Include if NOT a bar channel
-        if channel not in bar_channels:
+
+        # Resolve channel code → channel type → keep only kitchen-typed items
+        code = mapping_dict.get(cat_id, "kitchen") if cat_id else "kitchen"
+        ctype = type_by_code.get(code, "kitchen")
+        if ctype == "kitchen":
             kitchen_items.append(item)
-    
+
     return kitchen_items
 
 # ─── KITCHEN ORDERS (KDS) ───
@@ -93,7 +135,7 @@ async def filter_items_for_kds(items, kitchen_cat_ids, bar_channels, mapping_dic
 async def kitchen_orders():
     """Get orders with items sent to kitchen that are not yet served - FILTERED BY CHANNEL"""
     # Get filtering data
-    kitchen_cat_ids, bar_channels, mapping_dict = await get_kitchen_category_ids()
+    kitchen_cat_ids, type_by_code, mapping_dict = await get_kitchen_category_ids()
     product_cat_map = await get_product_category_map()
     
     orders = await db.orders.find(
@@ -107,7 +149,7 @@ async def kitchen_orders():
     for order in orders:
         kitchen_items = await filter_items_for_kds(
             order.get("items", []), 
-            kitchen_cat_ids, bar_channels, mapping_dict, product_cat_map
+            kitchen_cat_ids, type_by_code, mapping_dict, product_cat_map
         )
         if kitchen_items:
             order_copy = dict(order)
@@ -129,7 +171,7 @@ async def kitchen_stream(request: Request):
                 break
             
             # Get filtering data
-            kitchen_cat_ids, bar_channels, mapping_dict = await get_kitchen_category_ids()
+            kitchen_cat_ids, type_by_code, mapping_dict = await get_kitchen_category_ids()
             product_cat_map = await get_product_category_map()
             
             # Get current orders
@@ -144,7 +186,7 @@ async def kitchen_stream(request: Request):
             for order in orders:
                 kitchen_items = await filter_items_for_kds(
                     order.get("items", []), 
-                    kitchen_cat_ids, bar_channels, mapping_dict, product_cat_map
+                    kitchen_cat_ids, type_by_code, mapping_dict, product_cat_map
                 )
                 if kitchen_items:
                     order_copy = dict(order)
@@ -178,7 +220,7 @@ async def kitchen_stream(request: Request):
 async def kitchen_status():
     """Debug endpoint to check KDS connectivity and order status - FILTERED BY CHANNEL"""
     # Get filtering data
-    kitchen_cat_ids, bar_channels, mapping_dict = await get_kitchen_category_ids()
+    kitchen_cat_ids, type_by_code, mapping_dict = await get_kitchen_category_ids()
     product_cat_map = await get_product_category_map()
     
     orders = await db.orders.find(
@@ -192,7 +234,7 @@ async def kitchen_status():
     for order in orders:
         kitchen_items = await filter_items_for_kds(
             order.get("items", []), 
-            kitchen_cat_ids, bar_channels, mapping_dict, product_cat_map
+            kitchen_cat_ids, type_by_code, mapping_dict, product_cat_map
         )
         if kitchen_items:
             order_copy = dict(order)
@@ -234,7 +276,7 @@ async def kitchen_tv():
         config = {"warning_minutes": 15, "urgent_minutes": 25, "critical_minutes": 35}
     
     # Get filtering data
-    kitchen_cat_ids, bar_channels, mapping_dict = await get_kitchen_category_ids()
+    kitchen_cat_ids, type_by_code, mapping_dict = await get_kitchen_category_ids()
     product_cat_map = await get_product_category_map()
     
     orders = await db.orders.find(
@@ -248,7 +290,7 @@ async def kitchen_tv():
         # Filter items by kitchen categories only
         kitchen_items = await filter_items_for_kds(
             order.get("items", []), 
-            kitchen_cat_ids, bar_channels, mapping_dict, product_cat_map
+            kitchen_cat_ids, type_by_code, mapping_dict, product_cat_map
         )
         if not kitchen_items:
             continue
