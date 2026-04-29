@@ -31,8 +31,8 @@ def get_user_from_request(request: Request) -> tuple:
             payload = jwt.decode(auth[7:], JWT_SECRET, algorithms=["HS256"])
             user_id = payload.get("user_id", "")
             user_name = payload.get("name", "Sistema")
-        except:
-            pass
+        except Exception as e:
+            logger.debug("recipes.get_user_from_request: JWT decode failed (anonymous): %s", e)
     return user_id, user_name
 
 def diff_ingredients(old_ings, new_ings):

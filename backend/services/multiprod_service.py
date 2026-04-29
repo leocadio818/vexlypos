@@ -507,10 +507,17 @@ class MultiprodService:
                         parts = []
                         for m in mensajes:
                             if isinstance(m, dict):
-                                parts.append(m.get("valor") or m.get("message") or str(m))
-                            else:
+                                # Only consider human-readable text fields. If both are
+                                # falsy, skip this entry instead of leaking dict syntax
+                                # (e.g. "{'valor': '', 'message': ''}") into the UI.
+                                text = m.get("valor") or m.get("message") or m.get("mensaje") or m.get("descripcion")
+                                if text:
+                                    parts.append(str(text))
+                            elif m:
                                 parts.append(str(m))
-                        motivo = "; ".join(parts)
+                        motivo = "; ".join(parts) if parts else None
+                    elif isinstance(mensajes, dict):
+                        motivo = mensajes.get("valor") or mensajes.get("message") or mensajes.get("mensaje") or mensajes.get("descripcion") or None
                     else:
                         motivo = str(mensajes)
                 if not motivo:

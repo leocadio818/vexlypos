@@ -4,9 +4,11 @@ from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
 import uuid
 import os
+import logging
 from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 
 router = APIRouter(tags=["attendance"])
+logger = logging.getLogger(__name__)
 
 db = None
 
@@ -56,8 +58,8 @@ async def check_attendance_status(input: PinInput):
                 # Has open POS session — auto clock-in and let them through
                 await auto_clock_in_for_active_session(user, today)
                 return {"clocked_in": True, "user_name": user["name"]}
-    except:
-        pass
+    except Exception as e:
+        logger.warning("attendance.check_attendance_status: Supabase POS-session lookup failed: %s", e)
     
     return {"clocked_in": False, "user_name": user["name"]}
 
@@ -175,8 +177,8 @@ async def clock_out(input: PinInput):
             raise HTTPException(status_code=400, detail=f"Tienes un turno de caja abierto ({open_shift.data[0]['ref']}). Debes hacer Cierre X primero.")
     except HTTPException:
         raise
-    except:
-        pass  # If Supabase check fails, allow clock-out (don't block operations)
+    except Exception as e:
+        logger.warning("attendance.clock_out: Supabase open-shift check failed (allowing clock-out): %s", e)
     
     # ── All validations passed — register clock-out ──
     local_now = now_local()
@@ -189,7 +191,8 @@ async def clock_out(input: PinInput):
         clock_in_dt = datetime.fromisoformat(existing["clock_in"])
         diff = local_now - clock_in_dt.replace(tzinfo=local_now.tzinfo) if clock_in_dt.tzinfo is None else local_now - clock_in_dt
         hours = round(diff.total_seconds() / 3600, 2)
-    except:
+    except Exception as e:
+        logger.warning("attendance.clock_out: failed to compute hours worked: %s", e)
         hours = 0
     
     hours_display = f"{int(hours)}h {int((hours % 1) * 60)}m"
@@ -246,7 +249,8 @@ async def auto_clock_out(user=Depends(get_current_user)):
         clock_in_dt = datetime.fromisoformat(existing["clock_in"])
         diff = local_now - clock_in_dt.replace(tzinfo=local_now.tzinfo) if clock_in_dt.tzinfo is None else local_now - clock_in_dt
         hours = round(diff.total_seconds() / 3600, 2)
-    except:
+    except Exception as e:
+        logger.warning("attendance.auto_clock_out: failed to compute hours worked: %s", e)
         hours = 0
     hours_display = f"{int(hours)}h {int((hours % 1) * 60)}m"
     
@@ -381,7 +385,8 @@ async def force_clock_out(input: ForceClockOutInput, user=Depends(get_current_us
         clock_in_dt = datetime.fromisoformat(existing["clock_in"])
         diff = local_now - clock_in_dt.replace(tzinfo=local_now.tzinfo) if clock_in_dt.tzinfo is None else local_now - clock_in_dt
         hours = round(diff.total_seconds() / 3600, 2)
-    except:
+    except Exception as e:
+        logger.warning("attendance.force_clock_out: failed to compute hours worked: %s", e)
         hours = 0
     
     hours_display = f"{int(hours)}h {int((hours % 1) * 60)}m"

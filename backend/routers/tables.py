@@ -4,8 +4,10 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 import uuid
+import logging
 
 router = APIRouter(tags=["tables"])
+logger = logging.getLogger(__name__)
 
 # Database reference
 db = None
@@ -278,8 +280,8 @@ async def list_tables(area_id: Optional[str] = Query(None)):
                 reserved_until = datetime.fromisoformat(table["reserved_until"].replace("Z", "+00:00"))
                 if reserved_until > datetime.now(timezone.utc):
                     table["status"] = "reserved"
-            except:
-                pass
+            except Exception as e:
+                logger.debug("tables.list_tables: failed to parse reserved_until=%r: %s", table.get("reserved_until"), e)
     
     return tables
 

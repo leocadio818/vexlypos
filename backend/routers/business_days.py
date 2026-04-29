@@ -16,9 +16,11 @@ from datetime import datetime, timezone, date
 from pymongo import ReturnDocument
 import uuid
 import os
+import logging
 from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 
 router = APIRouter(prefix="/business-days", tags=["Business Days"])
+logger = logging.getLogger(__name__)
 
 # Database reference (MongoDB)
 db = None
@@ -460,7 +462,8 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
                 clock_in_dt = datetime.fromisoformat(record["clock_in"])
                 diff = local_now - clock_in_dt.replace(tzinfo=local_now.tzinfo) if clock_in_dt.tzinfo is None else local_now - clock_in_dt
                 hours = round(diff.total_seconds() / 3600, 2)
-            except:
+            except Exception as e:
+                logger.warning("business_days.close: failed to compute hours_worked for attendance %s: %s", record.get("id"), e)
                 hours = 0
             hours_display = f"{int(hours)}h {int((hours % 1) * 60)}m"
             

@@ -7,10 +7,12 @@ from typing import Optional, List
 from datetime import datetime, timezone, timedelta
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import logging
 from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 import uuid
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
+logger = logging.getLogger(__name__)
 
 # Database connection
 mongo_url = os.environ['MONGO_URL']
@@ -678,7 +680,8 @@ async def cash_close_report(date: Optional[str] = Query(None)):
             if "T" in paid_time:
                 from datetime import datetime as dt2
                 paid_time = dt2.fromisoformat(paid_time.replace("Z","")).strftime("%I:%M %p")
-        except: pass
+        except Exception as e:
+            logger.debug("reports: failed to format paid_at=%r: %s", b.get("paid_at"), e)
         
         discount_amt = b.get("discount_applied", {}).get("amount", 0) if isinstance(b.get("discount_applied"), dict) else 0
         if discount_amt > 0:
@@ -3406,8 +3409,8 @@ async def reservations_report(
         try:
             dt = datetime.strptime(r.get("reservation_date", ""), "%Y-%m-%d")
             by_day[day_names[dt.weekday()]] += 1
-        except:
-            pass
+        except Exception as e:
+            logger.debug("reports: failed to parse reservation_date=%r: %s", r.get("reservation_date"), e)
     by_day_list = [{"day": d, "count": by_day[d]} for d in day_names]
     
     # By hour

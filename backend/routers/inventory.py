@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import uuid
 import jwt
 import os
+import logging
 
 from models.database import db
 from models.schemas import (
@@ -18,6 +19,7 @@ from models.schemas import (
 )
 
 router = APIRouter(tags=["Inventory"])
+logger = logging.getLogger(__name__)
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'fallback_secret')
 
@@ -54,8 +56,8 @@ def get_user_from_request(request: Request) -> tuple:
             payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
             user_id = payload.get("user_id", "")
             user_name = payload.get("name", "Sistema")
-        except:
-            pass
+        except Exception as e:
+            logger.debug("inventory.get_user_from_request: JWT decode failed (anonymous request): %s", e)
     return user_id, user_name
 
 

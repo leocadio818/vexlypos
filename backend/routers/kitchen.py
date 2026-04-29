@@ -5,8 +5,10 @@ from datetime import datetime, timezone
 import uuid
 import asyncio
 import json
+import logging
 
 router = APIRouter(tags=["kitchen"])
+logger = logging.getLogger(__name__)
 
 # Database reference
 db = None
@@ -258,8 +260,8 @@ async def kitchen_tv():
             try:
                 created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
                 elapsed_minutes = (datetime.now(timezone.utc) - created).total_seconds() / 60
-            except:
-                pass
+            except Exception as e:
+                logger.debug("kitchen.kitchen_tv: failed to parse created_at=%r: %s", created_at, e)
         
         result.append({
             "order_id": order["id"],
