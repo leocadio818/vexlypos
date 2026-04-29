@@ -4008,12 +4008,35 @@ export default function OrderScreen() {
 
       {/* Move Table Dialog */}
       <Dialog open={moveDialog.open} onOpenChange={(o) => !o && setMoveDialog({ open: false })}>
-        <DialogContent className="max-w-lg bg-card border-border" data-testid="move-table-dialog">
-          <DialogHeader><DialogTitle className="font-oswald flex items-center gap-2">
-            <MoveRight size={18} className="text-primary" /> Mover a otra Mesa
-          </DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground mb-2">
+        {/*
+          BUG FIX — Move Table modal not scrollable.
+          Previously the modal had no vertical cap and rendered all areas +
+          tables as one tall stack. On restaurants with many zones (Lungomare
+          tiene 4+) the last zones fell below the viewport with no way to
+          reach them.
+          New layout:
+            - DialogContent is a flex column capped at 85vh so the modal
+              never exceeds the visible screen.
+            - The table list is a flex-1 scroll container with
+              overflow-y-auto and -webkit-overflow-scrolling:touch for
+              iOS Safari momentum scrolling.
+            - Header stays pinned; only the list scrolls.
+        */}
+        <DialogContent
+          className="max-w-lg bg-card border-border flex flex-col max-h-[85vh] p-0 overflow-hidden"
+          data-testid="move-table-dialog"
+        >
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
+            <DialogTitle className="font-oswald flex items-center gap-2">
+              <MoveRight size={18} className="text-primary" /> Mover a otra Mesa
+            </DialogTitle>
+          </DialogHeader>
+          <div
+            className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-3"
+            style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+            data-testid="move-table-scroll-area"
+          >
+            <p className="text-xs text-muted-foreground mb-2 sticky top-0 bg-card pt-1 pb-2 z-10">
               Selecciona la mesa destino. Si está ocupada, se te preguntará si deseas unir las cuentas.
             </p>
             {allAreas.map(area => (
