@@ -1,6 +1,29 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-29 — 🚨 Alerta de Cuota Mensual de Emails (full-stack, P1)
+
+### Backend
+- **Defaults configurables** en `system_config:main`: `email_monthly_quota` (1000 emails/mes) y `email_quota_alert_threshold` (0.8 = 80%).
+- `GET /api/email-logs/stats` ahora devuelve un bloque `quota` con `{limit, used, remaining, used_pct, threshold_pct, warning, exceeded, period_start, period_end}`. Período = mes calendario UTC (no rolling).
+- `PUT /api/email-logs/quota` (admin level 100): `{limit ≥ 0, threshold_pct 10..100}`, persiste en `system_config:main`. Valida y devuelve 400 con mensajes en español. 401 sin auth, 403 si nivel < 100.
+- **Bonus fix**: `GET /api/email-logs?date_to=YYYY-MM-DD` ahora usa cota superior exclusiva (`< next_day_00:00`) → incluye filas con microsegundos al final del día (observación de iteration_5).
+
+### Frontend (`EmailUsageCard.jsx`)
+- Bloque `email-quota-block` justo arriba de las 3 KPIs:
+  - Barra de progreso con tonos: 🟢 verde < umbral · 🟡 amber `email-quota-warning "Cerca del límite"` ≥ umbral · 🔴 rojo `email-quota-exceeded "Excedida"` ≥ 100%.
+  - Counter `used / limit` + porcentaje real (texto puede pasar del 100%, barra capped).
+  - Línea de pie con `Restantes: N · alerta a partir del XX%`.
+- Edición inline: botón Pencil (`email-quota-edit`) abre form con `email-quota-limit-input` + `email-quota-threshold-input` y botones Guardar/Cancelar. Validación cliente (NaN, negativos, fuera de rango) + servidor.
+- Toast `Cuota mensual actualizada` al guardar; refetch automático de stats.
+
+### Validación
+- 11/11 pytest backend (`/app/backend/tests/test_email_quota.py`).
+- Frontend: 3 estados (verde 5.1%, amber 85%, rojo 170% capped a 100%) verificados con colores RGB exactos; flujo de edición + validación; mobile 390 sin overflow; RBAC cashier sigue ocultando el card completo.
+- Estado de producción restaurado a `{1000, 80}`. Seeds QA limpiados (50 filas eliminadas).
+
+---
+
 ## 2026-04-29 — 📧 Contador de Emails Enviados (full-stack, P0)
 
 ### Backend
