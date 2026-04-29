@@ -2372,10 +2372,29 @@ async def print_comanda(order_id: str):
         items_html += f"<tr><td><b>{int(item.get('quantity', 0))}x</b> {product_name}{mod_str}{notes_str}</td></tr>"
     table_number = _html.escape(str(order.get("table_number", "")))
     waiter_name = _html.escape(order.get("waiter_name", ""))
+
+    # Service-type banner (PARA LLEVAR / DELIVERY) — same logic as the
+    # ESC/POS build_comanda(). Dine-in renders no banner.
+    service_type = (order.get("service_type") or "dine_in").lower()
+    service_banner_html = ""
+    if service_type == "takeout":
+        service_banner_html = (
+            "<div style='border-top:3px double #000;border-bottom:3px double #000;"
+            "padding:6px 0;margin:6px 0;text-align:center;font-size:18px;font-weight:bold;'>"
+            "📦 PARA LLEVAR</div>"
+        )
+    elif service_type == "delivery":
+        service_banner_html = (
+            "<div style='border-top:3px double #000;border-bottom:3px double #000;"
+            "padding:6px 0;margin:6px 0;text-align:center;font-size:18px;font-weight:bold;'>"
+            "🛵 DELIVERY</div>"
+        )
+
     # Comanda HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
     return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:13px;margin:0 auto;box-sizing:border-box;'>
     <div style='text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;'>
     <b style='font-size:18px;'>COMANDA</b></div>
+    {service_banner_html}
     <div style='font-size:14px;'><b>Mesa: {table_number}</b><br>Mesero: {waiter_name}<br>Hora: {now_local_str()}</div>
     <table style='width:100%;margin-top:10px;border-top:1px dashed #000;'>
     {items_html}</table></div>"""}
@@ -2389,6 +2408,16 @@ async def print_comanda_escpos(order_id: str):
     lines = []
     lines.append({"type": "center", "bold": True, "size": "large", "text": "COMANDA"})
     lines.append({"type": "divider"})
+
+    # Service-type banner (PARA LLEVAR / DELIVERY) on direct ESC/POS path.
+    service_type = (order.get("service_type") or "dine_in").lower()
+    if service_type == "takeout":
+        lines.append({"type": "center", "bold": True, "size": "large", "text": "*** PARA LLEVAR ***"})
+        lines.append({"type": "divider"})
+    elif service_type == "delivery":
+        lines.append({"type": "center", "bold": True, "size": "large", "text": "*** DELIVERY ***"})
+        lines.append({"type": "divider"})
+
     lines.append({"type": "left", "bold": True, "size": "large", "text": f"Mesa: {order['table_number']}"})
     lines.append({"type": "left", "text": f"Mesero: {order['waiter_name']}"})
     lines.append({"type": "left", "text": f"Hora: {now_local_str()}"})
@@ -3542,18 +3571,37 @@ async def send_comanda_to_queue(order_id: str):
         printer_ip = channel.get("ip", "") if channel else ""
         channel_name = channel.get("name", channel_code.title()) if channel else channel_code.title()
         copies = channel.get("copies", 1) if channel else 1  # Numero de copias
+
+        # Prefix the channel header with the service-type banner so that
+        # BOTH newly-downloaded print agents (which also render a dedicated
+        # size-2 banner above the header via build_comanda) AND legacy
+        # agents already installed at customer sites (which only render the
+        # channel_name) show the "PARA LLEVAR" / "DELIVERY" label clearly.
+        # Without this prefix, old agents would need to be re-downloaded by
+        # every customer to see the banner.
+        _svc = (order.get("service_type") or "dine_in").lower()
+        if _svc == "takeout":
+            channel_name_for_print = f"PARA LLEVAR · {channel_name}"
+        elif _svc == "delivery":
+            channel_name_for_print = f"DELIVERY · {channel_name}"
+        else:
+            channel_name_for_print = channel_name
         
         # Build comanda data with ONLY the filtered items for this channel
         comanda_data = {
             "type": "comanda",
             "paper_width": 80,
-            "channel_name": channel_name,
+            "channel_name": channel_name_for_print,
             "table_number": order.get("table_number", "?"),
             "waiter_name": order.get("waiter_name", ""),
             "order_number": order.get("id", "")[:8],
             "transaction_number": transaction_number,
             "date": now_local_str("%Y-%m-%d %H:%M:%S"),
             "items_count": len(items),
+            # Service type drives the "PARA LLEVAR" / "DELIVERY" banner at the
+            # top of the comanda (build_comanda renders it). dine_in shows no
+            # banner so the existing layout for sit-down service is preserved.
+            "service_type": order.get("service_type", "dine_in"),
             "items": [
                 {
                     "name": item.get("product_name", ""),
@@ -4468,6 +4516,21 @@ def build_comanda(data):
     if data.get("training_mode"):
         commands.append({{"type": "text", "text": "*** ENTRENAMIENTO ***", "align": "center", "bold": True, "size": 2}})
         commands.append({{"type": "text", "text": "NO ES VENTA REAL", "align": "center", "bold": True}})
+        commands.append({{"type": "divider"}})
+    
+    # ─── BANNER TIPO DE SERVICIO ───
+    # Renders a prominent banner above the channel header when the order
+    # is takeout or delivery so kitchen staff sees it immediately. Dine-in
+    # shows no banner (legacy layout preserved).
+    service_type = (data.get("service_type") or "dine_in").lower()
+    service_banner = None
+    if service_type == "takeout":
+        service_banner = "*** PARA LLEVAR ***"
+    elif service_type == "delivery":
+        service_banner = "*** DELIVERY ***"
+    if service_banner:
+        commands.append({{"type": "divider"}})
+        commands.append({{"type": "text", "text": service_banner, "align": "center", "bold": True, "size": 2}})
         commands.append({{"type": "divider"}})
     
     # Encabezado con ORDEN #XXXX arriba en negrita
