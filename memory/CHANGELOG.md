@@ -1,6 +1,27 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-29 — 🖨️ FIX 4 — Reimpresión de Facturas (backend, P0)
+
+### Cambios
+- `POST /api/print/receipt/{bill_id}/send` ahora:
+  - Incrementa atómicamente `bills.reprint_count` (`$inc` + `ReturnDocument.AFTER`) — race-safe para múltiples cajeros simultáneos.
+  - Persiste `bills.last_reprint_at` (ISO) y `bills.last_reprint_by` (nombre/id del usuario) para auditoría.
+  - Inyecta banner ESC/POS al INICIO del payload (antes de training mode y del nombre del negocio):
+    `*** REIMPRESION ***` (size 2, bold) → `Copia #N` (bold) → `DOCUMENTO NO VALIDO COMO ORIGINAL` → divider.
+  - Devuelve `reprint_count` en la respuesta JSON y en el job de la cola (`print_queue.reprint_count`, `print_queue.reprint=True`).
+  - El 404 sucede ANTES del `$inc` → facturas inexistentes no contaminan la BD.
+
+### Validación
+- 6/6 pytest cases pasados (`/app/backend/tests/test_reprint_counter_fix4.py`).
+- Casos: incremento 1→2→3, persistencia, banner antes del nombre del negocio, 404 sin side-effect, audit fields actualizados.
+
+### Pendiente
+- FIX 1, 2, 3 (frontend `BillHistory.js`: 2 botones, búsqueda por RNC/Razón Social, preset Personalizado con date pickers).
+- FIX 5 (frontend `EcfDashboard.jsx`: barra de búsqueda en tiempo real).
+
+
+
 ## 2026-04-28 — 🛡️ Multi-tenant data leakage hardening + Print Agent QR fix
 
 ### Bugs críticos resueltos
