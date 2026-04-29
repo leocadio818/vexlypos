@@ -356,7 +356,7 @@ export default function EcfDashboard({ data }) {
           Solo mis facturas en proceso
         </label>
         <div className="relative flex-1 min-w-[260px] max-w-md ml-auto">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Search size={14} className="absolute left-3 top-2.5 text-muted-foreground pointer-events-none" />
           <input
             type="search"
             value={search}
@@ -370,7 +370,7 @@ export default function EcfDashboard({ data }) {
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted text-muted-foreground"
+              className="absolute right-2 top-2 p-1 rounded hover:bg-muted text-muted-foreground"
               aria-label="Limpiar búsqueda"
               data-testid="ecf-search-clear"
             >
@@ -379,7 +379,7 @@ export default function EcfDashboard({ data }) {
           )}
           {search && (
             <span
-              className="absolute -bottom-5 left-0 text-[10px] text-muted-foreground"
+              className="block mt-1 text-[10px] text-muted-foreground"
               data-testid="ecf-search-count"
             >
               {filteredBills.length} resultado{filteredBills.length === 1 ? '' : 's'}

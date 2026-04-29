@@ -1,6 +1,27 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-29 — 🔍 FIX 5 — Búsqueda en tiempo real e-CF Dashboard (frontend, P0)
+
+### Cambios en `/app/frontend/src/pages/reports/EcfDashboard.jsx`
+- Nueva barra de búsqueda en tiempo real (`data-testid=ecf-search-input`) sobre la tabla de facturas electrónicas. Filtra al instante por: `transaction_number` (con o sin prefijo `T-`), `ecf_encf`, `ncf`, `fiscal_id` (RNC/Cédula), `razon_social`, `customer_name`, monto raw y monto formateado es-DO.
+- Botón limpiar (`ecf-search-clear`) visible solo con texto.
+- Contador de resultados inline (`ecf-search-count`) bajo el input — sin overflow en mobile.
+- Empty-state contextual (`ecf-empty-state`): muestra `No hay facturas que coincidan con "<query>"` cuando la búsqueda no devuelve nada.
+- Coexiste con los chips de estado y el checkbox "Solo mis facturas en proceso" (lógica AND).
+
+### Validación
+- 15/15 frontend test cases passed (testing agent v3, iteration_4.json).
+- Regresión visual en 5 viewports (Desktop light/dark, iOS, Android, Tablet dark) sin overflow horizontal.
+- Verificado end-to-end: búsqueda por 'SSTECH' devolvió 27/27 filas, 'E31' filtró a 15, combinación `Aprobadas + SSTECH` → 26 filas (intersección correcta), botón limpiar restaura, empty-state contextual muestra el query.
+
+### 🎉 Paquete "5 BRECHAS — Reimpresión de Facturas" COMPLETADO
+- ✅ FIX 1, 2, 3 (BillHistory frontend)
+- ✅ FIX 4 (backend reprint counter + banner ESC/POS)
+- ✅ FIX 5 (EcfDashboard search bar)
+
+---
+
 ## 2026-04-29 — 🖨️ FIX 1, 2, 3 — Reimpresión de Facturas (frontend, P0)
 
 ### Cambios en `/app/frontend/src/pages/BillHistory.js`
