@@ -3754,15 +3754,10 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
         if _t:
             bill_table_area_id = _t.get("area_id")
     
-    # Priority A: area override for receipt channel
-    if bill_table_area_id:
-        area_mapping = await db.area_channel_mappings.find_one(
-            {"area_id": bill_table_area_id, "category_id": "receipt"}, {"_id": 0}
-        )
-        if area_mapping and area_mapping.get("channel_code"):
-            receipt_channel_code = area_mapping["channel_code"]
-    
-    # Priority B: cashier's open shift terminal
+    # Priority A: cashier's open shift terminal — the cashier is physically
+    # standing at THIS register and the paper MUST come out there, regardless
+    # of what area the table belongs to. Otherwise a cashier on Caja 2 with
+    # a table in an area mapped to Caja 1 would never see the bill print.
     if not receipt_channel_code:
         try:
             from supabase import create_client as sc
@@ -3779,6 +3774,15 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
                             receipt_channel_code = terminal["print_channel"]
         except Exception as e:
             print(f"Warning: Could not resolve terminal printer for receipt: {e}")
+    
+    # Priority B: area override for receipt channel (only when cashier has no
+    # open shift, e.g. pre-check printed from a waiter tablet).
+    if not receipt_channel_code and bill_table_area_id:
+        area_mapping = await db.area_channel_mappings.find_one(
+            {"area_id": bill_table_area_id, "category_id": "receipt"}, {"_id": 0}
+        )
+        if area_mapping and area_mapping.get("channel_code"):
+            receipt_channel_code = area_mapping["channel_code"]
     
     # Priority C: global "receipt" fallback
     if not receipt_channel_code:
@@ -4132,8 +4136,10 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
     
     # Obtener impresora — PRIORIDAD:
     # 1. channel_override (manual)
-    # 2. Área de la mesa → buscar canal de recibo configurado para esa área
-    # 3. Turno activo del cajero → terminal printer
+    # 2. Turno activo del cajero → terminal printer (FIRST: cashier is physically
+    #    standing at this register — paper MUST come out there)
+    # 3. Área de la mesa → canal de recibo configurado para esa área (used only
+    #    when there is no open shift, e.g. pre-check printed by a waiter)
     # 4. Canal "receipt" global (fallback)
     receipt_channel_code = None
     
@@ -4141,21 +4147,10 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
     if channel_override:
         receipt_channel_code = channel_override
     
-    # Priority 2: Area-based printer (NEW)
-    if not receipt_channel_code:
-        table_id = order.get("table_id")
-        if table_id:
-            table = await db.tables.find_one({"id": table_id}, {"_id": 0, "area_id": 1})
-            if table and table.get("area_id"):
-                area_id = table["area_id"]
-                # Look for "receipt" category mapping for this area
-                area_receipt_mapping = await db.area_channel_mappings.find_one(
-                    {"area_id": area_id, "category_id": "receipt"}, {"_id": 0}
-                )
-                if area_receipt_mapping and area_receipt_mapping.get("channel_code"):
-                    receipt_channel_code = area_receipt_mapping["channel_code"]
-    
-    # Priority 3: Active shift terminal printer
+    # Priority 2: Active shift terminal printer (promoted above area mapping so
+    # the bill prints at the register where the cashier is standing, not at
+    # the register mapped to the table's area — otherwise Caja 2 users never
+    # see pre-checks when the table area is mapped to Caja 1).
     if not receipt_channel_code:
         try:
             from supabase import create_client as sc
@@ -4170,7 +4165,7 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
                         terminal = await db.pos_terminals.find_one({"name": terminal_name}, {"_id": 0, "print_channel": 1})
                         if terminal and terminal.get("print_channel"):
                             receipt_channel_code = terminal["print_channel"]
-                # Fallback within priority 3: if user has no open shift (common
+                # Fallback within priority 2: if user has no open shift (common
                 # for pre-cuentas which don't require an open shift), try
                 # reading the last shift the user closed within the last 12h.
                 if not receipt_channel_code:
@@ -4185,6 +4180,21 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
                                 receipt_channel_code = terminal["print_channel"]
         except Exception as e:
             print(f"Warning: Could not resolve terminal printer for pre-check: {e}")
+    
+    # Priority 3: Area-based printer (used when cashier has no terminal/shift,
+    # e.g. waiter tablet without register)
+    if not receipt_channel_code:
+        table_id = order.get("table_id")
+        if table_id:
+            table = await db.tables.find_one({"id": table_id}, {"_id": 0, "area_id": 1})
+            if table and table.get("area_id"):
+                area_id = table["area_id"]
+                # Look for "receipt" category mapping for this area
+                area_receipt_mapping = await db.area_channel_mappings.find_one(
+                    {"area_id": area_id, "category_id": "receipt"}, {"_id": 0}
+                )
+                if area_receipt_mapping and area_receipt_mapping.get("channel_code"):
+                    receipt_channel_code = area_receipt_mapping["channel_code"]
     
     # Priority 4: Global "receipt" fallback
     if not receipt_channel_code:
