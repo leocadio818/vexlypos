@@ -2,12 +2,19 @@
 VexlyPOS — Email Invoice Module
 Sends professional HTML invoices via Resend API
 """
+import base64
+import logging
 import os
-import resend
+from io import BytesIO
 from typing import Optional
+from urllib.parse import parse_qs, urlparse
+
+import qrcode
+import resend
 from fastapi import APIRouter, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorClient
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 db = None
 
@@ -18,6 +25,61 @@ def set_db(database):
 # Configure Resend
 resend.api_key = os.environ.get("RESEND_API_KEY", "")
 SENDER_EMAIL = "facturas@vexlyapp.com"
+
+
+def _build_dgii_qr_block(bill: dict) -> str:
+    """Render the FACTURACIÓN ELECTRÓNICA block with an inline base64 QR.
+    
+    Reads QR URL from `ecf_qr` (Multiprod) or `ecf_stamp_url` (Alanube).
+    The QR is embedded as a `data:image/png;base64,...` <img> so it works
+    even when the email client blocks remote images (Gmail, Outlook, iOS Mail
+    all support inline base64 in `<img src>`).
+    """
+    qr_url = bill.get("ecf_qr") or bill.get("ecf_stamp_url") or ""
+    if not qr_url:
+        return ""  # No DGII data → don't show the section
+    
+    encf = bill.get("ecf_encf") or ""
+    sec_code = bill.get("ecf_security_code") or ""
+    if not sec_code:
+        # Fallback: extract CodigoSeguridad from the QR URL itself
+        try:
+            params = parse_qs(urlparse(qr_url).query)
+            sec_code = params.get("CodigoSeguridad", [""])[0]
+        except Exception:
+            sec_code = ""
+    
+    try:
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=6,
+            border=2,
+        )
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        qr_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        qr_img_tag = (
+            f'<img src="data:image/png;base64,{qr_b64}" '
+            f'width="150" height="150" alt="QR DGII" '
+            f'style="display:block;margin:8px auto;border:1px solid #e5e7eb;border-radius:6px;background:#fff;padding:6px;" />'
+        )
+    except Exception as e:
+        logger.warning(f"[email] QR generation failed for bill {bill.get('id','?')}: {e}")
+        return ""
+    
+    return f"""
+    <div style="margin-bottom:20px;text-align:center;">
+      <p style="margin:0 0 6px;font-size:12px;color:#666;font-weight:bold;letter-spacing:1px;">FACTURACIÓN ELECTRÓNICA</p>
+      <p style="margin:0 0 4px;font-size:13px;font-weight:bold;color:#222;">e-NCF: {encf}</p>
+      {f'<p style="margin:0 0 6px;font-size:11px;color:#888;">Código: {sec_code}</p>' if sec_code else ''}
+      {qr_img_tag}
+      <p style="margin:6px 0 0;font-size:10px;color:#aaa;">Escanea para verificar en la DGII</p>
+    </div>
+    """
 
 
 def build_invoice_html(bill: dict, config: dict) -> str:
@@ -197,7 +259,7 @@ def build_invoice_html(bill: dict, config: dict) -> str:
             
             <!-- Footer -->
             <div style="background:#f8f9fa;border-radius:0 0 16px 16px;padding:24px;text-align:center;border:1px solid #e5e7eb;border-top:0;">
-                {'<div style="margin-bottom:16px;"><p style="margin:0 0 8px;font-size:12px;color:#666;font-weight:bold;">FACTURACIÓN ELECTRÓNICA</p><p style="margin:0 0 4px;font-size:13px;font-weight:bold;">' + (bill.get("ecf_encf") or "") + '</p><p style="margin:0 0 8px;font-size:11px;color:#888;">Código: ' + (bill.get("ecf_security_code") or "") + '</p><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + (bill.get("ecf_stamp_url") or "").replace("&", "%26") + '" width="150" height="150" style="margin:0 auto;" /><p style="margin:8px 0 0;font-size:10px;color:#aaa;">Escanea para verificar en la DGII</p></div>' if bill.get("ecf_stamp_url") else ''}
+                {_build_dgii_qr_block(bill)}
                 <p style="margin:0;font-size:14px;font-weight:bold;color:#333;">Gracias por su visita!</p>
                 <p style="margin:8px 0 0;font-size:11px;color:#999;">Este documento fue generado electrónicamente por {biz_name}</p>
                 <p style="margin:4px 0 0;font-size:11px;color:#999;">Conserve este comprobante para fines fiscales (DGII)</p>
