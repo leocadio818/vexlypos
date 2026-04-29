@@ -4,15 +4,17 @@
  * Reads from GET /api/email-logs/stats and GET /api/email-logs?page=...
  *
  * Displays:
+ *  - Quota progress bar + warning/exceeded banner (calendar month)
  *  - 3 KPIs: Hoy / Semana / Mes
  *  - Breakdown by type (pills)
  *  - Recent 20 emails list (subject, recipient, status, time)
  *  - "Ver más" expands into the full paginated history
+ *  - Inline edit of monthly limit + alert threshold
  */
 import { useEffect, useState, useCallback } from 'react';
 import {
   Mail, FileText, ClipboardCheck, AlertTriangle, Send, Megaphone,
-  CheckCircle2, XCircle, Loader2, Heart, Inbox
+  CheckCircle2, XCircle, Loader2, Heart, Inbox, Pencil, Save, X
 } from 'lucide-react';
 import { notify } from '@/lib/notify';
 
@@ -50,6 +52,10 @@ export default function EmailUsageCard() {
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [allLoading, setAllLoading] = useState(false);
+  const [editingQuota, setEditingQuota] = useState(false);
+  const [draftLimit, setDraftLimit] = useState('');
+  const [draftThreshold, setDraftThreshold] = useState('');
+  const [savingQuota, setSavingQuota] = useState(false);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
@@ -94,6 +100,50 @@ export default function EmailUsageCard() {
     if (showAll) fetchAll(1);
   }, [showAll, fetchAll]);
 
+  const beginEditQuota = () => {
+    setDraftLimit(String(stats?.quota?.limit ?? 1000));
+    setDraftThreshold(String(stats?.quota?.threshold_pct ?? 80));
+    setEditingQuota(true);
+  };
+
+  const cancelEditQuota = () => {
+    setEditingQuota(false);
+    setDraftLimit('');
+    setDraftThreshold('');
+  };
+
+  const saveQuota = async () => {
+    const limit = parseInt(draftLimit, 10);
+    const threshold = parseInt(draftThreshold, 10);
+    if (Number.isNaN(limit) || limit < 0) {
+      notify.error('El límite mensual debe ser un entero positivo');
+      return;
+    }
+    if (Number.isNaN(threshold) || threshold < 10 || threshold > 100) {
+      notify.error('El umbral de alerta debe estar entre 10 y 100');
+      return;
+    }
+    setSavingQuota(true);
+    try {
+      const r = await fetch(`${API}/api/email-logs/quota`, {
+        method: 'PUT',
+        headers: { ...hdrs(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit, threshold_pct: threshold }),
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${r.status}`);
+      }
+      notify.success('Cuota mensual actualizada');
+      setEditingQuota(false);
+      await fetchStats();
+    } catch (e) {
+      notify.error(e.message || 'No se pudo guardar la cuota');
+    } finally {
+      setSavingQuota(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-xl p-4 mb-4" data-testid="email-usage-card-loading">
@@ -111,8 +161,17 @@ export default function EmailUsageCard() {
   const month = stats.this_month || { sent: 0, failed: 0, total: 0 };
   const byType = stats.by_type || {};
   const recent = stats.recent || [];
+  const quota = stats.quota || null;
 
   const items = showAll ? allItems : recent;
+
+  // Quota visual style
+  const quotaPct = Math.min(100, quota?.used_pct || 0);
+  const quotaTone = quota?.exceeded
+    ? { bar: 'bg-red-500', text: 'text-red-600', bg: 'bg-red-500/10 border-red-500/40' }
+    : quota?.warning
+      ? { bar: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-500/10 border-amber-500/40' }
+      : { bar: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-500/10 border-emerald-500/30' };
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 mb-4" data-testid="email-usage-card">
@@ -129,6 +188,109 @@ export default function EmailUsageCard() {
           Actualizar
         </button>
       </div>
+
+      {/* Quota progress + warning banner */}
+      {quota && (
+        <div className={`rounded-lg border p-3 mb-4 ${quotaTone.bg}`} data-testid="email-quota-block">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+            <div className="flex items-center gap-2 text-xs">
+              <AlertTriangle size={14} className={quotaTone.text} />
+              <span className="font-semibold">Cuota mensual</span>
+              {quota.exceeded && (
+                <span className="text-[10px] font-bold uppercase tracking-wide text-red-600" data-testid="email-quota-exceeded">
+                  Excedida
+                </span>
+              )}
+              {quota.warning && (
+                <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600" data-testid="email-quota-warning">
+                  Cerca del límite
+                </span>
+              )}
+            </div>
+            {!editingQuota && (
+              <button
+                type="button"
+                onClick={beginEditQuota}
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                data-testid="email-quota-edit"
+              >
+                <Pencil size={11} /> Editar
+              </button>
+            )}
+          </div>
+
+          {!editingQuota ? (
+            <>
+              <div className="flex items-baseline justify-between gap-2 mb-1">
+                <span className="font-oswald text-lg font-bold tabular-nums" data-testid="email-quota-used">
+                  {quota.used} <span className="text-xs text-muted-foreground font-normal">/ {quota.limit}</span>
+                </span>
+                <span className={`text-xs font-medium ${quotaTone.text}`} data-testid="email-quota-pct">
+                  {quota.used_pct}%
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden" data-testid="email-quota-progress">
+                <div
+                  className={`h-full ${quotaTone.bar} transition-all`}
+                  style={{ width: `${quotaPct}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Restantes: <span className="font-medium text-foreground">{quota.remaining}</span> · alerta a partir del {quota.threshold_pct}%
+              </p>
+            </>
+          ) : (
+            <div className="space-y-2" data-testid="email-quota-edit-form">
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-[11px] text-muted-foreground">
+                  Límite mensual
+                  <input
+                    type="number"
+                    min="0"
+                    value={draftLimit}
+                    onChange={e => setDraftLimit(e.target.value)}
+                    className="mt-1 w-full bg-background border border-border rounded-lg px-2 py-1.5 text-sm tabular-nums"
+                    data-testid="email-quota-limit-input"
+                  />
+                </label>
+                <label className="text-[11px] text-muted-foreground">
+                  Umbral alerta (%)
+                  <input
+                    type="number"
+                    min="10"
+                    max="100"
+                    value={draftThreshold}
+                    onChange={e => setDraftThreshold(e.target.value)}
+                    className="mt-1 w-full bg-background border border-border rounded-lg px-2 py-1.5 text-sm tabular-nums"
+                    data-testid="email-quota-threshold-input"
+                  />
+                </label>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={cancelEditQuota}
+                  disabled={savingQuota}
+                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-border hover:bg-muted"
+                  data-testid="email-quota-cancel"
+                >
+                  <X size={12} /> Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={saveQuota}
+                  disabled={savingQuota}
+                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                  data-testid="email-quota-save"
+                >
+                  {savingQuota ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                  Guardar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-2 mb-4">

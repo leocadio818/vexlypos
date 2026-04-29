@@ -7,12 +7,16 @@ All endpoints require role_level >= 100 (Administrador del Sistema).
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from routers.auth import get_current_user, get_role_level_async
 
 router = APIRouter()
 db = None
+
+# Defaults applied if not explicitly configured in system_config:main.
+DEFAULT_MONTHLY_QUOTA = 1000
+DEFAULT_ALERT_THRESHOLD = 0.8  # 80%
 
 
 def set_db(database):
@@ -32,16 +36,57 @@ def _utc_iso(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat()
 
 
+def _calendar_month_start(now: datetime) -> datetime:
+    """First instant of the current calendar month in UTC."""
+    return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def _next_calendar_month_start(now: datetime) -> datetime:
+    """First instant of the following calendar month in UTC."""
+    if now.month == 12:
+        return now.replace(year=now.year + 1, month=1, day=1,
+                           hour=0, minute=0, second=0, microsecond=0)
+    return now.replace(month=now.month + 1, day=1,
+                       hour=0, minute=0, second=0, microsecond=0)
+
+
+async def _quota_settings() -> dict:
+    cfg = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
+    try:
+        limit = int(cfg.get("email_monthly_quota") or DEFAULT_MONTHLY_QUOTA)
+    except (TypeError, ValueError):
+        limit = DEFAULT_MONTHLY_QUOTA
+    try:
+        threshold = float(cfg.get("email_quota_alert_threshold") or DEFAULT_ALERT_THRESHOLD)
+    except (TypeError, ValueError):
+        threshold = DEFAULT_ALERT_THRESHOLD
+    # Sanitize ranges
+    if limit < 0:
+        limit = 0
+    if threshold < 0.1:
+        threshold = 0.1
+    if threshold > 1.0:
+        threshold = 1.0
+    return {"limit": limit, "threshold": threshold}
+
+
+async def _calendar_month_count(start: datetime, end: datetime) -> int:
+    return await db.email_logs.count_documents({
+        "created_at": {"$gte": _utc_iso(start), "$lt": _utc_iso(end)},
+    })
+
+
 @router.get("/email-logs/stats")
 async def email_logs_stats(user: dict = Depends(get_current_user)):
-    """Return per-day / per-week / per-month counters, breakdown by type
-    and the 20 most recent emails. Admin level 100 only."""
+    """Return per-day / per-week / rolling-30d counters, breakdown by type,
+    20 most recent emails and a quota block (calendar-month based).
+    Admin level 100 only."""
     await _require_level_100(user)
 
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=7)
-    month_start = today_start - timedelta(days=30)
+    month_start = today_start - timedelta(days=30)  # rolling 30d for "this_month" KPI
 
     async def _bucket(since: datetime) -> dict:
         since_iso = _utc_iso(since)
@@ -62,7 +107,7 @@ async def email_logs_stats(user: dict = Depends(get_current_user)):
     this_week = await _bucket(week_start)
     this_month = await _bucket(month_start)
 
-    # Breakdown by type — last 30 days
+    # Breakdown by type — rolling 30 days
     by_type: dict = {}
     pipeline = [
         {"$match": {"created_at": {"$gte": _utc_iso(month_start)}}},
@@ -79,12 +124,73 @@ async def email_logs_stats(user: dict = Depends(get_current_user)):
     ).sort("created_at", -1).limit(20)
     recent = await recent_cursor.to_list(20)
 
+    # ─── Calendar-month quota block ───
+    qcfg = await _quota_settings()
+    cal_start = _calendar_month_start(now)
+    cal_end = _next_calendar_month_start(now)
+    used = await _calendar_month_count(cal_start, cal_end)
+    limit = qcfg["limit"]
+    threshold = qcfg["threshold"]
+    used_pct = (used / limit) if limit > 0 else 0.0
+    quota = {
+        "limit": limit,
+        "used": used,
+        "remaining": max(0, limit - used),
+        "used_pct": round(used_pct * 100, 1),
+        "threshold_pct": round(threshold * 100, 1),
+        "warning": limit > 0 and used_pct >= threshold and used_pct < 1.0,
+        "exceeded": limit > 0 and used_pct >= 1.0,
+        "period_start": _utc_iso(cal_start),
+        "period_end": _utc_iso(cal_end),
+    }
+
     return {
         "today": today,
         "this_week": this_week,
         "this_month": this_month,
         "by_type": by_type,
         "recent": recent,
+        "quota": quota,
+    }
+
+
+@router.put("/email-logs/quota")
+async def update_email_quota(
+    payload: dict = Body(...),
+    user: dict = Depends(get_current_user),
+):
+    """Update the monthly email quota and alert threshold.
+    Body: { "limit": int >= 0, "threshold_pct": int 10..100 }.
+    Admin level 100 only."""
+    await _require_level_100(user)
+
+    update: dict = {}
+    if "limit" in payload:
+        try:
+            limit = int(payload["limit"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="limit debe ser un entero")
+        if limit < 0:
+            raise HTTPException(status_code=400, detail="limit no puede ser negativo")
+        update["email_monthly_quota"] = limit
+    if "threshold_pct" in payload:
+        try:
+            tp = int(payload["threshold_pct"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="threshold_pct debe ser un entero")
+        if tp < 10 or tp > 100:
+            raise HTTPException(status_code=400, detail="threshold_pct debe estar entre 10 y 100")
+        update["email_quota_alert_threshold"] = round(tp / 100.0, 4)
+
+    if not update:
+        raise HTTPException(status_code=400, detail="Nada que actualizar")
+
+    await db.system_config.update_one({"id": "main"}, {"$set": update}, upsert=True)
+    qcfg = await _quota_settings()
+    return {
+        "ok": True,
+        "limit": qcfg["limit"],
+        "threshold_pct": round(qcfg["threshold"] * 100, 1),
     }
 
 
@@ -111,7 +217,16 @@ async def list_email_logs(
         if date_from:
             rng["$gte"] = date_from if "T" in date_from else f"{date_from}T00:00:00+00:00"
         if date_to:
-            rng["$lte"] = date_to if "T" in date_to else f"{date_to}T23:59:59+00:00"
+            # Use exclusive upper bound on the next day to include sub-second
+            # precision (e.g. 23:59:59.987654 should still match 'date_to=YYYY-MM-DD').
+            if "T" in date_to:
+                rng["$lte"] = date_to
+            else:
+                try:
+                    end_day = datetime.fromisoformat(f"{date_to}T00:00:00+00:00") + timedelta(days=1)
+                    rng["$lt"] = _utc_iso(end_day)
+                except ValueError:
+                    rng["$lte"] = f"{date_to}T23:59:59+00:00"
         q["created_at"] = rng
 
     skip = (page - 1) * limit
