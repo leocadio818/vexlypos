@@ -1064,6 +1064,24 @@ async def get_station_config():
     config = await db.station_config.find_one({}, {"_id": 0})
     return config or {"require_shift_to_sell": True, "require_cash_count": False, "auto_send_on_logout": True}
 
+@api.post("/email-notifications/test")
+async def send_test_notification_email(input: dict):
+    """Send a sample shift-close email to verify recipient list is configured.
+    Used by the Settings → Notifications UI."""
+    from services.email_notifications import _get_settings, _send, _base_html, _now_dr_str
+    settings = await _get_settings(db)
+    target_email = (input or {}).get("email") or (settings["emails"][0] if settings["emails"] else "")
+    if not target_email:
+        raise HTTPException(status_code=400, detail="Sin destinatario configurado")
+    body = f"""
+    <p style="margin:0 0 16px;color:#374151;">Esta es una prueba del sistema de notificaciones de VexlyPOS.</p>
+    <p style="color:#6b7280;">Si recibiste este mensaje, las notificaciones por email están funcionando correctamente.</p>
+    <p style="color:#6b7280;font-size:13px;">Hora del envío: {_now_dr_str()}</p>
+    """
+    sent = _send([target_email], f"Prueba de Notificaciones — {settings['biz_name']}", _base_html("Prueba de Notificaciones", settings["biz_name"], body))
+    return {"ok": sent, "sent_to": target_email}
+
+
 @api.get("/tenant/readiness")
 async def tenant_readiness():
     """Tenant onboarding health check. UI should call this on dashboard load
@@ -4805,6 +4823,14 @@ async def startup_event():
     # Auto-retry worker for e-CF transient errors (every 60 seconds)
     from routers.ecf_provider import auto_retry_worker
     scheduler.add_job(auto_retry_worker, "interval", seconds=60, id="ecf_auto_retry_worker", replace_existing=True)
+    # Stock low-level alert job — runs every 6 hours, sends one email per cooldown window.
+    from services.email_notifications import send_stock_alert_email
+    async def _stock_alert_job():
+        try:
+            await send_stock_alert_email(db)
+        except Exception as e:
+            logger.warning(f"[stock_alert] job failed: {e}")
+    scheduler.add_job(_stock_alert_job, "interval", hours=6, id="stock_low_alert", replace_existing=True)
     logger.info("Scheduler started and configured")
     # Seed timezone config if not present
     existing_tz = await db.system_config.find_one({"id": "timezone"})

@@ -70,6 +70,7 @@ DEFAULT_PERMISSIONS = {
         "config_formas_pago": True,
         "manage_promotions": True,
         "create_open_items": True,
+        "manage_email_notifications": True,
     },
 
     "kitchen": {
@@ -158,6 +159,7 @@ CUSTOM_ROLE_DEFAULTS = {
         "config_reportes": True, "config_clientes": True,
         "manage_promotions": True,
         "create_open_items": True,
+        "manage_email_notifications": True,
     },
 }
 
@@ -236,6 +238,7 @@ ALL_PERMISSIONS = {
     "view_system_logs": "Ver Logs del Sistema",
     "manage_promotions": "Gestionar Promociones y Happy Hour",
     "create_open_items": "Crear Artículos Libres",
+    "manage_email_notifications": "Configurar Notificaciones por Email",
 }
 
 # ─── ROLE LEVELS (Hierarchical Security) ───

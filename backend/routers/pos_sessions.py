@@ -361,6 +361,17 @@ async def close_session(session_id: str, input: CloseSessionInput, user=Depends(
         except Exception as e:
             print(f"Auto clock-out warning: {e}")
         
+        # ── EMAIL NOTIFICATION: Shift close report (non-blocking) ──
+        try:
+            import asyncio as _asyncio
+            from services.email_notifications import send_shift_close_email
+            # Re-fetch the now-closed session for the email payload
+            closed_session = sb_select(sb.table("pos_sessions").select("*")).eq("id", session_id).single().execute().data or {}
+            terminal_name = closed_session.get("terminal_name", "")
+            _asyncio.create_task(send_shift_close_email(db, closed_session, reconciliation_doc, terminal_name))
+        except Exception as e:
+            print(f"[email] shift close notification failed: {e}")
+        
         return {
             "ok": True,
             "session_id": session_id,

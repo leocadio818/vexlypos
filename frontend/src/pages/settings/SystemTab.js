@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { invalidateTimezoneCache } from '@/lib/timezone';
 import ThermalTicket from '@/components/ThermalTicket';
+import EmailNotificationsCard from '@/components/EmailNotificationsCard';
 import axios from 'axios';
 import { PROVINCIAS, MUNICIPIOS_BY_PROVINCIA } from '@/data/dgii_territories';
 
@@ -484,6 +485,9 @@ export default function SystemTab() {
     <div className="space-y-6">
       <div>
         <h2 className="font-oswald text-base font-bold mb-4">Configuración del Sistema</h2>
+        
+        {/* Email Notifications — admin/propietario only */}
+        {(currentUser?.permissions?.manage_email_notifications) && <EmailNotificationsCard />}
         
         {/* Restaurant Name */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">

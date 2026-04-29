@@ -503,6 +503,41 @@ async def close_business_day(input: CloseBusinessDayInput, user=Depends(get_curr
         }
     )
     
+    # ─── EMAIL NOTIFICATION: Day close report (non-blocking) ───
+    try:
+        import asyncio as _asyncio
+        from services.email_notifications import send_day_close_email
+        # Build summary from stats; payments map keeps human-readable labels.
+        payments = {
+            "Efectivo": stats.get("total_cash", 0),
+            "Tarjeta": stats.get("total_card", 0),
+            "Transferencia": stats.get("total_transfer", 0),
+            "Otros": stats.get("total_other", 0),
+        }
+        # Top products + sessions list — best-effort; absence won't crash the email.
+        top_products = stats.get("top_products", []) or []
+        sessions_list = stats.get("sessions", []) or []
+        ecf_summary = stats.get("ecf", {}) or {
+            "approved": stats.get("ecf_approved", 0),
+            "rejected": stats.get("ecf_rejected", 0),
+            "contingency": stats.get("ecf_contingency", 0),
+        }
+        summary = {
+            "payments": payments,
+            "total_day": stats.get("total_sales", 0),
+            "total_bills": stats.get("total_invoices", 0),
+            "total_voids": stats.get("total_voids", 0),
+            "voids_amount": stats.get("void_amount", 0),
+            "customers": stats.get("customers", 0),
+            "avg_per_table": stats.get("avg_per_table", 0),
+            "sessions": sessions_list,
+            "top_products": top_products,
+            "ecf": ecf_summary,
+        }
+        _asyncio.create_task(send_day_close_email(db, business_day["business_date"], summary))
+    except Exception as e:
+        print(f"[email] day close notification failed: {e}")
+    
     return {
         "ok": True,
         "message": f"Jornada {business_day['ref']} cerrada exitosamente",
