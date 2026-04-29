@@ -40,6 +40,20 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+// BUG-F1 fix: RoleGate guards a specific route by permission or admin level.
+// Falls back to /dashboard if the user lacks the required permission. The
+// child route itself is still wrapped by ProtectedRoute (auth check) at the
+// parent level, so user is guaranteed to be set here.
+function RoleGate({ permission, adminOnly = false, children }) {
+  const { user, hasPermission, isAdmin } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />;
+  if (permission && !hasPermission(permission) && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
   
@@ -70,17 +84,17 @@ function AppRoutes() {
         <Route path="payment/:billId" element={<Suspense fallback={<PageSkeleton />}><PaymentScreen /></Suspense>} />
         <Route path="cash-register" element={<Suspense fallback={<PageSkeleton />}><CashRegister /></Suspense>} />
         <Route path="inventory" element={<Navigate to="/inventory-manager" replace />} />
-        <Route path="inventory-manager" element={<Suspense fallback={<PageSkeleton />}><InventoryManager /></Suspense>} />
-        <Route path="suppliers" element={<Suspense fallback={<PageSkeleton />}><Suppliers /></Suspense>} />
-        <Route path="reports" element={<Suspense fallback={<PageSkeleton />}><Reports /></Suspense>} />
-        <Route path="reports/anulaciones" element={<Suspense fallback={<PageSkeleton />}><AnulacionesReport /></Suspense>} />
-        <Route path="reports/facturas" element={<Suspense fallback={<PageSkeleton />}><BillHistory /></Suspense>} />
-        <Route path="customers" element={<Suspense fallback={<PageSkeleton />}><Customers /></Suspense>} />
+        <Route path="inventory-manager" element={<RoleGate permission="manage_inventory"><Suspense fallback={<PageSkeleton />}><InventoryManager /></Suspense></RoleGate>} />
+        <Route path="suppliers" element={<RoleGate permission="manage_suppliers"><Suspense fallback={<PageSkeleton />}><Suppliers /></Suspense></RoleGate>} />
+        <Route path="reports" element={<RoleGate permission="view_reports"><Suspense fallback={<PageSkeleton />}><Reports /></Suspense></RoleGate>} />
+        <Route path="reports/anulaciones" element={<RoleGate permission="view_reports"><Suspense fallback={<PageSkeleton />}><AnulacionesReport /></Suspense></RoleGate>} />
+        <Route path="reports/facturas" element={<RoleGate permission="view_reports"><Suspense fallback={<PageSkeleton />}><BillHistory /></Suspense></RoleGate>} />
+        <Route path="customers" element={<RoleGate permission="manage_customers"><Suspense fallback={<PageSkeleton />}><Customers /></Suspense></RoleGate>} />
         <Route path="reservations" element={<Suspense fallback={<PageSkeleton />}><Reservations /></Suspense>} />
-        <Route path="settings" element={<Suspense fallback={<PageSkeleton />}><Settings /></Suspense>} />
-        <Route path="settings/printer" element={<Suspense fallback={<PageSkeleton />}><PrinterSettings /></Suspense>} />
-        <Route path="product/:productId" element={<Suspense fallback={<PageSkeleton />}><ProductConfig /></Suspense>} />
-        <Route path="user/:userId" element={<Suspense fallback={<PageSkeleton />}><UserConfig /></Suspense>} />
+        <Route path="settings" element={<RoleGate permission="config_sistema"><Suspense fallback={<PageSkeleton />}><Settings /></Suspense></RoleGate>} />
+        <Route path="settings/printer" element={<RoleGate permission="config_impresion"><Suspense fallback={<PageSkeleton />}><PrinterSettings /></Suspense></RoleGate>} />
+        <Route path="product/:productId" element={<RoleGate permission="manage_products"><Suspense fallback={<PageSkeleton />}><ProductConfig /></Suspense></RoleGate>} />
+        <Route path="user/:userId" element={<RoleGate permission="manage_users"><Suspense fallback={<PageSkeleton />}><UserConfig /></Suspense></RoleGate>} />
         <Route path="ticket-demo" element={<Suspense fallback={<PageSkeleton />}><TicketDemo /></Suspense>} />
         <Route path="help" element={<Suspense fallback={<PageSkeleton />}><Help /></Suspense>} />
       </Route>

@@ -73,8 +73,10 @@ export default function Billing() {
       setSplitLabel('');
       setSelectedItems([]);
       fetchData();
-    } catch {
-      notify.error('Error creando factura');
+    } catch (err) {
+      // BUG-F16 fix: bubble backend detail.
+      const detail = err?.response?.data?.detail || 'Error creando factura';
+      notify.error(detail);
     }
   };
 
@@ -84,7 +86,7 @@ export default function Billing() {
   };
 
   const handlePayBill = async () => {
-    // Validar turno abierto antes de cobrar
+    // BUG-F12 fix: distinguish offline (no response) from real errors.
     try {
       const shiftCheck = await posSessionsAPI.check();
       if (!shiftCheck.data?.has_open_session) {
@@ -94,7 +96,16 @@ export default function Billing() {
         });
         return;
       }
-    } catch { /* Si falla, permitir continuar */ }
+    } catch (err) {
+      if (err?.response) {
+        notify.error('No se pudo verificar el turno de caja', {
+          description: err.response?.data?.detail || 'Reintenta en unos segundos.',
+          duration: 4000,
+        });
+        return;
+      }
+      // truly offline → continue
+    }
     
     const billId = payDialog.billId;
     // Determine primary payment method (the one with highest amount)
@@ -114,8 +125,10 @@ export default function Billing() {
       setSelectedCustomer('');
       setPayStep('method');
       fetchData();
-    } catch {
-      notify.error('Error procesando pago');
+    } catch (err) {
+      // BUG-F16 fix: surface backend detail (e.g. "Stock insuficiente", "Caja cerrada")
+      const detail = err?.response?.data?.detail || 'Error procesando pago';
+      notify.error(detail);
     }
   };
 
@@ -124,8 +137,11 @@ export default function Billing() {
       await billsAPI.cancel(billId);
       notify.success('Factura anulada');
       fetchData();
-    } catch {
-      notify.error('Error anulando factura');
+    } catch (err) {
+      // BUG-F16 fix: surface backend error detail so the user can act
+      // (e.g. "Factura ya pagada", "Sin permisos") instead of a generic banner.
+      const detail = err?.response?.data?.detail || 'Error anulando factura';
+      notify.error(detail);
     }
   };
 

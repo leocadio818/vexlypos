@@ -446,7 +446,10 @@ export default function PaymentScreen() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.role === 'admin' || data.role === 'manager') {
+        // BUG-F8 fix: accept admin/manager AND any custom role with role_level >= 90
+        const lvl = data.role_level || 0;
+        const isAuthorized = data.role === 'admin' || data.role === 'manager' || lvl >= 90;
+        if (isAuthorized) {
           setDiscountPinDialog({ open: false, discount: null });
           applyDiscount(discountPinDialog.discount);
         } else {
@@ -791,7 +794,10 @@ export default function PaymentScreen() {
       }
     }
     
-    // Validar que el usuario tenga turno abierto para cobrar
+    // Validar que el usuario tenga turno abierto para cobrar.
+    // BUG-F12 fix: distinguish offline (no response) from real backend errors.
+    // Only allow continuing when truly offline; otherwise block and surface
+    // the error so a cashier without an open shift cannot facturar.
     try {
       const shiftCheck = await posSessionsAPI.check();
       if (!shiftCheck.data?.has_open_session) {
@@ -801,8 +807,16 @@ export default function PaymentScreen() {
         });
         return;
       }
-    } catch {
-      // Si falla la verificación, permitir continuar para no bloquear ventas
+    } catch (err) {
+      // Real backend error (got a response) → block the sale.
+      if (err?.response) {
+        notify.error('No se pudo verificar el turno de caja', {
+          description: err.response?.data?.detail || 'Reintenta en unos segundos.',
+          duration: 4000,
+        });
+        return;
+      }
+      // Truly offline (no response) → continue to keep ventas operativas.
     }
     
     setProcessing(true);

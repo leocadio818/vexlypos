@@ -53,14 +53,15 @@ function SettingsContent() {
   const { hasPermission } = useAuth();
 
   // Filter tabs by user permissions (check any of the tab's permissions)
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const allowedTabs = useMemo(() => {
     return ALL_TABS.filter(tab => {
       if (tab.superAdminOnly) return user?.is_super_admin === true;
-      if (tab.adminOnly) return user?.role === 'admin';
+      // BUG-F7 fix: admin tabs include Propietario / custom roles with level>=100
+      if (tab.adminOnly) return isAdmin;
       return tab.permissions?.some(p => hasPermission(p));
     });
-  }, [hasPermission, user]);
+  }, [hasPermission, user, isAdmin]);
 
   // Smart default: first allowed tab (or requested tab if allowed)
   const requestedTab = searchParams.get('tab');

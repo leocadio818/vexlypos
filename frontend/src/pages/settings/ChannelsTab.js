@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSettings } from './SettingsContext';
 import { Printer, Plus, Trash2, Pencil, ChevronRight, MapPin, Save, ChefHat, Wine } from 'lucide-react';
 import { notify } from '@/lib/notify';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -85,13 +86,13 @@ export default function ChannelsTab() {
         }
       }
       
-      console.log('Saving area mappings:', cleanMappings);
+      logger.log('Saving area mappings:', cleanMappings);
       await axios.put(`${API}/area-channel-mappings/bulk`, cleanMappings, { headers: hdrs() });
       notify.success('Asignaciones por área guardadas');
       // Reload data to confirm save
       loadAreaData();
     } catch (err) {
-      console.error('Error saving area mappings:', err);
+      logger.error('Error saving area mappings:', err);
       notify.error('Error guardando asignaciones');
     }
     setSavingAreaMappings(false);

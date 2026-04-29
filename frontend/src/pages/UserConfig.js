@@ -338,10 +338,10 @@ function Input({ label, value, onChange, type = 'text', placeholder, className =
 export default function UserConfig() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isAdmin } = useAuth();
   const isNew = userId === 'new';
 
-  const isAdmin = currentUser?.role === 'admin';
+  // BUG-F8 fix: isAdmin from context covers role==='admin' OR role_level>=100 OR is_super_admin
   const isSystemAdmin = (currentUser?.role_level || 0) >= 100;
   const [showPin, setShowPin] = useState(false);
   const [pinModalOpen, setPinModalOpen] = useState(false);

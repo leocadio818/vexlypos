@@ -1,7 +1,29 @@
 # POS Restaurant System - Dominican Republic
 
 
-## 🛡️ AUDITORÍA DE BUGS — FASES 2 y 3 CERRADAS (2026-04-25)
+## 🛡️ AUDITORÍA DE BUGS — FASES 2, 3 y 4 CERRADAS (2026-04-26)
+
+### Fase 4 — Frontend audit (DONE 2026-04-26)
+QA: `/tmp/qa_phase4.py` 37/37 PASS · sin regresiones backend
+- **BUG-F1 (P0)**: `RoleGate` component en `App.js` envuelve rutas sensibles (`/inventory-manager`, `/suppliers`, `/reports`, `/customers`, `/settings`, `/product/*`, `/user/*`) con check de permiso + fallback a `/dashboard`. Usuarios sin permiso ya no acceden.
+- **BUG-F13 (P0)**: `lib/api.js` interceptor de respuesta detecta 401/403 (excepto en `/auth/*`), limpia token y redirige a `/login`. Solo deja /auth/login mostrar errores inline.
+- **BUG-F8 (P0)**: `isAdmin` centralizado en `AuthContext` (`role==='admin' || role_level>=100 || is_super_admin`). Reemplazos en 14+ sitios: `Layout.js` (5), `pages/CashRegister.js` (2), `pages/UserConfig.js`, `pages/reports/EcfDashboard.jsx`, `pages/settings/HealthTab.js`, `pages/settings/SystemLogsTab.js` (2), `pages/settings/index.js`. Backend `/auth/verify-pin` ahora devuelve `role` y `role_level`; `PaymentScreen.verifyDiscountPin` usa `role_level >= 90`.
+- **BUG-F11 (P0)**: `safeParse` helper en `lib/api.js`; todas las llamadas `JSON.parse(localStorage.getItem(…))` envueltas. Si cache corrupto → fallback graceful, no crash en interceptor.
+- **BUG-F6 (P0)**: `public/sw.js` reescrito — HTML usa **network-first**, assets hashed usan **stale-while-revalidate**, `index.html` removido de STATIC_ASSETS, `CACHE_NAME` bumped a `vexlypos-v5`. Resuelve pantalla blanca tras deploy.
+- **BUG-F5 (P0)**: `server.py` importa `html as _html` y escapa `product_name`, `notes`, `mods`, `waiter_name`, `table_number`, `fiscal_id`, `razon_social`, `discount_applied.name`, `tax.description`, `footer_msgs`, `biz_name/rnc/address/phone`, `logo_url`, `account_label` antes de inyectar en HTML del print preview.
+- **BUG-F2/F4 (P0)**: Nuevo `lib/safeStorage.js` (get/set/remove/getJSON/setJSON con try/catch). `Login.js` y `KitchenTV.js` migrados — Safari iOS Private Mode ya no crashea login ni TV.
+- **BUG-F3 (P0)**: Endpoint `POST /api/auth/kiosk-token` (admin only) emite JWT con `kiosk_mode=true`, `role='kiosk'`. KitchenTV ahora acepta `?token=` en lugar de `?pin=`. PIN ya no aparece en URL/history/logs.
+- **BUG-F7 (P0)**: `pages/settings/index.js` tabs `adminOnly` usa `isAdmin` (Propietarios ahora ven Sesiones/Salud).
+- **BUG-F9 (P1)**: `CashRegister.handleAddMovement` valida `amountNum` con `Number.isFinite` y `> 0` antes de enviar.
+- **BUG-F10 (P1)**: `TableMap` offline fallback con try interno por cache; corrupto → `localStorage.removeItem` graceful.
+- **BUG-F12 (P1)**: `PaymentScreen.handlePayment` y `Billing.handlePayBill` distinguen `err.response` (error real → bloquea) vs offline (sin response → continúa).
+- **BUG-F14 (P1)**: `index.js` silencia `console.log/debug/info` en `process.env.NODE_ENV === 'production'`. `lib/logger.js` disponible para uso opt-in. `errors` y `warn` mantienen visibilidad.
+- **BUG-F15 (P1)**: `VentasTab` `dgii_payment_code` valida `Number.isFinite(parsed)` antes de set (no más NaN al backend).
+- **BUG-F16 (P1)**: `Billing.handleCancelBill`, `Billing.handleCreateBill`, `Billing.handlePayBill` exponen `err.response.data.detail` al usuario.
+- **BUG-F17 (P1)**: `EcfDashboard.handleReprint` chequea `r.ok && d.ok !== false` y actualiza `reprint_count` en UI cuando el backend lo devuelve.
+
+### Fase 3 — auditoría de seguridad/lógica (DONE 2026-04-25)
+QA: `/tmp/qa_phase3.py` 27/27 PASS
 
 ### Fase 2 — backend stabilization sweep (DONE)
 QA: `/tmp/qa_phase2.py` 24/24 PASS · sin regresiones
@@ -9,7 +31,7 @@ QA: `/tmp/qa_phase2.py` 24/24 PASS · sin regresiones
 - **BUG-19**: 12 bare `except:` reemplazados por `except Exception as e:` con logging dedicado en `attendance.py`, `business_days.py`, `inventory.py`, `kitchen.py`, `recipes.py`, `reports.py`, `tables.py`. Logger por archivo.
 - **BUG-20**: parser de `mensajes` Multiprod ya no filtra `{'valor':'','message':''}` — guardia `if text:` y soporte para campos `mensaje`/`descripcion`. 8/8 casos funcionales pasan.
 
-### Fase 3 — auditoría de seguridad/lógica (DONE)
+### Fase 3 — auditoría de seguridad/lógica (DONE 2026-04-25)
 QA: `/tmp/qa_phase3.py` 27/27 PASS · sin regresiones
 - **BUG-21 (P0)**: `JWT_SECRET` sin `'fallback_secret'` en `recipes.py`, `inventory.py`, `customers.py` (replicas del fix BUG-11). Falla rápido si la env var falta.
 - **BUG-22 (P1)**: `business_days.generate_day_ref()` ahora usa `find_one_and_update` + `$inc` atómico sobre `counters` (con seed automático del max existente). Elimina race condition en apertura de jornadas concurrentes.

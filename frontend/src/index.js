@@ -10,6 +10,20 @@ import '@fontsource/jetbrains-mono/400.css';
 import "@/index.css";
 import App from "@/App";
 
+// BUG-F14 fix: silence console.log/debug/info in production builds so that
+// 94+ scattered `console.log` calls don't leak data (mappings, IDs, response
+// payloads, stack traces with auth headers) on customer browsers. Errors
+// and warnings remain visible because they are needed for runtime debugging.
+if (process.env.NODE_ENV === 'production') {
+  const noop = () => {};
+  // eslint-disable-next-line no-console
+  console.log = noop;
+  // eslint-disable-next-line no-console
+  console.debug = noop;
+  // eslint-disable-next-line no-console
+  console.info = noop;
+}
+
 // Suppress ResizeObserver loop error (known Radix UI issue, not critical)
 const resizeObserverErr = window.onerror;
 window.onerror = (message, ...args) => {

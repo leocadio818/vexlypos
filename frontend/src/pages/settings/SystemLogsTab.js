@@ -36,7 +36,7 @@ const LEVEL_CONFIG = {
 };
 
 export default function SystemLogsTab() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { isMinimalist, isNeoDark } = useTheme();
   const isLightMode = isMinimalist && !isNeoDark;
   
@@ -130,8 +130,8 @@ export default function SystemLogsTab() {
     );
   };
 
-  // Check permission
-  if (user?.role !== 'admin' && user?.role !== 'supervisor') {
+  // Check permission (BUG-F8 fix: include Propietario / custom admins)
+  if (!isAdmin && user?.role !== 'supervisor') {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">No tienes permiso para ver los logs del sistema</p>
@@ -254,7 +254,7 @@ export default function SystemLogsTab() {
           Actualizar
         </Button>
         
-        {user?.role === 'admin' && (
+        {isAdmin && (
           <Button variant="outline" size="sm" onClick={handleCleanup} className="text-red-500 hover:text-red-600">
             <Trash2 size={14} className="mr-1" />
             Limpiar

@@ -5,23 +5,50 @@ const API = `${API_BASE}/api`;
 
 const QUEUE_KEY = 'pos_offline_queue';
 
+// BUG-F11 fix: safe JSON parser. If localStorage value is corrupted,
+// parse silently falls back to defaultValue instead of throwing and
+// breaking every subsequent API call (single-point-of-failure).
+function safeParse(raw, defaultValue) {
+  if (raw == null || raw === '') return defaultValue;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return defaultValue;
+  }
+}
+
 const api = axios.create({ baseURL: API });
 
 // Token interceptor
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('pos_token');
+  let token = null;
+  try { token = localStorage.getItem('pos_token'); } catch {}
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Offline queue interceptor
+// Offline queue + auth interceptor
 api.interceptors.response.use(
   (res) => res,
   (err) => {
+    // BUG-F13 fix: handle 401 (token expired/invalid) by clearing session
+    // and redirecting to /login. Skip on /auth/* requests so the login page
+    // can show its own error inline instead of bouncing.
+    const status = err.response?.status;
+    const reqUrl = err.config?.url || '';
+    if ((status === 401 || status === 403) && !reqUrl.includes('/auth/')) {
+      try { localStorage.removeItem('pos_token'); } catch {}
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.replace('/login');
+      }
+    }
+
     if (!navigator.onLine && err.config && ['post', 'put', 'delete'].includes(err.config.method)) {
-      const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      queue.push({ method: err.config.method, url: err.config.url, data: err.config.data });
-      localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+      try {
+        const queue = safeParse(localStorage.getItem(QUEUE_KEY), []);
+        queue.push({ method: err.config.method, url: err.config.url, data: err.config.data });
+        localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+      } catch {}
     }
     return Promise.reject(err);
   }
@@ -29,17 +56,17 @@ api.interceptors.response.use(
 
 // Process offline queue when back online
 export async function processOfflineQueue() {
-  const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+  const queue = safeParse(localStorage.getItem(QUEUE_KEY), []);
   if (queue.length === 0) return;
   const failed = [];
   for (const req of queue) {
     try {
-      await api({ method: req.method, url: req.url, data: req.data ? JSON.parse(req.data) : undefined });
+      await api({ method: req.method, url: req.url, data: req.data ? safeParse(req.data, undefined) : undefined });
     } catch {
       failed.push(req);
     }
   }
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(failed));
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(failed)); } catch {}
 }
 
 // Format money RD$
@@ -80,8 +107,8 @@ export const tablesAPI = {
     })
     .catch(err => {
       if (!err.response) {
-        const cached = localStorage.getItem('vexly_mesas');
-        if (cached) return { data: JSON.parse(cached) };
+        const cached = safeParse(localStorage.getItem('vexly_mesas'), null);
+        if (cached) return { data: cached };
       }
       throw err;
     }),
@@ -158,7 +185,7 @@ export const ordersAPI = {
     .then(res => {
       try {
         // Merge: keep orders from other tables, replace orders for this table
-        const existing = JSON.parse(localStorage.getItem('vexly_orders') || '[]');
+        const existing = safeParse(localStorage.getItem('vexly_orders'), []);
         const other = Array.isArray(existing) ? existing.filter(o => o.table_id !== tableId) : [];
         localStorage.setItem('vexly_orders', JSON.stringify([...other, ...(res.data || [])]));
       } catch {}
@@ -166,10 +193,9 @@ export const ordersAPI = {
     })
     .catch(err => {
       if (!err.response) {
-        const cached = localStorage.getItem('vexly_orders');
-        if (cached) {
-          const all = JSON.parse(cached);
-          return { data: Array.isArray(all) ? all.filter(o => o.table_id === tableId) : [] };
+        const all = safeParse(localStorage.getItem('vexly_orders'), null);
+        if (Array.isArray(all)) {
+          return { data: all.filter(o => o.table_id === tableId) };
         }
       }
       throw err;

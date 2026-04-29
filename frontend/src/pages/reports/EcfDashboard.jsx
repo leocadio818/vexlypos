@@ -29,7 +29,7 @@ const ECF_TYPES = [
 ];
 
 export default function EcfDashboard({ data }) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [bills, setBills] = useState([]);
   const [summary, setSummary] = useState({});
   const [filter, setFilter] = useState('all');
@@ -154,15 +154,31 @@ export default function EcfDashboard({ data }) {
   };
 
   const handleReprint = async (billId) => {
-    // First refresh status from Alanube
+    // BUG-F17 fix: previous version silently ignored failures from
+    // refresh-status and ALWAYS notified "Factura enviada" even when the
+    // print agent was offline. Now we surface real errors and refresh the
+    // local row with the new reprint_count returned by the backend.
     try {
       await fetch(`${API}/api/ecf/refresh-status/${billId}`, { headers: hdrs() });
-    } catch {}
-    // Then print
+    } catch {
+      // status refresh is best-effort; printing must still report its own status
+    }
     try {
-      await fetch(`${API}/api/print/receipt/${billId}/send`, { method: 'POST', headers: hdrs() });
-      notify.success('Factura enviada a impresora');
-    } catch { notify.error('Error al imprimir'); }
+      const r = await fetch(`${API}/api/print/receipt/${billId}/send`, { method: 'POST', headers: hdrs() });
+      let d = {};
+      try { d = await r.json(); } catch {}
+      if (r.ok && d.ok !== false) {
+        notify.success('Factura enviada a impresora');
+        const copyN = d.reprint_count;
+        if (typeof copyN === 'number') {
+          setBills(prev => prev.map(b => b.id === billId ? { ...b, reprint_count: copyN } : b));
+        }
+      } else {
+        notify.error(d.detail || d.message || 'Error al imprimir');
+      }
+    } catch {
+      notify.error('Error de conexión al imprimir');
+    }
   };
 
   const handleEditEcfType = async () => {
@@ -507,8 +523,8 @@ export default function EcfDashboard({ data }) {
         </div>
       </div>
 
-      {/* 📊 Panel de Diagnóstico Multiprod — solo visible para admin */}
-      {user?.role === 'admin' && <EcfHealthPanel />}
+      {/* 📊 Panel de Diagnóstico Multiprod — solo visible para admin (BUG-F8 fix) */}
+      {isAdmin && <EcfHealthPanel />}
 
       {/* Edit e-CF Type Dialog */}
       <Dialog open={editDialog.open} onOpenChange={(open) => !open && setEditDialog({ open: false, bill: null, newType: '' })}>

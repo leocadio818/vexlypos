@@ -9,6 +9,7 @@ from pymongo import ReturnDocument
 import os
 from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
 import base64
+import html as _html  # BUG-F5 fix: escape user content before HTML injection
 import logging
 import time
 import uuid
@@ -2006,23 +2007,25 @@ async def print_pre_check(order_id: str):
     # Get account label (custom name)
     account_label = order.get("account_label", "")
     account_number = order.get("account_number", 1)
-    account_display = f" — {account_label}" if account_label else ""
-    
+    account_display = f" — {_html.escape(account_label)}" if account_label else ""
+
+    # BUG-F5 fix: escape user-supplied content before HTML injection.
     items_html = ""
     for item in items:
-        mods = ", ".join(m["name"] for m in item.get("modifiers", []))
+        mods = ", ".join(_html.escape(m.get("name", "")) for m in item.get("modifiers", []))
         mod_str = f"<br><small style='color:#666'>  {mods}</small>" if mods else ""
         item_total = (item["unit_price"] + sum(m.get("price",0) for m in item.get("modifiers",[]))) * item["quantity"]
-        items_html += f"<tr><td>{item['quantity']}x {item['product_name']}{mod_str}</td><td style='text-align:right'>RD$ {item_total:,.2f}</td></tr>"
+        product_name = _html.escape(item.get("product_name", ""))
+        items_html += f"<tr><td>{int(item.get('quantity',0))}x {product_name}{mod_str}</td><td style='text-align:right'>RD$ {item_total:,.2f}</td></tr>"
     print_count = await db.pre_check_prints.count_documents({"order_id": order_id})
     await db.pre_check_prints.insert_one({"order_id": order_id, "print_number": print_count + 1, "printed_at": now_iso()})
     reprint_label = f"<div style='text-align:center;color:red;font-weight:bold;'>*** RE-IMPRESION #{print_count} ***</div>" if print_count > 0 else ""
-    tax_html = "".join(f"<tr><td>{t['description']} {t['rate']}%</td><td style='text-align:right'>RD$ {t['amount']:,.2f}</td></tr>" for t in tax_lines)
-    
+    tax_html = "".join(f"<tr><td>{_html.escape(str(t.get('description','')))} {t.get('rate','')}%</td><td style='text-align:right'>RD$ {t['amount']:,.2f}</td></tr>" for t in tax_lines)
+
     # Build area header line if area exists
-    area_line = f"<div style='text-align:center;font-weight:bold;'>ÁREA: {area_name}</div>" if area_name else ""
-    
-    biz_name = (await get_business_info())["name"]
+    area_line = f"<div style='text-align:center;font-weight:bold;'>ÁREA: {_html.escape(area_name)}</div>" if area_name else ""
+
+    biz_name = _html.escape((await get_business_info())["name"])
     
     # Pre-cuenta HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
     return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:12px;margin:0 auto;box-sizing:border-box;'>
@@ -2030,7 +2033,7 @@ async def print_pre_check(order_id: str):
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
     <b style='font-size:16px;'>{biz_name}</b><br><b>PRE-CUENTA</b></div>
     {area_line}
-    <div style='font-size:11px;'>Mesa: {table_number}{account_display}<br>Cuenta #{account_number}<br>Mesero: {order['waiter_name']}<br>Fecha: {utc_to_local_str(order['created_at'])}</div>
+    <div style='font-size:11px;'>Mesa: {_html.escape(str(table_number))}{account_display}<br>Cuenta #{int(account_number)}<br>Mesero: {_html.escape(order.get('waiter_name', ''))}<br>Fecha: {utc_to_local_str(order['created_at'])}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;font-size:11px;'>
     {items_html}</table>
     <table style='width:100%;font-size:11px;'>
@@ -2104,14 +2107,16 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
         job = {"id": gen_id(), "type": "receipt", "channel": "receipt", "printer_name": printer_name, "data": receipt_data, "status": "pending", "created_at": now_iso()}
         await db.print_queue.insert_one(job)
     
+    # BUG-F5 fix: escape user content in items.
     items_html = ""
     for item in bill.get("items", []):
-        items_html += f"<tr><td>{item['quantity']}x {item['product_name']}</td><td style='text-align:right'>RD$ {item['total']:,.2f}</td></tr>"
+        product_name = _html.escape(item.get("product_name", ""))
+        items_html += f"<tr><td>{int(item.get('quantity',0))}x {product_name}</td><td style='text-align:right'>RD$ {item['total']:,.2f}</td></tr>"
     
     # Payment & change info
     payment_html = ""
     if bill.get("payment_method_name"):
-        payment_html += f"<tr><td>Pagado con:</td><td style='text-align:right'>{bill.get('payment_method_name', 'Efectivo')}</td></tr>"
+        payment_html += f"<tr><td>Pagado con:</td><td style='text-align:right'>{_html.escape(bill.get('payment_method_name', 'Efectivo'))}</td></tr>"
     amount_received = bill.get("amount_received", 0)
     if amount_received > bill["total"]:
         cambio = amount_received - bill["total"]
@@ -2141,20 +2146,20 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     
     # Build tax lines from tax_breakdown (dynamic names)
     tax_html = ""
-    # Discount line in HTML receipt
+    # Discount line in HTML receipt (BUG-F5: escape discount name)
     discount_info_html = bill.get("discount_applied")
     if discount_info_html and discount_info_html.get("amount", 0) > 0:
-        tax_html += f"<tr style='color:#059669'><td>Desc: {discount_info_html['name']}</td><td style='text-align:right'>-RD$ {discount_info_html['amount']:,.2f}</td></tr>"
+        tax_html += f"<tr style='color:#059669'><td>Desc: {_html.escape(str(discount_info_html.get('name','')))}</td><td style='text-align:right'>-RD$ {discount_info_html['amount']:,.2f}</td></tr>"
     tax_breakdown = bill.get("tax_breakdown", [])
     if tax_breakdown:
         for tax in tax_breakdown:
-            tax_html += f"<tr><td>{tax['description']} {tax['rate']}%</td><td style='text-align:right'>RD$ {tax['amount']:,.2f}</td></tr>"
+            tax_html += f"<tr><td>{_html.escape(str(tax.get('description','')))} {tax.get('rate','')}%</td><td style='text-align:right'>RD$ {tax['amount']:,.2f}</td></tr>"
     else:
         tax_html += f"<tr><td>ITBIS 18%</td><td style='text-align:right'>RD$ {bill.get('itbis', 0):,.2f}</td></tr>"
         if bill.get('propina_legal', 0) > 0:
             tax_html += f"<tr><td>Propina {bill.get('propina_percentage', 10)}%</td><td style='text-align:right'>RD$ {bill.get('propina_legal', 0):,.2f}</td></tr>"
     
-    footer_html = "<br>".join(f"<span>{m}</span>" for m in footer_msgs)
+    footer_html = "<br>".join(f"<span>{_html.escape(str(m))}</span>" for m in footer_msgs)
     
     # Build customer fiscal data - Show if fiscal_id or razon_social exists
     # DGII REQUIREMENT: Show customer RNC and Razón Social for fiscal invoice types:
@@ -2195,9 +2200,9 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     fiscal_types_require_customer_data = ["B01", "B14", "B15", "E31", "E44", "E45"]
     
     if ncf_type in fiscal_types_require_customer_data and (bill.get("fiscal_id") or bill.get("razon_social")):
-        fiscal_id = bill.get("fiscal_id", "")
-        fiscal_id_type = bill.get("fiscal_id_type", "RNC")
-        razon_social = bill.get("razon_social", "")
+        fiscal_id = _html.escape(bill.get("fiscal_id", ""))
+        fiscal_id_type = _html.escape(bill.get("fiscal_id_type", "RNC"))
+        razon_social = _html.escape(bill.get("razon_social", ""))
         customer_fiscal_html = f"""<div style='background:#f5f5f5;border:1px solid #333;padding:4px;margin:4px 0;font-size:10px;'>
         <b>DATOS DEL CLIENTE</b><br>
         {fiscal_id_type}: {fiscal_id}<br>
@@ -2208,21 +2213,28 @@ async def print_receipt(bill_id: str, send_to_queue: bool = Query(default=False)
     # Build logo HTML (only if logo_url is set)
     logo_html = ""
     if logo_url:
-        logo_html = f"""<img src="{logo_url}" alt="{biz_name}" style="max-width:200px;max-height:100px;width:auto;height:auto;display:block;margin:0 auto 8px auto;" onerror="this.style.display='none'" />"""
+        # logo_url is operator-supplied; escape attribute values to prevent HTML breakouts.
+        safe_logo = _html.escape(str(logo_url), quote=True)
+        safe_alt = _html.escape(str(biz_name), quote=True)
+        logo_html = f'<img src="{safe_logo}" alt="{safe_alt}" style="max-width:200px;max-height:100px;width:auto;height:auto;display:block;margin:0 auto 8px auto;" onerror="this.style.display=\'none\'" />'
     
+    safe_biz_name = _html.escape(biz_name)
+    safe_biz_rnc = _html.escape(str(biz_rnc))
+    safe_addr = _html.escape(biz_addr_line)
+    safe_phone = _html.escape(str(biz_phone))
     return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:12px;margin:0 auto;box-sizing:border-box;'>
     <div style='text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;'>
     {logo_html}
-    <b style='font-size:16px;'>{biz_name}</b><br>
-    <span style='font-size:10px;font-weight:bold;'>RNC: {biz_rnc}</span><br>
-    <span style='font-size:9px;'>{biz_addr_line}<br>Tel: {biz_phone}</span>
+    <b style='font-size:16px;'>{safe_biz_name}</b><br>
+    <span style='font-size:10px;font-weight:bold;'>RNC: {safe_biz_rnc}</span><br>
+    <span style='font-size:9px;'>{safe_addr}<br>Tel: {safe_phone}</span>
     </div>
     <div style='border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;font-size:10px;'>
     <!-- 🔒 DO NOT MODIFY - e-NCF display rule (Protected 2026-04-09) -->
-    <b>NCF: {bill.get('ecf_encf') or bill.get('ncf', '')}</b><br>
-    Valido hasta: {printer_config.get('ncf_expiry', config.get('ticket_ncf_expiry', '31/12/2026'))}</div>
+    <b>NCF: {_html.escape(str(bill.get('ecf_encf') or bill.get('ncf', '')))}</b><br>
+    Valido hasta: {_html.escape(str(printer_config.get('ncf_expiry', config.get('ticket_ncf_expiry', '31/12/2026'))))}</div>
     {customer_fiscal_html}
-    <div style='font-size:10px;border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;'>Mesa: {bill['table_number']} | Fecha: {utc_to_local_str(bill.get('paid_at', bill['created_at']))}</div>
+    <div style='font-size:10px;border-bottom:1px dashed #000;padding-bottom:4px;margin-bottom:4px;'>Mesa: {_html.escape(str(bill.get('table_number','')))} | Fecha: {utc_to_local_str(bill.get('paid_at', bill['created_at']))}</div>
     <table style='width:100%;border-collapse:collapse;margin:8px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;font-size:11px;'>
     {items_html}</table>
     <table style='width:100%;font-size:11px;'>
@@ -2351,15 +2363,20 @@ async def print_comanda(order_id: str):
     items = [i for i in order.get("items", []) if i["status"] == "sent"]
     items_html = ""
     for item in items:
-        mods = ", ".join(m["name"] for m in item.get("modifiers", []))
+        # BUG-F5 fix: escape every user-controlled string before inlining.
+        mods = ", ".join(_html.escape(m.get("name", "")) for m in item.get("modifiers", []))
         mod_str = f"<br><small>  + {mods}</small>" if mods else ""
-        notes_str = f"<br><small style='color:red'>  NOTA: {item['notes']}</small>" if item.get("notes") else ""
-        items_html += f"<tr><td><b>{item['quantity']}x</b> {item['product_name']}{mod_str}{notes_str}</td></tr>"
+        notes_raw = item.get("notes") or ""
+        notes_str = f"<br><small style='color:red'>  NOTA: {_html.escape(notes_raw)}</small>" if notes_raw else ""
+        product_name = _html.escape(item.get("product_name", ""))
+        items_html += f"<tr><td><b>{int(item.get('quantity', 0))}x</b> {product_name}{mod_str}{notes_str}</td></tr>"
+    table_number = _html.escape(str(order.get("table_number", "")))
+    waiter_name = _html.escape(order.get("waiter_name", ""))
     # Comanda HTML - 72mm área imprimible (papel 80mm), padding lateral 4mm
     return {"html": f"""<div style='font-family:monospace;max-width:72mm;width:72mm;padding:2mm 4mm;font-size:13px;margin:0 auto;box-sizing:border-box;'>
     <div style='text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;'>
     <b style='font-size:18px;'>COMANDA</b></div>
-    <div style='font-size:14px;'><b>Mesa: {order['table_number']}</b><br>Mesero: {order['waiter_name']}<br>Hora: {now_local_str()}</div>
+    <div style='font-size:14px;'><b>Mesa: {table_number}</b><br>Mesero: {waiter_name}<br>Hora: {now_local_str()}</div>
     <table style='width:100%;margin-top:10px;border-top:1px dashed #000;'>
     {items_html}</table></div>"""}
 

@@ -47,8 +47,9 @@ function HealthCard({ title, icon: Icon, iconColor, status, message, children, t
 }
 
 export default function HealthTab() {
-  const { user } = useAuth();
-  const isPrivileged = user?.is_super_admin === true || (user?.role || '').toLowerCase() === 'admin';
+  const { user, isAdmin } = useAuth();
+  // BUG-F8 fix: include Propietario/custom admins (role_level >= 100)
+  const isPrivileged = user?.is_super_admin === true || isAdmin;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

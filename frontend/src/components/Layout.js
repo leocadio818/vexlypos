@@ -28,7 +28,7 @@ const navItems = [
 const noGlassPages = ['/kitchen', '/kitchen-tv'];
 
 export default function Layout() {
-  const { user, logout, isOnline, hasPermission, largeMode, toggleLargeMode, device, offline } = useAuth();
+  const { user, logout, isOnline, hasPermission, isAdmin, largeMode, toggleLargeMode, device, offline } = useAuth();
   const { theme, isMinimalist, isNeoDark, neoColors } = useTheme();
   const { activeThemeMode, setActiveThemeMode, neoMode, setNeoMode, saveAllThemeSettings } = useTheme();
   const navigate = useNavigate();
@@ -170,7 +170,7 @@ export default function Layout() {
     () => localStorage.getItem('pos_ecf_rejections_last_seen') || ''
   );
   const [ecfHealthAlert, setEcfHealthAlert] = useState(false); // admin only
-  const canViewEcf = (user?.role === 'admin') || hasPermission('view_ecf_dashboard');
+  const canViewEcf = isAdmin || hasPermission('view_ecf_dashboard');
   const unseenRejections = ecfRejections.filter(
     (r) => (r.ecf_sent_at || '') > (ecfLastSeenAt || '')
   );
@@ -215,7 +215,7 @@ export default function Layout() {
 
   // ═════ Admin-only: Multiprod Health alert (polling 5min) ═════
   useEffect(() => {
-    if (user?.role !== 'admin') return;
+    if (!isAdmin) return;
     let mounted = true;
     const pollHealth = async () => {
       try {
@@ -232,7 +232,7 @@ export default function Layout() {
     pollHealth();
     const id = setInterval(pollHealth, 300000); // 5 min
     return () => { mounted = false; clearInterval(id); };
-  }, [user?.role]);
+  }, [isAdmin]);
   // ═════════════════════════════════════════════════════════════
 
   const [clockOutDialogOpen, setClockOutDialogOpen] = useState(false);
@@ -429,8 +429,8 @@ export default function Layout() {
   // Offline state
   const { isSyncing, pendingCount, syncNow } = offline || {};
   
-  // Check if user is admin
-  const isAdmin = user?.role === 'admin';
+  // Check if user is admin (via context — see BUG-F8 fix in AuthContext)
+  // isAdmin is provided by useAuth and already covers role==='admin' OR role_level>=100 OR is_super_admin
   const isCashier = user?.role === 'cashier';
   const canAccessCash = isAdmin || isCashier;
 
@@ -568,7 +568,7 @@ export default function Layout() {
                   {unseenRejectionCount > 9 ? '9+' : unseenRejectionCount}
                 </span>
               )}
-              {unseenRejectionCount === 0 && ecfHealthAlert && user?.role === 'admin' && (
+              {unseenRejectionCount === 0 && ecfHealthAlert && isAdmin && (
                 <span
                   data-testid="ecf-health-alert-badge-mobile"
                   className="absolute -top-1 -right-1 w-[14px] h-[14px] rounded-full bg-amber-500 ring-2 ring-background animate-pulse"
@@ -701,7 +701,7 @@ export default function Layout() {
                   {unseenRejectionCount > 9 ? '9+' : unseenRejectionCount}
                 </span>
               )}
-              {unseenRejectionCount === 0 && ecfHealthAlert && user?.role === 'admin' && (
+              {unseenRejectionCount === 0 && ecfHealthAlert && isAdmin && (
                 <span
                   data-testid="ecf-health-alert-badge-desktop"
                   className="absolute -top-1 -right-1 w-[14px] h-[14px] rounded-full bg-amber-500 ring-2 ring-background animate-pulse"

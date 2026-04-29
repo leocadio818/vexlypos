@@ -572,7 +572,16 @@ export default function VentasTab() {
               <label className="text-sm font-medium">Código DGII</label>
               <select 
                 value={payDialog.dgii_payment_code || ''} 
-                onChange={e => setPayDialog({ ...payDialog, dgii_payment_code: e.target.value ? parseInt(e.target.value) : null })}
+                onChange={e => {
+                  // BUG-F15 fix: guard parseInt so an unparseable value never
+                  // propagates as NaN (MongoDB stores Double NaN and queries fail).
+                  const raw = e.target.value;
+                  const parsed = parseInt(raw, 10);
+                  setPayDialog({
+                    ...payDialog,
+                    dgii_payment_code: raw && Number.isFinite(parsed) ? parsed : null,
+                  });
+                }}
                 className="w-full mt-1 p-2 rounded-lg bg-background border border-border text-sm"
                 data-testid="dgii-code-select"
               >

@@ -1039,14 +1039,26 @@ export default function TableMap() {
       try { localStorage.setItem('vexly_areas', JSON.stringify(areasRes.data)); } catch {}
       if (!activeArea && areasRes.data.length > 0) setActiveArea(areasRes.data[0].id);
     } catch {
-      // Offline fallback — read from localStorage
-      const cachedMesas = localStorage.getItem('vexly_mesas');
-      const cachedAreas = localStorage.getItem('vexly_areas');
-      if (cachedMesas) setTables(JSON.parse(cachedMesas));
-      if (cachedAreas) {
-        const areasData = JSON.parse(cachedAreas);
-        setAreas(areasData);
-        if (!activeArea && areasData.length > 0) setActiveArea(areasData[0].id);
+      // Offline fallback — read from localStorage with try/catch on parse to
+      // recover gracefully if the cache was corrupted (BUG-F10 fix).
+      try {
+        const cachedMesas = localStorage.getItem('vexly_mesas');
+        const cachedAreas = localStorage.getItem('vexly_areas');
+        if (cachedMesas) {
+          try { setTables(JSON.parse(cachedMesas)); }
+          catch { localStorage.removeItem('vexly_mesas'); }
+        }
+        if (cachedAreas) {
+          try {
+            const areasData = JSON.parse(cachedAreas);
+            setAreas(areasData);
+            if (!activeArea && areasData.length > 0) setActiveArea(areasData[0].id);
+          } catch {
+            localStorage.removeItem('vexly_areas');
+          }
+        }
+      } catch {
+        // localStorage itself unavailable — just leave UI empty.
       }
     }
   }, [activeArea, layoutMode]);

@@ -338,7 +338,9 @@ export function AuthProvider({ children }) {
     cacheData: cacheForOffline,
   };
 
-  const isAdmin = user?.role === 'admin' || (user?.role_level || 0) >= 100;
+  // BUG-F8 fix: use role_level OR admin role to keep Propietario/custom admins
+  // (level >= 100 or specific role) authorized for the same actions as 'admin'.
+  const isAdmin = (user?.role === 'admin') || ((user?.role_level || 0) >= 100) || (user?.is_super_admin === true);
 
   return (
     <AuthContext.Provider value={{ 

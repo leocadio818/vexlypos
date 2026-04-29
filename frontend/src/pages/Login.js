@@ -5,6 +5,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { Delete, LogIn, Clock, LogOut as LogOutIcon } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { notify } from '@/lib/notify';
+import { safeStorage } from '@/lib/safeStorage';
 
 // Neon glow colors for PIN dots
 const DOT_COLORS = [
@@ -19,10 +20,12 @@ export default function Login() {
   const [postLoginRoute, setPostLoginRoute] = useState(null);
   const [askClockIn, setAskClockIn] = useState(null);
   const [loggedInUser, setLoggedInUser] = useState(null);
-  const [branding, setBranding] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('pos_branding')) || { restaurant_name: '', logo_url: '' }; }
-    catch { return { restaurant_name: '', logo_url: '' }; }
-  });
+  // BUG-F4 fix: branding read/write goes through safeStorage so Safari iOS
+  // Private mode (which throws QuotaExceededError on every write) does not
+  // crash the login screen.
+  const [branding, setBranding] = useState(
+    () => safeStorage.getJSON('pos_branding', { restaurant_name: '', logo_url: '' })
+  );
   const { login, user, ensureSeed } = useAuth();
   const { theme, isMinimalist, neoColors, isNeoDark } = useTheme();
   const navigate = useNavigate();
@@ -31,7 +34,7 @@ export default function Login() {
   useEffect(() => {
     fetch(`${API_BASE}/api/system/branding`).then(r => r.json()).then(d => {
       setBranding(d);
-      localStorage.setItem('pos_branding', JSON.stringify(d));
+      safeStorage.setJSON('pos_branding', d);
     }).catch(() => {});
   }, [API_BASE]);
 

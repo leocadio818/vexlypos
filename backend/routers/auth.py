@@ -375,21 +375,37 @@ async def check_pin_duplicate(input: dict):
 
 @router.post("/auth/verify-pin")
 async def verify_pin_for_permission(input: dict):
-    """Verify a PIN belongs to a user who holds a specific permission (for supervisor override flows)."""
+    """Verify a PIN belongs to a user who holds a specific permission (for supervisor override flows).
+
+    BUG-F8 fix: when `required_permission` is omitted, just verify the PIN
+    is valid and return the role/role_level so the frontend can check via
+    role_level >= 90 (manager+) instead of literal string compare.
+    """
     pin = (input.get("pin") or "").strip()
     required = input.get("required_permission") or ""
-    if not pin or not required:
+    if not pin:
         return {"ok": False}
     hashed = hash_pin(pin)
     user = await db.users.find_one({"pin_hash": hashed, "active": True}, {"_id": 0})
     if not user:
         return {"ok": False}
+    role = user.get("role", "")
+    role_level = await get_role_level_async(role)
+    base = {
+        "ok": True,
+        "user_id": user.get("id"),
+        "user_name": user.get("name", ""),
+        "role": role,
+        "role_level": role_level,
+    }
+    if not required:
+        return base
     perms = user.get("permissions") or {}
-    role_defaults = DEFAULT_PERMISSIONS.get(user.get("role", ""), {})
+    role_defaults = DEFAULT_PERMISSIONS.get(role, {})
     # Check user-specific perm first, then role default (fallback for users created before new perms were added)
     has_perm = perms.get(required) if required in perms else role_defaults.get(required, False)
     if has_perm:
-        return {"ok": True, "user_id": user.get("id"), "user_name": user.get("name", "")}
+        return base
     return {"ok": False}
 
 
@@ -511,6 +527,36 @@ async def logout(user=Depends(get_current_user)):
     # Remove active session
     await db.active_sessions.delete_one({"user_id": user["user_id"]})
     return {"ok": True, "message": "Sesión cerrada"}
+
+
+# ─── KIOSK TOKENS ─────────────────────────────────────────────────────────────
+@router.post("/auth/kiosk-token")
+async def issue_kiosk_token(input: dict, user=Depends(get_current_user)):
+    """Issue a long-lived kiosk token for read-only kitchen displays.
+
+    BUG-F3 fix: replaces the previous `?pin=XXXX` URL pattern (which leaked
+    the PIN in browser history, server logs, and Referer headers) with a
+    dedicated kiosk JWT that:
+      * carries `kiosk_mode=true` and a restricted role (`kiosk`)
+      * is signed by the same JWT_SECRET so the backend can validate it
+      * has no `session_id` so it bypasses idle-revocation
+      * is callable only by an admin (role_level >= 100)
+    """
+    if await get_role_level_async(user.get("role", "")) < 100:
+        raise HTTPException(status_code=403, detail="Solo admin puede emitir tokens de kiosko")
+    target = (input.get("target") or "kitchen-tv").strip()
+    if target not in {"kitchen-tv"}:
+        raise HTTPException(status_code=400, detail="target inválido")
+    payload = {
+        "user_id": f"kiosk:{target}",
+        "name": f"Kiosk {target}",
+        "role": "kiosk",
+        "role_level": 0,
+        "kiosk_mode": True,
+        "kiosk_target": target,
+    }
+    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return {"ok": True, "token": token, "target": target}
 
 
 # ─── SESSION MANAGEMENT (Admin only) ───

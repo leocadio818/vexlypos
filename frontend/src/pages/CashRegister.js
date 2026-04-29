@@ -45,7 +45,7 @@ const COLORES_DENOMINACION = {
 };
 
 export default function CashRegister() {
-  const { user, logout, hasPermission } = useAuth();
+  const { user, logout, hasPermission, isAdmin } = useAuth();
   const { isMinimalist } = useTheme();
   const [currentSession, setCurrentSession] = useState(null);
   const [sessions, setSessions] = useState([]);
@@ -353,15 +353,18 @@ export default function CashRegister() {
   };
 
   const handleAddMovement = async () => {
-    if (!currentSession || !movementForm.amount || !movementForm.description) {
-      notify.error('Completa los campos requeridos');
+    // BUG-F9 fix: validate amount is a positive finite number (rejects "abc",
+    // "" and "0").
+    const amountNum = parseFloat(movementForm.amount);
+    if (!currentSession || !movementForm.description || !Number.isFinite(amountNum) || amountNum <= 0) {
+      notify.error('Completa los campos requeridos (monto debe ser un número mayor a 0)');
       return;
     }
     
     try {
       await posSessionsAPI.addMovement(currentSession.id, {
         movement_type: movementForm.movement_type,
-        amount: parseFloat(movementForm.amount),
+        amount: amountNum,
         description: movementForm.description,
         reason_code: movementForm.reason_code || null,
         notes: movementForm.notes || null,
@@ -576,8 +579,8 @@ export default function CashRegister() {
           >
             <FileX size={16} /> E34
           </button>
-          {/* Botón Cierre de Día - Solo para Admin */}
-          {user?.role === 'admin' && !currentSession && (
+          {/* Botón Cierre de Día - Solo para Admin (BUG-F8 fix) */}
+          {isAdmin && !currentSession && (
             <button 
               onClick={handleOpenCloseDayDialog} 
               data-testid="close-day-btn"
@@ -654,7 +657,7 @@ export default function CashRegister() {
               </div>
               
               {/* Expected Cash - Solo visible para admin, oculto para cajeros para conteo ciego */}
-              {user?.role === 'admin' && (
+              {isAdmin && (
                 <div className="px-6 pb-4">
                   <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-between">
                     <div>
