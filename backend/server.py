@@ -3495,13 +3495,29 @@ async def send_test_print(channel_code: str):
 # ─── PRINT TO QUEUE HELPERS ───
 @api.post("/print/receipt/{bill_id}/send")
 async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current_user)):
-    """Envia un recibo/factura directamente a la impresora (red) o a la cola (USB)"""
+    """Envia un recibo/factura directamente a la impresora (red) o a la cola (USB).
+    Cada llamada a este endpoint cuenta como una reimpresión: se incrementa
+    `reprint_count` en MongoDB y se inyecta un banner '*** REIMPRESIÓN *** (Copia #N)'
+    al inicio del payload ESC/POS para evitar fraude.
+    """
     bill = await db.bills.find_one({"id": bill_id}, {"_id": 0})
     if not bill:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     
     # PROTECTION: block printing if tenant identity is incomplete.
     await assert_tenant_ready_for_billing()
+    
+    # ─── CONTADOR DE REIMPRESIÓN ───
+    # Atomic $inc para evitar race conditions cuando varios cajeros reimprimen
+    # la misma factura simultáneamente. La PRIMERA emisión (al pagar la mesa)
+    # NO pasa por este endpoint, por eso reprint_count=1 ya significa "Copia #1".
+    updated_bill = await db.bills.find_one_and_update(
+        {"id": bill_id},
+        {"$inc": {"reprint_count": 1}, "$set": {"last_reprint_at": now_iso(), "last_reprint_by": user.get("name") or user.get("user_id")}},
+        projection={"_id": 0, "reprint_count": 1},
+        return_document=ReturnDocument.AFTER,
+    )
+    reprint_count = int((updated_bill or {}).get("reprint_count", 1) or 1)
     
     config = await db.system_config.find_one({"id": "main"}, {"_id": 0}) or {}
     biz = await get_business_info()
@@ -3560,6 +3576,13 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     printer_ip = receipt_channel.get("ip", receipt_channel.get("ip_address", "")) if receipt_channel else ""
     
     commands = []
+    
+    # ─── BANNER REIMPRESIÓN (siempre al inicio, antes que cualquier otro encabezado) ───
+    # DGII / fraude: marcar visiblemente cualquier copia adicional emitida.
+    commands.append({"type": "text", "text": "*** REIMPRESION ***", "align": "center", "bold": True, "size": 2})
+    commands.append({"type": "text", "text": f"Copia #{reprint_count}", "align": "center", "bold": True})
+    commands.append({"type": "text", "text": "DOCUMENTO NO VALIDO COMO ORIGINAL", "align": "center"})
+    commands.append({"type": "divider"})
     
     # ─── MODO ENTRENAMIENTO ───
     if bill.get("training_mode"):
@@ -3789,12 +3812,14 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
         "printer_target": printer_target,
         "printer_ip": printer_ip,
         "copies": copies,  # Numero de copias a imprimir
+        "reprint": True,
+        "reprint_count": reprint_count,
         "status": "pending",
         "created_at": now_iso()
     }
     await db.print_queue.insert_one(job)
     
-    return {"ok": True, "job_id": job["id"], "copies": copies, "message": "Factura enviada a cola", "method": "queue"}
+    return {"ok": True, "job_id": job["id"], "copies": copies, "reprint_count": reprint_count, "message": f"Reimpresión #{reprint_count} enviada a cola", "method": "queue"}
 
 @api.post("/print/comanda/{order_id}/send")
 async def send_comanda_to_printer(order_id: str):
