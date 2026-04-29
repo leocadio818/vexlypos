@@ -948,6 +948,116 @@ async def execute_day_close(input: dict, user=Depends(get_current_user)):
     await db.day_closes.insert_one(doc)
     return {k: v for k, v in doc.items() if k != "_id"}
 
+async def resolve_channel_for_area(
+    base_channel_code: str,
+    area_id: Optional[str],
+    available_channels: list,
+) -> str:
+    """Multi-tenant area-aware channel resolver.
+    
+    Resolution priority:
+      1. If `area_channel_mappings` has an exact match for (area_id, base_channel_code)
+         → use that physical channel.
+      2. If a channel with code == base_channel_code exists → use it as-is.
+      3. Fallback: prefix-match. Look for a channel whose code starts with
+         base_channel_code (e.g. base "bar" → first found "bar1" or "bar2").
+         Prevents silently dropping comandas when the operator typed a
+         generic code in category mappings but only suffix-coded channels exist.
+      4. Last resort: return base_channel_code unchanged so the caller can log.
+    """
+    if not base_channel_code:
+        return base_channel_code
+    
+    # Step 1 — Area-specific override
+    if area_id:
+        mapping = await db.area_channel_mappings.find_one(
+            {"area_id": area_id, "category_id": base_channel_code}, {"_id": 0}
+        )
+        if mapping and mapping.get("channel_code"):
+            target = mapping["channel_code"]
+            # Sanity: only return if the target actually exists
+            if any(c.get("code") == target for c in available_channels):
+                return target
+    
+    # Step 2 — Exact code match
+    if any(c.get("code") == base_channel_code for c in available_channels):
+        return base_channel_code
+    
+    # Step 3 — Prefix fallback (e.g. "bar" → "bar1" / "bar2")
+    candidates = sorted(
+        [c for c in available_channels if (c.get("code") or "").startswith(base_channel_code)],
+        key=lambda c: c.get("code") or ""
+    )
+    if candidates:
+        return candidates[0]["code"]
+    
+    # Step 4 — Give up; return original so the issue is observable in jobs
+    return base_channel_code
+
+
+@api.post("/admin/fix-orphan-channel-mappings")
+async def fix_orphan_channel_mappings():
+    """Self-healing endpoint that fixes common multi-tenant misconfigurations:
+    - category_channels rows pointing to channels that don't exist (e.g. 'cocina'
+      when only 'kitchen' exists, or 'bar' when only 'bar1'/'bar2' exist).
+    
+    Strategy:
+      1. List all active channels and their codes.
+      2. For each category_channel mapping whose target doesn't exist:
+         a. Try common aliases (cocina→kitchen, recibo→receipt, caja→receipt).
+         b. Try prefix-match (bar → first channel starting with 'bar').
+         c. If still no match, leave it (will be caught by resolve_channel_for_area).
+      3. Return a report of what was fixed.
+    
+    Idempotent — safe to run multiple times.
+    """
+    channels = await db.print_channels.find({}, {"_id": 0}).to_list(50)
+    valid_codes = {c.get("code") for c in channels}
+    
+    ALIASES = {
+        "cocina": "kitchen",
+        "recibo": "receipt",
+        "caja": "receipt",
+        "cashier": "receipt",
+    }
+    
+    mappings = await db.category_channels.find({}, {"_id": 0}).to_list(500)
+    fixed = []
+    unfixable = []
+    for m in mappings:
+        current = m.get("channel_code")
+        if current in valid_codes:
+            continue  # Already valid
+        
+        new_code = None
+        # Try alias
+        if current in ALIASES and ALIASES[current] in valid_codes:
+            new_code = ALIASES[current]
+        else:
+            # Try prefix match (e.g. "bar" → "bar1")
+            candidates = sorted(c.get("code") for c in channels if (c.get("code") or "").startswith(current or ""))
+            if candidates:
+                new_code = candidates[0]
+        
+        if new_code:
+            await db.category_channels.update_one(
+                {"category_id": m["category_id"]},
+                {"$set": {"channel_code": new_code}}
+            )
+            fixed.append({"category_id": m["category_id"], "from": current, "to": new_code})
+        else:
+            unfixable.append({"category_id": m["category_id"], "channel_code": current})
+    
+    return {
+        "ok": True,
+        "valid_channel_codes": sorted(valid_codes),
+        "fixed_count": len(fixed),
+        "fixed": fixed,
+        "unfixable_count": len(unfixable),
+        "unfixable": unfixable,
+    }
+
+
 # ─── STATION CONFIG ───
 @api.get("/station-config")
 async def get_station_config():
@@ -3184,6 +3294,14 @@ async def send_comanda_to_queue(order_id: str):
     category_mappings = await db.category_channels.find({}, {"_id": 0}).to_list(100)
     cat_to_channel = {m["category_id"]: m["channel_code"] for m in category_mappings}
     
+    # Get the table's area for area-aware channel resolution
+    table_area_id = None
+    table_id = order.get("table_id")
+    if table_id:
+        _t = await db.tables.find_one({"id": table_id}, {"_id": 0, "area_id": 1})
+        if _t:
+            table_area_id = _t.get("area_id")
+    
     # Get products to determine categories AND product-level print_channels
     products = await db.products.find({}, {"_id": 0, "id": 1, "name": 1, "category_id": 1, "print_channels": 1}).to_list(500)
     prod_map = {p["id"]: p for p in products}
@@ -3213,10 +3331,14 @@ async def send_comanda_to_queue(order_id: str):
         
         # Add item ONLY to its target channel(s)
         # This ensures Cocina only gets Cocina items, Bar only gets Bar items
-        for channel_code in target_channels:
+        # Each target_channel is resolved through the area-aware resolver so
+        # generic codes like "bar" route to the right physical printer (bar1/bar2)
+        # depending on the area of the table.
+        for raw_channel_code in target_channels:
             # Skip 'receipt' channel - receipts are handled separately with full bill
-            if channel_code == "receipt":
+            if raw_channel_code == "receipt":
                 continue
+            channel_code = await resolve_channel_for_area(raw_channel_code, table_area_id, channels)
             if channel_code not in items_by_channel:
                 items_by_channel[channel_code] = []
             items_by_channel[channel_code].append({
@@ -3370,23 +3492,48 @@ async def send_receipt_to_printer(bill_id: str, user: dict = Depends(get_current
     biz_phone = biz["phone"]
     biz_addr = biz["address"]
     
-    # Obtener impresora según turno activo del cajero
-    receipt_channel_code = "receipt"
-    try:
-        from supabase import create_client as sc
-        sb_url = os.environ.get("SUPABASE_URL", "")
-        sb_key = os.environ.get("SUPABASE_ANON_KEY", "")
-        if sb_url and sb_key:
-            sb = sc(sb_url, sb_key)
-            session = sb_select(sb.table("pos_sessions").select("terminal_name")).eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
-            if session.data and len(session.data) > 0:
-                terminal_name = session.data[0].get("terminal_name", "")
-                if terminal_name:
-                    terminal = await db.pos_terminals.find_one({"name": terminal_name}, {"_id": 0, "print_channel": 1})
-                    if terminal and terminal.get("print_channel"):
-                        receipt_channel_code = terminal["print_channel"]
-    except Exception as e:
-        print(f"Warning: Could not resolve terminal printer for receipt: {e}")
+    # Obtener impresora según turno activo del cajero (multi-tenant safe)
+    receipt_channel_code = ""
+    bill_table_area_id = None
+    bill_table_id = bill.get("table_id")
+    if bill_table_id:
+        _t = await db.tables.find_one({"id": bill_table_id}, {"_id": 0, "area_id": 1})
+        if _t:
+            bill_table_area_id = _t.get("area_id")
+    
+    # Priority A: area override for receipt channel
+    if bill_table_area_id:
+        area_mapping = await db.area_channel_mappings.find_one(
+            {"area_id": bill_table_area_id, "category_id": "receipt"}, {"_id": 0}
+        )
+        if area_mapping and area_mapping.get("channel_code"):
+            receipt_channel_code = area_mapping["channel_code"]
+    
+    # Priority B: cashier's open shift terminal
+    if not receipt_channel_code:
+        try:
+            from supabase import create_client as sc
+            sb_url = os.environ.get("SUPABASE_URL", "")
+            sb_key = os.environ.get("SUPABASE_ANON_KEY", "")
+            if sb_url and sb_key:
+                sb = sc(sb_url, sb_key)
+                session = sb_select(sb.table("pos_sessions").select("terminal_name")).eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+                if session.data and len(session.data) > 0:
+                    terminal_name = session.data[0].get("terminal_name", "")
+                    if terminal_name:
+                        terminal = await db.pos_terminals.find_one({"name": terminal_name}, {"_id": 0, "print_channel": 1})
+                        if terminal and terminal.get("print_channel"):
+                            receipt_channel_code = terminal["print_channel"]
+        except Exception as e:
+            print(f"Warning: Could not resolve terminal printer for receipt: {e}")
+    
+    # Priority C: global "receipt" fallback
+    if not receipt_channel_code:
+        receipt_channel_code = "receipt"
+    
+    # Final: area-aware resolver (handles "bar"→"bar1"/"bar2" prefix fallback)
+    _bill_channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
+    receipt_channel_code = await resolve_channel_for_area(receipt_channel_code, bill_table_area_id, _bill_channels)
     
     receipt_channel = await db.print_channels.find_one({"code": receipt_channel_code}, {"_id": 0})
     if not receipt_channel:
@@ -3761,12 +3908,34 @@ async def send_precheck_to_printer(order_id: str, user: dict = Depends(get_curre
                         terminal = await db.pos_terminals.find_one({"name": terminal_name}, {"_id": 0, "print_channel": 1})
                         if terminal and terminal.get("print_channel"):
                             receipt_channel_code = terminal["print_channel"]
+                # Fallback within priority 3: if user has no open shift (common
+                # for pre-cuentas which don't require an open shift), try
+                # reading the last shift the user closed within the last 12h.
+                if not receipt_channel_code:
+                    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+                    cutoff = (_dt.now(_tz.utc) - _td(hours=12)).isoformat()
+                    recent = sb_select(sb.table("pos_sessions").select("terminal_name").order("opened_at", desc=True)).eq("opened_by", user.get("user_id")).gte("opened_at", cutoff).limit(1).execute()
+                    if recent.data and len(recent.data) > 0:
+                        terminal_name = recent.data[0].get("terminal_name", "")
+                        if terminal_name:
+                            terminal = await db.pos_terminals.find_one({"name": terminal_name}, {"_id": 0, "print_channel": 1})
+                            if terminal and terminal.get("print_channel"):
+                                receipt_channel_code = terminal["print_channel"]
         except Exception as e:
             print(f"Warning: Could not resolve terminal printer for pre-check: {e}")
     
     # Priority 4: Global "receipt" fallback
     if not receipt_channel_code:
         receipt_channel_code = "receipt"
+    
+    # Final resolution: apply area-aware resolver so generic codes like "receipt"
+    # route to the right physical printer for this table's area.
+    available_channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
+    receipt_channel_code = await resolve_channel_for_area(
+        receipt_channel_code,
+        (await db.tables.find_one({"id": order.get("table_id", "")}, {"_id": 0, "area_id": 1}) or {}).get("area_id") if order.get("table_id") else None,
+        available_channels,
+    )
     
     receipt_channel = await db.print_channels.find_one({"code": receipt_channel_code}, {"_id": 0})
     if not receipt_channel:
