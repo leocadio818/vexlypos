@@ -1070,19 +1070,87 @@ async def get_station_config():
 @api.post("/email-notifications/test")
 async def send_test_notification_email(input: dict):
     """Send a sample shift-close email to verify recipient list is configured.
-    Used by the Settings → Notifications UI."""
-    from services.email_notifications import _get_settings, _send, _base_html, _now_dr_str
+    Used by the Settings → Notifications UI.
+    Returns the EXACT Resend error when sending fails so the admin can act."""
+    from services.email_notifications import _get_settings, _base_html, _now_dr_str, SENDER_EMAIL as NOTIF_SENDER
+    from services.email_logger import log_email
     settings = await _get_settings(db)
     target_email = (input or {}).get("email") or (settings["emails"][0] if settings["emails"] else "")
     if not target_email:
         raise HTTPException(status_code=400, detail="Sin destinatario configurado")
+
+    # Diagnostic precondition: API key must be present and well-formed.
+    if not resend.api_key:
+        return {
+            "ok": False,
+            "sent_to": target_email,
+            "error": "RESEND_API_KEY no está configurada en el backend (.env). Pídele al administrador que la agregue.",
+            "code": "missing_api_key",
+        }
+    if not str(resend.api_key).startswith("re_"):
+        return {
+            "ok": False,
+            "sent_to": target_email,
+            "error": "RESEND_API_KEY tiene formato inválido (debe empezar con 're_'). Revisa la variable en backend/.env.",
+            "code": "invalid_api_key_format",
+        }
+
+    biz_name = settings["biz_name"]
+    subject = f"Prueba de Notificaciones — {biz_name}"
     body = f"""
     <p style="margin:0 0 16px;color:#374151;">Esta es una prueba del sistema de notificaciones de VexlyPOS.</p>
     <p style="color:#6b7280;">Si recibiste este mensaje, las notificaciones por email están funcionando correctamente.</p>
     <p style="color:#6b7280;font-size:13px;">Hora del envío: {_now_dr_str()}</p>
+    <p style="color:#9ca3af;font-size:11px;">Remitente: {NOTIF_SENDER}</p>
     """
-    sent = _send([target_email], f"Prueba de Notificaciones — {settings['biz_name']}", _base_html("Prueba de Notificaciones", settings["biz_name"], body))
-    return {"ok": sent, "sent_to": target_email}
+    html = _base_html("Prueba de Notificaciones", biz_name, body)
+
+    # Send DIRECTLY (not via _send which swallows exceptions) so we can return
+    # the exact Resend error to the user.
+    try:
+        await asyncio.to_thread(resend.Emails.send, {
+            "from": NOTIF_SENDER,
+            "to": target_email,
+            "subject": subject,
+            "html": html,
+        })
+        # Audit log
+        try:
+            await log_email(db, type="generic", recipient=target_email,
+                            subject=subject, status="sent")
+        except Exception:
+            pass
+        logger.info(f"[email-test] sent OK to {target_email} from {NOTIF_SENDER}")
+        return {"ok": True, "sent_to": target_email, "from": NOTIF_SENDER}
+    except Exception as e:
+        err_msg = str(e)
+        logger.error(f"[email-test] Resend failed: from={NOTIF_SENDER} to={target_email} err={err_msg}")
+        # Try to extract a friendlier hint
+        hint = None
+        low = err_msg.lower()
+        if "domain" in low and ("not verif" in low or "verify" in low):
+            hint = (f"El dominio del remitente '{NOTIF_SENDER}' no está verificado en Resend. "
+                    "Verifícalo en https://resend.com/domains o usa 'onboarding@resend.dev' como remitente.")
+        elif "api key" in low or "unauthorized" in low or "401" in low:
+            hint = "La RESEND_API_KEY parece inválida o revocada. Genera una nueva en https://resend.com/api-keys."
+        elif "rate limit" in low or "429" in low:
+            hint = "Resend está aplicando rate limit. Espera un momento y reintenta."
+        elif "to " in low and "invalid" in low:
+            hint = f"La dirección destino '{target_email}' fue rechazada por Resend."
+        # Audit log (failed)
+        try:
+            await log_email(db, type="generic", recipient=target_email,
+                            subject=subject, status="failed", error=err_msg)
+        except Exception:
+            pass
+        return {
+            "ok": False,
+            "sent_to": target_email,
+            "from": NOTIF_SENDER,
+            "error": err_msg,
+            "hint": hint,
+            "code": "resend_send_failed",
+        }
 
 
 @api.get("/tenant/readiness")

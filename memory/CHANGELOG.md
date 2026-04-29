@@ -1,6 +1,39 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-29 — 🐛 BUG FIX — Test de Notificaciones por Email
+
+### Problema (reportado por usuario con screenshots IMG_2016/IMG_2017)
+- Botón "Enviar Test" en Configuración → Sistema → Notificaciones por Email mostraba siempre `Error al enviar test` sin detalle del motivo.
+
+### Causa raíz
+- En la sesión anterior se convirtió `services/email_notifications._send` de sincrónico a `async`, pero el endpoint `POST /api/email-notifications/test` en `server.py:1084` quedó con `sent = _send(...)` SIN `await`.
+- Resultado: `_send(...)` devolvía un objeto coroutine (no JSON-serializable). FastAPI lanzaba `ResponseValidationError` 500 al intentar serializar `{"ok": <coroutine>}`. El email NUNCA se enviaba realmente.
+- Además, el error real de Resend (cuando lo hubiera) era tragado por el `try/except` interno de `_send`, dejando al usuario sin pista.
+
+### Fix en `/app/backend/server.py::send_test_notification_email`
+- Reemplazado `_send(...)` por una llamada DIRECTA a `resend.Emails.send` envuelta en `asyncio.to_thread` con `try/except` propio que captura el error textual de Resend.
+- Precondiciones diagnósticas tempranas:
+  - `RESEND_API_KEY` ausente → `code: missing_api_key`.
+  - `RESEND_API_KEY` no empieza con `re_` → `code: invalid_api_key_format`.
+- Hints amigables en español para errores comunes de Resend:
+  - Dominio no verificado.
+  - API key inválida/revocada (HTTP 401).
+  - Rate-limit (HTTP 429).
+  - Dirección destino rechazada.
+- Auditoría: cada test ahora se loguea en `email_logs` (`type='generic'`, status sent/failed con `error` capturado) → admin lo ve en el card "Consumo de Emails".
+- Respuesta enriquecida: `{ok, sent_to, from, error?, hint?, code?}`.
+
+### Fix en `/app/frontend/src/components/EmailNotificationsCard.jsx::handleSendTest`
+- Toast de error ahora muestra el `hint` o `error` exacto del backend en la `description` (sub-texto del toast). Antes tragaba todo en `'Error al enviar test'` plano.
+
+### Validación
+- Curl smoke test directo: `POST /api/email-notifications/test` con destinatario real → `{"ok":true,"sent_to":"leocadio818@gmail.com","from":"facturas@vexlyapp.com"}`.
+- Path de error verificado simulando `RESEND_API_KEY` inválida → captura literal `"API key is invalid"` que ahora se propaga al toast con el hint sobre generar una nueva key.
+- Logs limpios: `[email-test] sent OK to leocadio818@gmail.com from facturas@vexlyapp.com`.
+
+---
+
 ## 2026-04-29 — 🔔 Email automático al admin cuando se cruza la cuota (full-stack hook, P1)
 
 ### Backend

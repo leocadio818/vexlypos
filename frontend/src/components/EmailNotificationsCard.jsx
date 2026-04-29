@@ -108,10 +108,14 @@ export default function EmailNotificationsCard() {
       if (r.data?.ok) {
         notify.success(`Test enviado a ${r.data.sent_to}`);
       } else {
-        notify.error('No se pudo enviar el test (revisa config Resend)');
+        // Surface the EXACT error from Resend + the friendly hint when present
+        const detail = r.data?.hint || r.data?.error || 'Sin detalles del error';
+        notify.error('No se pudo enviar el test', { description: detail });
       }
     } catch (e) {
-      notify.error(e.response?.data?.detail || 'Error al enviar test');
+      const data = e.response?.data;
+      const detail = data?.hint || data?.error || data?.detail || e.message || 'Error desconocido';
+      notify.error('Error al enviar test', { description: detail });
     }
     setTesting(false);
   };
