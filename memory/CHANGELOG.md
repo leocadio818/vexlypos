@@ -1,6 +1,39 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-29 — 📧 Contador de Emails Enviados (full-stack, P0)
+
+### Backend
+- **Nueva colección MongoDB** `email_logs` con esquema `{id, type, recipient, subject, status, error, bill_id, created_at}`.
+- **Helper centralizado** `services/email_logger.py::log_email(db, type, recipient, subject, status, error=None, bill_id=None)` — async, never raises, sanitiza inputs.
+- **Instrumentación** en TODOS los puntos donde el sistema envía email vía Resend:
+  - `services/email_notifications.py::_send` (ahora async, recibe `db` y `log_type`) — usado por shift_close, day_close, stock_alert.
+  - `routers/email.py` — `send_invoice_email` (factura individual) y `send_marketing_email` (per recipient).
+  - `routers/customers.py` — `send_loyalty_card_email` y `_auto_send_loyalty_email` (tarjeta fidelidad).
+  - `server.py` — `/email/send`, `/email/shift-report/{id}`, `/email/daily-close`, `/inventory/check-alerts` (low-stock loop).
+- **Nuevo router** `routers/email_logs.py` (level 100 only, gateado por `_require_level_100`):
+  - `GET /api/email-logs/stats` → `{today, this_week, this_month, by_type, recent}` (today/week/month: `{sent, failed, total}`, recent: top 20 por `created_at` desc).
+  - `GET /api/email-logs?page=&limit=&type=&status=&date_from=&date_to=` → paginado `{page, limit, total, pages, items}`.
+
+### Frontend
+- **Nuevo componente** `components/EmailUsageCard.jsx` montado en `pages/settings/SystemTab.js` justo después de `EmailNotificationsCard`, gateado por `isSystemAdmin = role_level >= 100`.
+- 3 KPIs (Hoy / Semana / Mes) con conteo `sent/failed/total`.
+- Pills por tipo (últimos 30 días) ordenadas por count desc, con icono y color por tipo (invoice/shift_close/day_close/stock_alert/marketing/loyalty_card/...).
+- Lista de últimos 20 enviados con asunto, destinatario, hora, status badge (verde "enviado" / rojo "falló") y mensaje de error en líneas fallidas.
+- Botón "Ver más" expande a vista paginada completa con prev/next y contador de páginas; "Ver solo recientes" la cierra.
+
+### Validación
+- 13/13 pytest backend cases (`/app/backend/tests/test_email_logs.py`).
+- RBAC verificado: cashier (level 30) recibe 403 en ambos endpoints con el mensaje exacto y NO ve el card en `/settings`. 401 sin auth.
+- Helper validado: lowercase + trim recipient, subject truncado a 300, status normalizado, type desconocido → "other", id UUID4, created_at ISO UTC.
+- 5-viewport visual regression OK (Desktop light/dark, iOS 390, Android 412, Tablet dark).
+
+### Notas
+- Las llamadas a `log_email` están envueltas en try/except — un fallo en el log NO bloquea el envío del email.
+- 10 filas de seed visual fueron sembradas y eliminadas tras testing — colección está limpia.
+
+---
+
 ## 2026-04-29 — 🔍 FIX 5 — Búsqueda en tiempo real e-CF Dashboard (frontend, P0)
 
 ### Cambios en `/app/frontend/src/pages/reports/EcfDashboard.jsx`
