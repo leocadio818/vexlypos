@@ -8,9 +8,10 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 import asyncio
+import logging
 from utils.supabase_helpers import sb_select, sb_insert, sb_update_filter
 
-from routers.auth import get_current_user, get_permissions
+from routers.auth import get_current_user, get_permissions, get_role_level_async
 from services import encrypt_value, decrypt_value, mask_value
 
 router = APIRouter(prefix="/ecf", tags=["ECF Provider"])
@@ -95,7 +96,8 @@ async def get_ecf_config(user=Depends(get_current_user)):
 @router.put("/config")
 async def update_ecf_config(input: EcfConfigInput, user=Depends(get_current_user)):
     """Update e-CF provider config. Admin only."""
-    if user.get("role") != "admin":
+    # BUG-14 fix
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(status_code=403, detail="Solo admin puede configurar el proveedor e-CF")
 
     if input.provider not in [p["id"] for p in PROVIDERS]:
@@ -295,7 +297,10 @@ async def process_retry(bill_id: str):
     """
     from services.multiprod_service import multiprod_service
 
-    entry = await db.ecf_retry_queue.find_one({"bill_id": bill_id, "status": "pending"}, {"_id": 0})
+    entry = await db.ecf_retry_queue.find_one(
+        {"bill_id": bill_id, "status": {"$in": ["pending", "processing"]}},
+        {"_id": 0}
+    )
     if not entry:
         return
 
@@ -394,6 +399,7 @@ async def process_retry(bill_id: str):
         "attempt": next_attempt,
         "next_retry_at": next_retry_at.isoformat(),
         "updated_at": now_iso(),
+        "status": "pending",  # BUG-12 fix: release the claim so the worker can pick it up next cycle
     }})
 
 
@@ -410,21 +416,33 @@ async def auto_retry_worker():
     Scheduled worker: runs every 60 seconds.
     Picks entries from ecf_retry_queue where status=pending AND next_retry_at <= now,
     and processes them. This enables long backoffs (2min, 10min, 1h) without holding coroutines.
+
+    BUG-12 fix: each entry is CLAIMED atomically (status pending → processing) before
+    being processed. Prevents duplicate sends if two workers/instances overlap.
     """
     try:
         now_dt = datetime.now(timezone.utc).isoformat()
-        # Pick all ready entries (cap at 50 to avoid flooding)
-        ready = await db.ecf_retry_queue.find(
-            {"status": "pending", "next_retry_at": {"$lte": now_dt}},
-            {"_id": 0, "bill_id": 1}
-        ).limit(50).to_list(50)
-        for entry in ready:
+        # Loop until no more claimable entries (cap at 50 to avoid flooding)
+        for _ in range(50):
+            claimed = await db.ecf_retry_queue.find_one_and_update(
+                {"status": "pending", "next_retry_at": {"$lte": now_dt}},
+                {"$set": {"status": "processing", "claimed_at": now_dt}},
+                projection={"_id": 0, "bill_id": 1},
+                # No specific sort: any oldest pending entry is fine
+            )
+            if not claimed:
+                break
             try:
-                await process_retry(entry["bill_id"])
+                await process_retry(claimed["bill_id"])
             except Exception as e:
-                print(f"auto_retry_worker: error processing {entry.get('bill_id')}: {e}")
+                # On unexpected failure, release the claim so it gets retried later
+                logging.warning(f"auto_retry_worker: error processing {claimed.get('bill_id')}: {e}")
+                await db.ecf_retry_queue.update_one(
+                    {"bill_id": claimed["bill_id"], "status": "processing"},
+                    {"$set": {"status": "pending"}}
+                )
     except Exception as e:
-        print(f"auto_retry_worker: unexpected error: {e}")
+        logging.warning(f"auto_retry_worker: unexpected error: {e}")
 
 
 # ─── DISPATCHER — Main send endpoint ───
@@ -606,7 +624,8 @@ async def get_ecf_status(bill_id: str, user=Depends(get_current_user)):
 @router.post("/test-multiprod")
 async def test_multiprod_connection(user=Depends(get_current_user)):
     """Test Multiprod connection by validating a sample XML against Megaplus validator."""
-    if user.get("role") != "admin":
+    # BUG-14 fix
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(status_code=403, detail="Solo admin puede probar la conexion")
 
     from services.multiprod_service import multiprod_service

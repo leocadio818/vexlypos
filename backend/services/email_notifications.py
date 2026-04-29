@@ -68,14 +68,15 @@ def _base_html(title: str, biz_name: str, body_html: str, accent: str = "#f97316
 
 async def _send(emails: list, subject: str, html: str, *, db=None, log_type: str = "other"):
     """Fire-and-forget Resend send. Logs and swallows exceptions.
-    If `db` is provided, every recipient is also logged in `email_logs` with
-    its individual sent/failed status via services.email_logger.log_email.
+    BUG-16 fix: wraps each blocking resend call in asyncio.to_thread so the
+    backend event loop is not stalled while emails fly out (200-1500ms each).
     """
     if not resend.api_key:
         logger.warning("RESEND_API_KEY missing — skipping email send")
         return False
     if not emails:
         return False
+    import asyncio as _asyncio
     # Lazy import to avoid circular imports if email_logger ever depends on us
     from services.email_logger import log_email
     try:
@@ -83,7 +84,7 @@ async def _send(emails: list, subject: str, html: str, *, db=None, log_type: str
             sent_ok = False
             err_msg = None
             try:
-                resend.Emails.send({
+                await _asyncio.to_thread(resend.Emails.send, {
                     "from": SENDER_EMAIL,
                     "to": e,
                     "subject": subject,

@@ -75,10 +75,16 @@ async def send_ecf(bill_id: str):
         ecf_prefix = {"B01": "E31", "B02": "E32", "B14": "E34", "B15": "E31"}.get(prefix, "E32")
     encf = gen_encf(ecf_prefix)
 
-    # Verify uniqueness
-    existing = await db.ecf_logs.find_one({"encf": encf})
-    if existing:
+    # BUG-18 fix: loop until we find an encf that's unique in ecf_logs.
+    # Up to 8 attempts (probability of 8 collisions in a 9e9 keyspace is astronomically low,
+    # but if it happens we surface a clear error rather than silently submitting a duplicate).
+    for _attempt in range(8):
+        existing = await db.ecf_logs.find_one({"encf": encf}, {"_id": 0, "encf": 1})
+        if not existing:
+            break
         encf = gen_encf(ecf_prefix)
+    else:
+        raise HTTPException(status_code=500, detail="No se pudo generar un e-NCF único tras múltiples intentos")
 
     if provider == "thefactory":
         from routers.thefactory import get_next_ncf
@@ -739,8 +745,9 @@ async def ecf_health_metrics(user=Depends(__import__("routers.auth", fromlist=["
     Returns 24h metrics: acceptance rate, hourly chart, top reject reasons,
     response times, and current retry queue state.
     """
-    # Admin-only guard
-    if (user.get("role") or "").lower() != "admin":
+    # BUG-14 fix: admin-only via role_level (no role string check)
+    from routers.auth import get_role_level_async
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(status_code=403, detail="Solo administradores pueden acceder al panel de diagnóstico")
 
     from datetime import datetime, timezone, timedelta

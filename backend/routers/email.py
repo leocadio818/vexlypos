@@ -306,7 +306,9 @@ async def send_invoice_email(bill_id: str, email_override: Optional[str] = Query
             "subject": f"Factura T-{trans_num} — {biz_name}",
             "html": html,
         }
-        email_response = resend.Emails.send(params)
+        # BUG-16 fix: blocking I/O off the event loop
+        import asyncio as _asyncio
+        email_response = await _asyncio.to_thread(resend.Emails.send, params)
         
         # Mark bill as email sent
         await db.bills.update_one({"id": bill_id}, {"$set": {"email_sent": True, "email_sent_to": customer_email}})
@@ -494,7 +496,9 @@ async def send_marketing_email(input: dict):
                 "subject": subject,
                 "html": html,
             }
-            resend.Emails.send(params)
+            # BUG-16 fix: blocking I/O off the event loop
+            import asyncio as _asyncio
+            await _asyncio.to_thread(resend.Emails.send, params)
             sent_count += 1
             # Audit log per recipient (best-effort)
             try:

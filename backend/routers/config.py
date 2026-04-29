@@ -21,7 +21,7 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 # Import auth dependency
-from routers.auth import get_current_user
+from routers.auth import get_current_user, get_role_level_async
 
 # ─── PYDANTIC MODELS ───
 class CategoryInput(BaseModel):
@@ -503,7 +503,8 @@ async def import_products_bulk(file: UploadFile = File(...), user: dict = Depend
     import io as sio
 
     user_perms = get_permissions(user.get("role", "waiter"), user.get("permissions", {}))
-    if user.get("role") != "admin" and not user_perms.get("config_productos"):
+    # BUG-14 fix
+    if (await get_role_level_async(user.get("role", "")) < 100) and not user_perms.get("config_productos"):
         raise HTTPException(status_code=403, detail="No tienes permiso para importar productos")
 
     filename = (file.filename or "").lower()

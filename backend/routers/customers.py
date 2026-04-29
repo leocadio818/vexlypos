@@ -327,7 +327,9 @@ async def send_loyalty_card_email(cid: str, request: Request, body: dict = None)
     try:
         sender = f"{biz_name} <facturas@vexlyapp.com>"
         subject_str = f"Tu tarjeta de fidelidad {biz_name} — {points} pts"
-        resend.Emails.send({
+        # BUG-16 fix: blocking I/O off the event loop
+        import asyncio as _asyncio
+        await _asyncio.to_thread(resend.Emails.send, {
             "from": sender,
             "to": [email],
             "subject": subject_str,
@@ -424,7 +426,9 @@ async def _auto_send_loyalty_email(cid: str, subject_prefix: str, title: str, su
 
         subject_str = f"{subject_prefix} — {biz_name}"
         try:
-            resend.Emails.send({
+            # BUG-16 fix: blocking I/O off the event loop
+            import asyncio as _asyncio
+            await _asyncio.to_thread(resend.Emails.send, {
                 "from": f"{biz_name} <facturas@vexlyapp.com>",
                 "to": [customer["email"]],
                 "subject": subject_str,

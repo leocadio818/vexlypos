@@ -42,7 +42,7 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 # Import auth dependency
-from routers.auth import get_current_user
+from routers.auth import get_current_user, get_role_level_async
 
 
 # ─── MODELS ───
@@ -79,14 +79,16 @@ async def get_return_reasons():
             {"id": gen_id(), "code": "ERROR_PRECIO", "name": "Error de Precio", "description": "Precio incorrecto en factura original", "affects_inventory": False, "requires_authorization": False, "is_active": True, "order": 5},
         ]
         await db.return_reasons.insert_many(defaults)
-        return defaults
+        # BUG-15 fix: insert_many mutates dicts adding ObjectId; re-fetch clean docs.
+        return await db.return_reasons.find({"is_active": True}, {"_id": 0}).sort("order", 1).to_list(50)
     return reasons
 
 
 @router.post("/return-reasons")
 async def create_return_reason(input: ReturnReasonInput, user=Depends(get_current_user)):
     """Crea un nuevo motivo de devolución"""
-    if user.get("role") != "admin":
+    # BUG-14 fix
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(status_code=403, detail="Solo administradores pueden crear motivos")
     
     count = await db.return_reasons.count_documents({})
@@ -241,7 +243,8 @@ async def find_bill_for_credit_note(search: str, user=Depends(get_current_user))
     
     # Check permission
     user_perms = get_permissions(user.get("role", "waiter"), user.get("permissions", {}))
-    if not user_perms.get("manage_credit_notes") and user.get("role") != "admin":
+    # BUG-14 fix: any user with manage_credit_notes perm OR system admin level
+    if not user_perms.get("manage_credit_notes") and (await get_role_level_async(user.get("role", "")) < 100):
         raise HTTPException(status_code=403, detail="No tienes permiso para generar notas de crédito")
     
     search = search.strip()
@@ -417,7 +420,8 @@ async def generate_standalone_e34_endpoint(input: dict, user=Depends(get_current
     
     # Check permission
     user_perms = get_permissions(user.get("role", "waiter"), user.get("permissions", {}))
-    if not user_perms.get("manage_credit_notes") and user.get("role") != "admin":
+    # BUG-14 fix
+    if not user_perms.get("manage_credit_notes") and (await get_role_level_async(user.get("role", "")) < 100):
         raise HTTPException(status_code=403, detail="No tienes permiso para generar notas de crédito")
     
     search = input.get("search", "").strip()
@@ -894,7 +898,8 @@ async def create_credit_note(input: CreditNoteInput, user=Depends(get_current_us
 @router.post("/{note_id}/cancel")
 async def cancel_credit_note(note_id: str, user=Depends(get_current_user)):
     """Cancela una nota de crédito (solo si está pendiente)"""
-    if user.get("role") != "admin":
+    # BUG-14 fix
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(status_code=403, detail="Solo administradores pueden cancelar notas de crédito")
     
     note = await db.credit_notes.find_one({"id": note_id}, {"_id": 0})
@@ -940,8 +945,8 @@ async def search_by_transaction_number(input: SearchTransactionInput, user=Depen
     
     SEGURIDAD: Solo administradores pueden usar esta función.
     """
-    # Verificar permisos de admin
-    if user.get("role") != "admin":
+    # BUG-14 fix: re-abrir transacciones requiere admin level (100)
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(
             status_code=403,
             detail="Solo administradores pueden re-abrir transacciones"

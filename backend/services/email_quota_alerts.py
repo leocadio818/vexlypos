@@ -158,7 +158,9 @@ async def maybe_send_quota_alert(db) -> None:
             sent_ok = False
             err_msg = None
             try:
-                resend.Emails.send({
+                # BUG-16 fix: blocking I/O off the event loop
+                import asyncio as _asyncio
+                await _asyncio.to_thread(resend.Emails.send, {
                     "from": SENDER_EMAIL,
                     "to": e,
                     "subject": subject,

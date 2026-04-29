@@ -2790,7 +2790,9 @@ async def resolve_system_log(log_id: str, input: dict, user: dict = Depends(get_
 @api.delete("/system-logs/cleanup")
 async def cleanup_system_logs(days: int = 30, user: dict = Depends(get_current_user)):
     """Delete old resolved logs"""
-    if user.get("role") != "admin":
+    # BUG-14 fix
+    from routers.auth import get_role_level_async
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(status_code=403, detail="Solo admin puede limpiar logs")
     
     from routers.system_logs import delete_old_logs

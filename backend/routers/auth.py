@@ -26,7 +26,7 @@ def set_db(database):
     global db
     db = database
 
-JWT_SECRET = os.environ.get('JWT_SECRET', 'fallback_secret')
+JWT_SECRET = os.environ['JWT_SECRET']  # BUG-11 fix: fail fast if missing instead of using a known fallback string
 
 
 def hash_pin(pin: str) -> str:
@@ -518,7 +518,8 @@ async def logout(user=Depends(get_current_user)):
 @router.get("/auth/active-sessions")
 async def list_active_sessions(user=Depends(get_current_user)):
     """List all active sessions. Admin only."""
-    if user.get("role") != "admin":
+    # BUG-14 fix: check role_level >= 100 instead of literal "admin" string
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(status_code=403, detail="Solo admin puede ver sesiones activas")
     sessions = await db.active_sessions.find({}, {"_id": 0}).to_list(100)
     return sessions
@@ -527,7 +528,8 @@ async def list_active_sessions(user=Depends(get_current_user)):
 @router.post("/auth/revoke-session/{user_id}")
 async def revoke_session(user_id: str, user=Depends(get_current_user)):
     """Revoke a user's session. Admin only."""
-    if user.get("role") != "admin":
+    # BUG-14 fix
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(status_code=403, detail="Solo admin puede cerrar sesiones")
     if user_id == user.get("user_id"):
         raise HTTPException(status_code=400, detail="No puedes cerrar tu propia sesion desde aqui")
@@ -566,7 +568,8 @@ class AutoLogoutConfigInput(BaseModel):
 @router.put("/auth/auto-logout-config")
 async def update_auto_logout_config(input: AutoLogoutConfigInput, user=Depends(get_current_user)):
     """Update auto-logout configuration. Admin only."""
-    if user.get("role") != "admin":
+    # BUG-14 fix
+    if await get_role_level_async(user.get("role", "")) < 100:
         raise HTTPException(status_code=403, detail="Solo admin puede configurar auto-logout")
     if input.timeout_minutes < 1 or input.timeout_minutes > 480:
         raise HTTPException(status_code=400, detail="Timeout debe ser entre 1 y 480 minutos")

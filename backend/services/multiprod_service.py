@@ -317,13 +317,17 @@ class MultiprodService:
             item_total = price * qty
 
             tax_rate = item.get("tax_rate", item.get("itbis_rate"))
-            if tax_rate is None:
+            # BUG-17 fix: also treat "" / non-numeric strings as missing → fall back to defaults
+            if tax_rate in (None, ""):
                 if tipo_num == "44":
                     tax_rate = 0
                 else:
                     tax_rate = 18
 
-            tax_rate = float(tax_rate)
+            try:
+                tax_rate = float(tax_rate)
+            except (TypeError, ValueError):
+                tax_rate = 0 if tipo_num == "44" else 18
 
             # E44 is always exempt regardless of item tax_rate
             if tipo_num == "44":
