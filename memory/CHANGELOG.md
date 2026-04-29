@@ -1,6 +1,38 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-29 — 🔔 Email automático al admin cuando se cruza la cuota (full-stack hook, P1)
+
+### Backend
+- **Nuevo módulo** `services/email_quota_alerts.py::maybe_send_quota_alert(db)`:
+  - Cuenta filas del mes calendario en `email_logs` (excluyendo `type='quota_alert'` para no auto-alimentar).
+  - Si `used_pct >= threshold` y aún no se envió alerta este mes → email amber a `system_config.notification_emails` con asunto `Cuota cerca del límite — {biz} — {used}/{limit} ({pct}%)`.
+  - Si `used_pct >= 100%` y aún no se envió → email rojo `Cuota EXCEDIDA — ...`.
+  - **Idempotencia** vía dos markers en `system_config:main`:
+    - `email_quota_warning_sent_period`
+    - `email_quota_exceeded_sent_period`
+    - Ambos almacenan el ISO del `period_start` (mes calendario UTC). Cuando el mes rota, los markers ya no coinciden y los alerts vuelven a poder dispararse.
+  - Cuando dispara EXCEDIDA antes que el warning (subida brusca), también marca el warning para evitar dos emails el mismo día.
+- **Hook automático** en `services/email_logger.py::log_email`: tras cada inserción en `email_logs` programa `asyncio.create_task(maybe_send_quota_alert(db))`. Saltea el caso `type='quota_alert'` para evitar recursión. Añade `quota_alert` a `ALLOWED_TYPES`.
+- **Best-effort y silencioso** en todos los caminos: sin recipients, sin RESEND_API_KEY, `limit<=0`, error de Resend → no rompe el request original.
+
+### Validación
+- 11/11 pytest backend (`/app/backend/tests/test_email_quota_alerts.py`):
+  - Warning @ 80%, idempotente @ 90%, Excedida @ 110%, idempotente @ 120%.
+  - No recipients → silencio.
+  - `limit<=0` → corto-circuito.
+  - Sin `RESEND_API_KEY` → silencio.
+  - No recursión (`type='quota_alert'`).
+  - El conteo `used_pct` excluye filas tipo `quota_alert` (validado: sin filtro daría 14 en vez de los reales 9 y rompería los assertions).
+  - HTTP `/api/email-logs/stats` y `PUT /api/email-logs/quota` siguen sanos.
+- Logs del backend limpios tras la ejecución.
+
+### Notas operativas
+- El alert se loguea en `email_logs` con `type='quota_alert'` → visible en el card del admin pero filtrado del cómputo de cuota.
+- Los markers se resetean naturalmente al cambiar de mes calendario. Si el admin sube el límite tras recibir el warning, NO se reenvía en el mismo mes (comportamiento intencional anti-spam).
+
+---
+
 ## 2026-04-29 — 🚨 Alerta de Cuota Mensual de Emails (full-stack, P1)
 
 ### Backend
