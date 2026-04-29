@@ -10,6 +10,7 @@ Usage:
     await log_email(db, type="invoice", recipient="x@y.com",
                     subject="...", status="sent", bill_id=bill["id"])
 """
+import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -28,6 +29,7 @@ ALLOWED_TYPES = {
     "shift_report",     # /email/shift-report (manual)
     "daily_close",      # /email/daily-close (manual)
     "generic",          # /email/send (genérico)
+    "quota_alert",      # auto-alert when monthly quota threshold/exceeded
     "other",
 }
 
@@ -41,13 +43,17 @@ async def log_email(
     error: Optional[str] = None,
     bill_id: Optional[str] = None,
 ):
-    """Insert one row into email_logs. Never raises."""
+    """Insert one row into email_logs. Never raises.
+    After every successful insert (except for quota_alert itself, to avoid
+    recursion) schedule an async quota check that fires admin-warning emails
+    when the monthly threshold/100% is crossed."""
     try:
         if db is None:
             return
+        normalized_type = type if type in ALLOWED_TYPES else "other"
         doc = {
             "id": str(uuid.uuid4()),
-            "type": type if type in ALLOWED_TYPES else "other",
+            "type": normalized_type,
             "recipient": (recipient or "").strip().lower(),
             "subject": (subject or "")[:300],
             "status": "sent" if status == "sent" else "failed",
@@ -56,6 +62,15 @@ async def log_email(
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         await db.email_logs.insert_one(doc)
+
+        # Fire-and-forget quota check (skip for the alert email itself)
+        if normalized_type != "quota_alert":
+            try:
+                from services.email_quota_alerts import maybe_send_quota_alert
+                asyncio.create_task(maybe_send_quota_alert(db))
+            except Exception as inner:
+                logger.warning(f"[email_logger] quota check schedule failed: {inner}")
     except Exception as e:
         # Never block the caller for a logging failure
         logger.warning(f"[email_logger] Failed to write email log: {e}")
+
