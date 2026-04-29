@@ -326,14 +326,28 @@ async def send_loyalty_card_email(cid: str, request: Request, body: dict = None)
 
     try:
         sender = f"{biz_name} <facturas@vexlyapp.com>"
+        subject_str = f"Tu tarjeta de fidelidad {biz_name} — {points} pts"
         resend.Emails.send({
             "from": sender,
             "to": [email],
-            "subject": f"Tu tarjeta de fidelidad {biz_name} — {points} pts",
+            "subject": subject_str,
             "html": html,
         })
+        try:
+            from services.email_logger import log_email
+            await log_email(db, type="loyalty_card", recipient=email,
+                            subject=subject_str, status="sent")
+        except Exception:
+            pass
         return {"ok": True, "sent_to": email, "public_url": public_url}
     except Exception as e:
+        try:
+            from services.email_logger import log_email
+            await log_email(db, type="loyalty_card", recipient=email,
+                            subject=f"Tu tarjeta de fidelidad {biz_name} — {points} pts",
+                            status="failed", error=str(e))
+        except Exception:
+            pass
         raise HTTPException(status_code=500, detail=f"Error enviando email: {str(e)}")
 
 
@@ -408,13 +422,29 @@ async def _auto_send_loyalty_email(cid: str, subject_prefix: str, title: str, su
             biz_address=biz_config.get("address", ""),
         )
 
-        resend.Emails.send({
-            "from": f"{biz_name} <facturas@vexlyapp.com>",
-            "to": [customer["email"]],
-            "subject": f"{subject_prefix} — {biz_name}",
-            "html": html,
-        })
-        return True
+        subject_str = f"{subject_prefix} — {biz_name}"
+        try:
+            resend.Emails.send({
+                "from": f"{biz_name} <facturas@vexlyapp.com>",
+                "to": [customer["email"]],
+                "subject": subject_str,
+                "html": html,
+            })
+            try:
+                from services.email_logger import log_email
+                await log_email(db, type="loyalty_card", recipient=customer["email"],
+                                subject=subject_str, status="sent")
+            except Exception:
+                pass
+            return True
+        except Exception as send_err:
+            try:
+                from services.email_logger import log_email
+                await log_email(db, type="loyalty_card", recipient=customer["email"],
+                                subject=subject_str, status="failed", error=str(send_err))
+            except Exception:
+                pass
+            return False
     except Exception:
         return False
 

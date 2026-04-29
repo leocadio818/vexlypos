@@ -311,6 +311,16 @@ async def send_invoice_email(bill_id: str, email_override: Optional[str] = Query
         # Mark bill as email sent
         await db.bills.update_one({"id": bill_id}, {"$set": {"email_sent": True, "email_sent_to": customer_email}})
         
+        # Audit log (best-effort, never breaks the request)
+        try:
+            from services.email_logger import log_email
+            await log_email(
+                db, type="invoice", recipient=customer_email,
+                subject=params["subject"], status="sent", bill_id=bill_id,
+            )
+        except Exception:
+            pass
+        
         return {"ok": True, "message": f"Factura enviada a {customer_email}", "email_id": email_response.get("id", "")}
     except Exception as e:
         # Log email error to system_logs
@@ -320,6 +330,16 @@ async def send_invoice_email(bill_id: str, email_override: Optional[str] = Query
                 technical_error=str(e),
                 email=customer_email,
                 error_type="email_invoice_failed"
+            )
+        except Exception:
+            pass
+        # Audit log (failed)
+        try:
+            from services.email_logger import log_email
+            await log_email(
+                db, type="invoice", recipient=customer_email,
+                subject=f"Factura T-{trans_num} — {biz_name}", status="failed",
+                error=str(e), bill_id=bill_id,
             )
         except Exception:
             pass
@@ -476,6 +496,15 @@ async def send_marketing_email(input: dict):
             }
             resend.Emails.send(params)
             sent_count += 1
+            # Audit log per recipient (best-effort)
+            try:
+                from services.email_logger import log_email
+                await log_email(
+                    db, type="marketing", recipient=customer["email"],
+                    subject=subject, status="sent",
+                )
+            except Exception:
+                pass
         except Exception as e:
             failed_emails.append({"email": customer["email"], "error": str(e)})
             # Log each failed email to system_logs
@@ -485,6 +514,15 @@ async def send_marketing_email(input: dict):
                     technical_error=str(e),
                     email=customer["email"],
                     error_type="email_send_failed"
+                )
+            except Exception:
+                pass
+            # Audit log (failed)
+            try:
+                from services.email_logger import log_email
+                await log_email(
+                    db, type="marketing", recipient=customer["email"],
+                    subject=subject, status="failed", error=str(e),
                 )
             except Exception:
                 pass

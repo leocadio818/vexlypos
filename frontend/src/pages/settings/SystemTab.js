@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { invalidateTimezoneCache } from '@/lib/timezone';
 import ThermalTicket from '@/components/ThermalTicket';
 import EmailNotificationsCard from '@/components/EmailNotificationsCard';
+import EmailUsageCard from '@/components/EmailUsageCard';
 import axios from 'axios';
 import { PROVINCIAS, MUNICIPIOS_BY_PROVINCIA } from '@/data/dgii_territories';
 
@@ -488,6 +489,9 @@ export default function SystemTab() {
         
         {/* Email Notifications — admin/propietario only */}
         {(currentUser?.permissions?.manage_email_notifications) && <EmailNotificationsCard />}
+        
+        {/* Email Usage Dashboard — system admin (level 100) only */}
+        {isSystemAdmin && <EmailUsageCard />}
         
         {/* Restaurant Name */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4">

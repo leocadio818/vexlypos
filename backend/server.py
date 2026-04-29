@@ -52,6 +52,7 @@ from routers.business_days import router as business_days_router, set_db as busi
 from routers.dgii import router as dgii_router
 from routers.discounts import router as discounts_router, set_db as discounts_set_db
 from routers.email import router as email_router, set_db as email_set_db
+from routers.email_logs import router as email_logs_router, set_db as email_logs_set_db
 from routers.features import router as features_router, set_db as features_set_db
 from routers.system_health import router as system_health_router, set_db as system_health_set_db
 from routers.alanube import router as alanube_router, set_db as alanube_set_db
@@ -97,6 +98,7 @@ business_days_set_db(db)
 business_days_init_supabase()  # Initialize Supabase for business days
 discounts_set_db(db)
 email_set_db(db)
+email_logs_set_db(db)
 features_set_db(db)
 system_health_set_db(db)
 alanube_set_db(db)
@@ -243,6 +245,7 @@ api.include_router(business_days_router)
 api.include_router(dgii_router)
 api.include_router(discounts_router)
 api.include_router(email_router, prefix="/email")
+api.include_router(email_logs_router)
 api.include_router(ecf_dispatcher_router, prefix="/ecf")
 api.include_router(manuales_router)
 api.include_router(promotions_router)
@@ -1617,8 +1620,20 @@ async def send_email(input: EmailInput):
     try:
         params = {"from": SENDER_EMAIL, "to": [input.to], "subject": input.subject, "html": input.html}
         email = await asyncio.to_thread(resend.Emails.send, params)
+        try:
+            from services.email_logger import log_email
+            await log_email(db, type="generic", recipient=input.to,
+                            subject=input.subject, status="sent")
+        except Exception:
+            pass
         return {"status": "success", "email_id": email.get("id")}
     except Exception as e:
+        try:
+            from services.email_logger import log_email
+            await log_email(db, type="generic", recipient=input.to,
+                            subject=input.subject, status="failed", error=str(e))
+        except Exception:
+            pass
         raise HTTPException(status_code=500, detail=str(e))
 
 @api.post("/email/shift-report/{shift_id}")
@@ -1646,8 +1661,21 @@ async def email_shift_report(shift_id: str, input: dict):
     try:
         params = {"from": SENDER_EMAIL, "to": [to_email], "subject": f"Reporte de Turno - {shift['user_name']} - {shift['station']}", "html": html}
         email = await asyncio.to_thread(resend.Emails.send, params)
+        try:
+            from services.email_logger import log_email
+            await log_email(db, type="shift_report", recipient=to_email,
+                            subject=params["subject"], status="sent")
+        except Exception:
+            pass
         return {"status": "sent", "email_id": email.get("id")}
     except Exception as e:
+        try:
+            from services.email_logger import log_email
+            await log_email(db, type="shift_report", recipient=to_email,
+                            subject=f"Reporte de Turno - {shift['user_name']} - {shift['station']}",
+                            status="failed", error=str(e))
+        except Exception:
+            pass
         return {"status": "error", "detail": str(e), "html": html}
 
 @api.post("/email/daily-close")
@@ -1677,8 +1705,21 @@ async def email_daily_close(input: dict):
     try:
         params = {"from": SENDER_EMAIL, "to": [to_email], "subject": f"Cierre del Dia - {date} - Mesa POS RD", "html": html}
         email = await asyncio.to_thread(resend.Emails.send, params)
+        try:
+            from services.email_logger import log_email
+            await log_email(db, type="daily_close", recipient=to_email,
+                            subject=params["subject"], status="sent")
+        except Exception:
+            pass
         return {"status": "sent", "email_id": email.get("id"), "html": html}
     except Exception as e:
+        try:
+            from services.email_logger import log_email
+            await log_email(db, type="daily_close", recipient=to_email,
+                            subject=f"Cierre del Dia - {date} - Mesa POS RD",
+                            status="failed", error=str(e))
+        except Exception:
+            pass
         return {"status": "error", "detail": str(e), "html": html}
 
 # ─── LOW STOCK ALERTS ───
@@ -1790,7 +1831,25 @@ async def check_low_stock_alerts(send_email: bool = Query(False)):
                         "subject": f"Alerta de Stock Bajo - {total_alerts} alertas", 
                         "html": html
                     }
-                    await asyncio.to_thread(resend.Emails.send, params)
+                    sent_ok = False
+                    err_msg = None
+                    try:
+                        await asyncio.to_thread(resend.Emails.send, params)
+                        sent_ok = True
+                    except Exception as send_err:
+                        err_msg = str(send_err)
+                        raise
+                    finally:
+                        try:
+                            from services.email_logger import log_email
+                            await log_email(
+                                db, type="stock_alert", recipient=email,
+                                subject=params["subject"],
+                                status="sent" if sent_ok else "failed",
+                                error=err_msg,
+                            )
+                        except Exception:
+                            pass
                 
                 result["email_sent"] = True
                 result["sent_to"] = alert_emails

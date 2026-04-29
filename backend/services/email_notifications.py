@@ -66,15 +66,22 @@ def _base_html(title: str, biz_name: str, body_html: str, accent: str = "#f97316
 </table></td></tr></table></body></html>"""
 
 
-def _send(emails: list, subject: str, html: str):
-    """Fire-and-forget Resend send. Logs and swallows exceptions."""
+async def _send(emails: list, subject: str, html: str, *, db=None, log_type: str = "other"):
+    """Fire-and-forget Resend send. Logs and swallows exceptions.
+    If `db` is provided, every recipient is also logged in `email_logs` with
+    its individual sent/failed status via services.email_logger.log_email.
+    """
     if not resend.api_key:
         logger.warning("RESEND_API_KEY missing — skipping email send")
         return False
     if not emails:
         return False
+    # Lazy import to avoid circular imports if email_logger ever depends on us
+    from services.email_logger import log_email
     try:
         for e in emails:
+            sent_ok = False
+            err_msg = None
             try:
                 resend.Emails.send({
                     "from": SENDER_EMAIL,
@@ -83,8 +90,19 @@ def _send(emails: list, subject: str, html: str):
                     "html": html,
                 })
                 logger.info(f"[email] sent '{subject}' → {e}")
+                sent_ok = True
             except Exception as inner:
+                err_msg = str(inner)
                 logger.warning(f"[email] failed to send to {e}: {inner}")
+            if db is not None:
+                await log_email(
+                    db,
+                    type=log_type,
+                    recipient=e,
+                    subject=subject,
+                    status="sent" if sent_ok else "failed",
+                    error=err_msg,
+                )
         return True
     except Exception as e:
         logger.error(f"[email] send pipeline failed: {e}")
@@ -177,7 +195,7 @@ async def send_shift_close_email(db, session: dict, reconciliation: dict, termin
         body += f'<p style="margin-top:14px;color:#6b7280;font-size:13px;"><b>Notas:</b> {reconciliation["difference_notes"]}</p>'
 
     subject = f"Cierre de Caja — {biz} — {_now_dr_str('%Y-%m-%d %H:%M')}"
-    return _send(settings["emails"], subject, _base_html("Cierre de Caja", biz, body))
+    return await _send(settings["emails"], subject, _base_html("Cierre de Caja", biz, body), db=db, log_type="shift_close")
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -259,7 +277,7 @@ async def send_day_close_email(db, business_date: str, summary: dict):
     """
 
     subject = f"Cierre de Jornada — {biz} — {business_date}"
-    return _send(settings["emails"], subject, _base_html("Cierre de Jornada", biz, body))
+    return await _send(settings["emails"], subject, _base_html("Cierre de Jornada", biz, body), db=db, log_type="day_close")
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -318,7 +336,7 @@ async def send_stock_alert_email(db):
     """
 
     subject = f"⚠️ Alerta Stock Bajo — {biz} — {_now_dr_str('%Y-%m-%d')}"
-    sent = _send(settings["emails"], subject, _base_html("Alerta de Stock Bajo", biz, body, accent="#dc2626"))
+    sent = await _send(settings["emails"], subject, _base_html("Alerta de Stock Bajo", biz, body, accent="#dc2626"), db=db, log_type="stock_alert")
 
     if sent:
         now_ts = datetime.now(timezone.utc).timestamp()
