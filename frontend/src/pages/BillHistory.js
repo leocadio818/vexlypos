@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Receipt, Search, RotateCcw, FileText, AlertTriangle, 
-  ChevronDown, ChevronUp, Calendar, User, Printer, X, Check
+  ChevronDown, ChevronUp, Printer, Eye, X, Check
 } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL;
@@ -22,7 +22,10 @@ export default function BillHistory() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('paid');
   const [dateRange, setDateRange] = useState('today');
+  const [customStart, setCustomStart] = useState(() => new Date().toISOString().slice(0, 10));
+  const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().slice(0, 10));
   const [expandedBill, setExpandedBill] = useState(null);
+  const [printingId, setPrintingId] = useState(null);
   
   // Reversal dialog state
   const [reversalDialog, setReversalDialog] = useState({ open: false, bill: null });
@@ -53,6 +56,11 @@ export default function BillHistory() {
         } else if (dateRange === 'month') {
           const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
           return billDate >= monthAgo;
+        } else if (dateRange === 'custom') {
+          // Inclusive range [customStart 00:00, customEnd 23:59:59]
+          const start = new Date(`${customStart}T00:00:00`);
+          const end = new Date(`${customEnd}T23:59:59.999`);
+          return billDate >= start && billDate <= end;
         }
         return true;
       });
@@ -64,7 +72,7 @@ export default function BillHistory() {
       notify.error('Error cargando datos');
     }
     setLoading(false);
-  }, [statusFilter, dateRange]);
+  }, [statusFilter, dateRange, customStart, customEnd]);
 
   useEffect(() => {
     fetchData();
@@ -83,7 +91,11 @@ export default function BillHistory() {
       b.waiter_name?.toLowerCase().includes(s) ||
       String(b.table_number || '').includes(s) ||
       transNum.includes(s) ||
-      b.id?.toLowerCase().includes(s)
+      b.id?.toLowerCase().includes(s) ||
+      // FIX 2: búsqueda fiscal por RNC/Cédula, Razón Social y nombre de cliente
+      String(b.fiscal_id || '').toLowerCase().includes(s) ||
+      String(b.razon_social || '').toLowerCase().includes(s) ||
+      String(b.customer_name || '').toLowerCase().includes(s)
     );
   });
 
@@ -166,6 +178,39 @@ export default function BillHistory() {
     return bill.status;
   };
 
+  // FIX 1: Reimpresión térmica → cola del Print Agent (NO window.print)
+  const handleThermalReprint = async (bill) => {
+    if (printingId === bill.id) return;
+    setPrintingId(bill.id);
+    try {
+      const res = await fetch(`${API_BASE}/api/print/receipt/${bill.id}/send`, {
+        method: 'POST',
+        headers: hdrs(),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Error al enviar a impresora');
+      }
+      const data = await res.json();
+      const copyN = data.reprint_count || 1;
+      const copies = data.copies || 1;
+      notify.success(
+        `Reimpresión enviada a la impresora térmica (Copia #${copyN}${copies > 1 ? ` × ${copies}` : ''})`
+      );
+      // Actualizar el contador local sin recargar todo
+      setBills(prev => prev.map(b => b.id === bill.id ? { ...b, reprint_count: copyN } : b));
+    } catch (e) {
+      notify.error(e.message || 'No se pudo enviar a la impresora');
+    } finally {
+      setPrintingId(null);
+    }
+  };
+
+  const handleViewPdf = (bill) => {
+    window.open(`${API_BASE}/api/print/receipt/${bill.id}`, '_blank', 'noopener,noreferrer');
+    notify.info('Abriendo vista previa en otra pestaña…');
+  };
+
   return (
     <div className="p-4 md:p-6 pb-28 sm:pb-6 max-w-6xl mx-auto space-y-6" data-testid="bill-history-page">
       {/* Header */}
@@ -183,7 +228,8 @@ export default function BillHistory() {
             {[
               { key: 'today', label: 'Hoy' },
               { key: 'week', label: 'Semana' },
-              { key: 'month', label: 'Mes' }
+              { key: 'month', label: 'Mes' },
+              { key: 'custom', label: 'Personalizado' }
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -213,13 +259,54 @@ export default function BillHistory() {
         </div>
       </div>
 
+      {/* FIX 3: Date pickers visibles solo cuando dateRange === 'custom' */}
+      {dateRange === 'custom' && (
+        <div
+          className="flex flex-wrap items-end gap-3 bg-card border border-border rounded-xl p-3"
+          data-testid="custom-date-range"
+        >
+          <div className="flex flex-col gap-1">
+            <label htmlFor="custom-start" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Desde
+            </label>
+            <input
+              id="custom-start"
+              type="date"
+              value={customStart}
+              max={customEnd}
+              onChange={e => setCustomStart(e.target.value)}
+              className="bg-background border border-border rounded-lg px-3 py-1.5 text-xs"
+              data-testid="custom-start-date"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="custom-end" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Hasta
+            </label>
+            <input
+              id="custom-end"
+              type="date"
+              value={customEnd}
+              min={customStart}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={e => setCustomEnd(e.target.value)}
+              className="bg-background border border-border rounded-lg px-3 py-1.5 text-xs"
+              data-testid="custom-end-date"
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground ml-auto">
+            Rango: {new Date(customStart).toLocaleDateString('es-DO')} → {new Date(customEnd).toLocaleDateString('es-DO')}
+          </p>
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar por NCF, # orden, mesa, cajero..."
+          placeholder="Buscar por NCF, # orden, mesa, cajero, RNC, Razón Social, cliente..."
           className="w-full bg-card border border-border rounded-xl pl-10 pr-12 py-2.5 text-sm"
           data-testid="search-input"
         />
@@ -369,18 +456,35 @@ export default function BillHistory() {
                     )}
                     
                     {/* Actions */}
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        className="text-xs"
+                        disabled={printingId === bill.id}
+                        onClick={() => handleThermalReprint(bill)}
+                        data-testid={`print-thermal-${bill.id}`}
+                      >
+                        {printingId === bill.id ? (
+                          <div className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full mr-1" />
+                        ) : (
+                          <Printer size={14} className="mr-1" />
+                        )}
+                        Imprimir
+                        {bill.reprint_count > 0 && (
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 text-[10px] font-bold">
+                            ×{bill.reprint_count}
+                          </span>
+                        )}
+                      </Button>
+
                       <Button
                         variant="outline"
                         size="sm"
                         className="text-xs"
-                        onClick={() => {
-                          // Print receipt
-                          window.open(`${API_BASE}/api/print/receipt/${bill.id}`, '_blank');
-                        }}
-                        data-testid={`print-${bill.id}`}
+                        onClick={() => handleViewPdf(bill)}
+                        data-testid={`view-pdf-${bill.id}`}
                       >
-                        <Printer size={14} className="mr-1" /> Imprimir
+                        <Eye size={14} className="mr-1" /> Ver PDF
                       </Button>
                       
                       {bill.status === 'paid' && !hasCreditNote && (
