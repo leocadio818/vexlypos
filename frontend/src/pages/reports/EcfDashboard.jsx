@@ -36,6 +36,7 @@ export default function EcfDashboard({ data }) {
   const [loading, setLoading] = useState(false);
   const [editDialog, setEditDialog] = useState({ open: false, bill: null, newType: '' });
   const [onlyMine, setOnlyMine] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (data?.bills) {
@@ -66,8 +67,27 @@ export default function EcfDashboard({ data }) {
 
   const filteredBills = bills.filter(b => {
     if (onlyMine && user?.id && b.cashier_id !== user.id && b.waiter_id !== user.id) return false;
-    if (filter === 'all') return true;
-    return getStatus(b) === filter;
+    if (filter !== 'all' && getStatus(b) !== filter) return false;
+    // FIX 5: búsqueda en tiempo real (Transaction #, e-NCF, RNC, Razón Social, Monto)
+    if (search) {
+      const s = search.trim().toLowerCase();
+      if (!s) return true;
+      const totalStr = String(b.total ?? '');
+      const totalFmt = (b.total ?? 0).toLocaleString('es-DO', { minimumFractionDigits: 2 }).toLowerCase();
+      const matches = (
+        String(b.transaction_number ?? '').includes(s) ||
+        `t-${b.transaction_number ?? ''}`.toLowerCase().includes(s) ||
+        String(b.ecf_encf || '').toLowerCase().includes(s) ||
+        String(b.ncf || '').toLowerCase().includes(s) ||
+        String(b.fiscal_id || '').toLowerCase().includes(s) ||
+        String(b.razon_social || '').toLowerCase().includes(s) ||
+        String(b.customer_name || '').toLowerCase().includes(s) ||
+        totalStr.includes(s.replace(/[^\d.]/g, '')) ||
+        totalFmt.includes(s)
+      );
+      if (!matches) return false;
+    }
+    return true;
   });
 
   const handleRefreshStatus = async (billId) => {
@@ -329,12 +349,43 @@ export default function EcfDashboard({ data }) {
         </button>
       </div>
 
-      {/* Filter: Only mine */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      {/* Filter: Only mine + FIX 5: búsqueda en tiempo real */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
           <input type="checkbox" checked={onlyMine} onChange={e => setOnlyMine(e.target.checked)} className="rounded" data-testid="only-mine-filter" />
           Solo mis facturas en proceso
         </label>
+        <div className="relative flex-1 min-w-[260px] max-w-md ml-auto">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <input
+            type="search"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por # Trans, e-NCF, RNC, Razón Social, Monto…"
+            className="w-full bg-card border border-border rounded-lg pl-9 pr-9 py-2 text-xs"
+            data-testid="ecf-search-input"
+            aria-label="Buscar facturas electrónicas"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted text-muted-foreground"
+              aria-label="Limpiar búsqueda"
+              data-testid="ecf-search-clear"
+            >
+              <XCircle size={14} />
+            </button>
+          )}
+          {search && (
+            <span
+              className="absolute -bottom-5 left-0 text-[10px] text-muted-foreground"
+              data-testid="ecf-search-count"
+            >
+              {filteredBills.length} resultado{filteredBills.length === 1 ? '' : 's'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Action buttons — "Reintentar Todas" EXCLUYE contingencia manual (Uber Eats/PedidosYa) */}
@@ -447,7 +498,11 @@ export default function EcfDashboard({ data }) {
             </tbody>
           </table>
           {filteredBills.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">No hay facturas electrónicas en este filtro</p>
+            <p className="text-center text-muted-foreground py-8" data-testid="ecf-empty-state">
+              {search
+                ? `No hay facturas que coincidan con "${search}"`
+                : 'No hay facturas electrónicas en este filtro'}
+            </p>
           )}
         </div>
       </div>
