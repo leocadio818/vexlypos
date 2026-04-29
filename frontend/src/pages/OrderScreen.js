@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ordersAPI, categoriesAPI, productsAPI, modifiersAPI, reasonsAPI, tablesAPI, areasAPI, billsAPI, inventorySettingsAPI, posSessionsAPI, simpleInventoryAPI } from '@/lib/api';
 import { formatMoney } from '@/lib/api';
-import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search, Pencil, Settings, Package } from 'lucide-react';
+import { ArrowLeft, Send, Trash2, AlertTriangle, Receipt, Grid3X3, SplitSquareHorizontal, FileText, Printer, Lock, MoveRight, Users, Check, X, Plus, Merge, Hash, RotateCcw, Ban, MoreVertical, Percent, RefreshCw, ShoppingCart, Utensils, ShoppingBag, Truck, Pizza, Coffee, Sandwich, IceCream, Soup, Wine, Beer, Beef, Fish, Salad, Cookie, Cake, Search, Pencil, Settings, Package, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -153,6 +153,13 @@ export default function OrderScreen() {
   const [allAreas, setAllAreas] = useState([]);
   const [mergeConfirm, setMergeConfirm] = useState({ open: false, targetTableId: null, targetTableNumber: null });
   const [reservedAlert, setReservedAlert] = useState({ open: false, tableNumber: null });
+
+  // Scroll hint chip for Move Table modal. Visible while the list overflows
+  // and the user has not yet scrolled near the bottom. Auto-hides after the
+  // user scrolls, making the "there's more below" affordance discoverable
+  // without adding permanent visual noise when everything fits on screen.
+  const moveScrollRef = useRef(null);
+  const [showMoveScrollHint, setShowMoveScrollHint] = useState(false);
   
   // Split/Divide Dialog
   const [splitMode, setSplitMode] = useState(false);
@@ -1752,6 +1759,37 @@ export default function OrderScreen() {
       }
     } catch { console.warn('Error moviendo cuenta'); }
   };
+
+  // Scroll-hint lifecycle for Move Table modal. Uses React onScroll + a ref
+  // callback so it works cleanly inside a Radix portal (where imperative
+  // addEventListener can miss events after re-renders). The chip shows when
+  // the list overflows, hides after the user scrolls >40px or nears the
+  // bottom, and reappears if they scroll back to the top.
+  const recomputeMoveScrollHint = useCallback(() => {
+    const el = moveScrollRef.current;
+    if (!el) {
+      setShowMoveScrollHint(false);
+      return;
+    }
+    const overflows = el.scrollHeight - el.clientHeight > 8;
+    const nearBottom = el.scrollHeight - el.clientHeight - el.scrollTop < 24;
+    const engaged = el.scrollTop > 40;
+    setShowMoveScrollHint(overflows && !nearBottom && !engaged);
+  }, []);
+
+  useEffect(() => {
+    if (!moveDialog.open) {
+      setShowMoveScrollHint(false);
+      return;
+    }
+    // Two frames catches both Radix portal mount + list children render.
+    const raf = requestAnimationFrame(() => requestAnimationFrame(recomputeMoveScrollHint));
+    window.addEventListener('resize', recomputeMoveScrollHint);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', recomputeMoveScrollHint);
+    };
+  }, [moveDialog.open, allAreas, allTables, recomputeMoveScrollHint]);
 
   const handleConfirmMerge = async () => {
     if (!order || !mergeConfirm.targetTableId) return;
@@ -4023,7 +4061,7 @@ export default function OrderScreen() {
             - Header stays pinned; only the list scrolls.
         */}
         <DialogContent
-          className="max-w-lg bg-card border-border flex flex-col max-h-[85vh] p-0 overflow-hidden"
+          className="max-w-lg bg-card border-border flex flex-col max-h-[85vh] p-0 overflow-hidden relative"
           data-testid="move-table-dialog"
         >
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
@@ -4032,6 +4070,8 @@ export default function OrderScreen() {
             </DialogTitle>
           </DialogHeader>
           <div
+            ref={moveScrollRef}
+            onScroll={recomputeMoveScrollHint}
             className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 space-y-3"
             style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
             data-testid="move-table-scroll-area"
@@ -4099,6 +4139,25 @@ export default function OrderScreen() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/*
+            Scroll-hint chip. Pinned to the bottom-right of the dialog frame,
+            above the scroll-area padding so it never overlaps a table button.
+            Pointer-events:none keeps it non-interactive — clicking a table
+            through the chip area still registers. It uses pure CSS fade so
+            mount/unmount is instant (no layout shift). The chevron bounces
+            softly via Tailwind's built-in `animate-bounce`.
+          */}
+          <div
+            data-testid="move-scroll-hint"
+            aria-hidden={!showMoveScrollHint}
+            className={`pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 z-20 transition-opacity duration-200 ${showMoveScrollHint ? 'opacity-100' : 'opacity-0'}`}
+          >
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg border border-primary/40">
+              <span>Más zonas</span>
+              <ChevronDown size={14} className="animate-bounce" />
+            </div>
           </div>
         </DialogContent>
       </Dialog>
