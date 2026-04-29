@@ -2405,19 +2405,20 @@ async def print_comanda_escpos(order_id: str):
     if not order:
         raise HTTPException(status_code=404)
     items = [i for i in order.get("items", []) if i["status"] == "sent"]
-    lines = []
-    lines.append({"type": "center", "bold": True, "size": "large", "text": "COMANDA"})
-    lines.append({"type": "divider"})
 
-    # Service-type banner (PARA LLEVAR / DELIVERY) on direct ESC/POS path.
+    # Single banner policy: prefix the header itself so there's always ONE
+    # visible label (matches build_comanda behavior used by the Print Agent).
     service_type = (order.get("service_type") or "dine_in").lower()
     if service_type == "takeout":
-        lines.append({"type": "center", "bold": True, "size": "large", "text": "*** PARA LLEVAR ***"})
-        lines.append({"type": "divider"})
+        header_text = "COMANDA — PARA LLEVAR"
     elif service_type == "delivery":
-        lines.append({"type": "center", "bold": True, "size": "large", "text": "*** DELIVERY ***"})
-        lines.append({"type": "divider"})
+        header_text = "COMANDA — DELIVERY"
+    else:
+        header_text = "COMANDA"
 
+    lines = []
+    lines.append({"type": "center", "bold": True, "size": "large", "text": header_text})
+    lines.append({"type": "divider"})
     lines.append({"type": "left", "bold": True, "size": "large", "text": f"Mesa: {order['table_number']}"})
     lines.append({"type": "left", "text": f"Mesero: {order['waiter_name']}"})
     lines.append({"type": "left", "text": f"Hora: {now_local_str()}"})
@@ -4518,20 +4519,11 @@ def build_comanda(data):
         commands.append({{"type": "text", "text": "NO ES VENTA REAL", "align": "center", "bold": True}})
         commands.append({{"type": "divider"}})
     
-    # ─── BANNER TIPO DE SERVICIO ───
-    # Renders a prominent banner above the channel header when the order
-    # is takeout or delivery so kitchen staff sees it immediately. Dine-in
-    # shows no banner (legacy layout preserved).
-    service_type = (data.get("service_type") or "dine_in").lower()
-    service_banner = None
-    if service_type == "takeout":
-        service_banner = "*** PARA LLEVAR ***"
-    elif service_type == "delivery":
-        service_banner = "*** DELIVERY ***"
-    if service_banner:
-        commands.append({{"type": "divider"}})
-        commands.append({{"type": "text", "text": service_banner, "align": "center", "bold": True, "size": 2}})
-        commands.append({{"type": "divider"}})
+    # NOTE: service_type banner (PARA LLEVAR / DELIVERY) is NOT rendered here.
+    # Instead the backend prefixes the `channel_name` itself (e.g.
+    # "PARA LLEVAR · COCINA") so BOTH legacy and updated agents show the
+    # label exactly ONCE in the header. Rendering it again here would
+    # duplicate the banner for users with the new agent installed.
     
     # Encabezado con ORDEN #XXXX arriba en negrita
     commands.append({{"type": "text", "text": channel.upper(), "align": "center", "bold": True}})
