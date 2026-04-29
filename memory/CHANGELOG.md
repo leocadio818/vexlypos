@@ -1,6 +1,25 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-29 — 🖨️ FIX 1, 2, 3 — Reimpresión de Facturas (frontend, P0)
+
+### Cambios en `/app/frontend/src/pages/BillHistory.js`
+- **FIX 1** — Acciones del recibo: el botón único "Imprimir" se reemplazó por dos botones:
+  - **Imprimir** (`data-testid=print-thermal-{id}`) → POST `/api/print/receipt/{id}/send` → cola del Print Agent → impresora térmica. Muestra toast `Reimpresión enviada a la impresora térmica (Copia #N)` y un badge `×N` en el propio botón con el contador de reimpresiones.
+  - **Ver PDF** (`data-testid=view-pdf-{id}`) → abre el HTML viewer en otra pestaña con toast informativo.
+- **FIX 2** — Búsqueda extendida: incluye `fiscal_id` (RNC/Cédula), `razon_social` y `customer_name` además de NCF, e-NCF, mesa, cajero, mesero, # transacción, label e id. Placeholder actualizado.
+- **FIX 3** — Preset "Personalizado": chip `data-testid=filter-custom` revela una caja con dos `<input type="date">` (Desde / Hasta) más un resumen del rango. El filtro se aplica inclusive `[start 00:00, end 23:59:59]`.
+
+### Validación
+- 11/11 frontend test cases passed (testing agent v3, iteration_3.json).
+- 5-viewport visual regression OK (Desktop light/dark, Mobile iOS, Android, Tablet dark) — sin overflow horizontal.
+- Verificado end-to-end: contador `×N` aumenta correctamente al hacer clic en Imprimir; búsqueda por RNC `131062822` (SSTECH SRL) devolvió las 13 facturas asociadas; rango personalizado 1/4/2026 → 30/4/2026 mostró 68 facturas correctamente.
+
+### Pendiente del paquete
+- FIX 5 (frontend `EcfDashboard.jsx`): barra de búsqueda en tiempo real (Transaction #, e-NCF, RNC, Razón Social, Monto).
+
+---
+
 ## 2026-04-29 — 🖨️ FIX 4 — Reimpresión de Facturas (backend, P0)
 
 ### Cambios
