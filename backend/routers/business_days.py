@@ -757,6 +757,95 @@ async def calculate_day_stats(day_id: str) -> dict:
     b04_result = await db.credit_notes.aggregate(b04_pipeline).to_list(1)
     b04_stats = b04_result[0] if b04_result else {"count": 0, "total": 0}
     
+    # ─── Top 10 productos vendidos ───
+    top_products_pipeline = [
+        {"$match": day_match},
+        {"$unwind": "$items"},
+        {"$group": {
+            "_id": {"$ifNull": ["$items.product_id", "$items.product_name"]},
+            "name": {"$first": {"$ifNull": ["$items.product_name", "$items.name"]}},
+            "qty": {"$sum": "$items.quantity"},
+            "total": {"$sum": "$items.total"}
+        }},
+        {"$sort": {"total": -1}},
+        {"$limit": 10}
+    ]
+    top_products_result = await db.bills.aggregate(top_products_pipeline).to_list(10)
+    top_products = [
+        {"name": p.get("name") or "Sin nombre", "qty": round(p.get("qty", 0), 2), "total": round(p.get("total", 0), 2)}
+        for p in top_products_result
+    ]
+    
+    # ─── e-CF DGII (aprobadas / rechazadas / contingencia) ───
+    ecf_pipeline = [
+        {"$match": day_match_base},
+        {"$group": {
+            "_id": {"$ifNull": ["$ecf_status", "none"]},
+            "count": {"$sum": 1}
+        }}
+    ]
+    ecf_result = await db.bills.aggregate(ecf_pipeline).to_list(10)
+    ecf_summary = {"approved": 0, "rejected": 0, "contingency": 0}
+    for row in ecf_result:
+        status_lower = (row.get("_id") or "").lower()
+        if status_lower in ("approved", "aprobada", "aceptada"):
+            ecf_summary["approved"] += row.get("count", 0)
+        elif status_lower in ("rejected", "rechazada"):
+            ecf_summary["rejected"] += row.get("count", 0)
+        elif status_lower in ("contingency", "contingencia"):
+            ecf_summary["contingency"] += row.get("count", 0)
+    
+    # ─── Sesiones / turnos del día (Supabase) ───
+    # pos_sessions schema: cash_sales/card_sales/transfer_sales/other_sales,
+    # opening_amount, cash_in/cash_out, total_invoices. NO business_day_id, NO
+    # total_sales, NO total_difference (these are computed below).
+    sessions_list = []
+    try:
+        from server import supabase_client, sb_select
+        if supabase_client:
+            opened_at = business_day.get("opened_at", "") or f"{business_date}T00:00:00"
+            closed_at = business_day.get("closed_at")
+            if not closed_at:
+                # Open day: include any session opened after the day start
+                from datetime import datetime as _dt, timezone as _tz
+                closed_at = _dt.now(_tz.utc).isoformat()
+            sessions_response = sb_select(supabase_client.table("pos_sessions").select("*")).gte(
+                "opened_at", opened_at
+            ).lte(
+                "opened_at", closed_at
+            ).execute()
+            if sessions_response.data:
+                for s in sessions_response.data:
+                    cash = (s.get("cash_sales") or 0)
+                    card = (s.get("card_sales") or 0)
+                    transfer = (s.get("transfer_sales") or 0)
+                    other = (s.get("other_sales") or 0)
+                    total_sales = cash + card + transfer + other
+                    # Difference = (counted) - (expected). When session not closed
+                    # we have no actual count, so report 0.
+                    diff = 0
+                    if s.get("status") in ("closed", "force_closed"):
+                        # Some installs persist a discrepancy field. If absent, leave 0.
+                        diff = (s.get("cash_difference") or s.get("difference") or 0)
+                    sessions_list.append({
+                        "terminal_name": s.get("terminal_name", "-"),
+                        "opened_by_name": s.get("opened_by_name", "-"),
+                        "total_sales": round(total_sales, 2),
+                        "total_difference": round(diff, 2)
+                    })
+    except Exception as e:
+        print(f"Warning: Could not fetch sessions for stats: {e}")
+    
+    # ─── Métricas operativas ───
+    customers_pipeline = [
+        {"$match": day_match},
+        {"$group": {"_id": None, "customers": {"$sum": {"$ifNull": ["$customer_count", 1]}}}}
+    ]
+    cust_result = await db.bills.aggregate(customers_pipeline).to_list(1)
+    customers = cust_result[0].get("customers", 0) if cust_result else 0
+    invoices_count = sales.get("total_invoices", 0) or 0
+    avg_per_table = round((sales.get("total_sales", 0) / invoices_count), 2) if invoices_count > 0 else 0
+    
     return {
         "business_date": business_date,
         "total_sales": sales.get("total_sales", 0),
@@ -771,7 +860,15 @@ async def calculate_day_stats(day_id: str) -> dict:
         "total_voids": voids,
         "void_amount": void_amount,
         "total_b04": b04_stats.get("count", 0),
-        "b04_amount": b04_stats.get("total", 0)
+        "b04_amount": b04_stats.get("total", 0),
+        "top_products": top_products,
+        "ecf": ecf_summary,
+        "ecf_approved": ecf_summary["approved"],
+        "ecf_rejected": ecf_summary["rejected"],
+        "ecf_contingency": ecf_summary["contingency"],
+        "sessions": sessions_list,
+        "customers": customers,
+        "avg_per_table": avg_per_table
     }
 
 

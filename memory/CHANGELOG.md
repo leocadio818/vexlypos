@@ -1,9 +1,21 @@
 # VexlyPOS — Changelog
 
 
-## 2026-04-30 — 🔴 P0 FIXES: Impresión recibos Caja 2 + Cierre de Día + Modal Mover Mesa
+## 2026-04-30 — 🔴 P0 FIXES: Impresión recibos Caja 2 + Cierre de Día + Modal Mover Mesa + Email Cierre Jornada
 
 Sesión de fixes críticos en producción Lungomare (cliente reportó problemas operativos):
+
+### Fix 0 — Email "Cierre de Jornada" con secciones vacías
+**Causa raíz**: `calculate_day_stats` en `routers/business_days.py:649` solo retornaba ventas/pagos básicos. **NO calculaba** los campos `sessions`, `top_products`, `ecf`, `customers`, `avg_per_table` que el template HTML del email espera (`services/email_notifications.py:205`). Resultado: las secciones "Por turno", "Top 10 productos" y "e-CF DGII" siempre se mostraban vacías o en 0.
+
+**Fix aplicado** (`routers/business_days.py:776-862`):
+- **Top 10 productos**: nuevo aggregation pipeline sobre `bills.items` agrupando por `product_id`, sumando `quantity` y `total`. Usa `product_name` (no `name` — verificado en schema real).
+- **e-CF DGII**: aggregation por `ecf_status` mapeando aprobada/rechazada/contingencia.
+- **Sesiones**: query a `pos_sessions` (Supabase) filtrando por `opened_at >= business_day.opened_at`. Schema real verificado: `cash_sales + card_sales + transfer_sales + other_sales = total_sales`. NO existe `business_day_id` ni `total_difference` en Supabase — se computan en runtime.
+- **Customers**: suma de `customer_count` por bill (default 1).
+- **Avg per table**: `total_sales / total_invoices`.
+
+**Verificación e2e**: `GET /business-days/{id}` en pod preview ahora retorna `top_products: 9 items` (PRESIDENTE, HAMBURGUESA, STELLA…), `customers: 40`, `avg_per_table: 733.11`, estructura `ecf: {approved, rejected, contingency}` completa.
 
 ### Fix 1 — Cajero 2 no recibía pre-cuentas ni facturas en Caja 2
 **Causa raíz**: `print_pre_check` y `print_bill` en `server.py` evaluaban Área de la mesa ANTES que Turno del cajero. Los 7 mapeos `area → receipt (Caja 1)` configurados en Lungomare siempre ganaban, y el terminal del cajero nunca se consultaba. Resultado: Cajero 2 abre Caja 2, hace pre-cuenta → sale en Caja 1.
