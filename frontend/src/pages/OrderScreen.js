@@ -4061,7 +4061,7 @@ export default function OrderScreen() {
             - Header stays pinned; only the list scrolls.
         */}
         <DialogContent
-          className="max-w-lg bg-card border-border flex flex-col max-h-[85vh] p-0 overflow-hidden relative"
+          className="!grid-cols-none !gap-0 w-[min(calc(100vw-2rem),32rem)] bg-card border-border !flex !flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[85vh] p-0 overflow-hidden"
           data-testid="move-table-dialog"
         >
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
