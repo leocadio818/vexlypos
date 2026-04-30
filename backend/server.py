@@ -3177,15 +3177,59 @@ async def print_shift_report(input: dict, user=Depends(get_current_user)):
     add_feed(3)
     commands.append({"type": "cut"})
     
-    # Enviar a cola de impresión
-    receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
+    # Enviar a cola de impresión — RESOLVER impresora igual que pre-cuenta/factura:
+    # 1. Turno activo del usuario que genera el reporte (cajero/admin en su caja física)
+    # 2. Canal "receipt" global (fallback)
+    # Multi-tenant safe: cada cajero imprime en SU caja aunque sea cierre de día.
+    receipt_channel_code = ""
+    try:
+        sb_url = os.environ.get("SUPABASE_URL", "")
+        sb_key = os.environ.get("SUPABASE_ANON_KEY", "")
+        if sb_url and sb_key:
+            from supabase import create_client as sc
+            sb = sc(sb_url, sb_key)
+            sess = sb_select(sb.table("pos_sessions").select("terminal_name")).eq("opened_by", user.get("user_id")).eq("status", "open").limit(1).execute()
+            if sess.data and len(sess.data) > 0:
+                terminal_name = sess.data[0].get("terminal_name", "")
+                if terminal_name:
+                    terminal = await db.pos_terminals.find_one({"name": terminal_name}, {"_id": 0, "print_channel": 1})
+                    if terminal and terminal.get("print_channel"):
+                        receipt_channel_code = terminal["print_channel"]
+            # If no open shift (common for day-close by admin), look back 12h for
+            # most recent closed shift of this user so Z reports still print at
+            # the register they were just using.
+            if not receipt_channel_code:
+                from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+                cutoff = (_dt.now(_tz.utc) - _td(hours=12)).isoformat()
+                recent = sb_select(sb.table("pos_sessions").select("terminal_name").order("opened_at", desc=True)).eq("opened_by", user.get("user_id")).gte("opened_at", cutoff).limit(1).execute()
+                if recent.data and len(recent.data) > 0:
+                    terminal_name = recent.data[0].get("terminal_name", "")
+                    if terminal_name:
+                        terminal = await db.pos_terminals.find_one({"name": terminal_name}, {"_id": 0, "print_channel": 1})
+                        if terminal and terminal.get("print_channel"):
+                            receipt_channel_code = terminal["print_channel"]
+    except Exception as e:
+        print(f"Warning: Could not resolve terminal printer for report: {e}")
+    if not receipt_channel_code:
+        receipt_channel_code = "receipt"
+    # Area-aware resolver (handles aliases like "cocina→kitchen" and prefix "bar"→"bar1")
+    _rep_channels = await db.print_channels.find({"active": True}, {"_id": 0}).to_list(20)
+    receipt_channel_code = await resolve_channel_for_area(receipt_channel_code, None, _rep_channels)
+    
+    receipt_channel = await db.print_channels.find_one({"code": receipt_channel_code}, {"_id": 0})
+    if not receipt_channel:
+        receipt_channel = await db.print_channels.find_one({"code": "receipt"}, {"_id": 0})
     printer_name = receipt_channel.get("printer_name", "") if receipt_channel else ""
+    printer_target = receipt_channel.get("target", "usb") if receipt_channel else "usb"
+    printer_ip = receipt_channel.get("ip", receipt_channel.get("ip_address", "")) if receipt_channel else ""
     
     job = {
         "id": gen_id(),
         "type": "report",
-        "channel": "receipt",
+        "channel": receipt_channel_code,
         "printer_name": printer_name,
+        "printer_target": printer_target,
+        "printer_ip": printer_ip,
         "data": {
             "type": "report",
             "paper_width": 80,
@@ -3197,7 +3241,7 @@ async def print_shift_report(input: dict, user=Depends(get_current_user)):
     }
     await db.print_queue.insert_one(job)
     
-    return {"ok": True, "job_id": job["id"]}
+    return {"ok": True, "job_id": job["id"], "channel": receipt_channel_code, "printer_ip": printer_ip}
 
 
 # ─── PRINT QUEUE ENDPOINTS FOR AGENT ───
