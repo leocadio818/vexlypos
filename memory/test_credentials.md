@@ -2,6 +2,7 @@
 
 ## POS Login PINs
 - Admin: `11338585` (currently `is_super_admin: true` in DB — can toggle Feature Flags in Configuración → Plan)
+- ADMIN2 / Cajero Caja 2 (Lungomare prod): `11448585` (role=admin, used to reproduce receipt routing bug)
 - OSCAR (Cajero): `1111`
 - Carlos (Mesero): `100`
 

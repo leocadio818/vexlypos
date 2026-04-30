@@ -1,6 +1,57 @@
 # VexlyPOS — Changelog
 
 
+## 2026-04-30 — 🔴 P0 FIXES: Impresión recibos Caja 2 + Cierre de Día + Modal Mover Mesa
+
+Sesión de fixes críticos en producción Lungomare (cliente reportó problemas operativos):
+
+### Fix 1 — Cajero 2 no recibía pre-cuentas ni facturas en Caja 2
+**Causa raíz**: `print_pre_check` y `print_bill` en `server.py` evaluaban Área de la mesa ANTES que Turno del cajero. Los 7 mapeos `area → receipt (Caja 1)` configurados en Lungomare siempre ganaban, y el terminal del cajero nunca se consultaba. Resultado: Cajero 2 abre Caja 2, hace pre-cuenta → sale en Caja 1.
+
+**Fix aplicado** (`server.py`):
+- `print_bill` (~línea 3749): invertido orden → ahora **Turno > Área > Fallback global**.
+- `print_pre_check` (~línea 4138): misma inversión. El cajero imprime SIEMPRE en la caja donde abrió turno, sin importar el área de la mesa.
+- Racional documentado en comentarios: "el cajero está físicamente en ESTE register, el papel DEBE salir ahí".
+
+### Fix 2 — Cierre de Día (Reporte Z) no imprimía
+**Causa raíz**: `/print/report-shift` (`server.py:3181`) encolaba jobs **sin `printer_ip` ni `printer_target`**. Los agentes de red no podían rutear y caían al fallback USB (inexistente en Lungomare). Bug afectaba tanto X como Z (cierre de turno y cierre de día) — el cliente creyó que X funcionaba pero era otro flujo de recibo.
+
+**Fix aplicado**: misma lógica de resolución que pre-cuenta/factura — Turno activo (o último turno de las últimas 12h) > global `receipt` > `resolve_channel_for_area` para aliases. Job ahora se encola con `channel + printer_name + printer_target + printer_ip` completos.
+
+**Verificación e2e**:
+- POST `/print/report-shift` en Lungomare prod (código viejo): job encolado sin `printer_ip` ❌ (confirma bug).
+- POST en pod preview (código nuevo): job con `channel=recibo, printer_target=network, printer_ip=192.168.1.114` ✅.
+
+### Fix 3 — Modal Mover Mesa se cortaba en todas las resoluciones
+**Causa raíz**: en sesión anterior añadí `className="... relative"` al `DialogContent` para posicionar el chip flotante "Más zonas". Eso sobre-escribió el `position: fixed` base de Radix Dialog, convirtiendo el modal en elemento `relative` dentro del flujo del documento → `getBoundingClientRect().bottom` se iba a 1064-1376px aunque el viewport fuera 768-1080.
+
+**Fix aplicado** (`OrderScreen.js:4063`):
+- Eliminado `relative` del className.
+- Añadido `!grid-cols-none !gap-0 !flex !flex-col` para forzar layout flex sobre el grid base.
+- `max-h-[calc(100dvh-2rem)] sm:max-h-[85vh]` → `dvh` (dynamic viewport height) corrige iOS Safari cuando la barra del navegador aparece/desaparece.
+- `w-[min(calc(100vw-2rem),32rem)]` → garantiza 1rem margen lateral en móvil.
+
+**Verificación visual + métrica** en 4 viewports:
+| Viewport | Dialog y | Dialog bottom | VP height | Fits |
+|---|---|---|---|---|
+| Desktop 1920×1080 | 243 | 836 | 1080 | ✓ |
+| Laptop 1366×768 | 87 | 680 | 768 | ✓ |
+| Laptop 1280×720 | 63 | 656 | 720 | ✓ |
+| Mobile 390×844 | 125 | 718 | 844 | ✓ |
+
+Test de scroll forzado: overflows=true, scrollMax=193px, didScroll=true ✅.
+
+### Archivos modificados
+- `/app/backend/server.py` (3 fixes: print_bill, print_pre_check, print_shift_report)
+- `/app/frontend/src/pages/OrderScreen.js` (Move Table modal)
+
+### Estado de deploy
+- Pod plantilla: ✅ todos los fixes aplicados
+- Lungomare prod: ⏳ pendiente `Save to GitHub` + pull + redeploy
+- Otros tenants: ⏳ mismo flujo (revisar caso por caso si tienen el bug de routing según cuántas cajas tengan)
+
+
+
 ## 2026-04-29 — 🔴 P0 FIX: Impresión física rota (Lungomare — cliente molesto)
 
 **Problema reportado**: COCINA, BAR GRANDE, BAR PEQUEÑO y CAJA 2 "no imprimían".
