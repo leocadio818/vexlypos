@@ -3,6 +3,25 @@
 
 ## 2026-04-30 — 🔴 P0 FIXES: Impresión recibos Caja 2 + Cierre de Día + Modal Mover Mesa + Email Cierre Jornada
 
+### Fix 7 — Reportes mostraban timestamps en UTC en lugar de hora local
+**Causa raíz**: `routers/reports.py:682` formateaba `paid_at` con `.strftime()` sin convertir a zona horaria. Como los ISO de `bills.paid_at` están almacenados en UTC (correcto para DB), el string de display salía con 4 horas de adelanto (DR = UTC-4). Ejemplo real: factura #1050 registrada a las 9:20 PM local aparecía como "01:20 AM" en la tabla "Detalle de Facturas".
+
+**Fix aplicado**:
+- `utils/timezone.py`: añadida función `format_local_time(iso_utc, fmt)` que convierte ISO UTC → string formateado en la zona configurada (lee `system_config.timezone`, fallback `America/Santo_Domingo`). NO hardcodea timezone.
+- `routers/reports.py:678`: reemplazado el `strftime` directo por `await format_local_time(b["paid_at"], "%I:%M %p")`.
+- `routers/reports.py:3339`: mismo fix para el export de descuentos.
+
+**NO tocado** (regla 🔒 protegida de `utils/timezone.py`):
+- Business/jornada date logic (sigue usando `get_jornada_date`)
+- Timestamps de tickets impresos (ya correctos)
+- `created_at` / `paid_at` almacenados en DB (siguen UTC)
+
+**Verificación e2e** con bill real en preview:
+- DB: `paid_at = 2026-04-19T19:46:34+00:00`
+- API antes: `07:46 PM` ❌ (UTC)
+- API después: `03:46 PM` ✅ (America/Santo_Domingo = UTC-4)
+- Smoke test: `/reports/cash-close`, `/reports/hourly-sales`, `/reports/cash-close-hierarchical` → 200 OK.
+
 Sesión de fixes críticos en producción Lungomare (cliente reportó problemas operativos):
 
 ### Fix 0 — Email "Cierre de Jornada" con secciones vacías

@@ -9,6 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from utils.supabase_helpers import get_client_id, sb_select, sb_insert, sb_update_filter
+from utils.timezone import format_local_time
 import uuid
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
@@ -674,14 +675,7 @@ async def cash_close_report(date: Optional[str] = Query(None)):
     total_discounts = 0
     total_discount_count = 0
     for b in day_bills:
-        paid_time = ""
-        try:
-            paid_time = b.get("paid_at", "")
-            if "T" in paid_time:
-                from datetime import datetime as dt2
-                paid_time = dt2.fromisoformat(paid_time.replace("Z","")).strftime("%I:%M %p")
-        except Exception as e:
-            logger.debug("reports: failed to format paid_at=%r: %s", b.get("paid_at"), e)
+        paid_time = await format_local_time(b.get("paid_at", ""), "%I:%M %p")
         
         discount_amt = b.get("discount_applied", {}).get("amount", 0) if isinstance(b.get("discount_applied"), dict) else 0
         if discount_amt > 0:
@@ -3342,7 +3336,7 @@ async def get_discounts_report(
             "Descuento": disc.get("name", "-"),
             "Monto Descuento": round(amount, 2),
             "Total Final": round(b.get("total", 0), 2),
-            "Fecha": b.get("paid_at", "")[:19].replace("T", " ")
+            "Fecha": await format_local_time(b.get("paid_at", ""), "%Y-%m-%d %H:%M:%S")
         })
     
     return {

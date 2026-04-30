@@ -74,6 +74,33 @@ async def utc_hour_to_local(utc_hour: int) -> int:
     return local_dt.hour
 
 
+async def format_local_time(iso_utc: str, fmt: str = "%I:%M %p") -> str:
+    """Convert an ISO-8601 UTC timestamp string to a local-timezone formatted
+    string (for DISPLAY ONLY, in reports).
+    
+    Rationale: paid_at, created_at, etc. are stored in UTC (good for DB).
+    When rendered in report tables they must match the user's wall-clock time,
+    not UTC. This helper is ONLY for display — never use it for filtering,
+    grouping, or business-date logic (that still uses get_jornada_date()).
+    
+    Returns an empty string if the input is empty or unparseable.
+    """
+    if not iso_utc or "T" not in iso_utc:
+        return ""
+    try:
+        # Accept both "Z" suffix and "+00:00"
+        s = iso_utc.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(s)
+        # If input has no tzinfo, assume UTC (that's how we persist).
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        tz = await get_system_tz()
+        local_dt = dt.astimezone(tz)
+        return local_dt.strftime(fmt)
+    except Exception:
+        return ""
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 🔒 DO NOT MODIFY - PERMANENT BUSINESS DATE RULE
 # ═══════════════════════════════════════════════════════════════════════════════
